@@ -13,6 +13,7 @@ from localstack.aws.api.stepfunctions import (
     TestStateOutput,
     Timestamp,
 )
+from localstack.services.stepfunctions.asl.eval.evaluation_details import EvaluationDetails
 from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramEnded,
     ProgramError,
@@ -46,7 +47,7 @@ class TestStateExecution(Execution):
             exit_program_state: ProgramState = self.execution.exec_worker.env.program_state()
             if isinstance(exit_program_state, ProgramChoiceSelected):
                 self.execution.exec_status = ExecutionStatus.SUCCEEDED
-                self.execution.output = self.execution.exec_worker.env.inp
+                self.execution.output = self.execution.exec_worker.env.states.get_input()
                 self.execution.next_state = exit_program_state.next_state_name
             else:
                 self._reflect_execution_status()
@@ -85,13 +86,13 @@ class TestStateExecution(Execution):
 
     def _get_start_execution_worker(self) -> TestStateExecutionWorker:
         return TestStateExecutionWorker(
-            execution_type=StateMachineType.STANDARD,
-            definition=self.state_machine.definition,
-            input_data=self.input_data,
+            evaluation_details=EvaluationDetails(
+                aws_execution_details=self._get_start_aws_execution_details(),
+                execution_details=self.get_start_execution_details(),
+                state_machine_details=self.get_start_state_machine_details(),
+            ),
             exec_comm=self._get_start_execution_worker_comm(),
-            context_object_init=self._get_start_context_object_init_data(),
-            aws_execution_details=self._get_start_aws_execution_details(),
-            cloud_watch_logging_session=None,
+            cloud_watch_logging_session=self._cloud_watch_logging_session,
             activity_store=self._activity_store,
         )
 

@@ -1,0 +1,32 @@
+{
+  "Comment": "MAP_STATE_ITEMS_VARIABLE",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Pass",
+      "Assign": {
+        "ItemsVar": "_tbd_",  // Resource field to be replaced dynamically.
+      },
+      "Next": "MapIterateState"
+    },
+    "MapIterateState": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "Items": "{% $ItemsVar %}",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "Pass",
+        "States": {
+          "Pass": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

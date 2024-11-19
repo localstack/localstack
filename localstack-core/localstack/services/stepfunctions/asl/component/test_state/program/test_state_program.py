@@ -46,7 +46,7 @@ class TestStateProgram(EvalComponent):
 
     def _eval_body(self, env: TestStateEnvironment) -> None:
         try:
-            env.inspection_data["input"] = to_json_str(env.inp)
+            env.inspection_data["input"] = to_json_str(env.states.get_input())
             self.test_state.eval(env=env)
         except FailureEventException as ex:
             env.set_error(error=ex.get_execution_failed_event_details())

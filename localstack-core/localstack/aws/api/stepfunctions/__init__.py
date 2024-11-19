@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import List, Optional, TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -12,6 +12,7 @@ ConnectorParameters = str
 Definition = str
 Enabled = bool
 ErrorMessage = str
+EvaluationFailureLocation = str
 HTTPBody = str
 HTTPHeaders = str
 HTTPMethod = str
@@ -52,6 +53,8 @@ ValidateStateMachineDefinitionLocation = str
 ValidateStateMachineDefinitionMaxResult = int
 ValidateStateMachineDefinitionMessage = str
 ValidateStateMachineDefinitionTruncated = bool
+VariableName = str
+VariableValue = str
 VersionDescription = str
 VersionWeight = int
 includedDetails = bool
@@ -145,6 +148,7 @@ class HistoryEventType(StrEnum):
     MapRunSucceeded = "MapRunSucceeded"
     ExecutionRedriven = "ExecutionRedriven"
     MapRunRedriven = "MapRunRedriven"
+    EvaluationFailed = "EvaluationFailed"
 
 
 class IncludedData(StrEnum):
@@ -473,6 +477,13 @@ class ActivityTimedOutEventDetails(TypedDict, total=False):
     cause: Optional[SensitiveCause]
 
 
+AssignedVariables = Dict[VariableName, VariableValue]
+
+
+class AssignedVariablesDetails(TypedDict, total=False):
+    truncated: Optional[truncated]
+
+
 BilledDuration = int
 BilledMemoryUsed = int
 
@@ -721,6 +732,10 @@ class DescribeStateMachineForExecutionInput(ServiceRequest):
     includedData: Optional[IncludedData]
 
 
+VariableNameList = List[VariableName]
+VariableReferences = Dict[StateName, VariableNameList]
+
+
 class DescribeStateMachineForExecutionOutput(TypedDict, total=False):
     stateMachineArn: Arn
     name: Name
@@ -733,6 +748,7 @@ class DescribeStateMachineForExecutionOutput(TypedDict, total=False):
     label: Optional[MapRunLabel]
     revisionId: Optional[RevisionId]
     encryptionConfiguration: Optional[EncryptionConfiguration]
+    variableReferences: Optional[VariableReferences]
 
 
 class DescribeStateMachineInput(ServiceRequest):
@@ -756,9 +772,19 @@ DescribeStateMachineOutput = TypedDict(
         "revisionId": Optional[RevisionId],
         "description": Optional[VersionDescription],
         "encryptionConfiguration": Optional[EncryptionConfiguration],
+        "variableReferences": Optional[VariableReferences],
     },
     total=False,
 )
+
+
+class EvaluationFailedEventDetails(TypedDict, total=False):
+    error: Optional[SensitiveError]
+    cause: Optional[SensitiveCause]
+    location: Optional[EvaluationFailureLocation]
+    state: StateName
+
+
 EventId = int
 
 
@@ -848,6 +874,8 @@ class StateExitedEventDetails(TypedDict, total=False):
     name: Name
     output: Optional[SensitiveData]
     outputDetails: Optional[HistoryEventExecutionDataDetails]
+    assignedVariables: Optional[AssignedVariables]
+    assignedVariablesDetails: Optional[AssignedVariablesDetails]
 
 
 class StateEnteredEventDetails(TypedDict, total=False):
@@ -1004,6 +1032,7 @@ HistoryEvent = TypedDict(
         "mapRunStartedEventDetails": Optional[MapRunStartedEventDetails],
         "mapRunFailedEventDetails": Optional[MapRunFailedEventDetails],
         "mapRunRedrivenEventDetails": Optional[MapRunRedrivenEventDetails],
+        "evaluationFailedEventDetails": Optional[EvaluationFailedEventDetails],
     },
     total=False,
 )
@@ -1033,6 +1062,7 @@ class InspectionDataRequest(TypedDict, total=False):
 
 class InspectionData(TypedDict, total=False):
     input: Optional[SensitiveData]
+    afterArguments: Optional[SensitiveData]
     afterInputPath: Optional[SensitiveData]
     afterParameters: Optional[SensitiveData]
     result: Optional[SensitiveData]
@@ -1040,6 +1070,7 @@ class InspectionData(TypedDict, total=False):
     afterResultPath: Optional[SensitiveData]
     request: Optional[InspectionDataRequest]
     response: Optional[InspectionDataResponse]
+    variables: Optional[SensitiveData]
 
 
 class ListActivitiesInput(ServiceRequest):
@@ -1265,10 +1296,11 @@ class TagResourceOutput(TypedDict, total=False):
 
 class TestStateInput(ServiceRequest):
     definition: Definition
-    roleArn: Arn
+    roleArn: Optional[Arn]
     input: Optional[SensitiveData]
     inspectionLevel: Optional[InspectionLevel]
     revealSecrets: Optional[RevealSecrets]
+    variables: Optional[SensitiveData]
 
 
 class TestStateOutput(TypedDict, total=False):
@@ -1640,10 +1672,11 @@ class StepfunctionsApi:
         self,
         context: RequestContext,
         definition: Definition,
-        role_arn: Arn,
+        role_arn: Arn = None,
         input: SensitiveData = None,
         inspection_level: InspectionLevel = None,
         reveal_secrets: RevealSecrets = None,
+        variables: SensitiveData = None,
         **kwargs,
     ) -> TestStateOutput:
         raise NotImplementedError

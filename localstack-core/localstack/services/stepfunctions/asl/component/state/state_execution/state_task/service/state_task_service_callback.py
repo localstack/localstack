@@ -147,7 +147,7 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         task_output = env.stack.pop()
 
         # Initialise the Callback endpoint for this task.
-        callback_id = env.context_object_manager.context_object["Task"]["Token"]
+        callback_id = env.states.context_object.context_object_data["Task"]["Token"]
         callback_endpoint = env.callback_pool_manager.get(callback_id)
 
         # Setup resources for timeout control.
@@ -302,13 +302,13 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
             and ResourceCondition.WaitForTaskToken in self._supported_integration_patterns
         ):
             self._assert_integration_pattern_is_supported()
-            task_token = env.context_object_manager.update_task_token()
+            task_token = env.states.context_object.update_task_token()
             env.callback_pool_manager.add(task_token)
 
         super()._eval_body(env=env)
 
         # Ensure the TaskToken field is reset, as this is only available during waitForTaskToken task evaluations.
-        env.context_object_manager.context_object.pop("Task", None)
+        env.states.context_object.context_object_data.pop("Task", None)
 
     def _after_eval_execution(
         self,

@@ -1,0 +1,11 @@
+{
+  "StartAt": "State_0",
+  "States": {
+    "State_0": {
+      "QueryLanguage": "JSONata",
+      "Type": "Pass",
+      "Output": "{% $range($states.input.FunctionInput.fst, $states.input.FunctionInput.snd, $states.input.FunctionInput.trd) %}",
+      "End": true
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "StartAt": "Init",
+  "States": {
+    "Init": {
+      "Type": "Pass",
+      "Assign": {
+        "var_input_value.$": "$.input_value",
+        "var_constant_1": 1
+      },
+      "Next": "State0"
+    },
+    "State0": {
+      "QueryLanguage": "JSONata",
+      "Type": "Pass",
+      "Output": {
+        "ja_states_context": "{% $states.context %}",
+        "ja_states_input": "{% $states.input %}",
+        "ja_var_access": "{% $var_input_value %}",
+        "ja_expr": "{% $sum($states.input.input_values) + $var_constant_1 %}"
+      },
+      "End": true
+    }
+  }
+}

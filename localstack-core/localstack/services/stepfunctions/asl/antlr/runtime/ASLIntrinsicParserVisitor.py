@@ -59,6 +59,11 @@ class ASLIntrinsicParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLIntrinsicParser#func_arg_var.
+    def visitFunc_arg_var(self, ctx:ASLIntrinsicParser.Func_arg_varContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLIntrinsicParser#func_arg_func_decl.
     def visitFunc_arg_func_decl(self, ctx:ASLIntrinsicParser.Func_arg_func_declContext):
         return self.visitChildren(ctx)

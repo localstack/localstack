@@ -106,8 +106,9 @@ class StateTaskLambda(StateTask):
         )
 
     def _eval_parameters(self, env: Environment) -> dict:
-        if self.parameters:
-            self.parameters.eval(env=env)
+        if self.parargs:
+            self.parargs.eval(env=env)
+
         payload = env.stack.pop()
         parameters = InvocationRequest(
             FunctionName=self.resource.resource_arn,

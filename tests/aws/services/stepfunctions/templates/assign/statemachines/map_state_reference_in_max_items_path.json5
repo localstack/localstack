@@ -1,0 +1,42 @@
+{
+  "Comment": "MAP_STATE_REFERENCE_IN_MAX_ITEMS_PATH",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Pass",
+      "Assign": {
+        "maxItems": "2"
+      },
+      "Next": "MapState"
+    },
+    "MapState": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "ItemReader": {
+        "ReaderConfig": {
+          "InputType": "JSON",
+          "MaxItemsPath": "$maxItems"
+        },
+        "Resource": "arn:aws:states:::s3:getObject",
+        "Parameters": {
+          "Bucket.$": "$.Bucket",
+          "Key.$": "$.Key"
+        }
+      },
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "PassItem",
+        "States": {
+          "PassItem": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

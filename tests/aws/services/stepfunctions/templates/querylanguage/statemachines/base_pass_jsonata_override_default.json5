@@ -1,0 +1,10 @@
+{
+  "StartAt": "StartState",
+  "States": {
+    "StartState": {
+      "QueryLanguage": "JSONata",
+      "Type": "Pass",
+      "End": true
+    },
+  }
+}

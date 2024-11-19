@@ -1,6 +1,10 @@
 from typing import Final, Optional
 
-from localstack.aws.api.stepfunctions import ExecutionFailedEventDetails, HistoryEventType
+from localstack.aws.api.stepfunctions import (
+    EvaluationFailedEventDetails,
+    ExecutionFailedEventDetails,
+    HistoryEventType,
+)
 from localstack.services.stepfunctions.asl.component.common.error_name.error_name import ErrorName
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
@@ -50,6 +54,32 @@ class FailureEventException(Exception):
             cause = failure_event_spec["cause"]
         return error, cause
 
+    def get_evaluation_failed_event_details(self) -> Optional[EvaluationFailedEventDetails]:
+        original_failed_event_details = self.failure_event.event_details[
+            "evaluationFailedEventDetails"
+        ]
+        evaluation_failed_event_details = EvaluationFailedEventDetails()
+
+        error = original_failed_event_details["error"]
+        cause = original_failed_event_details["cause"]
+        location = original_failed_event_details.get("location")
+        state_name = self.failure_event.state_name
+
+        if error != StatesErrorNameType.StatesQueryEvaluationError.to_name():
+            return None
+        if error:
+            evaluation_failed_event_details["error"] = error
+        if cause:
+            event_id = self.failure_event.source_event_id
+            decorated_cause = f"An error occurred while executing the state '{state_name}' (entered at the event id #{event_id}). {cause}"
+            evaluation_failed_event_details["cause"] = decorated_cause
+        if location:
+            evaluation_failed_event_details["location"] = location
+        if state_name:
+            evaluation_failed_event_details["state"] = state_name
+
+        return evaluation_failed_event_details
+
     def get_execution_failed_event_details(self) -> Optional[ExecutionFailedEventDetails]:
         maybe_error_cause_pair = self.extract_error_cause_pair()
         if maybe_error_cause_pair is None:
@@ -59,7 +89,10 @@ class FailureEventException(Exception):
         if error:
             execution_failed_event_details["error"] = error
         if cause:
-            if error == StatesErrorNameType.StatesRuntime.to_name():
+            if (
+                error == StatesErrorNameType.StatesRuntime.to_name()
+                or error == StatesErrorNameType.StatesQueryEvaluationError.to_name()
+            ):
                 state_name = self.failure_event.state_name
                 event_id = self.failure_event.source_event_id
                 decorated_cause = f"An error occurred while executing the state '{state_name}' (entered at the event id #{event_id}). {cause}"

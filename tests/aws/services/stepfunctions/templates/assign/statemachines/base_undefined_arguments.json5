@@ -1,0 +1,13 @@
+{
+  "Comment": "BASE_UNDEFINED_ARGUMENTS",
+  "StartAt": "State0",
+  "QueryLanguage": "JSONata",
+  "States": {
+    "State0": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": "{% $doesNotExist %}",
+      "End": true
+    }
+  }
+}

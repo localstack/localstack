@@ -1,0 +1,67 @@
+{
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_math_operations_jsonata.py::TestMathOperationsJSONata::test_math_random_seeded": {
+    "recorded-date": "15-11-2024, 17:12:32",
+    "recorded-content": {
+      "exec_hist_resp_0": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": "fst"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": "fst"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "evaluationFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'State_0' (entered at the event id #2). The JSONata expression '$randomSeeded($states.input.FunctionInput.fst)' specified for the field 'Output/FunctionResult' threw an error during evaluation. T1006: Attempted to invoke a non-function",
+              "error": "States.QueryEvaluationError",
+              "location": "Output/FunctionResult",
+              "state": "State_0"
+            },
+            "id": 3,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "EvaluationFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'State_0' (entered at the event id #2). The JSONata expression '$randomSeeded($states.input.FunctionInput.fst)' specified for the field 'Output/FunctionResult' threw an error during evaluation. T1006: Attempted to invoke a non-function",
+              "error": "States.QueryEvaluationError"
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

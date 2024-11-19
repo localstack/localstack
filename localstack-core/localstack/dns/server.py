@@ -12,8 +12,12 @@ from pathlib import Path
 from socket import AddressFamily
 from typing import Iterable, Literal, Tuple
 
+import dns.flags
+import dns.message
+import dns.query
 import psutil
 from cachetools import TTLCache, cached
+from dns.exception import Timeout
 from dnslib import (
     AAAA,
     CNAME,
@@ -34,11 +38,6 @@ from dnslib import (
 )
 from dnslib.server import DNSHandler, DNSServer
 from psutil._common import snicaddr
-
-import dns.flags
-import dns.message
-import dns.query
-from dns.exception import Timeout
 
 # Note: avoid adding additional imports here, to avoid import issues when running the CLI
 from localstack import config

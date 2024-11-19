@@ -1,0 +1,23 @@
+{
+  "Comment": "JSONPATH_ASSIGN_JSONATA_REF",
+  "StartAt": "JSONPathState",
+  "States": {
+    "JSONPathState": {
+      "QueryLanguage": "JSONPath",
+      "Type": "Pass",
+      "Assign": {
+        "theAnswer": 42
+      },
+      "Next": "JSONataState"
+    },
+    "JSONataState": {
+      "QueryLanguage": "JSONata",
+      "Type": "Pass",
+      "Assign": {
+        "theAnswer": 18,
+        "oldAnswer": "{% $theAnswer %}"
+      },
+      "End": true
+    }
+  }
+}

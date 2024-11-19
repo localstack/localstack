@@ -1,0 +1,13 @@
+{
+  "StartAt": "State_0",
+  "States": {
+    "State_0": {
+      "QueryLanguage": "JSONata",
+      "Type": "Pass",
+      "Output": {
+        "FunctionResult": "{% $randomSeeded($states.input.FunctionInput.fst) %}"
+      },
+      "End": true
+    }
+  }
+}

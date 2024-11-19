@@ -13,5 +13,5 @@ class FunctionArgumentContextPath(FunctionArgument):
         self._json_path: str = json_path
 
     def _eval_body(self, env: Environment) -> None:
-        self._value = extract_json(self._json_path, env.context_object_manager.context_object)
+        self._value = extract_json(self._json_path, env.states.context_object.context_object_data)
         super()._eval_body(env=env)

@@ -220,6 +220,7 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        task_credentials: dict,
     ):
         service_name = self._get_boto_service_name()
         api_action = self._get_boto_service_action()

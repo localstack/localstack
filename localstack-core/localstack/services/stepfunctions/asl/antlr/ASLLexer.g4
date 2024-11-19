@@ -55,6 +55,8 @@ MAP: '"Map"';
 
 CHOICES: '"Choices"';
 
+CONDITION: '"Condition"';
+
 VARIABLE: '"Variable"';
 
 DEFAULT: '"Default"';
@@ -189,6 +191,8 @@ INPUTPATH: '"InputPath"';
 
 OUTPUTPATH: '"OutputPath"';
 
+ITEMS: '"Items"';
+
 ITEMSPATH: '"ItemsPath"';
 
 RESULTPATH: '"ResultPath"';
@@ -196,6 +200,8 @@ RESULTPATH: '"ResultPath"';
 RESULT: '"Result"';
 
 PARAMETERS: '"Parameters"';
+
+CREDENTIALS: '"Credentials"';
 
 RESULTSELECTOR: '"ResultSelector"';
 
@@ -259,6 +265,22 @@ NONE: '"NONE"';
 // Catch.
 CATCH: '"Catch"';
 
+// Query Language.
+QUERYLANGUAGE: '"QueryLanguage"';
+
+JSONPATH: '"JSONPath"';
+
+JSONATA: '"JSONata"';
+
+// Assign.
+ASSIGN: '"Assign"';
+
+// Output.
+OUTPUT: '"Output"';
+
+// Arguments.
+ARGUMENTS: '"Arguments"';
+
 // ErrorNames
 ERRORNAMEStatesALL: '"States.ALL"';
 
@@ -288,6 +310,8 @@ ERRORNAMEStatesItemReaderFailed: '"States.ItemReaderFailed"';
 
 ERRORNAMEStatesResultWriterFailed: '"States.ResultWriterFailed"';
 
+ERRORNAMEStatesQueryEvaluationError: '"States.QueryEvaluationError"';
+
 // Read-only:
 ERRORNAMEStatesRuntime: '"States.Runtime"';
 
@@ -296,7 +320,13 @@ STRINGDOLLAR: '"' (ESC | SAFECODEPOINT)* '.$"';
 
 STRINGPATHCONTEXTOBJ: '"$$' (ESC | SAFECODEPOINT)* '"';
 
-STRINGPATH: '"$' (ESC | SAFECODEPOINT)* '"';
+STRINGPATH: '"$"' | '"$' ('.' | '[') (ESC | SAFECODEPOINT)* '"';
+
+STRINGVAR: '"$' [a-zA-Z_] (ESC | SAFECODEPOINT)* '"';
+
+STRINGINTRINSICFUNC: '"States.' (ESC | SAFECODEPOINT)+ '(' (ESC | SAFECODEPOINT)* ')"';
+
+STRINGJSONATA: LJSONATA (ESC | SAFECODEPOINT)* RJSONATA;
 
 STRING: '"' (ESC | SAFECODEPOINT)* '"';
 
@@ -307,6 +337,10 @@ fragment UNICODE: 'u' HEX HEX HEX HEX;
 fragment HEX: [0-9a-fA-F];
 
 fragment SAFECODEPOINT: ~ ["\\\u0000-\u001F];
+
+fragment LJSONATA: '"{%';
+
+fragment RJSONATA: '%}"';
 
 // Numbers.
 INT: '0' | [1-9] [0-9]*;

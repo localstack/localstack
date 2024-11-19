@@ -1,7 +1,7 @@
 import copy
 from typing import Final, Optional
 
-from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
+from localstack.services.stepfunctions.asl.component.common.parargs import Parargs
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.reader_config_decl import (
     ReaderConfig,
@@ -26,18 +26,18 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 class ItemReader(EvalComponent):
     resource_eval: Final[ResourceEval]
-    parameters: Final[Optional[Parameters]]
+    parargs: Final[Optional[Parargs]]
     reader_config: Final[Optional[ReaderConfig]]
     resource_output_transformer: Optional[ResourceOutputTransformer]
 
     def __init__(
         self,
         resource: Resource,
-        parameters: Optional[Parameters],
+        parargs: Optional[Parargs],
         reader_config: Optional[ReaderConfig],
     ):
         self.resource_eval = resource_eval_for(resource=resource)
-        self.parameters = parameters
+        self.parargs = parargs
         self.reader_config = reader_config
 
         self.resource_output_transformer = None
@@ -62,8 +62,8 @@ class ItemReader(EvalComponent):
             self.reader_config.eval(env=env)
             resource_config = env.stack.pop()
 
-        if self.parameters:
-            self.parameters.eval(env=env)
+        if self.parargs:
+            self.parargs.eval(env=env)
         else:
             env.stack.append(dict())
 

@@ -1,0 +1,24 @@
+{
+  "StartAt": "ChoiceState",
+  "States": {
+    "ChoiceState": {
+      "Type": "Choice",
+      "QueryLanguage": "JSONata",
+      "Choices": [
+        {
+          "Condition": "{% $states.input.type = 'Public' %}",
+          "Next": "Public"
+        }
+      ],
+      "Default": "DefaultState"
+    },
+    "Public": {
+      "Type": "Pass",
+      "End": true
+    },
+    "DefaultState": {
+      "Type": "Fail",
+      "Cause": "No Matches!"
+    }
+  }
+}

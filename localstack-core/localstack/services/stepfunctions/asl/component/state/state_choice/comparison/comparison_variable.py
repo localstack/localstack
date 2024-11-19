@@ -1,10 +1,10 @@
 from typing import Final
 
-from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison import (
-    Comparison,
-)
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_func import (
     ComparisonFunc,
+)
+from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_type import (
+    Comparison,
 )
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.variable import (
     Variable,

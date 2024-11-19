@@ -1,0 +1,24 @@
+{
+  "StartAt": "ChoiceState",
+  "States": {
+    "ChoiceState": {
+      "Type": "Choice",
+      "QueryLanguage": "JSONata",
+      "Choices": [
+        {
+          "Condition": true,
+          "Next": "ConditionTrue"
+        }
+      ],
+      "Default": "DefaultState"
+    },
+    "ConditionTrue": {
+      "Type": "Pass",
+      "End": true
+    },
+    "DefaultState": {
+      "Type": "Fail",
+      "Cause": "Condition is false"
+    }
+  }
+}

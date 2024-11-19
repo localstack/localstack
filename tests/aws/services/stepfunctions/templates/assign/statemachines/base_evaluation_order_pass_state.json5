@@ -1,0 +1,27 @@
+{
+  "Comment": "BASE_EVALUATION_ORDER_PASS_STATE",
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "Result": {
+        "theQuestion": "What is the answer to life the universe and everything?"
+      },
+      "Assign": {
+        "question.$": "$.theQuestion",
+        "answer": 42
+      },
+      "Next": "State1"
+    },
+    "State1": {
+      "Type": "Pass",
+      "InputPath": "$answer",
+      "ResultPath": "$.theAnswer",
+      "OutputPath": "$answer",
+      "Assign": {
+        "answer": "<omitted>"
+      },
+      "End": true
+    }
+  }
+}

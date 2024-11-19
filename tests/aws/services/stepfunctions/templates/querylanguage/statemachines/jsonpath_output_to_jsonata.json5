@@ -1,0 +1,20 @@
+{
+  "Comment": "JSONPATH_OUTPUT_TO_JSONATA",
+  "StartAt": "JSONataState",
+  "States": {
+    "JSONataState": {
+      "QueryLanguage": "JSONPath",
+      "Type": "Pass",
+      "Parameters": {
+        "foo": "foobar",
+        "bar.$": "$"
+      },
+      "Next": "JSONPathState"
+    },
+    "JSONPathState": {
+      "QueryLanguage": "JSONata",
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

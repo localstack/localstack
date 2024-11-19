@@ -1,8 +1,7 @@
-import copy
 import logging
 from typing import Final, Optional
 
-from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
+from localstack.services.stepfunctions.asl.component.common.parargs import Parameters
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
     ItemSelector,
 )
@@ -38,13 +37,13 @@ class InlineItemProcessorWorker(IterationWorker):
             return
 
         map_state_input = self._env.stack[-1]
-        env_frame.inp = copy.deepcopy(map_state_input)
-        env_frame.stack.append(env_frame.inp)
+        env_frame.states.reset(input_value=map_state_input)
+        env_frame.stack.append(map_state_input)
 
         if self._item_selector:
             self._item_selector.eval(env_frame)
         elif self._parameters:
             self._parameters.eval(env_frame)
 
-        env_frame.inp = env_frame.stack.pop()
-        env_frame.stack.append(env_frame.inp)
+        output_value = env_frame.stack[-1]
+        env_frame.states.reset(input_value=output_value)

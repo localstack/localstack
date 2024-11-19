@@ -1,0 +1,2569 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_REFERENCE_IN_PARAMETERS]": {
+    "recorded-date": "20-11-2024, 14:37:01",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_REFERENCE_IN_PARAMETERS",
+          "StartAt": "State0",
+          "States": {
+            "State0": {
+              "Type": "Pass",
+              "Parameters": {
+                "result": "$result"
+              },
+              "Assign": {
+                "result": "foobar"
+              },
+              "Next": "State1"
+            },
+            "State1": {
+              "Type": "Pass",
+              "ResultPath": "$.result",
+              "Parameters": {
+                "result.$": "$result"
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "variableReferences": {
+          "State1": [
+            "result"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_for_execution_response": {
+        "definition": {
+          "Comment": "BASE_REFERENCE_IN_PARAMETERS",
+          "StartAt": "State0",
+          "States": {
+            "State0": {
+              "Type": "Pass",
+              "Parameters": {
+                "result": "$result"
+              },
+              "Assign": {
+                "result": "foobar"
+              },
+              "Next": "State1"
+            },
+            "State1": {
+              "Type": "Pass",
+              "ResultPath": "$.result",
+              "Parameters": {
+                "result.$": "$result"
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "updateDate": "datetime",
+        "variableReferences": {
+          "State1": [
+            "result"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_REFERENCE_IN_CHOICE]": {
+    "recorded-date": "20-11-2024, 14:37:12",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_REFERENCE_IN_CHOICE",
+          "StartAt": "Setup",
+          "States": {
+            "Setup": {
+              "Type": "Pass",
+              "Assign": {
+                "guess": "the_guess",
+                "answer": "the_answer"
+              },
+              "Next": "CheckAnswer"
+            },
+            "CheckAnswer": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$guess",
+                  "StringEqualsPath": "$answer",
+                  "Next": "CorrectAnswer"
+                }
+              ],
+              "Default": "WrongAnswer"
+            },
+            "CorrectAnswer": {
+              "Type": "Pass",
+              "Result": {
+                "state": "CORRECT"
+              },
+              "End": true
+            },
+            "WrongAnswer": {
+              "Type": "Pass",
+              "Assign": {
+                "guess.$": "$answer"
+              },
+              "Result": {
+                "state": "WRONG"
+              },
+              "Next": "CheckAnswer"
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "variableReferences": {
+          "CheckAnswer": [
+            "answer",
+            "guess"
+          ],
+          "WrongAnswer": [
+            "answer"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_for_execution_response": {
+        "definition": {
+          "Comment": "BASE_REFERENCE_IN_CHOICE",
+          "StartAt": "Setup",
+          "States": {
+            "Setup": {
+              "Type": "Pass",
+              "Assign": {
+                "guess": "the_guess",
+                "answer": "the_answer"
+              },
+              "Next": "CheckAnswer"
+            },
+            "CheckAnswer": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$guess",
+                  "StringEqualsPath": "$answer",
+                  "Next": "CorrectAnswer"
+                }
+              ],
+              "Default": "WrongAnswer"
+            },
+            "CorrectAnswer": {
+              "Type": "Pass",
+              "Result": {
+                "state": "CORRECT"
+              },
+              "End": true
+            },
+            "WrongAnswer": {
+              "Type": "Pass",
+              "Assign": {
+                "guess.$": "$answer"
+              },
+              "Result": {
+                "state": "WRONG"
+              },
+              "Next": "CheckAnswer"
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "updateDate": "datetime",
+        "variableReferences": {
+          "CheckAnswer": [
+            "answer",
+            "guess"
+          ],
+          "WrongAnswer": [
+            "answer"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_REFERENCE_IN_WAIT]": {
+    "recorded-date": "20-11-2024, 14:37:26",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_REFERENCE_IN_WAIT",
+          "StartAt": "Start",
+          "States": {
+            "Start": {
+              "Type": "Pass",
+              "Assign": {
+                "waitTime": 0,
+                "startAt": "date"
+              },
+              "Next": "WaitSecondsState"
+            },
+            "WaitSecondsState": {
+              "Type": "Wait",
+              "SecondsPath": "$waitTime",
+              "Next": "WaitUntilState"
+            },
+            "WaitUntilState": {
+              "Type": "Wait",
+              "TimestampPath": "timestamp",
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "variableReferences": {
+          "WaitSecondsState": [
+            "waitTime"
+          ],
+          "WaitUntilState": [
+            "startAt"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_for_execution_response": {
+        "definition": {
+          "Comment": "BASE_REFERENCE_IN_WAIT",
+          "StartAt": "Start",
+          "States": {
+            "Start": {
+              "Type": "Pass",
+              "Assign": {
+                "waitTime": 0,
+                "startAt": "date"
+              },
+              "Next": "WaitSecondsState"
+            },
+            "WaitSecondsState": {
+              "Type": "Wait",
+              "SecondsPath": "$waitTime",
+              "Next": "WaitUntilState"
+            },
+            "WaitUntilState": {
+              "Type": "Wait",
+              "TimestampPath": "timestamp",
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "updateDate": "datetime",
+        "variableReferences": {
+          "WaitSecondsState": [
+            "waitTime"
+          ],
+          "WaitUntilState": [
+            "startAt"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_REFERENCE_IN_ITERATOR_OUTER_SCOPE]": {
+    "recorded-date": "20-11-2024, 14:37:42",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_REFERENCE_IN_ITERATOR_OUTER_SCOPE",
+          "StartAt": "Input",
+          "States": {
+            "Input": {
+              "Type": "Pass",
+              "Result": [
+                [
+                  9,
+                  44,
+                  6
+                ],
+                [
+                  82,
+                  25,
+                  76
+                ],
+                [
+                  18,
+                  42,
+                  2
+                ]
+              ],
+              "Assign": {
+                "bias": 4.3
+              },
+              "Next": "IterateLevels"
+            },
+            "IterateLevels": {
+              "Type": "Map",
+              "MaxConcurrency": 1,
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "INLINE"
+                },
+                "StartAt": "AssignCurrentVector",
+                "States": {
+                  "AssignCurrentVector": {
+                    "Type": "Pass",
+                    "Assign": {
+                      "xCurrent.$": "$[0]",
+                      "yCurrent.$": "$[1]",
+                      "zCurrent.$": "$[2]"
+                    },
+                    "Next": "Calculate"
+                  },
+                  "Calculate": {
+                    "Type": "Map",
+                    "MaxConcurrency": 1,
+                    "ItemProcessor": {
+                      "ProcessorConfig": {
+                        "Mode": "INLINE"
+                      },
+                      "StartAt": "Summate",
+                      "States": {
+                        "Summate": {
+                          "Type": "Pass",
+                          "Assign": {
+                            "Sum.$": "States.MathAdd(States.MathAdd(States.MathAdd($yCurrent, $xCurrent), $zCurrent), $bias)"
+                          },
+                          "End": true
+                        }
+                      }
+                    },
+                    "End": true
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "variableReferences": {
+          "Summate": [
+            "bias",
+            "xCurrent",
+            "yCurrent",
+            "zCurrent"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_for_execution_response": {
+        "definition": {
+          "Comment": "BASE_REFERENCE_IN_ITERATOR_OUTER_SCOPE",
+          "StartAt": "Input",
+          "States": {
+            "Input": {
+              "Type": "Pass",
+              "Result": [
+                [
+                  9,
+                  44,
+                  6
+                ],
+                [
+                  82,
+                  25,
+                  76
+                ],
+                [
+                  18,
+                  42,
+                  2
+                ]
+              ],
+              "Assign": {
+                "bias": 4.3
+              },
+              "Next": "IterateLevels"
+            },
+            "IterateLevels": {
+              "Type": "Map",
+              "MaxConcurrency": 1,
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "INLINE"
+                },
+                "StartAt": "AssignCurrentVector",
+                "States": {
+                  "AssignCurrentVector": {
+                    "Type": "Pass",
+                    "Assign": {
+                      "xCurrent.$": "$[0]",
+                      "yCurrent.$": "$[1]",
+                      "zCurrent.$": "$[2]"
+                    },
+                    "Next": "Calculate"
+                  },
+                  "Calculate": {
+                    "Type": "Map",
+                    "MaxConcurrency": 1,
+                    "ItemProcessor": {
+                      "ProcessorConfig": {
+                        "Mode": "INLINE"
+                      },
+                      "StartAt": "Summate",
+                      "States": {
+                        "Summate": {
+                          "Type": "Pass",
+                          "Assign": {
+                            "Sum.$": "States.MathAdd(States.MathAdd(States.MathAdd($yCurrent, $xCurrent), $zCurrent), $bias)"
+                          },
+                          "End": true
+                        }
+                      }
+                    },
+                    "End": true
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "updateDate": "datetime",
+        "variableReferences": {
+          "Summate": [
+            "bias",
+            "xCurrent",
+            "yCurrent",
+            "zCurrent"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_REFERENCE_IN_INPUTPATH]": {
+    "recorded-date": "20-11-2024, 14:37:57",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_REFERENCE_IN_INPUTPATH",
+          "StartAt": "State0",
+          "States": {
+            "State0": {
+              "Type": "Pass",
+              "Assign": {
+                "theAnswer": 42
+              },
+              "Next": "State1"
+            },
+            "State1": {
+              "Type": "Pass",
+              "InputPath": "$theAnswer",
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "variableReferences": {
+          "State1": [
+            "theAnswer"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_for_execution_response": {
+        "definition": {
+          "Comment": "BASE_REFERENCE_IN_INPUTPATH",
+          "StartAt": "State0",
+          "States": {
+            "State0": {
+              "Type": "Pass",
+              "Assign": {
+                "theAnswer": 42
+              },
+              "Next": "State1"
+            },
+            "State1": {
+              "Type": "Pass",
+              "InputPath": "$theAnswer",
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "updateDate": "datetime",
+        "variableReferences": {
+          "State1": [
+            "theAnswer"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_REFERENCE_IN_OUTPUTPATH]": {
+    "recorded-date": "20-11-2024, 14:38:12",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_REFERENCE_IN_OUTPUTPATH",
+          "StartAt": "State0",
+          "States": {
+            "State0": {
+              "Type": "Pass",
+              "Result": {
+                "answer": 42
+              },
+              "Assign": {
+                "theAnswer.$": "$.answer"
+              },
+              "Next": "State1"
+            },
+            "State1": {
+              "Type": "Pass",
+              "OutputPath": "$theAnswer",
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "variableReferences": {
+          "State1": [
+            "theAnswer"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_for_execution_response": {
+        "definition": {
+          "Comment": "BASE_REFERENCE_IN_OUTPUTPATH",
+          "StartAt": "State0",
+          "States": {
+            "State0": {
+              "Type": "Pass",
+              "Result": {
+                "answer": 42
+              },
+              "Assign": {
+                "theAnswer.$": "$.answer"
+              },
+              "Next": "State1"
+            },
+            "State1": {
+              "Type": "Pass",
+              "OutputPath": "$theAnswer",
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "updateDate": "datetime",
+        "variableReferences": {
+          "State1": [
+            "theAnswer"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_REFERENCE_IN_INTRINSIC_FUNCTION]": {
+    "recorded-date": "20-11-2024, 14:38:29",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_REFERENCE_IN_INTRINSIC_FUNCTION",
+          "StartAt": "State0",
+          "States": {
+            "State0": {
+              "Type": "Pass",
+              "Assign": {
+                "inputArray": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7,
+                  8,
+                  9
+                ],
+                "duplicateArray": [
+                  1,
+                  2,
+                  2,
+                  3,
+                  3,
+                  4
+                ],
+                "rawString": "Hello World",
+                "encodedString": "SGVsbG8gV29ybGQ=",
+                "inputString": "Hash this string",
+                "json1": {
+                  "a": 1,
+                  "b": 2
+                },
+                "json2": {
+                  "c": 3,
+                  "d": 4
+                },
+                "jsonString": "{\"key\":\"value\"}",
+                "jsonObject": {
+                  "test": "object"
+                },
+                "value1": 5,
+                "value2": 3,
+                "csvString": "a,b,c,d,e",
+                "name": "John",
+                "place": "LocalStack",
+                "additionalInfo": {
+                  "age": 30,
+                  "role": "developer"
+                }
+              },
+              "Next": "State1"
+            },
+            "State1": {
+              "Type": "Pass",
+              "Parameters": {
+                "encodingOps": {
+                  "encoded.$": "States.Base64Encode($rawString)",
+                  "decoded.$": "States.Base64Decode($encodedString)"
+                },
+                "hashOps": {
+                  "hashValue.$": "States.Hash($inputString, 'SHA-256')"
+                },
+                "jsonOps": {
+                  "mergedJson.$": "States.JsonMerge($json1, $json2, false)",
+                  "parsedJson.$": "States.StringToJson($jsonString)",
+                  "stringifiedJson.$": "States.JsonToString($jsonObject)"
+                },
+                "mathOps": {
+                  "sum.$": "States.MathAdd($value1, $value2)"
+                },
+                "stringOps": {
+                  "splitString.$": "States.StringSplit($csvString, ',')",
+                  "formattedString.$": "States.Format('Hello {}, welcome to {}!', $name, $place)"
+                },
+                "uuidOp": {
+                  "uniqueId.$": "States.UUID()"
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "variableReferences": {
+          "State1": [
+            "csvString",
+            "encodedString",
+            "inputString",
+            "json1",
+            "json2",
+            "jsonObject",
+            "jsonString",
+            "name",
+            "place",
+            "rawString",
+            "value1",
+            "value2"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_for_execution_response": {
+        "definition": {
+          "Comment": "BASE_REFERENCE_IN_INTRINSIC_FUNCTION",
+          "StartAt": "State0",
+          "States": {
+            "State0": {
+              "Type": "Pass",
+              "Assign": {
+                "inputArray": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7,
+                  8,
+                  9
+                ],
+                "duplicateArray": [
+                  1,
+                  2,
+                  2,
+                  3,
+                  3,
+                  4
+                ],
+                "rawString": "Hello World",
+                "encodedString": "SGVsbG8gV29ybGQ=",
+                "inputString": "Hash this string",
+                "json1": {
+                  "a": 1,
+                  "b": 2
+                },
+                "json2": {
+                  "c": 3,
+                  "d": 4
+                },
+                "jsonString": "{\"key\":\"value\"}",
+                "jsonObject": {
+                  "test": "object"
+                },
+                "value1": 5,
+                "value2": 3,
+                "csvString": "a,b,c,d,e",
+                "name": "John",
+                "place": "LocalStack",
+                "additionalInfo": {
+                  "age": 30,
+                  "role": "developer"
+                }
+              },
+              "Next": "State1"
+            },
+            "State1": {
+              "Type": "Pass",
+              "Parameters": {
+                "encodingOps": {
+                  "encoded.$": "States.Base64Encode($rawString)",
+                  "decoded.$": "States.Base64Decode($encodedString)"
+                },
+                "hashOps": {
+                  "hashValue.$": "States.Hash($inputString, 'SHA-256')"
+                },
+                "jsonOps": {
+                  "mergedJson.$": "States.JsonMerge($json1, $json2, false)",
+                  "parsedJson.$": "States.StringToJson($jsonString)",
+                  "stringifiedJson.$": "States.JsonToString($jsonObject)"
+                },
+                "mathOps": {
+                  "sum.$": "States.MathAdd($value1, $value2)"
+                },
+                "stringOps": {
+                  "splitString.$": "States.StringSplit($csvString, ',')",
+                  "formattedString.$": "States.Format('Hello {}, welcome to {}!', $name, $place)"
+                },
+                "uuidOp": {
+                  "uniqueId.$": "States.UUID()"
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "updateDate": "datetime",
+        "variableReferences": {
+          "State1": [
+            "csvString",
+            "encodedString",
+            "inputString",
+            "json1",
+            "json2",
+            "jsonObject",
+            "jsonString",
+            "name",
+            "place",
+            "rawString",
+            "value1",
+            "value2"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_REFERENCE_IN_FAIL]": {
+    "recorded-date": "20-11-2024, 14:38:43",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_REFERENCE_IN_FAIL",
+          "StartAt": "Pass",
+          "States": {
+            "Pass": {
+              "Type": "Pass",
+              "Assign": {
+                "errorVar": "Exception",
+                "causeVar": "An Exception was encountered"
+              },
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Fail",
+              "CausePath": "$causeVar",
+              "ErrorPath": "$errorVar"
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "variableReferences": {
+          "Fail": [
+            "causeVar",
+            "errorVar"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_for_execution_response": {
+        "definition": {
+          "Comment": "BASE_REFERENCE_IN_FAIL",
+          "StartAt": "Pass",
+          "States": {
+            "Pass": {
+              "Type": "Pass",
+              "Assign": {
+                "errorVar": "Exception",
+                "causeVar": "An Exception was encountered"
+              },
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Fail",
+              "CausePath": "$causeVar",
+              "ErrorPath": "$errorVar"
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "updateDate": "datetime",
+        "variableReferences": {
+          "Fail": [
+            "causeVar",
+            "errorVar"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_ASSIGN_FROM_PARAMETERS]": {
+    "recorded-date": "20-11-2024, 14:38:57",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_ASSIGN_FROM_PARAMETERS",
+          "StartAt": "State0",
+          "States": {
+            "State0": {
+              "Type": "Pass",
+              "Parameters": {
+                "input": "PENDING"
+              },
+              "Assign": {
+                "result.$": "$.input"
+              },
+              "Next": "State1"
+            },
+            "State1": {
+              "Type": "Pass",
+              "Assign": {
+                "result": "SUCCESS",
+                "originalResult.$": "$.input"
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_for_execution_response": {
+        "definition": {
+          "Comment": "BASE_ASSIGN_FROM_PARAMETERS",
+          "StartAt": "State0",
+          "States": {
+            "State0": {
+              "Type": "Pass",
+              "Parameters": {
+                "input": "PENDING"
+              },
+              "Assign": {
+                "result.$": "$.input"
+              },
+              "Next": "State1"
+            },
+            "State1": {
+              "Type": "Pass",
+              "Assign": {
+                "result": "SUCCESS",
+                "originalResult.$": "$.input"
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "updateDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_ASSIGN_FROM_RESULT]": {
+    "recorded-date": "20-11-2024, 14:39:12",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_ASSIGN_FROM_RESULT",
+          "StartAt": "State0",
+          "States": {
+            "State0": {
+              "Type": "Pass",
+              "Result": {
+                "answer": 42
+              },
+              "Assign": {
+                "theAnswer.$": "$.answer"
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_for_execution_response": {
+        "definition": {
+          "Comment": "BASE_ASSIGN_FROM_RESULT",
+          "StartAt": "State0",
+          "States": {
+            "State0": {
+              "Type": "Pass",
+              "Result": {
+                "answer": 42
+              },
+              "Assign": {
+                "theAnswer.$": "$.answer"
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "updateDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_ASSIGN_FROM_INTRINSIC_FUNCTION]": {
+    "recorded-date": "20-11-2024, 14:39:31",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_ASSIGN_FROM_INTRINSIC_FUNCTION",
+          "StartAt": "State0",
+          "States": {
+            "State0": {
+              "Type": "Pass",
+              "Result": {
+                "inputArray": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6
+                ],
+                "duplicateArray": [
+                  1,
+                  2,
+                  2,
+                  3,
+                  3,
+                  4
+                ],
+                "rawString": "Hello World",
+                "encodedString": "SGVsbG8gV29ybGQ=",
+                "inputString": "Hash this string",
+                "json1": {
+                  "a": 1,
+                  "b": 2
+                },
+                "json2": {
+                  "c": 3,
+                  "d": 4
+                },
+                "jsonString": "{\"key\":\"value\"}",
+                "jsonObject": {
+                  "test": "object"
+                },
+                "value1": 5,
+                "value2": 3,
+                "csvString": "a,b,c,d,e",
+                "name": "John",
+                "place": "LocalStack",
+                "additionalInfo": {
+                  "age": 30,
+                  "role": "developer"
+                }
+              },
+              "Assign": {
+                "arrayOps": {
+                  "simpleArray.$": "States.Array('a', 'b', 'c')",
+                  "partitionedArray.$": "States.ArrayPartition($.inputArray, 2)",
+                  "containsElement.$": "States.ArrayContains($.inputArray, 5)",
+                  "numberRange.$": "States.ArrayRange(1, 10, 2)",
+                  "thirdElement.$": "States.ArrayGetItem($.inputArray, 2)",
+                  "arraySize.$": "States.ArrayLength($.inputArray)",
+                  "uniqueValues.$": "States.ArrayUnique($.duplicateArray)"
+                },
+                "encodingOps": {
+                  "encoded.$": "States.Base64Encode($.rawString)",
+                  "decoded.$": "States.Base64Decode($.encodedString)"
+                },
+                "hashOps": {
+                  "hashValue.$": "States.Hash($.inputString, 'SHA-256')"
+                },
+                "jsonOps": {
+                  "mergedJson.$": "States.JsonMerge($.json1, $.json2, false)",
+                  "parsedJson.$": "States.StringToJson($.jsonString)",
+                  "stringifiedJson.$": "States.JsonToString($.jsonObject)"
+                },
+                "mathOps": {
+                  "sum.$": "States.MathAdd($.value1, $.value2)"
+                },
+                "stringOps": {
+                  "splitString.$": "States.StringSplit($.csvString, ',')",
+                  "formattedString.$": "States.Format('Hello {}, welcome to {}!', $.name, $.place)"
+                },
+                "uuidOp": {
+                  "uniqueId.$": "States.UUID()"
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_for_execution_response": {
+        "definition": {
+          "Comment": "BASE_ASSIGN_FROM_INTRINSIC_FUNCTION",
+          "StartAt": "State0",
+          "States": {
+            "State0": {
+              "Type": "Pass",
+              "Result": {
+                "inputArray": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6
+                ],
+                "duplicateArray": [
+                  1,
+                  2,
+                  2,
+                  3,
+                  3,
+                  4
+                ],
+                "rawString": "Hello World",
+                "encodedString": "SGVsbG8gV29ybGQ=",
+                "inputString": "Hash this string",
+                "json1": {
+                  "a": 1,
+                  "b": 2
+                },
+                "json2": {
+                  "c": 3,
+                  "d": 4
+                },
+                "jsonString": "{\"key\":\"value\"}",
+                "jsonObject": {
+                  "test": "object"
+                },
+                "value1": 5,
+                "value2": 3,
+                "csvString": "a,b,c,d,e",
+                "name": "John",
+                "place": "LocalStack",
+                "additionalInfo": {
+                  "age": 30,
+                  "role": "developer"
+                }
+              },
+              "Assign": {
+                "arrayOps": {
+                  "simpleArray.$": "States.Array('a', 'b', 'c')",
+                  "partitionedArray.$": "States.ArrayPartition($.inputArray, 2)",
+                  "containsElement.$": "States.ArrayContains($.inputArray, 5)",
+                  "numberRange.$": "States.ArrayRange(1, 10, 2)",
+                  "thirdElement.$": "States.ArrayGetItem($.inputArray, 2)",
+                  "arraySize.$": "States.ArrayLength($.inputArray)",
+                  "uniqueValues.$": "States.ArrayUnique($.duplicateArray)"
+                },
+                "encodingOps": {
+                  "encoded.$": "States.Base64Encode($.rawString)",
+                  "decoded.$": "States.Base64Decode($.encodedString)"
+                },
+                "hashOps": {
+                  "hashValue.$": "States.Hash($.inputString, 'SHA-256')"
+                },
+                "jsonOps": {
+                  "mergedJson.$": "States.JsonMerge($.json1, $.json2, false)",
+                  "parsedJson.$": "States.StringToJson($.jsonString)",
+                  "stringifiedJson.$": "States.JsonToString($.jsonObject)"
+                },
+                "mathOps": {
+                  "sum.$": "States.MathAdd($.value1, $.value2)"
+                },
+                "stringOps": {
+                  "splitString.$": "States.StringSplit($.csvString, ',')",
+                  "formattedString.$": "States.Format('Hello {}, welcome to {}!', $.name, $.place)"
+                },
+                "uuidOp": {
+                  "uniqueId.$": "States.UUID()"
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "updateDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_EVALUATION_ORDER_PASS_STATE]": {
+    "recorded-date": "20-11-2024, 14:39:46",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_EVALUATION_ORDER_PASS_STATE",
+          "StartAt": "State0",
+          "States": {
+            "State0": {
+              "Type": "Pass",
+              "Result": {
+                "theQuestion": "What is the answer to life the universe and everything?"
+              },
+              "Assign": {
+                "question.$": "$.theQuestion",
+                "answer": 42
+              },
+              "Next": "State1"
+            },
+            "State1": {
+              "Type": "Pass",
+              "InputPath": "$answer",
+              "ResultPath": "$.theAnswer",
+              "OutputPath": "$answer",
+              "Assign": {
+                "answer": "<omitted>"
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "variableReferences": {
+          "State1": [
+            "answer"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_for_execution_response": {
+        "definition": {
+          "Comment": "BASE_EVALUATION_ORDER_PASS_STATE",
+          "StartAt": "State0",
+          "States": {
+            "State0": {
+              "Type": "Pass",
+              "Result": {
+                "theQuestion": "What is the answer to life the universe and everything?"
+              },
+              "Assign": {
+                "question.$": "$.theQuestion",
+                "answer": 42
+              },
+              "Next": "State1"
+            },
+            "State1": {
+              "Type": "Pass",
+              "InputPath": "$answer",
+              "ResultPath": "$.theAnswer",
+              "OutputPath": "$answer",
+              "Assign": {
+                "answer": "<omitted>"
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "updateDate": "datetime",
+        "variableReferences": {
+          "State1": [
+            "answer"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[MAP_STATE_REFERENCE_IN_INTRINSIC_FUNCTION]": {
+    "recorded-date": "20-11-2024, 14:40:01",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "MAP_STATE_REFERENCE_IN_INTRINSIC_FUNCTION",
+          "StartAt": "Start",
+          "States": {
+            "Start": {
+              "Type": "Pass",
+              "Assign": {
+                "AnswerTemplate": "It's {}!",
+                "Question": "Who's that Pokemon?"
+              },
+              "Result": [
+                "Charizard",
+                "Pikachu",
+                "Squirtle"
+              ],
+              "Next": "MapIterateState"
+            },
+            "MapIterateState": {
+              "Type": "Map",
+              "MaxConcurrency": 1,
+              "ItemSelector": {
+                "AnnouncePokemon.$": "States.Format($AnswerTemplate, $$.Map.Item.Value)"
+              },
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "INLINE"
+                },
+                "StartAt": "Pass",
+                "States": {
+                  "Pass": {
+                    "Type": "Pass",
+                    "Parameters": {
+                      "Question.$": "$Question",
+                      "Answer.$": "$.AnnouncePokemon"
+                    },
+                    "End": true
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "variableReferences": {
+          "MapIterateState": [
+            "AnswerTemplate"
+          ],
+          "Pass": [
+            "Question"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_for_execution_response": {
+        "definition": {
+          "Comment": "MAP_STATE_REFERENCE_IN_INTRINSIC_FUNCTION",
+          "StartAt": "Start",
+          "States": {
+            "Start": {
+              "Type": "Pass",
+              "Assign": {
+                "AnswerTemplate": "It's {}!",
+                "Question": "Who's that Pokemon?"
+              },
+              "Result": [
+                "Charizard",
+                "Pikachu",
+                "Squirtle"
+              ],
+              "Next": "MapIterateState"
+            },
+            "MapIterateState": {
+              "Type": "Map",
+              "MaxConcurrency": 1,
+              "ItemSelector": {
+                "AnnouncePokemon.$": "States.Format($AnswerTemplate, $$.Map.Item.Value)"
+              },
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "INLINE"
+                },
+                "StartAt": "Pass",
+                "States": {
+                  "Pass": {
+                    "Type": "Pass",
+                    "Parameters": {
+                      "Question.$": "$Question",
+                      "Answer.$": "$.AnnouncePokemon"
+                    },
+                    "End": true
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "updateDate": "datetime",
+        "variableReferences": {
+          "MapIterateState": [
+            "AnswerTemplate"
+          ],
+          "Pass": [
+            "Question"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[MAP_STATE_REFERENCE_IN_ITEMS_PATH]": {
+    "recorded-date": "20-11-2024, 14:40:15",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "MAP_STATE_REFERENCE_IN_ITEMS_PATH",
+          "StartAt": "Start",
+          "States": {
+            "Start": {
+              "Type": "Pass",
+              "Assign": {
+                "Question": "Who's that Pokemon?",
+                "PokemonList": [
+                  "Charizard",
+                  "Pikachu",
+                  "Squirtle"
+                ]
+              },
+              "Result": {
+                "AnswerTemplate": "It's {}!"
+              },
+              "Next": "MapIterateState"
+            },
+            "MapIterateState": {
+              "Type": "Map",
+              "MaxConcurrency": 1,
+              "ItemsPath": "$PokemonList",
+              "ItemSelector": {
+                "AnnouncePokemon.$": "States.Format($.AnswerTemplate, $$.Map.Item.Value)"
+              },
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "INLINE"
+                },
+                "StartAt": "Pass",
+                "States": {
+                  "Pass": {
+                    "Type": "Pass",
+                    "Parameters": {
+                      "Question.$": "$Question",
+                      "Answer.$": "$.AnnouncePokemon"
+                    },
+                    "End": true
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "variableReferences": {
+          "MapIterateState": [
+            "PokemonList"
+          ],
+          "Pass": [
+            "Question"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_for_execution_response": {
+        "definition": {
+          "Comment": "MAP_STATE_REFERENCE_IN_ITEMS_PATH",
+          "StartAt": "Start",
+          "States": {
+            "Start": {
+              "Type": "Pass",
+              "Assign": {
+                "Question": "Who's that Pokemon?",
+                "PokemonList": [
+                  "Charizard",
+                  "Pikachu",
+                  "Squirtle"
+                ]
+              },
+              "Result": {
+                "AnswerTemplate": "It's {}!"
+              },
+              "Next": "MapIterateState"
+            },
+            "MapIterateState": {
+              "Type": "Map",
+              "MaxConcurrency": 1,
+              "ItemsPath": "$PokemonList",
+              "ItemSelector": {
+                "AnnouncePokemon.$": "States.Format($.AnswerTemplate, $$.Map.Item.Value)"
+              },
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "INLINE"
+                },
+                "StartAt": "Pass",
+                "States": {
+                  "Pass": {
+                    "Type": "Pass",
+                    "Parameters": {
+                      "Question.$": "$Question",
+                      "Answer.$": "$.AnnouncePokemon"
+                    },
+                    "End": true
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "updateDate": "datetime",
+        "variableReferences": {
+          "MapIterateState": [
+            "PokemonList"
+          ],
+          "Pass": [
+            "Question"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[MAP_STATE_REFERENCE_IN_MAX_CONCURRENCY_PATH]": {
+    "recorded-date": "20-11-2024, 14:40:33",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "MAP_STATE_REFERENCE_IN_MAX_CONCURRENCY_PATH",
+          "StartAt": "Start",
+          "States": {
+            "Start": {
+              "Type": "Pass",
+              "Assign": {
+                "maxConcurrency": "1"
+              },
+              "Result": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "Next": "MapState"
+            },
+            "MapState": {
+              "Type": "Map",
+              "ItemsPath": "$.Values",
+              "MaxConcurrencyPath": "$maxConcurrency",
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "INLINE"
+                },
+                "StartAt": "HandleItem",
+                "States": {
+                  "HandleItem": {
+                    "Type": "Pass",
+                    "End": true
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "variableReferences": {
+          "MapState": [
+            "maxConcurrency"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_for_execution_response": {
+        "definition": {
+          "Comment": "MAP_STATE_REFERENCE_IN_MAX_CONCURRENCY_PATH",
+          "StartAt": "Start",
+          "States": {
+            "Start": {
+              "Type": "Pass",
+              "Assign": {
+                "maxConcurrency": "1"
+              },
+              "Result": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "Next": "MapState"
+            },
+            "MapState": {
+              "Type": "Map",
+              "ItemsPath": "$.Values",
+              "MaxConcurrencyPath": "$maxConcurrency",
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "INLINE"
+                },
+                "StartAt": "HandleItem",
+                "States": {
+                  "HandleItem": {
+                    "Type": "Pass",
+                    "End": true
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "updateDate": "datetime",
+        "variableReferences": {
+          "MapState": [
+            "maxConcurrency"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[MAP_STATE_REFERENCE_IN_TOLERATED_FAILURE_PATH]": {
+    "recorded-date": "20-11-2024, 14:40:53",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "MAP_STATE_REFERENCE_IN_TOLERATED_FAILURE_PATH",
+          "StartAt": "Start",
+          "States": {
+            "Start": {
+              "Type": "Pass",
+              "Assign": {
+                "toleratedFailurePercentage": "1",
+                "toleratedFailureCount": "1"
+              },
+              "Result": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "Next": "MapState"
+            },
+            "MapState": {
+              "Type": "Map",
+              "ItemsPath": "$.Values",
+              "MaxConcurrency": 1,
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "DISTRIBUTED",
+                  "ExecutionType": "STANDARD"
+                },
+                "StartAt": "HandleItem",
+                "States": {
+                  "HandleItem": {
+                    "Type": "Pass",
+                    "End": true
+                  }
+                }
+              },
+              "ToleratedFailurePercentagePath": "$toleratedFailurePercentage",
+              "ToleratedFailureCountPath": "$toleratedFailureCount",
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "variableReferences": {
+          "MapState": [
+            "toleratedFailureCount",
+            "toleratedFailurePercentage"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_for_execution_response": {
+        "definition": {
+          "Comment": "MAP_STATE_REFERENCE_IN_TOLERATED_FAILURE_PATH",
+          "StartAt": "Start",
+          "States": {
+            "Start": {
+              "Type": "Pass",
+              "Assign": {
+                "toleratedFailurePercentage": "1",
+                "toleratedFailureCount": "1"
+              },
+              "Result": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "Next": "MapState"
+            },
+            "MapState": {
+              "Type": "Map",
+              "ItemsPath": "$.Values",
+              "MaxConcurrency": 1,
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "DISTRIBUTED",
+                  "ExecutionType": "STANDARD"
+                },
+                "StartAt": "HandleItem",
+                "States": {
+                  "HandleItem": {
+                    "Type": "Pass",
+                    "End": true
+                  }
+                }
+              },
+              "ToleratedFailurePercentagePath": "$toleratedFailurePercentage",
+              "ToleratedFailureCountPath": "$toleratedFailureCount",
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "updateDate": "datetime",
+        "variableReferences": {
+          "MapState": [
+            "toleratedFailureCount",
+            "toleratedFailurePercentage"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[MAP_STATE_REFERENCE_IN_ITEM_SELECTOR]": {
+    "recorded-date": "20-11-2024, 14:41:13",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "MAP_STATE_REFERENCE_IN_ITEM_SELECTOR",
+          "StartAt": "Start",
+          "States": {
+            "Start": {
+              "Type": "Pass",
+              "Assign": {
+                "bucket": "test-name"
+              },
+              "Result": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "Next": "MapState"
+            },
+            "MapState": {
+              "Type": "Map",
+              "MaxConcurrency": 1,
+              "ItemsPath": "$.Values",
+              "ItemSelector": {
+                "value.$": "$$.Map.Item.Value",
+                "bucketName": "$bucket"
+              },
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "DISTRIBUTED",
+                  "ExecutionType": "STANDARD"
+                },
+                "StartAt": "MapPass",
+                "States": {
+                  "MapPass": {
+                    "Type": "Pass",
+                    "End": true
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_for_execution_response": {
+        "definition": {
+          "Comment": "MAP_STATE_REFERENCE_IN_ITEM_SELECTOR",
+          "StartAt": "Start",
+          "States": {
+            "Start": {
+              "Type": "Pass",
+              "Assign": {
+                "bucket": "test-name"
+              },
+              "Result": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "Next": "MapState"
+            },
+            "MapState": {
+              "Type": "Map",
+              "MaxConcurrency": 1,
+              "ItemsPath": "$.Values",
+              "ItemSelector": {
+                "value.$": "$$.Map.Item.Value",
+                "bucketName": "$bucket"
+              },
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "DISTRIBUTED",
+                  "ExecutionType": "STANDARD"
+                },
+                "StartAt": "MapPass",
+                "States": {
+                  "MapPass": {
+                    "Type": "Pass",
+                    "End": true
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "updateDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[MAP_STATE_REFERENCE_IN_MAX_ITEMS_PATH]": {
+    "recorded-date": "20-11-2024, 14:41:28",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "MAP_STATE_REFERENCE_IN_MAX_ITEMS_PATH",
+          "StartAt": "Start",
+          "States": {
+            "Start": {
+              "Type": "Pass",
+              "Assign": {
+                "maxItems": "2"
+              },
+              "Next": "MapState"
+            },
+            "MapState": {
+              "Type": "Map",
+              "MaxConcurrency": 1,
+              "ItemReader": {
+                "ReaderConfig": {
+                  "InputType": "JSON",
+                  "MaxItemsPath": "$maxItems"
+                },
+                "Resource": "arn:<partition>:states:::s3:getObject",
+                "Parameters": {
+                  "Bucket.$": "$.Bucket",
+                  "Key.$": "$.Key"
+                }
+              },
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "DISTRIBUTED",
+                  "ExecutionType": "STANDARD"
+                },
+                "StartAt": "PassItem",
+                "States": {
+                  "PassItem": {
+                    "Type": "Pass",
+                    "End": true
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "variableReferences": {
+          "MapState": [
+            "maxItems"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_for_execution_response": {
+        "definition": {
+          "Comment": "MAP_STATE_REFERENCE_IN_MAX_ITEMS_PATH",
+          "StartAt": "Start",
+          "States": {
+            "Start": {
+              "Type": "Pass",
+              "Assign": {
+                "maxItems": "2"
+              },
+              "Next": "MapState"
+            },
+            "MapState": {
+              "Type": "Map",
+              "MaxConcurrency": 1,
+              "ItemReader": {
+                "ReaderConfig": {
+                  "InputType": "JSON",
+                  "MaxItemsPath": "$maxItems"
+                },
+                "Resource": "arn:<partition>:states:::s3:getObject",
+                "Parameters": {
+                  "Bucket.$": "$.Bucket",
+                  "Key.$": "$.Key"
+                }
+              },
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "DISTRIBUTED",
+                  "ExecutionType": "STANDARD"
+                },
+                "StartAt": "PassItem",
+                "States": {
+                  "PassItem": {
+                    "Type": "Pass",
+                    "End": true
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "updateDate": "datetime",
+        "variableReferences": {
+          "MapState": [
+            "maxItems"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_jsonata_template[CHOICE_CONDITION_CONSTANT_JSONATA]": {
+    "recorded-date": "20-11-2024, 14:41:42",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "StartAt": "ChoiceState",
+          "States": {
+            "ChoiceState": {
+              "Type": "Choice",
+              "QueryLanguage": "JSONata",
+              "Choices": [
+                {
+                  "Condition": true,
+                  "Next": "ConditionTrue"
+                }
+              ],
+              "Default": "DefaultState"
+            },
+            "ConditionTrue": {
+              "Type": "Pass",
+              "End": true
+            },
+            "DefaultState": {
+              "Type": "Fail",
+              "Cause": "Condition is false"
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_jsonata_template[CHOICE_STATE_UNSORTED_CHOICE_PARAMETERS_JSONATA]": {
+    "recorded-date": "20-11-2024, 14:42:01",
+    "recorded-content": {
+      "describe_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "StartAt": "CheckResult",
+          "States": {
+            "CheckResult": {
+              "Type": "Choice",
+              "QueryLanguage": "JSONata",
+              "Choices": [
+                {
+                  "Condition": "{% $states.input.result.done %}",
+                  "Next": "FinishTrue"
+                },
+                {
+                  "Condition": "{% $not($states.input.result.done) %}",
+                  "Next": "FinishFalse"
+                }
+              ]
+            },
+            "FinishTrue": {
+              "End": true,
+              "Type": "Pass"
+            },
+            "FinishFalse": {
+              "End": true,
+              "Type": "Pass"
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<ArnPart_0idx>",
+        "roleArn": "sfn_role_arn",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

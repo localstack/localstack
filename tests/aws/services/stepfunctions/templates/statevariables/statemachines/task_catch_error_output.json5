@@ -1,0 +1,50 @@
+{
+  "Comment": "TASK_CATCH_ERROR_OUTPUT",
+  "StartAt": "Task",
+  "States": {
+    "Task": {
+      "Type": "Task",
+      "QueryLanguage": "JSONata",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "%LAMBDA_FUNCTION_ARN_LITERAL_PLACEHOLDER%",
+        "Payload": {
+          "foo": "foobar"
+        }
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Output": {
+            "stateInput": "{% $states.input %}",
+            "stateError": "{% $states.errorOutput %}"
+          },
+          "Next": "Fallback"
+        }
+      ],
+      "Output": {
+        "stateInput": "{% $states.input %}",
+        "stateResult": "{% $states.result %}"
+      },
+      "Next": "Finish"
+    },
+    "Fallback": {
+      "Type": "Pass",
+      "QueryLanguage": "JSONata",
+      "Output": {
+        "error": "{% $states.input %}"
+      },
+      "End": true
+    },
+    "Finish": {
+      "Type": "Pass",
+      "QueryLanguage": "JSONata",
+      "Output": {
+        "result": "{% $states.input %}"
+      },
+      "End": true
+    }
+  }
+}

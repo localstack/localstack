@@ -1,0 +1,24 @@
+{
+  "Comment": "BASE_REFERENCE_IN_WAIT",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Pass",
+      "Assign": {
+        "waitTime": 0,
+        "startAt": "2024-11-06T09:42:03Z"
+      },
+      "Next": "WaitSecondsState"
+    },
+    "WaitSecondsState": {
+      "Type": "Wait",
+      "SecondsPath": "$waitTime",
+      "Next": "WaitUntilState"
+    },
+    "WaitUntilState": {
+      "Type": "Wait",
+      "TimestampPath": "$startAt",
+        "End": true
+    }
+  }
+}

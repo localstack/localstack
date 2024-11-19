@@ -1,0 +1,14 @@
+{
+  "Comment": "BASE_UNDEFINED_OUTPUT_FIELD",
+  "StartAt": "State0",
+  "QueryLanguage": "JSONata",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "Output": {
+        "result": "{% $doesNotExist %}"
+      },
+      "End": true
+    }
+  }
+}

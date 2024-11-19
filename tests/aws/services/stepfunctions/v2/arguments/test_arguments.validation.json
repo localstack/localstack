@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/stepfunctions/v2/arguments/test_arguments.py::TestArgumentsBase::test_base_cases[BASE_LAMBDA_EMPTY]": {
+    "last_validated_date": "2024-11-04T11:40:47+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/arguments/test_arguments.py::TestArgumentsBase::test_base_cases[BASE_LAMBDA_EMPTY_GLOBAL_QL_JSONATA]": {
+    "last_validated_date": "2024-11-04T11:41:45+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/arguments/test_arguments.py::TestArgumentsBase::test_base_cases[BASE_LAMBDA_EXPRESSION]": {
+    "last_validated_date": "2024-11-04T11:41:25+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/arguments/test_arguments.py::TestArgumentsBase::test_base_cases[BASE_LAMBDA_LITERALS]": {
+    "last_validated_date": "2024-11-04T11:41:06+00:00"
+  }
+}

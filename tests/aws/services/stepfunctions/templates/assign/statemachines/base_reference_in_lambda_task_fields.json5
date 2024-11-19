@@ -1,0 +1,50 @@
+{
+  "Comment": "BASE_REFERENCE_IN_LAMBDA_TASK_FIELDS",
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "Assign": {
+        "maxTimeout": 300,
+        "heartbeatInterval": 60,
+        "accountId.$": "$.AccountID",
+        "functionName.$": "$.FunctionName",
+        "intervalSeconds" : 2,
+        "maxAttempts" : 3,
+        "backoffRate" : 1.5,
+        "targetRole": "CrossAccountRole",
+        "jobParameters": {
+          "inputData": "sample data",
+          "configOption": "value1"
+        }
+      },
+      "Next": "State1"
+    },
+    "State1": {
+      "Comment" : "Here we reference all variables set in Assign when running our task state",
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName.$": "$functionName",
+        "Payload": {
+          "data.$": "$jobParameters",
+        }
+      },
+      "Credentials": {
+        "RoleArn.$": "States.Format('arn:aws:iam::{}:role/{}', $accountId, $targetRole)"
+      },
+      "ResultSelector": {
+        "processedData.$": "$.Payload.result",
+        "executionDetails": {
+          "startTime.$": "$.Payload.startTime",
+          "status.$": "$.Payload.status"
+        }
+      },
+      "ResultPath": "$.taskResult",
+      "OutputPath": "$.taskResult.processedData",
+      "TimeoutSecondsPath": "$maxTimeout",
+      "HeartbeatSecondsPath": "$heartbeatInterval",
+      "End": true
+    }
+  }
+}

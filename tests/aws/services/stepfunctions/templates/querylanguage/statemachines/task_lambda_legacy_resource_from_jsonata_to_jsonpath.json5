@@ -1,0 +1,27 @@
+{
+  "Comment": "TASK_LAMBDA_LEGACY_RESOURCE_JSONATA_TO_JSONPATH",
+  "StartAt": "JsonataState",
+  "States": {
+    "JsonataState": {
+      "Comment": "JSONata does not allow the Resource field to be dynamically set",
+      "QueryLanguage": "JSONata",
+      "Type": "Task",
+      "Resource": "%LAMBDA_FUNCTION_ARN_LITERAL_PLACEHOLDER%",
+      "Arguments": {
+        "Payload": {"foo": "foo-1"}
+      },
+      "Assign": {
+        "resultsVar": "{% $states.result %}"
+      },
+      "Output": {
+        "results": "{% $states.result %}"
+      },
+      "Next": "JsonPathState"
+    },
+      "JsonPathState": {
+      "QueryLanguage": "JSONPath",
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_ASSIGN_FROM_INTRINSIC_FUNCTION]": {
+    "last_validated_date": "2024-11-20T14:39:31+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_ASSIGN_FROM_PARAMETERS]": {
+    "last_validated_date": "2024-11-20T14:38:57+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_ASSIGN_FROM_RESULT]": {
+    "last_validated_date": "2024-11-20T14:39:12+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_EVALUATION_ORDER_PASS_STATE]": {
+    "last_validated_date": "2024-11-20T14:39:46+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_REFERENCE_IN_CHOICE]": {
+    "last_validated_date": "2024-11-20T14:37:12+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_REFERENCE_IN_FAIL]": {
+    "last_validated_date": "2024-11-20T14:38:43+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_REFERENCE_IN_INPUTPATH]": {
+    "last_validated_date": "2024-11-20T14:37:57+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_REFERENCE_IN_INTRINSIC_FUNCTION]": {
+    "last_validated_date": "2024-11-20T14:38:29+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_REFERENCE_IN_ITERATOR_OUTER_SCOPE]": {
+    "last_validated_date": "2024-11-20T14:37:42+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_REFERENCE_IN_OUTPUTPATH]": {
+    "last_validated_date": "2024-11-20T14:38:12+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_REFERENCE_IN_PARAMETERS]": {
+    "last_validated_date": "2024-11-20T14:37:01+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[BASE_REFERENCE_IN_WAIT]": {
+    "last_validated_date": "2024-11-20T14:37:26+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[MAP_STATE_REFERENCE_IN_INTRINSIC_FUNCTION]": {
+    "last_validated_date": "2024-11-20T14:40:01+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[MAP_STATE_REFERENCE_IN_ITEMS_PATH]": {
+    "last_validated_date": "2024-11-20T14:40:15+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[MAP_STATE_REFERENCE_IN_ITEM_SELECTOR]": {
+    "last_validated_date": "2024-11-20T14:41:13+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[MAP_STATE_REFERENCE_IN_MAX_CONCURRENCY_PATH]": {
+    "last_validated_date": "2024-11-20T14:40:33+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[MAP_STATE_REFERENCE_IN_MAX_ITEMS_PATH]": {
+    "last_validated_date": "2024-11-20T14:41:28+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_assign_templates[MAP_STATE_REFERENCE_IN_TOLERATED_FAILURE_PATH]": {
+    "last_validated_date": "2024-11-20T14:40:53+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_jsonata_template[CHOICE_CONDITION_CONSTANT_JSONATA]": {
+    "last_validated_date": "2024-11-20T14:41:42+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_variable_references.py::TestSfnApiVariableReferences::test_base_variable_references_in_jsonata_template[CHOICE_STATE_UNSORTED_CHOICE_PARAMETERS_JSONATA]": {
+    "last_validated_date": "2024-11-20T14:42:01+00:00"
+  }
+}

@@ -5,6 +5,8 @@ from typing import Optional
 
 from localstack.services.stepfunctions.asl.component.common.comment import Comment
 from localstack.services.stepfunctions.asl.component.common.flow.start_at import StartAt
+from localstack.services.stepfunctions.asl.component.common.query_language import QueryLanguage
+from localstack.services.stepfunctions.asl.component.program.states import States
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.inline_iteration_component import (
     InlineIterationComponent,
     InlineIterationComponentEvalInput,
@@ -15,7 +17,6 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.processor_config import (
     ProcessorConfig,
 )
-from localstack.services.stepfunctions.asl.component.states import States
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.parse.typed_props import TypedProps
 
@@ -36,6 +37,7 @@ class InlineItemProcessor(InlineIterationComponent):
         if not props.get(StartAt):
             raise ValueError(f"Missing StartAt declaration in props '{props}'.")
         item_processor = cls(
+            query_language=props.get(QueryLanguage) or QueryLanguage(),
             start_at=props.get(StartAt),
             states=props.get(States),
             comment=props.get(Comment),

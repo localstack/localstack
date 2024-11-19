@@ -1,0 +1,18 @@
+{
+  "Comment": "BASE_REFERENCE_IN_INPUTPATH",
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "Assign": {
+        "theAnswer": 42
+      },
+      "Next": "State1"
+    },
+    "State1": {
+      "Type": "Pass",
+      "InputPath": "$theAnswer",
+      "End": true
+    }
+  }
+}

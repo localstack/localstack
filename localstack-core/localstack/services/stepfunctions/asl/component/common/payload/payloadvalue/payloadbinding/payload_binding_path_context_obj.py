@@ -19,5 +19,5 @@ class PayloadBindingPathContextObj(PayloadBinding):
         return cls(field=field, path_context_obj=path_context_obj)
 
     def _eval_val(self, env: Environment) -> Any:
-        value = extract_json(self.path_context_obj, env.context_object_manager.context_object)
+        value = extract_json(self.path_context_obj, env.states.context_object.context_object_data)
         return value

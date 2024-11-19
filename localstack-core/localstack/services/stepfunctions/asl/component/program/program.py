@@ -21,11 +21,12 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
     StatesErrorNameType,
 )
 from localstack.services.stepfunctions.asl.component.common.flow.start_at import StartAt
+from localstack.services.stepfunctions.asl.component.common.query_language import QueryLanguage
 from localstack.services.stepfunctions.asl.component.common.timeouts.timeout import TimeoutSeconds
-from localstack.services.stepfunctions.asl.component.common.version import Version
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
+from localstack.services.stepfunctions.asl.component.program.states import States
+from localstack.services.stepfunctions.asl.component.program.version import Version
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
-from localstack.services.stepfunctions.asl.component.states import States
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.eval.program_state import (
@@ -43,6 +44,7 @@ LOG = logging.getLogger(__name__)
 
 
 class Program(EvalComponent):
+    query_language: Final[QueryLanguage]
     start_at: Final[StartAt]
     states: Final[States]
     timeout_seconds: Final[Optional[TimeoutSeconds]]
@@ -51,12 +53,14 @@ class Program(EvalComponent):
 
     def __init__(
         self,
+        query_language: QueryLanguage,
         start_at: StartAt,
         states: States,
         timeout_seconds: Optional[TimeoutSeconds],
         comment: Optional[Comment] = None,
         version: Optional[Version] = None,
     ):
+        self.query_language = query_language
         self.start_at = start_at
         self.states = states
         self.timeout_seconds = timeout_seconds
@@ -146,7 +150,7 @@ class Program(EvalComponent):
                 event_type=HistoryEventType.ExecutionSucceeded,
                 event_details=EventDetails(
                     executionSucceededEventDetails=ExecutionSucceededEventDetails(
-                        output=to_json_str(env.inp, separators=(",", ":")),
+                        output=to_json_str(env.states.get_input(), separators=(",", ":")),
                         outputDetails=HistoryEventExecutionDataDetails(
                             truncated=False  # Always False for api calls.
                         ),

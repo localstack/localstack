@@ -22,9 +22,13 @@ from localstack.aws.api.stepfunctions import (
     TagList,
     TracingConfiguration,
     ValidationException,
+    VariableReferences,
 )
 from localstack.services.stepfunctions.asl.eval.event.logging import (
     CloudWatchLoggingConfiguration,
+)
+from localstack.services.stepfunctions.asl.static_analyser.variable_references_static_analyser import (
+    VariableReferencesStaticAnalyser,
 )
 from localstack.utils.strings import long_uid
 
@@ -78,8 +82,16 @@ class StateMachineInstance:
             creationDate=self.create_date,
             loggingConfiguration=self.logging_config,
         )
+
         if self.revision_id:
             describe_output["revisionId"] = self.revision_id
+
+        variable_references: VariableReferences = VariableReferencesStaticAnalyser.process_and_get(
+            definition=self.definition
+        )
+        if variable_references:
+            describe_output["variableReferences"] = variable_references
+
         return describe_output
 
     @abc.abstractmethod

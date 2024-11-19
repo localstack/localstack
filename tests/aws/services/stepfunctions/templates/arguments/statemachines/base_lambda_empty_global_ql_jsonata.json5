@@ -1,0 +1,12 @@
+{
+  "QueryLanguage": "JSONata",
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Task",
+      "Resource":  "__tbd__",
+      "Arguments": {},
+      "End": true
+    }
+  }
+}

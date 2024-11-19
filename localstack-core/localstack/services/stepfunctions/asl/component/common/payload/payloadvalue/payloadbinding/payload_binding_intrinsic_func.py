@@ -9,10 +9,12 @@ from localstack.services.stepfunctions.asl.parse.intrinsic.intrinsic_parser impo
 
 
 class PayloadBindingIntrinsicFunc(PayloadBinding):
+    function: Final[Function]
+
     def __init__(self, field: str, intrinsic_func: str):
         super().__init__(field=field)
         self.src: Final[str] = intrinsic_func
-        self.function: Final[Function] = IntrinsicParser.parse(self.src)
+        self.function, _ = IntrinsicParser.parse(self.src)
 
     @classmethod
     def from_raw(cls, string_dollar: str, intrinsic_func: str):

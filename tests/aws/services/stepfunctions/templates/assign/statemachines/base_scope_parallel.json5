@@ -1,0 +1,57 @@
+{
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "Assign": {
+        "x": 42,
+      },
+      "Next": "State1"
+    },
+    "State1": {
+      "Type": "Parallel",
+      "End": true,
+      "Branches": [
+        {
+          "StartAt": "Branch1",
+          "States": {
+            "Branch1": {
+              "Type": "Pass",
+              "Assign": {
+                "innerX.$": "$x",
+                "value.$": "$"
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Branch21",
+          "States": {
+            "Branch21": {
+              "Type": "Pass",
+              "Assign": {
+                "innerX.$": "$x",
+                "value.$": "$"
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Branch31",
+          "States": {
+            "Branch31": {
+              "Type": "Pass",
+              "Assign": {
+                "innerX.$": "$x",
+                "value.$": "$"
+              },
+              "End": true
+            }
+          }
+        }
+      ]
+    }
+  }
+}

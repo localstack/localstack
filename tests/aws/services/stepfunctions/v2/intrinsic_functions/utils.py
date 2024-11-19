@@ -2,7 +2,9 @@ import json
 
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
-from localstack.testing.pytest.stepfunctions.utils import await_execution_success
+from localstack.testing.pytest.stepfunctions.utils import (
+    await_execution_terminated,
+)
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.intrinsicfunctions.intrinsic_functions_templates import (
     IntrinsicFunctionTemplate as IFT,
@@ -40,7 +42,7 @@ def create_and_test_on_inputs(
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, i))
         execution_arn = exec_resp["executionArn"]
 
-        await_execution_success(
+        await_execution_terminated(
             stepfunctions_client=stepfunctions_client, execution_arn=execution_arn
         )
 
