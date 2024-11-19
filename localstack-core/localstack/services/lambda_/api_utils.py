@@ -50,6 +50,7 @@ FULL_FN_ARN_PATTERN = re.compile(
 )
 
 # Pattern for a full (both with and without qualifier) lambda layer ARN
+# TODO: It looks like they added `|(arn:[a-zA-Z0-9-]+:lambda:::awslayer:[a-zA-Z0-9-_]+` in 2024-11
 LAYER_VERSION_ARN_PATTERN = re.compile(
     rf"{ARN_PARTITION_REGEX}:lambda:(?P<region_name>[^:]+):(?P<account_id>\d{{12}}):layer:(?P<layer_name>[^:]+)(:(?P<layer_version>\d+))?$"
 )

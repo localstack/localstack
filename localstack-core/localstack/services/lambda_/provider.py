@@ -1069,8 +1069,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         latest_runtime = DEPRECATED_RUNTIMES_UPGRADES.get(deprecated_runtime)
 
         if latest_runtime is not None:
+            LOG.debug(
+                "The Lambda runtime %s is deprecated. Please upgrade to a supported Lambda runtime such as %s.",
+                deprecated_runtime,
+                latest_runtime,
+            )
             raise InvalidParameterValueException(
-                f"The runtime parameter of {deprecated_runtime} is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime ({latest_runtime}) while creating or updating functions.",
+                f"The runtime parameter of {deprecated_runtime} is no longer supported for creating or updating AWS Lambda functions. We recommend you use a supported runtime while creating or updating functions.",
                 Type="User",
             )
 
@@ -3579,7 +3584,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if not layer_version:
             raise ValidationException(
                 f"1 validation error detected: Value '{arn}' at 'arn' failed to satisfy constraint: Member must satisfy regular expression pattern: "
-                + "arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+"
+                + "(arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+)|(arn:[a-zA-Z0-9-]+:lambda:::awslayer:[a-zA-Z0-9-_]+)"
             )
 
         store = lambda_stores[account_id][region_name]
