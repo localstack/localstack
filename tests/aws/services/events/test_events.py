@@ -422,6 +422,86 @@ class TestEvents:
             )
         snapshot.match("create_connection_exc", e.value.response)
 
+    @markers.aws.validated
+    def test_put_events_response_entries_order(
+        self, events_put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot
+    ):
+        """Test that put_events response contains each EventId only once, even with multiple targets."""
+        # Create two SQS queues as targets
+        queue_url_1 = sqs_create_queue()
+        queue_arn_1 = sqs_get_queue_arn(queue_url_1)
+        queue_url_2 = sqs_create_queue()
+        queue_arn_2 = sqs_get_queue_arn(queue_url_2)
+
+        # Create rule that will match our test event
+        rule_name = f"test-rule-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
+
+        # Add pattern that will match our test event
+        events_put_rule(
+            Name=rule_name,
+            EventPattern=json.dumps(
+                {"source": ["test.source"], "detail-type": ["test.detail.type"]}
+            ),
+        )
+
+        # Add two targets to the same rule
+        target_id_1 = f"test-target-1-{short_uid()}"
+        target_id_2 = f"test-target-2-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {"Id": target_id_1, "Arn": queue_arn_1},
+                {"Id": target_id_2, "Arn": queue_arn_2},
+            ],
+        )
+
+        # Put a test event that matches our rule
+        response = aws_client.events.put_events(
+            Entries=[
+                {
+                    "Source": "test.source",
+                    "DetailType": "test.detail.type",
+                    "Detail": json.dumps({"message": "test message"}),
+                }
+            ]
+        )
+
+        # Add transformers for the snapshot
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("EventId", reference_replacement=False),
+                snapshot.transform.regex(queue_arn_1, "<queue-1-arn>"),
+                snapshot.transform.regex(queue_arn_2, "<queue-2-arn>"),
+            ]
+        )
+
+        # Verify the response matches our snapshot
+        snapshot.match("put-events-response", response)
+
+        # Additional verification:
+        # 1. Verify we got exactly one EventId in the response
+        assert len(response["Entries"]) == 1
+
+        # 2. Verify both queues received the message (proving both targets were triggered)
+        messages_1 = sqs_collect_messages(aws_client, queue_url_1, expected_events_count=1)
+        messages_2 = sqs_collect_messages(aws_client, queue_url_2, expected_events_count=1)
+
+        assert len(messages_1) == 1
+        assert len(messages_2) == 1
+
+        # 3. Verify both messages have the same EventId as in the response
+        event_id = response["Entries"][0]["EventId"]
+        message_1 = json.loads(messages_1[0]["Body"])
+        message_2 = json.loads(messages_2[0]["Body"])
+
+        assert message_1["id"] == event_id
+        assert message_2["id"] == event_id
+
+        snapshot.match(
+            "sqs-messages", {"queue1_messages": messages_1, "queue2_messages": messages_2}
+        )
+
 
 class TestEventBus:
     @markers.aws.validated
