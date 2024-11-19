@@ -41,6 +41,7 @@ class RestApiGateway(Gateway):
             [
                 handlers.response_enricher,
                 handlers.cors_response_enricher,
+                handlers.usage_counter,
                 # add composite response handlers?
             ]
         )
