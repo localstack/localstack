@@ -1983,7 +1983,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self._proxy_capture_input_event(event_formatted)
 
         has_processing_error = self._process_rules_for_event(
-            event_bus.rules.values(), region, account_id, event_formatted, failed_entry_count
+            event_bus_name,
+            event_bus.rules.values(),
+            region,
+            account_id,
+            event_formatted,
+            failed_entry_count,
         )
 
         if has_processing_error:
@@ -1997,6 +2002,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
     def _process_rules_for_event(
         self,
+        event_bus_name: str,
         rules: list[Rule],
         region: str,
         account_id: str,
@@ -2011,7 +2017,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 json.dumps(
                     {
                         "InfoCode": "InternalInfoEvents at process_rules",
-                        "InfoMessage": "No rules configured for event bus",
+                        "InfoMessage": f"No rules attached to event_bus: {event_bus_name}",
                     }
                 )
             )
@@ -2044,7 +2050,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     LOG.info(
                         json.dumps(
                             {
-                                "ErrorCode": "InternalException at process_target",
+                                "ErrorCode": "InternalException at process_entries",
                                 "ErrorMessage": str(error),
                             }
                         )
