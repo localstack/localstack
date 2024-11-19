@@ -2,12 +2,19 @@ import base64
 import json
 import logging
 import re
-from typing import Callable, Optional
+import uuid
+from datetime import datetime
+from typing import Any, Callable, Dict, Optional
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.config import TagsList
 from localstack.aws.api.events import (
     Action,
+    ApiDestination,
+    ApiDestinationDescription,
+    ApiDestinationHttpMethod,
+    ApiDestinationInvocationRateLimitPerSecond,
+    ApiDestinationName,
     ArchiveDescription,
     ArchiveName,
     ArchiveResponseList,
@@ -16,11 +23,24 @@ from localstack.aws.api.events import (
     Boolean,
     CancelReplayResponse,
     Condition,
+    Connection,
+    ConnectionArn,
+    ConnectionAuthorizationType,
+    ConnectionDescription,
+    ConnectionName,
+    ConnectionState,
+    CreateApiDestinationResponse,
     CreateArchiveResponse,
+    CreateConnectionAuthRequestParameters,
+    CreateConnectionResponse,
     CreateEventBusResponse,
     DeadLetterConfig,
+    DeleteApiDestinationResponse,
     DeleteArchiveResponse,
+    DeleteConnectionResponse,
+    DescribeApiDestinationResponse,
     DescribeArchiveResponse,
+    DescribeConnectionResponse,
     DescribeEventBusResponse,
     DescribeReplayResponse,
     DescribeRuleResponse,
@@ -32,11 +52,14 @@ from localstack.aws.api.events import (
     EventPattern,
     EventsApi,
     EventSourceName,
+    HttpsEndpoint,
     InternalException,
     InvalidEventPatternException,
     KmsKeyIdentifier,
     LimitMax100,
+    ListApiDestinationsResponse,
     ListArchivesResponse,
+    ListConnectionsResponse,
     ListEventBusesResponse,
     ListReplaysResponse,
     ListRuleNamesByTargetResponse,
@@ -84,7 +107,10 @@ from localstack.aws.api.events import (
     TestEventPatternResponse,
     Timestamp,
     UntagResourceResponse,
+    UpdateApiDestinationResponse,
     UpdateArchiveResponse,
+    UpdateConnectionAuthRequestParameters,
+    UpdateConnectionResponse,
 )
 from localstack.aws.api.events import Archive as ApiTypeArchive
 from localstack.aws.api.events import EventBus as ApiTypeEventBus
@@ -132,12 +158,14 @@ from localstack.services.events.utils import (
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.common import truncate
 from localstack.utils.event_matcher import matches_event
-from localstack.utils.strings import long_uid
+from localstack.utils.strings import long_uid, short_uid
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 
 LOG = logging.getLogger(__name__)
 
 ARCHIVE_TARGET_ID_NAME_PATTERN = re.compile(r"^Events-Archive-(?P<name>[a-zA-Z0-9_-]+)$")
+
+VALID_AUTH_TYPES = [t.value for t in ConnectionAuthorizationType]
 
 
 def decode_next_token(token: NextToken) -> int:
@@ -188,12 +216,596 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self._target_sender_store: TargetSenderDict = {}
         self._archive_service_store: ArchiveServiceDict = {}
         self._replay_service_store: ReplayServiceDict = {}
+        self._connections: Dict[str, Connection] = {}
+        self._api_destinations: Dict[str, ApiDestination] = {}
 
     def on_before_start(self):
         JobScheduler.start()
 
     def on_before_stop(self):
         JobScheduler.shutdown()
+
+    ##########
+    # Helper Methods for connections and api destinations
+    ##########
+
+    def _validate_api_destination_name(self, name: str) -> None:
+        """Validate the API destination name according to AWS rules."""
+        if not re.match(r"^[\.\-_A-Za-z0-9]+$", name):
+            raise ValidationException(
+                f"1 validation error detected: Value '{name}' at 'name' failed to satisfy constraint: "
+                "Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
+            )
+        if not (1 <= len(name) <= 64):
+            raise ValidationException(
+                f"1 validation error detected: Value '{name}' at 'name' failed to satisfy constraint: "
+                "Member must have length between 1 and 64"
+            )
+
+    def _validate_connection_name(self, name: str) -> None:
+        """Validate the connection name according to AWS rules."""
+        if not re.match("^[\\.\\-_A-Za-z0-9]+$", name):
+            raise ValidationException(
+                f"1 validation error detected: Value '{name}' at 'name' failed to satisfy constraint: "
+                "Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
+            )
+
+    def _validate_auth_type(self, auth_type: str) -> None:
+        """Validate the authorization type is one of the allowed values."""
+        if auth_type not in VALID_AUTH_TYPES:
+            raise ValidationException(
+                f"1 validation error detected: Value '{auth_type}' at 'authorizationType' failed to satisfy constraint: "
+                f"Member must satisfy enum value set: [{', '.join(VALID_AUTH_TYPES)}]"
+            )
+
+    def _get_connection_by_arn(self, connection_arn: str) -> Optional[Dict]:
+        """Retrieve a connection by its ARN."""
+        return next(
+            (
+                conn
+                for conn in self._connections.values()
+                if conn["ConnectionArn"] == connection_arn
+            ),
+            None,
+        )
+
+    def _get_public_parameters(self, auth_type: str, auth_parameters: dict) -> dict:
+        """Extract public parameters (without secrets) based on auth type."""
+        public_params = {}
+
+        if auth_type == "BASIC" and "BasicAuthParameters" in auth_parameters:
+            public_params["BasicAuthParameters"] = {
+                "Username": auth_parameters["BasicAuthParameters"]["Username"]
+            }
+
+        elif auth_type == "API_KEY" and "ApiKeyAuthParameters" in auth_parameters:
+            public_params["ApiKeyAuthParameters"] = {
+                "ApiKeyName": auth_parameters["ApiKeyAuthParameters"]["ApiKeyName"]
+            }
+
+        elif auth_type == "OAUTH_CLIENT_CREDENTIALS" and "OAuthParameters" in auth_parameters:
+            oauth_params = auth_parameters["OAuthParameters"]
+            public_params["OAuthParameters"] = {
+                "AuthorizationEndpoint": oauth_params["AuthorizationEndpoint"],
+                "HttpMethod": oauth_params["HttpMethod"],
+                "ClientParameters": {"ClientID": oauth_params["ClientParameters"]["ClientID"]},
+            }
+
+        if "InvocationHttpParameters" in auth_parameters:
+            public_params["InvocationHttpParameters"] = auth_parameters["InvocationHttpParameters"]
+
+        return public_params
+
+    def _get_initial_state(self, auth_type: str) -> ConnectionState:
+        """Get initial connection state based on auth type."""
+        if auth_type == "OAUTH_CLIENT_CREDENTIALS":
+            return ConnectionState.AUTHORIZING
+        return ConnectionState.AUTHORIZED
+
+    def _determine_api_destination_state(self, connection_state: str) -> str:
+        """Determine ApiDestinationState based on ConnectionState."""
+        return "ACTIVE" if connection_state == "AUTHORIZED" else "INACTIVE"
+
+    def _create_api_destination_object(
+        self,
+        context: RequestContext,
+        name: str,
+        connection_arn: str,
+        invocation_endpoint: str,
+        http_method: str,
+        description: Optional[str] = None,
+        invocation_rate_limit_per_second: Optional[int] = None,
+        api_destination_state: Optional[str] = "ACTIVE",
+    ) -> ApiDestination:
+        """Create a standardized API destination object."""
+        now = datetime.utcnow()
+        api_destination_arn = f"arn:aws:events:{context.region}:{context.account_id}:api-destination/{name}/{short_uid()}"
+
+        api_destination: ApiDestination = {
+            "ApiDestinationArn": api_destination_arn,
+            "Name": name,
+            "ConnectionArn": connection_arn,
+            "InvocationEndpoint": invocation_endpoint,
+            "HttpMethod": http_method,
+            "Description": description,
+            "InvocationRateLimitPerSecond": invocation_rate_limit_per_second or 300,
+            "CreationTime": now,
+            "LastModifiedTime": now,
+            "ApiDestinationState": api_destination_state,
+        }
+        return api_destination
+
+    def _create_connection_arn(
+        self, context: RequestContext, name: str, connection_uuid: str
+    ) -> str:
+        """Create a standardized connection ARN."""
+        return f"arn:aws:events:{context.region}:{context.account_id}:connection/{name}/{connection_uuid}"
+
+    def _create_secret_arn(self, context: RequestContext, name: str, connection_uuid: str) -> str:
+        """Create a standardized secret ARN."""
+        return f"arn:aws:secretsmanager:{context.region}:{context.account_id}:secret:events!connection/{name}/{connection_uuid}"
+
+    def _create_connection_object(
+        self,
+        context: RequestContext,
+        name: str,
+        authorization_type: str,
+        auth_parameters: dict,
+        description: Optional[str] = None,
+        connection_state: Optional[str] = None,
+        creation_time: Optional[datetime] = None,
+    ) -> Dict[str, Any]:
+        """Create a standardized connection object."""
+        current_time = creation_time or datetime.utcnow()
+        connection_uuid = str(uuid.uuid4())
+
+        connection: Dict[str, Any] = {
+            "ConnectionArn": self._create_connection_arn(context, name, connection_uuid),
+            "Name": name,
+            "ConnectionState": connection_state or self._get_initial_state(authorization_type),
+            "AuthorizationType": authorization_type,
+            "AuthParameters": self._get_public_parameters(authorization_type, auth_parameters),
+            "SecretArn": self._create_secret_arn(context, name, connection_uuid),
+            "CreationTime": current_time,
+            "LastModifiedTime": current_time,
+            "LastAuthorizedTime": current_time,
+        }
+
+        if description:
+            connection["Description"] = description
+
+        return connection
+
+    def _handle_api_destination_operation(self, operation_name: str, func: Callable) -> Any:
+        """Generic error handler for API destination operations."""
+        try:
+            return func()
+        except (
+            ValidationException,
+            ResourceNotFoundException,
+            ResourceAlreadyExistsException,
+        ) as e:
+            raise e
+        except Exception as e:
+            raise ValidationException(f"Error {operation_name} API destination: {str(e)}")
+
+    def _handle_connection_operation(self, operation_name: str, func: Callable) -> Any:
+        """Generic error handler for connection operations."""
+        try:
+            return func()
+        except (
+            ValidationException,
+            ResourceNotFoundException,
+            ResourceAlreadyExistsException,
+        ) as e:
+            raise e
+        except Exception as e:
+            raise ValidationException(f"Error {operation_name} connection: {str(e)}")
+
+    def _create_connection_response(
+        self, connection: Dict[str, Any], override_state: Optional[str] = None
+    ) -> dict:
+        """Create a standardized response for connection operations."""
+        response = {
+            "ConnectionArn": connection["ConnectionArn"],
+            "ConnectionState": override_state or connection["ConnectionState"],
+            "CreationTime": connection["CreationTime"],
+            "LastModifiedTime": connection["LastModifiedTime"],
+            "LastAuthorizedTime": connection.get("LastAuthorizedTime"),
+        }
+        if "SecretArn" in connection:
+            response["SecretArn"] = connection["SecretArn"]
+        return response
+
+    ##########
+    # Connections
+    ##########
+
+    @handler("CreateConnection")
+    def create_connection(
+        self,
+        context: RequestContext,
+        name: ConnectionName,
+        authorization_type: ConnectionAuthorizationType,
+        auth_parameters: CreateConnectionAuthRequestParameters,
+        description: ConnectionDescription = None,
+        **kwargs,
+    ) -> CreateConnectionResponse:
+        def create():
+            auth_type = authorization_type
+            if hasattr(authorization_type, "value"):
+                auth_type = authorization_type.value
+            self._validate_auth_type(auth_type)
+            self._validate_connection_name(name)
+
+            if name in self._connections:
+                raise ResourceAlreadyExistsException(f"Connection {name} already exists.")
+
+            connection = self._create_connection_object(
+                context, name, auth_type, auth_parameters, description
+            )
+            self._connections[name] = connection
+
+            return CreateConnectionResponse(**self._create_connection_response(connection))
+
+        return self._handle_connection_operation("creating", create)
+
+    @handler("DescribeConnection")
+    def describe_connection(
+        self, context: RequestContext, name: ConnectionName, **kwargs
+    ) -> DescribeConnectionResponse:
+        try:
+            if name not in self._connections:
+                raise ResourceNotFoundException(
+                    f"Failed to describe the connection(s). Connection '{name}' does not exist."
+                )
+
+            return DescribeConnectionResponse(**self._connections[name])
+
+        except ResourceNotFoundException as e:
+            raise e
+        except Exception as e:
+            raise ValidationException(f"Error describing connection: {str(e)}")
+
+    @handler("UpdateConnection")
+    def update_connection(
+        self,
+        context: RequestContext,
+        name: ConnectionName,
+        description: ConnectionDescription = None,
+        authorization_type: ConnectionAuthorizationType = None,
+        auth_parameters: UpdateConnectionAuthRequestParameters = None,
+        **kwargs,
+    ) -> UpdateConnectionResponse:
+        def update():
+            if name not in self._connections:
+                raise ResourceNotFoundException(
+                    f"Failed to describe the connection(s). Connection '{name}' does not exist."
+                )
+
+            existing_connection = self._connections[name]
+
+            # Use existing values if not provided in update
+            if authorization_type:
+                auth_type = (
+                    authorization_type.value
+                    if hasattr(authorization_type, "value")
+                    else authorization_type
+                )
+                self._validate_auth_type(auth_type)
+            else:
+                auth_type = existing_connection["AuthorizationType"]
+
+            auth_params = (
+                auth_parameters if auth_parameters else existing_connection["AuthParameters"]
+            )
+            desc = description if description else existing_connection.get("Description")
+
+            connection = self._create_connection_object(
+                context,
+                name,
+                auth_type,
+                auth_params,
+                desc,
+                ConnectionState.AUTHORIZED,
+                existing_connection["CreationTime"],
+            )
+            self._connections[name] = connection
+
+            return UpdateConnectionResponse(**self._create_connection_response(connection))
+
+        return self._handle_connection_operation("updating", update)
+
+    @handler("DeleteConnection")
+    def delete_connection(
+        self, context: RequestContext, name: ConnectionName, **kwargs
+    ) -> DeleteConnectionResponse:
+        def delete():
+            if name not in self._connections:
+                raise ResourceNotFoundException(
+                    f"Failed to describe the connection(s). Connection '{name}' does not exist."
+                )
+
+            connection = self._connections[name]
+            del self._connections[name]
+
+            return DeleteConnectionResponse(
+                **self._create_connection_response(connection, ConnectionState.DELETING)
+            )
+
+        return self._handle_connection_operation("deleting", delete)
+
+    @handler("ListConnections")
+    def list_connections(
+        self,
+        context: RequestContext,
+        name_prefix: ConnectionName = None,
+        connection_state: ConnectionState = None,
+        next_token: NextToken = None,
+        limit: LimitMax100 = None,
+        **kwargs,
+    ) -> ListConnectionsResponse:
+        try:
+            connections = []
+
+            for conn in self._connections.values():
+                if name_prefix and not conn["Name"].startswith(name_prefix):
+                    continue
+
+                if connection_state and conn["ConnectionState"] != connection_state:
+                    continue
+
+                connection_summary = {
+                    "ConnectionArn": conn["ConnectionArn"],
+                    "ConnectionState": conn["ConnectionState"],
+                    "CreationTime": conn["CreationTime"],
+                    "LastAuthorizedTime": conn.get("LastAuthorizedTime"),
+                    "LastModifiedTime": conn["LastModifiedTime"],
+                    "Name": conn["Name"],
+                    "AuthorizationType": conn["AuthorizationType"],
+                }
+                connections.append(connection_summary)
+
+            connections.sort(key=lambda x: x["CreationTime"])
+
+            if limit:
+                connections = connections[:limit]
+
+            return ListConnectionsResponse(Connections=connections)
+
+        except Exception as e:
+            raise ValidationException(f"Error listing connections: {str(e)}")
+
+    ##########
+    # API Destinations
+    ##########
+
+    @handler("CreateApiDestination")
+    def create_api_destination(
+        self,
+        context: RequestContext,
+        name: ApiDestinationName,
+        connection_arn: ConnectionArn,
+        invocation_endpoint: HttpsEndpoint,
+        http_method: ApiDestinationHttpMethod,
+        description: ApiDestinationDescription = None,
+        invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond = None,
+        **kwargs,
+    ) -> CreateApiDestinationResponse:
+        def create():
+            validation_errors = []
+            if not re.match(r"^[\.\-_A-Za-z0-9]+$", name):
+                validation_errors.append(
+                    f"Value '{name}' at 'name' failed to satisfy constraint: "
+                    "Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
+                )
+            if not (1 <= len(name) <= 64):
+                validation_errors.append(
+                    f"Value '{name}' at 'name' failed to satisfy constraint: "
+                    "Member must have length between 1 and 64"
+                )
+
+            connection_arn_pattern = r"^arn:aws([a-z]|\-)*:events:[a-z0-9\-]+:\d{12}:connection/[\.\-_A-Za-z0-9]+/[\-A-Za-z0-9]+$"
+            if not re.match(connection_arn_pattern, connection_arn):
+                validation_errors.append(
+                    f"Value '{connection_arn}' at 'connectionArn' failed to satisfy constraint: "
+                    "Member must satisfy regular expression pattern: "
+                    "^arn:aws([a-z]|\\-)*:events:([a-z]|\\d|\\-)*:([0-9]{12})?:connection\\/[\\.\\-_A-Za-z0-9]+\\/[\\-A-Za-z0-9]+$"
+                )
+
+            allowed_methods = ["HEAD", "POST", "PATCH", "DELETE", "PUT", "GET", "OPTIONS"]
+            if http_method not in allowed_methods:
+                validation_errors.append(
+                    f"Value '{http_method}' at 'httpMethod' failed to satisfy constraint: "
+                    f"Member must satisfy enum value set: [{', '.join(allowed_methods)}]"
+                )
+
+            endpoint_pattern = (
+                r"^((%[0-9A-Fa-f]{2}|[-()_.!~*';/?:@&=+$,A-Za-z0-9])+)([).!';/?:,])?$"
+            )
+            if not re.match(endpoint_pattern, invocation_endpoint):
+                validation_errors.append(
+                    f"Value '{invocation_endpoint}' at 'invocationEndpoint' failed to satisfy constraint: "
+                    "Member must satisfy regular expression pattern: "
+                    "^((%[0-9A-Fa-f]{2}|[-()_.!~*';/?:@&=+$,A-Za-z0-9])+)([).!';/?:,])?$"
+                )
+
+            if validation_errors:
+                error_message = f"{len(validation_errors)} validation error{'s' if len(validation_errors) > 1 else ''} detected: "
+                error_message += "; ".join(validation_errors)
+                raise ValidationException(error_message)
+
+            if name in self._api_destinations:
+                raise ResourceAlreadyExistsException(f"An api-destination '{name}' already exists.")
+
+            connection = self._get_connection_by_arn(connection_arn)
+            if not connection:
+                raise ResourceNotFoundException(f"Connection '{connection_arn}' does not exist.")
+
+            api_destination_state = self._determine_api_destination_state(
+                connection["ConnectionState"]
+            )
+
+            api_destination = self._create_api_destination_object(
+                context,
+                name,
+                connection_arn,
+                invocation_endpoint,
+                http_method,
+                description,
+                invocation_rate_limit_per_second,
+                api_destination_state=api_destination_state,
+            )
+            self._api_destinations[name] = api_destination
+
+            return CreateApiDestinationResponse(
+                ApiDestinationArn=api_destination["ApiDestinationArn"],
+                ApiDestinationState=api_destination["ApiDestinationState"],
+                CreationTime=api_destination["CreationTime"],
+                LastModifiedTime=api_destination["LastModifiedTime"],
+            )
+
+        return self._handle_api_destination_operation("creating", create)
+
+    @handler("DescribeApiDestination")
+    def describe_api_destination(
+        self, context: RequestContext, name: ApiDestinationName, **kwargs
+    ) -> DescribeApiDestinationResponse:
+        try:
+            if name not in self._api_destinations:
+                raise ResourceNotFoundException(
+                    f"Failed to describe the api-destination(s). An api-destination '{name}' does not exist."
+                )
+            api_destination = self._api_destinations[name]
+            return DescribeApiDestinationResponse(**api_destination)
+        except ResourceNotFoundException as e:
+            raise e
+        except Exception as e:
+            raise ValidationException(f"Error describing API destination: {str(e)}")
+
+    @handler("UpdateApiDestination")
+    def update_api_destination(
+        self,
+        context: RequestContext,
+        name: ApiDestinationName,
+        description: ApiDestinationDescription = None,
+        connection_arn: ConnectionArn = None,
+        invocation_endpoint: HttpsEndpoint = None,
+        http_method: ApiDestinationHttpMethod = None,
+        invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond = None,
+        **kwargs,
+    ) -> UpdateApiDestinationResponse:
+        def update():
+            if name not in self._api_destinations:
+                raise ResourceNotFoundException(
+                    f"Failed to describe the api-destination(s). An api-destination '{name}' does not exist."
+                )
+            api_destination = self._api_destinations[name]
+
+            if description is not None:
+                api_destination["Description"] = description
+            if connection_arn is not None:
+                connection = self._get_connection_by_arn(connection_arn)
+                if not connection:
+                    raise ResourceNotFoundException(
+                        f"Connection '{connection_arn}' does not exist."
+                    )
+                api_destination["ConnectionArn"] = connection_arn
+                api_destination["ApiDestinationState"] = self._determine_api_destination_state(
+                    connection["ConnectionState"]
+                )
+            else:
+                connection = self._get_connection_by_arn(api_destination["ConnectionArn"])
+                if connection:
+                    api_destination["ApiDestinationState"] = self._determine_api_destination_state(
+                        connection["ConnectionState"]
+                    )
+                else:
+                    api_destination["ApiDestinationState"] = "INACTIVE"
+
+            if invocation_endpoint is not None:
+                api_destination["InvocationEndpoint"] = invocation_endpoint
+            if http_method is not None:
+                api_destination["HttpMethod"] = http_method
+            if invocation_rate_limit_per_second is not None:
+                api_destination["InvocationRateLimitPerSecond"] = invocation_rate_limit_per_second
+            else:
+                if "InvocationRateLimitPerSecond" not in api_destination:
+                    api_destination["InvocationRateLimitPerSecond"] = 300
+
+            api_destination["LastModifiedTime"] = datetime.utcnow()
+
+            return UpdateApiDestinationResponse(
+                ApiDestinationArn=api_destination["ApiDestinationArn"],
+                ApiDestinationState=api_destination["ApiDestinationState"],
+                CreationTime=api_destination["CreationTime"],
+                LastModifiedTime=api_destination["LastModifiedTime"],
+            )
+
+        return self._handle_api_destination_operation("updating", update)
+
+    @handler("DeleteApiDestination")
+    def delete_api_destination(
+        self, context: RequestContext, name: ApiDestinationName, **kwargs
+    ) -> DeleteApiDestinationResponse:
+        def delete():
+            if name not in self._api_destinations:
+                raise ResourceNotFoundException(
+                    f"Failed to describe the api-destination(s). An api-destination '{name}' does not exist."
+                )
+            del self._api_destinations[name]
+            return DeleteApiDestinationResponse()
+
+        return self._handle_api_destination_operation("deleting", delete)
+
+    @handler("ListApiDestinations")
+    def list_api_destinations(
+        self,
+        context: RequestContext,
+        name_prefix: ApiDestinationName = None,
+        connection_arn: ConnectionArn = None,
+        next_token: NextToken = None,
+        limit: LimitMax100 = None,
+        **kwargs,
+    ) -> ListApiDestinationsResponse:
+        try:
+            api_destinations = list(self._api_destinations.values())
+
+            if name_prefix:
+                api_destinations = [
+                    dest for dest in api_destinations if dest["Name"].startswith(name_prefix)
+                ]
+            if connection_arn:
+                api_destinations = [
+                    dest for dest in api_destinations if dest["ConnectionArn"] == connection_arn
+                ]
+
+            api_destinations.sort(key=lambda x: x["Name"])
+            if limit:
+                api_destinations = api_destinations[:limit]
+
+            # Prepare summaries
+            api_destination_summaries = []
+            for dest in api_destinations:
+                summary = {
+                    "ApiDestinationArn": dest["ApiDestinationArn"],
+                    "Name": dest["Name"],
+                    "ApiDestinationState": dest["ApiDestinationState"],
+                    "ConnectionArn": dest["ConnectionArn"],
+                    "InvocationEndpoint": dest["InvocationEndpoint"],
+                    "HttpMethod": dest["HttpMethod"],
+                    "CreationTime": dest["CreationTime"],
+                    "LastModifiedTime": dest["LastModifiedTime"],
+                    "InvocationRateLimitPerSecond": dest.get("InvocationRateLimitPerSecond", 300),
+                }
+                api_destination_summaries.append(summary)
+
+            return ListApiDestinationsResponse(
+                ApiDestinations=api_destination_summaries,
+                NextToken=None,  # Pagination token handling can be added if needed
+            )
+        except Exception as e:
+            raise ValidationException(f"Error listing API destinations: {str(e)}")
 
     ##########
     # EventBus

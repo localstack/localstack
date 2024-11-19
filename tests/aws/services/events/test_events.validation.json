@@ -1,4 +1,46 @@
 {
+  "tests/aws/services/events/test_events.py::TestEventBridgeApiDestinations::test_api_destinations[auth0]": {
+    "last_validated_date": "2024-11-16T13:44:03+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeApiDestinations::test_api_destinations[auth1]": {
+    "last_validated_date": "2024-11-16T13:44:04+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeApiDestinations::test_api_destinations[auth2]": {
+    "last_validated_date": "2024-11-16T13:44:07+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeApiDestinations::test_create_api_destination_invalid_parameters": {
+    "last_validated_date": "2024-11-16T13:44:07+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeApiDestinations::test_create_api_destination_name_validation": {
+    "last_validated_date": "2024-11-16T13:44:08+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection": {
+    "last_validated_date": "2024-11-12T16:49:40+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_invalid_parameters": {
+    "last_validated_date": "2024-11-12T16:49:47+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_name_validation": {
+    "last_validated_date": "2024-11-12T16:49:49+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params0]": {
+    "last_validated_date": "2024-11-12T16:49:41+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params1]": {
+    "last_validated_date": "2024-11-12T16:49:41+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params2]": {
+    "last_validated_date": "2024-11-12T16:49:42+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_delete_connection": {
+    "last_validated_date": "2024-11-12T16:49:46+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_list_connections": {
+    "last_validated_date": "2024-11-12T16:49:42+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_update_connection": {
+    "last_validated_date": "2024-11-12T16:49:48+00:00"
+  },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions0]": {
     "last_validated_date": "2024-06-19T10:54:07+00:00"
   },
