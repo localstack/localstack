@@ -19,15 +19,21 @@ TRACKED_ENV_VAR = [
     "DMS_SERVERLESS_STATUS_CHANGE_WAITING_TIME",
     "DNS_ADDRESS",
     "DYNAMODB_ERROR_PROBABILITY",
+    "DYNAMODB_IN_MEMORY",
+    "DYNAMODB_REMOVE_EXPIRED_ITEMS",
     "EAGER_SERVICE_LOADING",
+    "EC2_VM_MANAGER",
     "ECS_TASK_EXECUTOR",
     "EDGE_PORT",
     "ENABLE_REPLICATOR",
     "ENFORCE_IAM",
+    "ES_CUSTOM_BACKEND",  # deprecated in 0.14.0, removed in 3.0.0
+    "ES_MULTI_CLUSTER",  # deprecated in 0.14.0, removed in 3.0.0
+    "ES_ENDPOINT_STRATEGY",  # deprecated in 0.14.0, removed in 3.0.0
     "IAM_SOFT_MODE",
     "KINESIS_PROVIDER",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
     "KINESIS_ERROR_PROBABILITY",
-    "KMS_PROVIDER",
+    "KMS_PROVIDER",  # defunct since 1.4.0
     "LAMBDA_DEBUG_MODE",
     "LAMBDA_DEBUG_MODE_CONFIG_PATH",
     "LAMBDA_DOWNLOAD_AWS_LAYERS",
@@ -47,7 +53,7 @@ TRACKED_ENV_VAR = [
     "OPENSEARCH_ENDPOINT_STRATEGY",
     "PERSISTENCE",
     "PERSISTENCE_SINGLE_FILE",
-    "PERSIST_ALL",
+    "PERSIST_ALL",  # defunct since 3.0.0
     "PORT_WEB_UI",
     "RDS_MYSQL_DOCKER",
     "REQUIRE_PRO",
@@ -57,9 +63,6 @@ TRACKED_ENV_VAR = [
     "SQS_ENDPOINT_STRATEGY",
     "USE_SINGLE_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
     "USE_SSL",
-    "ES_CUSTOM_BACKEND",  # deprecated in 0.14.0, removed in 3.0.0
-    "ES_MULTI_CLUSTER",  # deprecated in 0.14.0, removed in 3.0.0
-    "ES_ENDPOINT_STRATEGY",  # deprecated in 0.14.0, removed in 3.0.0
 ]
 
 PRESENCE_ENV_VAR = [
