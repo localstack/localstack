@@ -191,6 +191,19 @@ def test_container_configurator_no_deprecation_warning_on_prefix(
     assert "LOCALSTACK_SERVICES" in container.config.env_vars
 
 
+def test_container_configurator_no_deprecation_warning_for_CI_env_var(
+    container_factory, monkeypatch, caplog
+):
+    # set the "CI" env var indicating that we are running in a CI environment
+    monkeypatch.setenv("CI", "1")
+
+    container: Container = container_factory()
+    configure_container(container)
+
+    assert "Non-prefixed environment variable" not in caplog.text
+    assert "CI" in container.config.env_vars
+
+
 def test_container_configurator_no_deprecation_warning_on_profile(
     container_factory, monkeypatch, caplog, tmp_path
 ):

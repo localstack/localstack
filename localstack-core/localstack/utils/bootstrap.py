@@ -516,9 +516,14 @@ class ContainerConfigurators:
         for env_var in config.CONFIG_ENV_VARS:
             value = os.environ.get(env_var, None)
             if value is not None:
-                if not env_var.startswith("LOCALSTACK_") and env_var not in profile_env:
+                if (
+                    env_var != "CI"
+                    and not env_var.startswith("LOCALSTACK_")
+                    and env_var not in profile_env
+                ):
                     # Show a warning here in case we are directly forwarding an environment variable from
                     # the system env to the container which has not been prefixed with LOCALSTACK_.
+                    # Suppress the warning for the "CI" env var.
                     # Suppress the warning if the env var was set from the profile.
                     LOG.warning(
                         "Non-prefixed environment variable %(env_var)s is forwarded to the LocalStack container! "
