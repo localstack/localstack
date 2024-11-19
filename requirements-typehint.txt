@@ -53,7 +53,7 @@ boto3==1.35.63
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.35.63
+boto3-stubs==1.35.64
     # via localstack-core (pyproject.toml)
 botocore==1.35.63
     # via
@@ -64,7 +64,7 @@ botocore==1.35.63
     #   localstack-snapshot
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.35.63
+botocore-stubs==1.35.64
     # via boto3-stubs
 build==1.2.2.post1
     # via
@@ -89,7 +89,7 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.19.0
+cfn-lint==1.20.0
     # via moto-ext
 charset-normalizer==3.4.0
     # via requests
@@ -202,7 +202,7 @@ jmespath==1.0.1
     #   botocore
 joserfc==1.0.0
     # via moto-ext
-jpype1==1.5.0
+jpype1==1.5.1
     # via localstack-core
 jsii==1.105.0
     # via
@@ -276,7 +276,7 @@ mypy-boto3-apigateway==1.35.25
     # via boto3-stubs
 mypy-boto3-apigatewayv2==1.35.0
     # via boto3-stubs
-mypy-boto3-appconfig==1.35.48
+mypy-boto3-appconfig==1.35.64
     # via boto3-stubs
 mypy-boto3-appconfigdata==1.35.0
     # via boto3-stubs
@@ -286,7 +286,7 @@ mypy-boto3-appsync==1.35.52
     # via boto3-stubs
 mypy-boto3-athena==1.35.44
     # via boto3-stubs
-mypy-boto3-autoscaling==1.35.56
+mypy-boto3-autoscaling==1.35.64
     # via boto3-stubs
 mypy-boto3-backup==1.35.10
     # via boto3-stubs
@@ -296,7 +296,7 @@ mypy-boto3-ce==1.35.22
     # via boto3-stubs
 mypy-boto3-cloudcontrol==1.35.61
     # via boto3-stubs
-mypy-boto3-cloudformation==1.35.41
+mypy-boto3-cloudformation==1.35.64
     # via boto3-stubs
 mypy-boto3-cloudfront==1.35.58
     # via boto3-stubs
@@ -318,11 +318,11 @@ mypy-boto3-dynamodb==1.35.60
     # via boto3-stubs
 mypy-boto3-dynamodbstreams==1.35.0
     # via boto3-stubs
-mypy-boto3-ec2==1.35.63
+mypy-boto3-ec2==1.35.64
     # via boto3-stubs
 mypy-boto3-ecr==1.35.21
     # via boto3-stubs
-mypy-boto3-ecs==1.35.52
+mypy-boto3-ecs==1.35.64
     # via boto3-stubs
 mypy-boto3-efs==1.35.0
     # via boto3-stubs
@@ -404,9 +404,9 @@ mypy-boto3-qldb==1.35.0
     # via boto3-stubs
 mypy-boto3-qldb-session==1.35.0
     # via boto3-stubs
-mypy-boto3-rds==1.35.59
+mypy-boto3-rds==1.35.64
     # via boto3-stubs
-mypy-boto3-rds-data==1.35.28
+mypy-boto3-rds-data==1.35.64
     # via boto3-stubs
 mypy-boto3-redshift==1.35.61
     # via boto3-stubs
