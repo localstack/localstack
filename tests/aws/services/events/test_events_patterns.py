@@ -134,9 +134,10 @@ class TestEventPattern:
         https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-content-based-filtering.html#eb-filtering-complex-example
         """
 
-        with open(COMPLEX_MULTI_KEY_EVENT, "r") as event_file, open(
-            COMPLEX_MULTI_KEY_EVENT_PATTERN, "r"
-        ) as event_pattern_file:
+        with (
+            open(COMPLEX_MULTI_KEY_EVENT, "r") as event_file,
+            open(COMPLEX_MULTI_KEY_EVENT_PATTERN, "r") as event_pattern_file,
+        ):
             event = event_file.read()
             event_pattern = event_pattern_file.read()
 

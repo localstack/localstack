@@ -5,7 +5,6 @@ from collections import defaultdict
 from datetime import datetime
 from secrets import token_urlsafe
 from typing import Literal, NamedTuple, Optional, Union
-
 from zoneinfo import ZoneInfo
 
 from localstack.aws.api import CommonServiceException

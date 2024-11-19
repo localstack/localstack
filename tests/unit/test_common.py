@@ -6,10 +6,10 @@ import threading
 import time
 import zipfile
 from datetime import date, datetime, timezone
+from zoneinfo import ZoneInfo
 
 import pytest
 import yaml
-from zoneinfo import ZoneInfo
 
 from localstack import config
 from localstack.utils import common
