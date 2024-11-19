@@ -53,7 +53,7 @@ TRACKED_ENV_VAR = [
     "OPENSEARCH_ENDPOINT_STRATEGY",
     "PERSISTENCE",
     "PERSISTENCE_SINGLE_FILE",
-    "PERSIST_ALL",  # defunct since 3.0.0
+    "PERSIST_ALL",  # defunct since 2.3.2
     "PORT_WEB_UI",
     "RDS_MYSQL_DOCKER",
     "REQUIRE_PRO",
