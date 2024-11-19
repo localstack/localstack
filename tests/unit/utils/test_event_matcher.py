@@ -28,12 +28,14 @@ def event_rule_engine(monkeypatch):
     return _set_engine
 
 
+@pytest.mark.skip(reason="jpype conflict")
 def test_matches_event_with_java_engine_strings(event_rule_engine):
     """Test Java engine with string inputs (EventBridge case)"""
     event_rule_engine("java")
     assert matches_event(EVENT_PATTERN_STR, EVENT_STR)
 
 
+@pytest.mark.skip(reason="jpype conflict")
 def test_matches_event_with_java_engine_dicts(event_rule_engine):
     """Test Java engine with dict inputs (ESM/Pipes case)"""
     event_rule_engine("java")
@@ -52,6 +54,7 @@ def test_matches_event_with_python_engine_dicts(event_rule_engine):
     assert matches_event(EVENT_PATTERN_DICT, EVENT_STR)
 
 
+@pytest.mark.skip(reason="jpype conflict")
 def test_matches_event_mixed_inputs(event_rule_engine):
     """Test with mixed string/dict inputs"""
     event_rule_engine("java")

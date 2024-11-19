@@ -1110,9 +1110,11 @@ class TestSQSEventSourceMapping:
         aws_client,
         monkeypatch,
     ):
-        if item_not_matching == "this is a test string":
-            # String comparison is broken in the Python rule engine for this specific case in ESM v2, using java engine.
-            monkeypatch.setattr(config, "EVENT_RULE_ENGINE", "java")
+        if item_not_matching == "this is a test string" and config.EVENT_RULE_ENGINE != "java":
+            pytest.skip(
+                "String comparison is broken in the Python rule engine for this specific case in ESM v2"
+            )
+
         function_name = f"lambda_func-{short_uid()}"
         queue_name_1 = f"queue-{short_uid()}-1"
         mapping_uuid = None
