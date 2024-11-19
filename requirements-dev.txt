@@ -85,7 +85,7 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.19.0
+cfn-lint==1.20.0
     # via moto-ext
 charset-normalizer==3.4.0
     # via requests
@@ -198,7 +198,7 @@ jmespath==1.0.1
     #   botocore
 joserfc==1.0.0
     # via moto-ext
-jpype1==1.5.0
+jpype1==1.5.1
     # via localstack-core
 jsii==1.105.0
     # via
