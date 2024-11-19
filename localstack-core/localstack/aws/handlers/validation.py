@@ -3,7 +3,6 @@ Handlers for validating request and response schema against OpenAPI specs.
 """
 
 import logging
-from typing import Any
 
 from openapi_core import OpenAPI
 from openapi_core.contrib.werkzeug import WerkzeugOpenAPIRequest, WerkzeugOpenAPIResponse
@@ -19,24 +18,8 @@ from localstack.aws.api import RequestContext
 from localstack.aws.chain import Handler, HandlerChain
 from localstack.constants import INTERNAL_RESOURCE_PATH
 from localstack.http import Response
-from localstack.utils.analytics.usage import UsageSetCounter
 
 LOG = logging.getLogger(__name__)
-
-
-class UsageCollectorFactory:
-    _collector_registry: dict[str, Any] = {}
-    """Registry for the different paths."""
-
-    NAMESPACE_PREFIX = "internal"
-    """Namespace prefix to track usage of public endpoints (_localstack/ and _aws/)."""
-
-    @classmethod
-    def get_collector(cls, path: str):
-        namespace = f"{cls.NAMESPACE_PREFIX}/{path}"
-        if namespace not in cls._collector_registry:
-            cls._collector_registry[namespace] = UsageSetCounter(namespace)
-        return cls._collector_registry[namespace]
 
 
 class OpenAPIValidator(Handler):
@@ -44,26 +27,6 @@ class OpenAPIValidator(Handler):
 
     def __init__(self) -> None:
         self._load_specs()
-
-    def _record_usage(self, context: RequestContext) -> None:
-        if config.DISABLE_EVENTS:
-            return
-
-        request_path = context.request.path
-        user_agent = context.request.headers.get("User-Agent")
-        if not request_path or not user_agent:
-            return
-        # Skip the endpoints for the new API Gateway implementation
-        if "execute-api" in request_path:
-            return
-        # We only record the first segment in the path after the _internal/ or _aws/ prefix, as a path can have
-        # potentially an infinite number of parameters.
-        recorded_path = request_path.split("/")[:2]
-        if len(recorded_path) < 2:
-            return
-        recorded_path = "/".join(recorded_path)
-        collector = UsageCollectorFactory.get_collector(recorded_path)
-        collector.record(user_agent)
 
     def _load_specs(self) -> None:
         """Load the openapi spec plugins iff at least one between request and response validation is set."""
@@ -85,7 +48,6 @@ class OpenAPIRequestValidator(OpenAPIValidator):
         path = context.request.path
         if not (path.startswith(f"{INTERNAL_RESOURCE_PATH}/") or path.startswith("/_aws/")):
             return
-        self._record_usage(context)
 
         if not config.OPENAPI_VALIDATE_REQUEST:
             return
