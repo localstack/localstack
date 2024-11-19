@@ -543,85 +543,83 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationEventbridge::test_invoke_lambda_eventbridge": {
-    "recorded-date": "18-11-2024, 19:59:36",
+    "recorded-date": "19-11-2024, 08:49:47",
     "recorded-content": {
-      "lambda_destination_event_bus": [
-        {
-          "version": "0",
-          "id": "<uuid:1>",
-          "detail-type": "Lambda Function Invocation Result - Success",
-          "source": "lambda",
-          "account": "111111111111",
-          "time": "date",
-          "region": "<region>",
-          "resources": [
-            "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
-            "arn:<partition>:lambda:<region>:111111111111:function:<input-fn-name>:$LATEST"
-          ],
-          "detail": {
-            "version": "1.0",
-            "timestamp": "date",
-            "requestContext": {
-              "requestId": "<uuid:2>",
-              "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<input-fn-name>:$LATEST",
-              "condition": "Success",
-              "approximateInvokeCount": 1
-            },
-            "requestPayload": {
-              "mode": "success"
-            },
-            "responseContext": {
-              "statusCode": 200,
-              "executedVersion": "$LATEST"
-            },
-            "responsePayload": {
-              "hello": "world",
-              "test": "abc",
-              "val": 5,
-              "success": true
-            }
-          }
+      "lambda_destination_event_bus_success": {
+        "account": "111111111111",
+        "detail": {
+          "requestContext": {
+            "approximateInvokeCount": 1,
+            "condition": "Success",
+            "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<input-fn-name>:$LATEST",
+            "requestId": "<uuid:1>"
+          },
+          "requestPayload": {
+            "mode": "success"
+          },
+          "responseContext": {
+            "executedVersion": "$LATEST",
+            "statusCode": 200
+          },
+          "responsePayload": {
+            "hello": "world",
+            "success": true,
+            "test": "abc",
+            "val": 5
+          },
+          "timestamp": "date",
+          "version": "1.0"
         },
-        {
-          "version": "0",
-          "id": "<uuid:3>",
-          "detail-type": "Lambda Function Invocation Result - Failure",
-          "source": "lambda",
-          "account": "111111111111",
-          "time": "date",
-          "region": "<region>",
-          "resources": [
-            "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
-            "arn:<partition>:lambda:<region>:111111111111:function:<input-fn-name>:$LATEST"
-          ],
-          "detail": {
-            "version": "1.0",
-            "timestamp": "date",
-            "requestContext": {
-              "requestId": "<uuid:4>",
-              "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<input-fn-name>:$LATEST",
-              "condition": "RetriesExhausted",
-              "approximateInvokeCount": 1
-            },
-            "requestPayload": {
-              "mode": "failure"
-            },
-            "responseContext": {
-              "statusCode": 200,
-              "executedVersion": "$LATEST",
-              "functionError": "Unhandled"
-            },
-            "responsePayload": {
-              "errorMessage": "intentional failure!",
-              "errorType": "Exception",
-              "requestId": "<uuid:4>",
-              "stackTrace": [
-                "  File \"/var/task/index.py\", line 4, in handler\n    raise Exception(\"intentional failure!\")\n"
-              ]
-            }
-          }
-        }
-      ]
+        "detail-type": "Lambda Function Invocation Result - Success",
+        "id": "<uuid:2>",
+        "region": "<region>",
+        "resources": [
+          "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
+          "arn:<partition>:lambda:<region>:111111111111:function:<input-fn-name>:$LATEST"
+        ],
+        "source": "lambda",
+        "time": "date",
+        "version": "0"
+      },
+      "lambda_destination_event_bus_failure": {
+        "account": "111111111111",
+        "detail": {
+          "requestContext": {
+            "approximateInvokeCount": 1,
+            "condition": "RetriesExhausted",
+            "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<input-fn-name>:$LATEST",
+            "requestId": "<uuid:3>"
+          },
+          "requestPayload": {
+            "mode": "failure"
+          },
+          "responseContext": {
+            "executedVersion": "$LATEST",
+            "functionError": "Unhandled",
+            "statusCode": 200
+          },
+          "responsePayload": {
+            "errorMessage": "intentional failure!",
+            "errorType": "Exception",
+            "requestId": "<uuid:3>",
+            "stackTrace": [
+              "  File \"/var/task/index.py\", line 4, in handler\n    raise Exception(\"intentional failure!\")\n"
+            ]
+          },
+          "timestamp": "date",
+          "version": "1.0"
+        },
+        "detail-type": "Lambda Function Invocation Result - Failure",
+        "id": "<uuid:4>",
+        "region": "<region>",
+        "resources": [
+          "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
+          "arn:<partition>:lambda:<region>:111111111111:function:<input-fn-name>:$LATEST"
+        ],
+        "source": "lambda",
+        "time": "date",
+        "version": "0"
+      }
     }
   }
 }

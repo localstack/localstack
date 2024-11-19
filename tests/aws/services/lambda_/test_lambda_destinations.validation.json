@@ -3,7 +3,7 @@
     "last_validated_date": "2024-06-17T11:49:58+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationEventbridge::test_invoke_lambda_eventbridge": {
-    "last_validated_date": "2024-11-18T20:02:23+00:00"
+    "last_validated_date": "2024-11-19T08:54:21+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_assess_lambda_destination_invocation[payload0]": {
     "last_validated_date": "2024-03-21T12:26:43+00:00"

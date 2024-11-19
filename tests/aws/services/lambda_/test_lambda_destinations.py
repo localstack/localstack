@@ -566,32 +566,43 @@ def handler(event, context):
         snapshot.add_transformer(snapshot.transform.regex(triggered_fn_name, "<trigger-fn-name>"))
         snapshot.add_transformer(snapshot.transform.regex(input_fn_name, "<input-fn-name>"))
 
+        def _get_event_payload(payload_to_match: str):
+            log_events = aws_client.logs.filter_log_events(
+                logGroupName=f"/aws/lambda/{triggered_fn_name}"
+            )
+            forwarded_events = [
+                e["message"]
+                for e in log_events["events"]
+                if "detail-type" in e["message"] and payload_to_match in e["message"]
+            ]
+            assert len(forwarded_events) >= 1
+            # message payload is a JSON string but for snapshots it's easier to compare individual fields
+            return json.loads(forwarded_events[0])
+
+        # Lambda Destination (SUCCESS)
         aws_client.lambda_.invoke(
             FunctionName=input_fn_name,
             Payload=b'{"mode": "success"}',
             InvocationType="Event",  # important, otherwise destinations won't be triggered
         )
+        success_payload = retry(
+            _get_event_payload,
+            retries=10,
+            sleep=10 if is_aws_cloud() else 1,
+            payload_to_match="success",
+        )
+        snapshot.match("lambda_destination_event_bus_success", success_payload)
+
+        # Lambda Destination (FAILURE)
         aws_client.lambda_.invoke(
             FunctionName=input_fn_name,
             Payload=b'{"mode": "failure"}',
             InvocationType="Event",  # important, otherwise destinations won't be triggered
         )
-
-        # wait until triggered lambda was invoked
-        wait_until_log_group_exists(triggered_fn_name, aws_client.logs)
-
-        def _filter_message_triggered():
-            log_events = aws_client.logs.filter_log_events(
-                logGroupName=f"/aws/lambda/{triggered_fn_name}"
-            )
-            forwarded_events = [
-                e["message"] for e in log_events["events"] if "detail-type" in e["message"]
-            ]
-            assert len(forwarded_events) >= 2
-            return forwarded_events
-
-        messages = retry(_filter_message_triggered, retries=10, sleep=10 if is_aws_cloud() else 1)
-        # message payload is a JSON string but for snapshots it's easier to compare individual fields
-        snapshot.match(
-            "lambda_destination_event_bus", [json.loads(message) for message in messages]
+        failure_payload = retry(
+            _get_event_payload,
+            retries=10,
+            sleep=10 if is_aws_cloud() else 1,
+            payload_to_match="failure",
         )
+        snapshot.match("lambda_destination_event_bus_failure", failure_payload)
