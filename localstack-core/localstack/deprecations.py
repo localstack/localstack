@@ -298,6 +298,11 @@ DEPRECATIONS = [
         "This option is ignored because the legacy StepFunctions provider (v1) has been removed since 4.0.0."
         " Please remove PROVIDER_OVERRIDE_STEPFUNCTIONS.",
     ),
+    EnvVarDeprecation(
+        "PERSIST_ALL",
+        "2.3.2",
+        "LocalStack treats backends and assets the same with respect to persistence. Please remove PERSIST_ALL.",
+    ),
 ]
 
 
