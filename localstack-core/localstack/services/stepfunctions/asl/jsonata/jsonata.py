@@ -50,7 +50,7 @@ class _JSONataJVMBridge:
         jvm_path = jpype.getDefaultJVMPath()
         jsonata_libs_path = Path(installer.get_installed_dir())
         event_ruler_libs_pattern = jsonata_libs_path.joinpath("*")
-        jpype.startJVM(jvm_path, classpath=[event_ruler_libs_pattern])
+        jpype.startJVM(jvm_path, classpath=[event_ruler_libs_pattern], interrupt=False)
 
         from com.fasterxml.jackson.databind import ObjectMapper  # noqa
         from com.dashjoin.jsonata.Jsonata import jsonata  # noqa
