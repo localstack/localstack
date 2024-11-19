@@ -2027,7 +2027,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             event_pattern = rule.event_pattern
             event_str = to_json_str(event_formatted)
 
-            if not matches_rule(event_str, event_pattern):
+            if not matches_event(event_pattern, event_str):
                 continue
 
             if not rule.targets:
