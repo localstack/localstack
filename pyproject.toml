@@ -9,7 +9,7 @@ authors = [
         { name = "LocalStack Contributors", email = "info@localstack.cloud" }
 ]
 description = "The core library and runtime of LocalStack"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
     "build",
     "click>=7.1",
@@ -175,8 +175,8 @@ exclude = ["tests*"]
 ]
 
 [tool.ruff]
-# Always generate Python 3.8-compatible code.
-target-version = "py38"
+# Always generate Python 3.9-compatible code.
+target-version = "py39"
 line-length = 100
 src = ["localstack-core", "tests"]
 exclude = [

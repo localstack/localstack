@@ -9,11 +9,11 @@ from enum import StrEnum
 from secrets import token_bytes
 from typing import IO, Any, Dict, Literal, NamedTuple, Optional, Protocol, Tuple, Union
 from urllib import parse as urlparser
+from zoneinfo import ZoneInfo
 
 import xmltodict
 from botocore.exceptions import ClientError
 from botocore.utils import InvalidArnException
-from zoneinfo import ZoneInfo
 
 from localstack import config, constants
 from localstack.aws.api import CommonServiceException, RequestContext

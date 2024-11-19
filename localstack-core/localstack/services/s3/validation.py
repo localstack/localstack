@@ -1,9 +1,9 @@
 import base64
 import datetime
 import hashlib
+from zoneinfo import ZoneInfo
 
 from botocore.utils import InvalidArnException
-from zoneinfo import ZoneInfo
 
 from localstack.aws.api import CommonServiceException
 from localstack.aws.api.s3 import (
