@@ -182,7 +182,7 @@ jmespath==1.0.1
     #   botocore
 joserfc==1.0.0
     # via moto-ext
-jpype1==1.5.1
+jpype1-ext==0.0.1
     # via localstack-core
 jsii==1.105.0
     # via
@@ -266,7 +266,7 @@ packaging==24.2
     # via
     #   apispec
     #   build
-    #   jpype1
+    #   jpype1-ext
     #   pytest
     #   pytest-rerunfailures
 parse==1.20.2
