@@ -1,0 +1,11 @@
+{
+  "Comment": "RAISE_FAILURE_CAUSE_JSONATA",
+  "QueryLanguage": "JSONata",
+  "StartAt": "FailState",
+  "States": {
+    "FailState": {
+      "Type": "Fail",
+      "Cause": "{% $states.input.cause %}"
+    },
+  },
+}

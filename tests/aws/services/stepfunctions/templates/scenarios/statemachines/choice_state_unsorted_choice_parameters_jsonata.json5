@@ -1,0 +1,27 @@
+{
+  "StartAt": "CheckResult",
+  "States": {
+    "CheckResult": {
+      "Type": "Choice",
+      "QueryLanguage": "JSONata",
+      "Choices": [
+        {
+          "Condition": "{% $states.input.result.done %}",
+          "Next": "FinishTrue",
+        },
+        {
+          "Condition": "{% $not($states.input.result.done) %}",
+          "Next": "FinishFalse",
+        }
+      ],
+    },
+    "FinishTrue": {
+      "End": true,
+      "Type": "Pass"
+    },
+    "FinishFalse": {
+      "End": true,
+      "Type": "Pass"
+    }
+  }
+}

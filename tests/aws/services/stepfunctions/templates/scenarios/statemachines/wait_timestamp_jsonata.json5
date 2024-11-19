@@ -1,0 +1,12 @@
+{
+  "Comment": "WAIT_TIMESTAMP_JSONATA",
+  "QueryLanguage": "JSONata",
+  "StartAt": "WaitState",
+  "States": {
+    "WaitState": {
+      "Type": "Wait",
+      "Timestamp": "{% $states.input.TimestampValue %}",
+      "End": true
+    },
+  },
+}

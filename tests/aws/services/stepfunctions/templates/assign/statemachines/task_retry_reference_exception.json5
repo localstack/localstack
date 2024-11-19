@@ -1,0 +1,51 @@
+{
+  "StartAt": "Pass",
+  "States": {
+    "Pass": {
+      "Type": "Pass",
+      "Assign": {
+        "intervalSeconds": 2,
+        "maxAttempts": 3,
+        "backoffRate": 1.5
+      },
+      "Next": "Task"
+    },
+    "Task": {
+      "Type": "Task",
+      "Resource": "$.FunctionName",
+      "TimeoutSeconds": 300,
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException"
+          ],
+          "IntervalSeconds": "$intervalSeconds",
+          "MaxAttempts": "$maxAttempts",
+          "BackoffRate": "$backoffRate"
+        },
+        {
+          "ErrorEquals": [
+            "States.Timeout",
+          ],
+          "IntervalSeconds": "$.intervalSeconds",
+          "MaxAttempts": "$.maxAttempts",
+          "BackoffRate": "$.backoffRate"
+        },
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "Finish"
+        }
+      ],
+      "Next": "Finish"
+    },
+    "Finish": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

@@ -27,3 +27,5 @@ class StateWait(CommonStateField):
 
     def _eval_state(self, env: Environment) -> None:
         self.wait_function.eval(env)
+        if self.assign_decl:
+            self.assign_decl.eval(env=env)

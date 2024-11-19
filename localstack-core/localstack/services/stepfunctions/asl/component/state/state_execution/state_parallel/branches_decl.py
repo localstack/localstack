@@ -1,4 +1,3 @@
-import copy
 import datetime
 import threading
 from typing import Final, Optional
@@ -71,8 +70,8 @@ class BranchesDecl(EvalComponent):
         branch_workers: list[BranchWorker] = list()
         for program in self.programs:
             # Environment frame for this sub process.
-            env_frame: Environment = env.open_frame()
-            env_frame.inp = copy.deepcopy(input_val)
+            env_frame: Environment = env.open_inner_frame()
+            env_frame.states.reset(input_value=input_val)
 
             # Launch the worker.
             worker = BranchWorker(
@@ -108,7 +107,7 @@ class BranchesDecl(EvalComponent):
 
         for worker in branch_workers:
             env_frame = worker.env
-            result_list.append(env_frame.inp)
+            result_list.append(env_frame.states.get_input())
             env.close_frame(env_frame)
 
         env.stack.append(result_list)

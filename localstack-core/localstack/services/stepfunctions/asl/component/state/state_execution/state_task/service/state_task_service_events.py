@@ -75,8 +75,8 @@ class StateTaskServiceEvents(StateTaskServiceCallback):
             # The execution ARN and the state machine ARN are automatically appended to the Resources
             #  field of each PutEventsRequestEntry.
             resources = entry.get("Resources", [])
-            resources.append(env.context_object_manager.context_object["StateMachine"]["Id"])
-            resources.append(env.context_object_manager.context_object["Execution"]["Id"])
+            resources.append(env.states.context_object.context_object_data["StateMachine"]["Id"])
+            resources.append(env.states.context_object.context_object_data["Execution"]["Id"])
             entry["Resources"] = resources
 
     def _eval_service_task(
@@ -84,6 +84,7 @@ class StateTaskServiceEvents(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        task_credentials: dict,
     ):
         self._normalised_request_parameters(env=env, parameters=normalised_parameters)
         service_name = self._get_boto_service_name()

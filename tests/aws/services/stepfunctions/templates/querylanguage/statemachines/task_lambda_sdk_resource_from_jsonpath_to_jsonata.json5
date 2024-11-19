@@ -1,0 +1,25 @@
+{
+  "Comment": "TASK_LAMBDA_SDK_RESOURCE_JSONPATH_TO_JSONATA",
+  "StartAt": "JsonPathState",
+  "States": {
+    "JsonPathState": {
+      "QueryLanguage": "JSONPath",
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "Payload": {"foo": "foo-1"},
+        "FunctionName": "%LAMBDA_FUNCTION_ARN_LITERAL_PLACEHOLDER%"
+      },
+      "Assign": {
+        "resultsVar.$": "$"
+      },
+      "OutputPath": "$",
+      "Next": "JsonataState"
+    },
+      "JsonataState": {
+      "QueryLanguage": "JSONata",
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "Comment": "BASE_REFERENCE_IN_OUTPUTPATH",
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "Result": {
+        "answer": 42
+      },
+      "Assign": {
+        "theAnswer.$": "$.answer"
+      },
+      "Next": "State1"
+    },
+    "State1": {
+      "Type": "Pass",
+      "OutputPath": "$theAnswer",
+      "End": true
+    }
+  }
+}

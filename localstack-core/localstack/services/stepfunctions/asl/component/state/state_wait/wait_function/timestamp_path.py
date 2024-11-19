@@ -13,8 +13,10 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
 )
+from localstack.services.stepfunctions.asl.component.common.variable_sample import VariableSample
 from localstack.services.stepfunctions.asl.component.state.state_wait.wait_function.timestamp import (
-    Timestamp,
+    TIMESTAMP_FORMAT,
+    TIMESTAMP_PATTERN,
 )
 from localstack.services.stepfunctions.asl.component.state.state_wait.wait_function.wait_function import (
     WaitFunction,
@@ -45,11 +47,9 @@ class TimestampPath(WaitFunction):
             ),
         )
 
-    def _get_wait_seconds(self, env: Environment) -> int:
-        inp = env.stack[-1]
-        timestamp_str: str = extract_json(self.path, inp)
+    def _compute_delta_seconds(self, env: Environment, timestamp_str: str):
         try:
-            if not re.match(Timestamp.TIMESTAMP_PATTERN, timestamp_str):
+            if not re.match(TIMESTAMP_PATTERN, timestamp_str):
                 raise FailureEventException(self._create_failure_event(env, timestamp_str))
 
             # anything lower than seconds is truncated
@@ -57,10 +57,30 @@ class TimestampPath(WaitFunction):
             # add back the "Z" suffix if we removed it
             if not processed_timestamp.endswith("Z"):
                 processed_timestamp = f"{processed_timestamp}Z"
-            timestamp = datetime.datetime.strptime(processed_timestamp, Timestamp.TIMESTAMP_FORMAT)
+            timestamp = datetime.datetime.strptime(processed_timestamp, TIMESTAMP_FORMAT)
         except Exception:
             raise FailureEventException(self._create_failure_event(env, timestamp_str))
 
         delta = timestamp - datetime.datetime.now()
         delta_sec = int(delta.total_seconds())
+        return delta_sec
+
+    def _get_wait_seconds(self, env: Environment) -> int:
+        inp = env.stack[-1]
+        timestamp_str: str = extract_json(self.path, inp)
+        delta_sec = self._compute_delta_seconds(env=env, timestamp_str=timestamp_str)
+        return delta_sec
+
+
+class TimestampPathVar(TimestampPath):
+    variable_sample: Final[VariableSample]
+
+    def __init__(self, variable_sample: VariableSample):
+        super().__init__(path=variable_sample.expression)
+        self.variable_sample = variable_sample
+
+    def _get_wait_seconds(self, env: Environment) -> int:
+        self.variable_sample.eval(env=env)
+        timestamp_str = env.stack.pop()
+        delta_sec = self._compute_delta_seconds(env=env, timestamp_str=timestamp_str)
         return delta_sec

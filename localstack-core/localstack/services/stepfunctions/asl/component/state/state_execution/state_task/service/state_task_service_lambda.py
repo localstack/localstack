@@ -106,6 +106,7 @@ class StateTaskServiceLambda(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        task_credentials: dict,
     ):
         lambda_eval_utils.exec_lambda_function(
             env=env,

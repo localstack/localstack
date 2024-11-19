@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_base.py::TestAssignBase::test_base_cases[BASE_CONSTANT_LITERALS]": {
+    "last_validated_date": "2024-11-04T11:02:43+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_base.py::TestAssignBase::test_base_cases[BASE_EMPTY]": {
+    "last_validated_date": "2024-11-04T11:02:29+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_base.py::TestAssignBase::test_base_cases[BASE_PATHS]": {
+    "last_validated_date": "2024-11-04T11:03:09+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_base.py::TestAssignBase::test_base_cases[BASE_SCOPE_MAP]": {
+    "last_validated_date": "2024-11-04T11:03:38+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_base.py::TestAssignBase::test_base_cases[BASE_VAR]": {
+    "last_validated_date": "2024-11-04T11:03:23+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_base.py::TestAssignBase::test_base_parallel_cases[BASE_SCOPE_PARALLEL]": {
+    "last_validated_date": "2024-11-04T11:03:53+00:00"
+  }
+}

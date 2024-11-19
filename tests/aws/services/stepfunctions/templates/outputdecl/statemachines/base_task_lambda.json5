@@ -1,0 +1,19 @@
+{
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "QueryLanguage": "JSONata",
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "{% $states.input.FunctionName %}",
+        "Payload": "{% $states.input.Payload %}",
+      },
+      "Output": {
+        "ja_states_input": "{% $states.input %}",
+        "ja_states_result": "{% $states.result %}",
+      },
+      "End": true
+    }
+  }
+}

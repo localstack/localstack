@@ -1,0 +1,24 @@
+{
+  "Comment": "BASE_REFERENCE_IN_PARAMETERS",
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "Parameters": {
+        "result": "$result"
+      },
+      "Assign": {
+        "result": "foobar"
+      },
+      "Next": "State1"
+    },
+    "State1": {
+      "Type": "Pass",
+      "ResultPath": "$.result",
+      "Parameters": {
+        "result.$": "$result"
+      },
+      "End": true
+    }
+  }
+}

@@ -19,6 +19,7 @@ def from_iterator_decl(iterator_decl: IteratorDecl) -> IterationComponent:
     match iterator_decl.processor_config.mode:
         case Mode.Inline:
             return InlineIterator(
+                query_language=iterator_decl.query_language,
                 start_at=iterator_decl.start_at,
                 states=iterator_decl.states,
                 comment=iterator_decl.comment,
@@ -26,6 +27,7 @@ def from_iterator_decl(iterator_decl: IteratorDecl) -> IterationComponent:
             )
         case Mode.Distributed:
             return DistributedIterator(
+                query_language=iterator_decl.query_language,
                 start_at=iterator_decl.start_at,
                 states=iterator_decl.states,
                 comment=iterator_decl.comment,

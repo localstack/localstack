@@ -1,0 +1,38 @@
+{
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_catch_error_variable_sampling[TASK_CATCH_ERROR_VARIABLE_SAMPLING]": {
+    "last_validated_date": "2024-11-12T12:38:38+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_catch_error_variable_sampling[TASK_CATCH_ERROR_VARIABLE_SAMPLING_TO_JSONPATH]": {
+    "last_validated_date": "2024-11-12T12:39:00+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_map_catch_error[MAP_CATCH_ERROR_OUTPUT]": {
+    "last_validated_date": "2024-11-12T13:03:13+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_map_catch_error[MAP_CATCH_ERROR_OUTPUT_WITH_RETRY]": {
+    "last_validated_date": "2024-11-12T13:00:30+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_map_catch_error[MAP_CATCH_ERROR_VARIABLE_SAMPLING]": {
+    "last_validated_date": "2024-11-12T13:00:58+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_parallel_catch_error[PARALLEL_CATCH_ERROR_OUTPUT]": {
+    "last_validated_date": "2024-11-13T09:49:19+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_parallel_catch_error[PARALLEL_CATCH_ERROR_OUTPUT_WITH_RETRY]": {
+    "last_validated_date": "2024-11-13T09:50:05+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_parallel_catch_error[PARALLEL_CATCH_ERROR_VARIABLE_SAMPLING]": {
+    "last_validated_date": "2024-11-13T09:49:41+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_task_catch_error_output[TASK_CATCH_ERROR_OUTPUT]": {
+    "last_validated_date": "2024-11-12T12:38:00+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_task_catch_error_output[TASK_CATCH_ERROR_OUTPUT_TO_JSONPATH]": {
+    "last_validated_date": "2024-11-12T12:38:16+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_task_catch_error_with_retry[TASK_CATCH_ERROR_OUTPUT_WITH_RETRY]": {
+    "last_validated_date": "2024-11-12T12:39:18+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_task_catch_error_with_retry[TASK_CATCH_ERROR_OUTPUT_WITH_RETRY_TO_JSONPATH]": {
+    "last_validated_date": "2024-11-12T12:39:41+00:00"
+  }
+}

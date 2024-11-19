@@ -2,16 +2,23 @@ from typing import Any, Final
 
 from localstack.services.stepfunctions.asl.component.common.flow.end import End
 from localstack.services.stepfunctions.asl.component.common.flow.next import Next
+from localstack.services.stepfunctions.asl.component.common.parargs import Parargs
 from localstack.services.stepfunctions.asl.component.common.path.input_path import InputPath
 from localstack.services.stepfunctions.asl.component.common.path.items_path import ItemsPath
 from localstack.services.stepfunctions.asl.component.common.path.output_path import OutputPath
 from localstack.services.stepfunctions.asl.component.common.timeouts.heartbeat import Heartbeat
 from localstack.services.stepfunctions.asl.component.common.timeouts.timeout import Timeout
+from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_type import (
+    Comparison,
+)
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.variable import (
     Variable,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.max_items_decl import (
     MaxItemsDecl,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.items.items import (
+    Items,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
     MaxConcurrencyDecl,
@@ -32,6 +39,7 @@ from localstack.services.stepfunctions.asl.parse.typed_props import TypedProps
 
 UNIQUE_SUBINSTANCES: Final[set[type]] = {
     InputPath,
+    Items,
     ItemsPath,
     OutputPath,
     Resource,
@@ -45,6 +53,8 @@ UNIQUE_SUBINSTANCES: Final[set[type]] = {
     ErrorDecl,
     CauseDecl,
     Variable,
+    Parargs,
+    Comparison,
 }
 
 

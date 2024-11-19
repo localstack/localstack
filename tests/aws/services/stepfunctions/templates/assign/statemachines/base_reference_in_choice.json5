@@ -1,0 +1,42 @@
+{
+  "Comment": "BASE_REFERENCE_IN_CHOICE",
+  "StartAt": "Setup",
+  "States": {
+    "Setup": {
+      "Type": "Pass",
+      "Assign": {
+        "guess": "the_guess",
+        "answer": "the_answer"
+      },
+      "Next": "CheckAnswer"
+    },
+    "CheckAnswer": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$guess",
+          "StringEqualsPath": "$answer",
+          "Next": "CorrectAnswer"
+        }
+      ],
+      "Default": "WrongAnswer"
+    },
+    "CorrectAnswer": {
+      "Type": "Pass",
+      "Result": {
+        "state": "CORRECT"
+      },
+      "End": true
+    },
+    "WrongAnswer": {
+      "Type": "Pass",
+      "Assign": {
+        "guess.$": "$answer"
+      },
+      "Result": {
+        "state": "WRONG"
+      },
+      "Next": "CheckAnswer"
+    }
+  }
+}

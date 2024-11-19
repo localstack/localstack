@@ -1,0 +1,19 @@
+{
+  "Comment": "BASE_REFERENCE_IN_FAIL",
+  "StartAt": "Pass",
+  "States": {
+    "Pass": {
+      "Type": "Pass",
+      "Assign": {
+        "errorVar": "Exception",
+        "causeVar": "An Exception was encountered"
+      },
+      "Next": "Fail"
+    },
+    "Fail": {
+      "Type": "Fail",
+      "CausePath": "$causeVar",
+      "ErrorPath": "$errorVar"
+    }
+  }
+}

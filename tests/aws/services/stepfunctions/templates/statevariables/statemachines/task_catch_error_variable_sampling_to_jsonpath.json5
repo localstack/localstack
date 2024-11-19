@@ -1,0 +1,44 @@
+{
+  "Comment": "TASK_CATCH_ERROR_VARIABLE_SAMPLING_TO_JSONPATH",
+  "StartAt": "Task",
+  "States": {
+    "Task": {
+      "Type": "Task",
+      "QueryLanguage": "JSONata",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "%LAMBDA_FUNCTION_ARN_LITERAL_PLACEHOLDER%",
+        "Payload": {
+          "foo": "foobar"
+        }
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Assign": {
+            "inputVar": "{% $states.input %}",
+            "errorVar": "{% $states.errorOutput %}"
+          },
+          "Next": "Fallback"
+        }
+      ],
+      "Assign": {
+        "inputVar": "{% $states.input %}",
+        "resultVar": "{% $states.result %}"
+      },
+      "Next": "Finish"
+    },
+    "Fallback": {
+      "Type": "Pass",
+      "OutputPath": "$errorVar",
+      "End": true
+    },
+    "Finish": {
+      "Type": "Pass",
+      "OutputPath": "$resultVar",
+      "End": true
+    }
+  }
+}

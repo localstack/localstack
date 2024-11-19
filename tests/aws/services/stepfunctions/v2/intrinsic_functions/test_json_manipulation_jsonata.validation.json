@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_json_manipulation_jsonata.py::TestJsonManipulationJSONata::test_parse": {
+    "last_validated_date": "2024-11-21T13:16:36+00:00"
+  }
+}

@@ -11,6 +11,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
 )
+from localstack.services.stepfunctions.asl.component.common.variable_sample import VariableSample
 from localstack.services.stepfunctions.asl.component.state.state_wait.wait_function.wait_function import (
     WaitFunction,
 )
@@ -57,5 +58,19 @@ class SecondsPath(WaitFunction):
     def _get_wait_seconds(self, env: Environment) -> int:
         inp = env.stack[-1]
         seconds = extract_json(self.path, inp)
+        self._validate_seconds_value(env=env, seconds=seconds)
+        return seconds
+
+
+class SecondsPathVar(SecondsPath):
+    variable_sample: Final[VariableSample]
+
+    def __init__(self, variable_sample: VariableSample):
+        super().__init__(path=variable_sample.expression)
+        self.variable_sample = variable_sample
+
+    def _get_wait_seconds(self, env: Environment) -> int:
+        self.variable_sample.eval(env=env)
+        seconds = env.stack.pop()
         self._validate_seconds_value(env=env, seconds=seconds)
         return seconds

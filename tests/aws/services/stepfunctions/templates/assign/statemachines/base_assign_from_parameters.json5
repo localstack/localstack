@@ -1,0 +1,24 @@
+{
+  "Comment": "BASE_ASSIGN_FROM_PARAMETERS",
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "Parameters": {
+        "input": "PENDING",
+      },
+      "Assign": {
+        "result.$": "$.input"
+      },
+      "Next": "State1"
+    },
+    "State1": {
+      "Type": "Pass",
+      "Assign": {
+        "result": "SUCCESS",
+        "originalResult.$": "$.input"
+      },
+      "End": true
+    }
+  }
+}

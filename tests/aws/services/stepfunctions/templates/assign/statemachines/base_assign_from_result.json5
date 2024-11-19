@@ -1,0 +1,16 @@
+{
+  "Comment": "BASE_ASSIGN_FROM_RESULT",
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "Result": {
+        "answer": 42
+      },
+      "Assign": {
+        "theAnswer.$": "$.answer"
+      },
+      "End": true
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_math_operations_jsonata.py::TestMathOperationsJSONata::test_math_random_seeded": {
+    "last_validated_date": "2024-11-15T17:12:32+00:00"
+  }
+}

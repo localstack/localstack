@@ -12,6 +12,10 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
 )
+from localstack.services.stepfunctions.asl.component.common.jsonata.jsonata_template_value_terminal import (
+    JSONataTemplateValueTerminalExpression,
+)
+from localstack.services.stepfunctions.asl.component.common.variable_sample import VariableSample
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
@@ -42,6 +46,36 @@ class ToleratedFailureCount(ToleratedFailureCountDecl):
 
     def _eval_tolerated_failure_count(self, env: Environment) -> int:
         return self.tolerated_failure_count
+
+
+class ToleratedFailureCountJSONata(ToleratedFailureCountDecl):
+    jsonata_template_value_terminal_expression: Final[JSONataTemplateValueTerminalExpression]
+
+    def __init__(
+        self, jsonata_template_value_terminal_expression: JSONataTemplateValueTerminalExpression
+    ):
+        super().__init__()
+        self.jsonata_template_value_terminal_expression = jsonata_template_value_terminal_expression
+
+    def _eval_tolerated_failure_count(self, env: Environment) -> int:
+        # TODO: add snapshot tests to verify AWS's behaviour about non integer values.
+        self.jsonata_template_value_terminal_expression.eval(env=env)
+        failure_count: int = int(env.stack.pop())
+        return failure_count
+
+
+class ToleratedFailureCountPathVar(ToleratedFailureCountDecl):
+    variable_sample: Final[VariableSample]
+
+    def __init__(self, variable_sample: VariableSample):
+        super().__init__()
+        self.variable_sample = variable_sample
+
+    def _eval_tolerated_failure_count(self, env: Environment) -> int:
+        self.variable_sample.eval(env=env)
+        # TODO: add snapshot tests to verify AWS's behaviour about non integer values.
+        tolerated_failure_count: int = int(env.stack.pop())
+        return tolerated_failure_count
 
 
 class ToleratedFailureCountPath(ToleratedFailureCountDecl):
@@ -103,6 +137,36 @@ class ToleratedFailurePercentage(ToleratedFailurePercentageDecl):
 
     def _eval_tolerated_failure_percentage(self, env: Environment) -> float:
         return self.tolerated_failure_percentage
+
+
+class ToleratedFailurePercentageJSONata(ToleratedFailurePercentageDecl):
+    jsonata_template_value_terminal_expression: Final[JSONataTemplateValueTerminalExpression]
+
+    def __init__(
+        self, jsonata_template_value_terminal_expression: JSONataTemplateValueTerminalExpression
+    ):
+        super().__init__()
+        self.jsonata_template_value_terminal_expression = jsonata_template_value_terminal_expression
+
+    def _eval_tolerated_failure_percentage(self, env: Environment) -> float:
+        # TODO: add snapshot tests to verify AWS's behaviour about non floating values.
+        self.jsonata_template_value_terminal_expression.eval(env=env)
+        failure_percentage: int = int(env.stack.pop())
+        return failure_percentage
+
+
+class ToleratedFailurePercentagePathVar(ToleratedFailurePercentageDecl):
+    variable_sample: Final[VariableSample]
+
+    def __init__(self, variable_sample: VariableSample):
+        super().__init__()
+        self.variable_sample = variable_sample
+
+    def _eval_tolerated_failure_percentage(self, env: Environment) -> float:
+        self.variable_sample.eval(env=env)
+        # TODO: add snapshot tests to verify AWS's behaviour about non floating values.
+        tolerated_failure_percentage: float = float(env.stack.pop())
+        return tolerated_failure_percentage
 
 
 class ToleratedFailurePercentagePath(ToleratedFailurePercentageDecl):

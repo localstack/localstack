@@ -231,6 +231,7 @@ class StateTaskService(StateTask, abc.ABC):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        task_credentials: dict,
     ): ...
 
     def _before_eval_execution(
@@ -302,10 +303,13 @@ class StateTaskService(StateTask, abc.ABC):
         normalised_parameters = copy.deepcopy(raw_parameters)
         self._normalise_parameters(normalised_parameters)
 
+        task_credentials = self._eval_credentials(env=env)
+
         self._eval_service_task(
             env=env,
             resource_runtime_part=resource_runtime_part,
             normalised_parameters=normalised_parameters,
+            task_credentials=task_credentials,
         )
 
         output_value = env.stack[-1]

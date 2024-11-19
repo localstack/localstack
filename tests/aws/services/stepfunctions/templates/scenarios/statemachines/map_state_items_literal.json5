@@ -1,0 +1,25 @@
+{
+  "Comment": "MAP_STATE_ITEMS_LITERAL",
+  "QueryLanguage": "JSONata",
+  "StartAt": "MapIterateState",
+  "States": {
+    "MapIterateState": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "Items": "_tbd_",  // Resource field to be replaced dynamically.
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "Pass",
+        "States": {
+          "Pass": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

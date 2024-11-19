@@ -98,6 +98,15 @@ class ASLIntrinsicParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLIntrinsicParser#func_arg_var.
+    def enterFunc_arg_var(self, ctx:ASLIntrinsicParser.Func_arg_varContext):
+        pass
+
+    # Exit a parse tree produced by ASLIntrinsicParser#func_arg_var.
+    def exitFunc_arg_var(self, ctx:ASLIntrinsicParser.Func_arg_varContext):
+        pass
+
+
     # Enter a parse tree produced by ASLIntrinsicParser#func_arg_func_decl.
     def enterFunc_arg_func_decl(self, ctx:ASLIntrinsicParser.Func_arg_func_declContext):
         pass

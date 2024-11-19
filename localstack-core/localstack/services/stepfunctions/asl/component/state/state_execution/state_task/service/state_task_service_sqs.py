@@ -89,6 +89,7 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        task_credentials: dict,
     ):
         # TODO: Stepfunctions automatically dumps to json MessageBody's definitions.
         #  Are these other similar scenarios?

@@ -1,0 +1,29 @@
+{
+  "tests/aws/services/stepfunctions/v2/query_language/test_mixed_query_language.py::TestMixedQueryLanguageFlow::test_lambda_task_resource_data_flow[TASK_LAMBDA_LEGACY_RESOURCE_JSONATA_TO_JSONPATH]": {
+    "last_validated_date": "2024-11-08T12:28:06+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/query_language/test_mixed_query_language.py::TestMixedQueryLanguageFlow::test_lambda_task_resource_data_flow[TASK_LAMBDA_LEGACY_RESOURCE_JSONPATH_TO_JSONATA]": {
+    "last_validated_date": "2024-11-08T15:10:54+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/query_language/test_mixed_query_language.py::TestMixedQueryLanguageFlow::test_lambda_task_resource_data_flow[TASK_LAMBDA_SDK_RESOURCE_JSONATA_TO_JSONPATH]": {
+    "last_validated_date": "2024-11-08T12:28:35+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/query_language/test_mixed_query_language.py::TestMixedQueryLanguageFlow::test_lambda_task_resource_data_flow[TASK_LAMBDA_SDK_RESOURCE_JSONPATH_TO_JSONATA]": {
+    "last_validated_date": "2024-11-08T15:09:42+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/query_language/test_mixed_query_language.py::TestMixedQueryLanguageFlow::test_output_to_state[JSONATA_OUTPUT_TO_JSONPATH]": {
+    "last_validated_date": "2024-11-07T17:38:46+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/query_language/test_mixed_query_language.py::TestMixedQueryLanguageFlow::test_output_to_state[JSONPATH_OUTPUT_TO_JSONATA]": {
+    "last_validated_date": "2024-11-07T17:39:04+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/query_language/test_mixed_query_language.py::TestMixedQueryLanguageFlow::test_task_dataflow_to_state": {
+    "last_validated_date": "2024-11-07T21:40:18+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/query_language/test_mixed_query_language.py::TestMixedQueryLanguageFlow::test_variable_sampling[JSONATA_ASSIGN_JSONPATH_REF]": {
+    "last_validated_date": "2024-11-07T17:38:16+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/query_language/test_mixed_query_language.py::TestMixedQueryLanguageFlow::test_variable_sampling[JSONPATH_ASSIGN_JSONATA_REF]": {
+    "last_validated_date": "2024-11-07T17:38:29+00:00"
+  }
+}

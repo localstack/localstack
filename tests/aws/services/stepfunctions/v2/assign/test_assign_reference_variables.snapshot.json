@@ -1,0 +1,4978 @@
+{
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_assign[BASE_REFERENCE_IN_PARAMETERS]": {
+    "recorded-date": "06-11-2024, 23:17:18",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "result": "\"foobar\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "State0",
+              "output": {
+                "result": "$result"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "result": "$result"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State1"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "State1",
+              "output": {
+                "result": {
+                  "result": "foobar"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "result": {
+                  "result": "foobar"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_assign[BASE_REFERENCE_IN_CHOICE]": {
+    "recorded-date": "12-11-2024, 14:43:37",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Setup"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "answer": "\"the_answer\"",
+                "guess": "\"the_guess\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Setup",
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "CheckAnswer"
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "CheckAnswer",
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateExited"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "WrongAnswer"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "guess": "\"the_answer\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "WrongAnswer",
+              "output": {
+                "state": "WRONG"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateEnteredEventDetails": {
+              "input": {
+                "state": "WRONG"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "CheckAnswer"
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateEntered"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateExitedEventDetails": {
+              "name": "CheckAnswer",
+              "output": {
+                "state": "WRONG"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateExited"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "stateEnteredEventDetails": {
+              "input": {
+                "state": "WRONG"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "CorrectAnswer"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateExitedEventDetails": {
+              "name": "CorrectAnswer",
+              "output": {
+                "state": "CORRECT"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "state": "CORRECT"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 12,
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_assign[BASE_REFERENCE_IN_ITERATOR_OUTER_SCOPE]": {
+    "recorded-date": "13-11-2024, 08:44:04",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Input"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "bias": "4.3"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Input",
+              "output": "[[9,44,6],[82,25,76],[18,42,2]]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": "[[9,44,6],[82,25,76],[18,42,2]]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "IterateLevels"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 5,
+            "mapStateStartedEventDetails": {
+              "length": 3
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 6,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "IterateLevels"
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": "[9,44,6]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "AssignCurrentVector"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "xCurrent": "9",
+                "yCurrent": "44",
+                "zCurrent": "6"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "AssignCurrentVector",
+              "output": "[9,44,6]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateEnteredEventDetails": {
+              "input": "[9,44,6]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Calculate"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 10,
+            "mapStateStartedEventDetails": {
+              "length": 3
+            },
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 11,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "Calculate"
+            },
+            "previousEventId": 10,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "stateEnteredEventDetails": {
+              "input": "9",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Summate"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 13,
+            "previousEventId": 12,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "Sum": "63"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Summate",
+              "output": "9",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 14,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "Calculate"
+            },
+            "previousEventId": 13,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 15,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "Calculate"
+            },
+            "previousEventId": 13,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 16,
+            "previousEventId": 15,
+            "stateEnteredEventDetails": {
+              "input": "44",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Summate"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 17,
+            "previousEventId": 16,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "Sum": "63"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Summate",
+              "output": "44",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 18,
+            "mapIterationSucceededEventDetails": {
+              "index": 1,
+              "name": "Calculate"
+            },
+            "previousEventId": 17,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 19,
+            "mapIterationStartedEventDetails": {
+              "index": 2,
+              "name": "Calculate"
+            },
+            "previousEventId": 17,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 20,
+            "previousEventId": 19,
+            "stateEnteredEventDetails": {
+              "input": "6",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Summate"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 21,
+            "previousEventId": 20,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "Sum": "63"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Summate",
+              "output": "6",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 22,
+            "mapIterationSucceededEventDetails": {
+              "index": 2,
+              "name": "Calculate"
+            },
+            "previousEventId": 21,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 23,
+            "previousEventId": 22,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 24,
+            "previousEventId": 22,
+            "stateExitedEventDetails": {
+              "name": "Calculate",
+              "output": "[9,44,6]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 25,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "IterateLevels"
+            },
+            "previousEventId": 24,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 26,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "IterateLevels"
+            },
+            "previousEventId": 24,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 27,
+            "previousEventId": 26,
+            "stateEnteredEventDetails": {
+              "input": "[82,25,76]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "AssignCurrentVector"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 28,
+            "previousEventId": 27,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "xCurrent": "82",
+                "yCurrent": "25",
+                "zCurrent": "76"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "AssignCurrentVector",
+              "output": "[82,25,76]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 29,
+            "previousEventId": 28,
+            "stateEnteredEventDetails": {
+              "input": "[82,25,76]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Calculate"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 30,
+            "mapStateStartedEventDetails": {
+              "length": 3
+            },
+            "previousEventId": 29,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 31,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "Calculate"
+            },
+            "previousEventId": 30,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 32,
+            "previousEventId": 31,
+            "stateEnteredEventDetails": {
+              "input": "82",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Summate"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 33,
+            "previousEventId": 32,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "Sum": "187"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Summate",
+              "output": "82",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 34,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "Calculate"
+            },
+            "previousEventId": 33,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 35,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "Calculate"
+            },
+            "previousEventId": 33,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 36,
+            "previousEventId": 35,
+            "stateEnteredEventDetails": {
+              "input": "25",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Summate"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 37,
+            "previousEventId": 36,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "Sum": "187"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Summate",
+              "output": "25",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 38,
+            "mapIterationSucceededEventDetails": {
+              "index": 1,
+              "name": "Calculate"
+            },
+            "previousEventId": 37,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 39,
+            "mapIterationStartedEventDetails": {
+              "index": 2,
+              "name": "Calculate"
+            },
+            "previousEventId": 37,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 40,
+            "previousEventId": 39,
+            "stateEnteredEventDetails": {
+              "input": "76",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Summate"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 41,
+            "previousEventId": 40,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "Sum": "187"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Summate",
+              "output": "76",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 42,
+            "mapIterationSucceededEventDetails": {
+              "index": 2,
+              "name": "Calculate"
+            },
+            "previousEventId": 41,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 43,
+            "previousEventId": 42,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 44,
+            "previousEventId": 42,
+            "stateExitedEventDetails": {
+              "name": "Calculate",
+              "output": "[82,25,76]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 45,
+            "mapIterationSucceededEventDetails": {
+              "index": 1,
+              "name": "IterateLevels"
+            },
+            "previousEventId": 44,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 46,
+            "mapIterationStartedEventDetails": {
+              "index": 2,
+              "name": "IterateLevels"
+            },
+            "previousEventId": 44,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 47,
+            "previousEventId": 46,
+            "stateEnteredEventDetails": {
+              "input": "[18,42,2]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "AssignCurrentVector"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 48,
+            "previousEventId": 47,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "xCurrent": "18",
+                "yCurrent": "42",
+                "zCurrent": "2"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "AssignCurrentVector",
+              "output": "[18,42,2]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 49,
+            "previousEventId": 48,
+            "stateEnteredEventDetails": {
+              "input": "[18,42,2]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Calculate"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 50,
+            "mapStateStartedEventDetails": {
+              "length": 3
+            },
+            "previousEventId": 49,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 51,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "Calculate"
+            },
+            "previousEventId": 50,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 52,
+            "previousEventId": 51,
+            "stateEnteredEventDetails": {
+              "input": "18",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Summate"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 53,
+            "previousEventId": 52,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "Sum": "66"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Summate",
+              "output": "18",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 54,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "Calculate"
+            },
+            "previousEventId": 53,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 55,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "Calculate"
+            },
+            "previousEventId": 53,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 56,
+            "previousEventId": 55,
+            "stateEnteredEventDetails": {
+              "input": "42",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Summate"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 57,
+            "previousEventId": 56,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "Sum": "66"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Summate",
+              "output": "42",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 58,
+            "mapIterationSucceededEventDetails": {
+              "index": 1,
+              "name": "Calculate"
+            },
+            "previousEventId": 57,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 59,
+            "mapIterationStartedEventDetails": {
+              "index": 2,
+              "name": "Calculate"
+            },
+            "previousEventId": 57,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 60,
+            "previousEventId": 59,
+            "stateEnteredEventDetails": {
+              "input": "2",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Summate"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 61,
+            "previousEventId": 60,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "Sum": "66"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Summate",
+              "output": "2",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 62,
+            "mapIterationSucceededEventDetails": {
+              "index": 2,
+              "name": "Calculate"
+            },
+            "previousEventId": 61,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 63,
+            "previousEventId": 62,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 64,
+            "previousEventId": 62,
+            "stateExitedEventDetails": {
+              "name": "Calculate",
+              "output": "[18,42,2]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 65,
+            "mapIterationSucceededEventDetails": {
+              "index": 2,
+              "name": "IterateLevels"
+            },
+            "previousEventId": 64,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 66,
+            "previousEventId": 65,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 67,
+            "previousEventId": 65,
+            "stateExitedEventDetails": {
+              "name": "IterateLevels",
+              "output": "[[9,44,6],[82,25,76],[18,42,2]]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[[9,44,6],[82,25,76],[18,42,2]]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 68,
+            "previousEventId": 67,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_assign[BASE_REFERENCE_IN_INPUTPATH]": {
+    "recorded-date": "06-11-2024, 23:18:25",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "theAnswer": "42"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "State0",
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State1"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "State1",
+              "output": "42",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "42",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_assign[BASE_REFERENCE_IN_OUTPUTPATH]": {
+    "recorded-date": "06-11-2024, 23:18:41",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "theAnswer": "42"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "State0",
+              "output": {
+                "answer": 42
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "answer": 42
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State1"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "State1",
+              "output": "42",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "42",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_assign_from_value[BASE_ASSIGN_FROM_PARAMETERS]": {
+    "recorded-date": "06-11-2024, 22:54:11",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "result": "\"PENDING\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "State0",
+              "output": {
+                "input": "PENDING"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input": "PENDING"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State1"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "originalResult": "\"PENDING\"",
+                "result": "\"SUCCESS\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "State1",
+              "output": {
+                "input": "PENDING"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "input": "PENDING"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_assign_from_value[BASE_ASSIGN_FROM_RESULT]": {
+    "recorded-date": "06-11-2024, 22:54:27",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "theAnswer": "42"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "State0",
+              "output": {
+                "answer": 42
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "answer": 42
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_assign_in_choice_state[CORRECT]": {
+    "recorded-date": "12-11-2024, 14:40:08",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "input_value": "42"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input_value": "42"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "CheckInputState"
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "guess": "\"42\"",
+                "status": "\"INCORRECT\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "CheckInputState",
+              "output": {
+                "input_value": "42"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input_value": "42"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "FinalState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "FinalState",
+              "output": {
+                "result": "INCORRECT"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "result": "INCORRECT"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_assign_in_choice_state[INCORRECT]": {
+    "recorded-date": "12-11-2024, 14:40:20",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "input_value": "0"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input_value": "0"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "CheckInputState"
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "guess": "\"0\"",
+                "status": "\"INCORRECT\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "CheckInputState",
+              "output": {
+                "input_value": "0"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input_value": "0"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "FinalState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "FinalState",
+              "output": {
+                "result": "INCORRECT"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "result": "INCORRECT"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_assign_in_wait_state": {
+    "recorded-date": "06-11-2024, 11:01:35",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "WaitState"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "foo": "\"oof\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "WaitState",
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_assign_in_catch_state": {
+    "recorded-date": "06-11-2024, 12:26:40",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "input_value": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input_value": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Task"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "oof"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "result": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Task",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "fallback"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "fallback",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_state_assign_evaluation_order[BASE_EVALUATION_ORDER_PASS_STATE]": {
+    "recorded-date": "06-11-2024, 23:28:59",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "answer": "42",
+                "question": "\"What is the answer to life the universe and everything?\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "State0",
+              "output": {
+                "theQuestion": "What is the answer to life the universe and everything?"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "theQuestion": "What is the answer to life the universe and everything?"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State1"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "answer": "\"<omitted>\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "State1",
+              "output": "42",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "42",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_assign[BASE_REFERENCE_IN_INTRINSIC_FUNCTION]": {
+    "recorded-date": "06-11-2024, 23:18:56",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "additionalInfo": {
+                  "age": 30,
+                  "role": "developer"
+                },
+                "csvString": "\"a,b,c,d,e\"",
+                "duplicateArray": "[1,2,2,3,3,4]",
+                "encodedString": "\"SGVsbG8gV29ybGQ=\"",
+                "inputArray": "[1,2,3,4,5,6,7,8,9]",
+                "inputString": "\"Hash this string\"",
+                "json1": {
+                  "a": 1,
+                  "b": 2
+                },
+                "json2": {
+                  "c": 3,
+                  "d": 4
+                },
+                "jsonObject": {
+                  "test": "object"
+                },
+                "jsonString": "\"{\\\"key\\\":\\\"value\\\"}\"",
+                "name": "\"John\"",
+                "place": "\"LocalStack\"",
+                "rawString": "\"Hello World\"",
+                "value1": "5",
+                "value2": "3"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "State0",
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State1"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "State1",
+              "output": {
+                "encodingOps": {
+                  "decoded": "Hello World",
+                  "encoded": "SGVsbG8gV29ybGQ="
+                },
+                "hashOps": {
+                  "hashValue": "1cac63f39fd68d8c531f27b807610fb3d50f0fc3f186995767fb6316e7200a3e"
+                },
+                "jsonOps": {
+                  "parsedJson": {
+                    "key": "value"
+                  },
+                  "mergedJson": {
+                    "a": 1,
+                    "b": 2,
+                    "c": 3,
+                    "d": 4
+                  },
+                  "stringifiedJson": "{\"test\":\"object\"}"
+                },
+                "mathOps": {
+                  "sum": 8
+                },
+                "stringOps": {
+                  "formattedString": "Hello John, welcome to LocalStack!",
+                  "splitString": [
+                    "a",
+                    "b",
+                    "c",
+                    "d",
+                    "e"
+                  ]
+                },
+                "uuidOp": {
+                  "uniqueId": "<uuid:1>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "encodingOps": {
+                  "decoded": "Hello World",
+                  "encoded": "SGVsbG8gV29ybGQ="
+                },
+                "hashOps": {
+                  "hashValue": "1cac63f39fd68d8c531f27b807610fb3d50f0fc3f186995767fb6316e7200a3e"
+                },
+                "jsonOps": {
+                  "parsedJson": {
+                    "key": "value"
+                  },
+                  "mergedJson": {
+                    "a": 1,
+                    "b": 2,
+                    "c": 3,
+                    "d": 4
+                  },
+                  "stringifiedJson": "{\"test\":\"object\"}"
+                },
+                "mathOps": {
+                  "sum": 8
+                },
+                "stringOps": {
+                  "formattedString": "Hello John, welcome to LocalStack!",
+                  "splitString": [
+                    "a",
+                    "b",
+                    "c",
+                    "d",
+                    "e"
+                  ]
+                },
+                "uuidOp": {
+                  "uniqueId": "<uuid:1>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_assign_from_value[BASE_ASSIGN_FROM_INTRINSIC_FUNCTION]": {
+    "recorded-date": "06-11-2024, 22:54:42",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "arrayOps": {
+                  "uniqueValues": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  "simpleArray": [
+                    "a",
+                    "b",
+                    "c"
+                  ],
+                  "thirdElement": 3,
+                  "partitionedArray": [
+                    [
+                      1,
+                      2
+                    ],
+                    [
+                      3,
+                      4
+                    ],
+                    [
+                      5,
+                      6
+                    ]
+                  ],
+                  "arraySize": 6,
+                  "containsElement": true,
+                  "numberRange": [
+                    1,
+                    3,
+                    5,
+                    7,
+                    9
+                  ]
+                },
+                "encodingOps": {
+                  "decoded": "Hello World",
+                  "encoded": "SGVsbG8gV29ybGQ="
+                },
+                "hashOps": {
+                  "hashValue": "1cac63f39fd68d8c531f27b807610fb3d50f0fc3f186995767fb6316e7200a3e"
+                },
+                "jsonOps": {
+                  "parsedJson": {
+                    "key": "value"
+                  },
+                  "mergedJson": {
+                    "a": 1,
+                    "b": 2,
+                    "c": 3,
+                    "d": 4
+                  },
+                  "stringifiedJson": "{\"test\":\"object\"}"
+                },
+                "mathOps": {
+                  "sum": 8
+                },
+                "stringOps": {
+                  "formattedString": "Hello John, welcome to LocalStack!",
+                  "splitString": [
+                    "a",
+                    "b",
+                    "c",
+                    "d",
+                    "e"
+                  ]
+                },
+                "uuidOp": {
+                  "uniqueId": "<uuid:1>"
+                }
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "State0",
+              "output": {
+                "inputArray": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6
+                ],
+                "duplicateArray": [
+                  1,
+                  2,
+                  2,
+                  3,
+                  3,
+                  4
+                ],
+                "rawString": "Hello World",
+                "encodedString": "SGVsbG8gV29ybGQ=",
+                "inputString": "Hash this string",
+                "json1": {
+                  "a": 1,
+                  "b": 2
+                },
+                "json2": {
+                  "c": 3,
+                  "d": 4
+                },
+                "jsonString": "{\"key\":\"value\"}",
+                "jsonObject": {
+                  "test": "object"
+                },
+                "value1": 5,
+                "value2": 3,
+                "csvString": "a,b,c,d,e",
+                "name": "John",
+                "place": "LocalStack",
+                "additionalInfo": {
+                  "age": 30,
+                  "role": "developer"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "inputArray": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6
+                ],
+                "duplicateArray": [
+                  1,
+                  2,
+                  2,
+                  3,
+                  3,
+                  4
+                ],
+                "rawString": "Hello World",
+                "encodedString": "SGVsbG8gV29ybGQ=",
+                "inputString": "Hash this string",
+                "json1": {
+                  "a": 1,
+                  "b": 2
+                },
+                "json2": {
+                  "c": 3,
+                  "d": 4
+                },
+                "jsonString": "{\"key\":\"value\"}",
+                "jsonObject": {
+                  "test": "object"
+                },
+                "value1": 5,
+                "value2": 3,
+                "csvString": "a,b,c,d,e",
+                "name": "John",
+                "place": "LocalStack",
+                "additionalInfo": {
+                  "age": 30,
+                  "role": "developer"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_variables_in_lambda_task[BASE_REFERENCE_IN_LAMBDA_TASK_FIELDS]": {
+    "recorded-date": "07-11-2024, 10:03:14",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "AccountID": "111111111111"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "AccountID": "111111111111"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "accountId": "\"111111111111\"",
+                "backoffRate": "1.5",
+                "functionName": "\"arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>\"",
+                "heartbeatInterval": "60",
+                "intervalSeconds": "2",
+                "jobParameters": {
+                  "inputData": "sample data",
+                  "configOption": "value1"
+                },
+                "maxAttempts": "3",
+                "maxTimeout": "300",
+                "targetRole": "\"CrossAccountRole\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "State0",
+              "output": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "AccountID": "111111111111"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "AccountID": "111111111111"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State1"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskScheduledEventDetails": {
+              "heartbeatInSeconds": 60,
+              "parameters": {
+                "Payload": {
+                  "data": {
+                    "inputData": "sample data",
+                    "configOption": "value1"
+                  }
+                },
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>"
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda",
+              "taskCredentials": {
+                "roleArn": "arn:<partition>:iam::111111111111:role/CrossAccountRole"
+              },
+              "timeoutInSeconds": 300
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "taskFailedEventDetails": {
+              "cause": "The role snf_role_arn is not authorized to assume the task state's role, arn:<partition>:iam::111111111111:role/CrossAccountRole.",
+              "error": "States.TaskFailed",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "The role snf_role_arn is not authorized to assume the task state's role, arn:<partition>:iam::111111111111:role/CrossAccountRole.",
+              "error": "States.TaskFailed"
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_assign[BASE_REFERENCE_IN_WAIT]": {
+    "recorded-date": "06-11-2024, 23:17:58",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "startAt": "\"date\"",
+                "waitTime": "0"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Start",
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "WaitSecondsState"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "WaitSecondsState",
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateExited"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "WaitUntilState"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "WaitUntilState",
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_variables_in_lambda_task[BASE_ASSIGN_FROM_LAMBDA_TASK_RESULT]": {
+    "recorded-date": "07-11-2024, 10:03:33",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "AccountID": "111111111111"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "AccountID": "111111111111"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "functionName": "\"arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>\"",
+                "inputData": {
+                  "foo": "oof",
+                  "bar": "rab"
+                },
+                "timeout": "300"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Pass",
+              "output": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "AccountID": "111111111111"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "AccountID": "111111111111"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Task"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "oof",
+                  "bar": "rab"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda",
+              "timeoutInSeconds": 300
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "taskSucceededEventDetails": {
+              "output": {
+                "ExecutedVersion": "$LATEST",
+                "Payload": "HelloWorld!",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "X-Amz-Executed-Version": [
+                      "$LATEST"
+                    ],
+                    "x-amzn-Remapped-Content-Length": [
+                      "0"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "Content-Length": [
+                      "13"
+                    ],
+                    "Date": "date",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                    "Content-Type": [
+                      "application/json"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "13",
+                    "Content-Type": "application/json",
+                    "Date": "date",
+                    "X-Amz-Executed-Version": "$LATEST",
+                    "x-amzn-Remapped-Content-Length": "0",
+                    "x-amzn-RequestId": "<uuid:1>",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "StatusCode": 200
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "result": "\"HelloWorld!\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Task",
+              "output": "\"HelloWorld!\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateEnteredEventDetails": {
+              "input": "\"HelloWorld!\"",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "End"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "previousResult": "\"HelloWorld!\"",
+                "timeout": "150"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "End",
+              "output": "\"HelloWorld!\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "\"HelloWorld!\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 11,
+            "previousEventId": 10,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_in_map_state_max_items_path[MAP_STATE_REFERENCE_IN_MAX_ITEMS_PATH]": {
+    "recorded-date": "14-11-2024, 16:32:42",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.json"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.json"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "maxItems": "\"2\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Start",
+              "output": {
+                "Bucket": "bucket-name",
+                "Key": "file.json"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.json"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 5,
+            "mapStateStartedEventDetails": {
+              "length": 0
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 6,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 9,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"verdict\":\"true\",\"statement_date\":\"6/11/2008\",\"statement_source\":\"speech\"},{\"verdict\":\"false\",\"statement_date\":\"6/7/2022\",\"statement_source\":\"television\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"verdict\":\"true\",\"statement_date\":\"6/11/2008\",\"statement_source\":\"speech\"},{\"verdict\":\"false\",\"statement_date\":\"6/7/2022\",\"statement_source\":\"television\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_in_map_state_max_items_path[MAP_STATE_REFERENCE_IN_MAX_PER_BATCH_PATH]": {
+    "recorded-date": "14-11-2024, 16:33:06",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.json"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.json"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "maxBytesPerBatch": "\"15000\"",
+                "maxItemsPerBatch": "\"2\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Start",
+              "output": {
+                "Bucket": "bucket-name",
+                "Key": "file.json"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.json"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "BatchMapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 5,
+            "mapStateStartedEventDetails": {
+              "length": 0
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 6,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 9,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "BatchMapState",
+              "output": "[{\"Items\":[{\"verdict\":\"true\",\"statement_date\":\"6/11/2008\",\"statement_source\":\"speech\"},{\"verdict\":\"false\",\"statement_date\":\"6/7/2022\",\"statement_source\":\"television\"}]},{\"Items\":[{\"verdict\":\"mostly-true\",\"statement_date\":\"5/18/2016\",\"statement_source\":\"news\"},{\"verdict\":\"false\",\"statement_date\":\"5/18/2024\",\"statement_source\":\"x\"}]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"Items\":[{\"verdict\":\"true\",\"statement_date\":\"6/11/2008\",\"statement_source\":\"speech\"},{\"verdict\":\"false\",\"statement_date\":\"6/7/2022\",\"statement_source\":\"television\"}]},{\"Items\":[{\"verdict\":\"mostly-true\",\"statement_date\":\"5/18/2016\",\"statement_source\":\"news\"},{\"verdict\":\"false\",\"statement_date\":\"5/18/2024\",\"statement_source\":\"x\"}]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_assign[BASE_REFERENCE_IN_FAIL]": {
+    "recorded-date": "14-11-2024, 13:15:13",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "causeVar": "\"An Exception was encountered\"",
+                "errorVar": "\"Exception\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Pass",
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Fail"
+            },
+            "timestamp": "timestamp",
+            "type": "FailStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An Exception was encountered",
+              "error": "Exception"
+            },
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_in_map_state[MAP_STATE_REFERENCE_IN_INTRINSIC_FUNCTION]": {
+    "recorded-date": "18-11-2024, 14:52:40",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "AnswerTemplate": "\"It's {}!\"",
+                "Question": "\"Who's that Pokemon?\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Start",
+              "output": [
+                "Charizard",
+                "Pikachu",
+                "Squirtle"
+              ],
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": "[\"Charizard\",\"Pikachu\",\"Squirtle\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapIterateState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 5,
+            "mapStateStartedEventDetails": {
+              "length": 3
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 6,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "MapIterateState"
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "AnnouncePokemon": "It's Charizard!"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "Pass",
+              "output": {
+                "Answer": "It's Charizard!",
+                "Question": "Who's that Pokemon?"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 9,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "MapIterateState"
+            },
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 10,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "MapIterateState"
+            },
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateEnteredEventDetails": {
+              "input": {
+                "AnnouncePokemon": "It's Pikachu!"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "stateExitedEventDetails": {
+              "name": "Pass",
+              "output": {
+                "Answer": "It's Pikachu!",
+                "Question": "Who's that Pokemon?"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 13,
+            "mapIterationSucceededEventDetails": {
+              "index": 1,
+              "name": "MapIterateState"
+            },
+            "previousEventId": 12,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 14,
+            "mapIterationStartedEventDetails": {
+              "index": 2,
+              "name": "MapIterateState"
+            },
+            "previousEventId": 12,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "stateEnteredEventDetails": {
+              "input": {
+                "AnnouncePokemon": "It's Squirtle!"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 16,
+            "previousEventId": 15,
+            "stateExitedEventDetails": {
+              "name": "Pass",
+              "output": {
+                "Answer": "It's Squirtle!",
+                "Question": "Who's that Pokemon?"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 17,
+            "mapIterationSucceededEventDetails": {
+              "index": 2,
+              "name": "MapIterateState"
+            },
+            "previousEventId": 16,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 18,
+            "previousEventId": 17,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 19,
+            "previousEventId": 17,
+            "stateExitedEventDetails": {
+              "name": "MapIterateState",
+              "output": [
+                {
+                  "Answer": "It's Charizard!",
+                  "Question": "Who's that Pokemon?"
+                },
+                {
+                  "Answer": "It's Pikachu!",
+                  "Question": "Who's that Pokemon?"
+                },
+                {
+                  "Answer": "It's Squirtle!",
+                  "Question": "Who's that Pokemon?"
+                }
+              ],
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": [
+                {
+                  "Answer": "It's Charizard!",
+                  "Question": "Who's that Pokemon?"
+                },
+                {
+                  "Answer": "It's Pikachu!",
+                  "Question": "Who's that Pokemon?"
+                },
+                {
+                  "Answer": "It's Squirtle!",
+                  "Question": "Who's that Pokemon?"
+                }
+              ],
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 20,
+            "previousEventId": 19,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_in_map_state[MAP_STATE_REFERENCE_IN_ITEMS_PATH]": {
+    "recorded-date": "18-11-2024, 14:52:57",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "PokemonList": "[\"Charizard\",\"Pikachu\",\"Squirtle\"]",
+                "Question": "\"Who's that Pokemon?\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Start",
+              "output": {
+                "AnswerTemplate": "It's {}!"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "AnswerTemplate": "It's {}!"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapIterateState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 5,
+            "mapStateStartedEventDetails": {
+              "length": 3
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 6,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "MapIterateState"
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "AnnouncePokemon": "It's Charizard!"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "Pass",
+              "output": {
+                "Answer": "It's Charizard!",
+                "Question": "Who's that Pokemon?"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 9,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "MapIterateState"
+            },
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 10,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "MapIterateState"
+            },
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateEnteredEventDetails": {
+              "input": {
+                "AnnouncePokemon": "It's Pikachu!"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "stateExitedEventDetails": {
+              "name": "Pass",
+              "output": {
+                "Answer": "It's Pikachu!",
+                "Question": "Who's that Pokemon?"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 13,
+            "mapIterationSucceededEventDetails": {
+              "index": 1,
+              "name": "MapIterateState"
+            },
+            "previousEventId": 12,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 14,
+            "mapIterationStartedEventDetails": {
+              "index": 2,
+              "name": "MapIterateState"
+            },
+            "previousEventId": 12,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "stateEnteredEventDetails": {
+              "input": {
+                "AnnouncePokemon": "It's Squirtle!"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 16,
+            "previousEventId": 15,
+            "stateExitedEventDetails": {
+              "name": "Pass",
+              "output": {
+                "Answer": "It's Squirtle!",
+                "Question": "Who's that Pokemon?"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 17,
+            "mapIterationSucceededEventDetails": {
+              "index": 2,
+              "name": "MapIterateState"
+            },
+            "previousEventId": 16,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 18,
+            "previousEventId": 17,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 19,
+            "previousEventId": 17,
+            "stateExitedEventDetails": {
+              "name": "MapIterateState",
+              "output": [
+                {
+                  "Answer": "It's Charizard!",
+                  "Question": "Who's that Pokemon?"
+                },
+                {
+                  "Answer": "It's Pikachu!",
+                  "Question": "Who's that Pokemon?"
+                },
+                {
+                  "Answer": "It's Squirtle!",
+                  "Question": "Who's that Pokemon?"
+                }
+              ],
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": [
+                {
+                  "Answer": "It's Charizard!",
+                  "Question": "Who's that Pokemon?"
+                },
+                {
+                  "Answer": "It's Pikachu!",
+                  "Question": "Who's that Pokemon?"
+                },
+                {
+                  "Answer": "It's Squirtle!",
+                  "Question": "Who's that Pokemon?"
+                }
+              ],
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 20,
+            "previousEventId": 19,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_in_map_state[MAP_STATE_REFERENCE_IN_MAX_CONCURRENCY_PATH]": {
+    "recorded-date": "18-11-2024, 14:53:25",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "maxConcurrency": "\"1\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Start",
+              "output": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 5,
+            "mapStateStartedEventDetails": {
+              "length": 3
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 6,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "MapState"
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": "1",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleItem"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "HandleItem",
+              "output": 1,
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 9,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "MapState"
+            },
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 10,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "MapState"
+            },
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateEnteredEventDetails": {
+              "input": "2",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleItem"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "stateExitedEventDetails": {
+              "name": "HandleItem",
+              "output": 2,
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 13,
+            "mapIterationSucceededEventDetails": {
+              "index": 1,
+              "name": "MapState"
+            },
+            "previousEventId": 12,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 14,
+            "mapIterationStartedEventDetails": {
+              "index": 2,
+              "name": "MapState"
+            },
+            "previousEventId": 12,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "stateEnteredEventDetails": {
+              "input": "3",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleItem"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 16,
+            "previousEventId": 15,
+            "stateExitedEventDetails": {
+              "name": "HandleItem",
+              "output": 3,
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 17,
+            "mapIterationSucceededEventDetails": {
+              "index": 2,
+              "name": "MapState"
+            },
+            "previousEventId": 16,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 18,
+            "previousEventId": 17,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 19,
+            "previousEventId": 17,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": [
+                1,
+                2,
+                3
+              ],
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": [
+                1,
+                2,
+                3
+              ],
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 20,
+            "previousEventId": 19,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_in_map_state[MAP_STATE_REFERENCE_IN_TOLERATED_FAILURE_PATH]": {
+    "recorded-date": "18-11-2024, 14:53:45",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "toleratedFailureCount": "\"1\"",
+                "toleratedFailurePercentage": "\"1\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Start",
+              "output": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 5,
+            "mapStateStartedEventDetails": {
+              "length": 3
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 6,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 9,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": [
+                1,
+                2,
+                3
+              ],
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": [
+                1,
+                2,
+                3
+              ],
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_in_map_state[MAP_STATE_REFERENCE_IN_ITEM_SELECTOR]": {
+    "recorded-date": "18-11-2024, 14:54:07",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "bucket": "\"test-name\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Start",
+              "output": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 5,
+            "mapStateStartedEventDetails": {
+              "length": 3
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 6,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 9,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": [
+                {
+                  "bucketName": "$bucket",
+                  "value": 1
+                },
+                {
+                  "bucketName": "$bucket",
+                  "value": 2
+                },
+                {
+                  "bucketName": "$bucket",
+                  "value": 3
+                }
+              ],
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": [
+                {
+                  "bucketName": "$bucket",
+                  "value": 1
+                },
+                {
+                  "bucketName": "$bucket",
+                  "value": 2
+                },
+                {
+                  "bucketName": "$bucket",
+                  "value": 3
+                }
+              ],
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_undefined_reference[BASE_UNDEFINED_OUTPUT]": {
+    "recorded-date": "21-11-2024, 11:07:38",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "evaluationFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'State0' (entered at the event id #2). The JSONata expression '$doesNotExist' specified for the field 'Output' returned nothing (undefined).",
+              "error": "States.QueryEvaluationError",
+              "location": "Output",
+              "state": "State0"
+            },
+            "id": 3,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "EvaluationFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'State0' (entered at the event id #2). The JSONata expression '$doesNotExist' specified for the field 'Output' returned nothing (undefined).",
+              "error": "States.QueryEvaluationError"
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_undefined_reference[BASE_UNDEFINED_OUTPUT_FIELD]": {
+    "recorded-date": "21-11-2024, 11:07:56",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "evaluationFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'State0' (entered at the event id #2). The JSONata expression '$doesNotExist' specified for the field 'Output/result' returned nothing (undefined).",
+              "error": "States.QueryEvaluationError",
+              "location": "Output/result",
+              "state": "State0"
+            },
+            "id": 3,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "EvaluationFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'State0' (entered at the event id #2). The JSONata expression '$doesNotExist' specified for the field 'Output/result' returned nothing (undefined).",
+              "error": "States.QueryEvaluationError"
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_undefined_reference[BASE_UNDEFINED_OUTPUT_MULTIPLE_STATES]": {
+    "recorded-date": "21-11-2024, 11:08:12",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State0",
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State1"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "State1",
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State2"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "evaluationFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'State2' (entered at the event id #6). The JSONata expression '$doesNotExist' specified for the field 'Output/result' returned nothing (undefined).",
+              "error": "States.QueryEvaluationError",
+              "location": "Output/result",
+              "state": "State2"
+            },
+            "id": 7,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "EvaluationFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'State2' (entered at the event id #6). The JSONata expression '$doesNotExist' specified for the field 'Output/result' returned nothing (undefined).",
+              "error": "States.QueryEvaluationError"
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_undefined_reference[BASE_UNDEFINED_ASSIGN]": {
+    "recorded-date": "21-11-2024, 11:08:30",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "evaluationFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'State0' (entered at the event id #2). The JSONata expression '$doesNotExist' specified for the field 'Assign/result' returned nothing (undefined).",
+              "error": "States.QueryEvaluationError",
+              "location": "Assign/result",
+              "state": "State0"
+            },
+            "id": 3,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "EvaluationFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'State0' (entered at the event id #2). The JSONata expression '$doesNotExist' specified for the field 'Assign/result' returned nothing (undefined).",
+              "error": "States.QueryEvaluationError"
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_undefined_reference[BASE_UNDEFINED_ARGUMENTS]": {
+    "recorded-date": "21-11-2024, 11:19:43",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "evaluationFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'State0' (entered at the event id #2). The JSONata expression '$doesNotExist' specified for the field 'Arguments' returned nothing (undefined).",
+              "error": "States.QueryEvaluationError",
+              "location": "Arguments",
+              "state": "State0"
+            },
+            "id": 3,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "EvaluationFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'State0' (entered at the event id #2). The JSONata expression '$doesNotExist' specified for the field 'Arguments' returned nothing (undefined).",
+              "error": "States.QueryEvaluationError"
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_undefined_reference[BASE_UNDEFINED_ARGUMENTS_FIELD]": {
+    "recorded-date": "21-11-2024, 11:20:19",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "evaluationFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'State0' (entered at the event id #2). The JSONata expression '$doesNotExist' specified for the field 'Arguments/FunctionName' returned nothing (undefined).",
+              "error": "States.QueryEvaluationError",
+              "location": "Arguments/FunctionName",
+              "state": "State0"
+            },
+            "id": 3,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "EvaluationFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'State0' (entered at the event id #2). The JSONata expression '$doesNotExist' specified for the field 'Arguments/FunctionName' returned nothing (undefined).",
+              "error": "States.QueryEvaluationError"
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "QueryLanguage": "JSONata",
+      "Type": "Pass",
+      "Output": "_tbd_",
+      "End": true
+    }
+  }
+}

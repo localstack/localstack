@@ -1,0 +1,736 @@
+{
+  "tests/aws/services/stepfunctions/v2/arguments/test_arguments.py::TestArgumentsBase::test_base_cases[BASE_LAMBDA_EMPTY]": {
+    "recorded-date": "04-11-2024, 11:40:50",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "input_value": "string literal",
+                "input_values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input_value": "string literal",
+                "input_values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:lambda_function_name"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "State0",
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/arguments/test_arguments.py::TestArgumentsBase::test_base_cases[BASE_LAMBDA_LITERALS]": {
+    "recorded-date": "04-11-2024, 11:41:09",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "input_value": "string literal",
+                "input_values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input_value": "string literal",
+                "input_values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "constant_null": null,
+                "constant_int": 0,
+                "constant_float": 0.1,
+                "constant_bool": true,
+                "constant_str": "constant string",
+                "constant_not_jsonata": " {% states.input %} ",
+                "constant_varpath_states": "$states.input",
+                "constant_varpath": "$no.such.var.path",
+                "constant_lst_empty": [],
+                "constant_lst": [
+                  null,
+                  0,
+                  0.1,
+                  true,
+                  [],
+                  {
+                    "constant": 0
+                  },
+                  " {% states.input %} ",
+                  "$states.input",
+                  "$no.such.var.path"
+                ],
+                "constant_obj_empty": {},
+                "constant_obj": {
+                  "in_obj_constant_null": null,
+                  "in_obj_constant_int": 0,
+                  "in_obj_constant_float": 0.1,
+                  "in_obj_constant_bool": true,
+                  "in_obj_constant_str": "constant string",
+                  "in_obj_constant_not_jsonata": " {% states.input %} ",
+                  "in_obj_constant_lst_empty": [],
+                  "in_obj_constant_lst": [
+                    null,
+                    0,
+                    0.1,
+                    true,
+                    [],
+                    {
+                      "constant": 0
+                    },
+                    " {% states.input %} ",
+                    "$states.input",
+                    "$no.such.var.path"
+                  ],
+                  "in_obj_constant_obj_empty": {},
+                  "in_obj_constant_obj": {
+                    "constant": 0
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:lambda_function_name"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": {
+                "constant_null": null,
+                "constant_int": 0,
+                "constant_float": 0.1,
+                "constant_bool": true,
+                "constant_str": "constant string",
+                "constant_not_jsonata": " {% states.input %} ",
+                "constant_varpath_states": "$states.input",
+                "constant_varpath": "$no.such.var.path",
+                "constant_lst_empty": [],
+                "constant_lst": [
+                  null,
+                  0,
+                  0.1,
+                  true,
+                  [],
+                  {
+                    "constant": 0
+                  },
+                  " {% states.input %} ",
+                  "$states.input",
+                  "$no.such.var.path"
+                ],
+                "constant_obj_empty": {},
+                "constant_obj": {
+                  "in_obj_constant_null": null,
+                  "in_obj_constant_int": 0,
+                  "in_obj_constant_float": 0.1,
+                  "in_obj_constant_bool": true,
+                  "in_obj_constant_str": "constant string",
+                  "in_obj_constant_not_jsonata": " {% states.input %} ",
+                  "in_obj_constant_lst_empty": [],
+                  "in_obj_constant_lst": [
+                    null,
+                    0,
+                    0.1,
+                    true,
+                    [],
+                    {
+                      "constant": 0
+                    },
+                    " {% states.input %} ",
+                    "$states.input",
+                    "$no.such.var.path"
+                  ],
+                  "in_obj_constant_obj_empty": {},
+                  "in_obj_constant_obj": {
+                    "constant": 0
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "State0",
+              "output": {
+                "constant_null": null,
+                "constant_int": 0,
+                "constant_float": 0.1,
+                "constant_bool": true,
+                "constant_str": "constant string",
+                "constant_not_jsonata": " {% states.input %} ",
+                "constant_varpath_states": "$states.input",
+                "constant_varpath": "$no.such.var.path",
+                "constant_lst_empty": [],
+                "constant_lst": [
+                  null,
+                  0,
+                  0.1,
+                  true,
+                  [],
+                  {
+                    "constant": 0
+                  },
+                  " {% states.input %} ",
+                  "$states.input",
+                  "$no.such.var.path"
+                ],
+                "constant_obj_empty": {},
+                "constant_obj": {
+                  "in_obj_constant_null": null,
+                  "in_obj_constant_int": 0,
+                  "in_obj_constant_float": 0.1,
+                  "in_obj_constant_bool": true,
+                  "in_obj_constant_str": "constant string",
+                  "in_obj_constant_not_jsonata": " {% states.input %} ",
+                  "in_obj_constant_lst_empty": [],
+                  "in_obj_constant_lst": [
+                    null,
+                    0,
+                    0.1,
+                    true,
+                    [],
+                    {
+                      "constant": 0
+                    },
+                    " {% states.input %} ",
+                    "$states.input",
+                    "$no.such.var.path"
+                  ],
+                  "in_obj_constant_obj_empty": {},
+                  "in_obj_constant_obj": {
+                    "constant": 0
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "constant_null": null,
+                "constant_int": 0,
+                "constant_float": 0.1,
+                "constant_bool": true,
+                "constant_str": "constant string",
+                "constant_not_jsonata": " {% states.input %} ",
+                "constant_varpath_states": "$states.input",
+                "constant_varpath": "$no.such.var.path",
+                "constant_lst_empty": [],
+                "constant_lst": [
+                  null,
+                  0,
+                  0.1,
+                  true,
+                  [],
+                  {
+                    "constant": 0
+                  },
+                  " {% states.input %} ",
+                  "$states.input",
+                  "$no.such.var.path"
+                ],
+                "constant_obj_empty": {},
+                "constant_obj": {
+                  "in_obj_constant_null": null,
+                  "in_obj_constant_int": 0,
+                  "in_obj_constant_float": 0.1,
+                  "in_obj_constant_bool": true,
+                  "in_obj_constant_str": "constant string",
+                  "in_obj_constant_not_jsonata": " {% states.input %} ",
+                  "in_obj_constant_lst_empty": [],
+                  "in_obj_constant_lst": [
+                    null,
+                    0,
+                    0.1,
+                    true,
+                    [],
+                    {
+                      "constant": 0
+                    },
+                    " {% states.input %} ",
+                    "$states.input",
+                    "$no.such.var.path"
+                  ],
+                  "in_obj_constant_obj_empty": {},
+                  "in_obj_constant_obj": {
+                    "constant": 0
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/arguments/test_arguments.py::TestArgumentsBase::test_base_cases[BASE_LAMBDA_EXPRESSION]": {
+    "recorded-date": "04-11-2024, 11:41:28",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "input_value": "string literal",
+                "input_values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input_value": "string literal",
+                "input_values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Init"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "var_constant_1": "1",
+                "var_input_value": "\"string literal\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Init",
+              "output": {
+                "input_value": "string literal",
+                "input_values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input_value": "string literal",
+                "input_values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "ja_states_input": {
+                  "input_value": "string literal",
+                  "input_values": [
+                    1,
+                    2,
+                    3
+                  ]
+                },
+                "ja_var_access": "string literal",
+                "ja_expr": 7
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:lambda_function_name"
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 7,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": {
+                "ja_states_input": {
+                  "input_value": "string literal",
+                  "input_values": [
+                    1,
+                    2,
+                    3
+                  ]
+                },
+                "ja_var_access": "string literal",
+                "ja_expr": 7
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "ja_expr": "7",
+                "ja_var_access": "\"string literal\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "State0",
+              "output": {
+                "ja_states_input": {
+                  "input_value": "string literal",
+                  "input_values": [
+                    1,
+                    2,
+                    3
+                  ]
+                },
+                "ja_var_access": "string literal",
+                "ja_expr": 7
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "ja_states_input": {
+                  "input_value": "string literal",
+                  "input_values": [
+                    1,
+                    2,
+                    3
+                  ]
+                },
+                "ja_var_access": "string literal",
+                "ja_expr": 7
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/arguments/test_arguments.py::TestArgumentsBase::test_base_cases[BASE_LAMBDA_EMPTY_GLOBAL_QL_JSONATA]": {
+    "recorded-date": "04-11-2024, 11:41:48",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "input_value": "string literal",
+                "input_values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "input_value": "string literal",
+                "input_values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:lambda_function_name"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "State0",
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

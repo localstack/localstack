@@ -1,0 +1,59 @@
+{
+  "Comment": "PARALLEL_CATCH_ERROR_VARIABLE_SAMPLING",
+  "QueryLanguage": "JSONata",
+  "StartAt": "ParallelState",
+  "States": {
+    "ParallelState": {
+      "Type": "Parallel",
+      "Next": "Finish",
+      "Branches": [
+        {
+          "StartAt": "ExecuteLambdaTask",
+          "States": {
+            "ExecuteLambdaTask": {
+              "Assign": {
+                "inputVar": "{% $states.input %}",
+                "resultVar": "{% $states.result %}"
+              },
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Arguments": {
+                "FunctionName": "%LAMBDA_FUNCTION_ARN_LITERAL_PLACEHOLDER%",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "End": true
+            }
+          }
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Assign": {
+            "inputVar": "{% $states.input %}",
+            "errorVar": "{% $states.errorOutput %}"
+          },
+          "Next": "Fallback"
+        }
+      ]
+    },
+    "Fallback": {
+      "Type": "Pass",
+      "Output": {
+        "error": "{% $errorVar %}"
+      },
+      "End": true
+    },
+    "Finish": {
+      "Type": "Pass",
+      "Output": {
+        "result": "{% $resultVar %}"
+      },
+      "End": true
+    }
+  }
+}
