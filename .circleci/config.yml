@@ -461,7 +461,8 @@ jobs:
       - store_test_results:
           path: target/reports/
 
-  itest-events-v2-provider:
+  # TODO: remove legacy v1 provider in future 4.x release
+  itest-events-v1-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     environment:
@@ -474,14 +475,14 @@ jobs:
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
       - run:
-          name: Test EventBridge v2 provider
+          name: Test EventBridge v1 provider
           environment:
-            PROVIDER_OVERRIDE_EVENTS: "v2"
+            PROVIDER_OVERRIDE_EVENTS: "v1"
             TEST_PATH: "tests/aws/services/events/"
             COVERAGE_ARGS: "-p"
           command: |
-            COVERAGE_FILE="target/coverage/.coverage.eventsV2.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/events_v2.xml -o junit_suite_name='events_v2'" \
+            COVERAGE_FILE="target/coverage/.coverage.eventsV1.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/events_v1.xml -o junit_suite_name='events_v1'" \
             make test-coverage
       - persist_to_workspace:
           root:
@@ -881,7 +882,7 @@ workflows:
           requires:
             - preflight
             - test-selection
-      - itest-events-v2-provider:
+      - itest-events-v1-provider:
           requires:
             - preflight
             - test-selection
@@ -948,7 +949,7 @@ workflows:
       - report:
           requires:
             - itest-cloudwatch-v1-provider
-            - itest-events-v2-provider
+            - itest-events-v1-provider
             - itest-ddb-v2-provider
             - acceptance-tests-amd64
             - acceptance-tests-arm64
@@ -962,7 +963,7 @@ workflows:
               only: master
           requires:
             - itest-cloudwatch-v1-provider
-            - itest-events-v2-provider
+            - itest-events-v1-provider
             - itest-ddb-v2-provider
             - acceptance-tests-amd64
             - acceptance-tests-arm64

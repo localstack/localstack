@@ -40,7 +40,8 @@ def convert_schedule_to_cron(schedule):
         if "day" in rate_unit:
             return f"0 0 */{rate_value} * *"
 
-        raise ValueError(f"Unable to parse events schedule expression: {schedule}")
+        # TODO: cover via test
+        # raise ValueError(f"Unable to parse events schedule expression: {schedule}")
 
     return schedule
 
