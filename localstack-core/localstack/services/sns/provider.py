@@ -1,4 +1,5 @@
 import base64
+import functools
 import json
 import logging
 from typing import Dict, List
@@ -60,6 +61,7 @@ from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sns import constants as sns_constants
+from localstack.services.sns import usage
 from localstack.services.sns.certificate import SNS_SERVER_CERT
 from localstack.services.sns.filter import FilterPolicyValidator
 from localstack.services.sns.models import SnsMessage, SnsStore, SnsSubscription, sns_stores
@@ -1116,7 +1118,25 @@ def _format_messages(sent_messages: List[Dict[str, str]], validated_keys: List[s
     return formatted_messages
 
 
-class SNSServicePlatformEndpointMessagesApiResource:
+class SNSInternalResource:
+    resource_type: str
+    """Base class with helper to properly track usage of internal endpoints"""
+
+    def count_usage(self):
+        usage.internalapi.record(f"{self.resource_type}")
+
+
+def count_usage(f):
+    @functools.wraps(f)
+    def _wrapper(self, *args, **kwargs):
+        self.count_usage()
+        return f(self, *args, **kwargs)
+
+    return _wrapper
+
+
+class SNSServicePlatformEndpointMessagesApiResource(SNSInternalResource):
+    resource_type = "platform-endpoint-message"
     """Provides a REST API for retrospective access to platform endpoint messages sent via SNS.
 
     This is registered as a LocalStack internal HTTP resource.
@@ -1141,6 +1161,7 @@ class SNSServicePlatformEndpointMessagesApiResource:
     ]
 
     @route(sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["GET"])
+    @count_usage
     def on_get(self, request: Request):
         filter_endpoint_arn = request.args.get("endpointArn")
         account_id = (
@@ -1172,6 +1193,7 @@ class SNSServicePlatformEndpointMessagesApiResource:
         }
 
     @route(sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["DELETE"])
+    @count_usage
     def on_delete(self, request: Request) -> Response:
         filter_endpoint_arn = request.args.get("endpointArn")
         account_id = (
@@ -1193,7 +1215,8 @@ class SNSServicePlatformEndpointMessagesApiResource:
         return Response("", status=204)
 
 
-class SNSServiceSMSMessagesApiResource:
+class SNSServiceSMSMessagesApiResource(SNSInternalResource):
+    resource_type = "sms-message"
     """Provides a REST API for retrospective access to SMS messages sent via SNS.
 
     This is registered as a LocalStack internal HTTP resource.
@@ -1216,6 +1239,7 @@ class SNSServiceSMSMessagesApiResource:
     ]
 
     @route(sns_constants.SMS_MSGS_ENDPOINT, methods=["GET"])
+    @count_usage
     def on_get(self, request: Request):
         account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
         region = request.args.get("region", AWS_REGION_US_EAST_1)
@@ -1242,6 +1266,7 @@ class SNSServiceSMSMessagesApiResource:
         }
 
     @route(sns_constants.SMS_MSGS_ENDPOINT, methods=["DELETE"])
+    @count_usage
     def on_delete(self, request: Request) -> Response:
         account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
         region = request.args.get("region", AWS_REGION_US_EAST_1)
@@ -1257,7 +1282,8 @@ class SNSServiceSMSMessagesApiResource:
         return Response("", status=204)
 
 
-class SNSServiceSubscriptionTokenApiResource:
+class SNSServiceSubscriptionTokenApiResource(SNSInternalResource):
+    resource_type = "subscription-token"
     """Provides a REST API for retrospective access to Subscription Confirmation Tokens to confirm subscriptions.
     Those are not sent for email, and sometimes inaccessible when working with external HTTPS endpoint which won't be
     able to reach your local host.
@@ -1269,6 +1295,7 @@ class SNSServiceSubscriptionTokenApiResource:
     """
 
     @route(f"{sns_constants.SUBSCRIPTION_TOKENS_ENDPOINT}/<path:subscription_arn>", methods=["GET"])
+    @count_usage
     def on_get(self, _request: Request, subscription_arn: str):
         try:
             parsed_arn = parse_arn(subscription_arn)
