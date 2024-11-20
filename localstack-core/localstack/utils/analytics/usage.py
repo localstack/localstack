@@ -49,6 +49,49 @@ class UsageSetCounter:
         return self.state
 
 
+class UsageMultiSetCounter:
+    """
+    Use this counter to count occurrences of unique values for multiple dimensions.
+    This dynamically creates UsageSetCounters and should be used with care (i.e., with limited keys).
+
+    Example:
+
+    my_feature_counter = UsageMultiSetCounter("pipes:invocation")
+    my_feature_counter.record("aws:sqs", "aws:lambda")
+    my_feature_counter.record("aws:sqs", "aws:lambda")
+    my_feature_counter.record("aws:sqs", "aws:stepfunctions")
+    my_feature_counter.record("aws:kinesis", "aws:lambda")
+    my_feature_counter.aggregate() returns:
+    {
+       "aws:sqs": {
+         "aws:lambda": 2,
+         "aws:stepfunctions": 1,
+       },
+       "aws:kinesis": {
+         "aws:lambda": 1
+       }
+    }
+    """
+
+    namespace: str
+    _counters: dict[str, UsageSetCounter]
+
+    def __init__(self, namespace: str):
+        self._counters = {}
+        self.namespace = namespace
+
+    def record(self, key: str, value: str):
+        namespace = f"{self.namespace}:{key}"
+        set_counter = self._counters.setdefault(key, UsageSetCounter(namespace))
+        set_counter.record(value)
+
+    def aggregate(self) -> dict:
+        merged_dict = {}
+        for namespace, counter in self._counters.items():
+            merged_dict[namespace] = counter.aggregate()
+        return merged_dict
+
+
 class UsageCounter:
     """
     Use this counter to count numeric values
