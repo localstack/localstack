@@ -134,6 +134,7 @@ class TestEvents:
         with pytest.raises(ClientError) as e:
             aws_client.events.put_events(Entries=entries)
         snapshot.match("put-events-too-big-detail-error", e.value.response)
+
     @markers.aws.validated
     @pytest.mark.skipif(
         is_old_provider(),
