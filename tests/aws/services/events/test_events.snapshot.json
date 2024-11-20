@@ -2453,5 +2453,22 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_target_delivery_failure": {
+    "recorded-date": "20-11-2024, 17:19:19",
+    "recorded-content": {
+      "put-events-response": {
+        "Entries": [
+          {
+            "EventId": "<event-id:1>"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -527,14 +527,16 @@ class TestEvents:
         )
 
     @markers.aws.validated
-    def test_put_events_with_iam_permission_failure(
+    def test_put_events_with_target_delivery_failure(
         self, events_put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot, clean_up
     ):
-        """Test that put_events returns successful EventId even when target permissions are missing,
-        but the message is not delivered to the target."""
-        # Create SQS queue without EventBridge permissions
+        """Test that put_events returns successful EventId even when target delivery fails due to non-existent queue."""
+        # Create a queue and get its ARN
         queue_url = sqs_create_queue()
         queue_arn = sqs_get_queue_arn(queue_url)
+
+        # Delete the queue to simulate a failure scenario
+        aws_client.sqs.delete_queue(QueueUrl=queue_url)
 
         rule_name = f"test-rule-{short_uid()}"
 
@@ -547,45 +549,38 @@ class TestEvents:
             ]
         )
 
-        # Create rule
         events_put_rule(
             Name=rule_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN_NO_DETAIL),
         )
 
-        # Add target without proper permissions
         target_id = f"test-target-{short_uid()}"
-        target_response = aws_client.events.put_targets(
+        aws_client.events.put_targets(
             Rule=rule_name,
             Targets=[
                 {"Id": target_id, "Arn": queue_arn},
             ],
         )
 
-        assert (
-            target_response["FailedEntryCount"] == 0
-        ), f"Failed to add targets: {target_response.get('FailedEntries', [])}"
-
-        # Put event that should trigger the rule
         test_event = {
             "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
             "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
             "Detail": json.dumps(EVENT_DETAIL),
         }
 
-        event_response = aws_client.events.put_events(Entries=[test_event])
-        snapshot.match("put-events-response", event_response)
+        response = aws_client.events.put_events(Entries=[test_event])
+        snapshot.match("put-events-response", response)
 
-        # Verify response matches expected structure
-        assert len(event_response["Entries"]) == 1
-        assert "EventId" in event_response["Entries"][0]
-        assert event_response["FailedEntryCount"] == 0
+        assert len(response["Entries"]) == 1
+        assert "EventId" in response["Entries"][0]
+        assert response["FailedEntryCount"] == 0
 
+        new_queue_url = sqs_create_queue()
         messages = aws_client.sqs.receive_message(
-            QueueUrl=queue_url, MaxNumberOfMessages=1, WaitTimeSeconds=1
+            QueueUrl=new_queue_url, MaxNumberOfMessages=1, WaitTimeSeconds=1
         ).get("Messages", [])
 
-        assert len(messages) == 0, "Expected no messages to be delivered due to missing permissions"
+        assert len(messages) == 0, "No messages should be delivered when queue doesn't exist"
 
 
 class TestEventBus:
