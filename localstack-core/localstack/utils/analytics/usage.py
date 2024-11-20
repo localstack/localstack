@@ -1,5 +1,6 @@
 import datetime
 import math
+import threading
 from collections import defaultdict
 from itertools import count
 from typing import Any
@@ -77,6 +78,7 @@ class UsageMultiSetCounter:
 
     namespace: str
     _counters: dict[str, UsageSetCounter]
+    lock = threading.Lock()
 
     def __init__(self, namespace: str):
         self._counters = {}
@@ -84,13 +86,15 @@ class UsageMultiSetCounter:
 
     def record(self, key: str, value: str):
         namespace = f"{self.namespace}:{key}"
-        # We cannot use setdefault here because Python always instantiates a new UsageSetCounter,
-        # which overwrites the collector_registry
-        if namespace in self._counters:
-            set_counter = self._counters[namespace]
-        else:
-            set_counter = UsageSetCounter(namespace)
-            self._counters[namespace] = set_counter
+
+        with self.lock:
+            # We cannot use setdefault here because Python always instantiates a new UsageSetCounter,
+            # which overwrites the collector_registry
+            if namespace in self._counters:
+                set_counter = self._counters[namespace]
+            else:
+                set_counter = UsageSetCounter(namespace)
+                self._counters[namespace] = set_counter
         set_counter.record(value)
 
     def aggregate(self) -> dict:
