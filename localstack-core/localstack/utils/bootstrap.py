@@ -13,7 +13,13 @@ from functools import wraps
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Union
 
 from localstack import config, constants
-from localstack.config import HostAndPort, default_ip, is_env_not_false, is_env_true
+from localstack.config import (
+    HostAndPort,
+    default_ip,
+    is_env_not_false,
+    is_env_true,
+    load_environment,
+)
 from localstack.constants import VERSION
 from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
@@ -502,9 +508,28 @@ class ContainerConfigurators:
     @staticmethod
     def config_env_vars(cfg: ContainerConfiguration):
         """Sets all env vars from config.CONFIG_ENV_VARS."""
+
+        profile_env = {}
+        if config.LOADED_PROFILES:
+            load_environment(profiles=",".join(config.LOADED_PROFILES), env=profile_env)
+
         for env_var in config.CONFIG_ENV_VARS:
             value = os.environ.get(env_var, None)
             if value is not None:
+                if (
+                    env_var != "CI"
+                    and not env_var.startswith("LOCALSTACK_")
+                    and env_var not in profile_env
+                ):
+                    # Show a warning here in case we are directly forwarding an environment variable from
+                    # the system env to the container which has not been prefixed with LOCALSTACK_.
+                    # Suppress the warning for the "CI" env var.
+                    # Suppress the warning if the env var was set from the profile.
+                    LOG.warning(
+                        "Non-prefixed environment variable %(env_var)s is forwarded to the LocalStack container! "
+                        "Please use `LOCALSTACK_%(env_var)s` instead of %(env_var)s to explicitly mark this environment variable to be forwarded form the CLI to the LocalStack Runtime.",
+                        {"env_var": env_var},
+                    )
                 cfg.env_vars[env_var] = value
 
     @staticmethod
