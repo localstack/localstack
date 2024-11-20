@@ -365,36 +365,6 @@
       }
     }
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_and_get_bucket_policy": {
-    "recorded-date": "04-08-2023, 23:56:00",
-    "recorded-content": {
-      "put-bucket-policy": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 204
-        }
-      },
-      "get-bucket-policy": {
-        "Policy": {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Principal": {
-                "AWS": "*"
-              },
-              "Action": "s3:GetObject",
-              "Resource": "<resource:1>"
-            }
-          ]
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_tagging_empty_list": {
     "recorded-date": "03-08-2023, 04:14:24",
     "recorded-content": {
@@ -13292,6 +13262,294 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_get_bucket_policy": {
+    "recorded-date": "10-11-2024, 19:20:17",
+    "recorded-content": {
+      "get-bucket-policy-no-such-bucket-policy": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucketPolicy",
+          "Message": "The bucket policy does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-bucket-policy": {
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "*"
+              },
+              "Action": "s3:GetObject",
+              "Resource": "<resource:1>"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-policy-with-expected-bucket-owner": {
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "*"
+              },
+              "Action": "s3:GetObject",
+              "Resource": "<resource:1>"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-policy-with-expected-bucket-owner-error": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Message": "Access Denied"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_delete_bucket_policy": {
+    "recorded-date": "10-11-2024, 19:21:53",
+    "recorded-content": {
+      "delete-bucket-policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get-bucket-policy-no-such-bucket-policy": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucketPolicy",
+          "Message": "The bucket policy does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_bucket_policy": {
+    "recorded-date": "10-11-2024, 19:20:47",
+    "recorded-content": {
+      "put-bucket-policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get-bucket-policy": {
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "*"
+              },
+              "Action": "s3:GetObject",
+              "Resource": "<resource:1>"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_delete_bucket_policy_expected_bucket_owner": {
+    "recorded-date": "14-11-2024, 21:43:07",
+    "recorded-content": {
+      "delete-bucket-policy-with-expected-bucket-owner-error": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Message": "Access Denied"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      },
+      "delete-bucket-policy-invalid-bucket-owner": {
+        "Error": {
+          "Code": "InvalidBucketOwnerAWSAccountID",
+          "Message": "The value of the expected bucket owner parameter must be an AWS Account ID... [invalid]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "delete-bucket-policy-with-expected-bucket-owner": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_bucket_policy_expected_bucket_owner": {
+    "recorded-date": "10-11-2024, 19:32:05",
+    "recorded-content": {
+      "put-bucket-policy-with-expected-bucket-owner-error": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Message": "Access Denied"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      },
+      "put-bucket-policy-with-expected-bucket-owner": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_get_bucket_policy_invalid_account_id[0000]": {
+    "recorded-date": "14-11-2024, 21:34:49",
+    "recorded-content": {
+      "get-bucket-policy-invalid-bucket-owner": {
+        "Error": {
+          "Code": "InvalidBucketOwnerAWSAccountID",
+          "Message": "The value of the expected bucket owner parameter must be an AWS Account ID... [0000]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_get_bucket_policy_invalid_account_id[0000000000020]": {
+    "recorded-date": "14-11-2024, 21:34:51",
+    "recorded-content": {
+      "get-bucket-policy-invalid-bucket-owner": {
+        "Error": {
+          "Code": "InvalidBucketOwnerAWSAccountID",
+          "Message": "The value of the expected bucket owner parameter must be an AWS Account ID... [0000000000020]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_get_bucket_policy_invalid_account_id[abcd]": {
+    "recorded-date": "14-11-2024, 21:34:53",
+    "recorded-content": {
+      "get-bucket-policy-invalid-bucket-owner": {
+        "Error": {
+          "Code": "InvalidBucketOwnerAWSAccountID",
+          "Message": "The value of the expected bucket owner parameter must be an AWS Account ID... [abcd]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_get_bucket_policy_invalid_account_id[aa000000000$]": {
+    "recorded-date": "14-11-2024, 21:34:56",
+    "recorded-content": {
+      "get-bucket-policy-invalid-bucket-owner": {
+        "Error": {
+          "Code": "InvalidBucketOwnerAWSAccountID",
+          "Message": "The value of the expected bucket owner parameter must be an AWS Account ID... [aa000000000$]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_bucket_policy_invalid_account_id[0000]": {
+    "recorded-date": "14-11-2024, 21:38:42",
+    "recorded-content": {
+      "put-bucket-policy-invalid-bucket-owner": {
+        "Error": {
+          "Code": "InvalidBucketOwnerAWSAccountID",
+          "Message": "The value of the expected bucket owner parameter must be an AWS Account ID... [0000]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_bucket_policy_invalid_account_id[0000000000020]": {
+    "recorded-date": "14-11-2024, 21:38:44",
+    "recorded-content": {
+      "put-bucket-policy-invalid-bucket-owner": {
+        "Error": {
+          "Code": "InvalidBucketOwnerAWSAccountID",
+          "Message": "The value of the expected bucket owner parameter must be an AWS Account ID... [0000000000020]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_bucket_policy_invalid_account_id[abcd]": {
+    "recorded-date": "14-11-2024, 21:38:46",
+    "recorded-content": {
+      "put-bucket-policy-invalid-bucket-owner": {
+        "Error": {
+          "Code": "InvalidBucketOwnerAWSAccountID",
+          "Message": "The value of the expected bucket owner parameter must be an AWS Account ID... [abcd]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_bucket_policy_invalid_account_id[aa000000000$]": {
+    "recorded-date": "14-11-2024, 21:38:49",
+    "recorded-content": {
+      "put-bucket-policy-invalid-bucket-owner": {
+        "Error": {
+          "Code": "InvalidBucketOwnerAWSAccountID",
+          "Message": "The value of the expected bucket owner parameter must be an AWS Account ID... [aa000000000$]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
