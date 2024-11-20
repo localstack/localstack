@@ -30,6 +30,9 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         # add response processor specific to ddblocal
         handlers.modify_service_response.append(self.service, modify_ddblocal_arns)
 
+    def on_before_start(self):
+        self.server.start_dynamodb()
+
     def forward_request(
         self, context: RequestContext, service_request: ServiceRequest = None
     ) -> ServiceResponse:

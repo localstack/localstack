@@ -3,11 +3,12 @@ import re
 
 import aws_cdk as cdk
 import pytest
+from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.utils.aws import resources
+from localstack.utils.aws import arns, resources
 from localstack.utils.aws.arns import kinesis_stream_arn
 from localstack.utils.aws.queries import kinesis_get_latest_records
 from localstack.utils.strings import short_uid
@@ -185,3 +186,22 @@ class TestDynamoDBStreams:
         assert len(records[0]["PartitionKey"]) == 32
         assert int(records[0]["PartitionKey"], 16)
         snapshot.match("result-records", records)
+
+    @markers.aws.validated
+    def test_non_existent_stream(self, aws_client, region_name, account_id, snapshot):
+        table_name = f"non-existent-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(table_name, "<table-name>"))
+        with pytest.raises(ClientError) as e:
+            bad_stream_name = arns.dynamodb_stream_arn(
+                account_id=account_id,
+                region_name=region_name,
+                latest_stream_label="2024-11-18T14:36:44.149",
+                table_name=table_name,
+            )
+            aws_client.dynamodbstreams.describe_stream(StreamArn=bad_stream_name)
+
+        snapshot.match("non-existent-stream", e.value.response)
+        message = e.value.response["Error"]["Message"]
+        # assert that we do not have ddblocal region and default account id
+        assert f":{account_id}:" in message
+        assert f":{region_name}" in message
