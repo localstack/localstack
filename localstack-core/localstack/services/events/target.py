@@ -19,6 +19,7 @@ from localstack.services.events.utils import (
     get_trace_header_encoded_region_account,
     to_json_str,
 )
+from localstack.utils import collections
 from localstack.utils.aws.arns import (
     extract_account_id_from_arn,
     extract_region_from_arn,
@@ -438,9 +439,13 @@ class FirehoseTargetSender(TargetSender):
 
 class KinesisTargetSender(TargetSender):
     def send_event(self, event):
-        partition_key_path = self.target["KinesisParameters"]["PartitionKeyPath"]
+        partition_key_path = collections.get_safe(
+            self.target,
+            "$.KinesisParameters.PartitionKeyPath",
+            default_value="$.id",
+        )
         stream_name = self.target["Arn"].split("/")[-1]
-        partition_key = event.get(partition_key_path, event["id"])
+        partition_key = collections.get_safe(event, partition_key_path, event["id"])
         self.client.put_record(
             StreamName=stream_name,
             Data=to_bytes(to_json_str(event)),
@@ -458,11 +463,10 @@ class KinesisTargetSender(TargetSender):
 
 class LambdaTargetSender(TargetSender):
     def send_event(self, event):
-        asynchronous = True  # TODO clarify default behavior of AWS
         self.client.invoke(
             FunctionName=self.target["Arn"],
             Payload=to_bytes(to_json_str(event)),
-            InvocationType="Event" if asynchronous else "RequestResponse",
+            InvocationType="Event",
         )
 
 
