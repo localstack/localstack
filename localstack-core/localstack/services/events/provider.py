@@ -2047,7 +2047,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                             json.dumps(
                                 {
                                     "ErrorCode": "InternalException at process_entries",
-                                    "ErrorMessage": str(error),
+                                    "ErrorMessage": repr(error),
                                 }
                             )
                         )

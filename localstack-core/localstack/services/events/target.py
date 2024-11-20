@@ -4,7 +4,7 @@ import logging
 import re
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Set
+from typing import TYPE_CHECKING, Any, Dict, Generic, Set, TypeVar
 from urllib.parse import urlencode
 
 import requests
@@ -32,6 +32,16 @@ from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_bytes
 from localstack.utils.time import now_utc
+
+if TYPE_CHECKING:
+    from mypy_boto3_events import EventBridgeClient  # noqa
+    from mypy_boto3_firehose import FirehoseClient  # noqa
+    from mypy_boto3_kinesis import KinesisClient  # noqa
+    from mypy_boto3_lambda import LambdaClient  # noqa
+    from mypy_boto3_logs import CloudWatchLogsClient  # noqa
+    from mypy_boto3_sns import SNSClient  # noqa
+    from mypy_boto3_sqs import SQSClient  # noqa
+    from mypy_boto3_stepfunctions import SFNClient  # noqa
 
 LOG = logging.getLogger(__name__)
 
@@ -93,7 +103,10 @@ def replace_template_placeholders(
     return json.loads(formatted_template) if is_json else formatted_template[1:-1]
 
 
-class TargetSender(ABC):
+T = TypeVar("T", bound=BaseClient)
+
+
+class TargetSender(Generic[T], ABC):
     target: Target
     rule_arn: Arn
     rule_name: RuleName
@@ -103,7 +116,7 @@ class TargetSender(ABC):
     account_id: str
     target_region: str
     target_account_id: str
-    _client: BaseClient | None
+    _client: T | None
 
     def __init__(
         self,
@@ -132,7 +145,7 @@ class TargetSender(ABC):
         return self.target["Arn"]
 
     @property
-    def client(self):
+    def client(self) -> T:
         """Lazy initialization of internal botoclient factory."""
         if self._client is None:
             self._client = self._initialize_client()
@@ -180,7 +193,7 @@ class TargetSender(ABC):
         if input_transformer := target.get("InputTransformer"):
             self._validate_input_transformer(input_transformer)
 
-    def _initialize_client(self) -> BaseClient:
+    def _initialize_client(self) -> T:
         """Initializes internal boto client.
         If a role from a target is provided, the client will be initialized with the assumed role.
         If no role is provided, the client will be initialized with the account ID and region.
@@ -381,7 +394,7 @@ class ContainerTargetSender(TargetSender):
             raise ValueError("EcsParameters.TaskDefinitionArn is required for ECS target")
 
 
-class EventsTargetSender(TargetSender):
+class EventsTargetSender(TargetSender["EventBridgeClient"]):
     def send_event(self, event):
         # TODO add validation and tests for eventbridge to eventbridge requires Detail, DetailType, and Source
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/events/client/put_events.html
@@ -423,7 +436,7 @@ class EventsTargetSender(TargetSender):
             return []
 
 
-class FirehoseTargetSender(TargetSender):
+class FirehoseTargetSender(TargetSender["FirehoseClient"]):
     def send_event(self, event):
         delivery_stream_name = firehose_name(self.target["Arn"])
         self.client.put_record(
@@ -432,7 +445,7 @@ class FirehoseTargetSender(TargetSender):
         )
 
 
-class KinesisTargetSender(TargetSender):
+class KinesisTargetSender(TargetSender["KinesisClient"]):
     def send_event(self, event):
         partition_key_path = self.target["KinesisParameters"]["PartitionKeyPath"]
         stream_name = self.target["Arn"].split("/")[-1]
@@ -451,7 +464,7 @@ class KinesisTargetSender(TargetSender):
             raise ValueError("KinesisParameters.PartitionKeyPath is required for Kinesis target")
 
 
-class LambdaTargetSender(TargetSender):
+class LambdaTargetSender(TargetSender["LambdaClient"]):
     def send_event(self, event):
         asynchronous = True  # TODO clarify default behavior of AWS
         self.client.invoke(
@@ -461,7 +474,7 @@ class LambdaTargetSender(TargetSender):
         )
 
 
-class LogsTargetSender(TargetSender):
+class LogsTargetSender(TargetSender["CloudWatchLogsClient"]):
     def send_event(self, event):
         log_group_name = self.target["Arn"].split(":")[6]
         log_stream_name = str(uuid.uuid4())  # Unique log stream name
@@ -493,12 +506,12 @@ class SagemakerTargetSender(TargetSender):
         raise NotImplementedError("Sagemaker target is not yet implemented")
 
 
-class SnsTargetSender(TargetSender):
+class SnsTargetSender(TargetSender["SNSClient"]):
     def send_event(self, event):
         self.client.publish(TopicArn=self.target["Arn"], Message=to_json_str(event))
 
 
-class SqsTargetSender(TargetSender):
+class SqsTargetSender(TargetSender["SQSClient"]):
     def send_event(self, event):
         queue_url = sqs_queue_url_for_arn(self.target["Arn"])
         msg_group_id = self.target.get("SqsParameters", {}).get("MessageGroupId", None)
@@ -510,7 +523,7 @@ class SqsTargetSender(TargetSender):
         )
 
 
-class StatesTargetSender(TargetSender):
+class StatesTargetSender(TargetSender["SFNClient"]):
     """Step Functions Target Sender"""
 
     def send_event(self, event):
