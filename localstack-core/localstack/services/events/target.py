@@ -203,8 +203,9 @@ class TargetSender(ABC):
         return client
 
     def _validate_input_transformer(self, input_transformer: InputTransformer):
-        if "InputTemplate" not in input_transformer:
-            raise ValueError("InputTemplate is required for InputTransformer")
+        # TODO: cover via test
+        # if "InputTemplate" not in input_transformer:
+        #     raise ValueError("InputTemplate is required for InputTransformer")
         input_template = input_transformer["InputTemplate"]
         input_paths_map = input_transformer.get("InputPathsMap", {})
         placeholders = TRANSFORMER_PLACEHOLDER_PATTERN.findall(input_template)
@@ -338,8 +339,9 @@ class ApiGatewayTargetSender(TargetSender):
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
-        if not collections.get_safe(target, "$.RoleArn"):
-            raise ValueError("RoleArn is required for ApiGateway target")
+        # TODO: cover via test
+        # if not collections.get_safe(target, "$.RoleArn"):
+        #     raise ValueError("RoleArn is required for ApiGateway target")
 
     def _get_predefined_template_replacements(self, event: Dict[str, Any]) -> Dict[str, Any]:
         """Extracts predefined values from the event."""
@@ -365,10 +367,12 @@ class BatchTargetSender(TargetSender):
         raise NotImplementedError("Batch target is not yet implemented")
 
     def _validate_input(self, target: Target):
-        if not collections.get_safe(target, "$.BatchParameters.JobDefinition"):
-            raise ValueError("BatchParameters.JobDefinition is required for Batch target")
-        if not collections.get_safe(target, "$.BatchParameters.JobName"):
-            raise ValueError("BatchParameters.JobName is required for Batch target")
+        # TODO: cover via test and fix (only required if we have BatchParameters)
+        # if not collections.get_safe(target, "$.BatchParameters.JobDefinition"):
+        #     raise ValueError("BatchParameters.JobDefinition is required for Batch target")
+        # if not collections.get_safe(target, "$.BatchParameters.JobName"):
+        #     raise ValueError("BatchParameters.JobName is required for Batch target")
+        pass
 
 
 class ContainerTargetSender(TargetSender):
@@ -377,8 +381,9 @@ class ContainerTargetSender(TargetSender):
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
-        if not collections.get_safe(target, "$.EcsParameters.TaskDefinitionArn"):
-            raise ValueError("EcsParameters.TaskDefinitionArn is required for ECS target")
+        # TODO: cover via test
+        # if not collections.get_safe(target, "$.EcsParameters.TaskDefinitionArn"):
+        #     raise ValueError("EcsParameters.TaskDefinitionArn is required for ECS target")
 
 
 class EventsTargetSender(TargetSender):
@@ -434,9 +439,13 @@ class FirehoseTargetSender(TargetSender):
 
 class KinesisTargetSender(TargetSender):
     def send_event(self, event):
-        partition_key_path = self.target["KinesisParameters"]["PartitionKeyPath"]
+        partition_key_path = collections.get_safe(
+            self.target,
+            "$.KinesisParameters.PartitionKeyPath",
+            default_value="$.id",
+        )
         stream_name = self.target["Arn"].split("/")[-1]
-        partition_key = event.get(partition_key_path, event["id"])
+        partition_key = collections.get_safe(event, partition_key_path, event["id"])
         self.client.put_record(
             StreamName=stream_name,
             Data=to_bytes(to_json_str(event)),
@@ -445,19 +454,19 @@ class KinesisTargetSender(TargetSender):
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
-        if not collections.get_safe(target, "$.RoleArn"):
-            raise ValueError("RoleArn is required for Kinesis target")
-        if not collections.get_safe(target, "$.KinesisParameters.PartitionKeyPath"):
-            raise ValueError("KinesisParameters.PartitionKeyPath is required for Kinesis target")
+        # TODO: cover via tests
+        # if not collections.get_safe(target, "$.RoleArn"):
+        #     raise ValueError("RoleArn is required for Kinesis target")
+        # if not collections.get_safe(target, "$.KinesisParameters.PartitionKeyPath"):
+        #     raise ValueError("KinesisParameters.PartitionKeyPath is required for Kinesis target")
 
 
 class LambdaTargetSender(TargetSender):
     def send_event(self, event):
-        asynchronous = True  # TODO clarify default behavior of AWS
         self.client.invoke(
             FunctionName=self.target["Arn"],
             Payload=to_bytes(to_json_str(event)),
-            InvocationType="Event" if asynchronous else "RequestResponse",
+            InvocationType="Event",
         )
 
 
@@ -484,8 +493,9 @@ class RedshiftTargetSender(TargetSender):
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
-        if not collections.get_safe(target, "$.RedshiftDataParameters.Database"):
-            raise ValueError("RedshiftDataParameters.Database is required for Redshift target")
+        # TODO: cover via test
+        # if not collections.get_safe(target, "$.RedshiftDataParameters.Database"):
+        #     raise ValueError("RedshiftDataParameters.Database is required for Redshift target")
 
 
 class SagemakerTargetSender(TargetSender):
@@ -521,8 +531,9 @@ class StatesTargetSender(TargetSender):
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
-        if not collections.get_safe(target, "$.RoleArn"):
-            raise ValueError("RoleArn is required for StepFunctions target")
+        # TODO: cover via test
+        # if not collections.get_safe(target, "$.RoleArn"):
+        #     raise ValueError("RoleArn is required for StepFunctions target")
 
 
 class SystemsManagerSender(TargetSender):
@@ -533,14 +544,15 @@ class SystemsManagerSender(TargetSender):
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
-        if not collections.get_safe(target, "$.RoleArn"):
-            raise ValueError(
-                "RoleArn is required for SystemManager target to invoke a EC2 run command"
-            )
-        if not collections.get_safe(target, "$.RunCommandParameters.RunCommandTargets"):
-            raise ValueError(
-                "RunCommandParameters.RunCommandTargets is required for Systems Manager target"
-            )
+        # TODO: cover via test
+        # if not collections.get_safe(target, "$.RoleArn"):
+        #     raise ValueError(
+        #         "RoleArn is required for SystemManager target to invoke a EC2 run command"
+        #     )
+        # if not collections.get_safe(target, "$.RunCommandParameters.RunCommandTargets"):
+        #     raise ValueError(
+        #         "RunCommandParameters.RunCommandTargets is required for Systems Manager target"
+        #     )
 
 
 class TargetSenderFactory:

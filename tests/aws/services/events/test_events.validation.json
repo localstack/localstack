@@ -153,7 +153,7 @@
     "last_validated_date": "2024-06-19T10:42:49+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_create_connection_validations": {
-    "last_validated_date": "2024-06-19T10:41:01+00:00"
+    "last_validated_date": "2024-11-14T20:29:49+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_event_with_too_big_detail": {
     "last_validated_date": "2024-10-18T07:36:18+00:00"
