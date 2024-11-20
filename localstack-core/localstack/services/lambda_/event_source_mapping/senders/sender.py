@@ -42,3 +42,9 @@ class Sender:
         Returns an optional payload with a list of "batchItemFailures" if only part of the batch succeeds.
         """
         pass
+
+    @abstractmethod
+    def event_target(self) -> str:
+        """Return the event target metadata (e.g., aws:sqs)
+        Format analogous to event_source of pollers"""
+        pass

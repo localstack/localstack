@@ -15,6 +15,7 @@ from localstack.services.lambda_.event_source_mapping.senders.sender import (
     Sender,
     SenderError,
 )
+from localstack.services.lambda_.usage import esm_error, esm_invocation
 
 LOG = logging.getLogger(__name__)
 
@@ -28,6 +29,11 @@ class EsmEventProcessor(EventProcessor):
         self.logger = logger
 
     def process_events_batch(self, input_events: list[dict]) -> None:
+        # analytics
+        first_event = input_events[0] if input_events else {}
+        event_source = first_event.get("eventSource")
+        esm_invocation.record(event_source)
+
         execution_id = uuid.uuid4()
         # Create a copy of the original input events
         events = input_events.copy()
@@ -69,6 +75,7 @@ class EsmEventProcessor(EventProcessor):
             )
             raise BatchFailureError(error=e.error) from e
         except Exception as e:
+            esm_error.record(event_source)
             LOG.error(
                 "Unhandled exception while processing Lambda event source mapping (ESM) events %s for ESM with execution id %s",
                 events,
