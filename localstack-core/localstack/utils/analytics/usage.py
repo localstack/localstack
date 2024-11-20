@@ -61,7 +61,9 @@ class UsageMultiSetCounter:
     my_feature_counter.record("aws:sqs", "aws:lambda")
     my_feature_counter.record("aws:sqs", "aws:stepfunctions")
     my_feature_counter.record("aws:kinesis", "aws:lambda")
-    my_feature_counter.aggregate() returns:
+    aggregate is implemented for each counter individually
+
+    my_feature_counter.aggregate() is available for testing purposes:
     {
        "aws:sqs": {
          "aws:lambda": 2,
@@ -82,10 +84,18 @@ class UsageMultiSetCounter:
 
     def record(self, key: str, value: str):
         namespace = f"{self.namespace}:{key}"
-        set_counter = self._counters.setdefault(key, UsageSetCounter(namespace))
+        # We cannot use setdefault here because Python always instantiates a new UsageSetCounter,
+        # which overwrites the collector_registry
+        if namespace in self._counters:
+            set_counter = self._counters[namespace]
+        else:
+            set_counter = UsageSetCounter(namespace)
+            self._counters[namespace] = set_counter
         set_counter.record(value)
 
     def aggregate(self) -> dict:
+        """aggregate is invoked on a per UsageSetCounter level because each counter is registered individually.
+        This utility is only for testing!"""
         merged_dict = {}
         for namespace, counter in self._counters.items():
             merged_dict[namespace] = counter.aggregate()
