@@ -74,6 +74,35 @@ class LocalStackCliGroup(click.Group):
                 # If we have a generic exception, we wrap it in a ClickException
                 raise CLIError(str(e)) from e
 
+    def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """Custom help formatter that makes all section headers bold and uppercase."""
+        from localstack.constants import VERSION
+
+        formatter.write_text(f"LocalStack CLI v{VERSION}")
+        self.format_help_text(ctx, formatter)
+        formatter.write_text("")
+        self.format_usage(ctx, formatter)
+        self.format_options(ctx, formatter)
+        self.format_commands(ctx, formatter)
+
+    def format_usage(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """Override usage formatting to make the header bold and uppercase."""
+        formatter.write_text("\033[1mUSAGE\033[0m")
+        formatter.write_text("localstack [OPTIONS] COMMAND [ARGS]...")
+
+    def format_options(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """Override options formatting to make the header bold and uppercase."""
+        opts = []
+        for param in ctx.command.get_params(ctx):
+            rv = param.get_help_record(ctx)
+            if rv is not None:
+                opts.append(rv)
+
+        if opts:
+            formatter.write_text("")
+            formatter.write_text("\033[1mOPTIONS\033[0m")
+            formatter.write_dl(opts)
+
     def format_commands(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
         """Extra format methods for multi methods that adds all the commands after the options. It also
         groups commands into command categories."""
@@ -100,8 +129,9 @@ class LocalStackCliGroup(click.Group):
 
         for category, rows in categories.items():
             if rows:
-                with formatter.section(category):
-                    formatter.write_dl(rows)
+                formatter.write_text("")
+                formatter.write_text(f"\033[1m{category.upper()}\033[0m")
+                formatter.write_dl(rows)
 
     def _get_category(self, cmd) -> str:
         if cmd.deprecated:
@@ -111,7 +141,6 @@ class LocalStackCliGroup(click.Group):
             return "Advanced"
 
         return "Commands"
-
 
 def create_with_plugins() -> LocalstackCli:
     """
