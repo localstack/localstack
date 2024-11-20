@@ -1985,13 +1985,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
         self._proxy_capture_input_event(event_formatted)
 
-        # Add the EventId to processed_entries immediately after validation succeeds
-        # This ensures exactly one entry per input event
+        # Always add the successful EventId entry, even if target processing might fail
         processed_entries.append({"EventId": event_formatted["id"]})
 
         if configured_rules := list(event_bus.rules.values()):
             for rule in configured_rules:
-                self._process_rules(rule, region, account_id, event_formatted, failed_entry_count)
+                self._process_rules(rule, region, account_id, event_formatted)
         else:
             LOG.info(
                 json.dumps(
@@ -2012,9 +2011,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         region: str,
         account_id: str,
         event_formatted: FormattedEvent,
-        failed_entry_count: dict[str, int],
     ) -> None:
-        """Process rules for an event. Note that processed_entries is no longer passed as we handle that in _process_entry."""
+        """Process rules for an event. Note that we no longer handle entries here as AWS returns success regardless of target failures."""
         event_pattern = rule.event_pattern
         event_str = to_json_str(event_formatted)
         if matches_event(event_pattern, event_str):
@@ -2027,6 +2025,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                         }
                     )
                 )
+                return
+
             for target in rule.targets.values():
                 target_arn = target["Arn"]
                 if is_archive_arn(target_arn):
@@ -2041,12 +2041,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     try:
                         target_sender.process_event(event_formatted.copy())
                     except Exception as error:
-                        failed_entry_count["count"] += 1
+                        # Log the error but don't modify the response
                         LOG.info(
                             json.dumps(
                                 {
-                                    "ErrorCode": "InternalException at process_entries",
-                                    "ErrorMessage": str(error),
+                                    "ErrorCode": "TargetDeliveryFailure",
+                                    "ErrorMessage": f"Failed to deliver to target {target['Id']}: {str(error)}",
                                 }
                             )
                         )

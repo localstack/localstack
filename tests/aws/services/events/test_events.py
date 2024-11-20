@@ -424,23 +424,19 @@ class TestEvents:
 
     @markers.aws.validated
     def test_put_events_response_entries_order(
-        self, events_put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot, clean_up
+        self, events_put_rule, create_sqs_events_target, aws_client, snapshot, clean_up
     ):
         """Test that put_events response contains each EventId only once, even with multiple targets."""
-        account_id = aws_client.sts.get_caller_identity()["Account"]
-        region = aws_client.events.meta.region_name
 
-        # Create two SQS queues as targets
-        queue_url_1 = sqs_create_queue()
-        queue_arn_1 = sqs_get_queue_arn(queue_url_1)
-        queue_url_2 = sqs_create_queue()
-        queue_arn_2 = sqs_get_queue_arn(queue_url_2)
+        queue_url_1, queue_arn_1 = create_sqs_events_target()
+        queue_url_2, queue_arn_2 = create_sqs_events_target()
 
         rule_name = f"test-rule-{short_uid()}"
 
         snapshot.add_transformers_list(
             [
                 snapshot.transform.key_value("EventId", reference_replacement=False),
+                snapshot.transform.key_value("detail", reference_replacement=False),
                 snapshot.transform.regex(queue_arn_1, "<queue-1-arn>"),
                 snapshot.transform.regex(queue_arn_2, "<queue-2-arn>"),
                 snapshot.transform.regex(rule_name, "<rule-name>"),
@@ -449,33 +445,9 @@ class TestEvents:
             ]
         )
 
-        rule_arn = f"arn:aws:events:{region}:{account_id}:rule/{rule_name}"
-        sqs_policy = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Sid": "EventBridgeToSQS",
-                    "Effect": "Allow",
-                    "Principal": {"Service": "events.amazonaws.com"},
-                    "Action": "sqs:SendMessage",
-                    "Resource": [queue_arn_1, queue_arn_2],
-                    "Condition": {"ArnLike": {"aws:SourceArn": rule_arn}},
-                }
-            ],
-        }
-
-        aws_client.sqs.set_queue_attributes(
-            QueueUrl=queue_url_1, Attributes={"Policy": json.dumps(sqs_policy)}
-        )
-        aws_client.sqs.set_queue_attributes(
-            QueueUrl=queue_url_2, Attributes={"Policy": json.dumps(sqs_policy)}
-        )
-
         events_put_rule(
             Name=rule_name,
-            EventPattern=json.dumps(
-                {"source": ["test.source"], "detail-type": ["test.detail.type"]}
-            ),
+            EventPattern=json.dumps(TEST_EVENT_PATTERN_NO_DETAIL),
         )
 
         def check_rule_active():
@@ -498,10 +470,11 @@ class TestEvents:
             target_response["FailedEntryCount"] == 0
         ), f"Failed to add targets: {target_response.get('FailedEntries', [])}"
 
+        # Use the test constants for the event
         test_event = {
-            "Source": "test.source",
-            "DetailType": "test.detail.type",
-            "Detail": json.dumps({"message": "test message"}),
+            "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+            "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+            "Detail": json.dumps(EVENT_DETAIL),
         }
 
         event_response = aws_client.events.put_events(Entries=[test_event])
@@ -516,16 +489,16 @@ class TestEvents:
             """Verify the message content matches what we sent."""
             body = json.loads(message["Body"])
 
-            assert body["source"] == "test.source", f"Unexpected source: {body['source']}"
             assert (
-                body["detail-type"] == "test.detail.type"
+                body["source"] == TEST_EVENT_PATTERN_NO_DETAIL["source"][0]
+            ), f"Unexpected source: {body['source']}"
+            assert (
+                body["detail-type"] == TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0]
             ), f"Unexpected detail-type: {body['detail-type']}"
 
             detail = body["detail"]  # detail is already parsed as dict
             assert isinstance(detail, dict), f"Detail should be a dict, got {type(detail)}"
-            assert (
-                detail.get("message") == "test message"
-            ), f"Unexpected message in detail: {detail}"
+            assert detail == EVENT_DETAIL, f"Unexpected detail content: {detail}"
 
             assert (
                 body["id"] == original_event_id
@@ -552,6 +525,67 @@ class TestEvents:
         snapshot.match(
             "sqs-messages", {"queue1_messages": messages_1, "queue2_messages": messages_2}
         )
+
+    @markers.aws.validated
+    def test_put_events_with_iam_permission_failure(
+        self, events_put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot, clean_up
+    ):
+        """Test that put_events returns successful EventId even when target permissions are missing,
+        but the message is not delivered to the target."""
+        # Create SQS queue without EventBridge permissions
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        rule_name = f"test-rule-{short_uid()}"
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("EventId"),
+                snapshot.transform.regex(queue_arn, "<queue-arn>"),
+                snapshot.transform.regex(rule_name, "<rule-name>"),
+                *snapshot.transform.sqs_api(),
+            ]
+        )
+
+        # Create rule
+        events_put_rule(
+            Name=rule_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN_NO_DETAIL),
+        )
+
+        # Add target without proper permissions
+        target_id = f"test-target-{short_uid()}"
+        target_response = aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn},
+            ],
+        )
+
+        assert (
+            target_response["FailedEntryCount"] == 0
+        ), f"Failed to add targets: {target_response.get('FailedEntries', [])}"
+
+        # Put event that should trigger the rule
+        test_event = {
+            "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+            "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+            "Detail": json.dumps(EVENT_DETAIL),
+        }
+
+        event_response = aws_client.events.put_events(Entries=[test_event])
+        snapshot.match("put-events-response", event_response)
+
+        # Verify response matches expected structure
+        assert len(event_response["Entries"]) == 1
+        assert "EventId" in event_response["Entries"][0]
+        assert event_response["FailedEntryCount"] == 0
+
+        messages = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=1, WaitTimeSeconds=1
+        ).get("Messages", [])
+
+        assert len(messages) == 0, "Expected no messages to be delivered due to missing permissions"
 
 
 class TestEventBus:
