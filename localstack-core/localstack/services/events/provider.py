@@ -145,6 +145,7 @@ from localstack.services.events.target import (
     TargetSenderDict,
     TargetSenderFactory,
 )
+from localstack.services.events.usage import rule_error, rule_invocation
 from localstack.services.events.utils import (
     extract_event_bus_name,
     extract_region_and_account_id,
@@ -1334,7 +1335,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 f"1 validation error detected: Value '{formatted_entries}' at 'entries' failed to satisfy constraint: Member must have length less than or equal to 10"
             )
         entries, failed_entry_count = self._process_entries(context, entries)
-
         response = PutEventsResponse(
             Entries=entries,
             FailedEntryCount=failed_entry_count,
@@ -2035,7 +2035,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     try:
                         target_sender.process_event(event_formatted.copy())
                         processed_entries.append({"EventId": event_formatted["id"]})
+                        rule_invocation.record(target_sender.service)
                     except Exception as error:
+                        rule_error.record(target_sender.service)
                         processed_entries.append(
                             {
                                 "ErrorCode": "InternalException",
