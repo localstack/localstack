@@ -424,20 +424,53 @@ class TestEvents:
 
     @markers.aws.validated
     def test_put_events_response_entries_order(
-        self, events_put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot
+        self, events_put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot, clean_up
     ):
         """Test that put_events response contains each EventId only once, even with multiple targets."""
+        account_id = aws_client.sts.get_caller_identity()["Account"]
+        region = aws_client.events.meta.region_name
+
         # Create two SQS queues as targets
         queue_url_1 = sqs_create_queue()
         queue_arn_1 = sqs_get_queue_arn(queue_url_1)
         queue_url_2 = sqs_create_queue()
         queue_arn_2 = sqs_get_queue_arn(queue_url_2)
 
-        # Create rule that will match our test event
         rule_name = f"test-rule-{short_uid()}"
-        snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
 
-        # Add pattern that will match our test event
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("EventId", reference_replacement=False),
+                snapshot.transform.regex(queue_arn_1, "<queue-1-arn>"),
+                snapshot.transform.regex(queue_arn_2, "<queue-2-arn>"),
+                snapshot.transform.regex(rule_name, "<rule-name>"),
+                *snapshot.transform.sqs_api(),
+                *snapshot.transform.sns_api(),
+            ]
+        )
+
+        rule_arn = f"arn:aws:events:{region}:{account_id}:rule/{rule_name}"
+        sqs_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "EventBridgeToSQS",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": "sqs:SendMessage",
+                    "Resource": [queue_arn_1, queue_arn_2],
+                    "Condition": {"ArnLike": {"aws:SourceArn": rule_arn}},
+                }
+            ],
+        }
+
+        aws_client.sqs.set_queue_attributes(
+            QueueUrl=queue_url_1, Attributes={"Policy": json.dumps(sqs_policy)}
+        )
+        aws_client.sqs.set_queue_attributes(
+            QueueUrl=queue_url_2, Attributes={"Policy": json.dumps(sqs_policy)}
+        )
+
         events_put_rule(
             Name=rule_name,
             EventPattern=json.dumps(
@@ -445,10 +478,15 @@ class TestEvents:
             ),
         )
 
-        # Add two targets to the same rule
+        def check_rule_active():
+            rule = aws_client.events.describe_rule(Name=rule_name)
+            assert rule["State"] == "ENABLED"
+
+        retry(check_rule_active, retries=10, sleep=1)
+
         target_id_1 = f"test-target-1-{short_uid()}"
         target_id_2 = f"test-target-2-{short_uid()}"
-        aws_client.events.put_targets(
+        target_response = aws_client.events.put_targets(
             Rule=rule_name,
             Targets=[
                 {"Id": target_id_1, "Arn": queue_arn_1},
@@ -456,47 +494,60 @@ class TestEvents:
             ],
         )
 
-        # Put a test event that matches our rule
-        response = aws_client.events.put_events(
-            Entries=[
-                {
-                    "Source": "test.source",
-                    "DetailType": "test.detail.type",
-                    "Detail": json.dumps({"message": "test message"}),
-                }
-            ]
-        )
+        assert (
+            target_response["FailedEntryCount"] == 0
+        ), f"Failed to add targets: {target_response.get('FailedEntries', [])}"
 
-        # Add transformers for the snapshot
-        snapshot.add_transformer(
-            [
-                snapshot.transform.key_value("EventId", reference_replacement=False),
-                snapshot.transform.regex(queue_arn_1, "<queue-1-arn>"),
-                snapshot.transform.regex(queue_arn_2, "<queue-2-arn>"),
-            ]
-        )
+        test_event = {
+            "Source": "test.source",
+            "DetailType": "test.detail.type",
+            "Detail": json.dumps({"message": "test message"}),
+        }
 
-        # Verify the response matches our snapshot
-        snapshot.match("put-events-response", response)
+        event_response = aws_client.events.put_events(Entries=[test_event])
 
-        # Additional verification:
-        # 1. Verify we got exactly one EventId in the response
-        assert len(response["Entries"]) == 1
+        snapshot.match("put-events-response", event_response)
 
-        # 2. Verify both queues received the message (proving both targets were triggered)
-        messages_1 = sqs_collect_messages(aws_client, queue_url_1, expected_events_count=1)
-        messages_2 = sqs_collect_messages(aws_client, queue_url_2, expected_events_count=1)
+        assert len(event_response["Entries"]) == 1
+        event_id = event_response["Entries"][0]["EventId"]
+        assert event_id, "EventId not found in response"
 
-        assert len(messages_1) == 1
-        assert len(messages_2) == 1
+        def verify_message_content(message, original_event_id):
+            """Verify the message content matches what we sent."""
+            body = json.loads(message["Body"])
 
-        # 3. Verify both messages have the same EventId as in the response
-        event_id = response["Entries"][0]["EventId"]
-        message_1 = json.loads(messages_1[0]["Body"])
-        message_2 = json.loads(messages_2[0]["Body"])
+            assert body["source"] == "test.source", f"Unexpected source: {body['source']}"
+            assert (
+                body["detail-type"] == "test.detail.type"
+            ), f"Unexpected detail-type: {body['detail-type']}"
 
-        assert message_1["id"] == event_id
-        assert message_2["id"] == event_id
+            detail = body["detail"]  # detail is already parsed as dict
+            assert isinstance(detail, dict), f"Detail should be a dict, got {type(detail)}"
+            assert (
+                detail.get("message") == "test message"
+            ), f"Unexpected message in detail: {detail}"
+
+            assert (
+                body["id"] == original_event_id
+            ), f"Event ID mismatch. Expected {original_event_id}, got {body['id']}"
+
+            return body
+
+        try:
+            messages_1 = sqs_collect_messages(
+                aws_client, queue_url_1, expected_events_count=1, retries=30, wait_time=5
+            )
+            messages_2 = sqs_collect_messages(
+                aws_client, queue_url_2, expected_events_count=1, retries=30, wait_time=5
+            )
+        except Exception as e:
+            raise Exception(f"Failed to collect messages: {str(e)}")
+
+        assert len(messages_1) == 1, f"Expected 1 message in queue 1, got {len(messages_1)}"
+        assert len(messages_2) == 1, f"Expected 1 message in queue 2, got {len(messages_2)}"
+
+        verify_message_content(messages_1[0], event_id)
+        verify_message_content(messages_2[0], event_id)
 
         snapshot.match(
             "sqs-messages", {"queue1_messages": messages_1, "queue2_messages": messages_2}
