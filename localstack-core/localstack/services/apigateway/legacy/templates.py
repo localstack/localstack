@@ -12,7 +12,7 @@ from localstack import config
 from localstack.constants import APPLICATION_JSON, APPLICATION_XML
 from localstack.services.apigateway.legacy.context import ApiInvocationContext
 from localstack.services.apigateway.legacy.helpers import select_integration_response
-from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
+from localstack.utils.aws.templating import APIGW_SOURCE, VelocityUtil, VtlTemplate
 from localstack.utils.json import extract_jsonpath, json_safe, try_json
 from localstack.utils.strings import to_str
 
@@ -184,8 +184,8 @@ class VelocityInput:
 class ApiGatewayVtlTemplate(VtlTemplate):
     """Util class for rendering VTL templates with API Gateway specific extensions"""
 
-    def prepare_namespace(self, variables) -> Dict[str, Any]:
-        namespace = super().prepare_namespace(variables)
+    def prepare_namespace(self, variables, source: str = APIGW_SOURCE) -> Dict[str, Any]:
+        namespace = super().prepare_namespace(variables, source)
         if stage_var := variables.get("stage_variables") or {}:
             namespace["stageVariables"] = stage_var
         input_var = variables.get("input") or {}
