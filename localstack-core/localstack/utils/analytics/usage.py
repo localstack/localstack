@@ -87,12 +87,12 @@ class UsageMultiSetCounter:
     def record(self, key: str, value: str):
         namespace = f"{self.namespace}:{key}"
 
-        with self.lock:
-            # We cannot use setdefault here because Python always instantiates a new UsageSetCounter,
-            # which overwrites the collector_registry
-            if namespace in self._counters:
-                set_counter = self._counters[namespace]
-            else:
+        if namespace in self._counters:
+            set_counter = self._counters[namespace]
+        else:
+            with self.lock:
+                # We cannot use setdefault here because Python always instantiates a new UsageSetCounter,
+                # which overwrites the collector_registry
                 set_counter = UsageSetCounter(namespace)
                 self._counters[namespace] = set_counter
         set_counter.record(value)
