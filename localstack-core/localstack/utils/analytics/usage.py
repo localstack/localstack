@@ -51,15 +51,47 @@ class UsageSetCounter:
 
 class UsageCounter:
     """
-    Use this counter to count numeric values and perform aggregations
-
-    Available aggregations: min, max, sum, mean, median
+    Use this counter to count numeric values
 
     Example:
-        my_feature_counter = UsageCounter("lambda:somefeature", aggregations=["min", "max", "sum"])
-        my_feature_counter.increment()  # equivalent to my_feature_counter.record_value(1)
-        my_feature_counter.record_value(3)
-        my_feature_counter.aggregate()  # returns {"min": 1, "max": 3, "sum": 4}
+        my__counter = UsageCounter("lambda:somefeature")
+        my_counter.increment()
+        my_counter.increment()
+        my_counter.aggregate()  # returns {"count": 2}
+    """
+
+    state: int
+    namespace: str
+
+    def __init__(self, namespace: str):
+        self.enabled = not config.DISABLE_EVENTS
+        self.state = 0
+        self._counter = count(1)
+        self.namespace = namespace
+        collector_registry[namespace] = self
+
+    def increment(self):
+        # TODO: we should instead have different underlying datastructures to store the state, and have no-op operations
+        #  when config.DISABLE_EVENTS is set
+        if self.enabled:
+            self.state = next(self._counter)
+
+    def aggregate(self) -> dict:
+        # TODO: should we just keep `count`? "sum" might need to be kept for historical data?
+        return {"count": self.state, "sum": self.state}
+
+
+class TimingStats:
+    """
+    Use this counter to measure numeric values and perform aggregations
+
+    Available aggregations: min, max, sum, mean, median, count
+
+    Example:
+        my_feature_counter = TimingStats("lambda:somefeature", aggregations=["min", "max", "sum", "count"])
+        my_feature_counter.record_value(512)
+        my_feature_counter.record_value(256)
+        my_feature_counter.aggregate()  # returns {"min": 256, "max": 512, "sum": 768, "count": 2}
     """
 
     state: list[int | float]
@@ -72,12 +104,6 @@ class UsageCounter:
         self.namespace = namespace
         self.aggregations = aggregations
         collector_registry[namespace] = self
-
-    def increment(self):
-        # TODO: we should instead have different underlying datastructures to store the state, and have no-op operations
-        #  when config.DISABLE_EVENTS is set
-        if self.enabled:
-            self.state.append(1)
 
     def record_value(self, value: int | float):
         if self.enabled:
