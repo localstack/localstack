@@ -1,5 +1,8 @@
 {
-  "tests/aws/services/apigateway/test_apigateway_kinesis.py::test_apigateway_to_kinesis": {
-    "last_validated_date": "2024-07-12T20:32:13+00:00"
+  "tests/aws/services/apigateway/test_apigateway_kinesis.py::test_apigateway_to_kinesis[PutRecord]": {
+    "last_validated_date": "2024-11-20T05:29:53+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_kinesis.py::test_apigateway_to_kinesis[PutRecords]": {
+    "last_validated_date": "2024-11-20T06:33:51+00:00"
   }
 }
