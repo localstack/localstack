@@ -20177,5 +20177,463 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_config_distributed_item_selector_parameters": {
+    "recorded-date": "15-11-2024, 13:56:59",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "Start",
+              "output": {
+                "content": {
+                  "bucket": "test-bucket",
+                  "values": [
+                    "1",
+                    "2",
+                    "3"
+                  ]
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "content": {
+                  "bucket": "test-bucket",
+                  "values": [
+                    "1",
+                    "2",
+                    "3"
+                  ]
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 5,
+            "mapStateStartedEventDetails": {
+              "length": 3
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 6,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 9,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"bucketName\":\"test-bucket\",\"value\":\"1\"},{\"bucketName\":\"test-bucket\",\"value\":\"2\"},{\"bucketName\":\"test-bucket\",\"value\":\"3\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "stateEnteredEventDetails": {
+              "input": "[{\"bucketName\":\"test-bucket\",\"value\":\"1\"},{\"bucketName\":\"test-bucket\",\"value\":\"2\"},{\"bucketName\":\"test-bucket\",\"value\":\"3\"}]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Finish"
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateEntered"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateExitedEventDetails": {
+              "name": "Finish",
+              "output": "[{\"bucketName\":\"test-bucket\",\"value\":\"1\"},{\"bucketName\":\"test-bucket\",\"value\":\"2\"},{\"bucketName\":\"test-bucket\",\"value\":\"3\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"bucketName\":\"test-bucket\",\"value\":\"1\"},{\"bucketName\":\"test-bucket\",\"value\":\"2\"},{\"bucketName\":\"test-bucket\",\"value\":\"3\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 12,
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_item_selector_parameters": {
+    "recorded-date": "15-11-2024, 11:20:56",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "Start",
+              "output": {
+                "content": {
+                  "bucket": "test-bucket",
+                  "values": [
+                    "1",
+                    "2",
+                    "3"
+                  ]
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "content": {
+                  "bucket": "test-bucket",
+                  "values": [
+                    "1",
+                    "2",
+                    "3"
+                  ]
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 5,
+            "mapStateStartedEventDetails": {
+              "length": 3
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 6,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "MapState"
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "bucketName": "test-bucket",
+                "value": "1"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EndState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "EndState",
+              "output": {
+                "message": "Processing item completed"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 9,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "MapState"
+            },
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 10,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "MapState"
+            },
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateEnteredEventDetails": {
+              "input": {
+                "bucketName": "test-bucket",
+                "value": "2"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EndState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "stateExitedEventDetails": {
+              "name": "EndState",
+              "output": {
+                "message": "Processing item completed"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 13,
+            "mapIterationSucceededEventDetails": {
+              "index": 1,
+              "name": "MapState"
+            },
+            "previousEventId": 12,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 14,
+            "mapIterationStartedEventDetails": {
+              "index": 2,
+              "name": "MapState"
+            },
+            "previousEventId": 12,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "stateEnteredEventDetails": {
+              "input": {
+                "bucketName": "test-bucket",
+                "value": "3"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EndState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 16,
+            "previousEventId": 15,
+            "stateExitedEventDetails": {
+              "name": "EndState",
+              "output": {
+                "message": "Processing item completed"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 17,
+            "mapIterationSucceededEventDetails": {
+              "index": 2,
+              "name": "MapState"
+            },
+            "previousEventId": 16,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 18,
+            "previousEventId": 17,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 19,
+            "previousEventId": 17,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": {
+                "content": {
+                  "bucket": "test-bucket",
+                  "values": [
+                    "1",
+                    "2",
+                    "3"
+                  ]
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "content": {
+                  "bucket": "test-bucket",
+                  "values": [
+                    "1",
+                    "2",
+                    "3"
+                  ]
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 20,
+            "previousEventId": 19,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

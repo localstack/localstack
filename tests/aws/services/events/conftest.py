@@ -384,6 +384,56 @@ def put_events_with_filter_to_sqs(
 
 
 @pytest.fixture
+def events_log_group(aws_client, account_id, region_name):
+    log_groups = []
+    policy_names = []
+
+    def _create_log_group():
+        log_group_name = f"/aws/events/test-log-group-{short_uid()}"
+        aws_client.logs.create_log_group(logGroupName=log_group_name)
+        log_group_arn = f"arn:aws:logs:{region_name}:{account_id}:log-group:{log_group_name}"
+        log_groups.append(log_group_name)
+
+        resource_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "EventBridgePutLogEvents",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+                    "Resource": f"{log_group_arn}:*",
+                }
+            ],
+        }
+        policy_name = f"EventBridgePolicy-{short_uid()}"
+        aws_client.logs.put_resource_policy(
+            policyName=policy_name, policyDocument=json.dumps(resource_policy)
+        )
+        policy_names.append(policy_name)
+
+        return {
+            "log_group_name": log_group_name,
+            "log_group_arn": log_group_arn,
+            "policy_name": policy_name,
+        }
+
+    yield _create_log_group
+
+    for log_group in log_groups:
+        try:
+            aws_client.logs.delete_log_group(logGroupName=log_group)
+        except Exception as e:
+            LOG.debug("error cleaning up log group %s: %s", log_group, e)
+
+    for policy_name in policy_names:
+        try:
+            aws_client.logs.delete_resource_policy(policyName=policy_name)
+        except Exception as e:
+            LOG.debug("error cleaning up resource policy %s: %s", policy_name, e)
+
+
+@pytest.fixture
 def logs_create_log_group(aws_client):
     log_group_names = []
 
@@ -478,3 +528,55 @@ def get_primary_secondary_client(
         }
 
     return _get_primary_secondary_clients
+
+
+@pytest.fixture
+def connection_name():
+    return f"test-connection-{short_uid()}"
+
+
+@pytest.fixture
+def destination_name():
+    return f"test-destination-{short_uid()}"
+
+
+@pytest.fixture
+def create_connection(aws_client, connection_name):
+    """Fixture to create a connection with given auth type and parameters."""
+
+    def _create_connection(auth_type_or_auth, auth_parameters=None):
+        # Handle both formats:
+        # 1. (auth_type, auth_parameters) - used by TestEventBridgeConnections
+        # 2. (auth) - used by TestEventBridgeApiDestinations
+        if auth_parameters is None:
+            # Format 2: Single auth dict parameter
+            auth = auth_type_or_auth
+            return aws_client.events.create_connection(
+                Name=connection_name,
+                AuthorizationType=auth.get("type"),
+                AuthParameters={
+                    auth.get("key"): auth.get("parameters"),
+                },
+            )
+        else:
+            # Format 1: auth type and auth parameters
+            return aws_client.events.create_connection(
+                Name=connection_name,
+                AuthorizationType=auth_type_or_auth,
+                AuthParameters=auth_parameters,
+            )
+
+    return _create_connection
+
+
+@pytest.fixture
+def create_api_destination(aws_client, destination_name):
+    """Fixture to create an API destination with given parameters."""
+
+    def _create_api_destination(**kwargs):
+        return aws_client.events.create_api_destination(
+            Name=destination_name,
+            **kwargs,
+        )
+
+    return _create_api_destination

@@ -42,7 +42,7 @@ IMAGE_MAPPING: dict[Runtime, str] = {
     Runtime.nodejs16_x: "nodejs:16",
     Runtime.nodejs14_x: "nodejs:14",  # deprecated Dec 4, 2023  => Jan 9, 2024  => Feb 8, 2024
     Runtime.nodejs12_x: "nodejs:12",  # deprecated Mar 31, 2023 => Mar 31, 2023 => Apr 30, 2023
-    # "python3.13": "python:3.13", expected November 2024
+    Runtime.python3_13: "python:3.13",
     Runtime.python3_12: "python:3.12",
     Runtime.python3_11: "python:3.11",
     Runtime.python3_10: "python:3.10",
@@ -72,6 +72,8 @@ IMAGE_MAPPING: dict[Runtime, str] = {
 # ideally ordered by deprecation date (following the AWS docs).
 # LocalStack can still provide best-effort support.
 
+# TODO: Consider removing these as AWS is not using them anymore and they likely get outdated.
+#  We currently use them in LocalStack logs as bonus recommendation (DevX).
 # When updating the recommendation,
 # please regenerate all tests with @markers.lambda_runtime_update
 DEPRECATED_RUNTIMES_UPGRADES: dict[Runtime, Optional[Runtime]] = {
@@ -114,6 +116,7 @@ RUNTIMES_AGGREGATED = {
         Runtime.nodejs16_x,
     ],
     "python": [
+        Runtime.python3_13,
         Runtime.python3_12,
         Runtime.python3_11,
         Runtime.python3_10,
@@ -150,6 +153,6 @@ TESTED_RUNTIMES: list[Runtime] = [
 SNAP_START_SUPPORTED_RUNTIMES = [Runtime.java11, Runtime.java17, Runtime.java21]
 
 # An ordered list of all Lambda runtimes considered valid by AWS. Matching snapshots in test_create_lambda_exceptions
-VALID_RUNTIMES: str = "[nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9]"
+VALID_RUNTIMES: str = "[nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9]"
 # An ordered list of all Lambda runtimes for layers considered valid by AWS. Matching snapshots in test_layer_exceptions
-VALID_LAYER_RUNTIMES: str = "[ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, java21, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, dotnet8, java17, nodejs, nodejs4.3, java8.al2, go1.x, nodejs20.x, go1.9, byol, nodejs10.x, provided.al2023, python3.10, java8, nodejs12.x, python3.11, nodejs8.x, python3.12, nodejs14.x, nodejs8.9, python3.13, nodejs16.x, provided.al2, nodejs4.3-edge, nodejs18.x, ruby3.2, python3.4, ruby3.3, ruby2.5, python3.6, python2.7]"
+VALID_LAYER_RUNTIMES: str = "[ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, java21, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, dotnet8, java17, nodejs, nodejs4.3, java8.al2, go1.x, nodejs20.x, go1.9, byol, nodejs10.x, provided.al2023, nodejs22.x, python3.10, java8, nodejs12.x, python3.11, nodejs8.x, python3.12, nodejs14.x, nodejs8.9, python3.13, nodejs16.x, provided.al2, nodejs4.3-edge, nodejs18.x, ruby3.2, python3.4, ruby3.3, ruby2.5, python3.6, python2.7]"

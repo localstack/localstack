@@ -41,6 +41,7 @@ class LocalStackCliGroup(click.Group):
         "logout",
         "pod",
         "state",
+        "ephemeral",
     ]
 
     def invoke(self, ctx: click.Context):
@@ -155,7 +156,13 @@ _click_format_option = click.option(
         "show_default": True,
     },
 )
-@click.version_option(VERSION, "--version", "-v", message="%(version)s")
+@click.version_option(
+    VERSION,
+    "--version",
+    "-v",
+    message="LocalStack CLI %(version)s",
+    help="Show the version of the LocalStack CLI and exit",
+)
 @click.option("-d", "--debug", is_flag=True, help="Enable CLI debugging mode")
 @click.option("-p", "--profile", type=str, help="Set the configuration profile")
 def localstack(debug, profile) -> None:

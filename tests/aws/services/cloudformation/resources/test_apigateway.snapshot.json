@@ -626,5 +626,48 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_update_apigateway_stage": {
+    "recorded-date": "07-11-2024, 05:35:20",
+    "recorded-content": {
+      "created-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tags": {
+          "aws:cloudformation:logical-id": "Stage",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<aws:cloudformation:stack-name:1>/<resource:1>",
+          "aws:cloudformation:stack-name": "<aws:cloudformation:stack-name:1>"
+        },
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tags": {
+          "aws:cloudformation:logical-id": "Stage",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<aws:cloudformation:stack-name:1>/<resource:1>",
+          "aws:cloudformation:stack-name": "<aws:cloudformation:stack-name:1>"
+        },
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

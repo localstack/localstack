@@ -32,15 +32,17 @@ class RestApiGateway(Gateway):
                 handlers.method_response_handler,
             ]
         )
-        self.response_handlers.extend(
-            [
-                handlers.response_enricher
-                # add composite response handlers?
-            ]
-        )
         self.exception_handlers.extend(
             [
                 handlers.gateway_exception_handler,
+            ]
+        )
+        self.response_handlers.extend(
+            [
+                handlers.response_enricher,
+                handlers.cors_response_enricher,
+                handlers.usage_counter,
+                # add composite response handlers?
             ]
         )
 

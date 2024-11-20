@@ -334,9 +334,10 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         :param range_data: the range data from which the S3Part will copy its data.
         :return: the EphemeralS3StoredObject representing the stored part
         """
-        with self._s3_store.open(
-            src_bucket, src_s3_object, mode="r"
-        ) as src_stored_object, self.open(s3_part, mode="w") as stored_part:
+        with (
+            self._s3_store.open(src_bucket, src_s3_object, mode="r") as src_stored_object,
+            self.open(s3_part, mode="w") as stored_part,
+        ):
             if not range_data:
                 stored_part.write(src_stored_object)
                 return

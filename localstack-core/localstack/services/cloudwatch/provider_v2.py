@@ -27,6 +27,7 @@ from localstack.aws.api.cloudwatch import (
     DescribeAlarmsOutput,
     DimensionFilters,
     Dimensions,
+    EntityMetricDataList,
     ExtendedStatistic,
     ExtendedStatistics,
     GetDashboardOutput,
@@ -64,6 +65,7 @@ from localstack.aws.api.cloudwatch import (
     StateValue,
     Statistic,
     Statistics,
+    StrictEntityValidation,
     TagKeyList,
     TagList,
     TagResourceOutput,
@@ -209,8 +211,15 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 store.alarms.pop(alarm_arn, None)
 
     def put_metric_data(
-        self, context: RequestContext, namespace: Namespace, metric_data: MetricData, **kwargs
+        self,
+        context: RequestContext,
+        namespace: Namespace,
+        metric_data: MetricData = None,
+        entity_metric_data: EntityMetricDataList = None,
+        strict_entity_validation: StrictEntityValidation = None,
+        **kwargs,
     ) -> None:
+        # TODO add support for entity_metric_data and strict_entity_validation
         _validate_parameters_for_put_metric_data(metric_data)
 
         self.cloudwatch_database.add_metric_data(

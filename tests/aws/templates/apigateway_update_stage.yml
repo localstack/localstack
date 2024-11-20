@@ -1,0 +1,46 @@
+Parameters:
+  Description:
+    Type: String
+    Default: "Original description"
+  Method:
+    Type: String
+    Default: GET
+  RestApiName:
+    Type: String
+
+Resources:
+  RestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Ref RestApiName
+  Stage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId:
+        Ref: RestApi
+      DeploymentId:
+        Ref: ApiDeployment
+      StageName: dev
+  MockMethod:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !GetAtt
+        - RestApi
+        - RootResourceId
+      HttpMethod: !Ref Method
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId:
+        Ref: RestApi
+      Description: !Ref Description
+    DependsOn:
+      - MockMethod
+
+Outputs:
+    RestApiId:
+        Value: !GetAtt RestApi.RestApiId

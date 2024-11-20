@@ -9,11 +9,11 @@ from enum import StrEnum
 from secrets import token_bytes
 from typing import IO, Any, Dict, Literal, NamedTuple, Optional, Protocol, Tuple, Union
 from urllib import parse as urlparser
+from zoneinfo import ZoneInfo
 
 import xmltodict
 from botocore.exceptions import ClientError
 from botocore.utils import InvalidArnException
-from zoneinfo import ZoneInfo
 
 from localstack import config, constants
 from localstack.aws.api import CommonServiceException, RequestContext
@@ -22,6 +22,7 @@ from localstack.aws.api.s3 import (
     BucketCannedACL,
     BucketName,
     ChecksumAlgorithm,
+    ContentMD5,
     CopyObjectRequest,
     CopySource,
     ETag,
@@ -72,6 +73,7 @@ from localstack.utils.strings import (
     checksum_crc32c,
     hash_sha1,
     hash_sha256,
+    is_base64,
     to_bytes,
     to_str,
 )
@@ -419,13 +421,32 @@ def verify_checksum(checksum_algorithm: str, data: bytes, request: Dict):
 
 def etag_to_base_64_content_md5(etag: ETag) -> str:
     """
-    Convert an ETag, representing an md5 hexdigest (might be quoted), to its base64 encoded representation
+    Convert an ETag, representing a MD5 hexdigest (might be quoted), to its base64 encoded representation
     :param etag: an ETag, might be quoted
     :return: the base64 value
     """
     # get the bytes digest from the hexdigest
     byte_digest = codecs.decode(to_bytes(etag.strip('"')), "hex")
     return to_str(base64.b64encode(byte_digest))
+
+
+def base_64_content_md5_to_etag(content_md5: ContentMD5) -> str | None:
+    """
+    Convert a ContentMD5 header, representing a base64 encoded representation of a MD5 binary digest to its ETag value,
+    hex encoded
+    :param content_md5: a ContentMD5 header, base64 encoded
+    :return: the ETag value, hex coded MD5 digest, or None if the input is not valid b64 or the representation of a MD5
+    hash
+    """
+    if not is_base64(content_md5):
+        return None
+    # get the hexdigest from the bytes digest
+    byte_digest = base64.b64decode(content_md5)
+    hex_digest = to_str(codecs.encode(byte_digest, "hex"))
+    if len(hex_digest) != 32:
+        return None
+
+    return hex_digest
 
 
 def decode_aws_chunked_object(

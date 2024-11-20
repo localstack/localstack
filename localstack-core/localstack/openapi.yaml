@@ -8,7 +8,7 @@ info:
     checks, plugins, initialisation hooks, service introspection, and more.
   termsOfService: https://www.localstack.cloud/legal/tos
   title: LocalStack REST API for Community
-  version: 3.6.1.dev
+  version: latest
 externalDocs:
   description: LocalStack Documentation
   url: https://docs.localstack.cloud
@@ -21,10 +21,17 @@ servers:
         default: 'localhost.localstack.cloud'
 components:
   parameters:
-    SesMessageId:
-      description: ID of the message (`id` field of SES message)
+    SesIdFilter:
+      description: Filter for the `id` field in SES message
       in: query
       name: id
+      required: false
+      schema:
+        type: string
+    SesEmailFilter:
+      description: Filter for the `source` field in SES message
+      in: query
+      name: email
       required: false
       schema:
         type: string
@@ -99,6 +106,51 @@ components:
       - completed
       - scripts
       type: object
+    InitScriptsStage:
+      additionalProperties: false
+      properties:
+        completed:
+          type: boolean
+        scripts:
+          items:
+            additionalProperties: false
+            properties:
+              name:
+                type: string
+              stage:
+                type: string
+              state:
+                type: string
+            required:
+              - stage
+              - name
+              - state
+            type: object
+          type: array
+      required:
+        - completed
+        - scripts
+      type: object
+    SESDestination:
+      type: object
+      description: Possible destination of a SES message
+      properties:
+        ToAddresses:
+          type: array
+          items:
+            type: string
+            format: email
+        CcAddresses:
+          type: array
+          items:
+            type: string
+            format: email
+        BccAddresses:
+          type: array
+          items:
+            type: string
+            format: email
+      additionalProperties: false
     SesSentEmail:
       additionalProperties: false
       properties:
@@ -114,7 +166,7 @@ components:
           - text_part
           type: object
         Destination:
-          type: string
+          $ref: '#/components/schemas/SESDestination'
         Id:
           type: string
         RawData:
@@ -135,13 +187,7 @@ components:
       - Id
       - Region
       - Timestamp
-      - Destination
-      - RawData
       - Source
-      - Subject
-      - Template
-      - TemplateData
-      - Body
       type: object
     SessionInfo:
       additionalProperties: false
@@ -186,6 +232,202 @@ components:
       - error
       - subscription_arn
       type: object
+    SNSPlatformEndpointMessage:
+      type: object
+      description: Message sent to a platform endpoint via SNS
+      additionalProperties: false
+      properties:
+        TargetArn:
+          type: string
+        TopicArn:
+          type: string
+        Message:
+          type: string
+        MessageAttributes:
+          type: object
+        MessageStructure:
+          type: string
+        Subject:
+          type: [string, 'null']
+        MessageId:
+          type: string
+    SNSMessage:
+      type: object
+      description: Message sent via SNS
+      properties:
+        PhoneNumber:
+          type: string
+        TopicArn:
+          type: [string, 'null']
+        SubscriptionArn:
+          type: [string, 'null']
+        MessageId:
+          type: string
+        Message:
+          type: string
+        MessageAttributes:
+          type: object
+        MessageStructure:
+          type: [string, 'null']
+        Subject:
+          type: [string, 'null']
+    SNSPlatformEndpointMessages:
+      type: object
+      description: |
+        Messages sent to the platform endpoint retrieved via the retrospective endpoint.
+        The endpoint ARN is the key with a list of messages as value.
+      additionalProperties:
+        type: array
+        items:
+          $ref: '#/components/schemas/SNSPlatformEndpointMessage'
+    SMSMessages:
+      type: object
+      description: |
+        SMS messages retrieved via the retrospective endpoint.
+        The phone number is the key with a list of messages as value.
+      additionalProperties:
+        type: array
+        items:
+          $ref: '#/components/schemas/SNSMessage'
+    SNSPlatformEndpointResponse:
+      type: object
+      additionalProperties: false
+      description: Response payload for the /_aws/sns/platform-endpoint-messages endpoint
+      properties:
+        region:
+          type: string
+          description: "The AWS region, e.g., us-east-1"
+        platform_endpoint_messages:
+          $ref: '#/components/schemas/SNSPlatformEndpointMessages'
+      required:
+        - region
+        - platform_endpoint_messages
+    SNSSMSMessagesResponse:
+      type: object
+      additionalProperties: false
+      description: Response payload for the /_aws/sns/sms-messages endpoint
+      properties:
+        region:
+          type: string
+          description: "The AWS region, e.g., us-east-1"
+        sms_messages:
+          $ref: '#/components/schemas/SMSMessages'
+      required:
+        - region
+        - sms_messages
+    ReceiveMessageRequest:
+      type: object
+      description: https://github.com/boto/botocore/blob/develop/botocore/data/sqs/2012-11-05/service-2.json
+      required:
+        - QueueUrl
+      properties:
+        QueueUrl:
+          type: string
+          format: uri
+        AttributeNames:
+          type: array
+          items:
+            type: string
+        MessageSystemAttributeNames:
+          type: array
+          items:
+            type: string
+        MessageAttributeNames:
+          type: array
+          items:
+            type: string
+        MaxNumberOfMessages:
+          type: integer
+        VisibilityTimeout:
+          type: integer
+        WaitTimeSeconds:
+          type: integer
+        ReceiveRequestAttemptId:
+          type: string
+    ReceiveMessageResult:
+      type: object
+      description: https://github.com/boto/botocore/blob/develop/botocore/data/sqs/2012-11-05/service-2.json
+      properties:
+        Messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+    Message:
+      type: object
+      properties:
+        MessageId:
+          type: [string, 'null']
+        ReceiptHandle:
+          type: [string, 'null']
+        MD5OfBody:
+          type: [string, 'null']
+        Body:
+          type: [string, 'null']
+        Attributes:
+          type: object
+        MessageAttributes:
+          type: object
+    CloudWatchMetrics:
+      additionalProperties: false
+      properties:
+        metrics:
+          items:
+            additionalProperties: false
+            properties:
+              account:
+                description: Account ID
+                type: string
+              d:
+                description: Dimensions
+                items:
+                  additionalProperties: false
+                  properties:
+                    n:
+                      description: Dimension name
+                      type: string
+                    v:
+                      description: Dimension value
+                      oneOf:
+                        - type: string
+                        - type: integer
+                  required:
+                    - n
+                    - v
+                  type: object
+                type: array
+              n:
+                description: Metric name
+                type: string
+              ns:
+                description: Namespace
+                type: string
+              region:
+                description: Region name
+                type: string
+              t:
+                description: Timestamp
+                oneOf:
+                  - type: string
+                    format: date-time
+                  - type: number
+              v:
+                description: Metric value
+                oneOf:
+                  - type: string
+                  - type: integer
+            required:
+              - ns
+              - n
+              - v
+              - t
+              - d
+              - account
+              - region
+            type: object
+          type: array
+      required:
+        - metrics
+      type: object
 paths:
   /_aws/cloudwatch/metrics/raw:
     get:
@@ -197,59 +439,7 @@ paths:
           content:
             application/json:
               schema:
-                additionalProperties: false
-                properties:
-                  metrics:
-                    items:
-                      additionalProperties: false
-                      properties:
-                        account:
-                          description: Account ID
-                          type: string
-                        d:
-                          description: Dimensions
-                          items:
-                            additionalProperties: false
-                            properties:
-                              n:
-                                description: Dimension name
-                                type: string
-                              v:
-                                description: Dimension value
-                                type: string
-                            required:
-                            - n
-                            - v
-                            type: object
-                          type: array
-                        n:
-                          description: Metric name
-                          type: string
-                        ns:
-                          description: Namespace
-                          type: string
-                        region:
-                          description: Region name
-                          type: string
-                        t:
-                          description: Timestamp
-                          type: number
-                        v:
-                          description: Metric value
-                          type: string
-                      required:
-                      - ns
-                      - n
-                      - v
-                      - t
-                      - d
-                      - account
-                      - region
-                      type: object
-                    type: array
-                required:
-                - metrics
-                type: object
+                $ref: '#/components/schemas/CloudWatchMetrics'
           description: CloudWatch metrics
   /_aws/dynamodb/expired:
     delete:
@@ -334,7 +524,7 @@ paths:
       operationId: discard_ses_messages
       tags: [aws]
       parameters:
-      - $ref: '#/components/parameters/SesMessageId'
+      - $ref: '#/components/parameters/SesIdFilter'
       responses:
         '204':
           description: Message was successfully discarded
@@ -343,13 +533,8 @@ paths:
       operationId: get_ses_messages
       tags: [aws]
       parameters:
-      - $ref: '#/components/parameters/SesMessageId'
-      - description: Source of the message (`source` field of SES message)
-        in: query
-        name: email
-        required: false
-        schema:
-          type: string
+      - $ref: '#/components/parameters/SesIdFilter'
+      - $ref: '#/components/parameters/SesEmailFilter'
       responses:
         '200':
           content:
@@ -367,8 +552,8 @@ paths:
           description: List of sent messages
   /_aws/sns/platform-endpoint-messages:
     delete:
-      description: Discard SNS platform endpoint messages
-      operationId: discard_sns_messages
+      description: Discard the messages published to a platform endpoint via SNS
+      operationId: discard_sns_endpoint_messages
       tags: [aws]
       parameters:
       - $ref: '#/components/parameters/SnsAccountId'
@@ -378,8 +563,8 @@ paths:
         '204':
           description: Platform endpoint message was discarded
     get:
-      description: Retrieve SNS platform endpoint messages
-      operationId: get_sns_messages
+      description: Retrieve the messages sent to a platform endpoint via SNS
+      operationId: get_sns_endpoint_messages
       tags: [aws]
       parameters:
       - $ref: '#/components/parameters/SnsAccountId'
@@ -390,17 +575,8 @@ paths:
           content:
             application/json:
               schema:
-                additionalProperties: false
-                properties:
-                  platform_endpoint_messages:
-                    type: object
-                  region:
-                    type: string
-                required:
-                - platform_endpoint_messages
-                - region
-                type: object
-          description: Platform endpoint messages
+                $ref: "#/components/schemas/SNSPlatformEndpointResponse"
+          description: SNS messages via retrospective access
   /_aws/sns/sms-messages:
     delete:
       description: Discard SNS SMS messages
@@ -412,8 +588,6 @@ paths:
       - $ref: '#/components/parameters/SnsPhoneNumber'
       responses:
         '204':
-          content:
-            text/plain: {}
           description: SMS message was discarded
     get:
       description: Retrieve SNS SMS messages
@@ -428,17 +602,8 @@ paths:
           content:
             application/json:
               schema:
-                additionalProperties: false
-                properties:
-                  region:
-                    type: string
-                  sms_messages:
-                    type: object
-                required:
-                - sms_messages
-                - region
-                type: object
-          description: SNS SMS messages
+                $ref: "#/components/schemas/SNSSMSMessagesResponse"
+          description: SNS messages via retrospective access
   /_aws/sns/subscription-tokens/{subscription_arn}:
     get:
       description: Retrieve SNS subscription token for confirmation
@@ -494,15 +659,55 @@ paths:
       responses:
         '200':
           content:
-            text/xml: {}
+            text/xml:
+              schema:
+                $ref: '#/components/schemas/ReceiveMessageResult'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiveMessageResult'
           description: SQS queue messages
         '400':
           content:
             text/xml: {}
+            application/json: {}
           description: Bad request
         '404':
           content:
             text/xml: {}
+            application/json: {}
+          description: Not found
+    post:
+      summary: Retrieves one or more messages from the specified queue.
+      description: |
+        This API receives messages from an SQS queue.
+        https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ReceiveMessage.html#API_ReceiveMessage_ResponseSyntax
+      operationId: receive_message
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+               $ref: '#/components/schemas/ReceiveMessageRequest'
+          application/json:
+            schema:
+               $ref: '#/components/schemas/ReceiveMessageRequest'
+      responses:
+        '200':
+          content:
+            text/xml: {}
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiveMessageResult'
+          description: SQS queue messages
+        '400':
+          content:
+            text/xml: {}
+            application/json: {}
+          description: Bad request
+        '404':
+          content:
+            text/xml: {}
+            application/json: {}
           description: Not found
   /_aws/sqs/messages/{region}/{account_id}/{queue_name}:
     get:
@@ -532,14 +737,19 @@ paths:
         '200':
           content:
             text/xml: {}
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiveMessageResult'
           description: SQS queue messages
         '400':
           content:
             text/xml: {}
+            application/json: {}
           description: Bad request
         '404':
           content:
             text/xml: {}
+            application/json: {}
           description: Not found
   /_localstack/config:
     get:
@@ -733,7 +943,6 @@ paths:
                     type: string
                 required:
                 - edition
-                - features
                 - services
                 - version
                 type: object
@@ -838,7 +1047,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InitScripts'
+                $ref: '#/components/schemas/InitScriptsStage'
           description: Information about init scripts in a specific stage
   /_localstack/plugins:
     get:

@@ -240,7 +240,7 @@ class StateMap(ExecutionState):
         env.context_object_manager.context_object["State"]["RetryCount"] = 0
 
         # Attempt to evaluate the state's logic through until it's successful, caught, or retries have run out.
-        while True:
+        while env.is_running():
             try:
                 self._evaluate_with_timeout(env)
                 break

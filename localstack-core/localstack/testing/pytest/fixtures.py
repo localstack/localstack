@@ -6,7 +6,7 @@ import os
 import re
 import textwrap
 import time
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
 import botocore.auth
 import botocore.config
@@ -45,6 +45,7 @@ from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import ensure_list
 from localstack.utils.functions import call_safe, run_safe
 from localstack.utils.http import safe_requests as requests
+from localstack.utils.id_generator import ResourceIdentifier, localstack_id_manager
 from localstack.utils.json import CustomEncoder, json_safe
 from localstack.utils.net import wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
@@ -59,6 +60,11 @@ WAITER_CHANGE_SET_CREATE_COMPLETE = "change_set_create_complete"
 WAITER_STACK_CREATE_COMPLETE = "stack_create_complete"
 WAITER_STACK_UPDATE_COMPLETE = "stack_update_complete"
 WAITER_STACK_DELETE_COMPLETE = "stack_delete_complete"
+
+
+if TYPE_CHECKING:
+    from mypy_boto3_sqs import SQSClient
+    from mypy_boto3_sqs.type_defs import MessageTypeDef
 
 
 @pytest.fixture(scope="class")
@@ -362,6 +368,65 @@ def sqs_receive_num_messages(sqs_receive_messages_delete):
         raise AssertionError(f"max iterations reached with {len(all_messages)} messages received")
 
     return factory
+
+
+@pytest.fixture
+def sqs_collect_messages(aws_client):
+    """Collects SQS messages from a given queue_url and deletes them by default.
+    Example usage:
+    messages = sqs_collect_messages(
+         my_queue_url,
+         expected=2,
+         timeout=10,
+         attribute_names=["All"],
+         message_attribute_names=["All"],
+    )
+    """
+
+    def factory(
+        queue_url: str,
+        expected: int,
+        timeout: int,
+        delete: bool = True,
+        attribute_names: list[str] = None,
+        message_attribute_names: list[str] = None,
+        max_number_of_messages: int = 1,
+        wait_time_seconds: int = 5,
+        sqs_client: "SQSClient | None" = None,
+    ) -> list["MessageTypeDef"]:
+        sqs_client = sqs_client or aws_client.sqs
+        collected = []
+
+        def _receive():
+            response = sqs_client.receive_message(
+                QueueUrl=queue_url,
+                # Maximum is 20 seconds. Performs long polling.
+                WaitTimeSeconds=wait_time_seconds,
+                # Maximum 10 messages
+                MaxNumberOfMessages=max_number_of_messages,
+                AttributeNames=attribute_names or [],
+                MessageAttributeNames=message_attribute_names or [],
+            )
+
+            if messages := response.get("Messages"):
+                collected.extend(messages)
+
+                if delete:
+                    for m in messages:
+                        sqs_client.delete_message(
+                            QueueUrl=queue_url, ReceiptHandle=m["ReceiptHandle"]
+                        )
+
+            return len(collected) >= expected
+
+        if not poll_condition(_receive, timeout=timeout):
+            raise TimeoutError(
+                f"gave up waiting for messages (expected={expected}, actual={len(collected)}"
+            )
+
+        return collected
+
+    yield factory
 
 
 @pytest.fixture
@@ -2285,3 +2350,25 @@ def clean_up(
             call_safe(_delete_log_group)
 
     yield _clean_up
+
+
+@pytest.fixture
+def openapi_validate(monkeypatch):
+    monkeypatch.setattr(config, "OPENAPI_VALIDATE_RESPONSE", "true")
+    monkeypatch.setattr(config, "OPENAPI_VALIDATE_REQUEST", "true")
+
+
+@pytest.fixture
+def set_resource_custom_id():
+    set_ids = []
+
+    def _set_custom_id(resource_identifier: ResourceIdentifier, custom_id):
+        localstack_id_manager.set_custom_id(
+            resource_identifier=resource_identifier, custom_id=custom_id
+        )
+        set_ids.append(resource_identifier)
+
+    yield _set_custom_id
+
+    for resource_identifier in set_ids:
+        localstack_id_manager.unset_custom_id(resource_identifier)

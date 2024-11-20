@@ -440,13 +440,13 @@ def _resolve_refs_recursively(
                     val,
                 )
 
-                if not isinstance(resolved_val, str):
+                if isinstance(resolved_val, (list, dict, tuple)):
                     # We don't have access to the resource that's a dependency in this case,
                     # so do the best we can with the resource ids
                     raise DependencyNotYetSatisfied(
                         resource_ids=key, message=f"Could not resolve {val} to terminal value type"
                     )
-                result = result.replace("${%s}" % key, resolved_val)
+                result = result.replace("${%s}" % key, str(resolved_val))
 
             # resolve placeholders
             result = resolve_placeholders_in_string(
@@ -758,6 +758,10 @@ def resolve_placeholders_in_string(
     """
 
     def _validate_result_type(value: str):
+        is_another_account_id = value.isdigit() and len(value) == len(account_id)
+        if value == account_id or is_another_account_id:
+            return value
+
         if value.isdigit():
             return int(value)
         else:

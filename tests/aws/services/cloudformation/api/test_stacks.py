@@ -10,6 +10,7 @@ from botocore.exceptions import WaiterError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.aws.api.cloudformation import Capability
+from localstack.services.cloudformation.engine.entities import StackIdentifier
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -399,6 +400,33 @@ class TestStacksApi:
             if resource["ResourceStatus"] in ["CREATE_COMPLETE", "UPDATE_COMPLETE"]
         ]
         assert len(updated_resources) == length_expected
+
+    @markers.aws.only_localstack
+    def test_create_stack_with_custom_id(
+        self, aws_client, cleanups, account_id, region_name, set_resource_custom_id
+    ):
+        stack_name = f"stack-{short_uid()}"
+        custom_id = short_uid()
+
+        set_resource_custom_id(
+            StackIdentifier(account_id, region_name, stack_name), custom_id=custom_id
+        )
+        template = open(
+            os.path.join(os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"),
+            "r",
+        ).read()
+
+        stack = aws_client.cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=template,
+        )
+        cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
+
+        assert stack["StackId"].split("/")[-1] == custom_id
+
+        # We need to wait until the stack is created otherwise we can end up in a scenario
+        # where we try to delete the stack before creating its resources, failing the test
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_name)
 
 
 def stack_process_is_finished(cfn_client, stack_name):

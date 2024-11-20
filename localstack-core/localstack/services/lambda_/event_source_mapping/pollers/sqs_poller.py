@@ -8,7 +8,6 @@ from botocore.client import BaseClient
 from localstack.aws.api.pipes import PipeSourceSqsQueueParameters
 from localstack.aws.api.sqs import MessageSystemAttributeName
 from localstack.config import internal_service_url
-from localstack.services.lambda_.event_source_listeners.utils import message_attributes_to_lower
 from localstack.services.lambda_.event_source_mapping.event_processor import (
     EventProcessor,
     PartialBatchFailureError,
@@ -18,6 +17,7 @@ from localstack.services.lambda_.event_source_mapping.pollers.poller import (
     parse_batch_item_failures,
 )
 from localstack.utils.aws.arns import parse_arn
+from localstack.utils.strings import first_char_to_lower
 
 LOG = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class SqsPoller(Poller):
     @cached_property
     def is_fifo_queue(self) -> bool:
         # Alternative heuristic: self.queue_url.endswith(".fifo"), but we need the call to get_queue_attributes for IAM
-        return self.get_queue_attributes().get("FifoQueue") == "true"
+        return self.get_queue_attributes().get("FifoQueue", "false").lower() == "true"
 
     def get_queue_attributes(self) -> dict:
         """The API call to sqs:GetQueueAttributes is required for IAM policy streamsing."""
@@ -216,3 +216,14 @@ def get_queue_url(queue_arn: str) -> str:
     account_id = parsed_arn["account"]
     name = parsed_arn["resource"]
     return f"{host}/{account_id}/{name}"
+
+
+def message_attributes_to_lower(message_attrs):
+    """Convert message attribute details (first characters) to lower case (e.g., stringValue, dataType)."""
+    message_attrs = message_attrs or {}
+    for _, attr in message_attrs.items():
+        if not isinstance(attr, dict):
+            continue
+        for key, value in dict(attr).items():
+            attr[first_char_to_lower(key)] = attr.pop(key)
+    return message_attrs

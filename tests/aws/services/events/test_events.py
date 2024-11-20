@@ -19,6 +19,7 @@ from localstack.services.events.v1.provider import _get_events_tmp_dir
 from localstack.testing.aws.eventbus_utils import allow_event_rule_to_sqs_queue
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.aws import arns
 from localstack.utils.files import load_file
 from localstack.utils.strings import long_uid, short_uid, to_str
@@ -133,6 +134,21 @@ class TestEvents:
         with pytest.raises(ClientError) as e:
             aws_client.events.put_events(Entries=entries)
         snapshot.match("put-events-too-big-detail-error", e.value.response)
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    def test_put_event_without_detail_type(self, snapshot, aws_client):
+        entries = [
+            {
+                "Source": "some.source",
+                "Detail": json.dumps(EVENT_DETAIL),
+                "DetailType": "",
+            },
+        ]
+        response = aws_client.events.put_events(Entries=entries)
+        snapshot.match("put-events", response)
 
     @markers.aws.validated
     def test_put_events_time(self, put_events_with_filter_to_sqs, snapshot):
@@ -1697,4 +1713,318 @@ class TestEventTarget:
             Targets=[
                 {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
             ],
+        )
+
+
+API_DESTINATION_AUTH_PARAMS = [
+    {
+        "AuthorizationType": "BASIC",
+        "AuthParameters": {
+            "BasicAuthParameters": {"Username": "user", "Password": "pass"},
+        },
+    },
+    {
+        "AuthorizationType": "API_KEY",
+        "AuthParameters": {
+            "ApiKeyAuthParameters": {"ApiKeyName": "ApiKey", "ApiKeyValue": "secret"},
+        },
+    },
+    {
+        "AuthorizationType": "OAUTH_CLIENT_CREDENTIALS",
+        "AuthParameters": {
+            "OAuthParameters": {
+                "AuthorizationEndpoint": "https://example.com/oauth",
+                "ClientParameters": {"ClientID": "client_id", "ClientSecret": "client_secret"},
+                "HttpMethod": "POST",
+            }
+        },
+    },
+]
+
+
+class TestEventBridgeConnections:
+    @pytest.fixture
+    def connection_snapshots(self, snapshot, connection_name):
+        """Common snapshot transformers for connection tests."""
+        return TransformerUtility.eventbridge_connection(snapshot, connection_name)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    def test_create_connection(
+        self, aws_client, connection_snapshots, create_connection, connection_name
+    ):
+        response = create_connection(
+            "API_KEY",
+            {
+                "ApiKeyAuthParameters": {"ApiKeyName": "ApiKey", "ApiKeyValue": "secret"},
+                "InvocationHttpParameters": {},
+            },
+        )
+        connection_snapshots.match("create-connection", response)
+
+        describe_response = aws_client.events.describe_connection(Name=connection_name)
+        connection_snapshots.match("describe-connection", describe_response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    @pytest.mark.parametrize("auth_params", API_DESTINATION_AUTH_PARAMS)
+    def test_create_connection_with_auth(
+        self, aws_client, connection_snapshots, create_connection, auth_params, connection_name
+    ):
+        response = create_connection(
+            auth_params["AuthorizationType"],
+            auth_params["AuthParameters"],
+        )
+        connection_snapshots.match("create-connection-auth", response)
+
+        describe_response = aws_client.events.describe_connection(Name=connection_name)
+        connection_snapshots.match("describe-connection-auth", describe_response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    def test_list_connections(
+        self, aws_client, connection_snapshots, create_connection, connection_name
+    ):
+        create_connection(
+            "BASIC",
+            {
+                "BasicAuthParameters": {"Username": "user", "Password": "pass"},
+                "InvocationHttpParameters": {},
+            },
+        )
+
+        response = aws_client.events.list_connections(NamePrefix=connection_name)
+        connection_snapshots.match("list-connections", response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    def test_delete_connection(
+        self, aws_client, connection_snapshots, create_connection, connection_name
+    ):
+        create_connection(
+            "API_KEY",
+            {
+                "ApiKeyAuthParameters": {"ApiKeyName": "ApiKey", "ApiKeyValue": "secret"},
+                "InvocationHttpParameters": {},
+            },
+        )
+
+        delete_response = aws_client.events.delete_connection(Name=connection_name)
+        connection_snapshots.match("delete-connection", delete_response)
+
+        with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as exc:
+            aws_client.events.describe_connection(Name=connection_name)
+        assert f"Connection '{connection_name}' does not exist" in str(exc.value)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    def test_create_connection_invalid_parameters(
+        self, aws_client, connection_snapshots, connection_name
+    ):
+        with pytest.raises(ClientError) as e:
+            aws_client.events.create_connection(
+                Name=connection_name,
+                AuthorizationType="INVALID_AUTH_TYPE",
+                AuthParameters={},
+            )
+        connection_snapshots.match("create-connection-invalid-auth-error", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    def test_update_connection(
+        self, aws_client, connection_snapshots, create_connection, connection_name
+    ):
+        create_response = create_connection(
+            "BASIC",
+            {
+                "BasicAuthParameters": {"Username": "user", "Password": "pass"},
+                "InvocationHttpParameters": {},
+            },
+        )
+        connection_snapshots.match("create-connection", create_response)
+
+        update_response = aws_client.events.update_connection(
+            Name=connection_name,
+            AuthorizationType="BASIC",
+            AuthParameters={
+                "BasicAuthParameters": {"Username": "new_user", "Password": "new_pass"},
+                "InvocationHttpParameters": {},
+            },
+        )
+        connection_snapshots.match("update-connection", update_response)
+
+        describe_response = aws_client.events.describe_connection(Name=connection_name)
+        connection_snapshots.match("describe-updated-connection", describe_response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    def test_create_connection_name_validation(
+        self, aws_client, connection_snapshots, connection_name
+    ):
+        invalid_name = "Invalid Name With Spaces!"
+
+        with pytest.raises(ClientError) as e:
+            aws_client.events.create_connection(
+                Name=invalid_name,
+                AuthorizationType="API_KEY",
+                AuthParameters={
+                    "ApiKeyAuthParameters": {"ApiKeyName": "ApiKey", "ApiKeyValue": "secret"},
+                    "InvocationHttpParameters": {},
+                },
+            )
+        connection_snapshots.match("create-connection-invalid-name-error", e.value.response)
+
+
+API_DESTINATION_AUTHS = [
+    {
+        "type": "BASIC",
+        "key": "BasicAuthParameters",
+        "parameters": {"Username": "user", "Password": "pass"},
+    },
+    {
+        "type": "API_KEY",
+        "key": "ApiKeyAuthParameters",
+        "parameters": {"ApiKeyName": "ApiKey", "ApiKeyValue": "secret"},
+    },
+    {
+        "type": "OAUTH_CLIENT_CREDENTIALS",
+        "key": "OAuthParameters",
+        "parameters": {
+            "ClientParameters": {"ClientID": "id", "ClientSecret": "password"},
+            "AuthorizationEndpoint": "https://example.com/oauth",
+            "HttpMethod": "POST",
+            "OAuthHttpParameters": {
+                "BodyParameters": [{"Key": "oauthbody", "Value": "value1", "IsValueSecret": False}],
+                "HeaderParameters": [
+                    {"Key": "oauthheader", "Value": "value2", "IsValueSecret": False}
+                ],
+                "QueryStringParameters": [
+                    {"Key": "oauthquery", "Value": "value3", "IsValueSecret": False}
+                ],
+            },
+        },
+    },
+]
+
+
+class TestEventBridgeApiDestinations:
+    @pytest.fixture
+    def api_destination_snapshots(self, snapshot, destination_name):
+        """Common snapshot transformers for API destination tests."""
+        return TransformerUtility.eventbridge_api_destination(snapshot, destination_name)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    def test_api_destinations(
+        self,
+        aws_client,
+        api_destination_snapshots,
+        create_connection,
+        create_api_destination,
+        connection_name,
+        destination_name,
+        auth,
+    ):
+        connection_response = create_connection(auth)
+        connection_arn = connection_response["ConnectionArn"]
+
+        response = create_api_destination(
+            ConnectionArn=connection_arn,
+            HttpMethod="POST",
+            InvocationEndpoint="https://example.com/api",
+            Description="Test API destination",
+        )
+        api_destination_snapshots.match("create-api-destination", response)
+
+        describe_response = aws_client.events.describe_api_destination(Name=destination_name)
+        api_destination_snapshots.match("describe-api-destination", describe_response)
+
+        list_response = aws_client.events.list_api_destinations(NamePrefix=destination_name)
+        api_destination_snapshots.match("list-api-destinations", list_response)
+
+        update_response = aws_client.events.update_api_destination(
+            Name=destination_name,
+            ConnectionArn=connection_arn,
+            HttpMethod="PUT",
+            InvocationEndpoint="https://example.com/api/v2",
+            Description="Updated API destination",
+        )
+        api_destination_snapshots.match("update-api-destination", update_response)
+
+        describe_updated_response = aws_client.events.describe_api_destination(
+            Name=destination_name
+        )
+        api_destination_snapshots.match(
+            "describe-updated-api-destination", describe_updated_response
+        )
+
+        delete_response = aws_client.events.delete_api_destination(Name=destination_name)
+        api_destination_snapshots.match("delete-api-destination", delete_response)
+
+        with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as exc_info:
+            aws_client.events.describe_api_destination(Name=destination_name)
+        api_destination_snapshots.match(
+            "describe-api-destination-not-found-error", exc_info.value.response
+        )
+
+    @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="V1 provider does not support this feature")
+    def test_create_api_destination_invalid_parameters(
+        self, aws_client, api_destination_snapshots, connection_name, destination_name
+    ):
+        with pytest.raises(ClientError) as e:
+            aws_client.events.create_api_destination(
+                Name=destination_name,
+                ConnectionArn="invalid-connection-arn",
+                HttpMethod="INVALID_METHOD",
+                InvocationEndpoint="invalid-endpoint",
+            )
+        api_destination_snapshots.match(
+            "create-api-destination-invalid-parameters-error", e.value.response
+        )
+
+    @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="V1 provider does not support this feature")
+    def test_create_api_destination_name_validation(
+        self, aws_client, api_destination_snapshots, create_connection, connection_name
+    ):
+        invalid_name = "Invalid Name With Spaces!"
+
+        connection_response = create_connection(API_DESTINATION_AUTHS[0])
+        connection_arn = connection_response["ConnectionArn"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.events.create_api_destination(
+                Name=invalid_name,
+                ConnectionArn=connection_arn,
+                HttpMethod="POST",
+                InvocationEndpoint="https://example.com/api",
+            )
+        api_destination_snapshots.match(
+            "create-api-destination-invalid-name-error", e.value.response
         )

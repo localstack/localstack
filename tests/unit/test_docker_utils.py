@@ -6,9 +6,10 @@ from localstack.utils.docker_utils import get_host_path_for_path_in_docker
 
 class TestDockerUtils:
     def test_host_path_for_path_in_docker_windows(self):
-        with mock.patch(
-            "localstack.utils.docker_utils.get_default_volume_dir_mount"
-        ) as get_volume, mock.patch("localstack.config.is_in_docker", True):
+        with (
+            mock.patch("localstack.utils.docker_utils.get_default_volume_dir_mount") as get_volume,
+            mock.patch("localstack.config.is_in_docker", True),
+        ):
             get_volume.return_value = VolumeInfo(
                 type="bind",
                 source=r"C:\Users\localstack\volume\mount",
@@ -23,9 +24,10 @@ class TestDockerUtils:
             assert result == r"C:\Users\localstack\volume\mount/some/test/file"
 
     def test_host_path_for_path_in_docker_linux(self):
-        with mock.patch(
-            "localstack.utils.docker_utils.get_default_volume_dir_mount"
-        ) as get_volume, mock.patch("localstack.config.is_in_docker", True):
+        with (
+            mock.patch("localstack.utils.docker_utils.get_default_volume_dir_mount") as get_volume,
+            mock.patch("localstack.config.is_in_docker", True),
+        ):
             get_volume.return_value = VolumeInfo(
                 type="bind",
                 source="/home/some-user/.cache/localstack/volume",
@@ -39,9 +41,10 @@ class TestDockerUtils:
             assert result == "/home/some-user/.cache/localstack/volume/some/test/file"
 
     def test_host_path_for_path_in_docker_linux_volume_dir(self):
-        with mock.patch(
-            "localstack.utils.docker_utils.get_default_volume_dir_mount"
-        ) as get_volume, mock.patch("localstack.config.is_in_docker", True):
+        with (
+            mock.patch("localstack.utils.docker_utils.get_default_volume_dir_mount") as get_volume,
+            mock.patch("localstack.config.is_in_docker", True),
+        ):
             get_volume.return_value = VolumeInfo(
                 type="bind",
                 source="/home/some-user/.cache/localstack/volume",
@@ -55,9 +58,10 @@ class TestDockerUtils:
             assert result == "/home/some-user/.cache/localstack/volume"
 
     def test_host_path_for_path_in_docker_linux_wrong_path(self):
-        with mock.patch(
-            "localstack.utils.docker_utils.get_default_volume_dir_mount"
-        ) as get_volume, mock.patch("localstack.config.is_in_docker", True):
+        with (
+            mock.patch("localstack.utils.docker_utils.get_default_volume_dir_mount") as get_volume,
+            mock.patch("localstack.config.is_in_docker", True),
+        ):
             get_volume.return_value = VolumeInfo(
                 type="bind",
                 source="/home/some-user/.cache/localstack/volume",

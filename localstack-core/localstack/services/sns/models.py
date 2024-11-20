@@ -107,6 +107,7 @@ class SnsSubscription(TypedDict, total=False):
     RawMessageDelivery: Literal["true", "false"]
     ConfirmationWasAuthenticated: Literal["true", "false"]
     SubscriptionRoleArn: Optional[str]
+    DeliveryPolicy: Optional[str]
 
 
 class SnsStore(BaseStore):

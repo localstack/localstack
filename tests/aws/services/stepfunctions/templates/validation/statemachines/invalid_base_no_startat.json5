@@ -1,0 +1,8 @@
+{
+  "States": {
+    "StartState": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

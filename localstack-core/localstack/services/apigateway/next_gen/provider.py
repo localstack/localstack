@@ -15,15 +15,16 @@ from localstack.aws.api.apigateway import (
     Stage,
     StatusCode,
     String,
+    TestInvokeMethodRequest,
+    TestInvokeMethodResponse,
 )
-from localstack.constants import AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
 from localstack.services.apigateway.helpers import (
     get_apigateway_store,
     get_moto_rest_api,
     get_rest_api_container,
 )
+from localstack.services.apigateway.legacy.provider import ApigatewayProvider
 from localstack.services.apigateway.patches import apply_patches
-from localstack.services.apigateway.provider import ApigatewayProvider
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 
@@ -45,8 +46,7 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
         # we initialize the route handler with a global store with default account and region, because it only ever
         # access values with CrossAccount attributes
         if not router:
-            store = apigateway_stores[DEFAULT_AWS_ACCOUNT_ID][AWS_REGION_US_EAST_1]
-            route_handler = ApiGatewayEndpoint(store=store)
+            route_handler = ApiGatewayEndpoint(store=apigateway_stores)
             router = ApiGatewayRouter(ROUTER, handler=route_handler)
 
         super().__init__(router=router)
@@ -238,6 +238,12 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
             for response_type in DEFAULT_GATEWAY_RESPONSES
         ]
         return GatewayResponses(items=gateway_responses)
+
+    def test_invoke_method(
+        self, context: RequestContext, request: TestInvokeMethodRequest
+    ) -> TestInvokeMethodResponse:
+        # TODO: rewrite and migrate to NextGen
+        return super().test_invoke_method(context, request)
 
 
 def _get_gateway_response_or_default(

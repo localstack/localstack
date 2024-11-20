@@ -6,6 +6,8 @@ Parameters:
     AllowedValues:
       - 'ORIGINAL'
       - 'UPDATED'
+  FunctionName:
+    Type: String
 
 Resources:
   PullMarketsRole:
@@ -47,6 +49,7 @@ Resources:
           - Arn
       Runtime: nodejs18.x
       Timeout: 6
+      FunctionName: !Ref FunctionName
       Environment:
         Variables:
           TEST: !Ref Environment

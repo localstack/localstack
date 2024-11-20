@@ -110,12 +110,14 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
         mkdir(target_directory)
         download_url = self._get_download_url()
         archive_name = os.path.basename(download_url)
+        archive_path = os.path.join(config.dirs.tmp, archive_name)
         download_and_extract(
             download_url,
             retries=3,
-            tmp_archive=os.path.join(config.dirs.tmp, archive_name),
+            tmp_archive=archive_path,
             target_dir=target_directory,
         )
+        rm_rf(archive_path)
         if self.extract_single_directory:
             dir_contents = os.listdir(target_directory)
             if len(dir_contents) != 1:

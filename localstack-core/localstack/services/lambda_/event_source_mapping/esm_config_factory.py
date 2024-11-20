@@ -5,24 +5,29 @@ from localstack.aws.api.lambda_ import (
     DestinationConfig,
     EventSourceMappingConfiguration,
     EventSourcePosition,
+    RequestContext,
 )
 from localstack.services.lambda_ import hooks as lambda_hooks
 from localstack.services.lambda_.event_source_mapping.esm_worker import EsmState, EsmStateReason
 from localstack.services.lambda_.event_source_mapping.pipe_utils import (
     get_standardized_service_name,
 )
-from localstack.utils.aws.arns import parse_arn
+from localstack.utils.aws.arns import lambda_event_source_mapping_arn, parse_arn
 from localstack.utils.collections import merge_recursive
 from localstack.utils.strings import long_uid
 
 
 class EsmConfigFactory:
     request: CreateEventSourceMappingRequest
+    context: RequestContext
     function_arn: str
 
-    def __init__(self, request: CreateEventSourceMappingRequest, function_arn: str):
+    def __init__(
+        self, request: CreateEventSourceMappingRequest, context: RequestContext, function_arn: str
+    ):
         self.request = request
         self.function_arn = function_arn
+        self.context = context
 
     def get_esm_config(self) -> EventSourceMappingConfiguration:
         """Creates an Event Source Mapping (ESM) configuration based on a create ESM request.
@@ -30,15 +35,20 @@ class EsmConfigFactory:
         * CreatePipe API: https://docs.aws.amazon.com/eventbridge/latest/pipes-reference/API_CreatePipe.html
         The CreatePipe API covers largely the same parameters, but is better structured using hierarchical parameters.
         """
-
         service = ""
         if source_arn := self.request.get("EventSourceArn"):
             parsed_arn = parse_arn(source_arn)
             service = get_standardized_service_name(parsed_arn["service"])
 
+        uuid = long_uid()
+
         default_source_parameters = {}
-        default_source_parameters["UUID"] = long_uid()
+        default_source_parameters["UUID"] = uuid
+        default_source_parameters["EventSourceMappingArn"] = lambda_event_source_mapping_arn(
+            uuid, self.context.account_id, self.context.region
+        )
         default_source_parameters["StateTransitionReason"] = EsmStateReason.USER_ACTION
+
         if service == "sqs":
             default_source_parameters["BatchSize"] = 10
             default_source_parameters["MaximumBatchingWindowInSeconds"] = 0
@@ -99,4 +109,8 @@ class EsmConfigFactory:
             State=state,
             # TODO: complete missing fields
         )
+        # TODO: check whether we need to remove any more fields that are present in the request but should not be in the
+        #  esm_config
+        esm_config.pop("Enabled", "")
+        esm_config.pop("FunctionName", "")
         return esm_config

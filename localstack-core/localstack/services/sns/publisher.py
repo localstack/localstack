@@ -489,8 +489,11 @@ class HttpTopicPublisher(TopicPublisher):
                 # When raw message delivery is enabled, x-amz-sns-rawdelivery needs to be set to 'true'
                 # indicating that the message has been published without JSON formatting.
                 # https://docs.aws.amazon.com/sns/latest/dg/sns-large-payload-raw-message-delivery.html
-                if message_context.type == "Notification" and is_raw_message_delivery(subscriber):
-                    message_headers["x-amz-sns-rawdelivery"] = "true"
+                if message_context.type == "Notification":
+                    if is_raw_message_delivery(subscriber):
+                        message_headers["x-amz-sns-rawdelivery"] = "true"
+                    if content_type := self._get_content_type(subscriber, context.topic_attributes):
+                        message_headers["Content-Type"] = content_type
 
             response = requests.post(
                 subscriber["Endpoint"],
@@ -525,6 +528,30 @@ class HttpTopicPublisher(TopicPublisher):
             # AWS doesn't send to the DLQ if there's an error trying to deliver a UnsubscribeConfirmation msg
             if message_context.type != "UnsubscribeConfirmation":
                 sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
+
+    @staticmethod
+    def _get_content_type(subscriber: SnsSubscription, topic_attributes: dict) -> str | None:
+        # TODO: we need to load the DeliveryPolicy every time if there's one, we should probably save the loaded
+        #  policy on the subscription and dumps it when requested instead
+        # to be much faster, once the logic is implemented in moto, we would only need to fetch EffectiveDeliveryPolicy,
+        # which would already have the value from the topic
+        if json_sub_delivery_policy := subscriber.get("DeliveryPolicy"):
+            sub_delivery_policy = json.loads(json_sub_delivery_policy)
+            if sub_content_type := sub_delivery_policy.get("requestPolicy", {}).get(
+                "headerContentType"
+            ):
+                return sub_content_type
+
+        if json_topic_delivery_policy := topic_attributes.get("delivery_policy"):
+            topic_delivery_policy = json.loads(json_topic_delivery_policy)
+            if not (
+                topic_content_type := topic_delivery_policy.get(subscriber["Protocol"].lower())
+            ):
+                return
+            if content_type := topic_content_type.get("defaultRequestPolicy", {}).get(
+                "headerContentType"
+            ):
+                return content_type
 
 
 class EmailJsonTopicPublisher(TopicPublisher):
@@ -1183,7 +1210,7 @@ class PublishDispatcher:
                     subscriber["Protocol"],
                     subscriber["SubscriptionArn"],
                 )
-                self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
+                self._submit_notification(notifier, ctx, subscriber)
 
     def publish_batch_to_topic(self, ctx: SnsBatchPublishContext, topic_arn: str) -> None:
         subscriptions = ctx.store.get_topic_subscriptions(topic_arn)
@@ -1230,9 +1257,7 @@ class PublishDispatcher:
                     subscriber["Protocol"],
                     subscriber["SubscriptionArn"],
                 )
-                self.executor.submit(
-                    notifier.publish, context=subscriber_ctx, subscriber=subscriber
-                )
+                self._submit_notification(notifier, subscriber_ctx, subscriber)
             else:
                 # if no batch support, fall back to sending them sequentially
                 notifier = self.topic_notifiers[subscriber["Protocol"]]
@@ -1251,9 +1276,10 @@ class PublishDispatcher:
                             subscriber["Protocol"],
                             subscriber["SubscriptionArn"],
                         )
-                        self.executor.submit(
-                            notifier.publish, context=individual_ctx, subscriber=subscriber
-                        )
+                        self._submit_notification(notifier, individual_ctx, subscriber)
+
+    def _submit_notification(self, notifier, ctx: SnsPublishContext, subscriber: SnsSubscription):
+        self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
 
     def publish_to_phone_number(self, ctx: SnsPublishContext, phone_number: str) -> None:
         LOG.debug(

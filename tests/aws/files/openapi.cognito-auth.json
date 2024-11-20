@@ -1,0 +1,97 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Example Pet Store",
+    "description": "A Pet Store API.",
+    "version": "1.0"
+  },
+  "paths": {
+    "/pets": {
+      "get": {
+        "operationId": "GET HTTP",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pets"
+                }
+              }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "type": "HTTP_PROXY",
+          "httpMethod": "GET",
+          "uri": "http://petstore.execute-api.us-west-1.amazonaws.com/petstore/pets",
+          "payloadFormatVersion": 1.0
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cognito-test-identity-source": {
+        "type": "apiKey",
+        "name": "TestHeaderAuth",
+        "in": "header",
+        "x-amazon-apigateway-authtype": "cognito_user_pools",
+        "x-amazon-apigateway-authorizer": {
+          "type": "cognito_user_pools",
+          "providerARNs": [
+            "${cognito_pool_arn}"
+          ]
+        }
+      }
+    },
+    "schemas": {
+      "Pets": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Pet"
+        }
+      },
+      "Empty": {
+        "type": "object"
+      },
+      "Pet": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          }
+        }
+      }
+    }
+  }
+}

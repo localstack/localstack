@@ -6,7 +6,7 @@ from localstack.aws.api.lambda_ import (
     EventSourceMappingConfiguration,
 )
 from localstack.services.lambda_.event_source_mapping.pollers.poller import Poller
-from localstack.services.lambda_.invocation.models import lambda_stores
+from localstack.services.lambda_.invocation.models import LambdaStore, lambda_stores
 from localstack.services.lambda_.provider_utils import get_function_version_from_arn
 from localstack.utils.threads import FuncThread
 
@@ -47,6 +47,7 @@ class EsmWorker:
 
     poller: Poller
 
+    _state: LambdaStore
     _state_lock: threading.RLock
     _shutdown_event: threading.Event
     _poller_thread: FuncThread | None
@@ -71,6 +72,9 @@ class EsmWorker:
         self._shutdown_event = threading.Event()
         self._poller_thread = None
 
+        function_version = get_function_version_from_arn(self.esm_config["FunctionArn"])
+        self._state = lambda_stores[function_version.id.account][function_version.id.region]
+
     @property
     def uuid(self) -> str:
         return self.esm_config["UUID"]
@@ -86,6 +90,7 @@ class EsmWorker:
             with self._state_lock:
                 self.current_state = EsmState.DISABLED
                 self.state_transition_reason = self.user_state_reason
+            self.update_esm_state_in_store(EsmState.DISABLED)
 
     def start(self):
         with self._state_lock:
@@ -106,18 +111,21 @@ class EsmWorker:
         with self._state_lock:
             self.enabled = False
             self.current_state = EsmState.DISABLING
+            self.update_esm_state_in_store(EsmState.DISABLING)
             self.state_transition_reason = self.user_state_reason
         self._shutdown_event.set()
 
     def delete(self):
         with self._state_lock:
             self.current_state = EsmState.DELETING
+            self.update_esm_state_in_store(EsmState.DELETING)
             self.state_transition_reason = self.user_state_reason
         self._shutdown_event.set()
 
     def poller_loop(self, *args, **kwargs):
         with self._state_lock:
             self.current_state = EsmState.ENABLED
+            self.update_esm_state_in_store(EsmState.ENABLED)
             self.state_transition_reason = self.user_state_reason
 
         while not self._shutdown_event.is_set():
@@ -145,11 +153,9 @@ class EsmWorker:
         try:
             # Update state in store after async stop or delete
             if self.enabled and self.current_state == EsmState.DELETING:
-                function_version = get_function_version_from_arn(self.esm_config["FunctionArn"])
-                state = lambda_stores[function_version.id.account][function_version.id.region]
                 # TODO: we also need to remove the ESM worker reference from the Lambda provider to esm_worker
                 # TODO: proper locking for store updates
-                del state.event_source_mappings[self.esm_config["UUID"]]
+                self.delete_esm_in_store()
             elif not self.enabled and self.current_state == EsmState.DISABLING:
                 with self._state_lock:
                     self.current_state = EsmState.DISABLED
@@ -170,10 +176,11 @@ class EsmWorker:
                 exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
 
+    def delete_esm_in_store(self):
+        self._state.event_source_mappings.pop(self.esm_config["UUID"], None)
+
     # TODO: how can we handle async state updates better? Async deletion or disabling needs to update the model state.
     def update_esm_state_in_store(self, new_state: EsmState):
-        function_version = get_function_version_from_arn(self.esm_config["FunctionArn"])
-        state = lambda_stores[function_version.id.account][function_version.id.region]
         esm_update = {"State": new_state}
         # TODO: add proper locking for store updates
-        state.event_source_mappings[self.esm_config["UUID"]].update(esm_update)
+        self._state.event_source_mappings[self.esm_config["UUID"]].update(esm_update)

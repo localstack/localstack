@@ -119,7 +119,7 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
                     self._workers.remove(worker)
 
     def _map_run(self, env: Environment) -> None:
-        input_items: list[json] = env.stack[-1]
+        input_items: list[json] = env.stack.pop()
 
         input_item_prog: Final[Program] = Program(
             start_at=self._start_at,

@@ -3,10 +3,12 @@ from typing import Optional
 
 import pytest
 from moto.core import DEFAULT_ACCOUNT_ID as DEFAULT_MOTO_ACCOUNT_ID
+from rolo import Request
 
 import localstack.aws.accounts
-from localstack.aws.api import ServiceException, handler
+from localstack.aws.api import RequestContext, ServiceException, handler
 from localstack.aws.forwarder import NotImplementedAvoidFallbackError
+from localstack.aws.spec import load_service
 from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.services import moto
 from localstack.services.moto import MotoFallbackDispatcher
@@ -227,6 +229,33 @@ def test_call_with_sqs_returns_service_response():
 
     assert "QueueUrl" in create_queue_response
     assert create_queue_response["QueueUrl"].endswith(qname)
+
+
+@markers.aws.only_localstack
+def test_call_with_sns_with_full_uri():
+    # when requests are being forwarded by a Proxy, the HTTP request can contain the full URI and not only the path
+    # see https://github.com/localstack/localstack/pull/8962
+    # by using `request.path`, we would use a full URI in the request, as Werkzeug has issue parsing those proxied
+    # requests
+    topic_name = f"queue-{short_uid()}"
+    sns_request = Request(
+        "POST",
+        "/",
+        raw_path="http://localhost:4566/",
+        body=f"Action=CreateTopic&Name={topic_name}&Version=2010-03-31",
+        headers={"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"},
+    )
+    sns_service = load_service("sns")
+    context = RequestContext()
+    context.account = "test"
+    context.region = "us-west-1"
+    context.service = sns_service
+    context.request = sns_request
+    context.operation = sns_service.operation_model("CreateTopic")
+
+    create_topic_response = moto.call_moto(context)
+
+    assert create_topic_response["TopicArn"].endswith(topic_name)
 
 
 class FakeSqsApi:

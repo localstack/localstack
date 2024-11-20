@@ -72,7 +72,7 @@ def apply_intrinsic_transformations(
     """Resolve constructs using the 'Fn::Transform' intrinsic function."""
 
     def _visit(obj, path, **_):
-        if isinstance(obj, dict) and "Fn::Transform" in obj.keys():
+        if isinstance(obj, dict) and "Fn::Transform" in obj:
             transform = (
                 obj["Fn::Transform"]
                 if isinstance(obj["Fn::Transform"], dict)

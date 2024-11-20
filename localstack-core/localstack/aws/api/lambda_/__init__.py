@@ -92,6 +92,8 @@ SubnetId = str
 TagKey = str
 TagValue = str
 TaggableResource = str
+TagsErrorCode = str
+TagsErrorMessage = str
 Timeout = int
 Timestamp = str
 Topic = str
@@ -263,6 +265,7 @@ class Runtime(StrEnum):
     provided_al2023 = "provided.al2023"
     python3_12 = "python3.12"
     java21 = "java21"
+    python3_13 = "python3.13"
 
 
 class SnapStartApplyOn(StrEnum):
@@ -912,6 +915,7 @@ class FunctionCode(TypedDict, total=False):
     S3Key: Optional[S3Key]
     S3ObjectVersion: Optional[S3ObjectVersion]
     ImageUri: Optional[String]
+    SourceKMSKeyArn: Optional[KMSKeyArn]
 
 
 class CreateFunctionRequest(ServiceRequest):
@@ -1065,6 +1069,7 @@ class FunctionCodeLocation(TypedDict, total=False):
     Location: Optional[String]
     ImageUri: Optional[String]
     ResolvedImageUri: Optional[String]
+    SourceKMSKeyArn: Optional[String]
 
 
 class RuntimeVersionError(TypedDict, total=False):
@@ -1243,10 +1248,16 @@ class GetFunctionRequest(ServiceRequest):
     Qualifier: Optional[Qualifier]
 
 
+class TagsError(TypedDict, total=False):
+    ErrorCode: TagsErrorCode
+    Message: TagsErrorMessage
+
+
 class GetFunctionResponse(TypedDict, total=False):
     Configuration: Optional[FunctionConfiguration]
     Code: Optional[FunctionCodeLocation]
     Tags: Optional[Tags]
+    TagsError: Optional[TagsError]
     Concurrency: Optional[Concurrency]
 
 
@@ -1738,6 +1749,7 @@ class UpdateFunctionCodeRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     RevisionId: Optional[String]
     Architectures: Optional[ArchitecturesList]
+    SourceKMSKeyArn: Optional[KMSKeyArn]
 
 
 class UpdateFunctionConfigurationRequest(ServiceRequest):
@@ -2500,6 +2512,7 @@ class LambdaApi:
         dry_run: Boolean = None,
         revision_id: String = None,
         architectures: ArchitecturesList = None,
+        source_kms_key_arn: KMSKeyArn = None,
         **kwargs,
     ) -> FunctionConfiguration:
         raise NotImplementedError

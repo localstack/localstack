@@ -1,0 +1,20 @@
+Parameters:
+  ParameterName:
+    Type: String
+
+  MyNumber:
+    Type: Number
+    Default: 3
+
+Resources:
+  Parameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name:
+        Ref: ParameterName
+      Type: String
+      Value:
+        Fn::Sub:
+          - "my number is ${numberRef}"
+          - numberRef:
+              Ref: MyNumber

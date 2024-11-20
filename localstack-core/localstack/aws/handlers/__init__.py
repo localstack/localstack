@@ -14,6 +14,7 @@ from . import (
     presigned_url,
     region,
     service,
+    tracing,
     validation,
 )
 
@@ -41,6 +42,7 @@ serve_localstack_resources = internal.LocalstackResourceHandler()
 run_custom_response_handlers = chain.CompositeResponseHandler()
 modify_service_response = service.ServiceResponseHandlers()
 parse_service_response = service.ServiceResponseParser()
+parse_trace_context = tracing.TraceContextParser()
 parse_pre_signed_url_request = presigned_url.ParsePreSignedUrlRequest()
 run_custom_finalizers = chain.CompositeFinalizer()
 serve_custom_exception_handlers = chain.CompositeExceptionHandler()

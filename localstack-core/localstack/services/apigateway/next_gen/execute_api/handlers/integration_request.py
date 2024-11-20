@@ -119,6 +119,10 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
             body, request_override = self.render_request_template_mapping(
                 context=context, template=request_template
             )
+            # mutate the ContextVariables with the requestOverride result, as we copy the context when rendering the
+            # template to avoid mutation on other fields
+            # the VTL responseTemplate can access the requestOverride
+            context.context_variables["requestOverride"] = request_override
             # TODO: log every override that happens afterwards (in a loop on `request_override`)
             merge_recursive(request_override, request_data_mapping, overwrite=True)
 
@@ -156,7 +160,6 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
             body=body,
         )
 
-        # LOG.debug("Created integration request from xxx")
         context.integration_request = integration_request
 
     def get_integration_request_data(
@@ -293,7 +296,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         if integration_type in {IntegrationType.AWS, IntegrationType.AWS_PROXY}:
             to_validate = ILLEGAL_INTEGRATION_REQUESTS_AWS
 
-        for header in headers.keys():
+        for header in headers:
             if header.lower() in to_validate:
                 LOG.debug(
                     "Execution failed due to configuration error: %s header already present", header

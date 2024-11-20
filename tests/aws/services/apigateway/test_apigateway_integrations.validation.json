@@ -14,6 +14,12 @@
   "tests/aws/services/apigateway/test_apigateway_integrations.py::test_create_execute_api_vpc_endpoint": {
     "last_validated_date": "2024-04-15T23:07:07+00:00"
   },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_integration_mock_with_path_param": {
+    "last_validated_date": "2024-11-05T12:55:51+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_integration_mock_with_request_overrides_in_response_template": {
+    "last_validated_date": "2024-11-06T23:09:04+00:00"
+  },
   "tests/aws/services/apigateway/test_apigateway_integrations.py::test_put_integration_response_with_response_template": {
     "last_validated_date": "2024-05-30T16:15:58+00:00"
   },

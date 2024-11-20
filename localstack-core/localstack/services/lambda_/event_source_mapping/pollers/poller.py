@@ -5,18 +5,14 @@ from typing import Any
 
 from botocore.client import BaseClient
 
-from localstack import config
 from localstack.aws.api.pipes import PipeStateReason
-from localstack.services.events.event_ruler import matches_rule
-
-# TODO remove when we switch to Java rule engine
-from localstack.services.events.v1.utils import matches_event
 from localstack.services.lambda_.event_source_mapping.event_processor import EventProcessor
 from localstack.services.lambda_.event_source_mapping.noops_event_processor import (
     NoOpsEventProcessor,
 )
 from localstack.services.lambda_.event_source_mapping.pipe_utils import get_internal_client
 from localstack.utils.aws.arns import parse_arn
+from localstack.utils.event_matcher import matches_event
 
 
 class PipeStateReasonValues(PipeStateReason):
@@ -89,7 +85,7 @@ class Poller(ABC):
         filtered_events = []
         for event in events:
             # TODO: add try/catch with default discard and error log for extra resilience
-            if any(_matches_event(pattern, event) for pattern in self.filter_patterns):
+            if any(matches_event(pattern, event) for pattern in self.filter_patterns):
                 filtered_events.append(event)
         return filtered_events
 
@@ -109,15 +105,6 @@ class Poller(ABC):
     def extra_metadata(self) -> dict:
         """Default implementation that subclasses can override to customize"""
         return {}
-
-
-def _matches_event(event_pattern: dict, event: dict) -> bool:
-    if config.EVENT_RULE_ENGINE == "java":
-        event_str = json.dumps(event)
-        event_pattern_str = json.dumps(event_pattern)
-        return matches_rule(event_str, event_pattern_str)
-    else:
-        return matches_event(event_pattern, event)
 
 
 def has_batch_item_failures(

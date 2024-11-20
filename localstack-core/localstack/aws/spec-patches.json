@@ -1297,6 +1297,26 @@
         "documentation": "<p>The conditional request cannot succeed due to a conflicting operation against this resource.</p>",
         "exception": true
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/BadDigest",
+      "value": {
+        "type": "structure",
+        "members": {
+          "ExpectedDigest": {
+            "shape": "ContentMD5"
+          },
+          "CalculatedDigest": {
+            "shape": "ContentMD5"
+          }
+        },
+        "error": {
+          "httpStatusCode": 400
+        },
+        "documentation": "<p>The Content-MD5 you specified did not match what we received.</p>",
+        "exception": true
+      }
     }
   ],
   "apigatewayv2/2018-11-29/service-2": [

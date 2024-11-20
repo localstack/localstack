@@ -41,6 +41,7 @@ ResolverQueryLogConfigPolicy = str
 ResolverRulePolicy = str
 ResourceId = str
 Rfc3339TimeString = str
+ServerNameIndication = str
 ServicePrinciple = str
 SortByKey = str
 StatusMessage = str
@@ -71,6 +72,17 @@ class BlockResponse(StrEnum):
     NODATA = "NODATA"
     NXDOMAIN = "NXDOMAIN"
     OVERRIDE = "OVERRIDE"
+
+
+class ConfidenceThreshold(StrEnum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+
+
+class DnsThreatProtection(StrEnum):
+    DGA = "DGA"
+    DNS_TUNNELING = "DNS_TUNNELING"
 
 
 class FirewallDomainImportOperation(StrEnum):
@@ -521,7 +533,7 @@ class CreateFirewallRuleGroupResponse(TypedDict, total=False):
 class CreateFirewallRuleRequest(ServiceRequest):
     CreatorRequestId: CreatorRequestId
     FirewallRuleGroupId: ResourceId
-    FirewallDomainListId: ResourceId
+    FirewallDomainListId: Optional[ResourceId]
     Priority: Priority
     Action: Action
     BlockResponse: Optional[BlockResponse]
@@ -531,11 +543,14 @@ class CreateFirewallRuleRequest(ServiceRequest):
     Name: Name
     FirewallDomainRedirectionAction: Optional[FirewallDomainRedirectionAction]
     Qtype: Optional[Qtype]
+    DnsThreatProtection: Optional[DnsThreatProtection]
+    ConfidenceThreshold: Optional[ConfidenceThreshold]
 
 
 class FirewallRule(TypedDict, total=False):
     FirewallRuleGroupId: Optional[ResourceId]
     FirewallDomainListId: Optional[ResourceId]
+    FirewallThreatProtectionId: Optional[ResourceId]
     Name: Optional[Name]
     Priority: Optional[Priority]
     Action: Optional[Action]
@@ -548,6 +563,8 @@ class FirewallRule(TypedDict, total=False):
     ModificationTime: Optional[Rfc3339TimeString]
     FirewallDomainRedirectionAction: Optional[FirewallDomainRedirectionAction]
     Qtype: Optional[Qtype]
+    DnsThreatProtection: Optional[DnsThreatProtection]
+    ConfidenceThreshold: Optional[ConfidenceThreshold]
 
 
 class CreateFirewallRuleResponse(TypedDict, total=False):
@@ -636,6 +653,7 @@ class TargetAddress(TypedDict, total=False):
     Port: Optional[Port]
     Ipv6: Optional[Ipv6]
     Protocol: Optional[Protocol]
+    ServerNameIndication: Optional[ServerNameIndication]
 
 
 TargetList = List[TargetAddress]
@@ -690,7 +708,8 @@ class DeleteFirewallRuleGroupResponse(TypedDict, total=False):
 
 class DeleteFirewallRuleRequest(ServiceRequest):
     FirewallRuleGroupId: ResourceId
-    FirewallDomainListId: ResourceId
+    FirewallDomainListId: Optional[ResourceId]
+    FirewallThreatProtectionId: Optional[ResourceId]
     Qtype: Optional[Qtype]
 
 
@@ -1275,7 +1294,8 @@ class UpdateFirewallRuleGroupAssociationResponse(TypedDict, total=False):
 
 class UpdateFirewallRuleRequest(ServiceRequest):
     FirewallRuleGroupId: ResourceId
-    FirewallDomainListId: ResourceId
+    FirewallDomainListId: Optional[ResourceId]
+    FirewallThreatProtectionId: Optional[ResourceId]
     Priority: Optional[Priority]
     Action: Optional[Action]
     BlockResponse: Optional[BlockResponse]
@@ -1285,6 +1305,8 @@ class UpdateFirewallRuleRequest(ServiceRequest):
     Name: Optional[Name]
     FirewallDomainRedirectionAction: Optional[FirewallDomainRedirectionAction]
     Qtype: Optional[Qtype]
+    DnsThreatProtection: Optional[DnsThreatProtection]
+    ConfidenceThreshold: Optional[ConfidenceThreshold]
 
 
 class UpdateFirewallRuleResponse(TypedDict, total=False):
@@ -1416,16 +1438,18 @@ class Route53ResolverApi:
         context: RequestContext,
         creator_request_id: CreatorRequestId,
         firewall_rule_group_id: ResourceId,
-        firewall_domain_list_id: ResourceId,
         priority: Priority,
         action: Action,
         name: Name,
+        firewall_domain_list_id: ResourceId = None,
         block_response: BlockResponse = None,
         block_override_domain: BlockOverrideDomain = None,
         block_override_dns_type: BlockOverrideDnsType = None,
         block_override_ttl: BlockOverrideTtl = None,
         firewall_domain_redirection_action: FirewallDomainRedirectionAction = None,
         qtype: Qtype = None,
+        dns_threat_protection: DnsThreatProtection = None,
+        confidence_threshold: ConfidenceThreshold = None,
         **kwargs,
     ) -> CreateFirewallRuleResponse:
         raise NotImplementedError
@@ -1511,7 +1535,8 @@ class Route53ResolverApi:
         self,
         context: RequestContext,
         firewall_rule_group_id: ResourceId,
-        firewall_domain_list_id: ResourceId,
+        firewall_domain_list_id: ResourceId = None,
+        firewall_threat_protection_id: ResourceId = None,
         qtype: Qtype = None,
         **kwargs,
     ) -> DeleteFirewallRuleResponse:
@@ -1928,7 +1953,8 @@ class Route53ResolverApi:
         self,
         context: RequestContext,
         firewall_rule_group_id: ResourceId,
-        firewall_domain_list_id: ResourceId,
+        firewall_domain_list_id: ResourceId = None,
+        firewall_threat_protection_id: ResourceId = None,
         priority: Priority = None,
         action: Action = None,
         block_response: BlockResponse = None,
@@ -1938,6 +1964,8 @@ class Route53ResolverApi:
         name: Name = None,
         firewall_domain_redirection_action: FirewallDomainRedirectionAction = None,
         qtype: Qtype = None,
+        dns_threat_protection: DnsThreatProtection = None,
+        confidence_threshold: ConfidenceThreshold = None,
         **kwargs,
     ) -> UpdateFirewallRuleResponse:
         raise NotImplementedError

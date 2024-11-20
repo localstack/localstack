@@ -1,12 +1,19 @@
+from datetime import datetime
 from enum import StrEnum
 from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
+ApplicationArn = str
+ApplicationTagKey = str
+CreateGroupName = str
+Criticality = int
 Description = str
+DisplayName = str
 ErrorCode = str
 ErrorMessage = str
 GroupArn = str
+GroupArnV2 = str
 GroupConfigurationFailureReason = str
 GroupConfigurationParameterName = str
 GroupConfigurationParameterValue = str
@@ -15,14 +22,19 @@ GroupFilterValue = str
 GroupLifecycleEventsStatusMessage = str
 GroupName = str
 GroupString = str
+GroupStringV2 = str
+ListGroupingStatusesFilterValue = str
 MaxResults = int
 NextToken = str
+Owner = str
 Query = str
 QueryErrorMessage = str
 ResourceArn = str
 ResourceFilterValue = str
 ResourceType = str
+RoleArn = str
 TagKey = str
+TagSyncTaskArn = str
 TagValue = str
 
 
@@ -35,6 +47,9 @@ class GroupConfigurationStatus(StrEnum):
 class GroupFilterName(StrEnum):
     resource_type = "resource-type"
     configuration_type = "configuration-type"
+    owner = "owner"
+    display_name = "display-name"
+    criticality = "criticality"
 
 
 class GroupLifecycleEventsDesiredStatus(StrEnum):
@@ -47,6 +62,23 @@ class GroupLifecycleEventsStatus(StrEnum):
     INACTIVE = "INACTIVE"
     IN_PROGRESS = "IN_PROGRESS"
     ERROR = "ERROR"
+
+
+class GroupingStatus(StrEnum):
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    IN_PROGRESS = "IN_PROGRESS"
+    SKIPPED = "SKIPPED"
+
+
+class GroupingType(StrEnum):
+    GROUP = "GROUP"
+    UNGROUP = "UNGROUP"
+
+
+class ListGroupingStatusesFilterName(StrEnum):
+    status = "status"
+    resource_arn = "resource-arn"
 
 
 class QueryErrorCode(StrEnum):
@@ -67,6 +99,11 @@ class ResourceFilterName(StrEnum):
 
 class ResourceStatusValue(StrEnum):
     PENDING = "PENDING"
+
+
+class TagSyncTaskStatus(StrEnum):
+    ACTIVE = "ACTIVE"
+    ERROR = "ERROR"
 
 
 class BadRequestException(ServiceException):
@@ -117,6 +154,13 @@ class AccountSettings(TypedDict, total=False):
     GroupLifecycleEventsStatusMessage: Optional[GroupLifecycleEventsStatusMessage]
 
 
+ApplicationTag = Dict[ApplicationTagKey, ApplicationArn]
+
+
+class CancelTagSyncTaskInput(ServiceRequest):
+    TaskArn: TagSyncTaskArn
+
+
 GroupConfigurationParameterValueList = List[GroupConfigurationParameterValue]
 
 
@@ -143,11 +187,14 @@ class ResourceQuery(TypedDict, total=False):
 
 
 class CreateGroupInput(ServiceRequest):
-    Name: GroupName
+    Name: CreateGroupName
     Description: Optional[Description]
     ResourceQuery: Optional[ResourceQuery]
     Tags: Optional[Tags]
     Configuration: Optional[GroupConfigurationList]
+    Criticality: Optional[Criticality]
+    Owner: Optional[Owner]
+    DisplayName: Optional[DisplayName]
 
 
 class GroupConfiguration(TypedDict, total=False):
@@ -158,9 +205,13 @@ class GroupConfiguration(TypedDict, total=False):
 
 
 class Group(TypedDict, total=False):
-    GroupArn: GroupArn
+    GroupArn: GroupArnV2
     Name: GroupName
     Description: Optional[Description]
+    Criticality: Optional[Criticality]
+    Owner: Optional[Owner]
+    DisplayName: Optional[DisplayName]
+    ApplicationTag: Optional[ApplicationTag]
 
 
 class CreateGroupOutput(TypedDict, total=False):
@@ -172,7 +223,7 @@ class CreateGroupOutput(TypedDict, total=False):
 
 class DeleteGroupInput(ServiceRequest):
     GroupName: Optional[GroupName]
-    Group: Optional[GroupString]
+    Group: Optional[GroupStringV2]
 
 
 class DeleteGroupOutput(TypedDict, total=False):
@@ -202,7 +253,7 @@ class GetGroupConfigurationOutput(TypedDict, total=False):
 
 class GetGroupInput(ServiceRequest):
     GroupName: Optional[GroupName]
-    Group: Optional[GroupString]
+    Group: Optional[GroupStringV2]
 
 
 class GetGroupOutput(TypedDict, total=False):
@@ -223,12 +274,31 @@ class GetGroupQueryOutput(TypedDict, total=False):
     GroupQuery: Optional[GroupQuery]
 
 
+class GetTagSyncTaskInput(ServiceRequest):
+    TaskArn: TagSyncTaskArn
+
+
+timestamp = datetime
+
+
+class GetTagSyncTaskOutput(TypedDict, total=False):
+    GroupArn: Optional[GroupArnV2]
+    GroupName: Optional[GroupName]
+    TaskArn: Optional[TagSyncTaskArn]
+    TagKey: Optional[TagKey]
+    TagValue: Optional[TagValue]
+    RoleArn: Optional[RoleArn]
+    Status: Optional[TagSyncTaskStatus]
+    ErrorMessage: Optional[ErrorMessage]
+    CreatedAt: Optional[timestamp]
+
+
 class GetTagsInput(ServiceRequest):
-    Arn: GroupArn
+    Arn: GroupArnV2
 
 
 class GetTagsOutput(TypedDict, total=False):
-    Arn: Optional[GroupArn]
+    Arn: Optional[GroupArnV2]
     Tags: Optional[Tags]
 
 
@@ -246,6 +316,10 @@ GroupFilterList = List[GroupFilter]
 class GroupIdentifier(TypedDict, total=False):
     GroupName: Optional[GroupName]
     GroupArn: Optional[GroupArn]
+    Description: Optional[Description]
+    Criticality: Optional[Criticality]
+    Owner: Optional[Owner]
+    DisplayName: Optional[DisplayName]
 
 
 GroupIdentifierList = List[GroupIdentifier]
@@ -254,7 +328,7 @@ ResourceArnList = List[ResourceArn]
 
 
 class GroupResourcesInput(ServiceRequest):
-    Group: GroupString
+    Group: GroupStringV2
     ResourceArns: ResourceArnList
 
 
@@ -271,6 +345,16 @@ class GroupResourcesOutput(TypedDict, total=False):
     Pending: Optional[PendingResourceList]
 
 
+class GroupingStatusesItem(TypedDict, total=False):
+    ResourceArn: Optional[ResourceArn]
+    Action: Optional[GroupingType]
+    Status: Optional[GroupingStatus]
+    ErrorMessage: Optional[ErrorMessage]
+    ErrorCode: Optional[ErrorCode]
+    UpdatedAt: Optional[timestamp]
+
+
+GroupingStatusesList = List[GroupingStatusesItem]
 ResourceFilterValues = List[ResourceFilterValue]
 
 
@@ -284,7 +368,7 @@ ResourceFilterList = List[ResourceFilter]
 
 class ListGroupResourcesInput(ServiceRequest):
     GroupName: Optional[GroupName]
-    Group: Optional[GroupString]
+    Group: Optional[GroupStringV2]
     Filters: Optional[ResourceFilterList]
     MaxResults: Optional[MaxResults]
     NextToken: Optional[NextToken]
@@ -323,6 +407,30 @@ class ListGroupResourcesOutput(TypedDict, total=False):
     QueryErrors: Optional[QueryErrorList]
 
 
+ListGroupingStatusesFilterValues = List[ListGroupingStatusesFilterValue]
+
+
+class ListGroupingStatusesFilter(TypedDict, total=False):
+    Name: ListGroupingStatusesFilterName
+    Values: ListGroupingStatusesFilterValues
+
+
+ListGroupingStatusesFilterList = List[ListGroupingStatusesFilter]
+
+
+class ListGroupingStatusesInput(ServiceRequest):
+    Group: GroupStringV2
+    MaxResults: Optional[MaxResults]
+    Filters: Optional[ListGroupingStatusesFilterList]
+    NextToken: Optional[NextToken]
+
+
+class ListGroupingStatusesOutput(TypedDict, total=False):
+    Group: Optional[GroupStringV2]
+    GroupingStatuses: Optional[GroupingStatusesList]
+    NextToken: Optional[NextToken]
+
+
 class ListGroupsInput(ServiceRequest):
     Filters: Optional[GroupFilterList]
     MaxResults: Optional[MaxResults]
@@ -332,6 +440,40 @@ class ListGroupsInput(ServiceRequest):
 class ListGroupsOutput(TypedDict, total=False):
     GroupIdentifiers: Optional[GroupIdentifierList]
     Groups: Optional[GroupList]
+    NextToken: Optional[NextToken]
+
+
+class ListTagSyncTasksFilter(TypedDict, total=False):
+    GroupArn: Optional[GroupArnV2]
+    GroupName: Optional[GroupName]
+
+
+ListTagSyncTasksFilterList = List[ListTagSyncTasksFilter]
+
+
+class ListTagSyncTasksInput(ServiceRequest):
+    Filters: Optional[ListTagSyncTasksFilterList]
+    MaxResults: Optional[MaxResults]
+    NextToken: Optional[NextToken]
+
+
+class TagSyncTaskItem(TypedDict, total=False):
+    GroupArn: Optional[GroupArnV2]
+    GroupName: Optional[GroupName]
+    TaskArn: Optional[TagSyncTaskArn]
+    TagKey: Optional[TagKey]
+    TagValue: Optional[TagValue]
+    RoleArn: Optional[RoleArn]
+    Status: Optional[TagSyncTaskStatus]
+    ErrorMessage: Optional[ErrorMessage]
+    CreatedAt: Optional[timestamp]
+
+
+TagSyncTaskList = List[TagSyncTaskItem]
+
+
+class ListTagSyncTasksOutput(TypedDict, total=False):
+    TagSyncTasks: Optional[TagSyncTaskList]
     NextToken: Optional[NextToken]
 
 
@@ -356,8 +498,24 @@ class SearchResourcesOutput(TypedDict, total=False):
     QueryErrors: Optional[QueryErrorList]
 
 
+class StartTagSyncTaskInput(ServiceRequest):
+    Group: GroupStringV2
+    TagKey: TagKey
+    TagValue: TagValue
+    RoleArn: RoleArn
+
+
+class StartTagSyncTaskOutput(TypedDict, total=False):
+    GroupArn: Optional[GroupArnV2]
+    GroupName: Optional[GroupName]
+    TaskArn: Optional[TagSyncTaskArn]
+    TagKey: Optional[TagKey]
+    TagValue: Optional[TagValue]
+    RoleArn: Optional[RoleArn]
+
+
 class TagInput(ServiceRequest):
-    Arn: GroupArn
+    Arn: GroupArnV2
     Tags: Tags
 
 
@@ -365,12 +523,12 @@ TagKeyList = List[TagKey]
 
 
 class TagOutput(TypedDict, total=False):
-    Arn: Optional[GroupArn]
+    Arn: Optional[GroupArnV2]
     Tags: Optional[Tags]
 
 
 class UngroupResourcesInput(ServiceRequest):
-    Group: GroupString
+    Group: GroupStringV2
     ResourceArns: ResourceArnList
 
 
@@ -381,12 +539,12 @@ class UngroupResourcesOutput(TypedDict, total=False):
 
 
 class UntagInput(ServiceRequest):
-    Arn: GroupArn
+    Arn: GroupArnV2
     Keys: TagKeyList
 
 
 class UntagOutput(TypedDict, total=False):
-    Arn: Optional[GroupArn]
+    Arn: Optional[GroupArnV2]
     Keys: Optional[TagKeyList]
 
 
@@ -400,8 +558,11 @@ class UpdateAccountSettingsOutput(TypedDict, total=False):
 
 class UpdateGroupInput(ServiceRequest):
     GroupName: Optional[GroupName]
-    Group: Optional[GroupString]
+    Group: Optional[GroupStringV2]
     Description: Optional[Description]
+    Criticality: Optional[Criticality]
+    Owner: Optional[Owner]
+    DisplayName: Optional[DisplayName]
 
 
 class UpdateGroupOutput(TypedDict, total=False):
@@ -422,15 +583,24 @@ class ResourceGroupsApi:
     service = "resource-groups"
     version = "2017-11-27"
 
+    @handler("CancelTagSyncTask")
+    def cancel_tag_sync_task(
+        self, context: RequestContext, task_arn: TagSyncTaskArn, **kwargs
+    ) -> None:
+        raise NotImplementedError
+
     @handler("CreateGroup")
     def create_group(
         self,
         context: RequestContext,
-        name: GroupName,
+        name: CreateGroupName,
         description: Description = None,
         resource_query: ResourceQuery = None,
         tags: Tags = None,
         configuration: GroupConfigurationList = None,
+        criticality: Criticality = None,
+        owner: Owner = None,
+        display_name: DisplayName = None,
         **kwargs,
     ) -> CreateGroupOutput:
         raise NotImplementedError
@@ -440,7 +610,7 @@ class ResourceGroupsApi:
         self,
         context: RequestContext,
         group_name: GroupName = None,
-        group: GroupString = None,
+        group: GroupStringV2 = None,
         **kwargs,
     ) -> DeleteGroupOutput:
         raise NotImplementedError
@@ -454,7 +624,7 @@ class ResourceGroupsApi:
         self,
         context: RequestContext,
         group_name: GroupName = None,
-        group: GroupString = None,
+        group: GroupStringV2 = None,
         **kwargs,
     ) -> GetGroupOutput:
         raise NotImplementedError
@@ -475,13 +645,23 @@ class ResourceGroupsApi:
     ) -> GetGroupQueryOutput:
         raise NotImplementedError
 
+    @handler("GetTagSyncTask")
+    def get_tag_sync_task(
+        self, context: RequestContext, task_arn: TagSyncTaskArn, **kwargs
+    ) -> GetTagSyncTaskOutput:
+        raise NotImplementedError
+
     @handler("GetTags")
-    def get_tags(self, context: RequestContext, arn: GroupArn, **kwargs) -> GetTagsOutput:
+    def get_tags(self, context: RequestContext, arn: GroupArnV2, **kwargs) -> GetTagsOutput:
         raise NotImplementedError
 
     @handler("GroupResources")
     def group_resources(
-        self, context: RequestContext, group: GroupString, resource_arns: ResourceArnList, **kwargs
+        self,
+        context: RequestContext,
+        group: GroupStringV2,
+        resource_arns: ResourceArnList,
+        **kwargs,
     ) -> GroupResourcesOutput:
         raise NotImplementedError
 
@@ -490,12 +670,24 @@ class ResourceGroupsApi:
         self,
         context: RequestContext,
         group_name: GroupName = None,
-        group: GroupString = None,
+        group: GroupStringV2 = None,
         filters: ResourceFilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
         **kwargs,
     ) -> ListGroupResourcesOutput:
+        raise NotImplementedError
+
+    @handler("ListGroupingStatuses")
+    def list_grouping_statuses(
+        self,
+        context: RequestContext,
+        group: GroupStringV2,
+        max_results: MaxResults = None,
+        filters: ListGroupingStatusesFilterList = None,
+        next_token: NextToken = None,
+        **kwargs,
+    ) -> ListGroupingStatusesOutput:
         raise NotImplementedError
 
     @handler("ListGroups")
@@ -507,6 +699,17 @@ class ResourceGroupsApi:
         next_token: NextToken = None,
         **kwargs,
     ) -> ListGroupsOutput:
+        raise NotImplementedError
+
+    @handler("ListTagSyncTasks")
+    def list_tag_sync_tasks(
+        self,
+        context: RequestContext,
+        filters: ListTagSyncTasksFilterList = None,
+        max_results: MaxResults = None,
+        next_token: NextToken = None,
+        **kwargs,
+    ) -> ListTagSyncTasksOutput:
         raise NotImplementedError
 
     @handler("PutGroupConfiguration")
@@ -530,19 +733,35 @@ class ResourceGroupsApi:
     ) -> SearchResourcesOutput:
         raise NotImplementedError
 
+    @handler("StartTagSyncTask")
+    def start_tag_sync_task(
+        self,
+        context: RequestContext,
+        group: GroupStringV2,
+        tag_key: TagKey,
+        tag_value: TagValue,
+        role_arn: RoleArn,
+        **kwargs,
+    ) -> StartTagSyncTaskOutput:
+        raise NotImplementedError
+
     @handler("Tag")
-    def tag(self, context: RequestContext, arn: GroupArn, tags: Tags, **kwargs) -> TagOutput:
+    def tag(self, context: RequestContext, arn: GroupArnV2, tags: Tags, **kwargs) -> TagOutput:
         raise NotImplementedError
 
     @handler("UngroupResources")
     def ungroup_resources(
-        self, context: RequestContext, group: GroupString, resource_arns: ResourceArnList, **kwargs
+        self,
+        context: RequestContext,
+        group: GroupStringV2,
+        resource_arns: ResourceArnList,
+        **kwargs,
     ) -> UngroupResourcesOutput:
         raise NotImplementedError
 
     @handler("Untag")
     def untag(
-        self, context: RequestContext, arn: GroupArn, keys: TagKeyList, **kwargs
+        self, context: RequestContext, arn: GroupArnV2, keys: TagKeyList, **kwargs
     ) -> UntagOutput:
         raise NotImplementedError
 
@@ -560,8 +779,11 @@ class ResourceGroupsApi:
         self,
         context: RequestContext,
         group_name: GroupName = None,
-        group: GroupString = None,
+        group: GroupStringV2 = None,
         description: Description = None,
+        criticality: Criticality = None,
+        owner: Owner = None,
+        display_name: DisplayName = None,
         **kwargs,
     ) -> UpdateGroupOutput:
         raise NotImplementedError

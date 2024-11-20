@@ -23,7 +23,6 @@ from localstack.aws.api.s3 import (
     EventList,
     LambdaFunctionArn,
     LambdaFunctionConfiguration,
-    NoSuchKey,
     NotificationConfiguration,
     NotificationConfigurationFilter,
     NotificationId,
@@ -35,7 +34,6 @@ from localstack.aws.api.s3 import (
     TopicConfiguration,
 )
 from localstack.aws.connect import connect_to
-from localstack.config import LEGACY_V2_S3_PROVIDER
 from localstack.services.s3.models import S3Bucket, S3DeleteMarker, S3Object
 from localstack.services.s3.utils import _create_invalid_argument_exc
 from localstack.utils.aws import arns
@@ -44,15 +42,6 @@ from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.strings import short_uid
 from localstack.utils.time import parse_timestamp, timestamp_millis
-
-if LEGACY_V2_S3_PROVIDER:
-    from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
-
-    from localstack.services.s3.legacy.models import get_moto_s3_backend
-    from localstack.services.s3.legacy.utils_moto import (
-        get_bucket_from_moto,
-        get_key_from_moto_bucket,
-    )
 
 LOG = logging.getLogger(__name__)
 
@@ -113,73 +102,6 @@ class S3EventNotificationContext:
     key_version_id: str
     key_expiry: datetime.datetime
     key_storage_class: Optional[StorageClass]
-
-    @classmethod
-    def from_request_context(
-        cls,
-        request_context: RequestContext,
-        key_name: str = None,
-        version_id: str = None,
-        allow_non_existing_key=False,
-    ) -> "S3EventNotificationContext":
-        """
-        Create an S3EventNotificationContext from a RequestContext.
-        The key is not always present in the request context depending on the event type. In that case, we can use
-        a provided one.
-        :param request_context: RequestContext
-        :param key_name: Optional, in case it's not provided in the RequestContext
-        :param version_id: Optional, can be given to get the key version in case of deletion
-        :param allow_non_existing_key: Optional, indicates that a dummy Key should be created, if it does not exist (required for delete_objects)
-        :return: S3EventNotificationContext
-        """
-        bucket_name = request_context.service_request["Bucket"]
-        moto_backend = get_moto_s3_backend(request_context)
-        bucket: FakeBucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
-        try:
-            key: FakeKey = get_key_from_moto_bucket(
-                moto_bucket=bucket,
-                key=key_name or request_context.service_request["Key"],
-                version_id=version_id,
-            )
-        except NoSuchKey as ex:
-            if allow_non_existing_key:
-                key: FakeKey = FakeKey(
-                    key_name, "", request_context.account_id, request_context.region
-                )
-            else:
-                raise ex
-
-        # TODO: test notification format when the concerned key is FakeDeleteMarker
-        # it might not send notification, or s3:ObjectRemoved:DeleteMarkerCreated which we don't support
-        if isinstance(key, FakeDeleteMarker):
-            etag = ""
-            key_size = 0
-            key_expiry = None
-            storage_class = ""
-        else:
-            etag = key.etag.strip('"')
-            key_size = key.contentsize
-            key_expiry = key._expiry
-            storage_class = key.storage_class
-
-        return cls(
-            request_id=request_context.request_id,
-            event_type=EVENT_OPERATION_MAP.get(request_context.operation.wire_name, ""),
-            event_time=datetime.datetime.now(),
-            account_id=request_context.account_id,
-            region=request_context.region,
-            caller=request_context.account_id,  # TODO: use it for `userIdentity`
-            bucket_name=bucket_name,
-            bucket_location=bucket.location,
-            bucket_account_id=bucket.account_id,  # TODO: use it for bucket owner identity
-            key_name=quote(key.name),
-            key_etag=etag,
-            key_size=key_size,
-            key_expiry=key_expiry,
-            key_storage_class=storage_class,
-            key_version_id=key.version_id if bucket.is_versioned else None,  # todo: check this?
-            xray=request_context.request.headers.get(HEADER_AMZN_XRAY),
-        )
 
     @classmethod
     def from_request_context_native(
@@ -845,7 +767,11 @@ class NotificationDispatcher:
             for config in configurations:
                 if notifier.should_notify(ctx, config):  # we check before sending it to the thread
                     LOG.debug("Submitting task to the executor for notifier %s", notifier)
-                    self.executor.submit(notifier.notify, ctx, config)
+                    self._submit_notification(notifier, ctx, config)
+
+    def _submit_notification(self, notifier, ctx, config):
+        "Required for patching submit with local thread context for EventStudio"
+        self.executor.submit(notifier.notify, ctx, config)
 
     def verify_configuration(
         self,

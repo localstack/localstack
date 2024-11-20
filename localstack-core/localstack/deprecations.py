@@ -275,6 +275,34 @@ DEPRECATIONS = [
         "This option was confusingly named. Please use DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM "
         "instead.",
     ),
+    EnvVarDeprecation(
+        "LAMBDA_EVENTS_INTERNAL_SQS",
+        "4.0.0",
+        "This option is ignored because the LocalStack SQS dependency for event invokes has been removed since 4.0.0"
+        " in favor of a lightweight Lambda-internal SQS implementation.",
+    ),
+    EnvVarDeprecation(
+        "LAMBDA_EVENT_SOURCE_MAPPING",
+        "4.0.0",
+        "This option has no effect anymore. Please remove this environment variable.",
+    ),
+    EnvVarDeprecation(
+        "LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC",
+        "4.0.0",
+        "This option is not supported by the new Lambda Event Source Mapping v2 implementation."
+        " Please create a GitHub issue if you experience any performance challenges.",
+    ),
+    EnvVarDeprecation(
+        "PROVIDER_OVERRIDE_STEPFUNCTIONS",
+        "4.0.0",
+        "This option is ignored because the legacy StepFunctions provider (v1) has been removed since 4.0.0."
+        " Please remove PROVIDER_OVERRIDE_STEPFUNCTIONS.",
+    ),
+    EnvVarDeprecation(
+        "PERSIST_ALL",
+        "2.3.2",
+        "LocalStack treats backends and assets the same with respect to persistence. Please remove PERSIST_ALL.",
+    ),
 ]
 
 

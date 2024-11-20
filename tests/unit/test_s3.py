@@ -1,11 +1,11 @@
 import datetime
 import os
 import re
+import zoneinfo
 from io import BytesIO
 from urllib.parse import urlparse
 
 import pytest
-import zoneinfo
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.s3 import InvalidArgument

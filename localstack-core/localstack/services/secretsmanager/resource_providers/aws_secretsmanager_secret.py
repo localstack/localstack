@@ -204,7 +204,7 @@ class SecretsManagerSecretProvider(ResourceProvider[SecretsManagerSecretProperti
         model = request.desired_state
         secrets_manager = request.aws_client_factory.secretsmanager
 
-        secrets_manager.delete_secret(SecretId=model["Name"])
+        secrets_manager.delete_secret(SecretId=model["Name"], ForceDeleteWithoutRecovery=True)
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
@@ -222,3 +222,16 @@ class SecretsManagerSecretProvider(ResourceProvider[SecretsManagerSecretProperti
 
         """
         raise NotImplementedError
+
+    def list(
+        self,
+        request: ResourceRequest[SecretsManagerSecretProperties],
+    ) -> ProgressEvent[SecretsManagerSecretProperties]:
+        resources = request.aws_client_factory.secretsmanager.list_secrets()
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[
+                SecretsManagerSecretProperties(Id=resource["Name"])
+                for resource in resources["SecretList"]
+            ],
+        )

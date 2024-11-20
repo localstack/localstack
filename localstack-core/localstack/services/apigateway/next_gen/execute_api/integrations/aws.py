@@ -21,7 +21,6 @@ from localstack.aws.protocol.service_router import get_service_catalog
 from localstack.constants import APPLICATION_JSON, INTERNAL_AWS_ACCESS_KEY_ID
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.aws.client_types import ServicePrincipal
-from localstack.utils.collections import merge_dicts
 from localstack.utils.strings import to_bytes, to_str
 
 from ..context import (
@@ -390,10 +389,7 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
 
         headers = Headers({"Content-Type": APPLICATION_JSON})
 
-        response_headers = merge_dicts(
-            lambda_response.get("headers") or {},
-            lambda_response.get("multiValueHeaders") or {},
-        )
+        response_headers = self._merge_lambda_response_headers(lambda_response)
         headers.update(response_headers)
 
         return EndpointResponse(
@@ -467,8 +463,6 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         if multi_value_headers := lambda_response.get("multiValueHeaders"):
             lambda_response["multiValueHeaders"] = {
                 k: [serialize_header(v) for v in values]
-                if isinstance(values, list)
-                else serialize_header(values)
                 for k, values in multi_value_headers.items()
             }
 
@@ -482,11 +476,18 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         if not validate_sub_dict_of_typed_dict(LambdaProxyResponse, lambda_response):
             return False
 
-        if "headers" in lambda_response:
-            headers = lambda_response["headers"]
+        if (headers := lambda_response.get("headers")) is not None:
             if not isinstance(headers, dict):
                 return False
             if any(not isinstance(header_value, (str, bool)) for header_value in headers.values()):
+                return False
+
+        if (multi_value_headers := lambda_response.get("multiValueHeaders")) is not None:
+            if not isinstance(multi_value_headers, dict):
+                return False
+            if any(
+                not isinstance(header_value, list) for header_value in multi_value_headers.values()
+            ):
                 return False
 
         if "statusCode" in lambda_response:
@@ -550,3 +551,19 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
             return body.decode("utf-8"), False
         except UnicodeDecodeError:
             return to_str(base64.b64encode(body)), True
+
+    @staticmethod
+    def _merge_lambda_response_headers(lambda_response: LambdaProxyResponse) -> dict:
+        headers = lambda_response.get("headers") or {}
+
+        if multi_value_headers := lambda_response.get("multiValueHeaders"):
+            # multiValueHeaders has the priority and will decide the casing of the final headers, as they are merged
+            headers_low_keys = {k.lower(): v for k, v in headers.items()}
+
+            for k, values in multi_value_headers.items():
+                if (k_lower := k.lower()) in headers_low_keys:
+                    headers[k] = [*values, headers_low_keys[k_lower]]
+                else:
+                    headers[k] = values
+
+        return headers

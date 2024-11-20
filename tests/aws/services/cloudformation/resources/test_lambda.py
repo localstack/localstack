@@ -57,7 +57,10 @@ def test_lambda_w_dynamodb_event_filter(deploy_cfn_template, aws_client):
 
 
 @markers.snapshot.skip_snapshot_verify(
-    ["$..EventSourceMappings..FunctionArn", "$..EventSourceMappings..LastProcessingResult"]
+    [
+        "$..EventSourceMappings..FunctionArn",
+        "$..EventSourceMappings..LastProcessingResult",
+    ]
 )
 @markers.aws.validated
 def test_lambda_w_dynamodb_event_filter_update(deploy_cfn_template, snapshot, aws_client):
@@ -97,19 +100,16 @@ def test_lambda_w_dynamodb_event_filter_update(deploy_cfn_template, snapshot, aw
     snapshot.match("updated_source_mappings", source_mappings)
 
 
-@pytest.mark.skip(
-    reason="fails/times out. Provider not able to update lambda function environment variables"
-)
 @markers.aws.validated
 def test_update_lambda_function(s3_create_bucket, deploy_cfn_template, aws_client):
+    function_name = f"lambda-{short_uid()}"
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../../templates/lambda_function_update.yml"
         ),
-        parameters={"Environment": "ORIGINAL"},
+        parameters={"Environment": "ORIGINAL", "FunctionName": function_name},
     )
 
-    function_name = stack.outputs["LambdaName"]
     response = aws_client.lambda_.get_function(FunctionName=function_name)
     assert response["Configuration"]["Environment"]["Variables"]["TEST"] == "ORIGINAL"
 
@@ -119,11 +119,40 @@ def test_update_lambda_function(s3_create_bucket, deploy_cfn_template, aws_clien
         template_path=os.path.join(
             os.path.dirname(__file__), "../../../templates/lambda_function_update.yml"
         ),
-        parameters={"Environment": "UPDATED"},
+        parameters={"Environment": "UPDATED", "FunctionName": function_name},
     )
 
     response = aws_client.lambda_.get_function(FunctionName=function_name)
     assert response["Configuration"]["Environment"]["Variables"]["TEST"] == "UPDATED"
+
+
+@markers.aws.validated
+def test_update_lambda_function_name(s3_create_bucket, deploy_cfn_template, aws_client):
+    function_name_1 = f"lambda-{short_uid()}"
+    function_name_2 = f"lambda-{short_uid()}"
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/lambda_function_update.yml"
+        ),
+        parameters={"FunctionName": function_name_1},
+    )
+
+    function_name = stack.outputs["LambdaName"]
+    response = aws_client.lambda_.get_function(FunctionName=function_name_1)
+    assert response["Configuration"]["Environment"]["Variables"]["TEST"] == "ORIGINAL"
+
+    deploy_cfn_template(
+        stack_name=stack.stack_name,
+        is_update=True,
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/lambda_function_update.yml"
+        ),
+        parameters={"FunctionName": function_name_2},
+    )
+    with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
+        aws_client.lambda_.get_function(FunctionName=function_name)
+
+    aws_client.lambda_.get_function(FunctionName=function_name_2)
 
 
 @markers.snapshot.skip_snapshot_verify(
@@ -715,9 +744,13 @@ class TestCfnLambdaIntegrations:
 
     # TODO: consider moving into the dedicated DynamoDB => Lambda tests
     #  tests.aws.services.lambda_.test_lambda_integration_dynamodbstreams.TestDynamoDBEventSourceMapping.test_dynamodb_event_filter
+    @pytest.mark.skipif(
+        config.EVENT_RULE_ENGINE != "java",
+        reason="Filtering is broken with the Python rule engine for this specific case (exists:false) in ESM v2",
+    )
     @markers.aws.validated
     def test_lambda_dynamodb_event_filter(
-        self, dynamodb_wait_for_table_active, deploy_cfn_template, aws_client
+        self, dynamodb_wait_for_table_active, deploy_cfn_template, aws_client, monkeypatch
     ):
         function_name = f"test-fn-{short_uid()}"
         table_name = f"ddb-tbl-{short_uid()}"

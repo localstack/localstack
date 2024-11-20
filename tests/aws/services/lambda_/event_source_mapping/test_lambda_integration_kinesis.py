@@ -21,8 +21,6 @@ from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
 from tests.aws.services.lambda_.event_source_mapping.utils import (
     create_lambda_with_response,
-    is_old_esm,
-    is_v2_esm,
 )
 from tests.aws.services.lambda_.functions import FUNCTIONS_PATH, lambda_integration
 from tests.aws.services.lambda_.test_lambda import (
@@ -35,6 +33,7 @@ TEST_LAMBDA_KINESIS_LOG = FUNCTIONS_PATH / "kinesis_log.py"
 TEST_LAMBDA_KINESIS_BATCH_ITEM_FAILURE = (
     FUNCTIONS_PATH / "lambda_report_batch_item_failures_kinesis.py"
 )
+TEST_LAMBDA_PROVIDED_BOOTSTRAP_EMPTY = FUNCTIONS_PATH / "provided_bootstrap_empty"
 
 
 @pytest.fixture(autouse=True)
@@ -64,6 +63,7 @@ def _snapshot_transformers(snapshot):
         "$..BisectBatchOnFunctionError",
         "$..DestinationConfig",
         "$..LastProcessingResult",
+        "$..EventSourceMappingArn",
         "$..MaximumBatchingWindowInSeconds",
         "$..MaximumRecordAgeInSeconds",
         "$..ResponseMetadata.HTTPStatusCode",
@@ -462,15 +462,6 @@ class TestKinesisSource:
             "$..Messages..Body.KinesisBatchInfo.streamArn",
         ],
     )
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_esm,
-        paths=[
-            "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfFirstRecord",
-            "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfLastRecord",
-            "$..Messages..Body.requestContext.approximateInvokeCount",
-            "$..Messages..Body.responseContext.statusCode",
-        ],
-    )
     @markers.aws.validated
     def test_kinesis_event_source_mapping_with_on_failure_destination_config(
         self,
@@ -551,10 +542,6 @@ class TestKinesisSource:
         sqs_payload = retry(verify_failure_received, retries=15, sleep=sleep, sleep_before=5)
         snapshot.match("sqs_payload", sqs_payload)
 
-    @pytest.mark.skipif(
-        is_old_esm(),
-        reason="ReportBatchItemFailures: Partial batch failure handling not implemented in ESM v1",
-    )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             # FIXME Conflict between shardId and AWS account number when transforming
@@ -656,9 +643,6 @@ class TestKinesisSource:
         snapshot.match("kinesis_records", {"Records": sorted_records})
 
     @markers.aws.validated
-    @pytest.mark.skipif(
-        is_old_esm(), reason="ReportBatchItemFailures: Total batch fails not implemented in ESM v1"
-    )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Messages..Body.KinesisBatchInfo.shardId",
@@ -766,15 +750,6 @@ class TestKinesisSource:
         paths=[
             "$..Message.KinesisBatchInfo.shardId",
             "$..Message.KinesisBatchInfo.streamArn",
-        ],
-    )
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_esm,
-        paths=[
-            "$..Message.KinesisBatchInfo.approximateArrivalOfFirstRecord",
-            "$..Message.KinesisBatchInfo.approximateArrivalOfLastRecord",
-            "$..Message.requestContext.approximateInvokeCount",
-            "$..Message.responseContext.statusCode",
         ],
     )
     @markers.aws.validated
@@ -893,6 +868,7 @@ class TestKinesisSource:
         "set_lambda_response",
         [
             # Successes
+            "",
             [],
             None,
             {},
@@ -901,6 +877,7 @@ class TestKinesisSource:
         ],
         ids=[
             # Successes
+            "empty_string_success",
             "empty_list_success",
             "null_success",
             "empty_dict_success",
@@ -970,12 +947,76 @@ class TestKinesisSource:
         invocation_events = retry(_verify_messages_received, retries=30, sleep=5)
         snapshot.match("kinesis_events", invocation_events)
 
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Messages..Body.KinesisBatchInfo.shardId",
+        ],
+    )
+    def test_kinesis_empty_provided(
+        self,
+        create_lambda_function,
+        kinesis_create_stream,
+        lambda_su_role,
+        wait_for_stream_ready,
+        cleanups,
+        snapshot,
+        aws_client,
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        stream_name = f"test-foobar-{short_uid()}"
+        record_data = "hello"
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PROVIDED_BOOTSTRAP_EMPTY,
+            func_name=function_name,
+            runtime=Runtime.provided_al2023,
+            role=lambda_su_role,
+        )
+
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        wait_for_stream_ready(stream_name=stream_name)
+        stream_summary = aws_client.kinesis.describe_stream_summary(StreamName=stream_name)
+        assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 1
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
+
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            EventSourceArn=stream_arn,
+            FunctionName=function_name,
+            StartingPosition="TRIM_HORIZON",
+            BatchSize=1,
+            MaximumBatchingWindowInSeconds=1,
+            MaximumRetryAttempts=2,
+        )
+        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
+        uuid = create_event_source_mapping_response["UUID"]
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
+        _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
+
+        aws_client.kinesis.put_record(
+            Data=record_data,
+            PartitionKey="test",
+            StreamName=stream_name,
+        )
+
+        def _verify_invoke():
+            log_events = aws_client.logs.filter_log_events(
+                logGroupName=f"/aws/lambda/{function_name}",
+            )["events"]
+            assert len([e["message"] for e in log_events if e["message"].startswith("REPORT")]) == 1
+
+        retry(_verify_invoke, retries=30, sleep=5)
+
+        get_esm_result = aws_client.lambda_.get_event_source_mapping(UUID=uuid)
+        snapshot.match("get_esm_result", get_esm_result)
+
 
 # TODO: add tests for different edge cases in filtering (e.g. message isn't json => needs to be dropped)
 # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-kinesis
 class TestKinesisEventFiltering:
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_v2_esm,
         paths=[
             # Lifecycle updates not yet implemented in ESM v2
             "$..LastProcessingResult",
@@ -985,6 +1026,7 @@ class TestKinesisEventFiltering:
         paths=[
             "$..Messages..Body.KinesisBatchInfo.shardId",
             "$..Messages..Body.KinesisBatchInfo.streamArn",
+            "$..EventSourceMappingArn",
         ],
     )
     @markers.aws.validated

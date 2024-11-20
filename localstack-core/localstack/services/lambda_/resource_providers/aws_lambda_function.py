@@ -463,7 +463,7 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
         # TODO: handle defaults properly
         old_name = request.previous_state["FunctionName"]
         new_name = request.desired_state.get("FunctionName")
-        if old_name != new_name:
+        if new_name and old_name != new_name:
             # replacement (!) => shouldn't be handled here but in the engine
             self.delete(request)
             return self.create(request)
@@ -512,4 +512,14 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model={**request.previous_state, **request.desired_state},
+        )
+
+    def list(
+        self,
+        request: ResourceRequest[LambdaFunctionProperties],
+    ) -> ProgressEvent[LambdaFunctionProperties]:
+        functions = request.aws_client_factory.lambda_.list_functions()
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[LambdaFunctionProperties(**fn) for fn in functions["Functions"]],
         )

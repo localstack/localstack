@@ -205,3 +205,16 @@ class CloudFormationStackProvider(ResourceProvider[CloudFormationStackProperties
 
         """
         raise NotImplementedError
+
+    def list(
+        self,
+        request: ResourceRequest[CloudFormationStackProperties],
+    ) -> ProgressEvent[CloudFormationStackProperties]:
+        resources = request.aws_client_factory.cloudformation.describe_stacks()
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[
+                CloudFormationStackProperties(Id=resource["StackId"])
+                for resource in resources["Stacks"]
+            ],
+        )

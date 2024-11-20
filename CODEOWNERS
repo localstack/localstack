@@ -111,11 +111,11 @@
 /tests/unit/services/apigateway/ @bentsku @cloutierMat
 
 # cloudformation
-/localstack-core/localstack/aws/api/cloudformation/ @dominikschubert @pinzon @simonrw @Morijarti
-/localstack-core/localstack/services/cloudformation/ @dominikschubert @pinzon @simonrw @Morijarti
-/tests/aws/services/cloudformation/ @dominikschubert @pinzon @simonrw @Morijarti
-/tests/unit/test_cloudformation.py @dominikschubert @pinzon @simonrw @Morijarti
-/tests/unit/services/cloudformation/ @dominikschubert @pinzon @simonrw @Morijarti
+/localstack-core/localstack/aws/api/cloudformation/ @dominikschubert @pinzon @simonrw
+/localstack-core/localstack/services/cloudformation/ @dominikschubert @pinzon @simonrw
+/tests/aws/services/cloudformation/ @dominikschubert @pinzon @simonrw
+/tests/unit/test_cloudformation.py @dominikschubert @pinzon @simonrw
+/tests/unit/services/cloudformation/ @dominikschubert @pinzon @simonrw
 
 # cloudwatch
 /localstack-core/localstack/aws/api/cloudwatch/ @pinzon @steffyP
@@ -143,9 +143,9 @@
 /tests/aws/services/es/ @alexrashed @silv-io
 
 # events
-/localstack-core/localstack/aws/api/events/ @maxhoheiser @Morijarti @joe4dev
-/localstack-core/localstack/services/events/ @maxhoheiser @Morijarti @joe4dev
-/tests/aws/services/events/ @maxhoheiser @Morijarti @joe4dev
+/localstack-core/localstack/aws/api/events/ @maxhoheiser @joe4dev
+/localstack-core/localstack/services/events/ @maxhoheiser @joe4dev
+/tests/aws/services/events/ @maxhoheiser @joe4dev
 
 # firehose
 /localstack-core/localstack/aws/api/firehose/ @pinzon
@@ -164,10 +164,10 @@
 /tests/unit/test_kms.py @sannya-singal
 
 # lambda
-/localstack-core/localstack/aws/api/lambda_/ @joe4dev @dominikschubert @dfangl
-/localstack-core/localstack/services/lambda_/ @joe4dev @dominikschubert @dfangl
-/tests/aws/services/lambda_/ @joe4dev @dominikschubert @dfangl
-/tests/unit/services/lambda_/ @joe4dev @dominikschubert @dfangl
+/localstack-core/localstack/aws/api/lambda_/ @joe4dev @dominikschubert @dfangl @gregfurman
+/localstack-core/localstack/services/lambda_/ @joe4dev @dominikschubert @dfangl @gregfurman
+/tests/aws/services/lambda_/ @joe4dev @dominikschubert @dfangl @gregfurman
+/tests/unit/services/lambda_/ @joe4dev @dominikschubert @dfangl @gregfurman
 
 # logs
 /localstack-core/localstack/aws/api/logs/ @pinzon @steffyP
@@ -199,7 +199,6 @@
 /localstack-core/localstack/services/s3/ @bentsku
 /tests/aws/services/s3/ @bentsku
 /tests/unit/test_s3.py @bentsku
-/tests/unit/services/s3/ @bentsku
 
 # scheduler
 /localstack-core/localstack/aws/api/scheduler/ @joe4dev
