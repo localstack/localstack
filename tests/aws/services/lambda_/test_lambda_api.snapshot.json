@@ -3029,7 +3029,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_alias_lifecycle": {
-    "recorded-date": "19-11-2024, 18:37:57",
+    "recorded-date": "21-11-2024, 13:44:49",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -3621,7 +3621,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_notfound_and_invalid_routingconfigs": {
-    "recorded-date": "19-11-2024, 18:38:14",
+    "recorded-date": "21-11-2024, 13:45:06",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -5257,7 +5257,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_lifecycle": {
-    "recorded-date": "19-11-2024, 18:37:16",
+    "recorded-date": "21-11-2024, 13:44:13",
     "recorded-content": {
       "url_creation": {
         "AuthType": "NONE",
@@ -7076,7 +7076,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_list_paging": {
-    "recorded-date": "19-11-2024, 18:37:13",
+    "recorded-date": "21-11-2024, 13:44:10",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -7200,7 +7200,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_exceptions": {
-    "recorded-date": "19-11-2024, 18:37:08",
+    "recorded-date": "21-11-2024, 13:44:05",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -14339,7 +14339,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_alias_naming": {
-    "recorded-date": "19-11-2024, 18:38:19",
+    "recorded-date": "21-11-2024, 13:45:11",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -18068,7 +18068,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_deletion_without_qualifier": {
-    "recorded-date": "19-11-2024, 18:37:20",
+    "recorded-date": "21-11-2024, 13:44:17",
     "recorded-content": {
       "url_creation": {
         "AuthType": "NONE",
@@ -18147,7 +18147,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_non_existent_alias_deletion": {
-    "recorded-date": "19-11-2024, 18:38:00",
+    "recorded-date": "21-11-2024, 13:44:51",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -18206,7 +18206,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_non_existent_alias_update": {
-    "recorded-date": "19-11-2024, 18:38:02",
+    "recorded-date": "21-11-2024, 13:44:53",
     "recorded-content": {
       "create_response": {
         "Architectures": [

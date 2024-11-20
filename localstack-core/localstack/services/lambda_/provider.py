@@ -1816,10 +1816,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function = self._get_function(
             function_name=function_name, region=region, account_id=account_id
         )
-        fn_arn = api_utils.unqualified_lambda_arn(function_name, account_id, region)
         if not (alias := function.aliases.get(name)):
+            fn_arn = api_utils.qualified_lambda_arn(function_name, name, account_id, region)
             raise ResourceNotFoundException(
-                f"Alias not found: {fn_arn}:{name}",
+                f"Alias not found: {fn_arn}",
                 Type="User",
             )
         if revision_id and alias.revision_id != revision_id:

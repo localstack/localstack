@@ -2140,9 +2140,11 @@ class TestLambdaAlias:
     def test_non_existent_alias_deletion(
         self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
     ):
+        """
+        This test checks the behaviour when deleting a non-existent alias.
+        No error is raised.
+        """
         function_name = f"alias-fn-{short_uid()}"
-        snapshot.add_transformer(SortingTransformer("Aliases", lambda x: x["Name"]))
-
         create_response = create_lambda_function_aws(
             FunctionName=function_name,
             Handler="index.handler",
@@ -2167,9 +2169,11 @@ class TestLambdaAlias:
     def test_non_existent_alias_update(
         self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
     ):
+        """
+        This test checks the behaviour when updating a non-existent alias.
+        An error (ResourceNotFoundException) is raised.
+        """
         function_name = f"alias-fn-{short_uid()}"
-        snapshot.add_transformer(SortingTransformer("Aliases", lambda x: x["Name"]))
-
         create_response = create_lambda_function_aws(
             FunctionName=function_name,
             Handler="index.handler",
@@ -4529,10 +4533,13 @@ class TestLambdaUrl:
     def test_url_config_deletion_without_qualifier(
         self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
     ):
+        """
+        This test checks that delete_function_url_config doesn't delete the function url configs of all aliases,
+        when not specifying the Qualifier.
+        """
         snapshot.add_transformer(
             snapshot.transform.key_value("FunctionUrl", "lambda-url", reference_replacement=False)
         )
-        snapshot.add_transformer(SortingTransformer("Aliases", lambda x: x["Name"]))
 
         function_name = f"alias-fn-{short_uid()}"
         create_lambda_function_aws(
