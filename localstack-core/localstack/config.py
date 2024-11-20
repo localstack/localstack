@@ -431,7 +431,7 @@ VOLUME_DIR = os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip() or TMP_FOLDER
 if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_FOLDER):
     TMP_FOLDER = "/private%s" % TMP_FOLDER
 
-# whether to enable verbose debug logging ("LOG" is ued when using the CLI with LOCALSTACK_LOG instead of LS_LOG)
+# whether to enable verbose debug logging ("LOG" is used when using the CLI with LOCALSTACK_LOG instead of LS_LOG)
 LS_LOG = eval_log_type("LS_LOG") or eval_log_type("LOG")
 DEBUG = is_env_true("DEBUG") or LS_LOG in TRACE_LOG_LEVELS
 
