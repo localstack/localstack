@@ -23,7 +23,6 @@ from localstack.aws.api.events import (
     Boolean,
     CancelReplayResponse,
     Condition,
-    Connection,
     ConnectionArn,
     ConnectionAuthorizationType,
     ConnectionDescription,
@@ -218,8 +217,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self._target_sender_store: TargetSenderDict = {}
         self._archive_service_store: ArchiveServiceDict = {}
         self._replay_service_store: ReplayServiceDict = {}
-        self._connections: Dict[str, Connection] = {}
-        self._api_destinations: Dict[str, ApiDestination] = {}
 
     def on_before_start(self):
         JobScheduler.start()
@@ -684,6 +681,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond = None,
         **kwargs,
     ) -> CreateApiDestinationResponse:
+        store = self.get_store(context.region, context.account_id)
+
         def create():
             validation_errors = []
             if not re.match(r"^[\.\-_A-Za-z0-9]+$", name):
@@ -727,7 +726,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 error_message += "; ".join(validation_errors)
                 raise ValidationException(error_message)
 
-            if name in self._api_destinations:
+            if name in store.api_destinations:
                 raise ResourceAlreadyExistsException(f"An api-destination '{name}' already exists.")
 
             connection = self._get_connection_by_arn(connection_arn)
@@ -748,7 +747,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 invocation_rate_limit_per_second,
                 api_destination_state=api_destination_state,
             )
-            self._api_destinations[name] = api_destination
+
+            store.api_destinations[name] = api_destination
 
             return CreateApiDestinationResponse(
                 ApiDestinationArn=api_destination["ApiDestinationArn"],
@@ -763,12 +763,13 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def describe_api_destination(
         self, context: RequestContext, name: ApiDestinationName, **kwargs
     ) -> DescribeApiDestinationResponse:
+        store = self.get_store(context.region, context.account_id)
         try:
-            if name not in self._api_destinations:
+            if name not in store.api_destinations:
                 raise ResourceNotFoundException(
                     f"Failed to describe the api-destination(s). An api-destination '{name}' does not exist."
                 )
-            api_destination = self._api_destinations[name]
+            api_destination = store.api_destinations[name]
             return DescribeApiDestinationResponse(**api_destination)
         except ResourceNotFoundException as e:
             raise e
@@ -787,12 +788,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond = None,
         **kwargs,
     ) -> UpdateApiDestinationResponse:
+        store = self.get_store(context.region, context.account_id)
+
         def update():
-            if name not in self._api_destinations:
+            if name not in store.api_destinations:
                 raise ResourceNotFoundException(
                     f"Failed to describe the api-destination(s). An api-destination '{name}' does not exist."
                 )
-            api_destination = self._api_destinations[name]
+            api_destination = store.api_destinations[name]
 
             if description is not None:
                 api_destination["Description"] = description
@@ -840,12 +843,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def delete_api_destination(
         self, context: RequestContext, name: ApiDestinationName, **kwargs
     ) -> DeleteApiDestinationResponse:
+        store = self.get_store(context.region, context.account_id)
+
         def delete():
-            if name not in self._api_destinations:
+            if name not in store.api_destinations:
                 raise ResourceNotFoundException(
                     f"Failed to describe the api-destination(s). An api-destination '{name}' does not exist."
                 )
-            del self._api_destinations[name]
+            del store.api_destinations[name]
             return DeleteApiDestinationResponse()
 
         return self._handle_api_destination_operation("deleting", delete)
@@ -860,8 +865,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         limit: LimitMax100 = None,
         **kwargs,
     ) -> ListApiDestinationsResponse:
+        store = self.get_store(context.region, context.account_id)
         try:
-            api_destinations = list(self._api_destinations.values())
+            api_destinations = list(store.api_destinations.values())
 
             if name_prefix:
                 api_destinations = [

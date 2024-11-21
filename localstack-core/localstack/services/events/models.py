@@ -5,18 +5,15 @@ from typing import Literal, Optional, TypeAlias, TypedDict
 
 from localstack.aws.api.core import ServiceException
 from localstack.aws.api.events import (
+    ApiDestinationName,
     ArchiveDescription,
     ArchiveName,
     ArchiveState,
     Arn,
-    ConnectionArn,
-    ConnectionAuthorizationType,
-    ConnectionDescription,
     ConnectionName,
-    ConnectionState,
-    ConnectionStateReason,
-    CreateConnectionAuthRequestParameters,
     CreatedBy,
+    DescribeApiDestinationResponse,
+    DescribeConnectionResponse,
     EventBusName,
     EventPattern,
     EventResourceList,
@@ -34,7 +31,6 @@ from localstack.aws.api.events import (
     RuleName,
     RuleState,
     ScheduleExpression,
-    SecretsManagerSecretArn,
     TagList,
     Target,
     TargetId,
@@ -231,21 +227,8 @@ class EventBus:
 EventBusDict = dict[EventBusName, EventBus]
 
 
-class Connection(TypedDict, total=False):
-    ConnectionArn: Optional[ConnectionArn]
-    Name: Optional[ConnectionName]
-    Description: Optional[ConnectionDescription]
-    ConnectionState: Optional[ConnectionState]
-    StateReason: Optional[ConnectionStateReason]
-    AuthorizationType: Optional[ConnectionAuthorizationType]
-    SecretArn: Optional[SecretsManagerSecretArn]
-    AuthParameters: Optional[CreateConnectionAuthRequestParameters]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
-    LastAuthorizedTime: Optional[Timestamp]
-
-
-ConnectionDict = dict[ConnectionName, Connection]
+ConnectionDict = dict[ConnectionName, DescribeConnectionResponse]
+ApiDestinationDict = dict[ApiDestinationName, DescribeApiDestinationResponse]
 
 
 class EventsStore(BaseStore):
@@ -260,6 +243,9 @@ class EventsStore(BaseStore):
 
     # Map of connection names to connection objects.
     connections: ConnectionDict = LocalAttribute(default=dict)
+
+    # Map of api destination names to api destination objects
+    api_destinations: ApiDestinationDict = LocalAttribute(default=dict)
 
     # Maps resource ARN to tags
     TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
