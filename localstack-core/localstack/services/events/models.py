@@ -9,6 +9,13 @@ from localstack.aws.api.events import (
     ArchiveName,
     ArchiveState,
     Arn,
+    ConnectionArn,
+    ConnectionAuthorizationType,
+    ConnectionDescription,
+    ConnectionName,
+    ConnectionState,
+    ConnectionStateReason,
+    CreateConnectionAuthRequestParameters,
     CreatedBy,
     EventBusName,
     EventPattern,
@@ -27,6 +34,7 @@ from localstack.aws.api.events import (
     RuleName,
     RuleState,
     ScheduleExpression,
+    SecretsManagerSecretArn,
     TagList,
     Target,
     TargetId,
@@ -223,6 +231,23 @@ class EventBus:
 EventBusDict = dict[EventBusName, EventBus]
 
 
+class Connection(TypedDict, total=False):
+    ConnectionArn: Optional[ConnectionArn]
+    Name: Optional[ConnectionName]
+    Description: Optional[ConnectionDescription]
+    ConnectionState: Optional[ConnectionState]
+    StateReason: Optional[ConnectionStateReason]
+    AuthorizationType: Optional[ConnectionAuthorizationType]
+    SecretArn: Optional[SecretsManagerSecretArn]
+    AuthParameters: Optional[CreateConnectionAuthRequestParameters]
+    CreationTime: Optional[Timestamp]
+    LastModifiedTime: Optional[Timestamp]
+    LastAuthorizedTime: Optional[Timestamp]
+
+
+ConnectionDict = dict[ConnectionName, Connection]
+
+
 class EventsStore(BaseStore):
     # Map of eventbus names to eventbus objects. The name MUST be unique per account and region (works with AccountRegionBundle)
     event_buses: EventBusDict = LocalAttribute(default=dict)
@@ -232,6 +257,9 @@ class EventsStore(BaseStore):
 
     # Map of replay names to replay objects. The name MUST be unique per account and region (works with AccountRegionBundle)
     replays: ReplayDict = LocalAttribute(default=dict)
+
+    # Map of connection names to connection objects.
+    connections: ConnectionDict = LocalAttribute(default=dict)
 
     # Maps resource ARN to tags
     TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)

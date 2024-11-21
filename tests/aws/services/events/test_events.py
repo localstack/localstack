@@ -243,9 +243,7 @@ class TestEvents:
         assert [json.loads(event["Detail"]) for event in sorted_events] == event_details_to_publish
 
     @markers.aws.only_localstack
-    # tests for legacy v1 provider delete once v1 provider is removed, v2 covered in separate tests
     @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_api_destinations(self, httpserver: HTTPServer, auth, aws_client, clean_up):
         token = short_uid()
         bearer = f"Bearer {token}"

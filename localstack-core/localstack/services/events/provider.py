@@ -156,6 +156,7 @@ from localstack.services.events.utils import (
     to_json_str,
 )
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.common import truncate
 from localstack.utils.event_matcher import matches_event
 from localstack.utils.strings import long_uid, short_uid
@@ -260,14 +261,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
     def _get_connection_by_arn(self, connection_arn: str) -> Optional[Dict]:
         """Retrieve a connection by its ARN."""
-        return next(
-            (
-                conn
-                for conn in self._connections.values()
-                if conn["ConnectionArn"] == connection_arn
-            ),
-            None,
-        )
+        parsed_arn = parse_arn(connection_arn)
+        store = self.get_store(parsed_arn["region"], parsed_arn["account"])
+        connection_name = parsed_arn["resource"].split("/")[1]
+        return store.connections.get(connection_name)
 
     def _get_public_parameters(self, auth_type: str, auth_parameters: dict) -> dict:
         """Extract public parameters (without secrets) based on auth type."""
@@ -364,7 +361,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             "Name": name,
             "ConnectionState": connection_state or self._get_initial_state(authorization_type),
             "AuthorizationType": authorization_type,
-            "AuthParameters": self._get_public_parameters(authorization_type, auth_parameters),
+            "AuthParameters": auth_parameters,
             "SecretArn": self._create_secret_arn(context, name, connection_uuid),
             "CreationTime": current_time,
             "LastModifiedTime": current_time,
@@ -437,14 +434,15 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 auth_type = authorization_type.value
             self._validate_auth_type(auth_type)
             self._validate_connection_name(name)
+            store = self.get_store(context.region, context.account_id)
 
-            if name in self._connections:
+            if name in store.connections:
                 raise ResourceAlreadyExistsException(f"Connection {name} already exists.")
 
             connection = self._create_connection_object(
                 context, name, auth_type, auth_parameters, description
             )
-            self._connections[name] = connection
+            store.connections[name] = connection
 
             return CreateConnectionResponse(**self._create_connection_response(connection))
 
@@ -454,13 +452,18 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def describe_connection(
         self, context: RequestContext, name: ConnectionName, **kwargs
     ) -> DescribeConnectionResponse:
+        store = self.get_store(context.region, context.account_id)
         try:
-            if name not in self._connections:
+            if name not in store.connections:
                 raise ResourceNotFoundException(
                     f"Failed to describe the connection(s). Connection '{name}' does not exist."
                 )
 
-            return DescribeConnectionResponse(**self._connections[name])
+            connection_response = DescribeConnectionResponse(**store.connections[name])
+            connection_response["AuthParameters"] = self._get_public_parameters(
+                connection_response["AuthorizationType"], connection_response["AuthParameters"]
+            )
+            return connection_response
 
         except ResourceNotFoundException as e:
             raise e
@@ -477,13 +480,15 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         auth_parameters: UpdateConnectionAuthRequestParameters = None,
         **kwargs,
     ) -> UpdateConnectionResponse:
+        store = self.get_store(context.region, context.account_id)
+
         def update():
-            if name not in self._connections:
+            if name not in store.connections:
                 raise ResourceNotFoundException(
                     f"Failed to describe the connection(s). Connection '{name}' does not exist."
                 )
 
-            existing_connection = self._connections[name]
+            existing_connection = store.connections[name]
 
             # Use existing values if not provided in update
             if authorization_type:
@@ -510,7 +515,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 ConnectionState.AUTHORIZED,
                 existing_connection["CreationTime"],
             )
-            self._connections[name] = connection
+            store.connections[name] = connection
 
             return UpdateConnectionResponse(**self._create_connection_response(connection))
 
@@ -520,14 +525,15 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def delete_connection(
         self, context: RequestContext, name: ConnectionName, **kwargs
     ) -> DeleteConnectionResponse:
+        store = self.get_store(context.region, context.account_id)
+
         def delete():
-            if name not in self._connections:
+            if name not in store.connections:
                 raise ResourceNotFoundException(
                     f"Failed to describe the connection(s). Connection '{name}' does not exist."
                 )
 
-            connection = self._connections[name]
-            del self._connections[name]
+            connection = store.connections.pop(name)
 
             return DeleteConnectionResponse(
                 **self._create_connection_response(connection, ConnectionState.DELETING)
@@ -545,10 +551,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         limit: LimitMax100 = None,
         **kwargs,
     ) -> ListConnectionsResponse:
+        store = self.get_store(context.region, context.account_id)
         try:
             connections = []
 
-            for conn in self._connections.values():
+            for conn in store.connections.values():
                 if name_prefix and not conn["Name"].startswith(name_prefix):
                     continue
 
