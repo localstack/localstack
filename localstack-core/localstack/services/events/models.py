@@ -237,4 +237,4 @@ class EventsStore(BaseStore):
     TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
 
 
-events_store = AccountRegionBundle("events", EventsStore)
+events_stores = AccountRegionBundle("events", EventsStore)

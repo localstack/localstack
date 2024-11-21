@@ -132,7 +132,7 @@ from localstack.services.events.models import (
     RuleDict,
     TargetDict,
     ValidationException,
-    events_store,
+    events_stores,
 )
 from localstack.services.events.models import (
     InvalidEventPatternException as InternalInvalidEventPatternException,
@@ -1521,7 +1521,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def get_store(self, region: str, account_id: str) -> EventsStore:
         """Returns the events store for the account and region.
         On first call, creates the default event bus for the account region."""
-        store = events_store[account_id][region]
+        store = events_stores[account_id][region]
         # create default event bus for account region on first call
         default_event_bus_name = "default"
         if default_event_bus_name not in store.event_buses:
@@ -1577,7 +1577,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_source_name: Optional[EventSourceName],
         tags: Optional[TagList],
     ) -> EventBusService:
-        event_bus_service = EventBusService(
+        event_bus_service = EventBusService.create_event_bus_service(
             name,
             region,
             account_id,
@@ -1601,7 +1601,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name: Optional[EventBusName],
         targets: Optional[TargetDict],
     ) -> RuleService:
-        rule_service = RuleService(
+        rule_service = RuleService.create_rule_service(
             name,
             region,
             account_id,

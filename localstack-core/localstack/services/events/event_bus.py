@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Self
 
 from localstack.aws.api.events import (
     Action,
@@ -23,11 +23,14 @@ class EventBusService:
     event_source_name: str | None
     tags: TagList | None
     policy: str | None
-    rules: RuleDict | None
     event_bus: EventBus
 
-    def __init__(
-        self,
+    def __init__(self, event_bus: EventBus):
+        self.event_bus = event_bus
+
+    @classmethod
+    def create_event_bus_service(
+        cls,
         name: EventBusName,
         region: str,
         account_id: str,
@@ -35,15 +38,17 @@ class EventBusService:
         tags: Optional[TagList] = None,
         policy: Optional[str] = None,
         rules: Optional[RuleDict] = None,
-    ):
-        self.event_bus = EventBus(
-            name,
-            region,
-            account_id,
-            event_source_name,
-            tags,
-            policy,
-            rules,
+    ) -> Self:
+        return cls(
+            EventBus(
+                name,
+                region,
+                account_id,
+                event_source_name,
+                tags,
+                policy,
+                rules,
+            )
         )
 
     @property
