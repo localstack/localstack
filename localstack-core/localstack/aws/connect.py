@@ -270,7 +270,7 @@ class ClientFactory(ABC):
 
         # make sure we consider our custom data paths for legacy specs (like SQS query protocol)
         if LOCALSTACK_BUILTIN_DATA_PATH not in self._session._loader.search_paths:
-            self._session._loader.search_paths.append(LOCALSTACK_BUILTIN_DATA_PATH)
+            self._session._loader.search_paths.insert(0, LOCALSTACK_BUILTIN_DATA_PATH)
 
         self._create_client_lock = threading.RLock()
 
