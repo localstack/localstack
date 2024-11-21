@@ -284,7 +284,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 "AuthorizationEndpoint": oauth_params["AuthorizationEndpoint"],
                 "HttpMethod": oauth_params["HttpMethod"],
                 "ClientParameters": {"ClientID": oauth_params["ClientParameters"]["ClientID"]},
-                "OAuthHttpParameters": oauth_params.get("OAuthHttpParameters"),
             }
             if "OAuthHttpParameters" in oauth_params:
                 public_params["OAuthParameters"]["OAuthHttpParameters"] = oauth_params.get(
