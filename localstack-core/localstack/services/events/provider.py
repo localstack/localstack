@@ -156,7 +156,7 @@ from localstack.services.events.utils import (
     to_json_str,
 )
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.aws.arns import parse_arn
+from localstack.utils.aws.arns import get_partition, parse_arn
 from localstack.utils.common import truncate
 from localstack.utils.event_matcher import matches_event
 from localstack.utils.strings import long_uid, short_uid
@@ -316,7 +316,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> ApiDestination:
         """Create a standardized API destination object."""
         now = datetime.utcnow()
-        api_destination_arn = f"arn:aws:events:{context.region}:{context.account_id}:api-destination/{name}/{short_uid()}"
+        api_destination_arn = f"arn:{get_partition(context.region)}:events:{context.region}:{context.account_id}:api-destination/{name}/{short_uid()}"
 
         api_destination: ApiDestination = {
             "ApiDestinationArn": api_destination_arn,
@@ -336,11 +336,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self, context: RequestContext, name: str, connection_uuid: str
     ) -> str:
         """Create a standardized connection ARN."""
-        return f"arn:aws:events:{context.region}:{context.account_id}:connection/{name}/{connection_uuid}"
+        return f"arn:{get_partition(context.region)}:events:{context.region}:{context.account_id}:connection/{name}/{connection_uuid}"
 
     def _create_secret_arn(self, context: RequestContext, name: str) -> str:
         """Create a standardized secret ARN."""
-        return f"arn:aws:secretsmanager:{context.region}:{context.account_id}:secret:events!connection/{name}/{str(uuid.uuid4())}"
+        return f"arn:{get_partition(context.region)}:secretsmanager:{context.region}:{context.account_id}:secret:events!connection/{name}/{str(uuid.uuid4())}"
 
     def _create_connection_object(
         self,

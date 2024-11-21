@@ -566,7 +566,12 @@ def create_connection(aws_client, connection_name):
                 AuthParameters=auth_parameters,
             )
 
-    return _create_connection
+    yield _create_connection
+
+    try:
+        aws_client.events.delete_connection(Name=connection_name)
+    except Exception as e:
+        LOG.debug("Error cleaning up connection: %s", e)
 
 
 @pytest.fixture

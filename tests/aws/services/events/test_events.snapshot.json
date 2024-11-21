@@ -1770,7 +1770,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection": {
-    "recorded-date": "21-11-2024, 14:00:54",
+    "recorded-date": "21-11-2024, 14:49:50",
     "recorded-content": {
       "create-connection": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
@@ -1805,7 +1805,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params0]": {
-    "recorded-date": "21-11-2024, 14:00:54",
+    "recorded-date": "21-11-2024, 14:49:51",
     "recorded-content": {
       "create-connection-auth": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
@@ -1839,7 +1839,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params1]": {
-    "recorded-date": "21-11-2024, 14:00:55",
+    "recorded-date": "21-11-2024, 14:49:51",
     "recorded-content": {
       "create-connection-auth": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
@@ -1873,7 +1873,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params2]": {
-    "recorded-date": "21-11-2024, 14:00:55",
+    "recorded-date": "21-11-2024, 14:49:51",
     "recorded-content": {
       "create-connection-auth": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
@@ -1911,7 +1911,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_list_connections": {
-    "recorded-date": "21-11-2024, 14:00:56",
+    "recorded-date": "21-11-2024, 14:49:52",
     "recorded-content": {
       "list-connections": {
         "Connections": [
@@ -1933,7 +1933,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_invalid_parameters": {
-    "recorded-date": "21-11-2024, 14:00:58",
+    "recorded-date": "21-11-2024, 14:49:53",
     "recorded-content": {
       "create-connection-invalid-auth-error": {
         "Error": {
@@ -1948,7 +1948,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_update_connection": {
-    "recorded-date": "21-11-2024, 14:00:59",
+    "recorded-date": "21-11-2024, 14:49:54",
     "recorded-content": {
       "create-connection": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
@@ -1994,7 +1994,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_name_validation": {
-    "recorded-date": "21-11-2024, 14:00:59",
+    "recorded-date": "21-11-2024, 14:49:54",
     "recorded-content": {
       "create-connection-invalid-name-error": {
         "Error": {
@@ -2009,7 +2009,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_delete_connection": {
-    "recorded-date": "21-11-2024, 14:00:58",
+    "recorded-date": "21-11-2024, 14:49:53",
     "recorded-content": {
       "create-connection-response": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
@@ -2474,6 +2474,165 @@
           }
         ],
         "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[auth_params0]": {
+    "recorded-date": "21-11-2024, 14:49:54",
+    "recorded-content": {
+      "create-connection-auth": {
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection-auth": {
+        "AuthParameters": {
+          "BasicAuthParameters": {
+            "Username": "user"
+          }
+        },
+        "AuthorizationType": "BASIC",
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "connection-secret": {
+        "ARN": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "CreatedDate": "datetime",
+        "Name": "events!connection/<connection-name>/<secret-uuid>",
+        "SecretString": {
+          "username": "user",
+          "password": "pass"
+        },
+        "VersionId": "<uuid:1>",
+        "VersionStages": [
+          "AWSCURRENT"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[auth_params1]": {
+    "recorded-date": "21-11-2024, 14:49:55",
+    "recorded-content": {
+      "create-connection-auth": {
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection-auth": {
+        "AuthParameters": {
+          "ApiKeyAuthParameters": {
+            "ApiKeyName": "ApiKey"
+          }
+        },
+        "AuthorizationType": "API_KEY",
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "connection-secret": {
+        "ARN": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "CreatedDate": "datetime",
+        "Name": "events!connection/<connection-name>/<secret-uuid>",
+        "SecretString": {
+          "api_key_name": "ApiKey",
+          "api_key_value": "secret"
+        },
+        "VersionId": "<uuid:1>",
+        "VersionStages": [
+          "AWSCURRENT"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[auth_params2]": {
+    "recorded-date": "21-11-2024, 14:49:55",
+    "recorded-content": {
+      "create-connection-auth": {
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZING",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection-auth": {
+        "AuthParameters": {
+          "OAuthParameters": {
+            "AuthorizationEndpoint": "https://example.com/oauth",
+            "ClientParameters": {
+              "ClientID": "client_id"
+            },
+            "HttpMethod": "POST"
+          }
+        },
+        "AuthorizationType": "OAUTH_CLIENT_CREDENTIALS",
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZING",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "connection-secret": {
+        "ARN": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "CreatedDate": "datetime",
+        "Name": "events!connection/<connection-name>/<secret-uuid>",
+        "SecretString": {
+          "client_id": "client_id",
+          "client_secret": "client_secret",
+          "authorization_endpoint": "https://example.com/oauth",
+          "http_method": "POST"
+        },
+        "VersionId": "<uuid:1>",
+        "VersionStages": [
+          "AWSCURRENT"
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

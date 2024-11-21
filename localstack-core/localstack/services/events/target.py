@@ -262,7 +262,7 @@ class ApiGatewayTargetSender(TargetSender):
 
     def send_event(self, event):
         # Parse the ARN to extract api_id, stage_name, http_method, and resource path
-        # Example ARN: arn:aws:execute-api:{region}:{account_id}:{api_id}/{stage_name}/{method}/{resource_path}
+        # Example ARN: arn:{partition}:execute-api:{region}:{account_id}:{api_id}/{stage_name}/{method}/{resource_path}
         arn_parts = parse_arn(self.target["Arn"])
         api_gateway_info = arn_parts["resource"]  # e.g., 'myapi/dev/POST/pets/*/*'
         api_gateway_info_parts = api_gateway_info.split("/")
