@@ -145,7 +145,6 @@ from localstack.services.events.target import (
     TargetSenderDict,
     TargetSenderFactory,
 )
-from localstack.services.events.usage import rule_error, rule_invocation
 from localstack.services.events.utils import (
     extract_event_bus_name,
     extract_region_and_account_id,
@@ -1335,6 +1334,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 f"1 validation error detected: Value '{formatted_entries}' at 'entries' failed to satisfy constraint: Member must have length less than or equal to 10"
             )
         entries, failed_entry_count = self._process_entries(context, entries)
+
         response = PutEventsResponse(
             Entries=entries,
             FailedEntryCount=failed_entry_count,
@@ -1958,13 +1958,16 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             failed_entry_count["count"] += 1
             LOG.info(json.dumps(event_failed_validation))
             return
+
         region, account_id = extract_region_and_account_id(event_bus_name_or_arn, context)
         if encoded_trace_header := get_trace_header_encoded_region_account(
             entry, context.region, context.account_id, region, account_id
         ):
             entry["TraceHeader"] = encoded_trace_header
+
         event_formatted = format_event(entry, region, account_id, event_bus_name)
         store = self.get_store(region, account_id)
+
         try:
             event_bus = self.get_event_bus(event_bus_name, store)
         except ResourceNotFoundException:
@@ -1979,14 +1982,16 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 )
             )
             return
+
         self._proxy_capture_input_event(event_formatted)
+
+        # Always add the successful EventId entry, even if target processing might fail
+        processed_entries.append({"EventId": event_formatted["id"]})
+
         if configured_rules := list(event_bus.rules.values()):
             for rule in configured_rules:
-                self._process_rules(
-                    rule, region, account_id, event_formatted, processed_entries, failed_entry_count
-                )
+                self._process_rules(rule, region, account_id, event_formatted)
         else:
-            processed_entries.append({"EventId": event_formatted["id"]})
             LOG.info(
                 json.dumps(
                     {
@@ -2006,9 +2011,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         region: str,
         account_id: str,
         event_formatted: FormattedEvent,
-        processed_entries: PutEventsResultEntryList,
-        failed_entry_count: dict[str, int],
     ) -> None:
+        """Process rules for an event. Note that we no longer handle entries here as AWS returns success regardless of target failures."""
         event_pattern = rule.event_pattern
         event_str = to_json_str(event_formatted)
         if matches_event(event_pattern, event_str):
@@ -2021,6 +2025,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                         }
                     )
                 )
+                return
+
             for target in rule.targets.values():
                 target_arn = target["Arn"]
                 if is_archive_arn(target_arn):
@@ -2034,22 +2040,13 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     target_sender = self._target_sender_store[target_arn]
                     try:
                         target_sender.process_event(event_formatted.copy())
-                        processed_entries.append({"EventId": event_formatted["id"]})
-                        rule_invocation.record(target_sender.service)
                     except Exception as error:
-                        rule_error.record(target_sender.service)
-                        processed_entries.append(
-                            {
-                                "ErrorCode": "InternalException",
-                                "ErrorMessage": str(error),
-                            }
-                        )
-                        failed_entry_count["count"] += 1
+                        # Log the error but don't modify the response
                         LOG.info(
                             json.dumps(
                                 {
-                                    "ErrorCode": "InternalException at process_entries",
-                                    "ErrorMessage": str(error),
+                                    "ErrorCode": "TargetDeliveryFailure",
+                                    "ErrorMessage": f"Failed to deliver to target {target['Id']}: {str(error)}",
                                 }
                             )
                         )

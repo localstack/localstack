@@ -422,6 +422,166 @@ class TestEvents:
             )
         snapshot.match("create_connection_exc", e.value.response)
 
+    @markers.aws.validated
+    def test_put_events_response_entries_order(
+        self, events_put_rule, create_sqs_events_target, aws_client, snapshot, clean_up
+    ):
+        """Test that put_events response contains each EventId only once, even with multiple targets."""
+
+        queue_url_1, queue_arn_1 = create_sqs_events_target()
+        queue_url_2, queue_arn_2 = create_sqs_events_target()
+
+        rule_name = f"test-rule-{short_uid()}"
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("EventId", reference_replacement=False),
+                snapshot.transform.key_value("detail", reference_replacement=False),
+                snapshot.transform.regex(queue_arn_1, "<queue-1-arn>"),
+                snapshot.transform.regex(queue_arn_2, "<queue-2-arn>"),
+                snapshot.transform.regex(rule_name, "<rule-name>"),
+                *snapshot.transform.sqs_api(),
+                *snapshot.transform.sns_api(),
+            ]
+        )
+
+        events_put_rule(
+            Name=rule_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN_NO_DETAIL),
+        )
+
+        def check_rule_active():
+            rule = aws_client.events.describe_rule(Name=rule_name)
+            assert rule["State"] == "ENABLED"
+
+        retry(check_rule_active, retries=10, sleep=1)
+
+        target_id_1 = f"test-target-1-{short_uid()}"
+        target_id_2 = f"test-target-2-{short_uid()}"
+        target_response = aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {"Id": target_id_1, "Arn": queue_arn_1},
+                {"Id": target_id_2, "Arn": queue_arn_2},
+            ],
+        )
+
+        assert (
+            target_response["FailedEntryCount"] == 0
+        ), f"Failed to add targets: {target_response.get('FailedEntries', [])}"
+
+        # Use the test constants for the event
+        test_event = {
+            "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+            "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+            "Detail": json.dumps(EVENT_DETAIL),
+        }
+
+        event_response = aws_client.events.put_events(Entries=[test_event])
+
+        snapshot.match("put-events-response", event_response)
+
+        assert len(event_response["Entries"]) == 1
+        event_id = event_response["Entries"][0]["EventId"]
+        assert event_id, "EventId not found in response"
+
+        def verify_message_content(message, original_event_id):
+            """Verify the message content matches what we sent."""
+            body = json.loads(message["Body"])
+
+            assert (
+                body["source"] == TEST_EVENT_PATTERN_NO_DETAIL["source"][0]
+            ), f"Unexpected source: {body['source']}"
+            assert (
+                body["detail-type"] == TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0]
+            ), f"Unexpected detail-type: {body['detail-type']}"
+
+            detail = body["detail"]  # detail is already parsed as dict
+            assert isinstance(detail, dict), f"Detail should be a dict, got {type(detail)}"
+            assert detail == EVENT_DETAIL, f"Unexpected detail content: {detail}"
+
+            assert (
+                body["id"] == original_event_id
+            ), f"Event ID mismatch. Expected {original_event_id}, got {body['id']}"
+
+            return body
+
+        try:
+            messages_1 = sqs_collect_messages(
+                aws_client, queue_url_1, expected_events_count=1, retries=30, wait_time=5
+            )
+            messages_2 = sqs_collect_messages(
+                aws_client, queue_url_2, expected_events_count=1, retries=30, wait_time=5
+            )
+        except Exception as e:
+            raise Exception(f"Failed to collect messages: {str(e)}")
+
+        assert len(messages_1) == 1, f"Expected 1 message in queue 1, got {len(messages_1)}"
+        assert len(messages_2) == 1, f"Expected 1 message in queue 2, got {len(messages_2)}"
+
+        verify_message_content(messages_1[0], event_id)
+        verify_message_content(messages_2[0], event_id)
+
+        snapshot.match(
+            "sqs-messages", {"queue1_messages": messages_1, "queue2_messages": messages_2}
+        )
+
+    @markers.aws.validated
+    def test_put_events_with_target_delivery_failure(
+        self, events_put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot, clean_up
+    ):
+        """Test that put_events returns successful EventId even when target delivery fails due to non-existent queue."""
+        # Create a queue and get its ARN
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        # Delete the queue to simulate a failure scenario
+        aws_client.sqs.delete_queue(QueueUrl=queue_url)
+
+        rule_name = f"test-rule-{short_uid()}"
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("EventId"),
+                snapshot.transform.regex(queue_arn, "<queue-arn>"),
+                snapshot.transform.regex(rule_name, "<rule-name>"),
+                *snapshot.transform.sqs_api(),
+            ]
+        )
+
+        events_put_rule(
+            Name=rule_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN_NO_DETAIL),
+        )
+
+        target_id = f"test-target-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn},
+            ],
+        )
+
+        test_event = {
+            "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+            "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+            "Detail": json.dumps(EVENT_DETAIL),
+        }
+
+        response = aws_client.events.put_events(Entries=[test_event])
+        snapshot.match("put-events-response", response)
+
+        assert len(response["Entries"]) == 1
+        assert "EventId" in response["Entries"][0]
+        assert response["FailedEntryCount"] == 0
+
+        new_queue_url = sqs_create_queue()
+        messages = aws_client.sqs.receive_message(
+            QueueUrl=new_queue_url, MaxNumberOfMessages=1, WaitTimeSeconds=1
+        ).get("Messages", [])
+
+        assert len(messages) == 0, "No messages should be delivered when queue doesn't exist"
+
 
 class TestEventBus:
     @markers.aws.validated

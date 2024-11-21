@@ -2381,5 +2381,94 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_response_entries_order": {
+    "recorded-date": "20-11-2024, 12:32:18",
+    "recorded-content": {
+      "put-events-response": {
+        "Entries": [
+          {
+            "EventId": "event-id"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "sqs-messages": {
+        "queue1_messages": [
+          {
+            "Body": {
+              "version": "0",
+              "id": "<uuid:1>",
+              "detail-type": "core.update-account-command",
+              "source": "core.update-account-command",
+              "account": "111111111111",
+              "time": "date",
+              "region": "<region>",
+              "resources": [],
+              "detail": "detail"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "queue2_messages": [
+          {
+            "Body": {
+              "version": "0",
+              "id": "<uuid:1>",
+              "detail-type": "core.update-account-command",
+              "source": "core.update-account-command",
+              "account": "111111111111",
+              "time": "date",
+              "region": "<region>",
+              "resources": [],
+              "detail": "detail"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_iam_permission_failure": {
+    "recorded-date": "20-11-2024, 12:32:10",
+    "recorded-content": {
+      "put-events-response": {
+        "Entries": [
+          {
+            "EventId": "<event-id:1>"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_target_delivery_failure": {
+    "recorded-date": "20-11-2024, 17:19:19",
+    "recorded-content": {
+      "put-events-response": {
+        "Entries": [
+          {
+            "EventId": "<event-id:1>"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
