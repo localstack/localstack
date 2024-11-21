@@ -386,7 +386,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         ).secretsmanager
         secret_value = self._get_secret_value(authorization_type, auth_parameters)
 
-        # TODO check if secret already exists / needs to be updated
         # create secret
         secret_name = f"events!connection/{name}/{str(uuid.uuid4())}"
         return secretsmanager_client.create_secret(
