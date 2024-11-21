@@ -7,7 +7,6 @@ import os
 import random
 import re
 import struct
-import uuid
 from collections import namedtuple
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
@@ -51,6 +50,13 @@ from localstack.services.kms.utils import is_valid_key_arn
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 from localstack.utils.aws.arns import get_partition, kms_alias_arn, kms_key_arn
 from localstack.utils.crypto import decrypt, encrypt
+from localstack.utils.id_generator import (
+    ExistingIds,
+    ResourceIdentifier,
+    Tags,
+    generate_str_id,
+    generate_uid,
+)
 from localstack.utils.strings import long_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
@@ -237,6 +243,37 @@ class KmsCryptoKey:
             password=None,
             backend=default_backend(),
         )
+
+
+class KeyIdentifier(ResourceIdentifier):
+    service = "kms"
+    resource = "key"
+
+    def __init__(
+        self,
+        account_id: str,
+        region: str,
+        key_usage: str,
+        key_spec: str,
+        description: str,
+        multi_region: bool,
+    ):
+        self.multi_region = multi_region
+        identifier = f"{key_usage}-{key_spec}-{description.strip()}"
+        super().__init__(account_id, region, identifier)
+
+    def generate(self, existing_ids: ExistingIds = None, tags: Tags = None) -> str:
+        if TAG_KEY_CUSTOM_ID in tags:
+            # check if the _custom_id_ tag is specified, to set a user-defined KeyId for this key
+            return tags[TAG_KEY_CUSTOM_ID].strip()
+        elif self.multi_region:
+            # https://docs.aws.amazon.com/kms/latest/developerguide/multi-region-keys-overview.html
+            # "Notice that multi-Region keys have a distinctive key ID that begins with mrk-. You can use the mrk- prefix to
+            # identify MRKs programmatically."
+            # The ID for MultiRegion keys also do not have dashes.
+            return "mrk-" + generate_str_id(resource_identifier=self)
+        else:
+            return generate_uid(resource_identifier=self)
 
 
 class KmsKey:
@@ -520,17 +557,15 @@ class KmsKey:
             else KeyState.PendingImport
         )
 
-        if TAG_KEY_CUSTOM_ID in self.tags:
-            # check if the _custom_id_ tag is specified, to set a user-defined KeyId for this key
-            self.metadata["KeyId"] = self.tags[TAG_KEY_CUSTOM_ID].strip()
-        elif self.metadata.get("MultiRegion"):
-            # https://docs.aws.amazon.com/kms/latest/developerguide/multi-region-keys-overview.html
-            # "Notice that multi-Region keys have a distinctive key ID that begins with mrk-. You can use the mrk- prefix to
-            # identify MRKs programmatically."
-            # The ID for MultiRegion keys also do not have dashes.
-            self.metadata["KeyId"] = "mrk-" + str(uuid.uuid4().hex)
-        else:
-            self.metadata["KeyId"] = str(uuid.uuid4())
+        self.metadata["KeyId"] = KeyIdentifier(
+            account_id,
+            region,
+            self.metadata["KeyUsage"],
+            self.metadata["KeySpec"],
+            create_key_request.get("Description", ""),
+            create_key_request.get("MultiRegion", False),
+        ).generate(tags=self.tags)
+
         self.calculate_and_set_arn(account_id, region)
 
         self._populate_encryption_algorithms(
