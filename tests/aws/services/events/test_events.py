@@ -1806,22 +1806,33 @@ class TestEventBridgeConnections:
         reason="V1 provider does not support this feature",
     )
     def test_delete_connection(
-        self, aws_client, connection_snapshots, create_connection, connection_name
+        self, aws_client, connection_snapshots, create_connection, connection_name, snapshot
     ):
-        create_connection(
+        response = create_connection(
             "API_KEY",
             {
                 "ApiKeyAuthParameters": {"ApiKeyName": "ApiKey", "ApiKeyValue": "secret"},
                 "InvocationHttpParameters": {},
             },
         )
+        connection_snapshots.match("create-connection-response", response)
 
         delete_response = aws_client.events.delete_connection(Name=connection_name)
         connection_snapshots.match("delete-connection", delete_response)
 
+        # wait until connection is deleted
+        def is_deleted():
+            try:
+                aws_client.events.describe_connection(Name=connection_name)
+                return False
+            except Exception:
+                return True
+
+        poll_condition(is_deleted)
+
         with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as exc:
             aws_client.events.describe_connection(Name=connection_name)
-        assert f"Connection '{connection_name}' does not exist" in str(exc.value)
+        snapshot.match("describe-deleted-connection", exc.value.response)
 
     @markers.aws.validated
     @pytest.mark.skipif(

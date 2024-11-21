@@ -338,9 +338,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         """Create a standardized connection ARN."""
         return f"arn:aws:events:{context.region}:{context.account_id}:connection/{name}/{connection_uuid}"
 
-    def _create_secret_arn(self, context: RequestContext, name: str, connection_uuid: str) -> str:
+    def _create_secret_arn(self, context: RequestContext, name: str) -> str:
         """Create a standardized secret ARN."""
-        return f"arn:aws:secretsmanager:{context.region}:{context.account_id}:secret:events!connection/{name}/{connection_uuid}"
+        return f"arn:aws:secretsmanager:{context.region}:{context.account_id}:secret:events!connection/{name}/{str(uuid.uuid4())}"
 
     def _create_connection_object(
         self,
@@ -351,18 +351,20 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         description: Optional[str] = None,
         connection_state: Optional[str] = None,
         creation_time: Optional[datetime] = None,
+        connection_arn: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create a standardized connection object."""
         current_time = creation_time or datetime.utcnow()
         connection_uuid = str(uuid.uuid4())
 
         connection: Dict[str, Any] = {
-            "ConnectionArn": self._create_connection_arn(context, name, connection_uuid),
+            "ConnectionArn": connection_arn
+            or self._create_connection_arn(context, name, connection_uuid),
             "Name": name,
             "ConnectionState": connection_state or self._get_initial_state(authorization_type),
             "AuthorizationType": authorization_type,
             "AuthParameters": auth_parameters,
-            "SecretArn": self._create_secret_arn(context, name, connection_uuid),
+            "SecretArn": self._create_secret_arn(context, name),
             "CreationTime": current_time,
             "LastModifiedTime": current_time,
             "LastAuthorizedTime": current_time,
@@ -514,6 +516,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 desc,
                 ConnectionState.AUTHORIZED,
                 existing_connection["CreationTime"],
+                connection_arn=existing_connection["ConnectionArn"],
             )
             store.connections[name] = connection
 
