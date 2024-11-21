@@ -1811,22 +1811,38 @@ class TestEventBridgeConnections:
         )
         snapshot.match("create-connection-response", response)
 
+        secret_arn = aws_client.events.describe_connection(Name=connection_name)["SecretArn"]
+        # check if secret exists
+        aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
+
         delete_response = aws_client.events.delete_connection(Name=connection_name)
         snapshot.match("delete-connection", delete_response)
 
         # wait until connection is deleted
-        def is_deleted():
+        def is_connection_deleted():
             try:
                 aws_client.events.describe_connection(Name=connection_name)
                 return False
             except Exception:
                 return True
 
-        poll_condition(is_deleted)
+        poll_condition(is_connection_deleted)
 
         with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as exc:
             aws_client.events.describe_connection(Name=connection_name)
         snapshot.match("describe-deleted-connection", exc.value.response)
+
+        def is_secret_deleted():
+            try:
+                aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
+                return False
+            except Exception:
+                return True
+
+        poll_condition(is_secret_deleted)
+
+        with pytest.raises(aws_client.secretsmanager.exceptions.ResourceNotFoundException):
+            aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
 
     @markers.aws.validated
     @pytest.mark.skipif(
@@ -1857,6 +1873,22 @@ class TestEventBridgeConnections:
         )
         snapshot.match("create-connection", create_response)
 
+        describe_response = aws_client.events.describe_connection(Name=connection_name)
+        snapshot.match("describe-created-connection", describe_response)
+
+        # add secret id transformer
+        secret_id = describe_response["SecretArn"]
+        secret_uuid, _, secret_suffix = secret_id.rpartition("/")[2].rpartition("-")
+        snapshot.add_transformer(
+            snapshot.transform.regex(secret_uuid, "<secret-uuid>"), priority=-1
+        )
+        snapshot.add_transformer(
+            snapshot.transform.regex(secret_suffix, "<secret-id-suffix>"), priority=-1
+        )
+
+        get_secret_response = aws_client.secretsmanager.get_secret_value(SecretId=secret_id)
+        snapshot.match("connection-secret-before-update", get_secret_response)
+
         update_response = aws_client.events.update_connection(
             Name=connection_name,
             AuthorizationType="BASIC",
@@ -1869,6 +1901,9 @@ class TestEventBridgeConnections:
 
         describe_response = aws_client.events.describe_connection(Name=connection_name)
         snapshot.match("describe-updated-connection", describe_response)
+
+        get_secret_response = aws_client.secretsmanager.get_secret_value(SecretId=secret_id)
+        snapshot.match("connection-secret-after-update", get_secret_response)
 
     @markers.aws.validated
     @pytest.mark.skipif(
@@ -1890,8 +1925,10 @@ class TestEventBridgeConnections:
         snapshot.match("create-connection-invalid-name-error", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.parametrize("auth_params", API_DESTINATION_AUTH_PARAMS)
-    @pytest.mark.skip(reason="Not implemented yet")
+    @pytest.mark.parametrize(
+        "auth_params", API_DESTINATION_AUTH_PARAMS, ids=["basic", "api-key", "oauth"]
+    )
+    # @pytest.mark.skip(reason="Not implemented yet")
     def test_connection_secrets(
         self, aws_client, snapshot, create_connection, connection_name, auth_params
     ):

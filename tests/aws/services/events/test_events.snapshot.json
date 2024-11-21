@@ -1948,13 +1948,51 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_update_connection": {
-    "recorded-date": "21-11-2024, 14:49:54",
+    "recorded-date": "21-11-2024, 15:39:32",
     "recorded-content": {
       "create-connection": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
         "ConnectionState": "AUTHORIZED",
         "CreationTime": "datetime",
         "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-created-connection": {
+        "AuthParameters": {
+          "BasicAuthParameters": {
+            "Username": "user"
+          },
+          "InvocationHttpParameters": {}
+        },
+        "AuthorizationType": "BASIC",
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "connection-secret-before-update": {
+        "ARN": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "CreatedDate": "datetime",
+        "Name": "events!connection/<connection-name>/<secret-uuid>",
+        "SecretString": {
+          "username": "user",
+          "password": "pass",
+          "invocation_http_parameters": {}
+        },
+        "VersionId": "<uuid:1>",
+        "VersionStages": [
+          "AWSCURRENT"
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -1985,7 +2023,25 @@
         "LastAuthorizedTime": "datetime",
         "LastModifiedTime": "datetime",
         "Name": "<connection-name>",
-        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<resource:2>",
+        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "connection-secret-after-update": {
+        "ARN": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "CreatedDate": "datetime",
+        "Name": "events!connection/<connection-name>/<secret-uuid>",
+        "SecretString": {
+          "username": "new_user",
+          "password": "new_pass",
+          "invocation_http_parameters": {}
+        },
+        "VersionId": "<uuid:2>",
+        "VersionStages": [
+          "AWSCURRENT"
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2009,7 +2065,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_delete_connection": {
-    "recorded-date": "21-11-2024, 14:49:53",
+    "recorded-date": "21-11-2024, 15:47:45",
     "recorded-content": {
       "create-connection-response": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
@@ -2481,8 +2537,8 @@
       }
     }
   },
-  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[auth_params0]": {
-    "recorded-date": "21-11-2024, 14:49:54",
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[basic]": {
+    "recorded-date": "21-11-2024, 15:16:35",
     "recorded-content": {
       "create-connection-auth": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
@@ -2532,8 +2588,8 @@
       }
     }
   },
-  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[auth_params1]": {
-    "recorded-date": "21-11-2024, 14:49:55",
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[api-key]": {
+    "recorded-date": "21-11-2024, 15:16:35",
     "recorded-content": {
       "create-connection-auth": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
@@ -2583,8 +2639,8 @@
       }
     }
   },
-  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[auth_params2]": {
-    "recorded-date": "21-11-2024, 14:49:55",
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[oauth]": {
+    "recorded-date": "21-11-2024, 15:16:36",
     "recorded-content": {
       "create-connection-auth": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",

@@ -14,14 +14,14 @@
   "tests/aws/services/events/test_events.py::TestEventBridgeApiDestinations::test_create_api_destination_name_validation": {
     "last_validated_date": "2024-11-16T13:44:08+00:00"
   },
-  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[auth_params0]": {
-    "last_validated_date": "2024-11-21T14:58:31+00:00"
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[api-key]": {
+    "last_validated_date": "2024-11-21T15:16:35+00:00"
   },
-  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[auth_params1]": {
-    "last_validated_date": "2024-11-21T14:58:31+00:00"
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[basic]": {
+    "last_validated_date": "2024-11-21T15:16:35+00:00"
   },
-  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[auth_params2]": {
-    "last_validated_date": "2024-11-21T14:58:32+00:00"
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[oauth]": {
+    "last_validated_date": "2024-11-21T15:16:36+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection": {
     "last_validated_date": "2024-11-21T14:58:26+00:00"
@@ -42,13 +42,13 @@
     "last_validated_date": "2024-11-21T14:58:28+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_delete_connection": {
-    "last_validated_date": "2024-11-21T14:58:29+00:00"
+    "last_validated_date": "2024-11-21T15:47:45+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_list_connections": {
     "last_validated_date": "2024-11-21T14:58:28+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_update_connection": {
-    "last_validated_date": "2024-11-21T14:58:30+00:00"
+    "last_validated_date": "2024-11-21T15:39:32+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions0]": {
     "last_validated_date": "2024-06-19T10:54:07+00:00"

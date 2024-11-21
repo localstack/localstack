@@ -116,6 +116,7 @@ from localstack.aws.api.events import Archive as ApiTypeArchive
 from localstack.aws.api.events import EventBus as ApiTypeEventBus
 from localstack.aws.api.events import Replay as ApiTypeReplay
 from localstack.aws.api.events import Rule as ApiTypeRule
+from localstack.aws.connect import connect_to
 from localstack.services.events.archive import ArchiveService, ArchiveServiceDict
 from localstack.services.events.event_bus import EventBusService, EventBusServiceDict
 from localstack.services.events.models import (
@@ -338,24 +339,102 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         """Create a standardized connection ARN."""
         return f"arn:{get_partition(context.region)}:events:{context.region}:{context.account_id}:connection/{name}/{connection_uuid}"
 
-    def _create_secret_arn(self, context: RequestContext, name: str) -> str:
+    def _get_secret_value(
+        self,
+        authorization_type: ConnectionAuthorizationType,
+        auth_parameters: CreateConnectionAuthRequestParameters,
+    ) -> str:
+        result = {}
+        match authorization_type:
+            case ConnectionAuthorizationType.BASIC:
+                params = auth_parameters.get("BasicAuthParameters", {})
+                result = {"username": params.get("Username"), "password": params.get("Password")}
+            case ConnectionAuthorizationType.API_KEY:
+                params = auth_parameters.get("ApiKeyAuthParameters", {})
+                result = {
+                    "api_key_name": params.get("ApiKeyName"),
+                    "api_key_value": params.get("ApiKeyValue"),
+                }
+            case ConnectionAuthorizationType.OAUTH_CLIENT_CREDENTIALS:
+                params = auth_parameters.get("OAuthParameters", {})
+                client_params = params.get("ClientParameters", {})
+                result = {
+                    "client_id": client_params.get("ClientID"),
+                    "client_secret": client_params.get("ClientSecret"),
+                    "authorization_endpoint": params.get("AuthorizationEndpoint"),
+                    "http_method": params.get("HttpMethod"),
+                }
+
+        if "InvocationHttpParameters" in auth_parameters:
+            result["invocation_http_parameters"] = auth_parameters["InvocationHttpParameters"]
+
+        return json.dumps(result)
+
+    def _create_connection_secret(
+        self,
+        context: RequestContext,
+        name: str,
+        authorization_type: ConnectionAuthorizationType,
+        auth_parameters: CreateConnectionAuthRequestParameters,
+    ) -> str:
         """Create a standardized secret ARN."""
-        return f"arn:{get_partition(context.region)}:secretsmanager:{context.region}:{context.account_id}:secret:events!connection/{name}/{str(uuid.uuid4())}"
+        # TODO use service role as described here: https://docs.aws.amazon.com/eventbridge/latest/userguide/using-service-linked-roles-service-action-1.html
+        # not too important as it is created automatically on AWS anyway, with the right permissions
+        secretsmanager_client = connect_to(
+            aws_access_key_id=context.account_id, region_name=context.region
+        ).secretsmanager
+        secret_value = self._get_secret_value(authorization_type, auth_parameters)
+
+        # TODO check if secret already exists / needs to be updated
+        # create secret
+        secret_name = f"events!connection/{name}/{str(uuid.uuid4())}"
+        return secretsmanager_client.create_secret(
+            Name=secret_name,
+            SecretString=secret_value,
+            Tags=[{"Key": "BYPASS_SECRET_ID_VALIDATION", "Value": "1"}],
+        )["ARN"]
+
+    def _update_connection_secret(
+        self,
+        context: RequestContext,
+        secret_id: str,
+        authorization_type: ConnectionAuthorizationType,
+        auth_parameters: CreateConnectionAuthRequestParameters,
+    ) -> None:
+        secretsmanager_client = connect_to(
+            aws_access_key_id=context.account_id, region_name=context.region
+        ).secretsmanager
+        secret_value = self._get_secret_value(authorization_type, auth_parameters)
+        secretsmanager_client.update_secret(SecretId=secret_id, SecretString=secret_value)
+
+    def _delete_connection_secret(self, context: RequestContext, secret_id: str):
+        secretsmanager_client = connect_to(
+            aws_access_key_id=context.account_id, region_name=context.region
+        ).secretsmanager
+        secretsmanager_client.delete_secret(SecretId=secret_id, ForceDeleteWithoutRecovery=True)
 
     def _create_connection_object(
         self,
         context: RequestContext,
         name: str,
-        authorization_type: str,
+        authorization_type: ConnectionAuthorizationType,
         auth_parameters: dict,
         description: Optional[str] = None,
         connection_state: Optional[str] = None,
         creation_time: Optional[datetime] = None,
         connection_arn: Optional[str] = None,
+        secret_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create a standardized connection object."""
         current_time = creation_time or datetime.utcnow()
         connection_uuid = str(uuid.uuid4())
+
+        if secret_id:
+            self._update_connection_secret(context, secret_id, authorization_type, auth_parameters)
+        else:
+            secret_id = self._create_connection_secret(
+                context, name, authorization_type, auth_parameters
+            )
 
         connection: Dict[str, Any] = {
             "ConnectionArn": connection_arn
@@ -364,7 +443,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             "ConnectionState": connection_state or self._get_initial_state(authorization_type),
             "AuthorizationType": authorization_type,
             "AuthParameters": auth_parameters,
-            "SecretArn": self._create_secret_arn(context, name),
+            "SecretArn": secret_id,
             "CreationTime": current_time,
             "LastModifiedTime": current_time,
             "LastAuthorizedTime": current_time,
@@ -517,6 +596,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 ConnectionState.AUTHORIZED,
                 existing_connection["CreationTime"],
                 connection_arn=existing_connection["ConnectionArn"],
+                secret_id=existing_connection["SecretArn"],
             )
             store.connections[name] = connection
 
@@ -537,6 +617,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 )
 
             connection = store.connections.pop(name)
+            self._delete_connection_secret(context, connection["SecretArn"])
 
             return DeleteConnectionResponse(
                 **self._create_connection_response(connection, ConnectionState.DELETING)
