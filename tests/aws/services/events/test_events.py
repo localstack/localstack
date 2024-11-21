@@ -1928,7 +1928,10 @@ class TestEventBridgeConnections:
     @pytest.mark.parametrize(
         "auth_params", API_DESTINATION_AUTH_PARAMS, ids=["basic", "api-key", "oauth"]
     )
-    # @pytest.mark.skip(reason="Not implemented yet")
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
     def test_connection_secrets(
         self, aws_client, snapshot, create_connection, connection_name, auth_params
     ):
