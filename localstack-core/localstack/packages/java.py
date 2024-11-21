@@ -142,7 +142,10 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         """
         Get JAVA_HOME for this installation of Java.
         """
-        return self.get_installed_dir()
+        installed_dir = self.get_installed_dir()
+        if is_mac_os():
+            return os.path.join(installed_dir, "Contents", "Home")
+        return installed_dir
 
     @property
     def arch(self) -> str | None:
