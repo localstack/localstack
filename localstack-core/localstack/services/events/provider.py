@@ -287,7 +287,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 "AuthorizationEndpoint": oauth_params["AuthorizationEndpoint"],
                 "HttpMethod": oauth_params["HttpMethod"],
                 "ClientParameters": {"ClientID": oauth_params["ClientParameters"]["ClientID"]},
+                "OAuthHttpParameters": oauth_params.get("OAuthHttpParameters"),
             }
+            if "OAuthHttpParameters" in oauth_params:
+                public_params["OAuthParameters"]["OAuthHttpParameters"] = oauth_params.get(
+                    "OAuthHttpParameters"
+                )
 
         if "InvocationHttpParameters" in auth_parameters:
             public_params["InvocationHttpParameters"] = auth_parameters["InvocationHttpParameters"]
@@ -442,7 +447,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             "Name": name,
             "ConnectionState": connection_state or self._get_initial_state(authorization_type),
             "AuthorizationType": authorization_type,
-            "AuthParameters": auth_parameters,
+            "AuthParameters": self._get_public_parameters(authorization_type, auth_parameters),
             "SecretArn": secret_id,
             "CreationTime": current_time,
             "LastModifiedTime": current_time,
@@ -540,11 +545,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     f"Failed to describe the connection(s). Connection '{name}' does not exist."
                 )
 
-            connection_response = DescribeConnectionResponse(**store.connections[name])
-            connection_response["AuthParameters"] = self._get_public_parameters(
-                connection_response["AuthorizationType"], connection_response["AuthParameters"]
-            )
-            return connection_response
+            return DescribeConnectionResponse(**store.connections[name])
 
         except ResourceNotFoundException as e:
             raise e
