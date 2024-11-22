@@ -36,6 +36,7 @@ _ddb_local_arn_pattern = re.compile(
     r'("TableArn"|"LatestStreamArn"|"StreamArn"|"ShardIterator")\s*:\s*"arn:[a-z-]+:dynamodb:ddblocal:000000000000:([^"]+)"'
 )
 _ddb_local_region_pattern = re.compile(r'"awsRegion"\s*:\s*"([^"]+)"')
+_ddb_local_exception_arn_pattern = re.compile(r'arn:[a-z-]+:dynamodb:ddblocal:000000000000:([^"]+)')
 
 
 def get_ddb_access_key(account_id: str, region_name: str) -> str:
@@ -318,10 +319,10 @@ def de_dynamize_record(item: dict) -> dict:
 def modify_ddblocal_arns(chain, context: RequestContext, response: Response):
     """A service response handler that modifies the dynamodb backend response."""
     if response_content := response.get_data(as_text=True):
+        partition = get_partition(context.region)
 
         def _convert_arn(matchobj):
             key = matchobj.group(1)
-            partition = get_partition(context.region)
             table_name = matchobj.group(2)
             return f'{key}: "arn:{partition}:dynamodb:{context.region}:{context.account_id}:{table_name}"'
 
@@ -334,6 +335,11 @@ def modify_ddblocal_arns(chain, context: RequestContext, response: Response):
             content_replaced = _ddb_local_region_pattern.sub(
                 f'"awsRegion": "{context.region}"', content_replaced
             )
+            if context.service_exception:
+                content_replaced = _ddb_local_exception_arn_pattern.sub(
+                    rf"arn:{partition}:dynamodb:{context.region}:{context.account_id}:\g<1>",
+                    content_replaced,
+                )
 
         if content_replaced != response_content:
             response.data = content_replaced
