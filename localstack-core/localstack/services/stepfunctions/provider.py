@@ -1143,10 +1143,11 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         definition: Definition,
-        role_arn: Arn,
+        role_arn: Arn = None,
         input: SensitiveData = None,
         inspection_level: InspectionLevel = None,
         reveal_secrets: RevealSecrets = None,
+        variables: SensitiveData = None,
         **kwargs,
     ) -> TestStateOutput:
         StepFunctionsProvider._validate_definition(
