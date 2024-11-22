@@ -23,7 +23,6 @@ from localstack.aws.api.events import (
     Boolean,
     CancelReplayResponse,
     Condition,
-    Connection,
     ConnectionArn,
     ConnectionAuthorizationType,
     ConnectionDescription,
@@ -116,6 +115,7 @@ from localstack.aws.api.events import Archive as ApiTypeArchive
 from localstack.aws.api.events import EventBus as ApiTypeEventBus
 from localstack.aws.api.events import Replay as ApiTypeReplay
 from localstack.aws.api.events import Rule as ApiTypeRule
+from localstack.aws.connect import connect_to
 from localstack.services.events.archive import ArchiveService, ArchiveServiceDict
 from localstack.services.events.event_bus import EventBusService, EventBusServiceDict
 from localstack.services.events.models import (
@@ -157,6 +157,7 @@ from localstack.services.events.utils import (
     to_json_str,
 )
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.utils.aws.arns import get_partition, parse_arn
 from localstack.utils.common import truncate
 from localstack.utils.event_matcher import matches_event
 from localstack.utils.strings import long_uid, short_uid
@@ -217,8 +218,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self._target_sender_store: TargetSenderDict = {}
         self._archive_service_store: ArchiveServiceDict = {}
         self._replay_service_store: ReplayServiceDict = {}
-        self._connections: Dict[str, Connection] = {}
-        self._api_destinations: Dict[str, ApiDestination] = {}
 
     def on_before_start(self):
         JobScheduler.start()
@@ -261,14 +260,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
     def _get_connection_by_arn(self, connection_arn: str) -> Optional[Dict]:
         """Retrieve a connection by its ARN."""
-        return next(
-            (
-                conn
-                for conn in self._connections.values()
-                if conn["ConnectionArn"] == connection_arn
-            ),
-            None,
-        )
+        parsed_arn = parse_arn(connection_arn)
+        store = self.get_store(parsed_arn["region"], parsed_arn["account"])
+        connection_name = parsed_arn["resource"].split("/")[1]
+        return store.connections.get(connection_name)
 
     def _get_public_parameters(self, auth_type: str, auth_parameters: dict) -> dict:
         """Extract public parameters (without secrets) based on auth type."""
@@ -291,6 +286,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 "HttpMethod": oauth_params["HttpMethod"],
                 "ClientParameters": {"ClientID": oauth_params["ClientParameters"]["ClientID"]},
             }
+            if "OAuthHttpParameters" in oauth_params:
+                public_params["OAuthParameters"]["OAuthHttpParameters"] = oauth_params.get(
+                    "OAuthHttpParameters"
+                )
 
         if "InvocationHttpParameters" in auth_parameters:
             public_params["InvocationHttpParameters"] = auth_parameters["InvocationHttpParameters"]
@@ -320,7 +319,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> ApiDestination:
         """Create a standardized API destination object."""
         now = datetime.utcnow()
-        api_destination_arn = f"arn:aws:events:{context.region}:{context.account_id}:api-destination/{name}/{short_uid()}"
+        api_destination_arn = f"arn:{get_partition(context.region)}:events:{context.region}:{context.account_id}:api-destination/{name}/{short_uid()}"
 
         api_destination: ApiDestination = {
             "ApiDestinationArn": api_destination_arn,
@@ -340,33 +339,112 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self, context: RequestContext, name: str, connection_uuid: str
     ) -> str:
         """Create a standardized connection ARN."""
-        return f"arn:aws:events:{context.region}:{context.account_id}:connection/{name}/{connection_uuid}"
+        return f"arn:{get_partition(context.region)}:events:{context.region}:{context.account_id}:connection/{name}/{connection_uuid}"
 
-    def _create_secret_arn(self, context: RequestContext, name: str, connection_uuid: str) -> str:
+    def _get_secret_value(
+        self,
+        authorization_type: ConnectionAuthorizationType,
+        auth_parameters: CreateConnectionAuthRequestParameters,
+    ) -> str:
+        result = {}
+        match authorization_type:
+            case ConnectionAuthorizationType.BASIC:
+                params = auth_parameters.get("BasicAuthParameters", {})
+                result = {"username": params.get("Username"), "password": params.get("Password")}
+            case ConnectionAuthorizationType.API_KEY:
+                params = auth_parameters.get("ApiKeyAuthParameters", {})
+                result = {
+                    "api_key_name": params.get("ApiKeyName"),
+                    "api_key_value": params.get("ApiKeyValue"),
+                }
+            case ConnectionAuthorizationType.OAUTH_CLIENT_CREDENTIALS:
+                params = auth_parameters.get("OAuthParameters", {})
+                client_params = params.get("ClientParameters", {})
+                result = {
+                    "client_id": client_params.get("ClientID"),
+                    "client_secret": client_params.get("ClientSecret"),
+                    "authorization_endpoint": params.get("AuthorizationEndpoint"),
+                    "http_method": params.get("HttpMethod"),
+                }
+
+        if "InvocationHttpParameters" in auth_parameters:
+            result["invocation_http_parameters"] = auth_parameters["InvocationHttpParameters"]
+
+        return json.dumps(result)
+
+    def _create_connection_secret(
+        self,
+        context: RequestContext,
+        name: str,
+        authorization_type: ConnectionAuthorizationType,
+        auth_parameters: CreateConnectionAuthRequestParameters,
+    ) -> str:
         """Create a standardized secret ARN."""
-        return f"arn:aws:secretsmanager:{context.region}:{context.account_id}:secret:events!connection/{name}/{connection_uuid}"
+        # TODO use service role as described here: https://docs.aws.amazon.com/eventbridge/latest/userguide/using-service-linked-roles-service-action-1.html
+        # not too important as it is created automatically on AWS anyway, with the right permissions
+        secretsmanager_client = connect_to(
+            aws_access_key_id=context.account_id, region_name=context.region
+        ).secretsmanager
+        secret_value = self._get_secret_value(authorization_type, auth_parameters)
+
+        # create secret
+        secret_name = f"events!connection/{name}/{str(uuid.uuid4())}"
+        return secretsmanager_client.create_secret(
+            Name=secret_name,
+            SecretString=secret_value,
+            Tags=[{"Key": "BYPASS_SECRET_ID_VALIDATION", "Value": "1"}],
+        )["ARN"]
+
+    def _update_connection_secret(
+        self,
+        context: RequestContext,
+        secret_id: str,
+        authorization_type: ConnectionAuthorizationType,
+        auth_parameters: CreateConnectionAuthRequestParameters,
+    ) -> None:
+        secretsmanager_client = connect_to(
+            aws_access_key_id=context.account_id, region_name=context.region
+        ).secretsmanager
+        secret_value = self._get_secret_value(authorization_type, auth_parameters)
+        secretsmanager_client.update_secret(SecretId=secret_id, SecretString=secret_value)
+
+    def _delete_connection_secret(self, context: RequestContext, secret_id: str):
+        secretsmanager_client = connect_to(
+            aws_access_key_id=context.account_id, region_name=context.region
+        ).secretsmanager
+        secretsmanager_client.delete_secret(SecretId=secret_id, ForceDeleteWithoutRecovery=True)
 
     def _create_connection_object(
         self,
         context: RequestContext,
         name: str,
-        authorization_type: str,
+        authorization_type: ConnectionAuthorizationType,
         auth_parameters: dict,
         description: Optional[str] = None,
         connection_state: Optional[str] = None,
         creation_time: Optional[datetime] = None,
+        connection_arn: Optional[str] = None,
+        secret_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create a standardized connection object."""
         current_time = creation_time or datetime.utcnow()
         connection_uuid = str(uuid.uuid4())
 
+        if secret_id:
+            self._update_connection_secret(context, secret_id, authorization_type, auth_parameters)
+        else:
+            secret_id = self._create_connection_secret(
+                context, name, authorization_type, auth_parameters
+            )
+
         connection: Dict[str, Any] = {
-            "ConnectionArn": self._create_connection_arn(context, name, connection_uuid),
+            "ConnectionArn": connection_arn
+            or self._create_connection_arn(context, name, connection_uuid),
             "Name": name,
             "ConnectionState": connection_state or self._get_initial_state(authorization_type),
             "AuthorizationType": authorization_type,
             "AuthParameters": self._get_public_parameters(authorization_type, auth_parameters),
-            "SecretArn": self._create_secret_arn(context, name, connection_uuid),
+            "SecretArn": secret_id,
             "CreationTime": current_time,
             "LastModifiedTime": current_time,
             "LastAuthorizedTime": current_time,
@@ -438,14 +516,15 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 auth_type = authorization_type.value
             self._validate_auth_type(auth_type)
             self._validate_connection_name(name)
+            store = self.get_store(context.region, context.account_id)
 
-            if name in self._connections:
+            if name in store.connections:
                 raise ResourceAlreadyExistsException(f"Connection {name} already exists.")
 
             connection = self._create_connection_object(
                 context, name, auth_type, auth_parameters, description
             )
-            self._connections[name] = connection
+            store.connections[name] = connection
 
             return CreateConnectionResponse(**self._create_connection_response(connection))
 
@@ -455,13 +534,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def describe_connection(
         self, context: RequestContext, name: ConnectionName, **kwargs
     ) -> DescribeConnectionResponse:
+        store = self.get_store(context.region, context.account_id)
         try:
-            if name not in self._connections:
+            if name not in store.connections:
                 raise ResourceNotFoundException(
                     f"Failed to describe the connection(s). Connection '{name}' does not exist."
                 )
 
-            return DescribeConnectionResponse(**self._connections[name])
+            return DescribeConnectionResponse(**store.connections[name])
 
         except ResourceNotFoundException as e:
             raise e
@@ -478,13 +558,15 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         auth_parameters: UpdateConnectionAuthRequestParameters = None,
         **kwargs,
     ) -> UpdateConnectionResponse:
+        store = self.get_store(context.region, context.account_id)
+
         def update():
-            if name not in self._connections:
+            if name not in store.connections:
                 raise ResourceNotFoundException(
                     f"Failed to describe the connection(s). Connection '{name}' does not exist."
                 )
 
-            existing_connection = self._connections[name]
+            existing_connection = store.connections[name]
 
             # Use existing values if not provided in update
             if authorization_type:
@@ -510,8 +592,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 desc,
                 ConnectionState.AUTHORIZED,
                 existing_connection["CreationTime"],
+                connection_arn=existing_connection["ConnectionArn"],
+                secret_id=existing_connection["SecretArn"],
             )
-            self._connections[name] = connection
+            store.connections[name] = connection
 
             return UpdateConnectionResponse(**self._create_connection_response(connection))
 
@@ -521,14 +605,16 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def delete_connection(
         self, context: RequestContext, name: ConnectionName, **kwargs
     ) -> DeleteConnectionResponse:
+        store = self.get_store(context.region, context.account_id)
+
         def delete():
-            if name not in self._connections:
+            if name not in store.connections:
                 raise ResourceNotFoundException(
                     f"Failed to describe the connection(s). Connection '{name}' does not exist."
                 )
 
-            connection = self._connections[name]
-            del self._connections[name]
+            connection = store.connections.pop(name)
+            self._delete_connection_secret(context, connection["SecretArn"])
 
             return DeleteConnectionResponse(
                 **self._create_connection_response(connection, ConnectionState.DELETING)
@@ -546,10 +632,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         limit: LimitMax100 = None,
         **kwargs,
     ) -> ListConnectionsResponse:
+        store = self.get_store(context.region, context.account_id)
         try:
             connections = []
 
-            for conn in self._connections.values():
+            for conn in store.connections.values():
                 if name_prefix and not conn["Name"].startswith(name_prefix):
                     continue
 
@@ -593,6 +680,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond = None,
         **kwargs,
     ) -> CreateApiDestinationResponse:
+        store = self.get_store(context.region, context.account_id)
+
         def create():
             validation_errors = []
             if not re.match(r"^[\.\-_A-Za-z0-9]+$", name):
@@ -636,7 +725,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 error_message += "; ".join(validation_errors)
                 raise ValidationException(error_message)
 
-            if name in self._api_destinations:
+            if name in store.api_destinations:
                 raise ResourceAlreadyExistsException(f"An api-destination '{name}' already exists.")
 
             connection = self._get_connection_by_arn(connection_arn)
@@ -657,7 +746,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 invocation_rate_limit_per_second,
                 api_destination_state=api_destination_state,
             )
-            self._api_destinations[name] = api_destination
+
+            store.api_destinations[name] = api_destination
 
             return CreateApiDestinationResponse(
                 ApiDestinationArn=api_destination["ApiDestinationArn"],
@@ -672,12 +762,13 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def describe_api_destination(
         self, context: RequestContext, name: ApiDestinationName, **kwargs
     ) -> DescribeApiDestinationResponse:
+        store = self.get_store(context.region, context.account_id)
         try:
-            if name not in self._api_destinations:
+            if name not in store.api_destinations:
                 raise ResourceNotFoundException(
                     f"Failed to describe the api-destination(s). An api-destination '{name}' does not exist."
                 )
-            api_destination = self._api_destinations[name]
+            api_destination = store.api_destinations[name]
             return DescribeApiDestinationResponse(**api_destination)
         except ResourceNotFoundException as e:
             raise e
@@ -696,12 +787,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond = None,
         **kwargs,
     ) -> UpdateApiDestinationResponse:
+        store = self.get_store(context.region, context.account_id)
+
         def update():
-            if name not in self._api_destinations:
+            if name not in store.api_destinations:
                 raise ResourceNotFoundException(
                     f"Failed to describe the api-destination(s). An api-destination '{name}' does not exist."
                 )
-            api_destination = self._api_destinations[name]
+            api_destination = store.api_destinations[name]
 
             if description is not None:
                 api_destination["Description"] = description
@@ -749,12 +842,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def delete_api_destination(
         self, context: RequestContext, name: ApiDestinationName, **kwargs
     ) -> DeleteApiDestinationResponse:
+        store = self.get_store(context.region, context.account_id)
+
         def delete():
-            if name not in self._api_destinations:
+            if name not in store.api_destinations:
                 raise ResourceNotFoundException(
                     f"Failed to describe the api-destination(s). An api-destination '{name}' does not exist."
                 )
-            del self._api_destinations[name]
+            del store.api_destinations[name]
             return DeleteApiDestinationResponse()
 
         return self._handle_api_destination_operation("deleting", delete)
@@ -769,8 +864,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         limit: LimitMax100 = None,
         **kwargs,
     ) -> ListApiDestinationsResponse:
+        store = self.get_store(context.region, context.account_id)
         try:
-            api_destinations = list(self._api_destinations.values())
+            api_destinations = list(store.api_destinations.values())
 
             if name_prefix:
                 api_destinations = [
