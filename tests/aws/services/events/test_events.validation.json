@@ -177,7 +177,7 @@
     "last_validated_date": "2024-06-19T10:40:55+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_response_entries_order": {
-    "last_validated_date": "2024-11-20T12:32:18+00:00"
+    "last_validated_date": "2024-11-21T11:48:24+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_time": {
     "last_validated_date": "2024-08-27T10:02:33+00:00"
