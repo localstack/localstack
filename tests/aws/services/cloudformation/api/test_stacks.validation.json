@@ -47,6 +47,9 @@
   "tests/aws/services/cloudformation/api/test_stacks.py::test_name_conflicts": {
     "last_validated_date": "2024-03-26T17:59:43+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_no_echo_parameter": {
+    "last_validated_date": "2024-12-19T11:35:15+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order2": {
     "last_validated_date": "2024-05-21T09:48:14+00:00"
   },
