@@ -39,6 +39,8 @@ ARCHIVE_NAME_ARN_PATTERN = re.compile(
     rf"{ARN_PARTITION_REGEX}:events:[a-z0-9-]+:\d{{12}}:archive/(?P<name>.+)$"
 )
 
+TARGET_ID_PATTERN = re.compile(r"[\.\-_A-Za-z0-9]+")
+
 
 class EventJSONEncoder(json.JSONEncoder):
     """This json encoder is used to serialize datetime object

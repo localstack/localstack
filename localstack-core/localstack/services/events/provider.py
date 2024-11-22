@@ -146,6 +146,7 @@ from localstack.services.events.target import (
     TargetSenderFactory,
 )
 from localstack.services.events.utils import (
+    TARGET_ID_PATTERN,
     extract_event_bus_name,
     extract_region_and_account_id,
     format_event,
@@ -1152,7 +1153,16 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         failed_entries = rule_service.add_targets(targets)
         rule_arn = rule_service.arn
         rule_name = rule_service.rule.name
-        for target in targets:  # TODO only add successful targets
+        for index, target in enumerate(targets):  # TODO only add successful targets
+            target_id = target["Id"]
+            if len(target_id) > 64:
+                raise ValidationException(
+                    rf"1 validation error detected: Value '{target_id}' at 'targets.{index+1}.member.id' failed to satisfy constraint: Member must have length less than or equal to 64"
+                )
+            if not bool(TARGET_ID_PATTERN.match(target_id)):
+                raise ValidationException(
+                    rf"1 validation error detected: Value '{target_id}' at 'targets.{index+1}.member.id' failed to satisfy constraint: Member must satisfy regular expression pattern: [\.\-_A-Za-z0-9]+"
+                )
             self.create_target_sender(target, rule_arn, rule_name, region, account_id)
 
         if rule_service.schedule_cron:
