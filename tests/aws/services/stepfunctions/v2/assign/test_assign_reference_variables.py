@@ -2,9 +2,9 @@ import json
 
 import pytest
 from localstack_snapshot.snapshots.transformer import GenericTransformer, RegexTransformer
-from localstack.testing.aws.util import is_aws_cloud
 
 from localstack.aws.api.lambda_ import Runtime
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import create_and_record_execution
 from localstack.utils.strings import short_uid
@@ -88,11 +88,15 @@ class TestAssignReferenceVariables:
             AT.load_sfn_template(AT.BASE_UNDEFINED_ASSIGN),
             pytest.param(
                 AT.load_sfn_template(AT.BASE_UNDEFINED_ARGUMENTS),
-                marks=pytest.mark.skipif(condition=not is_aws_cloud(), reason="Not reached full parity yet."),
+                marks=pytest.mark.skipif(
+                    condition=not is_aws_cloud(), reason="Not reached full parity yet."
+                ),
             ),
             pytest.param(
                 AT.load_sfn_template(AT.BASE_UNDEFINED_ARGUMENTS_FIELD),
-                marks=pytest.mark.skipif(condition=not is_aws_cloud(),reason="Not reached full parity yet."),
+                marks=pytest.mark.skipif(
+                    condition=not is_aws_cloud(), reason="Not reached full parity yet."
+                ),
             ),
         ],
         ids=[
@@ -104,7 +108,6 @@ class TestAssignReferenceVariables:
             "BASE_UNDEFINED_ARGUMENTS_FIELD",
         ],
     )
-
     @markers.aws.validated
     def test_undefined_reference(
         self,

@@ -6,7 +6,6 @@ from tests.aws.services.stepfunctions.v2.intrinsic_functions.utils import create
 
 
 class TestJsonManipulationJSONata:
-
     @markers.aws.validated
     def test_parse(self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client):
         input_values = [
