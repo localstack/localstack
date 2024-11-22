@@ -47,7 +47,7 @@ class _JSONataJVMBridge:
 
         jpype_config.destroy_jvm = False
 
-        jvm_path = jpype.getDefaultJVMPath()
+        jvm_path = installer.get_java_lib_path()
         jsonata_libs_path = Path(installer.get_installed_dir())
         event_ruler_libs_pattern = jsonata_libs_path.joinpath("*")
         jpype.startJVM(jvm_path, classpath=[event_ruler_libs_pattern], interrupt=False)
