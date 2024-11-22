@@ -1,6 +1,7 @@
 import json
 import logging
 from datetime import datetime, timezone
+from typing import Self
 
 from botocore.client import BaseClient
 
@@ -42,8 +43,19 @@ class ArchiveService:
     rule_name: RuleName
     target_id: TargetId
 
-    def __init__(
-        self,
+    def __init__(self, archive: Archive):
+        self.archive = archive
+        self.set_state(ArchiveState.CREATING)
+        self.set_creation_time()
+        self.client: BaseClient = self._initialize_client()
+        self.event_bus_name: EventBusName = extract_event_bus_name(archive.event_source_arn)
+        self.set_state(ArchiveState.ENABLED)
+        self.rule_name = f"Events-Archive-{self.archive_name}"
+        self.target_id = f"Events-Archive-{self.archive_name}"
+
+    @classmethod
+    def create_archive_service(
+        cls,
         archive_name: ArchiveName,
         region: str,
         account_id: str,
@@ -51,24 +63,22 @@ class ArchiveService:
         description: ArchiveDescription,
         event_pattern: EventPattern,
         retention_days: RetentionDays,
-    ):
-        self.archive = Archive(
-            archive_name,
-            region,
-            account_id,
-            event_source_arn,
-            description,
-            event_pattern,
-            retention_days,
+    ) -> Self:
+        return cls(
+            Archive(
+                archive_name,
+                region,
+                account_id,
+                event_source_arn,
+                description,
+                event_pattern,
+                retention_days,
+            )
         )
-        self.set_state(ArchiveState.CREATING)
-        self.set_creation_time()
-        self.client: BaseClient = self._initialize_client()
-        self.event_bus_name: EventBusName = extract_event_bus_name(event_source_arn)
 
-        self.rule_name: RuleName = self._create_archive_rule()
-        self.target_id: TargetId = self._create_archive_target()
-        self.set_state(ArchiveState.ENABLED)
+    def register_archive_rule_and_targets(self):
+        self._create_archive_rule()
+        self._create_archive_target()
 
     def __getattr__(self, name):
         return getattr(self.archive, name)
@@ -133,8 +143,7 @@ class ArchiveService:
 
     def _create_archive_rule(
         self,
-    ) -> RuleName:
-        rule_name = f"Events-Archive-{self.name}"
+    ):
         default_event_pattern = {
             "replay-name": [{"exists": False}],
         }
@@ -144,25 +153,22 @@ class ArchiveService:
         else:
             updated_event_pattern = default_event_pattern
         self.client.put_rule(
-            Name=rule_name,
+            Name=self.rule_name,
             EventBusName=self.event_bus_name,
             EventPattern=json.dumps(updated_event_pattern),
         )
-        return rule_name
 
     def _create_archive_target(
         self,
-    ) -> TargetId:
+    ):
         """Creates a target for the archive rule. The target is required for accessing parameters
         from the provider during sending of events to the target but it is not invoked
         because events are put to the archive directly to not overload the gateway"""
-        target_id = f"Events-Archive-{self.name}"
         self.client.put_targets(
             Rule=self.rule_name,
             EventBusName=self.event_bus_name,
-            Targets=[{"Id": target_id, "Arn": self.arn}],
+            Targets=[{"Id": self.target_id, "Arn": self.arn}],
         )
-        return target_id
 
     def _normalize_datetime(self, dt: datetime) -> datetime:
         return dt.replace(second=0, microsecond=0)

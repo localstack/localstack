@@ -1559,6 +1559,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             re_formatted_event_to_replay = replay_service.re_format_events_from_archive(
                 events_to_replay, replay_name
             )
+            # TODO should this really be run synchronously within the request?
             self._process_entries(context, re_formatted_event_to_replay)
         replay_service.finish()
 
@@ -1733,7 +1734,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_pattern: EventPattern,
         retention_days: RetentionDays,
     ) -> ArchiveService:
-        archive_service = ArchiveService(
+        archive_service = ArchiveService.create_archive_service(
             archive_name,
             region,
             account_id,
@@ -1742,6 +1743,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             event_pattern,
             retention_days,
         )
+        archive_service.register_archive_rule_and_targets()
         self._archive_service_store[archive_service.arn] = archive_service
         return archive_service
 
