@@ -117,6 +117,7 @@ test-coverage: TEST_EXEC = python -m coverage run $(COVERAGE_ARGS) -m
 test-coverage: test	  ## Run automated tests and create coverage report
 
 lint:              		  ## Run code linter to check code style, check if formatter would make changes and check if dependency pins need to be updated
+	@[ -f localstack-core/localstack/__init__.py ] && echo "localstack-core/localstack/version.py will break packaging. Please delete end retry" && exit 1 || :
 	($(VENV_RUN); python -m ruff check --output-format=full . && python -m ruff format --check .)
 	$(VENV_RUN); pre-commit run check-pinned-deps-for-needed-upgrade --files pyproject.toml # run pre-commit hook manually here to ensure that this check runs in CI as well
 	$(VENV_RUN); openapi-spec-validator localstack-core/localstack/openapi.yaml
