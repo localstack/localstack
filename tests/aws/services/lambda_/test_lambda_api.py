@@ -2137,6 +2137,66 @@ class TestLambdaAlias:
         snapshot.match("list_aliases_for_fnname_afterdelete", list_aliases_for_fnname_afterdelete)
 
     @markers.aws.validated
+    def test_non_existent_alias_deletion(
+        self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
+    ):
+        """
+        This test checks the behaviour when deleting a non-existent alias.
+        No error is raised.
+        """
+        function_name = f"alias-fn-{short_uid()}"
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={
+                "ZipFile": create_lambda_archive(
+                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+                )
+            },
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_12,
+            Environment={"Variables": {"testenv": "staging"}},
+        )
+        snapshot.match("create_response", create_response)
+
+        delete_alias_response = aws_client.lambda_.delete_alias(
+            FunctionName=function_name, Name="non-existent"
+        )
+        snapshot.match("delete_alias_response", delete_alias_response)
+
+    @markers.aws.validated
+    def test_non_existent_alias_update(
+        self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
+    ):
+        """
+        This test checks the behaviour when updating a non-existent alias.
+        An error (ResourceNotFoundException) is raised.
+        """
+        function_name = f"alias-fn-{short_uid()}"
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={
+                "ZipFile": create_lambda_archive(
+                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+                )
+            },
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_12,
+            Environment={"Variables": {"testenv": "staging"}},
+        )
+        snapshot.match("create_response", create_response)
+
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
+            aws_client.lambda_.update_alias(
+                FunctionName=function_name,
+                Name="non-existent",
+            )
+        snapshot.match("update_alias_response", e.value.response)
+
+    @markers.aws.validated
     def test_notfound_and_invalid_routingconfigs(
         self, aws_client_factory, create_lambda_function_aws, snapshot, lambda_su_role, aws_client
     ):
@@ -4467,6 +4527,82 @@ class TestLambdaUrl:
         with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as ex:
             aws_client.lambda_.get_function_url_config(FunctionName=function_name)
         snapshot.match("failed_getter", ex.value.response)
+
+    @markers.snapshot.skip_snapshot_verify(paths=["$..InvokeMode"])
+    @markers.aws.validated
+    def test_url_config_deletion_without_qualifier(
+        self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
+    ):
+        """
+        This test checks that delete_function_url_config doesn't delete the function url configs of all aliases,
+        when not specifying the Qualifier.
+        """
+        snapshot.add_transformer(
+            snapshot.transform.key_value("FunctionUrl", "lambda-url", reference_replacement=False)
+        )
+
+        function_name = f"alias-fn-{short_uid()}"
+        create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={
+                "ZipFile": create_lambda_archive(
+                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+                )
+            },
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_12,
+            Environment={"Variables": {"testenv": "staging"}},
+        )
+        aws_client.lambda_.publish_version(FunctionName=function_name)
+
+        alias_name = "test-alias"
+        aws_client.lambda_.create_alias(
+            FunctionName=function_name,
+            Name=alias_name,
+            FunctionVersion="1",
+            Description="custom-alias",
+        )
+
+        url_config_created = aws_client.lambda_.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+        )
+        snapshot.match("url_creation", url_config_created)
+
+        url_config_with_alias_created = aws_client.lambda_.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+            Qualifier=alias_name,
+        )
+        snapshot.match("url_with_alias_creation", url_config_with_alias_created)
+
+        url_config_obtained = aws_client.lambda_.get_function_url_config(FunctionName=function_name)
+        snapshot.match("get_url_config", url_config_obtained)
+
+        url_config_obtained_with_alias = aws_client.lambda_.get_function_url_config(
+            FunctionName=function_name, Qualifier=alias_name
+        )
+        snapshot.match("get_url_config_with_alias", url_config_obtained_with_alias)
+
+        # delete function url config by only specifying function name (no qualifier)
+        delete_function_url_config_response = aws_client.lambda_.delete_function_url_config(
+            FunctionName=function_name
+        )
+        snapshot.match("delete_function_url_config", delete_function_url_config_response)
+
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
+            aws_client.lambda_.get_function_url_config(FunctionName=function_name)
+        snapshot.match("get_url_config_after_deletion", e.value.response)
+
+        # only specifying the function name, doesn't delete the url config from all related aliases
+        get_url_config_with_alias_after_deletion = aws_client.lambda_.get_function_url_config(
+            FunctionName=function_name, Qualifier=alias_name
+        )
+        snapshot.match(
+            "get_url_config_with_alias_after_deletion", get_url_config_with_alias_after_deletion
+        )
 
     @markers.aws.only_localstack
     def test_create_url_config_custom_id_tag(self, create_lambda_function, aws_client):
