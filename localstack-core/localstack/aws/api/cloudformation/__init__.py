@@ -44,6 +44,7 @@ FailureTolerancePercentage = int
 GeneratedTemplateId = str
 GeneratedTemplateName = str
 HookInvocationCount = int
+HookResultId = str
 HookStatusReason = str
 HookTargetTypeName = str
 HookType = str
@@ -376,6 +377,13 @@ class IdentityProvider(StrEnum):
     Bitbucket = "Bitbucket"
 
 
+class ListHookResultsTargetType(StrEnum):
+    CHANGE_SET = "CHANGE_SET"
+    STACK = "STACK"
+    RESOURCE = "RESOURCE"
+    CLOUD_CONTROL = "CLOUD_CONTROL"
+
+
 class OnFailure(StrEnum):
     DO_NOTHING = "DO_NOTHING"
     ROLLBACK = "ROLLBACK"
@@ -689,6 +697,12 @@ class CreatedButModifiedException(ServiceException):
 
 class GeneratedTemplateNotFoundException(ServiceException):
     code: str = "GeneratedTemplateNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
+
+
+class HookResultNotFoundException(ServiceException):
+    code: str = "HookResultNotFound"
     sender_fault: bool = True
     status_code: int = 404
 
@@ -1974,6 +1988,17 @@ class GetTemplateSummaryOutput(TypedDict, total=False):
     Warnings: Optional[Warnings]
 
 
+class HookResultSummary(TypedDict, total=False):
+    InvocationPoint: Optional[HookInvocationPoint]
+    FailureMode: Optional[HookFailureMode]
+    TypeName: Optional[HookTypeName]
+    TypeVersionId: Optional[HookTypeVersionId]
+    TypeConfigurationVersionId: Optional[HookTypeConfigurationVersionId]
+    Status: Optional[HookStatus]
+    HookStatusReason: Optional[HookStatusReason]
+
+
+HookResultSummaries = List[HookResultSummary]
 StackIdList = List[StackId]
 
 
@@ -2037,6 +2062,19 @@ TemplateSummaries = List[TemplateSummary]
 
 class ListGeneratedTemplatesOutput(TypedDict, total=False):
     Summaries: Optional[TemplateSummaries]
+    NextToken: Optional[NextToken]
+
+
+class ListHookResultsInput(ServiceRequest):
+    TargetType: ListHookResultsTargetType
+    TargetId: HookResultId
+    NextToken: Optional[NextToken]
+
+
+class ListHookResultsOutput(TypedDict, total=False):
+    TargetType: Optional[ListHookResultsTargetType]
+    TargetId: Optional[HookResultId]
+    HookResults: Optional[HookResultSummaries]
     NextToken: Optional[NextToken]
 
 
@@ -3199,6 +3237,17 @@ class CloudformationApi:
         max_results: MaxResults = None,
         **kwargs,
     ) -> ListGeneratedTemplatesOutput:
+        raise NotImplementedError
+
+    @handler("ListHookResults")
+    def list_hook_results(
+        self,
+        context: RequestContext,
+        target_type: ListHookResultsTargetType,
+        target_id: HookResultId,
+        next_token: NextToken = None,
+        **kwargs,
+    ) -> ListHookResultsOutput:
         raise NotImplementedError
 
     @handler("ListImports")
