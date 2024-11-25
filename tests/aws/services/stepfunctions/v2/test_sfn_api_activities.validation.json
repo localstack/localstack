@@ -1,9 +1,108 @@
 {
-  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name": {
-    "last_validated_date": "2024-03-04T14:18:50+00:00"
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[\\x00activity]": {
+    "last_validated_date": "2024-11-25T19:07:34+00:00"
   },
-  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity": {
-    "last_validated_date": "2024-03-03T06:03:28+00:00"
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity name]": {
+    "last_validated_date": "2024-11-25T19:07:31+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity\"name]": {
+    "last_validated_date": "2024-11-25T19:07:32+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity#name]": {
+    "last_validated_date": "2024-11-25T19:07:32+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity$name]": {
+    "last_validated_date": "2024-11-25T19:07:33+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity%name]": {
+    "last_validated_date": "2024-11-25T19:07:32+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity&name]": {
+    "last_validated_date": "2024-11-25T19:07:33+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity*name]": {
+    "last_validated_date": "2024-11-25T19:07:32+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity,name]": {
+    "last_validated_date": "2024-11-25T19:07:33+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity/name]": {
+    "last_validated_date": "2024-11-25T19:07:34+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity:name]": {
+    "last_validated_date": "2024-11-25T19:07:34+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity;name]": {
+    "last_validated_date": "2024-11-25T19:07:33+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity<name]": {
+    "last_validated_date": "2024-11-25T19:07:31+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity>name]": {
+    "last_validated_date": "2024-11-25T19:07:31+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity?name]": {
+    "last_validated_date": "2024-11-25T19:07:32+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity[name]": {
+    "last_validated_date": "2024-11-25T19:07:32+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity\\\\name]": {
+    "last_validated_date": "2024-11-25T19:07:33+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity\\x1f]": {
+    "last_validated_date": "2024-11-25T19:07:34+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity\\x7f]": {
+    "last_validated_date": "2024-11-25T19:07:34+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity]name]": {
+    "last_validated_date": "2024-11-25T19:07:32+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity^name]": {
+    "last_validated_date": "2024-11-25T19:07:33+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity`name]": {
+    "last_validated_date": "2024-11-25T19:07:33+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity{name]": {
+    "last_validated_date": "2024-11-25T19:07:31+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity|name]": {
+    "last_validated_date": "2024-11-25T19:07:33+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity}name]": {
+    "last_validated_date": "2024-11-25T19:07:32+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity~name]": {
+    "last_validated_date": "2024-11-25T19:07:33+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity[ACTIVITY_NAME_ABC]": {
+    "last_validated_date": "2024-11-25T19:02:41+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity[Activity1]": {
+    "last_validated_date": "2024-11-25T19:02:40+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity[aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]": {
+    "last_validated_date": "2024-11-25T19:02:44+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity[activity-name.1]": {
+    "last_validated_date": "2024-11-25T19:02:43+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity[activity-name_123]": {
+    "last_validated_date": "2024-11-25T19:02:40+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity[activity.name.v2]": {
+    "last_validated_date": "2024-11-25T19:02:42+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity[activity.name]": {
+    "last_validated_date": "2024-11-25T19:02:42+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity[activityName.with.dots]": {
+    "last_validated_date": "2024-11-25T19:02:42+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity[activity_123.name]": {
+    "last_validated_date": "2024-11-25T19:02:43+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_describe_activity_invalid_arn": {
     "last_validated_date": "2024-03-11T20:38:07+00:00"

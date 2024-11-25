@@ -175,7 +175,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     )
 
     _ACTIVITY_ARN_REGEX: Final[re.Pattern] = re.compile(
-        rf"{ARN_PARTITION_REGEX}:states:[a-z0-9-]+:[0-9]{{12}}:activity:[a-zA-Z0-9-_]+$"
+        rf"{ARN_PARTITION_REGEX}:states:[a-z0-9-]+:[0-9]{{12}}:activity:[a-zA-Z0-9-_\.]{{1,80}}$"
     )
 
     @staticmethod
@@ -221,6 +221,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         # - special characters " # % \ ^ | ~ ` $ & , ; : /
         # - control characters (U+0000-001F, U+007F-009F)
         # https://docs.aws.amazon.com/step-functions/latest/apireference/API_CreateActivity.html#API_CreateActivity_RequestSyntax
+        if not (1 <= len(name) <= 80):
+            raise InvalidName(f"Invalid Name: '{name}'")
         invalid_chars = set(' <>{}[]?*"#%\\^|~`$&,;:/')
         control_chars = {chr(i) for i in range(32)} | {chr(i) for i in range(127, 160)}
         invalid_chars |= control_chars
