@@ -99,6 +99,10 @@ from localstack.aws.api.s3 import (
     HeadBucketOutput,
     HeadObjectOutput,
     HeadObjectRequest,
+    IfMatch,
+    IfMatchInitiatedTime,
+    IfMatchLastModifiedTime,
+    IfMatchSize,
     IfNoneMatch,
     IntelligentTieringConfiguration,
     IntelligentTieringId,
@@ -1090,6 +1094,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request_payer: RequestPayer = None,
         bypass_governance_retention: BypassGovernanceRetention = None,
         expected_bucket_owner: AccountId = None,
+        if_match: IfMatch = None,
+        if_match_last_modified_time: IfMatchLastModifiedTime = None,
+        if_match_size: IfMatchSize = None,
         **kwargs,
     ) -> DeleteObjectOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
@@ -2464,6 +2471,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         upload_id: MultipartUploadId,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        if_match_initiated_time: IfMatchInitiatedTime = None,
         **kwargs,
     ) -> AbortMultipartUploadOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)

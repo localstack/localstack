@@ -6,17 +6,21 @@ from localstack.aws.api import RequestContext, ServiceException, ServiceRequest,
 AccessPolicy = str
 AccountId = str
 AccountPolicyDocument = str
+AddKeyValue = str
 AllowedActionForAllowVendedLogsDeliveryForResource = str
 AmazonResourceName = str
 AnomalyDetectorArn = str
 AnomalyId = str
+ApplyOnTransformedLogs = bool
 Arn = str
 Baseline = bool
 Boolean = bool
 ClientToken = str
+Column = str
 DataProtectionPolicyDocument = str
 Days = int
 DefaultValue = float
+Delimiter = str
 DeliveryDestinationName = str
 DeliveryDestinationPolicy = str
 DeliveryId = str
@@ -27,6 +31,7 @@ DescribeLimit = int
 DescribeQueriesMaxResults = int
 Description = str
 DestinationArn = str
+DestinationField = str
 DestinationName = str
 DetectorName = str
 DimensionsKey = str
@@ -48,18 +53,27 @@ ExportTaskStatusMessage = str
 Field = str
 FieldDelimiter = str
 FieldHeader = str
+FieldIndexName = str
 FilterCount = int
 FilterName = str
 FilterPattern = str
+Flatten = bool
 ForceUpdate = bool
+FromKey = str
+GrokMatch = str
 IncludeLinkedAccounts = bool
 InferredTokenName = str
 Integer = int
 Interleaved = bool
 IsSampled = bool
+Key = str
+KeyPrefix = str
+KeyValueDelimiter = str
 KmsKeyId = str
 ListAnomaliesLimit = int
 ListLogAnomalyDetectorsLimit = int
+ListLogGroupsForQueryMaxResults = int
+Locale = str
 LogEventIndex = int
 LogGroupArn = str
 LogGroupIdentifier = str
@@ -69,11 +83,15 @@ LogRecordPointer = str
 LogStreamName = str
 LogStreamSearchedCompletely = bool
 LogType = str
+MatchPattern = str
 Message = str
 MetricName = str
 MetricNamespace = str
 MetricValue = str
 NextToken = str
+NonMatchValue = str
+OverwriteIfExists = bool
+ParserFieldDelimiter = str
 PatternId = str
 PatternRegex = str
 PatternString = str
@@ -87,6 +105,8 @@ QueryDefinitionString = str
 QueryId = str
 QueryListMaxResults = int
 QueryString = str
+QuoteCharacter = str
+RenameTo = str
 RequestId = str
 ResourceIdentifier = str
 ResourceType = str
@@ -95,17 +115,26 @@ SelectionCriteria = str
 SequenceToken = str
 Service = str
 SessionId = str
+Source = str
+SourceTimezone = str
 StartFromHead = bool
 StatsValue = float
 Success = bool
 TagKey = str
 TagValue = str
+Target = str
 TargetArn = str
+TargetFormat = str
+TargetTimezone = str
 Time = str
+ToKey = str
 Token = str
 TokenString = str
+TransformedEventMessage = str
 Unmask = bool
 Value = str
+ValueKey = str
+WithKey = str
 
 
 class AnomalyDetectorStatus(StrEnum):
@@ -163,6 +192,16 @@ class ExportTaskStatusCode(StrEnum):
     RUNNING = "RUNNING"
 
 
+class FlattenedElement(StrEnum):
+    first = "first"
+    last = "last"
+
+
+class IndexSource(StrEnum):
+    ACCOUNT = "ACCOUNT"
+    LOG_GROUP = "LOG_GROUP"
+
+
 class InheritedProperty(StrEnum):
     ACCOUNT_DATA_PROTECTION = "ACCOUNT_DATA_PROTECTION"
 
@@ -188,6 +227,8 @@ class OutputFormat(StrEnum):
 class PolicyType(StrEnum):
     DATA_PROTECTION_POLICY = "DATA_PROTECTION_POLICY"
     SUBSCRIPTION_FILTER_POLICY = "SUBSCRIPTION_FILTER_POLICY"
+    FIELD_INDEX_POLICY = "FIELD_INDEX_POLICY"
+    TRANSFORMER_POLICY = "TRANSFORMER_POLICY"
 
 
 class QueryStatus(StrEnum):
@@ -254,6 +295,13 @@ class SuppressionUnit(StrEnum):
     SECONDS = "SECONDS"
     MINUTES = "MINUTES"
     HOURS = "HOURS"
+
+
+class Type(StrEnum):
+    boolean = "boolean"
+    integer = "integer"
+    double = "double"
+    string = "string"
 
 
 class AccessDeniedException(ServiceException):
@@ -399,6 +447,21 @@ class AccountPolicy(TypedDict, total=False):
 
 
 AccountPolicies = List[AccountPolicy]
+
+
+class AddKeyEntry(TypedDict, total=False):
+    key: Key
+    value: AddKeyValue
+    overwriteIfExists: Optional[OverwriteIfExists]
+
+
+AddKeyEntries = List[AddKeyEntry]
+
+
+class AddKeys(TypedDict, total=False):
+    entries: AddKeyEntries
+
+
 AllowedFieldDelimiters = List[FieldDelimiter]
 
 
@@ -483,6 +546,16 @@ class AssociateKmsKeyRequest(ServiceRequest):
     resourceIdentifier: Optional[ResourceIdentifier]
 
 
+Columns = List[Column]
+
+
+class CSV(TypedDict, total=False):
+    quoteCharacter: Optional[QuoteCharacter]
+    delimiter: Optional[Delimiter]
+    columns: Optional[Columns]
+    source: Optional[Source]
+
+
 class CancelExportTaskRequest(ServiceRequest):
     taskId: ExportTaskId
 
@@ -518,6 +591,21 @@ class ConfigurationTemplate(TypedDict, total=False):
 
 
 ConfigurationTemplates = List[ConfigurationTemplate]
+
+
+class CopyValueEntry(TypedDict, total=False):
+    source: Source
+    target: Target
+    overwriteIfExists: Optional[OverwriteIfExists]
+
+
+CopyValueEntries = List[CopyValueEntry]
+
+
+class CopyValue(TypedDict, total=False):
+    entries: CopyValueEntries
+
+
 Tags = Dict[TagKey, TagValue]
 
 
@@ -591,6 +679,19 @@ class CreateLogStreamRequest(ServiceRequest):
     logStreamName: LogStreamName
 
 
+MatchPatterns = List[MatchPattern]
+
+
+class DateTimeConverter(TypedDict, total=False):
+    source: Source
+    target: Target
+    targetFormat: Optional[TargetFormat]
+    matchPatterns: MatchPatterns
+    sourceTimezone: Optional[SourceTimezone]
+    targetTimezone: Optional[TargetTimezone]
+    locale: Optional[Locale]
+
+
 class DeleteAccountPolicyRequest(ServiceRequest):
     policyName: PolicyName
     policyType: PolicyType
@@ -618,6 +719,21 @@ class DeleteDeliverySourceRequest(ServiceRequest):
 
 class DeleteDestinationRequest(ServiceRequest):
     destinationName: DestinationName
+
+
+class DeleteIndexPolicyRequest(ServiceRequest):
+    logGroupIdentifier: LogGroupIdentifier
+
+
+class DeleteIndexPolicyResponse(TypedDict, total=False):
+    pass
+
+
+DeleteWithKeys = List[WithKey]
+
+
+class DeleteKeys(TypedDict, total=False):
+    withKeys: DeleteWithKeys
 
 
 class DeleteLogAnomalyDetectorRequest(ServiceRequest):
@@ -659,6 +775,10 @@ class DeleteSubscriptionFilterRequest(ServiceRequest):
     filterName: FilterName
 
 
+class DeleteTransformerRequest(ServiceRequest):
+    logGroupIdentifier: LogGroupIdentifier
+
+
 Deliveries = List[Delivery]
 
 
@@ -696,10 +816,12 @@ class DescribeAccountPoliciesRequest(ServiceRequest):
     policyType: PolicyType
     policyName: Optional[PolicyName]
     accountIdentifiers: Optional[AccountIds]
+    nextToken: Optional[NextToken]
 
 
 class DescribeAccountPoliciesResponse(TypedDict, total=False):
     accountPolicies: Optional[AccountPolicies]
+    nextToken: Optional[NextToken]
 
 
 ResourceTypes = List[ResourceType]
@@ -813,6 +935,54 @@ class DescribeExportTasksResponse(TypedDict, total=False):
     nextToken: Optional[NextToken]
 
 
+DescribeFieldIndexesLogGroupIdentifiers = List[LogGroupIdentifier]
+
+
+class DescribeFieldIndexesRequest(ServiceRequest):
+    logGroupIdentifiers: DescribeFieldIndexesLogGroupIdentifiers
+    nextToken: Optional[NextToken]
+
+
+class FieldIndex(TypedDict, total=False):
+    logGroupIdentifier: Optional[LogGroupIdentifier]
+    fieldIndexName: Optional[FieldIndexName]
+    lastScanTime: Optional[Timestamp]
+    firstEventTime: Optional[Timestamp]
+    lastEventTime: Optional[Timestamp]
+
+
+FieldIndexes = List[FieldIndex]
+
+
+class DescribeFieldIndexesResponse(TypedDict, total=False):
+    fieldIndexes: Optional[FieldIndexes]
+    nextToken: Optional[NextToken]
+
+
+DescribeIndexPoliciesLogGroupIdentifiers = List[LogGroupIdentifier]
+
+
+class DescribeIndexPoliciesRequest(ServiceRequest):
+    logGroupIdentifiers: DescribeIndexPoliciesLogGroupIdentifiers
+    nextToken: Optional[NextToken]
+
+
+class IndexPolicy(TypedDict, total=False):
+    logGroupIdentifier: Optional[LogGroupIdentifier]
+    lastUpdateTime: Optional[Timestamp]
+    policyDocument: Optional[PolicyDocument]
+    policyName: Optional[PolicyName]
+    source: Optional[IndexSource]
+
+
+IndexPolicies = List[IndexPolicy]
+
+
+class DescribeIndexPoliciesResponse(TypedDict, total=False):
+    indexPolicies: Optional[IndexPolicies]
+    nextToken: Optional[NextToken]
+
+
 class DescribeLogGroupsRequest(ServiceRequest):
     accountIdentifiers: Optional[AccountIds]
     logGroupNamePrefix: Optional[LogGroupName]
@@ -908,6 +1078,7 @@ class MetricFilter(TypedDict, total=False):
     metricTransformations: Optional[MetricTransformations]
     creationTime: Optional[Timestamp]
     logGroupName: Optional[LogGroupName]
+    applyOnTransformedLogs: Optional[ApplyOnTransformedLogs]
 
 
 MetricFilters = List[MetricFilter]
@@ -999,6 +1170,7 @@ class SubscriptionFilter(TypedDict, total=False):
     destinationArn: Optional[DestinationArn]
     roleArn: Optional[RoleArn]
     distribution: Optional[Distribution]
+    applyOnTransformedLogs: Optional[ApplyOnTransformedLogs]
     creationTime: Optional[Timestamp]
 
 
@@ -1194,7 +1366,10 @@ class GetQueryResultsRequest(ServiceRequest):
 class QueryStatistics(TypedDict, total=False):
     recordsMatched: Optional[StatsValue]
     recordsScanned: Optional[StatsValue]
+    estimatedRecordsSkipped: Optional[StatsValue]
     bytesScanned: Optional[StatsValue]
+    estimatedBytesSkipped: Optional[StatsValue]
+    logGroupsScanned: Optional[StatsValue]
 
 
 class ResultField(TypedDict, total=False):
@@ -1211,6 +1386,184 @@ class GetQueryResultsResponse(TypedDict, total=False):
     statistics: Optional[QueryStatistics]
     status: Optional[QueryStatus]
     encryptionKey: Optional[EncryptionKey]
+
+
+class GetTransformerRequest(ServiceRequest):
+    logGroupIdentifier: LogGroupIdentifier
+
+
+UpperCaseStringWithKeys = List[WithKey]
+
+
+class UpperCaseString(TypedDict, total=False):
+    withKeys: UpperCaseStringWithKeys
+
+
+TypeConverterEntry = TypedDict(
+    "TypeConverterEntry",
+    {
+        "key": Key,
+        "type": Type,
+    },
+    total=False,
+)
+TypeConverterEntries = List[TypeConverterEntry]
+
+
+class TypeConverter(TypedDict, total=False):
+    entries: TypeConverterEntries
+
+
+TrimStringWithKeys = List[WithKey]
+
+
+class TrimString(TypedDict, total=False):
+    withKeys: TrimStringWithKeys
+
+
+SubstituteStringEntry = TypedDict(
+    "SubstituteStringEntry",
+    {
+        "source": Source,
+        "from": FromKey,
+        "to": ToKey,
+    },
+    total=False,
+)
+SubstituteStringEntries = List[SubstituteStringEntry]
+
+
+class SubstituteString(TypedDict, total=False):
+    entries: SubstituteStringEntries
+
+
+class SplitStringEntry(TypedDict, total=False):
+    source: Source
+    delimiter: Delimiter
+
+
+SplitStringEntries = List[SplitStringEntry]
+
+
+class SplitString(TypedDict, total=False):
+    entries: SplitStringEntries
+
+
+class RenameKeyEntry(TypedDict, total=False):
+    key: Key
+    renameTo: RenameTo
+    overwriteIfExists: Optional[OverwriteIfExists]
+
+
+RenameKeyEntries = List[RenameKeyEntry]
+
+
+class RenameKeys(TypedDict, total=False):
+    entries: RenameKeyEntries
+
+
+class ParseWAF(TypedDict, total=False):
+    source: Optional[Source]
+
+
+class ParseVPC(TypedDict, total=False):
+    source: Optional[Source]
+
+
+class ParsePostgres(TypedDict, total=False):
+    source: Optional[Source]
+
+
+class ParseRoute53(TypedDict, total=False):
+    source: Optional[Source]
+
+
+class ParseKeyValue(TypedDict, total=False):
+    source: Optional[Source]
+    destination: Optional[DestinationField]
+    fieldDelimiter: Optional[ParserFieldDelimiter]
+    keyValueDelimiter: Optional[KeyValueDelimiter]
+    keyPrefix: Optional[KeyPrefix]
+    nonMatchValue: Optional[NonMatchValue]
+    overwriteIfExists: Optional[OverwriteIfExists]
+
+
+class ParseJSON(TypedDict, total=False):
+    source: Optional[Source]
+    destination: Optional[DestinationField]
+
+
+class ParseCloudfront(TypedDict, total=False):
+    source: Optional[Source]
+
+
+class MoveKeyEntry(TypedDict, total=False):
+    source: Source
+    target: Target
+    overwriteIfExists: Optional[OverwriteIfExists]
+
+
+MoveKeyEntries = List[MoveKeyEntry]
+
+
+class MoveKeys(TypedDict, total=False):
+    entries: MoveKeyEntries
+
+
+LowerCaseStringWithKeys = List[WithKey]
+
+
+class LowerCaseString(TypedDict, total=False):
+    withKeys: LowerCaseStringWithKeys
+
+
+class ListToMap(TypedDict, total=False):
+    source: Source
+    key: Key
+    valueKey: Optional[ValueKey]
+    target: Optional[Target]
+    flatten: Optional[Flatten]
+    flattenedElement: Optional[FlattenedElement]
+
+
+class Grok(TypedDict, total=False):
+    source: Optional[Source]
+    match: GrokMatch
+
+
+class Processor(TypedDict, total=False):
+    addKeys: Optional[AddKeys]
+    copyValue: Optional[CopyValue]
+    csv: Optional[CSV]
+    dateTimeConverter: Optional[DateTimeConverter]
+    deleteKeys: Optional[DeleteKeys]
+    grok: Optional[Grok]
+    listToMap: Optional[ListToMap]
+    lowerCaseString: Optional[LowerCaseString]
+    moveKeys: Optional[MoveKeys]
+    parseCloudfront: Optional[ParseCloudfront]
+    parseJSON: Optional[ParseJSON]
+    parseKeyValue: Optional[ParseKeyValue]
+    parseRoute53: Optional[ParseRoute53]
+    parsePostgres: Optional[ParsePostgres]
+    parseVPC: Optional[ParseVPC]
+    parseWAF: Optional[ParseWAF]
+    renameKeys: Optional[RenameKeys]
+    splitString: Optional[SplitString]
+    substituteString: Optional[SubstituteString]
+    trimString: Optional[TrimString]
+    typeConverter: Optional[TypeConverter]
+    upperCaseString: Optional[UpperCaseString]
+
+
+Processors = List[Processor]
+
+
+class GetTransformerResponse(TypedDict, total=False):
+    logGroupIdentifier: Optional[LogGroupIdentifier]
+    creationTime: Optional[Timestamp]
+    lastModifiedTime: Optional[Timestamp]
+    transformerConfig: Optional[Processors]
 
 
 class InputLogEvent(TypedDict, total=False):
@@ -1241,6 +1594,20 @@ class ListLogAnomalyDetectorsRequest(ServiceRequest):
 
 class ListLogAnomalyDetectorsResponse(TypedDict, total=False):
     anomalyDetectors: Optional[AnomalyDetectors]
+    nextToken: Optional[NextToken]
+
+
+class ListLogGroupsForQueryRequest(ServiceRequest):
+    queryId: QueryId
+    nextToken: Optional[NextToken]
+    maxResults: Optional[ListLogGroupsForQueryMaxResults]
+
+
+LogGroupIdentifiers = List[LogGroupIdentifier]
+
+
+class ListLogGroupsForQueryResponse(TypedDict, total=False):
+    logGroupIdentifiers: Optional[LogGroupIdentifiers]
     nextToken: Optional[NextToken]
 
 
@@ -1288,9 +1655,6 @@ class LiveTailSessionStart(TypedDict, total=False):
 class LiveTailSessionUpdate(TypedDict, total=False):
     sessionMetadata: Optional[LiveTailSessionMetadata]
     sessionResults: Optional[LiveTailSessionResults]
-
-
-LogGroupIdentifiers = List[LogGroupIdentifier]
 
 
 class MetricFilterMatchRecord(TypedDict, total=False):
@@ -1373,6 +1737,15 @@ class PutDestinationResponse(TypedDict, total=False):
     destination: Optional[Destination]
 
 
+class PutIndexPolicyRequest(ServiceRequest):
+    logGroupIdentifier: LogGroupIdentifier
+    policyDocument: PolicyDocument
+
+
+class PutIndexPolicyResponse(TypedDict, total=False):
+    indexPolicy: Optional[IndexPolicy]
+
+
 class PutLogEventsRequest(ServiceRequest):
     logGroupName: LogGroupName
     logStreamName: LogStreamName
@@ -1402,6 +1775,7 @@ class PutMetricFilterRequest(ServiceRequest):
     filterName: FilterName
     filterPattern: FilterPattern
     metricTransformations: MetricTransformations
+    applyOnTransformedLogs: Optional[ApplyOnTransformedLogs]
 
 
 class PutQueryDefinitionRequest(ServiceRequest):
@@ -1437,6 +1811,12 @@ class PutSubscriptionFilterRequest(ServiceRequest):
     destinationArn: DestinationArn
     roleArn: Optional[RoleArn]
     distribution: Optional[Distribution]
+    applyOnTransformedLogs: Optional[ApplyOnTransformedLogs]
+
+
+class PutTransformerRequest(ServiceRequest):
+    logGroupIdentifier: LogGroupIdentifier
+    transformerConfig: Processors
 
 
 class StartLiveTailRequest(ServiceRequest):
@@ -1508,6 +1888,24 @@ class TestMetricFilterRequest(ServiceRequest):
 
 class TestMetricFilterResponse(TypedDict, total=False):
     matches: Optional[MetricFilterMatches]
+
+
+class TestTransformerRequest(ServiceRequest):
+    transformerConfig: Processors
+    logEventMessages: TestEventMessages
+
+
+class TransformedLogRecord(TypedDict, total=False):
+    eventNumber: Optional[EventNumber]
+    eventMessage: Optional[EventMessage]
+    transformedEventMessage: Optional[TransformedEventMessage]
+
+
+TransformedLogs = List[TransformedLogRecord]
+
+
+class TestTransformerResponse(TypedDict, total=False):
+    transformedLogs: Optional[TransformedLogs]
 
 
 class UntagLogGroupRequest(ServiceRequest):
@@ -1664,6 +2062,12 @@ class LogsApi:
     ) -> None:
         raise NotImplementedError
 
+    @handler("DeleteIndexPolicy")
+    def delete_index_policy(
+        self, context: RequestContext, log_group_identifier: LogGroupIdentifier, **kwargs
+    ) -> DeleteIndexPolicyResponse:
+        raise NotImplementedError
+
     @handler("DeleteLogAnomalyDetector")
     def delete_log_anomaly_detector(
         self, context: RequestContext, anomaly_detector_arn: AnomalyDetectorArn, **kwargs
@@ -1724,6 +2128,12 @@ class LogsApi:
     ) -> None:
         raise NotImplementedError
 
+    @handler("DeleteTransformer")
+    def delete_transformer(
+        self, context: RequestContext, log_group_identifier: LogGroupIdentifier, **kwargs
+    ) -> None:
+        raise NotImplementedError
+
     @handler("DescribeAccountPolicies")
     def describe_account_policies(
         self,
@@ -1731,6 +2141,7 @@ class LogsApi:
         policy_type: PolicyType,
         policy_name: PolicyName = None,
         account_identifiers: AccountIds = None,
+        next_token: NextToken = None,
         **kwargs,
     ) -> DescribeAccountPoliciesResponse:
         raise NotImplementedError
@@ -1800,6 +2211,26 @@ class LogsApi:
         limit: DescribeLimit = None,
         **kwargs,
     ) -> DescribeExportTasksResponse:
+        raise NotImplementedError
+
+    @handler("DescribeFieldIndexes")
+    def describe_field_indexes(
+        self,
+        context: RequestContext,
+        log_group_identifiers: DescribeFieldIndexesLogGroupIdentifiers,
+        next_token: NextToken = None,
+        **kwargs,
+    ) -> DescribeFieldIndexesResponse:
+        raise NotImplementedError
+
+    @handler("DescribeIndexPolicies")
+    def describe_index_policies(
+        self,
+        context: RequestContext,
+        log_group_identifiers: DescribeIndexPoliciesLogGroupIdentifiers,
+        next_token: NextToken = None,
+        **kwargs,
+    ) -> DescribeIndexPoliciesResponse:
         raise NotImplementedError
 
     @handler("DescribeLogGroups")
@@ -2000,6 +2431,12 @@ class LogsApi:
     ) -> GetQueryResultsResponse:
         raise NotImplementedError
 
+    @handler("GetTransformer")
+    def get_transformer(
+        self, context: RequestContext, log_group_identifier: LogGroupIdentifier, **kwargs
+    ) -> GetTransformerResponse:
+        raise NotImplementedError
+
     @handler("ListAnomalies")
     def list_anomalies(
         self,
@@ -2021,6 +2458,17 @@ class LogsApi:
         next_token: NextToken = None,
         **kwargs,
     ) -> ListLogAnomalyDetectorsResponse:
+        raise NotImplementedError
+
+    @handler("ListLogGroupsForQuery")
+    def list_log_groups_for_query(
+        self,
+        context: RequestContext,
+        query_id: QueryId,
+        next_token: NextToken = None,
+        max_results: ListLogGroupsForQueryMaxResults = None,
+        **kwargs,
+    ) -> ListLogGroupsForQueryResponse:
         raise NotImplementedError
 
     @handler("ListTagsForResource")
@@ -2115,6 +2563,16 @@ class LogsApi:
     ) -> None:
         raise NotImplementedError
 
+    @handler("PutIndexPolicy")
+    def put_index_policy(
+        self,
+        context: RequestContext,
+        log_group_identifier: LogGroupIdentifier,
+        policy_document: PolicyDocument,
+        **kwargs,
+    ) -> PutIndexPolicyResponse:
+        raise NotImplementedError
+
     @handler("PutLogEvents")
     def put_log_events(
         self,
@@ -2136,6 +2594,7 @@ class LogsApi:
         filter_name: FilterName,
         filter_pattern: FilterPattern,
         metric_transformations: MetricTransformations,
+        apply_on_transformed_logs: ApplyOnTransformedLogs = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -2183,6 +2642,17 @@ class LogsApi:
         destination_arn: DestinationArn,
         role_arn: RoleArn = None,
         distribution: Distribution = None,
+        apply_on_transformed_logs: ApplyOnTransformedLogs = None,
+        **kwargs,
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("PutTransformer")
+    def put_transformer(
+        self,
+        context: RequestContext,
+        log_group_identifier: LogGroupIdentifier,
+        transformer_config: Processors,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -2238,6 +2708,16 @@ class LogsApi:
         log_event_messages: TestEventMessages,
         **kwargs,
     ) -> TestMetricFilterResponse:
+        raise NotImplementedError
+
+    @handler("TestTransformer")
+    def test_transformer(
+        self,
+        context: RequestContext,
+        transformer_config: Processors,
+        log_event_messages: TestEventMessages,
+        **kwargs,
+    ) -> TestTransformerResponse:
         raise NotImplementedError
 
     @handler("UntagLogGroup")

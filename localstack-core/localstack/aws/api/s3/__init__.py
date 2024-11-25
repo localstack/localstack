@@ -627,12 +627,30 @@ class BucketAlreadyOwnedByYou(ServiceException):
     BucketName: Optional[BucketName]
 
 
+class EncryptionTypeMismatch(ServiceException):
+    code: str = "EncryptionTypeMismatch"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class InvalidObjectState(ServiceException):
     code: str = "InvalidObjectState"
     sender_fault: bool = False
     status_code: int = 403
     StorageClass: Optional[StorageClass]
     AccessTier: Optional[IntelligentTieringAccessTier]
+
+
+class InvalidRequest(ServiceException):
+    code: str = "InvalidRequest"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class InvalidWriteOffset(ServiceException):
+    code: str = "InvalidWriteOffset"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class NoSuchBucket(ServiceException):
@@ -668,6 +686,12 @@ class ObjectNotInActiveTierError(ServiceException):
     code: str = "ObjectNotInActiveTierError"
     sender_fault: bool = False
     status_code: int = 403
+
+
+class TooManyParts(ServiceException):
+    code: str = "TooManyParts"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class NoSuchLifecycleConfiguration(ServiceException):
@@ -993,12 +1017,16 @@ class AbortMultipartUploadOutput(TypedDict, total=False):
     RequestCharged: Optional[RequestCharged]
 
 
+IfMatchInitiatedTime = datetime
+
+
 class AbortMultipartUploadRequest(ServiceRequest):
     Bucket: BucketName
     Key: ObjectKey
     UploadId: MultipartUploadId
     RequestPayer: Optional[RequestPayer]
     ExpectedBucketOwner: Optional[AccountId]
+    IfMatchInitiatedTime: Optional[IfMatchInitiatedTime]
 
 
 class AccelerateConfiguration(TypedDict, total=False):
@@ -1523,9 +1551,16 @@ class DefaultRetention(TypedDict, total=False):
     Years: Optional[Years]
 
 
+Size = int
+LastModifiedTime = datetime
+
+
 class ObjectIdentifier(TypedDict, total=False):
     Key: ObjectKey
     VersionId: Optional[ObjectVersionId]
+    ETag: Optional[ETag]
+    LastModifiedTime: Optional[LastModifiedTime]
+    Size: Optional[Size]
 
 
 ObjectIdentifierList = List[ObjectIdentifier]
@@ -1625,6 +1660,10 @@ class DeleteObjectOutput(TypedDict, total=False):
     RequestCharged: Optional[RequestCharged]
 
 
+IfMatchSize = int
+IfMatchLastModifiedTime = datetime
+
+
 class DeleteObjectRequest(ServiceRequest):
     Bucket: BucketName
     Key: ObjectKey
@@ -1633,6 +1672,9 @@ class DeleteObjectRequest(ServiceRequest):
     RequestPayer: Optional[RequestPayer]
     BypassGovernanceRetention: Optional[BypassGovernanceRetention]
     ExpectedBucketOwner: Optional[AccountId]
+    IfMatch: Optional[IfMatch]
+    IfMatchLastModifiedTime: Optional[IfMatchLastModifiedTime]
+    IfMatchSize: Optional[IfMatchSize]
 
 
 class DeleteObjectTaggingOutput(TypedDict, total=False):
@@ -2161,9 +2203,6 @@ class GetObjectAclRequest(ServiceRequest):
     VersionId: Optional[ObjectVersionId]
     RequestPayer: Optional[RequestPayer]
     ExpectedBucketOwner: Optional[AccountId]
-
-
-Size = int
 
 
 class ObjectPart(TypedDict, total=False):
@@ -3133,7 +3172,11 @@ class PutObjectOutput(TypedDict, total=False):
     SSEKMSKeyId: Optional[SSEKMSKeyId]
     SSEKMSEncryptionContext: Optional[SSEKMSEncryptionContext]
     BucketKeyEnabled: Optional[BucketKeyEnabled]
+    Size: Optional[Size]
     RequestCharged: Optional[RequestCharged]
+
+
+WriteOffsetBytes = int
 
 
 class PutObjectRequest(ServiceRequest):
@@ -3159,6 +3202,7 @@ class PutObjectRequest(ServiceRequest):
     GrantReadACP: Optional[GrantReadACP]
     GrantWriteACP: Optional[GrantWriteACP]
     Key: ObjectKey
+    WriteOffsetBytes: Optional[WriteOffsetBytes]
     Metadata: Optional[Metadata]
     ServerSideEncryption: Optional[ServerSideEncryption]
     StorageClass: Optional[StorageClass]
@@ -3453,6 +3497,7 @@ class S3Api:
         upload_id: MultipartUploadId,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        if_match_initiated_time: IfMatchInitiatedTime = None,
         **kwargs,
     ) -> AbortMultipartUploadOutput:
         raise NotImplementedError
@@ -3738,6 +3783,9 @@ class S3Api:
         request_payer: RequestPayer = None,
         bypass_governance_retention: BypassGovernanceRetention = None,
         expected_bucket_owner: AccountId = None,
+        if_match: IfMatch = None,
+        if_match_last_modified_time: IfMatchLastModifiedTime = None,
+        if_match_size: IfMatchSize = None,
         **kwargs,
     ) -> DeleteObjectOutput:
         raise NotImplementedError
@@ -4611,6 +4659,7 @@ class S3Api:
         grant_read: GrantRead = None,
         grant_read_acp: GrantReadACP = None,
         grant_write_acp: GrantWriteACP = None,
+        write_offset_bytes: WriteOffsetBytes = None,
         metadata: Metadata = None,
         server_side_encryption: ServerSideEncryption = None,
         storage_class: StorageClass = None,
