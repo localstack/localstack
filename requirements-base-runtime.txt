@@ -9,7 +9,7 @@ attrs==24.2.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.23.0
+awscrt==0.23.1
     # via localstack-core (pyproject.toml)
 boto3==1.35.68
     # via localstack-core (pyproject.toml)
@@ -170,7 +170,7 @@ rpds-py==0.21.0
     # via
     #   jsonschema
     #   referencing
-s3transfer==0.10.3
+s3transfer==0.10.4
     # via boto3
 semver==3.0.2
     # via localstack-core (pyproject.toml)
