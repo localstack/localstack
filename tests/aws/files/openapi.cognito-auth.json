@@ -6,6 +6,75 @@
     "version": "1.0"
   },
   "paths": {
+    "/default-no-scope": {
+      "get": {
+        "security": [
+          {"cognito-test-identity-source": []}
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response"
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "responses": {
+            "default": {
+              "statusCode": "200"
+            }
+          },
+          "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets",
+          "passthroughBehavior": "when_no_match",
+          "httpMethod": "GET",
+          "type": "http"
+        }
+      }
+    },
+    "/default-scope-override": {
+      "get": {
+        "security": [
+          {"cognito-test-identity-source": ["openid"]}
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response"
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "responses": {
+            "default": {
+              "statusCode": "200"
+            }
+          },
+          "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets",
+          "passthroughBehavior": "when_no_match",
+          "httpMethod": "GET",
+          "type": "http"
+        }
+      }
+    },
+    "/non-default-authorizer": {
+      "get": {
+        "security": [
+          {"extra-test-identity-source": ["email", "openid"]}
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response"
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "responses": {
+            "default": {
+              "statusCode": "200"
+            }
+          },
+          "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets",
+          "passthroughBehavior": "when_no_match",
+          "httpMethod": "GET",
+          "type": "http"
+        }
+      }
+    },
     "/pets": {
       "get": {
         "operationId": "GET HTTP",
@@ -66,6 +135,18 @@
             "${cognito_pool_arn}"
           ]
         }
+      },
+      "extra-test-identity-source": {
+        "type": "apiKey",
+        "name": "TestHeaderAuth",
+        "in": "header",
+        "x-amazon-apigateway-authtype": "cognito_user_pools",
+        "x-amazon-apigateway-authorizer": {
+          "type": "cognito_user_pools",
+          "providerARNs": [
+            "${cognito_pool_arn}"
+          ]
+        }
       }
     },
     "schemas": {
@@ -93,5 +174,6 @@
         }
       }
     }
-  }
+  },
+  "security": [{"cognito-test-identity-source":  ["email"]}]
 }
