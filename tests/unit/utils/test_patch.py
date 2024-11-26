@@ -215,6 +215,13 @@ def test_patch_class_type():
     with pytest.raises(AttributeError):
         echoer.new_echo("Hello world!")
 
+    @patch(MyEchoer)
+    def do_echo(self, arg):
+        return arg
+
+    echoer = MyEchoer()
+    assert echoer.do_echo(1) == "do_echo: 1", "existing method is overridden"
+
     with pytest.raises(AttributeError):
 
         @patch(MyEchoer.new_echo)
