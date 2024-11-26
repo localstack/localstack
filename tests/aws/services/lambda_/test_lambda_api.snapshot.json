@@ -7836,7 +7836,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_create_lambda_exceptions": {
-    "recorded-date": "18-11-2024, 15:57:03",
+    "recorded-date": "26-11-2024, 09:27:31",
     "recorded-content": {
       "invalid_role_arn_exc": {
         "Error": {
@@ -7851,10 +7851,10 @@
       "invalid_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
+        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7863,10 +7863,10 @@
       "uppercase_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
+        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7908,7 +7908,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_update_lambda_exceptions": {
-    "recorded-date": "18-11-2024, 15:57:06",
+    "recorded-date": "26-11-2024, 09:27:33",
     "recorded-content": {
       "invalid_role_arn_exc": {
         "Error": {
@@ -7923,10 +7923,10 @@
       "invalid_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
+        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7935,10 +7935,10 @@
       "uppercase_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
+        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -8248,7 +8248,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_exceptions": {
-    "recorded-date": "18-11-2024, 15:57:22",
+    "recorded-date": "26-11-2024, 09:27:46",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -8426,7 +8426,7 @@
       "publish_layer_version_exc_invalid_runtime_arch": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "2 validation errors detected: Value '[invalidruntime]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9]; Value '[invalidarch]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64]]"
+          "Message": "2 validation errors detected: Value '[invalidruntime]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9]; Value '[invalidarch]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64]]"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -8436,7 +8436,7 @@
       "publish_layer_version_exc_partially_invalid_values": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "2 validation errors detected: Value '[invalidruntime, invalidruntime2, nodejs20.x]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9]; Value '[invalidarch, x86_64]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64]]"
+          "Message": "2 validation errors detected: Value '[invalidruntime, invalidruntime2, nodejs20.x]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9]; Value '[invalidarch, x86_64]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64]]"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -13759,7 +13759,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes0]": {
-    "recorded-date": "18-11-2024, 15:57:09",
+    "recorded-date": "26-11-2024, 09:27:34",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -13767,6 +13767,7 @@
           "x86_64"
         ],
         "CompatibleRuntimes": [
+          "nodejs22.x",
           "nodejs20.x",
           "nodejs18.x",
           "nodejs16.x",
@@ -13779,8 +13780,7 @@
           "python3.9",
           "python3.8",
           "python3.7",
-          "java21",
-          "java17"
+          "java21"
         ],
         "Content": {
           "CodeSha256": "<code-sha256:1>",
@@ -13800,7 +13800,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes1]": {
-    "recorded-date": "18-11-2024, 15:57:14",
+    "recorded-date": "26-11-2024, 09:27:38",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -13808,6 +13808,7 @@
           "x86_64"
         ],
         "CompatibleRuntimes": [
+          "java17",
           "java11",
           "java8.al2",
           "java8",
@@ -16304,7 +16305,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[java8]": {
-    "recorded-date": "18-11-2024, 15:57:00",
+    "recorded-date": "26-11-2024, 09:27:29",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
@@ -16321,7 +16322,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[go1.x]": {
-    "recorded-date": "18-11-2024, 15:57:00",
+    "recorded-date": "26-11-2024, 09:27:29",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
@@ -16338,7 +16339,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[provided]": {
-    "recorded-date": "18-11-2024, 15:57:01",
+    "recorded-date": "26-11-2024, 09:27:30",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
@@ -16355,7 +16356,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[ruby2.7]": {
-    "recorded-date": "18-11-2024, 15:57:01",
+    "recorded-date": "26-11-2024, 09:27:30",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
@@ -16372,7 +16373,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[nodejs14.x]": {
-    "recorded-date": "18-11-2024, 15:57:01",
+    "recorded-date": "26-11-2024, 09:27:30",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
@@ -16389,7 +16390,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[python3.7]": {
-    "recorded-date": "18-11-2024, 15:57:01",
+    "recorded-date": "26-11-2024, 09:27:30",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
@@ -16406,7 +16407,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[dotnetcore3.1]": {
-    "recorded-date": "18-11-2024, 15:57:02",
+    "recorded-date": "26-11-2024, 09:27:30",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
@@ -16423,7 +16424,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[nodejs12.x]": {
-    "recorded-date": "18-11-2024, 15:57:02",
+    "recorded-date": "26-11-2024, 09:27:30",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
