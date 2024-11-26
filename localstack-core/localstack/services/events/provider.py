@@ -145,7 +145,7 @@ from localstack.services.events.target import (
     TargetSenderDict,
     TargetSenderFactory,
 )
-from localstack.services.events.usage import rule_invocation
+from localstack.services.events.usage import rule_error, rule_invocation
 from localstack.services.events.utils import (
     TARGET_ID_PATTERN,
     extract_event_bus_name,
@@ -2165,6 +2165,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                         target_sender.process_event(event_formatted.copy())
                         rule_invocation.record(target_sender.service)
                     except Exception as error:
+                        rule_error.record(target_sender.service)
                         # Log the error but don't modify the response
                         LOG.info(
                             json.dumps(
