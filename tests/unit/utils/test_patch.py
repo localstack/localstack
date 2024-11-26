@@ -206,11 +206,17 @@ def test_to_string():
 
 def test_patch_class_type():
     @patch(MyEchoer)
-    def new_echo(self, value):
-        return f"Message: {value}"
+    def new_echo(self, *args):
+        return args[1]
 
     echoer = MyEchoer()
-    assert echoer.new_echo("Hello world!") == "Message: Hello world!"
+    assert echoer.new_echo(1, 2, 3) == 2
     new_echo.patch.undo()
     with pytest.raises(AttributeError):
         echoer.new_echo("Hello world!")
+
+    with pytest.raises(AttributeError):
+
+        @patch(MyEchoer.new_echo)
+        def new_echo(self, *args):
+            pass
