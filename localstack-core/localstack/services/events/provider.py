@@ -230,34 +230,45 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     # Helper Methods for connections and api destinations
     ##########
 
-    def _validate_api_destination_name(self, name: str) -> None:
-        """Validate the API destination name according to AWS rules."""
+    def _validate_api_destination_name(self, name: str) -> list[str]:
+        """Validate the API destination name according to AWS rules. Returns a list of validation errors."""
+        errors = []
         if not re.match(r"^[\.\-_A-Za-z0-9]+$", name):
-            raise ValidationException(
-                f"1 validation error detected: Value '{name}' at 'name' failed to satisfy constraint: "
+            errors.append(
+                f"Value '{name}' at 'name' failed to satisfy constraint: "
                 "Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
             )
         if not (1 <= len(name) <= 64):
-            raise ValidationException(
-                f"1 validation error detected: Value '{name}' at 'name' failed to satisfy constraint: "
-                "Member must have length between 1 and 64"
+            errors.append(
+                f"Value '{name}' at 'name' failed to satisfy constraint: "
+                "Member must have length less than or equal to 64"
             )
+        return errors
 
-    def _validate_connection_name(self, name: str) -> None:
-        """Validate the connection name according to AWS rules."""
+    def _validate_connection_name(self, name: str) -> list[str]:
+        """Validate the connection name according to AWS rules. Returns a list of validation errors."""
+        errors = []
         if not re.match("^[\\.\\-_A-Za-z0-9]+$", name):
-            raise ValidationException(
-                f"1 validation error detected: Value '{name}' at 'name' failed to satisfy constraint: "
+            errors.append(
+                f"Value '{name}' at 'name' failed to satisfy constraint: "
                 "Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
             )
+        if not (1 <= len(name) <= 64):
+            errors.append(
+                f"Value '{name}' at 'name' failed to satisfy constraint: "
+                "Member must have length less than or equal to 64"
+            )
+        return errors
 
-    def _validate_auth_type(self, auth_type: str) -> None:
-        """Validate the authorization type is one of the allowed values."""
+    def _validate_auth_type(self, auth_type: str) -> list[str]:
+        """Validate the authorization type. Returns a list of validation errors."""
+        errors = []
         if auth_type not in VALID_AUTH_TYPES:
-            raise ValidationException(
-                f"1 validation error detected: Value '{auth_type}' at 'authorizationType' failed to satisfy constraint: "
+            errors.append(
+                f"Value '{auth_type}' at 'authorizationType' failed to satisfy constraint: "
                 f"Member must satisfy enum value set: [{', '.join(VALID_AUTH_TYPES)}]"
             )
+        return errors
 
     def _get_connection_by_arn(self, connection_arn: str) -> Optional[Dict]:
         """Retrieve a connection by its ARN."""
@@ -511,12 +522,23 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         description: ConnectionDescription = None,
         **kwargs,
     ) -> CreateConnectionResponse:
+        """Create a new connection."""
+        auth_type = authorization_type
+        if hasattr(authorization_type, "value"):
+            auth_type = authorization_type.value
+
+        errors = []
+        errors.extend(self._validate_connection_name(name))
+        errors.extend(self._validate_auth_type(auth_type))
+
+        if errors:
+            error_message = (
+                f"{len(errors)} validation error{'s' if len(errors) > 1 else ''} detected: "
+            )
+            error_message += "; ".join(errors)
+            raise ValidationException(error_message)
+
         def create():
-            auth_type = authorization_type
-            if hasattr(authorization_type, "value"):
-                auth_type = authorization_type.value
-            self._validate_auth_type(auth_type)
-            self._validate_connection_name(name)
             store = self.get_store(context.region, context.account_id)
 
             if name in store.connections:
@@ -685,19 +707,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
         def create():
             validation_errors = []
-            if not re.match(r"^[\.\-_A-Za-z0-9]+$", name):
-                validation_errors.append(
-                    f"Value '{name}' at 'name' failed to satisfy constraint: "
-                    "Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
-                )
-            if not (1 <= len(name) <= 64):
-                validation_errors.append(
-                    f"Value '{name}' at 'name' failed to satisfy constraint: "
-                    "Member must have length between 1 and 64"
-                )
-
-            connection_arn_pattern = r"^arn:aws([a-z]|\-)*:events:[a-z0-9\-]+:\d{12}:connection/[\.\-_A-Za-z0-9]+/[\-A-Za-z0-9]+$"
-            if not re.match(connection_arn_pattern, connection_arn):
+            validation_errors.extend(self._validate_api_destination_name(name))
+            if not re.match(
+                r"^arn:aws([a-z]|\-)*:events:[a-z0-9\-]+:\d{12}:connection/[\.\-_A-Za-z0-9]+/[\-A-Za-z0-9]+$",
+                connection_arn,
+            ):
                 validation_errors.append(
                     f"Value '{connection_arn}' at 'connectionArn' failed to satisfy constraint: "
                     "Member must satisfy regular expression pattern: "
