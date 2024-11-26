@@ -1,5 +1,6 @@
 import datetime
 import math
+import threading
 from collections import defaultdict
 from itertools import count
 from typing import Any
@@ -47,6 +48,63 @@ class UsageSetCounter:
 
     def aggregate(self) -> dict:
         return self.state
+
+
+class UsageMultiSetCounter:
+    """
+    Use this counter to count occurrences of unique values for multiple dimensions.
+    This dynamically creates UsageSetCounters and should be used with care (i.e., with limited keys).
+    Example:
+    my_feature_counter = UsageMultiSetCounter("pipes:invocation")
+    my_feature_counter.record("aws:sqs", "aws:lambda")
+    my_feature_counter.record("aws:sqs", "aws:lambda")
+    my_feature_counter.record("aws:sqs", "aws:stepfunctions")
+    my_feature_counter.record("aws:kinesis", "aws:lambda")
+    aggregate is implemented for each counter individually
+    my_feature_counter.aggregate() is available for testing purposes:
+    {
+       "aws:sqs": {
+         "aws:lambda": 2,
+         "aws:stepfunctions": 1,
+       },
+       "aws:kinesis": {
+         "aws:lambda": 1
+       }
+    }
+    """
+
+    namespace: str
+    _counters: dict[str, UsageSetCounter]
+    lock = threading.Lock()
+
+    def __init__(self, namespace: str):
+        self._counters = {}
+        self.namespace = namespace
+
+    def record(self, key: str, value: str):
+        namespace = f"{self.namespace}:{key}"
+        if namespace in self._counters:
+            set_counter = self._counters[namespace]
+        else:
+            with self.lock:
+                if namespace in self._counters:
+                    set_counter = self._counters[namespace]
+                else:
+                    # We cannot use setdefault here because Python always instantiates a new UsageSetCounter,
+                    # which overwrites the collector_registry
+                    set_counter = UsageSetCounter(namespace)
+                    self._counters[namespace] = set_counter
+
+        self._counters[namespace] = set_counter
+        set_counter.record(value)
+
+    def aggregate(self) -> dict:
+        """aggregate is invoked on a per UsageSetCounter level because each counter is registered individually.
+        This utility is only for testing!"""
+        merged_dict = {}
+        for namespace, counter in self._counters.items():
+            merged_dict[namespace] = counter.aggregate()
+        return merged_dict
 
 
 class UsageCounter:
