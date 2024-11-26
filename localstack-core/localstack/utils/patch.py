@@ -91,18 +91,16 @@ class Patch:
         self.name = name
         try:
             self.old = getattr(self.obj, name)
-            if self.old and name == "__getattr__":
-                raise Exception("You can't patch class types implementing __getattr__")
-        except AttributeError as e:
-            # When we want to add a function to a class type, we want to intercept this exception and check if the
-            # name is `__getattr__`.
-            if name != "__getattr__":
-                raise e
+        except AttributeError:
             self.old = None
         self.new = new
         self.is_applied = False
 
     def apply(self):
+        if self.old and self.name == "__getattr__":
+            raise Exception("You can't patch class types implementing __getattr__")
+        if not self.old and self.name != "__getattr__":
+            raise AttributeError(f"`{self.obj.__name__}` object has no attribute `{self.name}`")
         setattr(self.obj, self.name, self.new)
         self.is_applied = True
         Patch.applied_patches.append(self)
@@ -122,7 +120,7 @@ class Patch:
         return self
 
     @staticmethod
-    def _extend_class(target: Callable, fn: Callable):
+    def extend_class(target: Callable, fn: Callable):
         def _getattr(obj, name):
             if name != fn.__name__:
                 raise AttributeError(f"`{target.__name__}` object has no attribute `{name}`")
@@ -133,10 +131,6 @@ class Patch:
 
     @staticmethod
     def function(target: Callable, fn: Callable, pass_target: bool = True):
-        if inspect.isclass(target):
-            # Special case: when a class type is passed, we bound the function to the class type patching __getattr__
-            return Patch._extend_class(target, fn)
-
         obj = get_defining_object(target)
         name = target.__name__
 
@@ -248,7 +242,11 @@ def patch(target, pass_target=True):
 
     @functools.wraps(target)
     def wrapper(fn):
-        fn.patch = Patch.function(target, fn, pass_target=pass_target)
+        fn.patch = (
+            Patch.extend_class(target, fn)
+            if inspect.isclass(target)
+            else Patch.function(target, fn, pass_target=pass_target)
+        )
         fn.patch.apply()
         return fn
 
