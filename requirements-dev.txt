@@ -423,7 +423,7 @@ rich==13.9.4
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-rolo==0.7.3
+rolo==0.7.4
     # via localstack-core
 rpds-py==0.21.0
     # via
