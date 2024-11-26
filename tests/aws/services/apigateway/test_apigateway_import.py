@@ -842,6 +842,11 @@ class TestApiGatewayImportRestApi:
         apigw_snapshot_imported_resources(rest_api_id=rest_api_id, resources=response)
 
     @pytest.mark.no_apigw_snap_transformers
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$.resources.items..resourceMethods.GET",  # AWS does not show them after import
+        ]
+    )
     @markers.aws.validated
     def test_import_with_cognito_auth_identity_source(
         self,
@@ -856,10 +861,10 @@ class TestApiGatewayImportRestApi:
             [
                 snapshot.transform.jsonpath("$.import-swagger.id", value_replacement="rest-id"),
                 snapshot.transform.jsonpath(
-                    "$.import-swagger.rootResourceId", value_replacement="root-resource-id"
+                    "$.resources.items..id", value_replacement="resource-id"
                 ),
                 snapshot.transform.jsonpath(
-                    "$.get-authorizers.items..id", value_replacement="authorizer-id"
+                    "$.get-authorizers..id", value_replacement="authorizer-id"
                 ),
             ]
         )
@@ -874,6 +879,13 @@ class TestApiGatewayImportRestApi:
 
         rest_api_id = response["id"]
 
-        # assert that are no multiple authorizers
         authorizers = aws_client.apigateway.get_authorizers(restApiId=rest_api_id)
-        snapshot.match("get-authorizers", authorizers)
+        snapshot.match("get-authorizers", sorted(authorizers["items"], key=lambda x: x["name"]))
+
+        response = aws_client.apigateway.get_resources(restApiId=rest_api_id)
+        response["items"] = sorted(response["items"], key=itemgetter("path"))
+        snapshot.match("resources", response)
+
+        # this fixture will iterate over every resource and match its method, methodResponse, integration and
+        # integrationResponse
+        apigw_snapshot_imported_resources(rest_api_id=rest_api_id, resources=response)
