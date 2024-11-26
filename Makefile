@@ -1,10 +1,14 @@
 IMAGE_NAME ?= localstack/localstack
 DEFAULT_TAG ?= latest
-VENV_BIN ?= python3 -m venv
+## Ensure compatibility with systems using multiple Python versions by
+## prioritizing the Python version specified in `.python-version`.
+PYTHON_VERSIONED ?= python$(shell cat .python-version)
+PYTHON ?= $(if $(shell which $(PYTHON_VERSIONED)),$(PYTHON_VERSIONED),python3)
+VENV_BIN ?= $(PYTHON) -m venv
 VENV_DIR ?= .venv
 PIP_CMD ?= pip3
 TEST_PATH ?= .
-TEST_EXEC ?= python -m
+TEST_EXEC ?= $(PYTHON) -m
 PYTEST_LOGLEVEL ?= warning
 
 uname_m := $(shell uname -m)
@@ -72,12 +76,12 @@ install-s3: venv     ## Install dependencies for the localstack runtime for s3-o
 install: install-dev entrypoints  ## Install full dependencies into venv
 
 entrypoints:              ## Run plux to build entry points
-	$(VENV_RUN); python3 -c "from setuptools import setup; setup()" plugins egg_info
+	$(VENV_RUN); $(PYTHON) -c "from setuptools import setup; setup()" plugins egg_info
 	@# make sure that the entrypoints were correctly created and are non-empty
 	@test -s localstack-core/localstack_core.egg-info/entry_points.txt || (echo "Entrypoints were not correctly created! Aborting!" && exit 1)
 
 dist: entrypoints        ## Build source and built (wheel) distributions of the current version
-	$(VENV_RUN); pip install --upgrade twine; python -m build
+	$(VENV_RUN); pip install --upgrade twine; $(PYTHON) -m build
 
 publish: clean-dist dist  ## Publish the library to the central PyPi repository
 	# make sure the dist archive contains a non-empty entry_points.txt file before uploading
@@ -113,26 +117,26 @@ test:              		  ## Run automated tests
 	($(VENV_RUN); $(TEST_EXEC) pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) $(PYTEST_ARGS) $(TEST_PATH))
 
 test-coverage: LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC = 1
-test-coverage: TEST_EXEC = python -m coverage run $(COVERAGE_ARGS) -m
+test-coverage: TEST_EXEC = $(PYTHON) -m coverage run $(COVERAGE_ARGS) -m
 test-coverage: test	  ## Run automated tests and create coverage report
 
 lint:              		  ## Run code linter to check code style, check if formatter would make changes and check if dependency pins need to be updated
-	($(VENV_RUN); python -m ruff check --output-format=full . && python -m ruff format --check .)
+	($(VENV_RUN); $(PYTHON) -m ruff check --output-format=full . && $(PYTHON) -m ruff format --check .)
 	$(VENV_RUN); pre-commit run check-pinned-deps-for-needed-upgrade --files pyproject.toml # run pre-commit hook manually here to ensure that this check runs in CI as well
 	$(VENV_RUN); openapi-spec-validator localstack-core/localstack/openapi.yaml
 
 lint-modified:     		  ## Run code linter to check code style, check if formatter would make changes on modified files, and check if dependency pins need to be updated because of modified files
-	($(VENV_RUN); python -m ruff check --output-format=full `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` && python -m ruff format --check `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`)
+	($(VENV_RUN); $(PYTHON) -m ruff check --output-format=full `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` && $(PYTHON) -m ruff format --check `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`)
 	$(VENV_RUN); pre-commit run check-pinned-deps-for-needed-upgrade --files $(git diff master --name-only) # run pre-commit hook manually here to ensure that this check runs in CI as well
 
 check-aws-markers:     		  ## Lightweight check to ensure all AWS tests have proper compatibility markers set
-	($(VENV_RUN); python -m pytest --co tests/aws/)
+	($(VENV_RUN); $(PYTHON) -m pytest --co tests/aws/)
 
 format:            		  ## Run ruff to format the whole codebase
-	($(VENV_RUN); python -m ruff format .; python -m ruff check --output-format=full --fix .)
+	($(VENV_RUN); $(PYTHON) -m ruff format .; $(PYTHON) -m ruff check --output-format=full --fix .)
 
 format-modified:          ## Run ruff to format only modified code
-	($(VENV_RUN); python -m ruff format `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`; python -m ruff check --output-format=full --fix `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`)
+	($(VENV_RUN); $(PYTHON) -m ruff format `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`; $(PYTHON) -m ruff check --output-format=full --fix `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`)
 
 init-precommit:    		  ## install te pre-commit hook into your local git repository
 	($(VENV_RUN); pre-commit install)
