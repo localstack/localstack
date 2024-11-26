@@ -202,3 +202,15 @@ def test_to_string():
     value = "Patch(function(tests.unit.utils.test_patch:MyEchoer.do_echo) -> function(tests.unit.utils.test_patch:test_to_string.<locals>.monkey), applied=True)"
     assert value in applied
     assert str(monkey.patch) == value
+
+
+def test_patch_class_type():
+    @patch(MyEchoer)
+    def new_echo(self, value):
+        return f"Message: {value}"
+
+    echoer = MyEchoer()
+    assert echoer.new_echo("Hello world!") == "Message: Hello world!"
+    new_echo.patch.undo()
+    with pytest.raises(AttributeError):
+        echoer.new_echo("Hello world!")

@@ -89,7 +89,16 @@ class Patch:
         super().__init__()
         self.obj = obj
         self.name = name
-        self.old = getattr(self.obj, name)
+        try:
+            self.old = getattr(self.obj, name)
+            if self.old and name == "__getattr__":
+                raise Exception("You can't patch class types implementing __getattr__")
+        except AttributeError as e:
+            # When we want to add a function to a class type, we want to intercept this exception and check if the
+            # name is `__getattr__`.
+            if name != "__getattr__":
+                raise e
+            self.old = None
         self.new = new
         self.is_applied = False
 
@@ -99,7 +108,8 @@ class Patch:
         Patch.applied_patches.append(self)
 
     def undo(self):
-        setattr(self.obj, self.name, self.old)
+        # If we added a method to a class type, we don't have a self.old. We just delete __getattr__
+        setattr(self.obj, self.name, self.old) if self.old else delattr(self.obj, self.name)
         self.is_applied = False
         Patch.applied_patches.remove(self)
 
@@ -112,7 +122,21 @@ class Patch:
         return self
 
     @staticmethod
+    def _extend_class(target: Callable, fn: Callable):
+        def _getattr(obj, name):
+            if name != fn.__name__:
+                raise AttributeError(f"`{target.__name__}` object has no attribute `{name}`")
+
+            return functools.partial(fn, obj)
+
+        return Patch(target, "__getattr__", _getattr)
+
+    @staticmethod
     def function(target: Callable, fn: Callable, pass_target: bool = True):
+        if inspect.isclass(target):
+            # Special case: when a class type is passed, we bound the function to the class type patching __getattr__
+            return Patch._extend_class(target, fn)
+
         obj = get_defining_object(target)
         name = target.__name__
 
@@ -208,6 +232,13 @@ def patch(target, pass_target=True):
 
         @patch(target=MyEchoer.do_echo, pass_target=False)
         def my_patch(self, *args):
+            ...
+
+    This decorator can also patch a class type with a new method.
+
+    For example:
+        @patch(target=MyEchoer)
+        def new_echo(self, *args):
             ...
 
     :param target: the function or method to patch
