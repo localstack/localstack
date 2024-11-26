@@ -3003,6 +3003,49 @@ class TestSNSSubscriptionSES:
 
         retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
+    @markers.aws.only_localstack
+    def test_email_sender(
+        self,
+        sns_create_topic,
+        sns_subscription,
+        aws_client,
+        monkeypatch,
+    ):
+        # make sure to reset all received emails in SES
+        requests.delete("http://localhost:4566/_aws/ses")
+
+        topic_arn = sns_create_topic()["TopicArn"]
+        sns_subscription(
+            TopicArn=topic_arn,
+            Protocol="email",
+            Endpoint="localstack@yopmail.com",
+        )
+
+        aws_client.sns.publish(
+            Message="Test message",
+            TopicArn=topic_arn,
+        )
+
+        def _get_messages(amount: int) -> list[dict]:
+            response = requests.get("http://localhost:4566/_aws/ses").json()
+            assert len(response["messages"]) == amount
+            return response["messages"]
+
+        messages = retry(lambda: _get_messages(1), retries=PUBLICATION_RETRIES, sleep=1)
+        # legacy default value, should be replaced at some point
+        assert messages[0]["Source"] == "admin@localstack.com"
+        requests.delete("http://localhost:4566/_aws/ses")
+
+        sender_address = "no-reply@sns.localstack.cloud"
+        monkeypatch.setattr(config, "SNS_SES_SENDER_ADDRESS", sender_address)
+
+        aws_client.sns.publish(
+            Message="Test message",
+            TopicArn=topic_arn,
+        )
+        messages = retry(lambda: _get_messages(1), retries=PUBLICATION_RETRIES, sleep=1)
+        assert messages[0]["Source"] == sender_address
+
 
 class TestSNSPlatformEndpoint:
     @markers.aws.only_localstack
