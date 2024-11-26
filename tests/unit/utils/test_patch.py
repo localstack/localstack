@@ -202,6 +202,7 @@ def test_to_string():
     value = "Patch(function(tests.unit.utils.test_patch:MyEchoer.do_echo) -> function(tests.unit.utils.test_patch:test_to_string.<locals>.monkey), applied=True)"
     assert value in applied
     assert str(monkey.patch) == value
+    monkey.patch.undo()
 
 
 def test_patch_class_type():
