@@ -1122,6 +1122,8 @@ OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER")
 # Whether to really publish to GCM while using SNS Platform Application (needs credentials)
 LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")
 
+SNS_SES_SENDER_ADDRESS = os.environ.get("SNS_SES_SENDER_ADDRESS")
+
 # Whether the Next Gen APIGW invocation logic is enabled (on by default)
 APIGW_NEXT_GEN_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_APIGATEWAY", "") in ("next_gen", "")
 
@@ -1334,6 +1336,7 @@ CONFIG_ENV_VARS = [
     "SNAPSHOT_LOAD_STRATEGY",
     "SNAPSHOT_SAVE_STRATEGY",
     "SNAPSHOT_FLUSH_INTERVAL",
+    "SNS_SES_SENDER_ADDRESS",
     "SQS_DELAY_PURGE_RETRY",
     "SQS_DELAY_RECENTLY_DELETED",
     "SQS_ENABLE_MESSAGE_RETENTION_PERIOD",

@@ -569,13 +569,16 @@ class EmailJsonTopicPublisher(TopicPublisher):
         region = extract_region_from_arn(subscriber["Endpoint"])
         ses_client = connect_to(aws_access_key_id=account_id, region_name=region).ses
         if endpoint := subscriber.get("Endpoint"):
+            # TODO: legacy value, replace by a more sane value in the future
+            #  no-reply@sns-localstack.cloud or similar
+            sender = config.SNS_SES_SENDER_ADDRESS or "admin@localstack.com"
             ses_client.verify_email_address(EmailAddress=endpoint)
-            ses_client.verify_email_address(EmailAddress="admin@localstack.com")
+            ses_client.verify_email_address(EmailAddress=sender)
             message_body = self.prepare_message(
                 context.message, subscriber, topic_attributes=context.topic_attributes
             )
             ses_client.send_email(
-                Source="admin@localstack.com",
+                Source=sender,
                 Message={
                     "Body": {"Text": {"Data": message_body}},
                     "Subject": {"Data": "SNS-Subscriber-Endpoint"},
