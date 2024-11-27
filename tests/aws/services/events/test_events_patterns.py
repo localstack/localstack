@@ -22,7 +22,7 @@ COMPLEX_MULTI_KEY_EVENT_PATTERN = os.path.join(
 COMPLEX_MULTI_KEY_EVENT = os.path.join(REQUEST_TEMPLATE_DIR, "complex_multi_key_event.json")
 
 SKIP_LABELS = [
-    # Failing exception tests:
+    # TODO: fix failing exception tests (not yet implemented)
     "arrays_empty_EXC",
     "content_numeric_EXC",
     "content_numeric_operatorcasing_EXC",
@@ -31,7 +31,7 @@ SKIP_LABELS = [
     "int_nolist_EXC",
     "operator_case_sensitive_EXC",
     "string_nolist_EXC",
-    # Failing tests:
+    # TODO: fix failing tests for Python event rule engine
     "complex_or",
     "content_anything_but_ignorecase",
     "content_anything_but_ignorecase_list",
