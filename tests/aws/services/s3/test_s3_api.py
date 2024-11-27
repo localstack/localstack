@@ -2122,3 +2122,61 @@ class TestS3ObjectWritePrecondition:
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_object(Bucket=s3_bucket, Key=key, IfNoneMatch="*", IfMatch="abcdef")
         snapshot.match("put-obj-both-precondition", e.value.response)
+
+    @markers.aws.validated
+    def test_multipart_if_match_etag(self, s3_bucket, aws_client, snapshot):
+        key = "test-precondition"
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="test")
+        snapshot.match("put-obj", put_obj)
+        put_obj_etag_1 = put_obj["ETag"]
+
+        create_multipart = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key)
+        snapshot.match("create-multipart", create_multipart)
+        upload_id = create_multipart["UploadId"]
+
+        upload_part = aws_client.s3.upload_part(
+            Bucket=s3_bucket, Key=key, UploadId=upload_id, Body="test", PartNumber=1
+        )
+        parts = [{"ETag": upload_part["ETag"], "PartNumber": 1}]
+
+        complete_multipart_1 = aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key,
+            MultipartUpload={"Parts": parts},
+            UploadId=upload_id,
+            IfMatch=put_obj_etag_1,
+        )
+        snapshot.match("complete-multipart-if-match", complete_multipart_1)
+
+        multipart_etag = complete_multipart_1["ETag"]
+        # those are different, because multipart etag contains the amount of parts and is the hash of the hashes of the
+        # part
+        assert put_obj_etag_1 != multipart_etag
+
+        create_multipart = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key)
+        snapshot.match("create-multipart-overwrite", create_multipart)
+        upload_id = create_multipart["UploadId"]
+
+        upload_part = aws_client.s3.upload_part(
+            Bucket=s3_bucket, Key=key, UploadId=upload_id, Body="test", PartNumber=1
+        )
+        parts = [{"ETag": upload_part["ETag"], "PartNumber": 1}]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key,
+                MultipartUpload={"Parts": parts},
+                UploadId=upload_id,
+                IfMatch=put_obj_etag_1,
+            )
+        snapshot.match("complete-multipart-if-match-true-etag", e.value.response)
+
+        complete_multipart_1 = aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key,
+            MultipartUpload={"Parts": parts},
+            UploadId=upload_id,
+            IfMatch=multipart_etag,
+        )
+        snapshot.match("complete-multipart-if-match-overwrite-multipart", complete_multipart_1)
