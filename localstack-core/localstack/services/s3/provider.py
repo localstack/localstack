@@ -660,11 +660,20 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         validate_object_key(key)
 
-        if (if_none_match := request.get("IfNoneMatch")) and if_none_match != "*":
+        if_match = request.get("IfMatch")
+        if (if_none_match := request.get("IfNoneMatch")) and if_match:
             raise NotImplementedException(
                 "A header you provided implies functionality that is not implemented",
-                Header="If-None-Match",
-                additionalMessage="We don't accept the provided value of If-None-Match header for this API",
+                Header="If-Match,If-None-Match",
+                additionalMessage="Multiple conditional request headers present in the request",
+            )
+
+        elif (if_none_match and if_none_match != "*") or (if_match and if_match == "*"):
+            header_name = "If-None-Match" if if_none_match else "If-Match"
+            raise NotImplementedException(
+                "A header you provided implies functionality that is not implemented",
+                Header=header_name,
+                additionalMessage=f"We don't accept the provided value of {header_name} header for this API",
             )
 
         system_metadata = get_system_metadata_from_request(request)
@@ -757,6 +766,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     "At least one of the pre-conditions you specified did not hold",
                     Condition="If-None-Match",
                 )
+
+            elif if_match:
+                verify_object_equality_precondition_write(s3_bucket, key, if_match)
 
             s3_stored_object.write(body)
 
@@ -2377,7 +2389,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 UploadId=upload_id,
             )
 
-        if if_none_match:
+        if if_none_match and if_match:
+            raise NotImplementedException(
+                "A header you provided implies functionality that is not implemented",
+                Header="If-Match,If-None-Match",
+                additionalMessage="Multiple conditional request headers present in the request",
+            )
+
+        elif if_none_match:
             if if_none_match != "*":
                 raise NotImplementedException(
                     "A header you provided implies functionality that is not implemented",
@@ -2395,6 +2414,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     Condition="If-None-Match",
                     Key=key,
                 )
+
+        elif if_match:
+            if if_match == "*":
+                raise NotImplementedException(
+                    "A header you provided implies functionality that is not implemented",
+                    Header="If-None-Match",
+                    additionalMessage="We don't accept the provided value of If-None-Match header for this API",
+                )
+            verify_object_equality_precondition_write(
+                s3_bucket, key, if_match, initiated=s3_multipart.initiated
+            )
 
         parts = multipart_upload.get("Parts", [])
         if not parts:
@@ -4395,3 +4425,27 @@ def get_access_control_policy_for_new_resource_request(
 
 def object_exists_for_precondition_write(s3_bucket: S3Bucket, key: ObjectKey) -> bool:
     return (existing := s3_bucket.objects.get(key)) and not isinstance(existing, S3DeleteMarker)
+
+
+def verify_object_equality_precondition_write(
+    s3_bucket: S3Bucket,
+    key: ObjectKey,
+    etag: str,
+    initiated: datetime.datetime | None = None,
+) -> None:
+    existing = s3_bucket.objects.get(key)
+    if not existing or isinstance(existing, S3DeleteMarker):
+        raise NoSuchKey("The specified key does not exist.", Key=key)
+
+    if not existing.etag == etag.strip('"'):
+        raise PreconditionFailed(
+            "At least one of the pre-conditions you specified did not hold",
+            Condition="If-Match",
+        )
+
+    if initiated and initiated < existing.last_modified:
+        raise ConditionalRequestConflict(
+            "The conditional request cannot succeed due to a conflicting operation against this resource.",
+            Condition="If-Match",
+            Key=key,
+        )
