@@ -1719,6 +1719,10 @@ class TestS3BucketAccelerateConfiguration:
 
 
 class TestS3ObjectWritePrecondition:
+    """
+    https://docs.aws.amazon.com/AmazonS3/latest/userguide/conditional-writes.html
+    """
+
     @pytest.fixture(autouse=True)
     def add_snapshot_transformers(self, snapshot):
         snapshot.add_transformers_list(
@@ -1869,3 +1873,252 @@ class TestS3ObjectWritePrecondition:
 
         list_object_versions = aws_client.s3.list_object_versions(Bucket=s3_bucket)
         snapshot.match("list-object-versions", list_object_versions)
+
+    @markers.aws.validated
+    def test_put_object_if_match(self, s3_bucket, aws_client, snapshot):
+        key = "test-precondition"
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="test")
+        snapshot.match("put-obj", put_obj)
+        etag = put_obj["ETag"]
+
+        with pytest.raises(ClientError) as e:
+            # empty object is provided
+            aws_client.s3.put_object(
+                Bucket=s3_bucket, Key=key, IfMatch="d41d8cd98f00b204e9800998ecf8427e"
+            )
+        snapshot.match("put-obj-if-match-wrong-etag", e.value.response)
+
+        put_obj_overwrite = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, IfMatch=etag)
+        snapshot.match("put-obj-overwrite", put_obj_overwrite)
+
+        del_obj = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("del-obj", del_obj)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=key, IfMatch=etag)
+        snapshot.match("put-obj-if-match-key-not-exists", e.value.response)
+
+        put_obj_after_del = aws_client.s3.put_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("put-obj-after-del", put_obj_after_del)
+
+    @markers.aws.validated
+    def test_put_object_if_match_validation(self, s3_bucket, aws_client, snapshot):
+        key = "test-precondition-validation"
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=key, IfMatch="*")
+        snapshot.match("put-obj-if-match-star-value", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=key, IfMatch="abcdef")
+        snapshot.match("put-obj-if-match-bad-value", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=key, IfMatch="bad-char_/")
+        snapshot.match("put-obj-if-match-bad-value-2", e.value.response)
+
+    @markers.aws.validated
+    def test_multipart_if_match_with_put(self, s3_bucket, aws_client, snapshot):
+        key = "test-precondition"
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="test")
+        snapshot.match("put-obj", put_obj)
+        put_obj_etag_1 = put_obj["ETag"]
+
+        create_multipart = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key)
+        snapshot.match("create-multipart", create_multipart)
+        upload_id = create_multipart["UploadId"]
+
+        upload_part = aws_client.s3.upload_part(
+            Bucket=s3_bucket, Key=key, UploadId=upload_id, Body="test", PartNumber=1
+        )
+        parts = [{"ETag": upload_part["ETag"], "PartNumber": 1}]
+
+        put_obj_2 = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="test2")
+        snapshot.match("put-obj-during", put_obj_2)
+        put_obj_etag_2 = put_obj_2["ETag"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key,
+                MultipartUpload={"Parts": parts},
+                UploadId=upload_id,
+                IfMatch=put_obj_etag_1,
+            )
+        snapshot.match("complete-multipart-if-match-put-before", e.value.response)
+
+        # the previous PutObject request was done between the CreateMultipartUpload and completion, so it takes
+        # precedence
+        # you need to restart the whole multipart for it to work
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key,
+                MultipartUpload={"Parts": parts},
+                UploadId=upload_id,
+                IfMatch=put_obj_etag_2,
+            )
+        snapshot.match("complete-multipart-if-match-put-during", e.value.response)
+
+        create_multipart = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key)
+        snapshot.match("create-multipart-again", create_multipart)
+        upload_id = create_multipart["UploadId"]
+
+        upload_part = aws_client.s3.upload_part(
+            Bucket=s3_bucket, Key=key, UploadId=upload_id, Body="test", PartNumber=1
+        )
+        parts = [{"ETag": upload_part["ETag"], "PartNumber": 1}]
+
+        complete_multipart = aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key,
+            MultipartUpload={"Parts": parts},
+            UploadId=upload_id,
+            IfMatch=put_obj_etag_2,
+        )
+        snapshot.match("complete-multipart-if-match-put-before-restart", complete_multipart)
+
+    @markers.aws.validated
+    def test_multipart_if_match_with_put_identical(self, s3_bucket, aws_client, snapshot):
+        key = "test-precondition"
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="test")
+        snapshot.match("put-obj", put_obj)
+        put_obj_etag_1 = put_obj["ETag"]
+
+        create_multipart = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key)
+        snapshot.match("create-multipart", create_multipart)
+        upload_id = create_multipart["UploadId"]
+
+        upload_part = aws_client.s3.upload_part(
+            Bucket=s3_bucket, Key=key, UploadId=upload_id, Body="test", PartNumber=1
+        )
+        parts = [{"ETag": upload_part["ETag"], "PartNumber": 1}]
+
+        put_obj_2 = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="test")
+        snapshot.match("put-obj-during", put_obj_2)
+        # same ETag as first put
+        put_obj_etag_2 = put_obj_2["ETag"]
+        assert put_obj_etag_1 == put_obj_etag_2
+
+        # it seems that even if we overwrite the object with the same content, S3 will still reject the request if a
+        # write operation was done between creation and completion of the multipart upload, like the `Delete`
+        # counterpart of `IfNoneMatch`
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key,
+                MultipartUpload={"Parts": parts},
+                UploadId=upload_id,
+                IfMatch=put_obj_etag_2,
+            )
+        snapshot.match("complete-multipart-if-match-put-during", e.value.response)
+        # the previous PutObject request was done between the CreateMultipartUpload and completion, so it takes
+        # precedence
+        # you need to restart the whole multipart for it to work
+
+        create_multipart = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key)
+        snapshot.match("create-multipart-again", create_multipart)
+        upload_id = create_multipart["UploadId"]
+
+        upload_part = aws_client.s3.upload_part(
+            Bucket=s3_bucket, Key=key, UploadId=upload_id, Body="test", PartNumber=1
+        )
+        parts = [{"ETag": upload_part["ETag"], "PartNumber": 1}]
+
+        complete_multipart = aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key,
+            MultipartUpload={"Parts": parts},
+            UploadId=upload_id,
+            IfMatch=put_obj_etag_2,
+        )
+        snapshot.match("complete-multipart-if-match-put-before-restart", complete_multipart)
+
+    @markers.aws.validated
+    def test_multipart_if_match_with_delete(self, s3_bucket, aws_client, snapshot):
+        key = "test-precondition"
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="test")
+        snapshot.match("put-obj", put_obj)
+        obj_etag = put_obj["ETag"]
+
+        create_multipart = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key)
+        snapshot.match("create-multipart", create_multipart)
+        upload_id = create_multipart["UploadId"]
+
+        upload_part = aws_client.s3.upload_part(
+            Bucket=s3_bucket, Key=key, UploadId=upload_id, Body="test", PartNumber=1
+        )
+        parts = [{"ETag": upload_part["ETag"], "PartNumber": 1}]
+
+        del_obj = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("del-obj", del_obj)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key,
+                MultipartUpload={"Parts": parts},
+                UploadId=upload_id,
+                IfMatch=obj_etag,
+            )
+        snapshot.match("complete-multipart-after-del", e.value.response)
+
+        put_obj_2 = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="test")
+        snapshot.match("put-obj-2", put_obj_2)
+        obj_etag_2 = put_obj_2["ETag"]
+
+        with pytest.raises(ClientError) as e:
+            # even if we recreated the object, it still fails as it was done after the start of the upload
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key,
+                MultipartUpload={"Parts": parts},
+                UploadId=upload_id,
+                IfMatch=obj_etag_2,
+            )
+        snapshot.match("complete-multipart-if-match-after-put", e.value.response)
+
+    @markers.aws.validated
+    def test_put_object_if_match_versioned_bucket(self, s3_bucket, aws_client, snapshot):
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        key = "test-precondition"
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="test")
+        snapshot.match("put-obj", put_obj)
+        put_obj_etag_1 = put_obj["ETag"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=key, IfMatch="abcdef")
+        snapshot.match("put-obj-if-none-match-bad-value", e.value.response)
+
+        del_obj = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("del-obj", del_obj)
+
+        # if the last object is a delete marker, then we can't use IfMatch
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=key, IfMatch=put_obj_etag_1)
+        snapshot.match("put-obj-after-del-exc", e.value.response)
+
+        put_obj_2 = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="test-after-del")
+        snapshot.match("put-obj-after-del", put_obj_2)
+        put_obj_etag_2 = put_obj_2["ETag"]
+
+        put_obj_3 = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=key, Body="test-if-match", IfMatch=put_obj_etag_2
+        )
+        snapshot.match("put-obj-if-match", put_obj_3)
+
+        list_object_versions = aws_client.s3.list_object_versions(Bucket=s3_bucket)
+        snapshot.match("list-object-versions", list_object_versions)
+
+    @markers.aws.validated
+    def test_put_object_if_match_and_if_none_match_validation(
+        self, s3_bucket, aws_client, snapshot
+    ):
+        key = "test-precondition-validation"
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=key, IfNoneMatch="*", IfMatch="abcdef")
+        snapshot.match("put-obj-both-precondition", e.value.response)
