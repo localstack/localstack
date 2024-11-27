@@ -11,7 +11,6 @@ from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
 from localstack.testing.aws.lambda_utils import (
     _await_dynamodb_table_active,
     _await_event_source_mapping_enabled,
-    _get_lambda_invocation_events,
     lambda_role,
     s3_lambda_permission,
 )
@@ -48,19 +47,6 @@ def _snapshot_transformers(snapshot):
     snapshot.add_transformer(snapshot.transform.key_value("SequenceNumber"))
     snapshot.add_transformer(snapshot.transform.key_value("eventID"))
     snapshot.add_transformer(snapshot.transform.key_value("shardId"))
-
-
-@pytest.fixture
-def get_lambda_logs_event(aws_client):
-    def _get_lambda_logs_event(function_name, expected_num_events, retries=30):
-        return _get_lambda_invocation_events(
-            logs_client=aws_client.logs,
-            function_name=function_name,
-            expected_num_events=expected_num_events,
-            retries=retries,
-        )
-
-    return _get_lambda_logs_event
 
 
 @markers.snapshot.skip_snapshot_verify(

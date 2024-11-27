@@ -1536,6 +1536,44 @@ class TestLambdaFeatures:
 
         retry(check_logs, retries=15)
 
+    @markers.aws.validated
+    def test_invocation_type_event_two(
+        self, snapshot, aws_client, get_lambda_logs_event, create_lambda_function
+    ):
+        """Check invocation behavior for two event invokes in short succession.
+        This test aims to reproduce an issue where a second invoke in short succession doesn't happen.
+        """
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_12,
+        )
+        # First invoke within short succession
+        result_one = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+            Payload=b"{}",
+            InvocationType="Event",
+        )
+        # Trying different timing for single container allocation
+        # time.sleep(1)
+        # Second invoke within short succession
+        result_two = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+            Payload=b"{}",
+            InvocationType="Event",
+        )
+        # Check that first invoke is scheduled properly
+        result_one = read_streams(result_one)
+        snapshot.match("invoke-result-one", result_one)
+        assert 202 == result_one["StatusCode"]
+        # Check that second invoke is scheduled properly
+        result_two = read_streams(result_two)
+        snapshot.match("invoke-result-two", result_two)
+        assert 202 == result_two["StatusCode"]
+
+        get_lambda_logs_event(function_name=function_name, expected_num_events=2, retries=20)
+
     @pytest.mark.parametrize(
         "invocation_type", [InvocationType.RequestResponse, InvocationType.Event]
     )
