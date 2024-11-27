@@ -1,7 +1,7 @@
 import functools
 import inspect
 import types
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Type
 
 
 def get_defining_object(method):
@@ -120,7 +120,7 @@ class Patch:
         return self
 
     @staticmethod
-    def extend_class(target: Callable, fn: Callable):
+    def extend_class(target: Type, fn: Callable):
         def _getattr(obj, name):
             if name != fn.__name__:
                 raise AttributeError(f"`{target.__name__}` object has no attribute `{name}`")
