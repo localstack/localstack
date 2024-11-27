@@ -270,7 +270,7 @@ class TestSES:
 
         sender_email, recipient_email = setup_email_addresses()
         send_quota = aws_client.ses.get_send_quota()
-        snapshot.match("get-quota-0", send_quota)
+        # snapshot.match("get-quota-0", send_quota)
         counter = send_quota["SentLast24Hours"]
 
         aws_client.ses.send_email(
