@@ -191,7 +191,7 @@ def test_container_configurator_no_deprecation_warning_on_prefix(
     assert "LOCALSTACK_SERVICES" in container.config.env_vars
 
 
-def test_container_configurator_no_deprecation_warning_for_CI_env_var(
+def test_container_configurator_no_deprecation_warning_for_ci_env_var(
     container_factory, monkeypatch, caplog
 ):
     # set the "CI" env var indicating that we are running in a CI environment
