@@ -45,7 +45,7 @@ class JavaInstallerMixin:
         """
         if java_home := self.get_java_home():
             if is_mac_os():
-                return os.path.join(java_home, "Contents", "Home", "lib", "jli", "libjli.dylib")
+                return os.path.join(java_home, "lib", "jli", "libjli.dylib")
             return os.path.join(java_home, "lib", "server", "libjvm.so")
 
     def get_java_env_vars(self, path: str = None, ld_library_path: str = None) -> dict[str, str]:
