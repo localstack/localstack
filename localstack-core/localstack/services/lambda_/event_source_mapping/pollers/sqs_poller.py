@@ -1,7 +1,9 @@
 import json
 import logging
+import time
 from collections import defaultdict
 from functools import cached_property
+from typing import Any, Callable, Generator
 
 from botocore.client import BaseClient
 
@@ -16,6 +18,7 @@ from localstack.services.lambda_.event_source_mapping.pollers.poller import (
     Poller,
     parse_batch_item_failures,
 )
+from localstack.services.lambda_.event_source_mapping.senders.sender_utils import batched
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import first_char_to_lower
 
@@ -26,6 +29,8 @@ DEFAULT_MAX_RECEIVE_COUNT = 10
 
 class SqsPoller(Poller):
     queue_url: str
+    # collector returns a list of SQS messages adhering to a batch policy
+    collector: Generator[list, Any, None] | None
 
     def __init__(
         self,
@@ -36,6 +41,7 @@ class SqsPoller(Poller):
     ):
         super().__init__(source_arn, source_parameters, source_client, processor)
         self.queue_url = get_queue_url(self.source_arn)
+        self.collector = None
 
     @property
     def sqs_queue_parameters(self) -> PipeSourceSqsQueueParameters:
@@ -57,14 +63,8 @@ class SqsPoller(Poller):
     def event_source(self) -> str:
         return "aws:sqs"
 
-    def poll_events(self) -> None:
-        # SQS pipe source: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-sqs.html
-        # "The 9 Ways an SQS Message can be Deleted": https://lucvandonkersgoed.com/2022/01/20/the-9-ways-an-sqs-message-can-be-deleted/
-        # TODO: implement batch window expires based on MaximumBatchingWindowInSeconds
-        # TODO: implement invocation payload size quota
-        # TODO: consider long-polling vs. short-polling trade-off. AWS uses long-polling:
-        #  https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-sqs.html#pipes-sqs-scaling
-        response = self.source_client.receive_message(
+    def receive_message(self, **kwargs) -> list[dict]:
+        return self.source_client.receive_message(
             QueueUrl=self.queue_url,
             MaxNumberOfMessages=min(
                 self.sqs_queue_parameters["BatchSize"], DEFAULT_MAX_RECEIVE_COUNT
@@ -72,7 +72,25 @@ class SqsPoller(Poller):
             MessageAttributeNames=["All"],
             MessageSystemAttributeNames=[MessageSystemAttributeName.All],
         )
-        if messages := response.get("Messages"):
+
+    def poll_events(self) -> None:
+        # SQS pipe source: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-sqs.html
+        # "The 9 Ways an SQS Message can be Deleted": https://lucvandonkersgoed.com/2022/01/20/the-9-ways-an-sqs-message-can-be-deleted/
+        # TODO: implement invocation payload size quota
+        # TODO: consider long-polling vs. short-polling trade-off. AWS uses long-polling:
+        #  https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-sqs.html#pipes-sqs-scaling
+        if self.collector is None:
+            self.collector = message_collector(
+                self.receive_message,
+                max_batch_size=self.sqs_queue_parameters["BatchSize"],
+                max_batch_window=self.sqs_queue_parameters["MaximumBatchingWindowInSeconds"],
+            )
+
+        # NOTE: If a batch is collected, this will send a single collected batch for each poll call.
+        # Increasing the poller frequency _should_ influence the rate of collection but this has not
+        # yet been investigated.
+        messages = next(self.collector)
+        if messages:
             LOG.debug("Polled %d events from %s", len(messages), self.source_arn)
             try:
                 if self.is_fifo_queue:
@@ -171,7 +189,10 @@ class SqsPoller(Poller):
                 for count, message in enumerate(messages)
                 if message["MessageId"] in message_ids_to_delete
             ]
-            self.source_client.delete_message_batch(QueueUrl=self.queue_url, Entries=entries)
+            for batched_entries in batched(entries, DEFAULT_MAX_RECEIVE_COUNT):
+                self.source_client.delete_message_batch(
+                    QueueUrl=self.queue_url, Entries=batched_entries
+                )
 
 
 def split_by_message_group_id(messages) -> defaultdict[str, list[dict]]:
@@ -229,3 +250,45 @@ def message_attributes_to_lower(message_attrs):
         for key, value in dict(attr).items():
             attr[first_char_to_lower(key)] = attr.pop(key)
     return message_attrs
+
+
+def message_collector(
+    receive_fn: Callable[[...], dict], max_batch_size=10, max_batch_window=0.5
+) -> Generator[list, Any, None]:
+    """
+    Collects a batch of SQS messages, doing a ReceiveMessage call every iteration, allowing a returned batch to exceed 10 elements.
+
+    A batch is yielded when the size of the collection exceeds `max_batch_size` or the elapsed duration exceeds the `max_batch_window`.
+
+    :param receive_fn: A zero-arguments version of a `receieve_message` call.
+    :param max_batch_size: A batch is collected until this size limit is reached (corresponds to ESM's `BatchSize` parameter).
+    :param max_batch_window: A batch is collected until this duration has elapsed (corresponds to ESM's `MaximumBatchingWindowInSeconds` parameter).
+    :returns: A generator which returns a collected batch of messages if limits have been reached, else an empty-list, each iteration.
+    """
+    batch = []
+    start_t = time.monotonic()
+
+    while True:
+        time_elapsed = time.monotonic() - start_t
+        try:
+            response = receive_fn()
+        except Exception:
+            LOG.exception(
+                "Internal receive events operation failed.",
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+            # If an error is encountered, return whatever we have collected and stop generating
+            yield batch
+            break
+
+        if messages := response.get("Messages", []):
+            batch.extend(messages)
+
+        # yield collected batch and reset
+        if time_elapsed >= max_batch_window or len(batch) >= max_batch_size:
+            yield batch
+            start_t = time.monotonic()
+            batch = []
+        else:
+            # batch is still being collected
+            yield []
