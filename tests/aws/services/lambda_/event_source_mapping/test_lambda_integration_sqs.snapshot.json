@@ -1662,5 +1662,2029 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batch_size[15]": {
+    "recorded-date": "26-11-2024, 13:43:42",
+    "recorded-content": {
+      "create-event-source-mapping-response": {
+        "BatchSize": 15,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 10,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "send-message-batch-result-10": {
+        "Successful": [
+          {
+            "Id": "0-0",
+            "MD5OfMessageBody": "<md5-of-body:1>",
+            "MessageId": "<uuid:2>"
+          },
+          {
+            "Id": "1-0",
+            "MD5OfMessageBody": "<md5-of-body:3>",
+            "MessageId": "<uuid:3>"
+          },
+          {
+            "Id": "2-0",
+            "MD5OfMessageBody": "<md5-of-body:5>",
+            "MessageId": "<uuid:4>"
+          },
+          {
+            "Id": "3-0",
+            "MD5OfMessageBody": "<md5-of-body:7>",
+            "MessageId": "<uuid:5>"
+          },
+          {
+            "Id": "4-0",
+            "MD5OfMessageBody": "<md5-of-body:9>",
+            "MessageId": "<uuid:6>"
+          },
+          {
+            "Id": "5-0",
+            "MD5OfMessageBody": "<md5-of-body:11>",
+            "MessageId": "<uuid:7>"
+          },
+          {
+            "Id": "6-0",
+            "MD5OfMessageBody": "<md5-of-body:12>",
+            "MessageId": "<uuid:8>"
+          },
+          {
+            "Id": "7-0",
+            "MD5OfMessageBody": "<md5-of-body:13>",
+            "MessageId": "<uuid:9>"
+          },
+          {
+            "Id": "8-0",
+            "MD5OfMessageBody": "<md5-of-body:14>",
+            "MessageId": "<uuid:10>"
+          },
+          {
+            "Id": "9-0",
+            "MD5OfMessageBody": "<md5-of-body:15>",
+            "MessageId": "<uuid:11>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "send-message-batch-result-5": {
+        "Successful": [
+          {
+            "Id": "0-1",
+            "MD5OfMessageBody": "<md5-of-body:2>",
+            "MessageId": "<uuid:12>"
+          },
+          {
+            "Id": "1-1",
+            "MD5OfMessageBody": "<md5-of-body:4>",
+            "MessageId": "<uuid:13>"
+          },
+          {
+            "Id": "2-1",
+            "MD5OfMessageBody": "<md5-of-body:6>",
+            "MessageId": "<uuid:14>"
+          },
+          {
+            "Id": "3-1",
+            "MD5OfMessageBody": "<md5-of-body:8>",
+            "MessageId": "<uuid:15>"
+          },
+          {
+            "Id": "4-1",
+            "MD5OfMessageBody": "<md5-of-body:10>",
+            "MessageId": "<uuid:16>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "Records": [
+        {
+          "messageId": "<uuid:2>",
+          "receiptHandle": "<receipt-handle:1>",
+          "body": "0-0-message-0",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:1>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:12>",
+          "receiptHandle": "<receipt-handle:2>",
+          "body": "0-1-message-0",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:2>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:3>",
+          "receiptHandle": "<receipt-handle:3>",
+          "body": "1-0-message-1",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfBody": "<md5-of-body:3>",
+          "md5OfMessageAttributes": null,
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:13>",
+          "receiptHandle": "<receipt-handle:4>",
+          "body": "1-1-message-1",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:4>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:4>",
+          "receiptHandle": "<receipt-handle:5>",
+          "body": "2-0-message-2",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfBody": "<md5-of-body:5>",
+          "md5OfMessageAttributes": null,
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:14>",
+          "receiptHandle": "<receipt-handle:6>",
+          "body": "2-1-message-2",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:6>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:5>",
+          "receiptHandle": "<receipt-handle:7>",
+          "body": "3-0-message-3",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:7>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:15>",
+          "receiptHandle": "<receipt-handle:8>",
+          "body": "3-1-message-3",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:8>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:6>",
+          "receiptHandle": "<receipt-handle:9>",
+          "body": "4-0-message-4",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:9>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:16>",
+          "receiptHandle": "<receipt-handle:10>",
+          "body": "4-1-message-4",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:10>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:7>",
+          "receiptHandle": "<receipt-handle:11>",
+          "body": "5-0-message-5",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:11>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:8>",
+          "receiptHandle": "<receipt-handle:12>",
+          "body": "6-0-message-6",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:12>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:9>",
+          "receiptHandle": "<receipt-handle:13>",
+          "body": "7-0-message-7",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:13>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:10>",
+          "receiptHandle": "<receipt-handle:14>",
+          "body": "8-0-message-8",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:14>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:11>",
+          "receiptHandle": "<receipt-handle:15>",
+          "body": "9-0-message-9",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:15>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batching_reserved_concurrency": {
+    "recorded-date": "26-11-2024, 08:29:04",
+    "recorded-content": {
+      "put_concurrency_resp": {
+        "ReservedConcurrentExecutions": 2,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-event-source-mapping-response": {
+        "BatchSize": 20,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 10,
+        "ScalingConfig": {
+          "MaximumConcurrency": 2
+        },
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "total_batches_received": 2,
+      "Records": [
+        {
+          "messageId": "<uuid:2>",
+          "receiptHandle": "<receipt-handle:1>",
+          "body": "0-0-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:1>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:3>",
+          "receiptHandle": "<receipt-handle:2>",
+          "body": "0-1-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:2>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:4>",
+          "receiptHandle": "<receipt-handle:3>",
+          "body": "0-2-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:3>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:5>",
+          "receiptHandle": "<receipt-handle:4>",
+          "body": "1-0-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:4>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:6>",
+          "receiptHandle": "<receipt-handle:5>",
+          "body": "1-1-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:5>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:7>",
+          "receiptHandle": "<receipt-handle:6>",
+          "body": "1-2-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:6>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:8>",
+          "receiptHandle": "<receipt-handle:7>",
+          "body": "2-0-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:7>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:9>",
+          "receiptHandle": "<receipt-handle:8>",
+          "body": "2-1-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:8>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:10>",
+          "receiptHandle": "<receipt-handle:9>",
+          "body": "2-2-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:9>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:11>",
+          "receiptHandle": "<receipt-handle:10>",
+          "body": "3-0-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:10>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:12>",
+          "receiptHandle": "<receipt-handle:11>",
+          "body": "3-1-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:11>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:13>",
+          "receiptHandle": "<receipt-handle:12>",
+          "body": "3-2-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:12>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:14>",
+          "receiptHandle": "<receipt-handle:13>",
+          "body": "4-0-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:13>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:15>",
+          "receiptHandle": "<receipt-handle:14>",
+          "body": "4-1-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:14>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:16>",
+          "receiptHandle": "<receipt-handle:15>",
+          "body": "4-2-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:15>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:17>",
+          "receiptHandle": "<receipt-handle:16>",
+          "body": "5-0-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:16>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:18>",
+          "receiptHandle": "<receipt-handle:17>",
+          "body": "5-1-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:17>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:19>",
+          "receiptHandle": "<receipt-handle:18>",
+          "body": "5-2-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:18>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:20>",
+          "receiptHandle": "<receipt-handle:19>",
+          "body": "6-0-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:19>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:21>",
+          "receiptHandle": "<receipt-handle:20>",
+          "body": "6-1-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:20>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:22>",
+          "receiptHandle": "<receipt-handle:21>",
+          "body": "6-2-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:21>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:23>",
+          "receiptHandle": "<receipt-handle:22>",
+          "body": "7-0-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:22>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:24>",
+          "receiptHandle": "<receipt-handle:23>",
+          "body": "7-1-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:23>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:25>",
+          "receiptHandle": "<receipt-handle:24>",
+          "body": "7-2-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:24>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:26>",
+          "receiptHandle": "<receipt-handle:25>",
+          "body": "8-0-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:25>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:27>",
+          "receiptHandle": "<receipt-handle:26>",
+          "body": "8-1-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:26>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:28>",
+          "receiptHandle": "<receipt-handle:27>",
+          "body": "8-2-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:27>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:29>",
+          "receiptHandle": "<receipt-handle:28>",
+          "body": "9-0-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:28>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:30>",
+          "receiptHandle": "<receipt-handle:29>",
+          "body": "9-1-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:29>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:31>",
+          "receiptHandle": "<receipt-handle:30>",
+          "body": "9-2-message",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:30>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batch_size[100]": {
+    "recorded-date": "26-11-2024, 13:44:40",
+    "recorded-content": {
+      "create-event-source-mapping-response": {
+        "BatchSize": 100,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 10,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "send-message-batch-result-10": {
+        "Successful": [
+          {
+            "Id": "0-0",
+            "MD5OfMessageBody": "<md5-of-body:1>",
+            "MessageId": "<uuid:2>"
+          },
+          {
+            "Id": "1-0",
+            "MD5OfMessageBody": "<md5-of-body:3>",
+            "MessageId": "<uuid:3>"
+          },
+          {
+            "Id": "2-0",
+            "MD5OfMessageBody": "<md5-of-body:5>",
+            "MessageId": "<uuid:4>"
+          },
+          {
+            "Id": "3-0",
+            "MD5OfMessageBody": "<md5-of-body:7>",
+            "MessageId": "<uuid:5>"
+          },
+          {
+            "Id": "4-0",
+            "MD5OfMessageBody": "<md5-of-body:9>",
+            "MessageId": "<uuid:6>"
+          },
+          {
+            "Id": "5-0",
+            "MD5OfMessageBody": "<md5-of-body:11>",
+            "MessageId": "<uuid:7>"
+          },
+          {
+            "Id": "6-0",
+            "MD5OfMessageBody": "<md5-of-body:12>",
+            "MessageId": "<uuid:8>"
+          },
+          {
+            "Id": "7-0",
+            "MD5OfMessageBody": "<md5-of-body:13>",
+            "MessageId": "<uuid:9>"
+          },
+          {
+            "Id": "8-0",
+            "MD5OfMessageBody": "<md5-of-body:14>",
+            "MessageId": "<uuid:10>"
+          },
+          {
+            "Id": "9-0",
+            "MD5OfMessageBody": "<md5-of-body:15>",
+            "MessageId": "<uuid:11>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "send-message-batch-result-5": {
+        "Successful": [
+          {
+            "Id": "0-1",
+            "MD5OfMessageBody": "<md5-of-body:2>",
+            "MessageId": "<uuid:12>"
+          },
+          {
+            "Id": "1-1",
+            "MD5OfMessageBody": "<md5-of-body:4>",
+            "MessageId": "<uuid:13>"
+          },
+          {
+            "Id": "2-1",
+            "MD5OfMessageBody": "<md5-of-body:6>",
+            "MessageId": "<uuid:14>"
+          },
+          {
+            "Id": "3-1",
+            "MD5OfMessageBody": "<md5-of-body:8>",
+            "MessageId": "<uuid:15>"
+          },
+          {
+            "Id": "4-1",
+            "MD5OfMessageBody": "<md5-of-body:10>",
+            "MessageId": "<uuid:16>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "Records": [
+        {
+          "messageId": "<uuid:2>",
+          "receiptHandle": "<receipt-handle:1>",
+          "body": "0-0-message-0",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfBody": "<md5-of-body:1>",
+          "md5OfMessageAttributes": null,
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:12>",
+          "receiptHandle": "<receipt-handle:2>",
+          "body": "0-1-message-0",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:2>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:3>",
+          "receiptHandle": "<receipt-handle:3>",
+          "body": "1-0-message-1",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfBody": "<md5-of-body:3>",
+          "md5OfMessageAttributes": null,
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:13>",
+          "receiptHandle": "<receipt-handle:4>",
+          "body": "1-1-message-1",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfBody": "<md5-of-body:4>",
+          "md5OfMessageAttributes": null,
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:4>",
+          "receiptHandle": "<receipt-handle:5>",
+          "body": "2-0-message-2",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfBody": "<md5-of-body:5>",
+          "md5OfMessageAttributes": null,
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:14>",
+          "receiptHandle": "<receipt-handle:6>",
+          "body": "2-1-message-2",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:6>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:5>",
+          "receiptHandle": "<receipt-handle:7>",
+          "body": "3-0-message-3",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfBody": "<md5-of-body:7>",
+          "md5OfMessageAttributes": null,
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:15>",
+          "receiptHandle": "<receipt-handle:8>",
+          "body": "3-1-message-3",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfBody": "<md5-of-body:8>",
+          "md5OfMessageAttributes": null,
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:6>",
+          "receiptHandle": "<receipt-handle:9>",
+          "body": "4-0-message-4",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfBody": "<md5-of-body:9>",
+          "md5OfMessageAttributes": null,
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:16>",
+          "receiptHandle": "<receipt-handle:10>",
+          "body": "4-1-message-4",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfBody": "<md5-of-body:10>",
+          "md5OfMessageAttributes": null,
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:7>",
+          "receiptHandle": "<receipt-handle:11>",
+          "body": "5-0-message-5",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:11>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:8>",
+          "receiptHandle": "<receipt-handle:12>",
+          "body": "6-0-message-6",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:12>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:9>",
+          "receiptHandle": "<receipt-handle:13>",
+          "body": "7-0-message-7",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfBody": "<md5-of-body:13>",
+          "md5OfMessageAttributes": null,
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:10>",
+          "receiptHandle": "<receipt-handle:14>",
+          "body": "8-0-message-8",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:14>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:11>",
+          "receiptHandle": "<receipt-handle:15>",
+          "body": "9-0-message-9",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfBody": "<md5-of-body:15>",
+          "md5OfMessageAttributes": null,
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batch_size[1000]": {
+    "recorded-date": "26-11-2024, 13:45:41",
+    "recorded-content": {
+      "create-event-source-mapping-response": {
+        "BatchSize": 1000,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 10,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "send-message-batch-result-10": {
+        "Successful": [
+          {
+            "Id": "0-0",
+            "MD5OfMessageBody": "<md5-of-body:1>",
+            "MessageId": "<uuid:2>"
+          },
+          {
+            "Id": "1-0",
+            "MD5OfMessageBody": "<md5-of-body:3>",
+            "MessageId": "<uuid:3>"
+          },
+          {
+            "Id": "2-0",
+            "MD5OfMessageBody": "<md5-of-body:5>",
+            "MessageId": "<uuid:4>"
+          },
+          {
+            "Id": "3-0",
+            "MD5OfMessageBody": "<md5-of-body:7>",
+            "MessageId": "<uuid:5>"
+          },
+          {
+            "Id": "4-0",
+            "MD5OfMessageBody": "<md5-of-body:9>",
+            "MessageId": "<uuid:6>"
+          },
+          {
+            "Id": "5-0",
+            "MD5OfMessageBody": "<md5-of-body:11>",
+            "MessageId": "<uuid:7>"
+          },
+          {
+            "Id": "6-0",
+            "MD5OfMessageBody": "<md5-of-body:12>",
+            "MessageId": "<uuid:8>"
+          },
+          {
+            "Id": "7-0",
+            "MD5OfMessageBody": "<md5-of-body:13>",
+            "MessageId": "<uuid:9>"
+          },
+          {
+            "Id": "8-0",
+            "MD5OfMessageBody": "<md5-of-body:14>",
+            "MessageId": "<uuid:10>"
+          },
+          {
+            "Id": "9-0",
+            "MD5OfMessageBody": "<md5-of-body:15>",
+            "MessageId": "<uuid:11>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "send-message-batch-result-5": {
+        "Successful": [
+          {
+            "Id": "0-1",
+            "MD5OfMessageBody": "<md5-of-body:2>",
+            "MessageId": "<uuid:12>"
+          },
+          {
+            "Id": "1-1",
+            "MD5OfMessageBody": "<md5-of-body:4>",
+            "MessageId": "<uuid:13>"
+          },
+          {
+            "Id": "2-1",
+            "MD5OfMessageBody": "<md5-of-body:6>",
+            "MessageId": "<uuid:14>"
+          },
+          {
+            "Id": "3-1",
+            "MD5OfMessageBody": "<md5-of-body:8>",
+            "MessageId": "<uuid:15>"
+          },
+          {
+            "Id": "4-1",
+            "MD5OfMessageBody": "<md5-of-body:10>",
+            "MessageId": "<uuid:16>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "Records": [
+        {
+          "messageId": "<uuid:2>",
+          "receiptHandle": "<receipt-handle:1>",
+          "body": "0-0-message-0",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:1>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:12>",
+          "receiptHandle": "<receipt-handle:2>",
+          "body": "0-1-message-0",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:2>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:3>",
+          "receiptHandle": "<receipt-handle:3>",
+          "body": "1-0-message-1",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:3>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:13>",
+          "receiptHandle": "<receipt-handle:4>",
+          "body": "1-1-message-1",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:4>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:4>",
+          "receiptHandle": "<receipt-handle:5>",
+          "body": "2-0-message-2",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:5>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:14>",
+          "receiptHandle": "<receipt-handle:6>",
+          "body": "2-1-message-2",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:6>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:5>",
+          "receiptHandle": "<receipt-handle:7>",
+          "body": "3-0-message-3",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:7>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:15>",
+          "receiptHandle": "<receipt-handle:8>",
+          "body": "3-1-message-3",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:8>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:6>",
+          "receiptHandle": "<receipt-handle:9>",
+          "body": "4-0-message-4",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:9>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:16>",
+          "receiptHandle": "<receipt-handle:10>",
+          "body": "4-1-message-4",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:10>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:7>",
+          "receiptHandle": "<receipt-handle:11>",
+          "body": "5-0-message-5",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:11>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:8>",
+          "receiptHandle": "<receipt-handle:12>",
+          "body": "6-0-message-6",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:12>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:9>",
+          "receiptHandle": "<receipt-handle:13>",
+          "body": "7-0-message-7",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:13>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:10>",
+          "receiptHandle": "<receipt-handle:14>",
+          "body": "8-0-message-8",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:14>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:11>",
+          "receiptHandle": "<receipt-handle:15>",
+          "body": "9-0-message-9",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:15>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batch_size[10000]": {
+    "recorded-date": "26-11-2024, 13:46:48",
+    "recorded-content": {
+      "create-event-source-mapping-response": {
+        "BatchSize": 10000,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 10,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "send-message-batch-result-10": {
+        "Successful": [
+          {
+            "Id": "0-0",
+            "MD5OfMessageBody": "<md5-of-body:1>",
+            "MessageId": "<uuid:2>"
+          },
+          {
+            "Id": "1-0",
+            "MD5OfMessageBody": "<md5-of-body:3>",
+            "MessageId": "<uuid:3>"
+          },
+          {
+            "Id": "2-0",
+            "MD5OfMessageBody": "<md5-of-body:5>",
+            "MessageId": "<uuid:4>"
+          },
+          {
+            "Id": "3-0",
+            "MD5OfMessageBody": "<md5-of-body:7>",
+            "MessageId": "<uuid:5>"
+          },
+          {
+            "Id": "4-0",
+            "MD5OfMessageBody": "<md5-of-body:9>",
+            "MessageId": "<uuid:6>"
+          },
+          {
+            "Id": "5-0",
+            "MD5OfMessageBody": "<md5-of-body:11>",
+            "MessageId": "<uuid:7>"
+          },
+          {
+            "Id": "6-0",
+            "MD5OfMessageBody": "<md5-of-body:12>",
+            "MessageId": "<uuid:8>"
+          },
+          {
+            "Id": "7-0",
+            "MD5OfMessageBody": "<md5-of-body:13>",
+            "MessageId": "<uuid:9>"
+          },
+          {
+            "Id": "8-0",
+            "MD5OfMessageBody": "<md5-of-body:14>",
+            "MessageId": "<uuid:10>"
+          },
+          {
+            "Id": "9-0",
+            "MD5OfMessageBody": "<md5-of-body:15>",
+            "MessageId": "<uuid:11>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "send-message-batch-result-5": {
+        "Successful": [
+          {
+            "Id": "0-1",
+            "MD5OfMessageBody": "<md5-of-body:2>",
+            "MessageId": "<uuid:12>"
+          },
+          {
+            "Id": "1-1",
+            "MD5OfMessageBody": "<md5-of-body:4>",
+            "MessageId": "<uuid:13>"
+          },
+          {
+            "Id": "2-1",
+            "MD5OfMessageBody": "<md5-of-body:6>",
+            "MessageId": "<uuid:14>"
+          },
+          {
+            "Id": "3-1",
+            "MD5OfMessageBody": "<md5-of-body:8>",
+            "MessageId": "<uuid:15>"
+          },
+          {
+            "Id": "4-1",
+            "MD5OfMessageBody": "<md5-of-body:10>",
+            "MessageId": "<uuid:16>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "Records": [
+        {
+          "messageId": "<uuid:2>",
+          "receiptHandle": "<receipt-handle:1>",
+          "body": "0-0-message-0",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:1>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:12>",
+          "receiptHandle": "<receipt-handle:2>",
+          "body": "0-1-message-0",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:2>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:3>",
+          "receiptHandle": "<receipt-handle:3>",
+          "body": "1-0-message-1",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:3>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:13>",
+          "receiptHandle": "<receipt-handle:4>",
+          "body": "1-1-message-1",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:4>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:4>",
+          "receiptHandle": "<receipt-handle:5>",
+          "body": "2-0-message-2",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:5>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:14>",
+          "receiptHandle": "<receipt-handle:6>",
+          "body": "2-1-message-2",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:6>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:5>",
+          "receiptHandle": "<receipt-handle:7>",
+          "body": "3-0-message-3",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:7>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:15>",
+          "receiptHandle": "<receipt-handle:8>",
+          "body": "3-1-message-3",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:8>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:6>",
+          "receiptHandle": "<receipt-handle:9>",
+          "body": "4-0-message-4",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:9>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:16>",
+          "receiptHandle": "<receipt-handle:10>",
+          "body": "4-1-message-4",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:10>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:7>",
+          "receiptHandle": "<receipt-handle:11>",
+          "body": "5-0-message-5",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:11>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:8>",
+          "receiptHandle": "<receipt-handle:12>",
+          "body": "6-0-message-6",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:12>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:9>",
+          "receiptHandle": "<receipt-handle:13>",
+          "body": "7-0-message-7",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:13>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:10>",
+          "receiptHandle": "<receipt-handle:14>",
+          "body": "8-0-message-8",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:14>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        },
+        {
+          "messageId": "<uuid:11>",
+          "receiptHandle": "<receipt-handle:15>",
+          "body": "9-0-message-9",
+          "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "sent-timestamp",
+            "SenderId": "<sender-id:1>",
+            "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:15>",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "awsRegion": "<region>"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batching_behaviour[100]": {
+    "recorded-date": "26-11-2024, 14:23:08",
+    "recorded-content": {}
   }
 }
