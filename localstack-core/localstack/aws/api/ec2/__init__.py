@@ -301,6 +301,8 @@ SecurityGroupName = str
 SecurityGroupRuleId = str
 SensitiveUrl = str
 SensitiveUserData = str
+SnapshotCompletionDurationMinutesRequest = int
+SnapshotCompletionDurationMinutesResponse = int
 SnapshotId = str
 SpotFleetRequestId = str
 SpotInstanceRequestId = str
@@ -3232,6 +3234,11 @@ class TrafficType(StrEnum):
     ALL = "ALL"
 
 
+class TransferType(StrEnum):
+    time_based = "time-based"
+    standard = "standard"
+
+
 class TransitGatewayAssociationState(StrEnum):
     associating = "associating"
     associated = "associated"
@@ -5988,6 +5995,7 @@ class ConnectionNotification(TypedDict, total=False):
     ConnectionNotificationArn: Optional[String]
     ConnectionEvents: Optional[ValueStringList]
     ConnectionNotificationState: Optional[ConnectionNotificationState]
+    ServiceRegion: Optional[String]
 
 
 ConnectionNotificationIdsList = List[ConnectionNotificationId]
@@ -6112,6 +6120,7 @@ class CopySnapshotRequest(ServiceRequest):
     SourceRegion: String
     SourceSnapshotId: String
     TagSpecifications: Optional[TagSpecificationList]
+    CompletionDurationMinutes: Optional[SnapshotCompletionDurationMinutesRequest]
     DryRun: Optional[Boolean]
 
 
@@ -9152,6 +9161,7 @@ class CreateVpcEndpointRequest(ServiceRequest):
     PrivateDnsEnabled: Optional[Boolean]
     TagSpecifications: Optional[TagSpecificationList]
     SubnetConfigurations: Optional[SubnetConfigurationsList]
+    ServiceRegion: Optional[String]
 
 
 class LastError(TypedDict, total=False):
@@ -9200,6 +9210,7 @@ class VpcEndpoint(TypedDict, total=False):
     Tags: Optional[TagList]
     OwnerId: Optional[String]
     LastError: Optional[LastError]
+    ServiceRegion: Optional[String]
 
 
 class CreateVpcEndpointResult(TypedDict, total=False):
@@ -9214,8 +9225,17 @@ class CreateVpcEndpointServiceConfigurationRequest(ServiceRequest):
     NetworkLoadBalancerArns: Optional[ValueStringList]
     GatewayLoadBalancerArns: Optional[ValueStringList]
     SupportedIpAddressTypes: Optional[ValueStringList]
+    SupportedRegions: Optional[ValueStringList]
     ClientToken: Optional[String]
     TagSpecifications: Optional[TagSpecificationList]
+
+
+class SupportedRegionDetail(TypedDict, total=False):
+    Region: Optional[String]
+    ServiceState: Optional[String]
+
+
+SupportedRegionSet = List[SupportedRegionDetail]
 
 
 class PrivateDnsNameConfiguration(TypedDict, total=False):
@@ -9251,6 +9271,8 @@ class ServiceConfiguration(TypedDict, total=False):
     PrivateDnsNameConfiguration: Optional[PrivateDnsNameConfiguration]
     PayerResponsibility: Optional[PayerResponsibility]
     Tags: Optional[TagList]
+    SupportedRegions: Optional[SupportedRegionSet]
+    RemoteAccessEnabled: Optional[Boolean]
 
 
 class CreateVpcEndpointServiceConfigurationResult(TypedDict, total=False):
@@ -13626,6 +13648,9 @@ class Snapshot(TypedDict, total=False):
     StorageTier: Optional[StorageTier]
     RestoreExpiryTime: Optional[MillisecondDateTime]
     SseType: Optional[SSEType]
+    TransferType: Optional[TransferType]
+    CompletionDurationMinutes: Optional[SnapshotCompletionDurationMinutesResponse]
+    CompletionTime: Optional[MillisecondDateTime]
     SnapshotId: Optional[String]
     VolumeId: Optional[String]
     State: Optional[SnapshotState]
@@ -14785,6 +14810,7 @@ class VpcEndpointConnection(TypedDict, total=False):
     IpAddressType: Optional[IpAddressType]
     VpcEndpointConnectionId: Optional[String]
     Tags: Optional[TagList]
+    VpcEndpointRegion: Optional[String]
 
 
 VpcEndpointConnectionSet = List[VpcEndpointConnection]
@@ -14830,6 +14856,7 @@ class DescribeVpcEndpointServicesRequest(ServiceRequest):
     Filters: Optional[FilterList]
     MaxResults: Optional[Integer]
     NextToken: Optional[String]
+    ServiceRegions: Optional[ValueStringList]
 
 
 class PrivateDnsDetails(TypedDict, total=False):
@@ -14843,6 +14870,7 @@ class ServiceDetail(TypedDict, total=False):
     ServiceName: Optional[String]
     ServiceId: Optional[String]
     ServiceType: Optional[ServiceTypeDetailSet]
+    ServiceRegion: Optional[String]
     AvailabilityZones: Optional[ValueStringList]
     Owner: Optional[String]
     BaseEndpointDnsNames: Optional[ValueStringList]
@@ -17935,6 +17963,8 @@ class ModifyVpcEndpointServiceConfigurationRequest(ServiceRequest):
     RemoveGatewayLoadBalancerArns: Optional[ValueStringList]
     AddSupportedIpAddressTypes: Optional[ValueStringList]
     RemoveSupportedIpAddressTypes: Optional[ValueStringList]
+    AddSupportedRegions: Optional[ValueStringList]
+    RemoveSupportedRegions: Optional[ValueStringList]
 
 
 class ModifyVpcEndpointServiceConfigurationResult(TypedDict, total=False):
@@ -19822,6 +19852,7 @@ class Ec2Api:
         kms_key_id: KmsKeyId = None,
         presigned_url: CopySnapshotRequestPSU = None,
         tag_specifications: TagSpecificationList = None,
+        completion_duration_minutes: SnapshotCompletionDurationMinutesRequest = None,
         dry_run: Boolean = None,
         **kwargs,
     ) -> CopySnapshotResult:
@@ -20978,6 +21009,7 @@ class Ec2Api:
         private_dns_enabled: Boolean = None,
         tag_specifications: TagSpecificationList = None,
         subnet_configurations: SubnetConfigurationsList = None,
+        service_region: String = None,
         **kwargs,
     ) -> CreateVpcEndpointResult:
         raise NotImplementedError
@@ -21006,6 +21038,7 @@ class Ec2Api:
         network_load_balancer_arns: ValueStringList = None,
         gateway_load_balancer_arns: ValueStringList = None,
         supported_ip_address_types: ValueStringList = None,
+        supported_regions: ValueStringList = None,
         client_token: String = None,
         tag_specifications: TagSpecificationList = None,
         **kwargs,
@@ -23829,6 +23862,7 @@ class Ec2Api:
         filters: FilterList = None,
         max_results: Integer = None,
         next_token: String = None,
+        service_regions: ValueStringList = None,
         **kwargs,
     ) -> DescribeVpcEndpointServicesResult:
         raise NotImplementedError
@@ -25975,6 +26009,8 @@ class Ec2Api:
         remove_gateway_load_balancer_arns: ValueStringList = None,
         add_supported_ip_address_types: ValueStringList = None,
         remove_supported_ip_address_types: ValueStringList = None,
+        add_supported_regions: ValueStringList = None,
+        remove_supported_regions: ValueStringList = None,
         **kwargs,
     ) -> ModifyVpcEndpointServiceConfigurationResult:
         raise NotImplementedError

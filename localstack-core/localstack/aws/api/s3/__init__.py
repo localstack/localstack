@@ -1338,6 +1338,7 @@ class CompleteMultipartUploadRequest(ServiceRequest):
     ChecksumSHA256: Optional[ChecksumSHA256]
     RequestPayer: Optional[RequestPayer]
     ExpectedBucketOwner: Optional[AccountId]
+    IfMatch: Optional[IfMatch]
     IfNoneMatch: Optional[IfNoneMatch]
     SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
     SSECustomerKey: Optional[SSECustomerKey]
@@ -3196,6 +3197,7 @@ class PutObjectRequest(ServiceRequest):
     ChecksumSHA1: Optional[ChecksumSHA1]
     ChecksumSHA256: Optional[ChecksumSHA256]
     Expires: Optional[Expires]
+    IfMatch: Optional[IfMatch]
     IfNoneMatch: Optional[IfNoneMatch]
     GrantFullControl: Optional[GrantFullControl]
     GrantRead: Optional[GrantRead]
@@ -3516,6 +3518,7 @@ class S3Api:
         checksum_sha256: ChecksumSHA256 = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        if_match: IfMatch = None,
         if_none_match: IfNoneMatch = None,
         sse_customer_algorithm: SSECustomerAlgorithm = None,
         sse_customer_key: SSECustomerKey = None,
@@ -4654,6 +4657,7 @@ class S3Api:
         checksum_sha1: ChecksumSHA1 = None,
         checksum_sha256: ChecksumSHA256 = None,
         expires: Expires = None,
+        if_match: IfMatch = None,
         if_none_match: IfNoneMatch = None,
         grant_full_control: GrantFullControl = None,
         grant_read: GrantRead = None,

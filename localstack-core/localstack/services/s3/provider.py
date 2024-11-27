@@ -2358,6 +2358,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         checksum_sha256: ChecksumSHA256 = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        if_match: IfMatch = None,
         if_none_match: IfNoneMatch = None,
         sse_customer_algorithm: SSECustomerAlgorithm = None,
         sse_customer_key: SSECustomerKey = None,
