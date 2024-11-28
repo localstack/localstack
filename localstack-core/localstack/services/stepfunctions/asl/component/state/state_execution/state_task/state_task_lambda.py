@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Union
 
 from botocore.exceptions import ClientError
@@ -40,6 +41,8 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.quotas import is_within_size_quota
 
+LOG = logging.getLogger(__name__)
+
 
 class StateTaskLambda(StateTask):
     resource: LambdaResource
@@ -60,12 +63,20 @@ class StateTaskLambda(StateTask):
             return ex.failure_event
 
         error = "Exception"
-        if isinstance(ex, lambda_eval_utils.LambdaFunctionErrorException):
-            error_name = CustomErrorName(error)
-            cause = ex.payload
-        elif isinstance(ex, ClientError):
+        if isinstance(ex, ClientError):
             error_name = CustomErrorName(error)
             cause = ex.response["Error"]["Message"]
+        elif isinstance(ex, lambda_eval_utils.LambdaFunctionErrorException):
+            cause = ex.payload
+            try:
+                cause_object = json.loads(cause)
+                error = cause_object["errorType"]
+            except Exception as ex:
+                LOG.warning(
+                    "Could not retrieve 'errorType' field from LambdaFunctionErrorException object: %s",
+                    ex,
+                )
+            error_name = CustomErrorName(error)
         else:
             error_name = StatesErrorName(StatesErrorNameType.StatesTaskFailed)
             cause = str(ex)

@@ -1,3 +1,5 @@
+import json
+import logging
 from typing import Final, Optional
 
 from botocore.exceptions import ClientError
@@ -21,6 +23,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
+
+LOG = logging.getLogger(__name__)
+
 
 _SUPPORTED_INTEGRATION_PATTERNS: Final[set[ResourceCondition]] = {
     ResourceCondition.WaitForTaskToken,
@@ -64,9 +69,17 @@ class StateTaskServiceLambda(StateTaskServiceCallback):
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         if isinstance(ex, lambda_eval_utils.LambdaFunctionErrorException):
-            error = "Exception"
-            error_name = CustomErrorName(error)
             cause = ex.payload
+            try:
+                cause_object = json.loads(cause)
+                error = cause_object["errorType"]
+            except Exception as ex:
+                LOG.warning(
+                    "Could not retrieve 'errorType' field from LambdaFunctionErrorException object: %s",
+                    ex,
+                )
+                error = "Exception"
+            error_name = CustomErrorName(error)
         elif isinstance(ex, ClientError):
             error, cause = self._error_cause_from_client_error(ex)
             error_name = CustomErrorName(error)
