@@ -4463,5 +4463,26 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_event_two": {
+    "recorded-date": "28-11-2024, 18:15:08",
+    "recorded-content": {
+      "invoke-result-one": {
+        "Payload": "",
+        "StatusCode": 202,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invoke-result-two": {
+        "Payload": "",
+        "StatusCode": 202,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      }
+    }
   }
 }

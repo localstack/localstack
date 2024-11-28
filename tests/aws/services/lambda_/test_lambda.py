@@ -1538,41 +1538,53 @@ class TestLambdaFeatures:
 
     @markers.aws.validated
     def test_invocation_type_event_two(
-        self, snapshot, aws_client, get_lambda_logs_event, create_lambda_function
+        self,
+        aws_client,
+        create_lambda_function,
+        s3_bucket,
     ):
         """Check invocation behavior for two event invokes in short succession.
         This test aims to reproduce an issue where a second invoke in short succession doesn't happen.
         """
+        results_bucket = s3_bucket
+        presigned_url = aws_client.s3.generate_presigned_url(
+            "put_object",
+            Params={"Bucket": results_bucket, "Key": "original"},
+        )
+
         function_name = f"test-function-{short_uid()}"
         create_lambda_function(
             func_name=function_name,
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            handler_file=os.path.join(THIS_FOLDER, "functions/lambda_s3_presigned.py"),
             runtime=Runtime.python3_12,
         )
-        # First invoke within short succession
-        result_one = aws_client.lambda_.invoke(
-            FunctionName=function_name,
-            Payload=b"{}",
-            InvocationType="Event",
-        )
-        # Trying different timing for single container allocation
-        # time.sleep(1)
-        # Second invoke within short succession
-        result_two = aws_client.lambda_.invoke(
-            FunctionName=function_name,
-            Payload=b"{}",
-            InvocationType="Event",
-        )
-        # Check that first invoke is scheduled properly
-        result_one = read_streams(result_one)
-        snapshot.match("invoke-result-one", result_one)
-        assert 202 == result_one["StatusCode"]
-        # Check that second invoke is scheduled properly
-        result_two = read_streams(result_two)
-        snapshot.match("invoke-result-two", result_two)
-        assert 202 == result_two["StatusCode"]
 
-        get_lambda_logs_event(function_name=function_name, expected_num_events=2, retries=20)
+        aws_client.lambda_.invoke(
+            FunctionName=function_name,
+            Payload=json.dumps({"url": presigned_url, "data": "SUCCESS"}),
+            InvocationType="Event",
+        )
+
+        def fetch_result(key: str = ""):
+            downloaded_object = aws_client.s3.get_object(Bucket=results_bucket, Key=key)
+            return downloaded_object["Body"]
+
+        retry(fetch_result, sleep=2, retries=10, key="original")
+
+        aws_client.lambda_.update_function_configuration(
+            FunctionName=function_name, Description="new description"
+        )
+
+        presigned_url_updated = aws_client.s3.generate_presigned_url(
+            "put_object",
+            Params={"Bucket": results_bucket, "Key": "updated"},
+        )
+        aws_client.lambda_.invoke(
+            FunctionName=function_name,
+            Payload=json.dumps({"url": presigned_url_updated, "data": "SUCCESS"}),
+            InvocationType="Event",
+        )
+        retry(fetch_result, sleep=2, retries=10, key="updated")
 
     @pytest.mark.parametrize(
         "invocation_type", [InvocationType.RequestResponse, InvocationType.Event]
