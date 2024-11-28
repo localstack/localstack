@@ -591,7 +591,7 @@ class TestEvents:
 
         snapshot.add_transformers_list(
             [
-                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("MD5OfBody", reference_replacement=False),
                 *snapshot.transform.sqs_api(),
             ]
         )
