@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/comments/test_comments.py::TestComments::test_comments_as_per_docs": {
-    "recorded-date": "09-02-2024, 11:23:55",
+    "recorded-date": "28-11-2024, 10:33:23",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -348,7 +348,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/comments/test_comments.py::TestComments::test_comment_in_parameters": {
-    "recorded-date": "09-02-2024, 12:06:30",
+    "recorded-date": "28-11-2024, 10:33:37",
     "recorded-content": {
       "get_execution_history": {
         "events": [

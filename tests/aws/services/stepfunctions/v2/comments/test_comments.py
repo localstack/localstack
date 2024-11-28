@@ -2,6 +2,7 @@ import json
 
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import create_and_record_execution
 from localstack.utils.strings import short_uid
@@ -13,7 +14,6 @@ from tests.aws.services.stepfunctions.templates.services.services_templates impo
 )
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestComments:
     @markers.aws.validated
     def test_comments_as_per_docs(
@@ -28,7 +28,7 @@ class TestComments:
         create_1_res = create_lambda_function(
             func_name=function_1_name,
             handler_file=ST.LAMBDA_ID_FUNCTION,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_1_name, "lambda_function_1_name"))
 
