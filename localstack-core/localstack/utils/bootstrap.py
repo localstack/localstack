@@ -1401,6 +1401,6 @@ def is_auth_token_configured() -> bool:
     return (
         True
         if os.environ.get("LOCALSTACK_AUTH_TOKEN", "").strip()
-           or os.environ.get("LOCALSTACK_API_KEY", "").strip()
+        or os.environ.get("LOCALSTACK_API_KEY", "").strip()
         else False
     )
