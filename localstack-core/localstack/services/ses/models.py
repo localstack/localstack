@@ -4,7 +4,7 @@ from localstack.aws.api.ses import Address, Destination, Subject, TemplateData, 
 
 
 class SentEmailBody(TypedDict):
-    html_part: str
+    html_part: str | None
     text_part: str
 
 
