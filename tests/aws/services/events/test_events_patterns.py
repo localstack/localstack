@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 from datetime import datetime
@@ -6,8 +7,8 @@ from typing import List, Tuple
 
 import json5
 import pytest
+from botocore.exceptions import ClientError
 
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 from tests.aws.services.events.helper_functions import (
@@ -20,40 +21,6 @@ COMPLEX_MULTI_KEY_EVENT_PATTERN = os.path.join(
     REQUEST_TEMPLATE_DIR, "complex_multi_key_event_pattern.json"
 )
 COMPLEX_MULTI_KEY_EVENT = os.path.join(REQUEST_TEMPLATE_DIR, "complex_multi_key_event.json")
-
-SKIP_LABELS = [
-    # TODO: fix failing exception tests (not yet implemented)
-    "arrays_empty_EXC",
-    "content_numeric_EXC",
-    "content_numeric_operatorcasing_EXC",
-    "content_numeric_syntax_EXC",
-    "content_wildcard_complex_EXC",
-    "int_nolist_EXC",
-    "operator_case_sensitive_EXC",
-    "string_nolist_EXC",
-    # TODO: fix failing tests for Python event rule engine
-    "complex_or",
-    "content_anything_but_ignorecase",
-    "content_anything_but_ignorecase_list",
-    "content_anything_suffix",
-    "content_exists_false",
-    "content_ignorecase",
-    "content_ignorecase_NEG",
-    "content_ip_address",
-    "content_numeric_and",
-    "content_prefix_ignorecase",
-    "content_suffix",
-    "content_suffix_ignorecase",
-    "content_wildcard_nonrepeating",
-    "content_wildcard_repeating",
-    "content_wildcard_simplified",
-    "dot_joining_event",
-    "dot_joining_pattern",
-    "exists_dynamodb_NEG",
-    "nested_json_NEG",
-    "or-exists",
-    "or-exists-parent",
-]
 
 
 def load_request_templates(directory_path: str) -> List[Tuple[dict, str]]:
@@ -91,27 +58,38 @@ class TestEventPattern:
         ids=[t[1] for t in request_template_tuples],
     )
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..MessageRaw"],  # AWS returns Java validation parts, we skip those
+    )
     def test_event_pattern(self, aws_client, snapshot, request_template, label):
         """This parametrized test handles three outcomes:
         a) MATCH (default): The EventPattern matches the Event yielding true as result.
         b) NO MATCH (_NEG suffix): The EventPattern does NOT match the Event yielding false as result.
         c) EXCEPTION (_EXC suffix): The EventPattern is invalid and raises an exception.
         """
-        if label in SKIP_LABELS and not is_aws_cloud():
-            pytest.skip("Not yet implemented")
+
+        def _transform_raw_exc_message(
+            boto_error: dict[str, dict[str, str]],
+        ) -> dict[str, dict[str, str]]:
+            if message := boto_error.get("Error", {}).get("Message"):
+                boto_error = copy.deepcopy(boto_error)
+                boto_error["Error"]["MessageRaw"] = message
+                boto_error["Error"]["Message"] = message.split("\n")[0]
+
+            return boto_error
 
         event = request_template["Event"]
         event_pattern = request_template["EventPattern"]
 
         if label.endswith("_EXC"):
-            with pytest.raises(Exception) as e:
+            with pytest.raises(ClientError) as e:
                 aws_client.events.test_event_pattern(
                     Event=json.dumps(event),
                     EventPattern=json.dumps(event_pattern),
                 )
             exception_info = {
                 "exception_type": type(e.value),
-                "exception_message": e.value.response,
+                "exception_message": _transform_raw_exc_message(e.value.response),
             }
             snapshot.match(label, exception_info)
         else:
