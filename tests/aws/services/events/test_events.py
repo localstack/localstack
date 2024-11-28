@@ -3,8 +3,10 @@ Test creating and modifying event buses, as well as putting events to custom and
 """
 
 import base64
+import datetime
 import json
 import os
+import re
 import time
 import uuid
 
@@ -577,6 +579,68 @@ class TestEvents:
         ).get("Messages", [])
 
         assert len(messages) == 0, "No messages should be delivered when queue doesn't exist"
+
+    @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="Test specific for v2 provider")
+    def test_put_events_with_time_field(
+        self, events_put_rule, create_sqs_events_target, aws_client, snapshot
+    ):
+        """Test that EventBridge correctly handles datetime serialization in events."""
+        rule_name = f"test-rule-{short_uid()}"
+        queue_url, queue_arn = create_sqs_events_target()
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                *snapshot.transform.sqs_api(),
+            ]
+        )
+
+        events_put_rule(
+            Name=rule_name,
+            EventPattern=json.dumps(
+                {"source": ["test-source"], "detail-type": ["test-detail-type"]}
+            ),
+        )
+
+        aws_client.events.put_targets(Rule=rule_name, Targets=[{"Id": "id1", "Arn": queue_arn}])
+
+        timestamp = datetime.datetime.utcnow()
+        event = {
+            "Source": "test-source",
+            "DetailType": "test-detail-type",
+            "Time": timestamp,
+            "Detail": json.dumps({"message": "test message"}),
+        }
+
+        response = aws_client.events.put_events(Entries=[event])
+        snapshot.match("put-events", response)
+
+        messages = sqs_collect_messages(aws_client, queue_url, expected_events_count=1)
+        assert len(messages) == 1
+        snapshot.match("sqs-messages", messages)
+
+        received_event = json.loads(messages[0]["Body"])
+        # Explicit assertions for time field format GH issue: https://github.com/localstack/localstack/issues/11630#issuecomment-2506187279
+        assert "time" in received_event, "Time field missing in the event"
+        time_str = received_event["time"]
+
+        # Verify ISO8601 format: YYYY-MM-DDThh:mm:ssZ
+        # Example: "2024-11-28T13:44:36Z"
+        assert re.match(
+            r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$", time_str
+        ), f"Time field '{time_str}' does not match ISO8601 format (YYYY-MM-DDThh:mm:ssZ)"
+
+        # Verify we can parse it back to datetime
+        datetime_obj = datetime.datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%SZ")
+        assert isinstance(
+            datetime_obj, datetime.datetime
+        ), f"Failed to parse time string '{time_str}' back to datetime object"
+
+        time_difference = abs((datetime_obj - timestamp.replace(microsecond=0)).total_seconds())
+        assert (
+            time_difference <= 60
+        ), f"Time in event '{time_str}' differs too much from sent time '{timestamp.isoformat()}'"
 
 
 class TestEventBus:

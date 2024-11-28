@@ -188,6 +188,9 @@
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_target_delivery_failure": {
     "last_validated_date": "2024-11-20T17:19:19+00:00"
   },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_time_field": {
+    "last_validated_date": "2024-11-28T19:58:10+00:00"
+  },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_without_source": {
     "last_validated_date": "2024-06-19T10:40:50+00:00"
   }
