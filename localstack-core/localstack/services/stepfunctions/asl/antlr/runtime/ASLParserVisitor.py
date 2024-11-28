@@ -154,6 +154,11 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#error_path_decl_context.
+    def visitError_path_decl_context(self, ctx:ASLParser.Error_path_decl_contextContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#error_path_decl_intrinsic.
     def visitError_path_decl_intrinsic(self, ctx:ASLParser.Error_path_decl_intrinsicContext):
         return self.visitChildren(ctx)
@@ -176,6 +181,11 @@ class ASLParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ASLParser#cause_path_decl_path.
     def visitCause_path_decl_path(self, ctx:ASLParser.Cause_path_decl_pathContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#cause_path_decl_context.
+    def visitCause_path_decl_context(self, ctx:ASLParser.Cause_path_decl_contextContext):
         return self.visitChildren(ctx)
 
 

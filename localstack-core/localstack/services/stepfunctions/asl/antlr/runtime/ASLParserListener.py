@@ -269,6 +269,15 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLParser#error_path_decl_context.
+    def enterError_path_decl_context(self, ctx:ASLParser.Error_path_decl_contextContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#error_path_decl_context.
+    def exitError_path_decl_context(self, ctx:ASLParser.Error_path_decl_contextContext):
+        pass
+
+
     # Enter a parse tree produced by ASLParser#error_path_decl_intrinsic.
     def enterError_path_decl_intrinsic(self, ctx:ASLParser.Error_path_decl_intrinsicContext):
         pass
@@ -311,6 +320,15 @@ class ASLParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by ASLParser#cause_path_decl_path.
     def exitCause_path_decl_path(self, ctx:ASLParser.Cause_path_decl_pathContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#cause_path_decl_context.
+    def enterCause_path_decl_context(self, ctx:ASLParser.Cause_path_decl_contextContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#cause_path_decl_context.
+    def exitCause_path_decl_context(self, ctx:ASLParser.Cause_path_decl_contextContext):
         pass
 
 
