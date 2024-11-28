@@ -330,7 +330,7 @@ class EventPatternValidator:
 
         return _inner(event_pattern)
 
-    def _validate_rule(self, rule: t.Any) -> None:
+    def _validate_rule(self, rule: t.Any, from_: str | None = None) -> None:
         match rule:
             case None | str() | bool():
                 return
@@ -369,10 +369,17 @@ class EventPatternValidator:
                     return
 
                 elif operator == "equals-ignore-case":
-                    if not isinstance(value, (str, list)):
+                    print(f"{operator=} / {from_=} / {value=}")
+                    if from_ == "anything-but":
+                        if (not isinstance(value, (str, list))) or (
+                            isinstance(value, list) and not all(isinstance(v, str) for v in value)
+                        ):
+                            raise InvalidEventPatternException(
+                                f"{self.error_prefix}Inside {from_}/{operator} list, number|start|null|boolean is not supported."
+                            )
+                    elif not isinstance(value, str):
                         raise InvalidEventPatternException(
-                            # TODO: validate
-                            f"{self.error_prefix}{operator} match pattern must be a string or an array???"
+                            f"{self.error_prefix}{operator} match pattern must be a string"
                         )
                     return
 
@@ -392,7 +399,7 @@ class EventPatternValidator:
                                     f"{self.error_prefix}Unsupported anything-but pattern: {inner_operator}"
                                 )
 
-                    self._validate_rule(value)
+                    self._validate_rule(value, from_="anything-but")
                     return
 
                 elif operator == "exists":
@@ -409,8 +416,9 @@ class EventPatternValidator:
                     try:
                         ipaddress.IPv4Network(value)
                     except ValueError:
-                        # TODO: validate
-                        raise InvalidEventPatternException(f"{self.error_prefix}?????")
+                        raise InvalidEventPatternException(
+                            f"{self.error_prefix}Malformed CIDR, one '/' required"
+                        )
                 elif operator == "wildcard":
                     self._validate_wildcard(value)
 
@@ -490,8 +498,9 @@ class EventPatternValidator:
         # https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-create-pattern-operators.html#eb-filtering-wildcard-matching-complexity
         # > calculate complexity of repeating character sequences that occur after a wildcard character
         if "**" in value:
-            # TODO: validate
-            raise InvalidEventPatternException(f"{self.error_prefix}Consecutive are supported!!!!!")
+            raise InvalidEventPatternException(
+                f"{self.error_prefix}Consecutive wildcard characters at pos {value.index('**') + 1}"
+            )
 
         if value.count("*") > 5:
             raise InvalidEventPatternException(
