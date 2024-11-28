@@ -315,7 +315,7 @@ comparison_variable_stmt:
     | comment_decl
 ;
 
-comparison_composite_stmt: comparison_composite | next_decl | assign_decl;
+comparison_composite_stmt: comparison_composite | next_decl | assign_decl | comment_decl;
 
 comparison_composite
     // TODO: this allows for Next definitions in nested choice_rules, is this supported at parse time?
