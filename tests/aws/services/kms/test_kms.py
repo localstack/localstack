@@ -9,8 +9,8 @@ from random import getrandbits
 import pytest
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from cryptography.hazmat.primitives import hashes, hmac, serialization
-from cryptography.hazmat.primitives.asymmetric import ec, padding
+from cryptography.hazmat.primitives import hashes, hmac, keywrap, serialization
+from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack.services.kms.models import IV_LEN, Ciphertext, _serialize_ciphertext_blob
@@ -789,6 +789,88 @@ class TestKMS:
         )
         assert verify_data["SignatureValid"]
 
+        aws_client.kms.delete_imported_key_material(KeyId=key_id)
+        describe_key_after_deleted_import = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-after-deleted-import", describe_key_after_deleted_import)
+
+    @markers.aws.unknown
+    def test_import_key_asymmetric_wrapped(self, kms_create_key, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("Description"))
+
+        # Generate a customer RSA-2048 keypair to import into KMS.
+        crypto_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        raw_private_key = crypto_key.private_bytes(
+            serialization.Encoding.DER,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+        raw_public_key = crypto_key.public_key().public_bytes(
+            serialization.Encoding.DER,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+
+        # Start import flow.
+        key = kms_create_key(Origin="EXTERNAL", KeySpec="RSA_2048", KeyUsage="SIGN_VERIFY")
+        snapshot.match("created-key", key)
+        key_id = key["KeyId"]
+
+        # Get import parameters.
+        params = aws_client.kms.get_parameters_for_import(
+            KeyId=key_id, WrappingAlgorithm="RSA_AES_KEY_WRAP_SHA_256", WrappingKeySpec="RSA_4096"
+        )
+        describe_key_before_import = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-before-import", describe_key_before_import)
+
+        # Generate an AES-256 ephemeral key, and encrypt the customer private key
+        # above with it.
+        aes256_key = os.urandom(32)
+        encrypted_crypto_key = keywrap.aes_key_wrap_with_padding(aes256_key, raw_private_key)
+
+        # Encrypt the ephemeral AES-256 key with the public key we got from KMS.
+        public_key = load_der_public_key(params["PublicKey"])
+        encrypted_aes256_key = public_key.encrypt(
+            aes256_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None
+            ),
+        )
+
+        # Concatenate the encrypted ephemeral AES-256 key plus the encrypted
+        # customer private key.
+        encrypted_key = encrypted_aes256_key + encrypted_crypto_key
+
+        # Import the key into KMS.
+        aws_client.kms.import_key_material(
+            KeyId=key_id,
+            ImportToken=params["ImportToken"],
+            EncryptedKeyMaterial=encrypted_key,
+            ExpirationModel="KEY_MATERIAL_DOES_NOT_EXPIRE",
+        )
+        describe_key_after_import = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-after-import", describe_key_after_import)
+
+        # Check whether public key is derived correctly.
+        get_public_key_after_import = aws_client.kms.get_public_key(KeyId=key_id)
+        assert get_public_key_after_import["PublicKey"] == raw_public_key
+
+        # Do a sign/verify cycle.
+        plaintext = b"Hello world, test content 123 !#"
+        signed_data = aws_client.kms.sign(
+            Message=plaintext,
+            MessageType="RAW",
+            SigningAlgorithm="RSASSA_PKCS1_V1_5_SHA_256",
+            KeyId=key_id,
+        )
+        verify_data = aws_client.kms.verify(
+            Message=plaintext,
+            Signature=signed_data["Signature"],
+            MessageType="RAW",
+            SigningAlgorithm="RSASSA_PKCS1_V1_5_SHA_256",
+            KeyId=key_id,
+        )
+        assert verify_data["SignatureValid"]
+
+        # Delete the imported key material.
         aws_client.kms.delete_imported_key_material(KeyId=key_id)
         describe_key_after_deleted_import = aws_client.kms.describe_key(KeyId=key_id)
         snapshot.match("describe-key-after-deleted-import", describe_key_after_deleted_import)
