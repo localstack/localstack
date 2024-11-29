@@ -1178,6 +1178,32 @@ class TestSNSFilterPolicyBody:
             recv_messages.sort(key=itemgetter("Body"))
             snapshot.match("messages-queue", {"Messages": recv_messages})
 
+    @markers.aws.validated
+    def test_filter_policy_empty_array_payload(self):
+        pass
+
+        # {
+        #   "Event": {
+        #     "version": "0",
+        #     "id": "3e3c153a-8339-4e30-8c35-687ebef853fe",
+        #     "detail-type": "EC2 Instance Launch Successful",
+        #     "source": "aws.autoscaling",
+        #     "account": "123456789012",
+        #     "time": "2015-11-11T21:31:47Z",
+        #     "region": "us-east-1",
+        #     "resources": [],
+        #     "detail": {
+        #       "eventVersion": "",
+        #       "responseElements": null
+        #     }
+        #   },
+        #   "EventPattern": {
+        #     "detail": {
+        #       "eventVersion": [""]
+        #     }
+        #   }
+        # }
+
 
 class TestSNSFilterPolicyConditions:
     @staticmethod

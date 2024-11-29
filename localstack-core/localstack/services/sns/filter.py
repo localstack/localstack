@@ -218,8 +218,8 @@ class SubscriptionFilter:
         Input:
         `{"field1": {
             "field2: [
-                {"field3: "val1", "field4": "val2"},
-                {"field3: "val3", "field4": "val4"},
+                {"field3": "val1", "field4": "val2"},
+                {"field3": "val3", "field4": "val4"}
             }
         ]}`
         Output:
@@ -231,7 +231,7 @@ class SubscriptionFilter:
             {
                 "field1.field2.field3": "val3",
                 "field1.field2.field4": "val4"
-            },
+            }
         ]`
         :param nested_dict: a (nested) dictionary
         :return: flatten_dict: a dictionary with no nested dict inside, flattened to a single level
@@ -245,6 +245,8 @@ class SubscriptionFilter:
                     array = _traverse(values, array, _parent_key)
 
             elif isinstance(_object, list):
+                if not _object:
+                    return array
                 array = [i for value in _object for i in _traverse(value, array, parent_key)]
             else:
                 array = [{**item, parent_key: _object} for item in array]
