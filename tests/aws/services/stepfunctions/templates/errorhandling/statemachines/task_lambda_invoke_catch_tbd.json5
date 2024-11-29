@@ -1,0 +1,24 @@
+{
+  "StartAt": "InvokeLambda",
+  "States": {
+    "InvokeLambda": {
+      "Type": "Task",
+      "Resource": "_tbd_",
+      "Next": "ProcessResult",
+      "Catch": [
+        {
+          "ErrorEquals": [],
+          "Next": "ErrorMatched"
+        }
+      ]
+    },
+    "ProcessResult": {
+      "Type": "Pass",
+      "End": true
+    },
+    "ErrorMatched": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}
