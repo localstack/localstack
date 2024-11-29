@@ -158,7 +158,7 @@ components:
           additionalProperties: false
           properties:
             html_part:
-              type: string
+              type: [string, 'null']
             text_part:
               type: string
           required:
