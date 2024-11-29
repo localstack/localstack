@@ -213,11 +213,10 @@ class SSMParameterProvider(ResourceProvider[SSMParameterProperties]):
         request: ResourceRequest[SSMParameterProperties],
     ) -> ProgressEvent[SSMParameterProperties]:
         resources = request.aws_client_factory.ssm.describe_parameters()
-        discoverable_properties = ["Name"]
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_models=[
-                SSMParameterProperties(**util.select_attributes(resource, discoverable_properties))
+                SSMParameterProperties(Name=resource["Name"])
                 for resource in resources["Parameters"]
             ],
         )
