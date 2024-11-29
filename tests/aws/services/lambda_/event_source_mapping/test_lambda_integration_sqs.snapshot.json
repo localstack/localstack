@@ -2033,7 +2033,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batching_reserved_concurrency": {
-    "recorded-date": "26-11-2024, 08:29:04",
+    "recorded-date": "29-11-2024, 13:29:56",
     "recorded-content": {
       "put_concurrency_resp": {
         "ReservedConcurrentExecutions": 2,
@@ -2061,7 +2061,9 @@
           "HTTPStatusCode": 202
         }
       },
-      "total_batches_received": 2,
+      "batch_info": {
+        "total_batches_received": 2
+      },
       "Records": [
         {
           "messageId": "<uuid:2>",
