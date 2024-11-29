@@ -28,7 +28,6 @@ PHYSICAL_RESOURCE_ID_SPECIAL_CASES = {
     "AWS::Events::EventBus": "/properties/Name",
     "AWS::Logs::LogStream": "/properties/LogStreamName",
     "AWS::Logs::SubscriptionFilter": "/properties/LogGroupName",
-    "AWS::SSM::Parameter": "/properties/Name",
     "AWS::RDS::DBProxyTargetGroup": "/properties/TargetGroupName",
     "AWS::Glue::SchemaVersionMetadata": "</properties/SchemaVersionId>|</properties/Key>|</properties/Value>",  # composite
     "AWS::WAFv2::WebACL": "</properties/Name>|</properties/Id>|</properties/Scope>",

@@ -19,7 +19,6 @@ class SSMParameterProperties(TypedDict):
     AllowedPattern: Optional[str]
     DataType: Optional[str]
     Description: Optional[str]
-    Id: Optional[str]
     Name: Optional[str]
     Policies: Optional[str]
     Tags: Optional[dict]
@@ -41,19 +40,21 @@ class SSMParameterProvider(ResourceProvider[SSMParameterProperties]):
         Create a new resource.
 
         Primary identifier fields:
-          - /properties/Id
+          - /properties/Name
 
         Required properties:
-          - Type
           - Value
+          - Type
 
         Create-only properties:
           - /properties/Name
 
-        Read-only properties:
-          - /properties/Id
 
 
+        IAM permissions required:
+          - ssm:PutParameter
+          - ssm:AddTagsToResource
+          - ssm:GetParameters
 
         """
         model = request.desired_state
@@ -96,7 +97,8 @@ class SSMParameterProvider(ResourceProvider[SSMParameterProperties]):
         """
         Fetch resource information
 
-
+        IAM permissions required:
+          - ssm:GetParameters
         """
         ssm = request.aws_client_factory.ssm
         parameter_name = request.desired_state.get("Name")
@@ -124,7 +126,8 @@ class SSMParameterProvider(ResourceProvider[SSMParameterProperties]):
         """
         Delete a resource
 
-
+        IAM permissions required:
+          - ssm:DeleteParameter
         """
         model = request.desired_state
         ssm = request.aws_client_factory.ssm
@@ -144,7 +147,11 @@ class SSMParameterProvider(ResourceProvider[SSMParameterProperties]):
         """
         Update a resource
 
-
+        IAM permissions required:
+          - ssm:PutParameter
+          - ssm:AddTagsToResource
+          - ssm:RemoveTagsFromResource
+          - ssm:GetParameters
         """
         model = request.desired_state
         ssm = request.aws_client_factory.ssm
