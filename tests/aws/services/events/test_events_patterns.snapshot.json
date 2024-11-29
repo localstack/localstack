@@ -692,5 +692,65 @@
         "exception_type": "<class 'botocore.errorfactory.InvalidEventPatternException'>"
       }
     }
+  },
+  "tests/aws/services/events/test_events_patterns.py::TestEventPattern::test_invalid_json_event_pattern[this is valid json but not a dict]": {
+    "recorded-date": "29-11-2024, 00:19:32",
+    "recorded-content": {
+      "invalid-pattern": {
+        "Error": {
+          "Code": "InvalidEventPatternException",
+          "Message": "Event pattern is not valid. Reason: Unrecognized token 'this': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')\n at [Source: (String)\"this is valid json but not a dict\"; line: 1, column: 5]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_patterns.py::TestEventPattern::test_invalid_json_event_pattern[{'bad': 'quotation'}]": {
+    "recorded-date": "29-11-2024, 00:19:32",
+    "recorded-content": {
+      "invalid-pattern": {
+        "Error": {
+          "Code": "InvalidEventPatternException",
+          "Message": "Event pattern is not valid. Reason: Unexpected character (''' (code 39)): was expecting double-quote to start field name\n at [Source: (String)\"{'bad': 'quotation'}\"; line: 1, column: 2]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_patterns.py::TestEventPattern::test_invalid_json_event_pattern[{\"not\": closed mark\"]": {
+    "recorded-date": "29-11-2024, 00:19:33",
+    "recorded-content": {
+      "invalid-pattern": {
+        "Error": {
+          "Code": "InvalidEventPatternException",
+          "Message": "Event pattern is not valid. Reason: Unrecognized token 'closed': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')\n at [Source: (String)\"{\"not\": closed mark\"\"; line: 1, column: 15]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_patterns.py::TestEventPattern::test_invalid_json_event_pattern[[\"not\", \"a\", \"dict\", \"but valid json\"]]": {
+    "recorded-date": "29-11-2024, 00:19:33",
+    "recorded-content": {
+      "invalid-pattern": {
+        "Error": {
+          "Code": "InvalidEventPatternException",
+          "Message": "Event pattern is not valid. Reason: Filter is not an object\n at [Source: (String)\"[\"not\", \"a\", \"dict\", \"but valid json\"]\"; line: 1, column: 2]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

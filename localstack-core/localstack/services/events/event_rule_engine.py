@@ -7,15 +7,17 @@ from localstack.aws.api.events import InvalidEventPatternException
 
 
 class EventRuleEngine:
-    def evaluate_pattern_on_event(self, event_pattern: dict, message_body: str):
-        try:
-            body = json.loads(message_body)
-            if not isinstance(body, dict):
+    def evaluate_pattern_on_event(self, event_pattern: dict, message_body: str | dict):
+        if isinstance(message_body, str):
+            try:
+                body = json.loads(message_body)
+                if not isinstance(body, dict):
+                    return False
+            except json.JSONDecodeError:
+                # Event pattern for the message body assume that the message payload is a well-formed JSON object.
                 return False
-        except json.JSONDecodeError:
-            # Filter policies for the message body assume that the message payload is a well-formed JSON object.
-            # See https://docs.aws.amazon.com/sns/latest/dg/sns-message-filtering.html
-            return False
+        else:
+            body = message_body
 
         return self._evaluate_nested_event_pattern_on_dict(event_pattern, payload=body)
 
@@ -246,11 +248,17 @@ class EventPatternValidator:
     def __init__(self):
         self.error_prefix = "Event pattern is not valid. Reason: "
 
-    def validate_event_pattern(self, event_pattern: str) -> dict[str, t.Any]:
-        try:
-            event_pattern = json.loads(event_pattern)
-        except json.JSONDecodeError:
-            raise InvalidEventPatternException()
+    def validate_event_pattern(self, event_pattern: str | dict) -> dict[str, t.Any]:
+        if isinstance(event_pattern, str):
+            try:
+                event_pattern = json.loads(event_pattern)
+                if not isinstance(event_pattern, dict):
+                    raise InvalidEventPatternException(
+                        f"{self.error_prefix}Filter is not an object"
+                    )
+            except json.JSONDecodeError:
+                # this error message is not in parity, as it is tightly coupled to AWS parsing engine
+                raise InvalidEventPatternException(f"{self.error_prefix}Filter is not valid JSON")
 
         aggregated_rules, combinations = self.aggregate_rules(event_pattern)
 

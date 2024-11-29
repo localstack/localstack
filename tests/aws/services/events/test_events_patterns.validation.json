@@ -260,6 +260,18 @@
   "tests/aws/services/events/test_events_patterns.py::TestEventPattern::test_event_pattern_with_multi_key": {
     "last_validated_date": "2024-07-11T13:55:38+00:00"
   },
+  "tests/aws/services/events/test_events_patterns.py::TestEventPattern::test_invalid_json_event_pattern[[\"not\", \"a\", \"dict\", \"but valid json\"]]": {
+    "last_validated_date": "2024-11-29T00:19:33+00:00"
+  },
+  "tests/aws/services/events/test_events_patterns.py::TestEventPattern::test_invalid_json_event_pattern[this is valid json but not a dict]": {
+    "last_validated_date": "2024-11-29T00:19:32+00:00"
+  },
+  "tests/aws/services/events/test_events_patterns.py::TestEventPattern::test_invalid_json_event_pattern[{\"not\": closed mark\"]": {
+    "last_validated_date": "2024-11-29T00:19:33+00:00"
+  },
+  "tests/aws/services/events/test_events_patterns.py::TestEventPattern::test_invalid_json_event_pattern[{'bad': 'quotation'}]": {
+    "last_validated_date": "2024-11-29T00:19:32+00:00"
+  },
   "tests/aws/services/events/test_events_patterns.py::TestRuleWithPattern::test_put_event_with_content_base_rule_in_pattern": {
     "last_validated_date": "2024-07-11T14:14:42+00:00"
   },

@@ -98,7 +98,8 @@ class TestEventPattern:
                 EventPattern=json.dumps(event_pattern),
             )
 
-            # Validate the test intention: The _NEG suffix indicates negative tests (i.e., a pattern not matching the event)
+            # Validate the test intention: The _NEG suffix indicates negative tests
+            # (i.e., a pattern not matching the event)
             if label.endswith("_NEG"):
                 assert not response["Result"]
             else:
@@ -186,6 +187,31 @@ class TestEventPattern:
             ),
         )
         snapshot.match("eventbridge-test-event-pattern-response-no-match", response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "pattern",
+        [
+            "this is valid json but not a dict",
+            "{'bad': 'quotation'}",
+            '{"not": closed mark"',
+            '["not", "a", "dict", "but valid json"]',
+        ],
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        # we cannot really validate the message, it is strongly coupled to AWS parsing engine
+        paths=["$..Error.Message"],
+    )
+    def test_invalid_json_event_pattern(self, aws_client, pattern, snapshot):
+        event = '{"id": "1", "source": "test-source", "detail-type": "test-detail-type", "account": "123456789012", "region": "us-east-2", "time": "2022-07-13T13:48:01Z", "detail": {"test": "test"}}'
+        # TODO: devise better testing strategy for * because the wildcard matches everything and "\\*" does not match.
+
+        with pytest.raises(ClientError) as e:
+            aws_client.events.test_event_pattern(
+                Event=event,
+                EventPattern=pattern,
+            )
+        snapshot.match("invalid-pattern", e.value.response)
 
 
 class TestRuleWithPattern:

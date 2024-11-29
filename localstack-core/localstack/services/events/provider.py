@@ -117,7 +117,6 @@ from localstack.aws.api.events import Rule as ApiTypeRule
 from localstack.aws.connect import connect_to
 from localstack.services.events.archive import ArchiveService, ArchiveServiceDict
 from localstack.services.events.event_bus import EventBusService, EventBusServiceDict
-from localstack.services.events.event_rule_engine import EventPatternValidator, EventRuleEngine
 from localstack.services.events.models import (
     Archive,
     ArchiveDict,
@@ -152,11 +151,11 @@ from localstack.services.events.utils import (
     get_trace_header_encoded_region_account,
     is_archive_arn,
     recursive_remove_none_values_from_dict,
-    to_json_str,
 )
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.arns import get_partition, parse_arn
 from localstack.utils.common import truncate
+from localstack.utils.event_matcher import matches_event
 from localstack.utils.strings import long_uid, short_uid
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 
@@ -215,8 +214,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self._target_sender_store: TargetSenderDict = {}
         self._archive_service_store: ArchiveServiceDict = {}
         self._replay_service_store: ReplayServiceDict = {}
-        self._event_rule_engine = EventRuleEngine()
-        self._event_rule_validator = EventPatternValidator()
 
     def on_before_start(self):
         JobScheduler.start()
@@ -1210,11 +1207,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         """Test event pattern uses EventBridge event pattern matching:
         https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html
         """
-        event_pattern_dict = self._event_rule_validator.validate_event_pattern(
-            event_pattern=event_pattern
-        )
-        result = self._event_rule_engine.evaluate_pattern_on_event(event_pattern_dict, event)
-
+        result = matches_event(event_pattern, event)
         return TestEventPatternResponse(Result=result)
 
     #########
@@ -2135,12 +2128,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> None:
         """Process rules for an event. Note that we no longer handle entries here as AWS returns success regardless of target failures."""
         event_pattern = rule.event_pattern
-        event_str = to_json_str(event_formatted)
 
-        event_pattern_dict = self._event_rule_validator.validate_event_pattern(
-            event_pattern=event_pattern
-        )
-        if self._event_rule_engine.evaluate_pattern_on_event(event_pattern_dict, event_str):
+        if matches_event(event_pattern, event_formatted):
             if not rule.targets:
                 LOG.info(
                     json.dumps(
