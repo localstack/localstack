@@ -919,7 +919,7 @@ class EventSource(TypedDict, total=False):
 
 
 EventSourceList = List[EventSource]
-EventTime = datetime
+EventTime = datetime | str
 HeaderParametersMap = Dict[HeaderKey, HeaderValue]
 QueryStringParametersMap = Dict[QueryStringKey, QueryStringValue]
 PathParameterList = List[PathParameter]

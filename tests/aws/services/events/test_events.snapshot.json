@@ -2695,5 +2695,42 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_time_field": {
+    "recorded-date": "28-11-2024, 21:25:00",
+    "recorded-content": {
+      "put-events": {
+        "Entries": [
+          {
+            "EventId": "<uuid:1>"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "sqs-messages": [
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:1>",
+            "detail-type": "test-detail-type",
+            "source": "test-source",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "message": "test message"
+            }
+          }
+        }
+      ]
+    }
   }
 }
