@@ -21,8 +21,6 @@ class PipeStateReasonValues(PipeStateReason):
     # TODO: add others (e.g., failure)
 
 
-POLL_INTERVAL_SEC: float = 1
-
 LOG = logging.getLogger(__name__)
 
 
