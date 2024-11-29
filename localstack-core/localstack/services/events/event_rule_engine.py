@@ -66,15 +66,24 @@ class EventRuleEngine:
             return must_exist == field_exists
         elif anything_but := condition.get("anything-but"):
             if isinstance(anything_but, dict):
-                if not_prefix := anything_but.get("prefix"):
-                    return not value.startswith(not_prefix)
-                elif not_suffix := anything_but.get("suffix"):
-                    return not value.endswith(not_suffix)
-                elif not_equal_ignore_case := anything_but.get("equals-ignore-case"):
-                    if isinstance(not_equal_ignore_case, str):
-                        return not_equal_ignore_case.lower() != value.lower()
-                    elif isinstance(not_equal_ignore_case, list):
-                        return all(value.lower() != v.lower() for v in not_equal_ignore_case)
+                if not_condition := anything_but.get("prefix"):
+                    predicate = self._evaluate_prefix
+                elif not_condition := anything_but.get("suffix"):
+                    predicate = self._evaluate_suffix
+                elif not_condition := anything_but.get("equals-ignore-case"):
+                    predicate = self._evaluate_equal_ignore_case
+                elif not_condition := anything_but.get("wildcard"):
+                    predicate = self._evaluate_wildcard
+                else:
+                    # this should not happen as we validate the EventPattern before
+                    return False
+
+                if isinstance(not_condition, str):
+                    return not predicate(not_condition, value)
+                elif isinstance(not_condition, list):
+                    return all(
+                        not predicate(sub_condition, value) for sub_condition in not_condition
+                    )
 
             elif isinstance(anything_but, list):
                 return value not in anything_but
@@ -87,19 +96,19 @@ class EventRuleEngine:
         elif prefix := condition.get("prefix"):
             if isinstance(prefix, dict):
                 if prefix_equal_ignore_case := prefix.get("equals-ignore-case"):
-                    return value.lower().startswith(prefix_equal_ignore_case.lower())
-
-            return value.startswith(prefix)
+                    return self._evaluate_prefix(prefix_equal_ignore_case.lower(), value.lower())
+            else:
+                return self._evaluate_prefix(prefix, value)
 
         elif suffix := condition.get("suffix"):
             if isinstance(suffix, dict):
                 if suffix_equal_ignore_case := suffix.get("equals-ignore-case"):
-                    return value.lower().endswith(suffix_equal_ignore_case.lower())
-
-            return value.endswith(suffix)
+                    return self._evaluate_suffix(suffix_equal_ignore_case.lower(), value.lower())
+            else:
+                return self._evaluate_suffix(suffix, value)
 
         elif equal_ignore_case := condition.get("equals-ignore-case"):
-            return equal_ignore_case.lower() == value.lower()
+            return self._evaluate_equal_ignore_case(equal_ignore_case, value)
         elif numeric_condition := condition.get("numeric"):
             return self._evaluate_numeric_condition(numeric_condition, value)
 
@@ -108,12 +117,28 @@ class EventRuleEngine:
             return value in ips
 
         elif wildcard := condition.get("wildcard"):
-            return re.match(re.escape(wildcard).replace("\\*", ".+") + "$", value)
+            return self._evaluate_wildcard(wildcard, value)
 
         return False
 
     @staticmethod
-    def _evaluate_numeric_condition(conditions, value):
+    def _evaluate_prefix(condition: str | list, value: str) -> bool:
+        return value.startswith(condition)
+
+    @staticmethod
+    def _evaluate_suffix(condition: str | list, value: str) -> bool:
+        return value.endswith(condition)
+
+    @staticmethod
+    def _evaluate_equal_ignore_case(condition: str, value: str) -> bool:
+        return condition.lower() == value.lower()
+
+    @staticmethod
+    def _evaluate_wildcard(condition: str, value: str) -> bool:
+        return re.match(re.escape(condition).replace("\\*", ".+") + "$", value)
+
+    @staticmethod
+    def _evaluate_numeric_condition(conditions, value) -> bool:
         try:
             # try if the value is numeric
             value = float(value)
@@ -362,7 +387,18 @@ class EventPatternValidator:
                     "prefix",
                     "suffix",
                 ):
-                    if isinstance(value, dict):
+                    if from_ == "anything-but":
+                        if isinstance(value, dict):
+                            raise InvalidEventPatternException(
+                                f"{self.error_prefix}Value of {from_} must be an array or single string/number value."
+                            )
+
+                        if not self._is_str_or_list_of_str(value):
+                            raise InvalidEventPatternException(
+                                f"{self.error_prefix}prefix/suffix match pattern must be a string"
+                            )
+
+                    elif isinstance(value, dict):
                         for inner_operator in value.keys():
                             if inner_operator != "equals-ignore-case":
                                 raise InvalidEventPatternException(
@@ -377,9 +413,7 @@ class EventPatternValidator:
 
                 elif operator == "equals-ignore-case":
                     if from_ == "anything-but":
-                        if (not isinstance(value, (str, list))) or (
-                            isinstance(value, list) and not all(isinstance(v, str) for v in value)
-                        ):
+                        if not self._is_str_or_list_of_str(value):
                             raise InvalidEventPatternException(
                                 f"{self.error_prefix}Inside {from_}/{operator} list, number|start|null|boolean is not supported."
                             )
@@ -400,7 +434,12 @@ class EventPatternValidator:
                     # or have a nested `prefix`, `suffix` or `equals-ignore-case` pattern
                     elif isinstance(value, dict):
                         for inner_operator in value.keys():
-                            if inner_operator not in ("prefix", "equals-ignore-case", "suffix"):
+                            if inner_operator not in (
+                                "prefix",
+                                "equals-ignore-case",
+                                "suffix",
+                                "wildcard",
+                            ):
                                 raise InvalidEventPatternException(
                                     f"{self.error_prefix}Unsupported anything-but pattern: {inner_operator}"
                                 )
@@ -426,7 +465,11 @@ class EventPatternValidator:
                             f"{self.error_prefix}Malformed CIDR, one '/' required"
                         )
                 elif operator == "wildcard":
-                    self._validate_wildcard(value)
+                    if from_ == "anything-but" and isinstance(value, list):
+                        for v in value:
+                            self._validate_wildcard(v)
+                    else:
+                        self._validate_wildcard(value)
 
                 else:
                     raise InvalidEventPatternException(
@@ -512,3 +555,12 @@ class EventPatternValidator:
             raise InvalidEventPatternException(
                 f"{self.error_prefix}Rule is too complex - try using fewer wildcard characters or fewer repeating character sequences after a wildcard character"
             )
+
+    @staticmethod
+    def _is_str_or_list_of_str(value: t.Any) -> bool:
+        if not isinstance(value, (str, list)):
+            return False
+        if isinstance(value, list) and not all(isinstance(v, str) for v in value):
+            return False
+
+        return True
