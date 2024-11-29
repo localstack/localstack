@@ -64,9 +64,6 @@ class EventRuleEngine:
             # if must_exists is True then field_exists must be True
             # if must_exists is False then fields_exists must be False
             return must_exist == field_exists
-        elif value is None:
-            # the remaining conditions require the value to not be None
-            return False
         elif anything_but := condition.get("anything-but"):
             if isinstance(anything_but, dict):
                 if not_prefix := anything_but.get("prefix"):
@@ -84,6 +81,9 @@ class EventRuleEngine:
             else:
                 return value != anything_but
 
+        elif value is None:
+            # the remaining conditions require the value to not be None
+            return False
         elif prefix := condition.get("prefix"):
             if isinstance(prefix, dict):
                 if prefix_equal_ignore_case := prefix.get("equals-ignore-case"):
@@ -226,7 +226,6 @@ class EventRuleEngine:
         """
 
         def _traverse(_object: dict, array=None, parent_key=None) -> list:
-            print(f"{_object=}: {array=}")
             if isinstance(_object, dict):
                 for key, values in _object.items():
                     # We update the parent key do that {"key1": {"key2": ""}} becomes "key1.key2"
@@ -377,7 +376,6 @@ class EventPatternValidator:
                     return
 
                 elif operator == "equals-ignore-case":
-                    print(f"{operator=} / {from_=} / {value=}")
                     if from_ == "anything-but":
                         if (not isinstance(value, (str, list))) or (
                             isinstance(value, list) and not all(isinstance(v, str) for v in value)
