@@ -37,6 +37,9 @@ class UsageMetricsStaticAnalyser(StaticAnalyser):
         self.has_variable_sampling = False
 
     def visitQuery_language_decl(self, ctx: ASLParser.Query_language_declContext):
+        if self.has_jsonata:
+            return
+
         query_language_mode_int = ctx.children[-1].getSymbol().type
         query_language_mode = QueryLanguageMode(value=query_language_mode_int)
         if query_language_mode == QueryLanguageMode.JSONata:
