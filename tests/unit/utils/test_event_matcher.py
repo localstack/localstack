@@ -69,9 +69,19 @@ def test_matches_event_non_matching_pattern():
     assert not matches_event(non_matching_pattern, EVENT_DICT)
 
 
-def test_matches_event_invalid_json():
+@pytest.mark.parametrize("engine", ("python", "java"))
+def test_matches_event_invalid_json(event_rule_engine, engine):
     """Test with invalid JSON strings"""
-    with pytest.raises(InvalidEventPatternException):
+    event_rule_engine(engine)
+
+    if engine == "java":
+        # this lets the exception bubble up to the provider, when AWS returns a proper exception, it should be fixed
+        exception_type = json.JSONDecodeError
+        pytest.skip("jpype conflict")
+    else:
+        exception_type = InvalidEventPatternException
+
+    with pytest.raises(exception_type):
         matches_event("{invalid-json}", EVENT_STR)
 
 
