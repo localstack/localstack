@@ -65,7 +65,7 @@ class SqsPoller(Poller):
     def close(self) -> None:
         self._shutdown_event.set()
 
-    def collect_messages(self, max_batch_size=10, max_batch_window=0.5, **kwargs) -> list[dict]:
+    def collect_messages(self, max_batch_size=10, max_batch_window=0, **kwargs) -> list[dict]:
         # The number of ReceiveMessage requests we expect to be made in order to fill up the max_batch_size.
         _total_expected_requests = (
             max_batch_size + DEFAULT_MAX_RECEIVE_COUNT - 1
@@ -101,7 +101,7 @@ class SqsPoller(Poller):
             except Exception as e:
                 # If an exception is raised here, break the loop and return whatever
                 # has been collected early.
-                # TODO: Handle exceptions differently i.e QueueNotExist or ConenctionFailed should retry with backoff
+                # TODO: Handle exceptions differently i.e QueueNotExist or ConnectionFailed should retry with backoff
                 LOG.warning(
                     "Polling SQS queue failed: %s",
                     e,
@@ -113,11 +113,13 @@ class SqsPoller(Poller):
                 batch.extend(messages)
 
             time_elapsed = time.monotonic() - start_collection_t
-            if time_elapsed >= max_batch_window or len(batch) == max_batch_size:
+            if time_elapsed >= max_batch_window or len(batch) >= max_batch_size:
                 return batch
 
-            # Simple adaptive interval technique: randomly backoff between last request duration
+            # Simple adaptive interval technique to randomly backoff between last request duration
             # and max allowed time per request.
+            # Note: This approach assumes that a larger batching window means a user is content
+            # with waiting longer for a batch response.
             adaptive_wait_time = random.uniform(request_duration, _maximum_duration_per_request)
             self._shutdown_event.wait(adaptive_wait_time)
 
