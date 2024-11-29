@@ -36,7 +36,13 @@ class TestBaseEvaluateJsonata:
     @pytest.mark.parametrize(
         "expression_dict",
         [
-            {"TimeoutSeconds": EJT.JSONATA_NUMBER_EXPRESSION},
+            pytest.param(
+                {"TimeoutSeconds": EJT.JSONATA_NUMBER_EXPRESSION},
+                marks=pytest.mark.skipif(
+                    condition=not is_aws_cloud(),
+                    reason="Polling and timeouts are flakey.",
+                ),
+            ),
             {"HeartbeatSeconds": EJT.JSONATA_NUMBER_EXPRESSION},
         ],
         ids=[

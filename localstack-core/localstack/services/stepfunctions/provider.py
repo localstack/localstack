@@ -125,6 +125,9 @@ from localstack.services.stepfunctions.asl.static_analyser.static_analyser impor
 from localstack.services.stepfunctions.asl.static_analyser.test_state.test_state_analyser import (
     TestStateStaticAnalyser,
 )
+from localstack.services.stepfunctions.asl.static_analyser.usage_metrics_static_analyser import (
+    UsageMetricsStaticAnalyser,
+)
 from localstack.services.stepfunctions.backend.activity import Activity, ActivityTask
 from localstack.services.stepfunctions.backend.execution import Execution, SyncExecution
 from localstack.services.stepfunctions.backend.state_machine import (
@@ -480,6 +483,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                 state_machine_version_arn = state_machine_version.arn
                 state_machines[state_machine_version_arn] = state_machine_version
                 create_output["stateMachineVersionArn"] = state_machine_version_arn
+
+        # Run static analyser on definition and collect usage metrics
+        UsageMetricsStaticAnalyser.process(state_machine_definition)
 
         return create_output
 
@@ -974,6 +980,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         if not isinstance(state_machine, StateMachineRevision):
             self._raise_state_machine_does_not_exist(state_machine_arn)
 
+        # TODO: Add logic to handle metrics for when SFN definitions update
         if not any([definition, role_arn, logging_configuration]):
             raise MissingRequiredParameter(
                 "Either the definition, the role ARN, the LoggingConfiguration, "
