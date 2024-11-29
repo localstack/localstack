@@ -548,10 +548,11 @@ def test_put_integration_validation(
 
 @markers.aws.validated
 @pytest.mark.skipif(
-    condition=not is_next_gen_api(),
+    condition=not is_next_gen_api() and not is_aws_cloud(),
     reason="Behavior is properly implemented in Legacy, it returns the MOCK response",
 )
-def test_integration_mock_with_path_param(create_rest_apigw, aws_client):
+def test_integration_mock_with_path_param(create_rest_apigw, aws_client, snapshot):
+    snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
     api_id, _, root = create_rest_apigw(
         name=f"test-api-{short_uid()}",
         description="this is my api",
@@ -580,7 +581,7 @@ def test_integration_mock_with_path_param(create_rest_apigw, aws_client):
 
     # you don't have to pass URI for Mock integration as it's not used anyway
     # when exporting an API in AWS, apparently you can get integration path parameters even if not used
-    aws_client.apigateway.put_integration(
+    integration = aws_client.apigateway.put_integration(
         restApiId=api_id,
         resourceId=resource_id,
         httpMethod="GET",
@@ -589,8 +590,11 @@ def test_integration_mock_with_path_param(create_rest_apigw, aws_client):
         requestParameters={
             "integration.request.path.integrationPath": "method.request.path.testPath",
         },
-        requestTemplates={"application/json": '{"statusCode": 200}'},
+        # This template was modified to validate a cdk issue where it creates this template part
+        # of some L2 construct for CORS handling. This isn't valid JSON but accepted by aws.
+        requestTemplates={"application/json": "{statusCode: 200}"},
     )
+    snapshot.match("integration", integration)
 
     aws_client.apigateway.put_integration_response(
         restApiId=api_id,
