@@ -120,9 +120,10 @@ error_decl:
 ;
 
 error_path_decl:
-    ERRORPATH COLON variable_sample       # error_path_decl_var
-    | ERRORPATH COLON STRINGPATH          # error_path_decl_path
-    | ERRORPATH COLON STRINGINTRINSICFUNC # error_path_decl_intrinsic
+    ERRORPATH COLON variable_sample        # error_path_decl_var
+    | ERRORPATH COLON STRINGPATH           # error_path_decl_path
+    | ERRORPATH COLON STRINGPATHCONTEXTOBJ # error_path_decl_context
+    | ERRORPATH COLON STRINGINTRINSICFUNC  # error_path_decl_intrinsic
 ;
 
 cause_decl:
@@ -131,9 +132,10 @@ cause_decl:
 ;
 
 cause_path_decl:
-    CAUSEPATH COLON variable_sample       # cause_path_decl_var
-    | CAUSEPATH COLON STRINGPATH          # cause_path_decl_path
-    | CAUSEPATH COLON STRINGINTRINSICFUNC # cause_path_decl_intrinsic
+    CAUSEPATH COLON variable_sample        # cause_path_decl_var
+    | CAUSEPATH COLON STRINGPATH           # cause_path_decl_path
+    | CAUSEPATH COLON STRINGPATHCONTEXTOBJ # cause_path_decl_context
+    | CAUSEPATH COLON STRINGINTRINSICFUNC  # cause_path_decl_intrinsic
 ;
 
 seconds_decl: SECONDS COLON STRINGJSONATA # seconds_jsonata | SECONDS COLON INT # seconds_int;

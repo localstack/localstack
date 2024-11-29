@@ -18,7 +18,6 @@ from tests.aws.services.stepfunctions.templates.services.services_templates impo
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..tracingConfiguration",
         "$..RedriveCount",
         "$..RedriveStatus",
         "$..SdkHttpMetadata",
@@ -142,7 +141,7 @@ class TestSnfBase:
         )
 
     @markers.aws.validated
-    def test_items_path(
+    def test_error_cause_path(
         self,
         aws_client,
         create_iam_role_for_sfn,
@@ -150,14 +149,10 @@ class TestSnfBase:
         sfn_snapshot,
     ):
         template = ContextObjectTemplates.load_sfn_template(
-            ContextObjectTemplates.CONTEXT_OBJECT_ITEMS_PATH
+            ContextObjectTemplates.CONTEXT_OBJECT_ERROR_CAUSE_PATH
         )
         definition = json.dumps(template)
-        definition = definition.replace(
-            ContextObjectTemplates.CONTEXT_OBJECT_LITERAL_PLACEHOLDER,
-            "$$.Execution.Input.input-values",
-        )
-        exec_input = json.dumps({"input-values": ["item-0"]})
+        exec_input = json.dumps({})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,

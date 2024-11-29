@@ -1,4 +1,5 @@
 import abc
+import copy
 from typing import Final
 
 from localstack.services.stepfunctions.asl.component.common.jsonata.jsonata_template_value_terminal import (
@@ -70,6 +71,12 @@ class ErrorPathJsonPath(ErrorConst):
         current_output = env.stack[-1]
         cause = extract_json(self.value, current_output)
         env.stack.append(cause)
+
+
+class ErrorPathContextObject(ErrorConst):
+    def _eval_body(self, env: Environment) -> None:
+        value = extract_json(self.value, env.states.context_object.context_object_data)
+        env.stack.append(copy.deepcopy(value))
 
 
 class ErrorPathIntrinsicFunction(ErrorConst):

@@ -309,6 +309,7 @@ from localstack.services.stepfunctions.asl.component.state.state_fail.cause_decl
     CauseConst,
     CauseDecl,
     CauseJSONata,
+    CausePathContextObject,
     CausePathIntrinsicFunction,
     CausePathJsonPath,
     CauseVar,
@@ -317,6 +318,7 @@ from localstack.services.stepfunctions.asl.component.state.state_fail.error_decl
     ErrorConst,
     ErrorDecl,
     ErrorJSONata,
+    ErrorPathContextObject,
     ErrorPathIntrinsicFunction,
     ErrorPathJsonPath,
     ErrorVar,
@@ -874,6 +876,16 @@ class Preprocessor(ASLParserVisitor):
         path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
         return ErrorPathJsonPath(value=path)
 
+    def visitError_path_decl_context(
+        self, ctx: ASLParser.Error_path_decl_contextContext
+    ) -> ErrorDecl:
+        self._raise_if_query_language_is_not(
+            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
+        )
+        path = self._inner_string_of(parse_tree=ctx.STRINGPATHCONTEXTOBJ())
+        path_tail = path[1:]
+        return ErrorPathContextObject(path_tail)
+
     def visitError_path_decl_intrinsic(
         self, ctx: ASLParser.Error_path_decl_intrinsicContext
     ) -> ErrorDecl:
@@ -905,6 +917,16 @@ class Preprocessor(ASLParserVisitor):
         )
         path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
         return CausePathJsonPath(value=path)
+
+    def visitCause_path_decl_context(
+        self, ctx: ASLParser.Cause_path_decl_contextContext
+    ) -> CauseDecl:
+        self._raise_if_query_language_is_not(
+            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
+        )
+        path = self._inner_string_of(parse_tree=ctx.STRINGPATHCONTEXTOBJ())
+        path_tail = path[1:]
+        return CausePathContextObject(path_tail)
 
     def visitCause_path_decl_intrinsic(
         self, ctx: ASLParser.Cause_path_decl_intrinsicContext
