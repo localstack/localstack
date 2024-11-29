@@ -14,28 +14,21 @@ class UsageMetricsStaticAnalyser(StaticAnalyser):
     @staticmethod
     def process(definition: str) -> "UsageMetricsStaticAnalyser":
         analyser = UsageMetricsStaticAnalyser()
-        analyser.analyse(definition=definition)
-
         try:
+            analyser.analyse(definition=definition)
+
             if analyser.has_jsonata:
                 UsageMetrics.jsonata_create_counter.increment()
             else:
                 UsageMetrics.jsonpath_create_counter.increment()
-        except Exception as e:
-            LOG.warning(
-                "Failed to record metrics for StepFunctions QueryLanguage usage",
-                exc_info=e,
-            )
 
-        try:
             if analyser.has_variable_sampling:
                 UsageMetrics.variables_create_counter.increment()
         except Exception as e:
             LOG.warning(
-                "Failed to record usage metrics for StepFunctions Variable Sampling usage",
+                "Failed to record Step Functions metrics from static analysis",
                 exc_info=e,
             )
-
         return analyser
 
     def __init__(self):
