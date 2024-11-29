@@ -130,11 +130,6 @@ def get_event_time(event: PutEventsRequestEntry) -> EventTime:
     return event_time
 
 
-def format_event_time(event_time: datetime) -> str:
-    """Format datetime object to AWS EventBridge format."""
-    return event_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
 def event_time_to_time_string(event_time: EventTime) -> str:
     return event_time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -188,7 +183,7 @@ def format_event(
     account_id = message.get("original_account", account_id)
     # Format the datetime to ISO-8601 string
     event_time = get_event_time(event)
-    formatted_time = format_event_time(event_time)
+    formatted_time = event_time_to_time_string(event_time)
 
     formatted_event = {
         "version": "0",

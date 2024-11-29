@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict, Union
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -919,7 +919,7 @@ class EventSource(TypedDict, total=False):
 
 
 EventSourceList = List[EventSource]
-EventTime = Union[datetime, str]
+EventTime = datetime | str
 HeaderParametersMap = Dict[HeaderKey, HeaderValue]
 QueryStringParametersMap = Dict[QueryStringKey, QueryStringValue]
 PathParameterList = List[PathParameter]
