@@ -25,7 +25,9 @@ class EventRuleEngine:
         """
         This method evaluates the event pattern against the JSON decoded payload.
         Although it's not documented anywhere, AWS allows `.` in the fields name in the event pattern and the payload,
-        and will evaluate them. However, it's not JSONPath compatible:
+        and will evaluate them. However, it's not JSONPath compatible.
+        See:
+        https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-create-pattern.html#eb-create-pattern-considerations
         Example:
         Pattern: `{"field1.field2": "value1"}`
         This pattern will match both `{"field1.field2": "value1"}` and  {"field1: {"field2": "value1"}}`, unlike JSONPath
