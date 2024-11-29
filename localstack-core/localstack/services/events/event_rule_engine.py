@@ -7,19 +7,19 @@ from localstack.aws.api.events import InvalidEventPatternException
 
 
 class EventRuleEngine:
-    def evaluate_pattern_on_event(self, event_pattern: dict, message_body: str | dict):
-        if isinstance(message_body, str):
+    def evaluate_pattern_on_event(self, compiled_event_pattern: dict, event: str | dict):
+        if isinstance(event, str):
             try:
-                body = json.loads(message_body)
+                body = json.loads(event)
                 if not isinstance(body, dict):
                     return False
             except json.JSONDecodeError:
                 # Event pattern for the message body assume that the message payload is a well-formed JSON object.
                 return False
         else:
-            body = message_body
+            body = event
 
-        return self._evaluate_nested_event_pattern_on_dict(event_pattern, payload=body)
+        return self._evaluate_nested_event_pattern_on_dict(compiled_event_pattern, payload=body)
 
     def _evaluate_nested_event_pattern_on_dict(self, event_pattern, payload: dict) -> bool:
         """
@@ -270,11 +270,11 @@ class EventRuleEngine:
         return _traverse(nested_dict, array=[{}], parent_key=None)
 
 
-class EventPatternValidator:
+class EventPatternCompiler:
     def __init__(self):
         self.error_prefix = "Event pattern is not valid. Reason: "
 
-    def validate_event_pattern(self, event_pattern: str | dict) -> dict[str, t.Any]:
+    def compile_event_pattern(self, event_pattern: str | dict) -> dict[str, t.Any]:
         if isinstance(event_pattern, str):
             try:
                 event_pattern = json.loads(event_pattern)

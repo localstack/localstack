@@ -2,10 +2,10 @@ import json
 from typing import Any
 
 from localstack import config
-from localstack.services.events.event_rule_engine import EventPatternValidator, EventRuleEngine
+from localstack.services.events.event_rule_engine import EventPatternCompiler, EventRuleEngine
 from localstack.services.events.event_ruler import matches_rule
 
-_event_pattern_validator = EventPatternValidator()
+_event_pattern_compiler = EventPatternCompiler()
 _event_rule_engine = EventRuleEngine()
 
 
@@ -51,7 +51,10 @@ def matches_event(event_pattern: dict[str, Any] | str | None, event: dict[str, A
         return matches_rule(event_str, pattern_str)
 
     # Python implementation (default)
-    event_pattern_dict = _event_pattern_validator.validate_event_pattern(
+    compiled_event_pattern = _event_pattern_compiler.compile_event_pattern(
         event_pattern=event_pattern
     )
-    return _event_rule_engine.evaluate_pattern_on_event(event_pattern_dict, event)
+    return _event_rule_engine.evaluate_pattern_on_event(
+        compiled_event_pattern=compiled_event_pattern,
+        event=event,
+    )
