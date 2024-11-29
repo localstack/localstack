@@ -204,7 +204,6 @@ class TestEventPattern:
     )
     def test_invalid_json_event_pattern(self, aws_client, pattern, snapshot):
         event = '{"id": "1", "source": "test-source", "detail-type": "test-detail-type", "account": "123456789012", "region": "us-east-2", "time": "2022-07-13T13:48:01Z", "detail": {"test": "test"}}'
-        # TODO: devise better testing strategy for * because the wildcard matches everything and "\\*" does not match.
 
         with pytest.raises(ClientError) as e:
             aws_client.events.test_event_pattern(
