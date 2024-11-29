@@ -227,7 +227,7 @@ def convert_values_to_numbers(input_dict: dict, keys_to_skip: Optional[List[str]
 
 
 #  LocalStack specific utilities
-def get_schema_path(file_path: Path) -> Path:
+def get_schema_path(file_path: Path) -> dict:
     file_name_base = file_path.name.removesuffix(".py").removesuffix(".py.enc")
     with Path(file_path).parent.joinpath(f"{file_name_base}.schema.json").open() as fd:
         return json.load(fd)
