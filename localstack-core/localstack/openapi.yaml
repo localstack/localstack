@@ -158,11 +158,10 @@ components:
           additionalProperties: false
           properties:
             html_part:
-              type: [string, 'null']
+              type: string
             text_part:
               type: string
           required:
-          - html_part
           - text_part
           type: object
         Destination:
