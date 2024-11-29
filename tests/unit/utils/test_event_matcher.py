@@ -3,6 +3,7 @@ import json
 import pytest
 
 from localstack import config
+from localstack.aws.api.events import InvalidEventPatternException
 from localstack.utils.event_matcher import matches_event
 
 EVENT_PATTERN_DICT = {
@@ -70,7 +71,7 @@ def test_matches_event_non_matching_pattern():
 
 def test_matches_event_invalid_json():
     """Test with invalid JSON strings"""
-    with pytest.raises(json.JSONDecodeError):
+    with pytest.raises(InvalidEventPatternException):
         matches_event("{invalid-json}", EVENT_STR)
 
 
