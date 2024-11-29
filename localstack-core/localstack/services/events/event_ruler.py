@@ -4,7 +4,7 @@ from functools import cache
 from pathlib import Path
 from typing import Tuple
 
-from localstack.services.events.models import InvalidEventPatternException
+from localstack.aws.api.events import InvalidEventPatternException
 from localstack.services.events.packages import event_ruler_package
 from localstack.utils.objects import singleton_factory
 
@@ -66,4 +66,6 @@ def matches_rule(event: str, rule: str) -> bool:
         return Ruler.matchesRule(event, rule)
     except java.lang.Exception as e:
         reason = e.args[0]
-        raise InvalidEventPatternException(reason=reason) from e
+        raise InvalidEventPatternException(
+            message=f"Event pattern is not valid. Reason: {reason}"
+        ) from e

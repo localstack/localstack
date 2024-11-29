@@ -53,7 +53,6 @@ from localstack.aws.api.events import (
     EventSourceName,
     HttpsEndpoint,
     InternalException,
-    InvalidEventPatternException,
     KmsKeyIdentifier,
     LimitMax100,
     ListApiDestinationsResponse,
@@ -134,9 +133,6 @@ from localstack.services.events.models import (
     ValidationException,
     events_stores,
 )
-from localstack.services.events.models import (
-    InvalidEventPatternException as InternalInvalidEventPatternException,
-)
 from localstack.services.events.replay import ReplayService, ReplayServiceDict
 from localstack.services.events.rule import RuleService, RuleServiceDict
 from localstack.services.events.scheduler import JobScheduler
@@ -155,7 +151,6 @@ from localstack.services.events.utils import (
     get_trace_header_encoded_region_account,
     is_archive_arn,
     recursive_remove_none_values_from_dict,
-    to_json_str,
 )
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.arns import get_partition, parse_arn
@@ -1212,11 +1207,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         """Test event pattern uses EventBridge event pattern matching:
         https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html
         """
-        try:
-            result = matches_event(event_pattern, event)
-        except InternalInvalidEventPatternException as e:
-            raise InvalidEventPatternException(e.message) from e
-
+        result = matches_event(event_pattern, event)
         return TestEventPatternResponse(Result=result)
 
     #########
@@ -2137,8 +2128,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> None:
         """Process rules for an event. Note that we no longer handle entries here as AWS returns success regardless of target failures."""
         event_pattern = rule.event_pattern
-        event_str = to_json_str(event_formatted)
-        if matches_event(event_pattern, event_str):
+
+        if matches_event(event_pattern, event_formatted):
             if not rule.targets:
                 LOG.info(
                     json.dumps(
