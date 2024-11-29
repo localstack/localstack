@@ -101,6 +101,9 @@ TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS = os.path.join(
 )
 TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, "functions/lambda_environment.py")
 
+TEST_LAMBDA_EVENT_SOURCE_MAPPING_SEND_MESSAGE = os.path.join(
+    THIS_FOLDER, "functions/lambda_event_source_mapping_send_message.py"
+)
 TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(THIS_FOLDER, "functions/lambda_send_message.py")
 TEST_LAMBDA_PUT_ITEM_FILE = os.path.join(THIS_FOLDER, "functions/lambda_put_item.py")
 TEST_LAMBDA_START_EXECUTION_FILE = os.path.join(THIS_FOLDER, "functions/lambda_start_execution.py")
