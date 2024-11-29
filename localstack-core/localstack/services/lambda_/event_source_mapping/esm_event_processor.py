@@ -28,9 +28,14 @@ class EsmEventProcessor(EventProcessor):
         self.sender = sender
         self.logger = logger
 
-    def process_events_batch(self, input_events: list[dict]) -> None:
+    def process_events_batch(self, input_events: list[dict] | dict) -> None:
         # analytics
-        first_event = input_events[0] if input_events else {}
+        if isinstance(input_events, list) and input_events:
+            first_event = input_events[0]
+        elif input_events:
+            first_event = input_events
+        else:
+            first_event = {}
         event_source = first_event.get("eventSource")
         esm_invocation.record(event_source)
 
