@@ -78,6 +78,10 @@ class RestApiMockIntegration(RestApiIntegration):
                 assert k
                 assert v
 
+                if k == "statusCode":
+                    statuscode = int(v)
+                    continue
+
                 if (first_char := k[0]) in "[{":
                     raise Exception
                 if first_char in "'\"":
