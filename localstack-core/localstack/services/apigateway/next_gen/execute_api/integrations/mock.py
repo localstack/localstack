@@ -66,45 +66,37 @@ class RestApiMockIntegration(RestApiIntegration):
         try:
             statuscode = ""
             matched = re.match(r"^\s*{(.+)}\s*$", body).group(1)
-            splits = [m.strip() for m in matched.split(",")]
+            pairs = [m.strip() for m in matched.split(",")]
             # TODO this is not right, but nested object would otherwise break the parsing
-            kvs = [s.split(":", maxsplit=1) for s in splits]
-            for kv in kvs:
-                assert len(kv) == 2
-                k, v = kv
-                k = k.strip()
-                v = v.strip()
+            key_values = [s.split(":", maxsplit=1) for s in pairs]
+            for key_value in key_values:
+                assert len(key_value) == 2
+                key, value = [el.strip() for el in key_value]
+                key = key or '""'
+                value = value or '""'
 
-                assert k
-                assert v
+                assert (leading_key_char := key[0]) not in "[{"
+                if leading_key_char in "'\"":
+                    assert len(key) >= 2
+                    assert key[-1] == leading_key_char
 
-                if k == "statusCode":
-                    statuscode = int(v)
+                if key == "statusCode":
+                    statuscode = int(value)
                     continue
 
-                if (first_char := k[0]) in "[{":
-                    raise Exception
-                if first_char in "'\"":
-                    assert len(k) > 2
-                    assert k[-1] == first_char
-                    k = k[1:-1]
-
-                if (v_first_char := v[0]) in "[{'\"":
-                    assert len(v) > 2
-                    if v_first_char == "{":
+                if (leading_value_char := value[0]) in "[{'\"":
+                    assert len(value) >= 2
+                    if leading_value_char == "{":
                         # TODO reparse objects
-                        assert v[-1] == "}"
-                    elif v_first_char == "[":
+                        assert value[-1] == "}"
+                    elif leading_value_char == "[":
                         # TODO validate arrays
-                        assert v[-1] == "]"
+                        assert value[-1] == "]"
                     else:
-                        assert v[-1] == v_first_char
-                        v = v[1:-1]
-
-                if k == "statusCode":
-                    statuscode = int(v)
+                        assert value[-1] == leading_value_char
 
             return {"statusCode": statuscode}
+
         except Exception as e:
             LOG.debug(
                 "Error Parsing an invalid json, %s", e, exc_info=LOG.isEnabledFor(logging.DEBUG)

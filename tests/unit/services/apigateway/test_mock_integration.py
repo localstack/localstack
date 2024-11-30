@@ -61,6 +61,9 @@ class TestMockIntegration:
             "{statusCode: 200, foo}: [ba r]}",
             "{statusCode: 200, foo'}: [ba r]}",
             "{statusCode: 200, }foo: [ba r]}",
+            "{statusCode: 200, }foo: ''}",
+            '{statusCode: 200, " ": " "}',
+            '{statusCode: 200, "": ""}',
         ]
         invalid_templates = [
             "statusCode: 200",
@@ -72,7 +75,7 @@ class TestMockIntegration:
         for valid_template in valid_templates:
             ctx = create_default_context(body=valid_template)
             response = mock_integration.invoke(ctx)
-            assert response["status_code"] == 200
+            assert response["status_code"] == 200, valid_template
 
         for invalid_template in invalid_templates:
             ctx = create_default_context(body=invalid_template)
