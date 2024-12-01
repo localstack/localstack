@@ -221,5 +221,47 @@
         "OpenSearch_2.9"
       ]
     }
+  },
+  "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_sql_plugin": {
+    "recorded-date": "01-12-2024, 17:11:32",
+    "recorded-content": {
+      "sql_plugin_installed": true,
+      "sql_query_response": {
+        "datarows": [
+          [
+            "I'm just a simple man, trying to make my way in the universe.",
+            "Fett",
+            "mandalorian armor",
+            "Boba",
+            41
+          ]
+        ],
+        "schema": [
+          {
+            "name": "about",
+            "type": "text"
+          },
+          {
+            "name": "last_name",
+            "type": "text"
+          },
+          {
+            "name": "interests",
+            "type": "text"
+          },
+          {
+            "name": "first_name",
+            "type": "text"
+          },
+          {
+            "name": "age",
+            "type": "long"
+          }
+        ],
+        "size": 1,
+        "status": 200,
+        "total": 1
+      }
+    }
   }
 }
