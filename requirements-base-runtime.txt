@@ -11,9 +11,9 @@ attrs==24.2.0
     #   referencing
 awscrt==0.23.1
     # via localstack-core (pyproject.toml)
-boto3==1.35.70
+boto3==1.35.71
     # via localstack-core (pyproject.toml)
-botocore==1.35.70
+botocore==1.35.71
     # via
     #   boto3
     #   localstack-core (pyproject.toml)
