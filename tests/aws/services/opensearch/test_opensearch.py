@@ -271,7 +271,6 @@ class TestOpensearchProvider:
                 }
             ],
         }
-        # domain_name = f"sql-test-domain-six"
 
         # create a domain that works on aws
         opensearch_create_domain(
