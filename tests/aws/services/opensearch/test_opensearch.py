@@ -322,7 +322,9 @@ class TestOpensearchProvider:
         assert response.ok
 
         # force the refresh of the index after the document was added, so it can appear in search
-        response = requests.post(f"https://{endpoint}/_refresh", auth=master_user_auth, headers=COMMON_HEADERS)
+        response = requests.post(
+            f"https://{endpoint}/_refresh", auth=master_user_auth, headers=COMMON_HEADERS
+        )
         assert response.ok
 
         # ensure sql query returns correct
