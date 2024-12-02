@@ -313,12 +313,17 @@ class TestOpensearchProvider:
             "interests": ["mandalorian armor", "tusken culture"],
         }
         document_path = f"https://{endpoint}/bountyhunters/_doc/1"
-        requests.put(
+        response = requests.put(
             document_path,
             auth=master_user_auth,
             data=json.dumps(document),
             headers=COMMON_HEADERS,
         )
+        assert response.ok
+
+        # force the refresh of the index after the document was added, so it can appear in search
+        response = requests.post(f"https://{endpoint}/_refresh", auth=master_user_auth, headers=COMMON_HEADERS)
+        assert response.ok
 
         # ensure sql query returns correct
         index = document_path.split("/")[-3]
