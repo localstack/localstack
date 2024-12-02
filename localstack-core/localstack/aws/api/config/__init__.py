@@ -22,6 +22,7 @@ Configuration = str
 ConfigurationAggregatorArn = str
 ConfigurationAggregatorName = str
 ConfigurationItemMD5Hash = str
+ConfigurationRecorderFilterValue = str
 ConfigurationStateId = str
 ConformancePackArn = str
 ConformancePackId = str
@@ -45,6 +46,7 @@ IncludeGlobalResourceTypes = bool
 Integer = int
 Limit = int
 ListResourceEvaluationsPageItemLimit = int
+MaxResults = int
 Name = str
 NextToken = str
 OrganizationConfigRuleName = str
@@ -68,12 +70,15 @@ ResourceEvaluationId = str
 ResourceId = str
 ResourceName = str
 ResourceTypeString = str
+ResourceTypeValue = str
 RetentionConfigurationName = str
 RetentionPeriodInDays = int
 RuleLimit = int
 SSMDocumentName = str
 SSMDocumentVersion = str
 SchemaVersionId = str
+ServicePrincipal = str
+ServicePrincipalValue = str
 StackArn = str
 String = str
 StringWithCharLimit1024 = str
@@ -109,6 +114,10 @@ class AggregatedSourceType(StrEnum):
     ORGANIZATION = "ORGANIZATION"
 
 
+class AggregatorFilterType(StrEnum):
+    INCLUDE = "INCLUDE"
+
+
 class ChronologicalOrder(StrEnum):
     Reverse = "Reverse"
     Forward = "Forward"
@@ -139,6 +148,10 @@ class ConfigurationItemStatus(StrEnum):
     ResourceNotRecorded = "ResourceNotRecorded"
     ResourceDeleted = "ResourceDeleted"
     ResourceDeletedNotRecorded = "ResourceDeletedNotRecorded"
+
+
+class ConfigurationRecorderFilterName(StrEnum):
+    recordingScope = "recordingScope"
 
 
 class ConformancePackComplianceType(StrEnum):
@@ -254,11 +267,17 @@ class RecorderStatus(StrEnum):
     Pending = "Pending"
     Success = "Success"
     Failure = "Failure"
+    NotApplicable = "NotApplicable"
 
 
 class RecordingFrequency(StrEnum):
     CONTINUOUS = "CONTINUOUS"
     DAILY = "DAILY"
+
+
+class RecordingScope(StrEnum):
+    INTERNAL = "INTERNAL"
+    PAID = "PAID"
 
 
 class RecordingStrategyType(StrEnum):
@@ -737,6 +756,12 @@ class SortOrder(StrEnum):
     DESCENDING = "DESCENDING"
 
 
+class ConflictException(ServiceException):
+    code: str = "ConflictException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class ConformancePackTemplateValidationException(ServiceException):
     code: str = "ConformancePackTemplateValidationException"
     sender_fault: bool = False
@@ -1055,6 +1080,12 @@ class TooManyTagsException(ServiceException):
     status_code: int = 400
 
 
+class UnmodifiableEntityException(ServiceException):
+    code: str = "UnmodifiableEntityException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class ValidationException(ServiceException):
     code: str = "ValidationException"
     sender_fault: bool = False
@@ -1207,6 +1238,82 @@ class AggregationAuthorization(TypedDict, total=False):
 
 
 AggregationAuthorizationList = List[AggregationAuthorization]
+ResourceTypeValueList = List[ResourceTypeValue]
+
+
+class AggregatorFilterResourceType(TypedDict, total=False):
+    Type: Optional[AggregatorFilterType]
+    Value: Optional[ResourceTypeValueList]
+
+
+ServicePrincipalValueList = List[ServicePrincipalValue]
+
+
+class AggregatorFilterServicePrincipal(TypedDict, total=False):
+    Type: Optional[AggregatorFilterType]
+    Value: Optional[ServicePrincipalValueList]
+
+
+class AggregatorFilters(TypedDict, total=False):
+    ResourceType: Optional[AggregatorFilterResourceType]
+    ServicePrincipal: Optional[AggregatorFilterServicePrincipal]
+
+
+ResourceTypeList = List[ResourceType]
+
+
+class AssociateResourceTypesRequest(ServiceRequest):
+    ConfigurationRecorderArn: AmazonResourceName
+    ResourceTypes: ResourceTypeList
+
+
+RecordingModeResourceTypesList = List[ResourceType]
+
+
+class RecordingModeOverride(TypedDict, total=False):
+    description: Optional[Description]
+    resourceTypes: RecordingModeResourceTypesList
+    recordingFrequency: RecordingFrequency
+
+
+RecordingModeOverrides = List[RecordingModeOverride]
+
+
+class RecordingMode(TypedDict, total=False):
+    recordingFrequency: RecordingFrequency
+    recordingModeOverrides: Optional[RecordingModeOverrides]
+
+
+class RecordingStrategy(TypedDict, total=False):
+    useOnly: Optional[RecordingStrategyType]
+
+
+class ExclusionByResourceTypes(TypedDict, total=False):
+    resourceTypes: Optional[ResourceTypeList]
+
+
+class RecordingGroup(TypedDict, total=False):
+    allSupported: Optional[AllSupported]
+    includeGlobalResourceTypes: Optional[IncludeGlobalResourceTypes]
+    resourceTypes: Optional[ResourceTypeList]
+    exclusionByResourceTypes: Optional[ExclusionByResourceTypes]
+    recordingStrategy: Optional[RecordingStrategy]
+
+
+class ConfigurationRecorder(TypedDict, total=False):
+    arn: Optional[AmazonResourceName]
+    name: Optional[RecorderName]
+    roleARN: Optional[String]
+    recordingGroup: Optional[RecordingGroup]
+    recordingMode: Optional[RecordingMode]
+    recordingScope: Optional[RecordingScope]
+    servicePrincipal: Optional[ServicePrincipal]
+
+
+class AssociateResourceTypesResponse(TypedDict, total=False):
+    ConfigurationRecorder: ConfigurationRecorder
+
+
 AutoRemediationAttemptSeconds = int
 ConfigurationItemDeliveryTime = datetime
 SupplementaryConfiguration = Dict[SupplementaryConfigurationName, SupplementaryConfigurationValue]
@@ -1413,6 +1520,7 @@ class ConfigurationAggregator(TypedDict, total=False):
     CreationTime: Optional[Date]
     LastUpdatedTime: Optional[Date]
     CreatedBy: Optional[StringWithCharLimit256]
+    AggregatorFilters: Optional[AggregatorFilters]
 
 
 ConfigurationAggregatorList = List[ConfigurationAggregator]
@@ -1455,54 +1563,21 @@ class ConfigurationItem(TypedDict, total=False):
 
 
 ConfigurationItemList = List[ConfigurationItem]
-RecordingModeResourceTypesList = List[ResourceType]
+ConfigurationRecorderFilterValues = List[ConfigurationRecorderFilterValue]
 
 
-class RecordingModeOverride(TypedDict, total=False):
-    description: Optional[Description]
-    resourceTypes: RecordingModeResourceTypesList
-    recordingFrequency: RecordingFrequency
+class ConfigurationRecorderFilter(TypedDict, total=False):
+    filterName: Optional[ConfigurationRecorderFilterName]
+    filterValue: Optional[ConfigurationRecorderFilterValues]
 
 
-RecordingModeOverrides = List[RecordingModeOverride]
-
-
-class RecordingMode(TypedDict, total=False):
-    recordingFrequency: RecordingFrequency
-    recordingModeOverrides: Optional[RecordingModeOverrides]
-
-
-class RecordingStrategy(TypedDict, total=False):
-    useOnly: Optional[RecordingStrategyType]
-
-
-ResourceTypeList = List[ResourceType]
-
-
-class ExclusionByResourceTypes(TypedDict, total=False):
-    resourceTypes: Optional[ResourceTypeList]
-
-
-class RecordingGroup(TypedDict, total=False):
-    allSupported: Optional[AllSupported]
-    includeGlobalResourceTypes: Optional[IncludeGlobalResourceTypes]
-    resourceTypes: Optional[ResourceTypeList]
-    exclusionByResourceTypes: Optional[ExclusionByResourceTypes]
-    recordingStrategy: Optional[RecordingStrategy]
-
-
-class ConfigurationRecorder(TypedDict, total=False):
-    name: Optional[RecorderName]
-    roleARN: Optional[String]
-    recordingGroup: Optional[RecordingGroup]
-    recordingMode: Optional[RecordingMode]
-
-
+ConfigurationRecorderFilterList = List[ConfigurationRecorderFilter]
 ConfigurationRecorderList = List[ConfigurationRecorder]
 ConfigurationRecorderNameList = List[RecorderName]
 
 
 class ConfigurationRecorderStatus(TypedDict, total=False):
+    arn: Optional[AmazonResourceName]
     name: Optional[String]
     lastStartTime: Optional[Date]
     lastStopTime: Optional[Date]
@@ -1511,9 +1586,20 @@ class ConfigurationRecorderStatus(TypedDict, total=False):
     lastErrorCode: Optional[String]
     lastErrorMessage: Optional[String]
     lastStatusChangeTime: Optional[Date]
+    servicePrincipal: Optional[ServicePrincipal]
 
 
 ConfigurationRecorderStatusList = List[ConfigurationRecorderStatus]
+
+
+class ConfigurationRecorderSummary(TypedDict, total=False):
+    arn: AmazonResourceName
+    name: RecorderName
+    servicePrincipal: Optional[ServicePrincipal]
+    recordingScope: RecordingScope
+
+
+ConfigurationRecorderSummaries = List[ConfigurationRecorderSummary]
 ConformancePackConfigRuleNames = List[StringWithCharLimit64]
 
 
@@ -1710,6 +1796,15 @@ class DeleteRetentionConfigurationRequest(ServiceRequest):
     RetentionConfigurationName: RetentionConfigurationName
 
 
+class DeleteServiceLinkedConfigurationRecorderRequest(ServiceRequest):
+    ServicePrincipal: ServicePrincipal
+
+
+class DeleteServiceLinkedConfigurationRecorderResponse(TypedDict, total=False):
+    Arn: AmazonResourceName
+    Name: RecorderName
+
+
 class DeleteStoredQueryRequest(ServiceRequest):
     QueryName: QueryName
 
@@ -1858,6 +1953,8 @@ class DescribeConfigurationAggregatorsResponse(TypedDict, total=False):
 
 class DescribeConfigurationRecorderStatusRequest(ServiceRequest):
     ConfigurationRecorderNames: Optional[ConfigurationRecorderNameList]
+    ServicePrincipal: Optional[ServicePrincipal]
+    Arn: Optional[AmazonResourceName]
 
 
 class DescribeConfigurationRecorderStatusResponse(TypedDict, total=False):
@@ -1866,6 +1963,8 @@ class DescribeConfigurationRecorderStatusResponse(TypedDict, total=False):
 
 class DescribeConfigurationRecordersRequest(ServiceRequest):
     ConfigurationRecorderNames: Optional[ConfigurationRecorderNameList]
+    ServicePrincipal: Optional[ServicePrincipal]
+    Arn: Optional[AmazonResourceName]
 
 
 class DescribeConfigurationRecordersResponse(TypedDict, total=False):
@@ -2213,6 +2312,15 @@ RetentionConfigurationList = List[RetentionConfiguration]
 class DescribeRetentionConfigurationsResponse(TypedDict, total=False):
     RetentionConfigurations: Optional[RetentionConfigurationList]
     NextToken: Optional[NextToken]
+
+
+class DisassociateResourceTypesRequest(ServiceRequest):
+    ConfigurationRecorderArn: AmazonResourceName
+    ResourceTypes: ResourceTypeList
+
+
+class DisassociateResourceTypesResponse(TypedDict, total=False):
+    ConfigurationRecorder: ConfigurationRecorder
 
 
 DiscoveredResourceIdentifierList = List[AggregateResourceIdentifier]
@@ -2604,6 +2712,17 @@ class ListAggregateDiscoveredResourcesResponse(TypedDict, total=False):
     NextToken: Optional[NextToken]
 
 
+class ListConfigurationRecordersRequest(ServiceRequest):
+    Filters: Optional[ConfigurationRecorderFilterList]
+    MaxResults: Optional[MaxResults]
+    NextToken: Optional[NextToken]
+
+
+class ListConfigurationRecordersResponse(TypedDict, total=False):
+    ConfigurationRecorderSummaries: ConfigurationRecorderSummaries
+    NextToken: Optional[NextToken]
+
+
 class ListConformancePackComplianceScoresRequest(ServiceRequest):
     Filters: Optional[ConformancePackComplianceScoresFilters]
     SortOrder: Optional[SortOrder]
@@ -2754,6 +2873,7 @@ class PutConfigurationAggregatorRequest(ServiceRequest):
     AccountAggregationSources: Optional[AccountAggregationSourceList]
     OrganizationAggregationSource: Optional[OrganizationAggregationSource]
     Tags: Optional[TagsList]
+    AggregatorFilters: Optional[AggregatorFilters]
 
 
 class PutConfigurationAggregatorResponse(TypedDict, total=False):
@@ -2762,6 +2882,7 @@ class PutConfigurationAggregatorResponse(TypedDict, total=False):
 
 class PutConfigurationRecorderRequest(ServiceRequest):
     ConfigurationRecorder: ConfigurationRecorder
+    Tags: Optional[TagsList]
 
 
 class PutConformancePackRequest(ServiceRequest):
@@ -2863,6 +2984,16 @@ class PutRetentionConfigurationResponse(TypedDict, total=False):
     RetentionConfiguration: Optional[RetentionConfiguration]
 
 
+class PutServiceLinkedConfigurationRecorderRequest(ServiceRequest):
+    ServicePrincipal: ServicePrincipal
+    Tags: Optional[TagsList]
+
+
+class PutServiceLinkedConfigurationRecorderResponse(TypedDict, total=False):
+    Arn: Optional[AmazonResourceName]
+    Name: Optional[RecorderName]
+
+
 class PutStoredQueryRequest(ServiceRequest):
     StoredQuery: StoredQuery
     Tags: Optional[TagsList]
@@ -2960,6 +3091,16 @@ class UntagResourceRequest(ServiceRequest):
 class ConfigApi:
     service = "config"
     version = "2014-11-12"
+
+    @handler("AssociateResourceTypes")
+    def associate_resource_types(
+        self,
+        context: RequestContext,
+        configuration_recorder_arn: AmazonResourceName,
+        resource_types: ResourceTypeList,
+        **kwargs,
+    ) -> AssociateResourceTypesResponse:
+        raise NotImplementedError
 
     @handler("BatchGetAggregateResourceConfig")
     def batch_get_aggregate_resource_config(
@@ -3093,6 +3234,12 @@ class ConfigApi:
     ) -> None:
         raise NotImplementedError
 
+    @handler("DeleteServiceLinkedConfigurationRecorder")
+    def delete_service_linked_configuration_recorder(
+        self, context: RequestContext, service_principal: ServicePrincipal, **kwargs
+    ) -> DeleteServiceLinkedConfigurationRecorderResponse:
+        raise NotImplementedError
+
     @handler("DeleteStoredQuery")
     def delete_stored_query(
         self, context: RequestContext, query_name: QueryName, **kwargs
@@ -3209,6 +3356,8 @@ class ConfigApi:
         self,
         context: RequestContext,
         configuration_recorder_names: ConfigurationRecorderNameList = None,
+        service_principal: ServicePrincipal = None,
+        arn: AmazonResourceName = None,
         **kwargs,
     ) -> DescribeConfigurationRecorderStatusResponse:
         raise NotImplementedError
@@ -3218,6 +3367,8 @@ class ConfigApi:
         self,
         context: RequestContext,
         configuration_recorder_names: ConfigurationRecorderNameList = None,
+        service_principal: ServicePrincipal = None,
+        arn: AmazonResourceName = None,
         **kwargs,
     ) -> DescribeConfigurationRecordersResponse:
         raise NotImplementedError
@@ -3366,6 +3517,16 @@ class ConfigApi:
         next_token: NextToken = None,
         **kwargs,
     ) -> DescribeRetentionConfigurationsResponse:
+        raise NotImplementedError
+
+    @handler("DisassociateResourceTypes")
+    def disassociate_resource_types(
+        self,
+        context: RequestContext,
+        configuration_recorder_arn: AmazonResourceName,
+        resource_types: ResourceTypeList,
+        **kwargs,
+    ) -> DisassociateResourceTypesResponse:
         raise NotImplementedError
 
     @handler("GetAggregateComplianceDetailsByConfigRule")
@@ -3582,6 +3743,17 @@ class ConfigApi:
     ) -> ListAggregateDiscoveredResourcesResponse:
         raise NotImplementedError
 
+    @handler("ListConfigurationRecorders")
+    def list_configuration_recorders(
+        self,
+        context: RequestContext,
+        filters: ConfigurationRecorderFilterList = None,
+        max_results: MaxResults = None,
+        next_token: NextToken = None,
+        **kwargs,
+    ) -> ListConfigurationRecordersResponse:
+        raise NotImplementedError
+
     @handler("ListConformancePackComplianceScores")
     def list_conformance_pack_compliance_scores(
         self,
@@ -3666,13 +3838,18 @@ class ConfigApi:
         account_aggregation_sources: AccountAggregationSourceList = None,
         organization_aggregation_source: OrganizationAggregationSource = None,
         tags: TagsList = None,
+        aggregator_filters: AggregatorFilters = None,
         **kwargs,
     ) -> PutConfigurationAggregatorResponse:
         raise NotImplementedError
 
     @handler("PutConfigurationRecorder")
     def put_configuration_recorder(
-        self, context: RequestContext, configuration_recorder: ConfigurationRecorder, **kwargs
+        self,
+        context: RequestContext,
+        configuration_recorder: ConfigurationRecorder,
+        tags: TagsList = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3785,6 +3962,16 @@ class ConfigApi:
     def put_retention_configuration(
         self, context: RequestContext, retention_period_in_days: RetentionPeriodInDays, **kwargs
     ) -> PutRetentionConfigurationResponse:
+        raise NotImplementedError
+
+    @handler("PutServiceLinkedConfigurationRecorder")
+    def put_service_linked_configuration_recorder(
+        self,
+        context: RequestContext,
+        service_principal: ServicePrincipal,
+        tags: TagsList = None,
+        **kwargs,
+    ) -> PutServiceLinkedConfigurationRecorderResponse:
         raise NotImplementedError
 
     @handler("PutStoredQuery")
