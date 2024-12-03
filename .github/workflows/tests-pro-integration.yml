@@ -234,7 +234,7 @@ jobs:
       - name: Install OS packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y --allow-downgrades libsnappy-dev jq postgresql-16 postgresql-client postgresql-plpython3 libvirt-dev
+          sudo apt-get install -y --allow-downgrades libsnappy-dev jq libvirt-dev
 
       - name: Cache Ext Dependencies (venv)
         if: inputs.disableCaching != true
