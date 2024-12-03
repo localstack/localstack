@@ -15,8 +15,6 @@
     }
   },
   "EventPattern": {
-    "detail": {
-      "eventVersion": [""]
-    }
+    "resources": [{ "exists": true }]
   }
 }
