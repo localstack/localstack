@@ -440,12 +440,12 @@ class TestEvents:
 
     @markers.aws.validated
     def test_put_events_response_entries_order(
-        self, events_put_rule, create_sqs_events_target, aws_client, snapshot, clean_up
+        self, events_put_rule, sqs_as_events_target, aws_client, snapshot, clean_up
     ):
         """Test that put_events response contains each EventId only once, even with multiple targets."""
 
-        queue_url_1, queue_arn_1 = create_sqs_events_target()
-        queue_url_2, queue_arn_2 = create_sqs_events_target()
+        queue_url_1, queue_arn_1 = sqs_as_events_target()
+        queue_url_2, queue_arn_2 = sqs_as_events_target()
 
         rule_name = f"test-rule-{short_uid()}"
 
@@ -601,11 +601,11 @@ class TestEvents:
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="Test specific for v2 provider")
     def test_put_events_with_time_field(
-        self, events_put_rule, create_sqs_events_target, aws_client, snapshot
+        self, events_put_rule, sqs_as_events_target, aws_client, snapshot
     ):
         """Test that EventBridge correctly handles datetime serialization in events."""
         rule_name = f"test-rule-{short_uid()}"
-        queue_url, queue_arn = create_sqs_events_target()
+        queue_url, queue_arn = sqs_as_events_target()
 
         snapshot.add_transformers_list(
             [
