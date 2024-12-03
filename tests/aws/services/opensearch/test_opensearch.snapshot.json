@@ -223,7 +223,7 @@
     }
   },
   "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_sql_plugin": {
-    "recorded-date": "01-12-2024, 17:11:32",
+    "recorded-date": "03-12-2024, 21:07:16",
     "recorded-content": {
       "sql_plugin_installed": true,
       "sql_query_response": {

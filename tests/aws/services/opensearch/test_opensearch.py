@@ -20,6 +20,8 @@ from localstack.aws.api.opensearch import (
     EncryptionAtRestOptions,
     MasterUserOptions,
     NodeToNodeEncryptionOptions,
+    OpenSearchPartitionInstanceType,
+    VolumeType,
 )
 from localstack.constants import (
     ELASTICSEARCH_DEFAULT_VERSION,
@@ -155,7 +157,7 @@ class TestOpensearchProvider:
             plugins_url = (
                 f"https://{domain_status['Endpoint']}/_cat/plugins?s=component&h=component"
             )
-            plugins_response = requests.get(plugins_url, headers={"Accept": "application/json"})
+            plugins_response = requests.get(plugins_url, headers=COMMON_HEADERS)
             installed_plugins = {plugin["component"] for plugin in plugins_response.json()}
             requested_plugins = set(OPENSEARCH_PLUGIN_LIST)
             assert requested_plugins.issubset(installed_plugins)
@@ -274,8 +276,10 @@ class TestOpensearchProvider:
         opensearch_create_domain(
             DomainName=domain_name,
             EngineVersion=OPENSEARCH_DEFAULT_VERSION,
-            ClusterConfig=ClusterConfig(InstanceType="t3.small.search", InstanceCount=1),
-            EBSOptions=EBSOptions(EBSEnabled=True, VolumeType="gp2", VolumeSize=10),
+            ClusterConfig=ClusterConfig(
+                InstanceType=OpenSearchPartitionInstanceType("t3.small.search"), InstanceCount=1
+            ),
+            EBSOptions=EBSOptions(EBSEnabled=True, VolumeType=VolumeType("gp2"), VolumeSize=10),
             AdvancedSecurityOptions=AdvancedSecurityOptionsInput(
                 Enabled=True,
                 InternalUserDatabaseEnabled=True,
@@ -310,7 +314,8 @@ class TestOpensearchProvider:
             "about": "I'm just a simple man, trying to make my way in the universe.",
             "interests": ["mandalorian armor", "tusken culture"],
         }
-        document_path = f"https://{endpoint}/bountyhunters/_doc/1"
+        index = "bountyhunters"
+        document_path = f"https://{endpoint}/{index}/_doc/1"
         response = requests.put(
             document_path,
             auth=master_user_auth,
@@ -326,7 +331,6 @@ class TestOpensearchProvider:
         assert response.ok
 
         # ensure sql query returns correct
-        index = document_path.split("/")[-3]
         query = {"query": f"SELECT * FROM {index} WHERE last_name = 'Fett'"}
         response = requests.post(
             f"https://{endpoint}/_plugins/_sql",
