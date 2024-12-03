@@ -14,9 +14,12 @@ from opensearchpy.exceptions import AuthorizationException
 from localstack import config
 from localstack.aws.api.opensearch import (
     AdvancedSecurityOptionsInput,
+    ClusterConfig,
     DomainEndpointOptions,
+    EBSOptions,
     EncryptionAtRestOptions,
     MasterUserOptions,
+    NodeToNodeEncryptionOptions,
 )
 from localstack.constants import (
     ELASTICSEARCH_DEFAULT_VERSION,
@@ -34,11 +37,6 @@ from localstack.services.opensearch.cluster_manager import (
     create_cluster_manager,
 )
 from localstack.services.opensearch.packages import opensearch_package
-from localstack.services.opensearch.resource_providers.aws_opensearchservice_domain import (
-    ClusterConfig,
-    EBSOptions,
-    NodeToNodeEncryptionOptions,
-)
 from localstack.testing.pytest import markers
 from localstack.utils.common import call_safe, poll_condition, retry, short_uid, start_worker_thread
 from localstack.utils.common import safe_requests as requests
