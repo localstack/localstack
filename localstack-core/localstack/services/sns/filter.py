@@ -1,3 +1,4 @@
+import ipaddress
 import json
 import typing as t
 
@@ -124,6 +125,10 @@ class SubscriptionFilter:
             return equal_ignore_case.lower() == value.lower()
         elif numeric_condition := condition.get("numeric"):
             return self._evaluate_numeric_condition(numeric_condition, value)
+        elif cidr := condition.get("cidr"):
+            ips = [str(ip) for ip in ipaddress.IPv4Network(cidr)]
+            return value in ips
+
         return False
 
     @staticmethod
@@ -325,6 +330,11 @@ class FilterPolicyValidator:
                     )
                     _rules.extend(sub_rules)
                 elif isinstance(_value, list):
+                    if not _value:
+                        raise InvalidParameterException(
+                            f"{self.error_prefix}FilterPolicy: Empty arrays are not allowed"
+                        )
+
                     current_combination = 0
                     if key == "$or":
                         for val in _value:
@@ -412,6 +422,14 @@ class FilterPolicyValidator:
 
                 elif operator == "numeric":
                     self._validate_numeric_condition(value)
+
+                elif operator == "cidr":
+                    try:
+                        ipaddress.IPv4Network(value)
+                    except ValueError:
+                        raise InvalidParameterException(
+                            f"{self.error_prefix}FilterPolicy: Malformed CIDR, one '/' required"
+                        )
 
                 else:
                     raise InvalidParameterException(
