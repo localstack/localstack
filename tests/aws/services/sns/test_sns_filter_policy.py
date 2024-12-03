@@ -1218,7 +1218,14 @@ class TestSNSFilterPolicyBody:
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
 
-        filter_policy = {"detail": {"sourceIPAddress": [{"cidr": "10.0.0.0/24"}]}}
+        filter_policy = {
+            "detail": {
+                "$or": [
+                    {"sourceIPAddress": [{"cidr": "10.0.0.0/24"}]},
+                    {"sourceIPAddressV6": [{"cidr": "2001:db8:1234:1a00::/64"}]},
+                ],
+            },
+        }
         sns_create_sqs_subscription_with_filter_policy(
             topic_arn=topic_arn,
             queue_url=queue_url,
@@ -1244,6 +1251,24 @@ class TestSNSFilterPolicyBody:
                 "time": "2022-07-13T13:48:01Z",
                 "detail": {"sourceIPAddress": "10.0.0.256"},
             },
+            {
+                "id": "1",
+                "source": "test-source",
+                "detail-type": "test-detail-type",
+                "account": "123456789012",
+                "region": "us-east-2",
+                "time": "2022-07-13T13:48:01Z",
+                "detail": {"sourceIPAddressV6": "2001:0db8:1234:1a00:0000:0000:0000:0000"},
+            },
+            {
+                "id": "1",
+                "source": "test-source",
+                "detail-type": "test-detail-type",
+                "account": "123456789012",
+                "region": "us-east-2",
+                "time": "2022-07-13T13:48:01Z",
+                "detail": {"sourceIPAddressV6": "2001:0db8:123f:1a01:0000:0000:0000:0000"},
+            },
         ]
         for message in messages:
             aws_client.sns.publish(
@@ -1259,7 +1284,7 @@ class TestSNSFilterPolicyBody:
             aws_client=aws_client,
             _queue_url=queue_url,
             _msg_list=recv_messages,
-            expected=1,
+            expected=2,
         )
         snapshot.match("messages-queue", {"Messages": recv_messages})
 
@@ -1379,12 +1404,40 @@ class TestSNSFilterPolicyConditions:
         snapshot.match("error-condition-is-not-list-and-no-operator", e.value.response)
 
         with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"cidr": ["bad-filter"]}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-bad-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
             filter_policy = {"key": [{"cidr": "bad-filter"}]}
             _subscribe(filter_policy)
         self._add_normalized_field_to_snapshot(e.value.response)
-        snapshot.match("error-condition-bad-cidr", e.value.response)
+        snapshot.match("error-condition-bad-cidr-str", e.value.response)
 
-        # TODO: add `cidr` string operator
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"cidr": "bad-filter/64"}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-bad-cidr-str-slash", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"cidr": "bad-/64filter"}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-bad-cidr-str-slash-2", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"cidr": "xx.11.xx/8"}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-bad-cidr-v4", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"cidr": "xxxx:db8:1234:1a00::/64"}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-bad-cidr-v6", e.value.response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])

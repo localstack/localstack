@@ -15,7 +15,7 @@
     "last_validated_date": "2024-12-03T15:02:26+00:00"
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_ip_address_condition": {
-    "last_validated_date": "2024-12-03T15:14:34+00:00"
+    "last_validated_date": "2024-12-03T22:05:07+00:00"
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body[False]": {
     "last_validated_date": "2024-12-03T15:02:09+00:00"
@@ -54,7 +54,7 @@
     "last_validated_date": "2024-05-14T16:51:06+00:00"
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy_string_operators": {
-    "last_validated_date": "2024-12-03T15:19:36+00:00"
+    "last_validated_date": "2024-12-03T22:11:13+00:00"
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyCrud::test_set_subscription_filter_policy_scope": {
     "last_validated_date": "2024-05-14T16:49:11+00:00"

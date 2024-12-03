@@ -41,7 +41,7 @@
     }
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy_string_operators": {
-    "recorded-date": "03-12-2024, 15:19:36",
+    "recorded-date": "03-12-2024, 22:11:13",
     "recorded-content": {
       "error-condition-empty-array": {
         "Error": {
@@ -139,12 +139,72 @@
           "HTTPStatusCode": 400
         }
       },
-      "error-condition-bad-cidr": {
+      "error-condition-bad-type": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: prefix match pattern must be a string\n at [Source: (String)\"{\"key\":[{\"cidr\":[\"bad-filter\"]}]}\"; line: 1, column: 18]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: prefix match pattern must be a string"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-bad-cidr-str": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Malformed CIDR, one '/' required",
           "Type": "Sender",
           "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Malformed CIDR, one '/' required"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-bad-cidr-str-slash": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Nonstandard IP address: bad-filter",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Nonstandard IP address: bad-filter"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-bad-cidr-str-slash-2": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Malformed CIDR, mask bits must be an integer",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Malformed CIDR, mask bits must be an integer"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-bad-cidr-v4": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Nonstandard IP address: xx.11.xx",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Nonstandard IP address: xx.11.xx"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-bad-cidr-v6": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Nonstandard IP address: xxxx:db8:1234:1a00::",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Nonstandard IP address: xxxx:db8:1234:1a00::"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1761,7 +1821,7 @@
     }
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_ip_address_condition": {
-    "recorded-date": "03-12-2024, 15:14:34",
+    "recorded-date": "03-12-2024, 22:05:08",
     "recorded-content": {
       "messages-queue": {
         "Messages": [
@@ -1786,6 +1846,28 @@
             "MD5OfBody": "<md5-hash>",
             "MessageId": "<uuid:1>",
             "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "id": "1",
+              "source": "test-source",
+              "detail-type": "test-detail-type",
+              "account": "123456789012",
+              "region": "us-east-2",
+              "time": "date",
+              "detail": {
+                "sourceIPAddressV6": "2001:0db8:1234:1a00:0000:0000:0000:0000"
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
           }
         ]
       }

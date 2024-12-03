@@ -126,8 +126,11 @@ class SubscriptionFilter:
         elif numeric_condition := condition.get("numeric"):
             return self._evaluate_numeric_condition(numeric_condition, value)
         elif cidr := condition.get("cidr"):
-            ips = [str(ip) for ip in ipaddress.IPv4Network(cidr)]
-            return value in ips
+            try:
+                ip = ipaddress.ip_address(value)
+                return ip in ipaddress.ip_network(cidr)
+            except ValueError:
+                return False
 
         return False
 
@@ -424,12 +427,7 @@ class FilterPolicyValidator:
                     self._validate_numeric_condition(value)
 
                 elif operator == "cidr":
-                    try:
-                        ipaddress.IPv4Network(value)
-                    except ValueError:
-                        raise InvalidParameterException(
-                            f"{self.error_prefix}FilterPolicy: Malformed CIDR, one '/' required"
-                        )
+                    self._validate_cidr_condition(value)
 
                 else:
                     raise InvalidParameterException(
@@ -440,6 +438,31 @@ class FilterPolicyValidator:
                 raise InvalidParameterException(
                     f"{self.error_prefix}FilterPolicy: Match value must be String, number, true, false, or null"
                 )
+
+    def _validate_cidr_condition(self, value):
+        if not isinstance(value, str):
+            # `cidr` returns the prefix error
+            raise InvalidParameterException(
+                f"{self.error_prefix}FilterPolicy: prefix match pattern must be a string"
+            )
+        splitted = value.split("/")
+        if len(splitted) != 2:
+            raise InvalidParameterException(
+                f"{self.error_prefix}FilterPolicy: Malformed CIDR, one '/' required"
+            )
+        ip_addr, mask = value.split("/")
+        try:
+            int(mask)
+        except ValueError:
+            raise InvalidParameterException(
+                f"{self.error_prefix}FilterPolicy: Malformed CIDR, mask bits must be an integer"
+            )
+        try:
+            ipaddress.ip_network(value)
+        except ValueError:
+            raise InvalidParameterException(
+                f"{self.error_prefix}FilterPolicy: Nonstandard IP address: {ip_addr}"
+            )
 
     def _validate_numeric_condition(self, value):
         if not value:
