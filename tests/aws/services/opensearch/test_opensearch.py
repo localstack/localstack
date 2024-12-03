@@ -151,7 +151,7 @@ class TestOpensearchProvider:
             # wait for the cluster
             opensearch_wait_for_cluster(domain_name=domain_name)
 
-            # make sure the plugins are installed
+            # make sure the plugins are installed (Sort and display component)
             plugins_url = (
                 f"https://{domain_status['Endpoint']}/_cat/plugins?s=component&h=component"
             )
@@ -180,7 +180,7 @@ class TestOpensearchProvider:
             "Endpoint"
         ]
 
-        # make sure the plugins are installed
+        # make sure the plugins are installed (Sort and display component)
         plugins_url = f"https://{endpoint}/_cat/plugins?s=component&h=component"
 
         # request without credentials fails
@@ -293,7 +293,7 @@ class TestOpensearchProvider:
             "Endpoint"
         ]
 
-        # ensure opensearch-sql plugin is installed
+        # make sure the sql plugin is installed (Sort and display component)
         plugins_url = f"https://{endpoint}/_cat/plugins?s=component&h=component"
         response = requests.get(
             plugins_url, auth=master_user_auth, headers={"Accept": "application/json"}
