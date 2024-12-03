@@ -142,7 +142,7 @@ class ShapeNode:
 
     def _print_structure_declaration(self, output, doc=True, quote_types=False):
         if self.is_exception:
-            self._print_as_class(output, "ServiceException", doc, quote_types=quote_types)
+            self._print_as_class(output, "ServiceException", doc, quote_types)
             return
 
         if any(map(is_keyword, self.shape.members.keys())):
