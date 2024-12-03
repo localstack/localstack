@@ -1,5 +1,7 @@
 from typing import Callable
 
+import botocore.config
+
 from localstack.aws.api.lambda_ import (
     EventSourceMappingConfiguration,
     FunctionResponseType,
@@ -57,6 +59,12 @@ class EsmWorkerFactory:
         function_arn = self.esm_config["FunctionArn"]
         lambda_client = get_internal_client(
             arn=function_arn,  # Only the function_arn is necessary since the Lambda should be able to invoke itself
+            client_config=botocore.config.Config(
+                retries={"max_attempts": 0, "total_max_attempts": 1},
+                read_timeout=900,  # 900s is the maximum amount of time a Lambda can run for
+                connect_timeout=900,
+                tcp_keepalive=True,
+            ),
         )
         sender = LambdaSender(
             target_arn=function_arn,
