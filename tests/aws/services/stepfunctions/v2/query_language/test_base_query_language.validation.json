@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/stepfunctions/v2/query_language/test_base_query_language.py::TestBaseQueryLanguage::test_base_query_language_field[JSONATA]": {
+    "last_validated_date": "2024-11-04T11:11:18+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/query_language/test_base_query_language.py::TestBaseQueryLanguage::test_base_query_language_field[JSON_PATH]": {
+    "last_validated_date": "2024-11-04T11:11:03+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/query_language/test_base_query_language.py::TestBaseQueryLanguage::test_query_language_field_override[JSONATA_OVERRIDE]": {
+    "last_validated_date": "2024-11-04T11:11:32+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/query_language/test_base_query_language.py::TestBaseQueryLanguage::test_query_language_field_override[JSONATA_OVERRIDE_DEFAULT]": {
+    "last_validated_date": "2024-11-04T11:11:42+00:00"
+  }
+}

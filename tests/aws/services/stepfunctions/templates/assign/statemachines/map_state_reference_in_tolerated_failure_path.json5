@@ -1,0 +1,38 @@
+{
+  "Comment": "MAP_STATE_REFERENCE_IN_TOLERATED_FAILURE_PATH",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Pass",
+      "Assign": {
+        "toleratedFailurePercentage": "1",
+        "toleratedFailureCount": "1",
+      },
+      "Result": {
+        "Values": [1, 2, 3]
+      },
+      "Next": "MapState"
+    },
+    "MapState": {
+      "Type": "Map",
+      "ItemsPath": "$.Values",
+      "MaxConcurrency": 1,
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "HandleItem",
+        "States": {
+          "HandleItem": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "ToleratedFailurePercentagePath": "$toleratedFailurePercentage",
+      "ToleratedFailureCountPath": "$toleratedFailureCount",
+      "End": true
+    }
+  }
+}

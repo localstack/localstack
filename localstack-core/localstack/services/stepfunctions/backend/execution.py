@@ -24,17 +24,14 @@ from localstack.aws.api.stepfunctions import (
     SyncExecutionStatus,
     Timestamp,
     TraceHeader,
+    VariableReferences,
 )
 from localstack.aws.connect import connect_to
-from localstack.services.stepfunctions.asl.eval.aws_execution_details import AWSExecutionDetails
-from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
-    ContextObjectInitData,
-)
-from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
-    Execution as ContextObjectExecution,
-)
-from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
-    StateMachine as ContextObjectStateMachine,
+from localstack.services.stepfunctions.asl.eval.evaluation_details import (
+    AWSExecutionDetails,
+    EvaluationDetails,
+    ExecutionDetails,
+    StateMachineDetails,
 )
 from localstack.services.stepfunctions.asl.eval.event.logging import (
     CloudWatchLoggingSession,
@@ -45,6 +42,9 @@ from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramState,
     ProgramStopped,
     ProgramTimedOut,
+)
+from localstack.services.stepfunctions.asl.static_analyser.variable_references_static_analyser import (
+    VariableReferencesStaticAnalyser,
 )
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.activity import Activity
@@ -74,7 +74,7 @@ class BaseExecutionWorkerCommunication(ExecutionWorkerCommunication):
         self.execution.stop_date = datetime.datetime.now(tz=datetime.timezone.utc)
         if isinstance(exit_program_state, ProgramEnded):
             self.execution.exec_status = ExecutionStatus.SUCCEEDED
-            self.execution.output = self.execution.exec_worker.env.inp
+            self.execution.output = self.execution.exec_worker.env.states.get_input()
         elif isinstance(exit_program_state, ProgramStopped):
             self.execution.exec_status = ExecutionStatus.ABORTED
         elif isinstance(exit_program_state, ProgramError):
@@ -206,6 +206,11 @@ class Execution:
         revision_id = self.state_machine.revision_id
         if self.state_machine.revision_id:
             out["revisionId"] = revision_id
+        variable_references: VariableReferences = VariableReferencesStaticAnalyser.process_and_get(
+            definition=self.state_machine.definition
+        )
+        if variable_references:
+            out["variableReferences"] = variable_references
         return out
 
     def to_execution_list_item(self) -> ExecutionListItem:
@@ -246,34 +251,36 @@ class Execution:
     def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerCommunication:
         return BaseExecutionWorkerCommunication(self)
 
-    def _get_start_context_object_init_data(self) -> ContextObjectInitData:
-        return ContextObjectInitData(
-            Execution=ContextObjectExecution(
-                Id=self.exec_arn,
-                Input=self.input_data,
-                Name=self.name,
-                RoleArn=self.role_arn,
-                StartTime=self._to_serialized_date(self.start_date),
-            ),
-            StateMachine=ContextObjectStateMachine(
-                Id=self.state_machine.arn,
-                Name=self.state_machine.name,
-            ),
-        )
-
     def _get_start_aws_execution_details(self) -> AWSExecutionDetails:
         return AWSExecutionDetails(
             account=self.account_id, region=self.region_name, role_arn=self.role_arn
         )
 
+    def get_start_execution_details(self) -> ExecutionDetails:
+        return ExecutionDetails(
+            arn=self.exec_arn,
+            name=self.name,
+            role_arn=self.role_arn,
+            inpt=self.input_data,
+            start_time=self._to_serialized_date(self.start_date),
+        )
+
+    def get_start_state_machine_details(self) -> StateMachineDetails:
+        return StateMachineDetails(
+            arn=self.state_machine.arn,
+            name=self.state_machine.name,
+            typ=self.state_machine.sm_type,
+            definition=self.state_machine.definition,
+        )
+
     def _get_start_execution_worker(self) -> ExecutionWorker:
         return ExecutionWorker(
-            execution_type=self.sm_type,
-            definition=self.state_machine.definition,
-            input_data=self.input_data,
+            evaluation_details=EvaluationDetails(
+                aws_execution_details=self._get_start_aws_execution_details(),
+                execution_details=self.get_start_execution_details(),
+                state_machine_details=self.get_start_state_machine_details(),
+            ),
             exec_comm=self._get_start_execution_worker_comm(),
-            context_object_init=self._get_start_context_object_init_data(),
-            aws_execution_details=self._get_start_aws_execution_details(),
             cloud_watch_logging_session=self._cloud_watch_logging_session,
             activity_store=self._activity_store,
         )
@@ -353,12 +360,12 @@ class SyncExecution(Execution):
 
     def _get_start_execution_worker(self) -> SyncExecutionWorker:
         return SyncExecutionWorker(
-            execution_type=self.sm_type,
-            definition=self.state_machine.definition,
-            input_data=self.input_data,
+            evaluation_details=EvaluationDetails(
+                aws_execution_details=self._get_start_aws_execution_details(),
+                execution_details=self.get_start_execution_details(),
+                state_machine_details=self.get_start_state_machine_details(),
+            ),
             exec_comm=self._get_start_execution_worker_comm(),
-            context_object_init=self._get_start_context_object_init_data(),
-            aws_execution_details=self._get_start_aws_execution_details(),
             cloud_watch_logging_session=self._cloud_watch_logging_session,
             activity_store=self._activity_store,
         )

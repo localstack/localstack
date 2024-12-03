@@ -39,6 +39,7 @@ class StateTaskServiceUnsupported(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        task_credentials: dict,
     ):
         # Logs that the evaluation of this optimised service integration is not supported
         # and relays the call to the target service with the computed parameters.

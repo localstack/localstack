@@ -1,0 +1,34 @@
+{
+  "Comment": "MAP_STATE_REFERENCE_IN_MAX_CONCURRENCY_PATH",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Pass",
+      "Assign": {
+        "maxConcurrency": "1"
+      },
+      "Result": {
+        "Values": [1, 2, 3]
+      },
+      "Next": "MapState"
+    },
+   "MapState": {
+      "Type": "Map",
+      "ItemsPath": "$.Values",
+      "MaxConcurrencyPath": "$maxConcurrency",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "HandleItem",
+        "States": {
+          "HandleItem": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

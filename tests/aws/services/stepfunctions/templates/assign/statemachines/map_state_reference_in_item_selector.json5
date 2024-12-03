@@ -1,0 +1,39 @@
+{
+  "Comment": "MAP_STATE_REFERENCE_IN_ITEM_SELECTOR",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Pass",
+      "Assign": {
+        "bucket": "test-name",
+      },
+      "Result":{
+        "Values": [1, 2, 3]
+      },
+      "Next": "MapState"
+    },
+    "MapState": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "ItemsPath": "$.Values",
+      "ItemSelector": {
+        "value.$": "$$.Map.Item.Value",
+        "bucketName": "$bucket"
+      },
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "MapPass",
+        "States": {
+          "MapPass": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

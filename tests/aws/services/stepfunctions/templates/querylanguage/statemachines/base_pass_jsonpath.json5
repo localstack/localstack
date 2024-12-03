@@ -1,0 +1,10 @@
+{
+  "QueryLanguage": "JSONPath",
+  "StartAt": "StartState",
+  "States": {
+    "StartState": {
+      "Type": "Pass",
+      "End": true
+    },
+  }
+}

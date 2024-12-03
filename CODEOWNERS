@@ -236,6 +236,7 @@
 /localstack-core/localstack/aws/api/stepfunctions/ @MEPalma @joe4dev @dominikschubert @gregfurman
 /localstack-core/localstack/services/stepfunctions/ @MEPalma @joe4dev @dominikschubert @gregfurman
 /tests/aws/services/stepfunctions/ @MEPalma @joe4dev @dominikschubert @gregfurman
+/tests/unit/services/stepfunctions/ @MEPalma @joe4dev @dominikschubert @gregfurman
 
 # sts
 /localstack-core/localstack/aws/api/sts/ @pinzon @dfangl

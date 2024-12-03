@@ -66,7 +66,9 @@ class SqsPoller(Poller):
         #  https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-sqs.html#pipes-sqs-scaling
         response = self.source_client.receive_message(
             QueueUrl=self.queue_url,
-            MaxNumberOfMessages=self.sqs_queue_parameters["BatchSize"],
+            MaxNumberOfMessages=min(
+                self.sqs_queue_parameters["BatchSize"], DEFAULT_MAX_RECEIVE_COUNT
+            ),  # BatchSize cannot exceed 10
             MessageAttributeNames=["All"],
             MessageSystemAttributeNames=[MessageSystemAttributeName.All],
         )

@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from json import JSONDecodeError
 
 from werkzeug.datastructures import Headers
@@ -39,20 +40,73 @@ class RestApiMockIntegration(RestApiIntegration):
 
         return EndpointResponse(status_code=status_code, body=b"", headers=Headers())
 
-    @staticmethod
-    def get_status_code(integration_req: IntegrationRequest) -> int | None:
+    def get_status_code(self, integration_req: IntegrationRequest) -> int | None:
         try:
-            body = json.loads(to_str(integration_req["body"]))
+            body = json.loads(integration_req["body"])
         except JSONDecodeError as e:
             LOG.debug(
-                "Exception while parsing integration request body: %s",
+                "Exception while JSON parsing integration request body: %s"
+                "Falling back to custom parser",
                 e,
                 exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
-            return
+            body = self.parse_invalid_json(to_str(integration_req["body"]))
 
         status_code = body.get("statusCode")
         if not isinstance(status_code, int):
             return
 
         return status_code
+
+    def parse_invalid_json(self, body: str) -> dict:
+        """This is a quick fix to unblock cdk users setting cors policy for rest apis.
+        CDK creates a MOCK OPTIONS route with in valid json. `{statusCode: 200}`
+        Aws probably has a custom token parser. We can implement one
+        at some point if we have user requests for it"""
+        try:
+            statuscode = ""
+            matched = re.match(r"^\s*{(.+)}\s*$", body).group(1)
+            splits = [m.strip() for m in matched.split(",")]
+            # TODO this is not right, but nested object would otherwise break the parsing
+            kvs = [s.split(":", maxsplit=1) for s in splits]
+            for kv in kvs:
+                assert len(kv) == 2
+                k, v = kv
+                k = k.strip()
+                v = v.strip()
+
+                assert k
+                assert v
+
+                if k == "statusCode":
+                    statuscode = int(v)
+                    continue
+
+                if (first_char := k[0]) in "[{":
+                    raise Exception
+                if first_char in "'\"":
+                    assert len(k) > 2
+                    assert k[-1] == first_char
+                    k = k[1:-1]
+
+                if (v_first_char := v[0]) in "[{'\"":
+                    assert len(v) > 2
+                    if v_first_char == "{":
+                        # TODO reparse objects
+                        assert v[-1] == "}"
+                    elif v_first_char == "[":
+                        # TODO validate arrays
+                        assert v[-1] == "]"
+                    else:
+                        assert v[-1] == v_first_char
+                        v = v[1:-1]
+
+                if k == "statusCode":
+                    statuscode = int(v)
+
+            return {"statusCode": statuscode}
+        except Exception as e:
+            LOG.debug(
+                "Error Parsing an invalid json, %s", e, exc_info=LOG.isEnabledFor(logging.DEBUG)
+            )
+            return {"statusCode": ""}

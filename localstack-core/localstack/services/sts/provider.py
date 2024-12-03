@@ -18,6 +18,7 @@ from localstack.aws.api.sts import (
     tokenCodeType,
     unrestrictedSessionPolicyDocumentType,
 )
+from localstack.services.iam.iam_patches import apply_iam_patches
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sts.models import sts_stores
@@ -27,6 +28,9 @@ LOG = logging.getLogger(__name__)
 
 
 class StsProvider(StsApi, ServiceLifecycleHook):
+    def __init__(self):
+        apply_iam_patches()
+
     def get_caller_identity(self, context: RequestContext, **kwargs) -> GetCallerIdentityResponse:
         response = call_moto(context)
         if "user/moto" in response["Arn"] and "sts" in response["Arn"]:

@@ -260,6 +260,9 @@ class TestSES:
         self, create_template, aws_client, snapshot, setup_email_addresses
     ):
         # Ensure all email send operations correctly update the `sent` email counter
+        snapshot.add_transformer(
+            snapshot.transform.key_value("SentLast24Hours", reference_replacement=False),
+        )
 
         def _assert_sent_quota(expected_counter: int) -> dict:
             _send_quota = aws_client.ses.get_send_quota()

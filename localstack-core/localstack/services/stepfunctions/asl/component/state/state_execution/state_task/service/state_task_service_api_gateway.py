@@ -291,6 +291,7 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        task_credentials: dict,
     ):
         task_parameters: TaskParameters = select_from_typed_dict(
             typed_dict=TaskParameters, obj=normalised_parameters

@@ -173,9 +173,20 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         self, context: RequestContext, request: CreateSecretRequest
     ) -> CreateSecretResponse:
         self._raise_if_missing_client_req_token(request)
-        self._raise_if_invalid_secret_id(request["Name"])
+        # Some providers need to create keys which are not usually creatable by users
+        if not any(
+            tag_entry["Key"] == "BYPASS_SECRET_ID_VALIDATION"
+            for tag_entry in request.get("Tags", [])
+        ):
+            self._raise_if_invalid_secret_id(request["Name"])
+        else:
+            request["Tags"] = [
+                tag_entry
+                for tag_entry in request.get("Tags", [])
+                if tag_entry["Key"] != "BYPASS_SECRET_ID_VALIDATION"
+            ]
 
-        return call_moto(context)
+        return call_moto(context, request)
 
     @handler("DeleteResourcePolicy", expand=False)
     def delete_resource_policy(

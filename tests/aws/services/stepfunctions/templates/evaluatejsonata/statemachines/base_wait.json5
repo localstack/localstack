@@ -1,0 +1,22 @@
+{
+  "Comment": "BASE_MAP",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Map",
+      "Items": [1],
+      "MaxConcurrency": 1,
+      "ItemProcessor": {
+        "StartAt": "Process",
+        "States": {
+          "Process": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

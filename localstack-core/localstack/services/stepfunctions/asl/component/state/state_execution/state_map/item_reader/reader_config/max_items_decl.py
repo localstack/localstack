@@ -12,6 +12,10 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
 )
+from localstack.services.stepfunctions.asl.component.common.jsonata.jsonata_template_value_terminal import (
+    JSONataTemplateValueTerminalExpression,
+)
+from localstack.services.stepfunctions.asl.component.common.variable_sample import VariableSample
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
@@ -55,6 +59,36 @@ class MaxItems(MaxItemsDecl):
 
     def _get_value(self, env: Environment) -> int:
         return self.max_items
+
+
+class MaxItemsJSONata(MaxItemsDecl):
+    jsonata_template_value_terminal_expression: Final[JSONataTemplateValueTerminalExpression]
+
+    def __init__(
+        self, jsonata_template_value_terminal_expression: JSONataTemplateValueTerminalExpression
+    ):
+        super().__init__()
+        self.jsonata_template_value_terminal_expression = jsonata_template_value_terminal_expression
+
+    def _get_value(self, env: Environment) -> int:
+        # TODO: add snapshot tests to verify AWS's behaviour about non integer values.
+        self.jsonata_template_value_terminal_expression.eval(env=env)
+        max_items: int = int(env.stack.pop())
+        return max_items
+
+
+class MaxItemsPathVar(MaxItemsDecl):
+    variable_sample: Final[VariableSample]
+
+    def __init__(self, variable_sample: VariableSample):
+        super().__init__()
+        self.variable_sample = variable_sample
+
+    def _get_value(self, env: Environment) -> int:
+        self.variable_sample.eval(env=env)
+        # TODO: add snapshot tests to verify AWS's behaviour about non integer values.
+        max_items: int = int(env.stack.pop())
+        return max_items
 
 
 class MaxItemsPath(MaxItemsDecl):

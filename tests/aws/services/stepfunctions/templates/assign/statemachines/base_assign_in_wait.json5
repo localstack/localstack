@@ -1,0 +1,14 @@
+{
+  "Comment": "BASE_ASSIGN_IN_WAIT",
+  "StartAt": "WaitState",
+  "States": {
+    "WaitState": {
+      "Type": "Wait",
+      "Seconds": 0,
+      "Assign": {
+        "foo": "oof"
+      },
+      "End": true
+    }
+  }
+}

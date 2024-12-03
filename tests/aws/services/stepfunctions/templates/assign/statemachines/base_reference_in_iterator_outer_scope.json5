@@ -1,0 +1,72 @@
+{
+  "Comment": "BASE_REFERENCE_IN_ITERATOR_OUTER_SCOPE",
+  "StartAt": "Input",
+  "States": {
+    "Input": {
+      "Type": "Pass",
+      "Result": [
+        [
+          9,
+          44,
+          6
+        ],
+        [
+          82,
+          25,
+          76
+        ],
+        [
+          18,
+          42,
+          2
+        ]
+      ],
+      "Assign": {
+        "bias": 4.3
+      },
+      "Next": "IterateLevels"
+    },
+    "IterateLevels": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "AssignCurrentVector",
+        "States": {
+          "AssignCurrentVector": {
+            "Type": "Pass",
+            "Assign": {
+              "xCurrent.$": "$[0]",
+              "yCurrent.$": "$[1]",
+              "zCurrent.$": "$[2]"
+            },
+            "Next": "Calculate"
+          },
+          "Calculate": {
+            "Type": "Map",
+            "MaxConcurrency": 1,
+            "ItemProcessor": {
+              "ProcessorConfig": {
+                "Mode": "INLINE"
+              },
+              "StartAt": "Summate",
+              "States": {
+                "Summate": {
+                  "Type": "Pass",
+                  "Assign": {
+                    "Sum.$": "States.MathAdd(States.MathAdd(States.MathAdd($yCurrent, $xCurrent), $zCurrent), $bias)"
+                  },
+                  "End": true
+                }
+              }
+            },
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

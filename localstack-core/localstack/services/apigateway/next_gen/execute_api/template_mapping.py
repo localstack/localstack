@@ -27,7 +27,7 @@ from localstack.services.apigateway.next_gen.execute_api.variables import (
     ContextVarsRequestOverride,
     ContextVarsResponseOverride,
 )
-from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
+from localstack.utils.aws.templating import APIGW_SOURCE, VelocityUtil, VtlTemplate
 from localstack.utils.json import extract_jsonpath, json_safe
 
 LOG = logging.getLogger(__name__)
@@ -173,8 +173,8 @@ class VelocityInput:
 class ApiGatewayVtlTemplate(VtlTemplate):
     """Util class for rendering VTL templates with API Gateway specific extensions"""
 
-    def prepare_namespace(self, variables) -> dict[str, Any]:
-        namespace = super().prepare_namespace(variables)
+    def prepare_namespace(self, variables, source: str = APIGW_SOURCE) -> dict[str, Any]:
+        namespace = super().prepare_namespace(variables, source)
         input_var = variables.get("input") or {}
         variables = {
             "input": VelocityInput(input_var.get("body"), input_var.get("params")),

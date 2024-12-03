@@ -30,7 +30,22 @@
     "last_validated_date": "2024-10-12T13:43:31+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping": {
-    "last_validated_date": "2024-10-12T13:38:01+00:00"
+    "last_validated_date": "2024-11-25T15:46:54+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batch_size[10000]": {
+    "last_validated_date": "2024-11-26T13:46:45+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batch_size[1000]": {
+    "last_validated_date": "2024-11-26T13:45:39+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batch_size[100]": {
+    "last_validated_date": "2024-11-26T13:44:38+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batch_size[15]": {
+    "last_validated_date": "2024-11-26T13:43:39+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batching_reserved_concurrency": {
+    "last_validated_date": "2024-11-29T13:29:53+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_update": {
     "last_validated_date": "2024-10-12T13:45:43+00:00"
@@ -48,7 +63,7 @@
     "last_validated_date": "2024-10-12T13:43:40+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_failing_lambda_retries_after_visibility_timeout": {
-    "last_validated_date": "2024-10-12T13:32:29+00:00"
+    "last_validated_date": "2024-11-25T12:12:47+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_fifo_message_group_parallelism": {
     "last_validated_date": "2024-10-12T13:37:00+00:00"

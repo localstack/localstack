@@ -1,0 +1,68 @@
+{
+  "Comment": "PARALLEL_CATCH_ERROR_OUTPUT_WITH_RETRY",
+  "QueryLanguage": "JSONata",
+  "StartAt": "ParallelState",
+  "States": {
+    "ParallelState": {
+      "Type": "Parallel",
+      "Next": "Finish",
+      "Branches": [
+        {
+          "StartAt": "ExecuteLambdaTask",
+          "States": {
+            "ExecuteLambdaTask": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Arguments": {
+                "FunctionName": "%LAMBDA_FUNCTION_ARN_LITERAL_PLACEHOLDER%",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "Output": {
+                "InnerStateInput": "{% $states.input %}",
+                "InnerStateResult": "{% $states.result %}"
+              },
+              "End": true
+            }
+          }
+        }
+      ],
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 1
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Output": {
+            "stateInput": "{% $states.input %}",
+            "stateError": "{% $states.errorOutput %}"
+          },
+          "Next": "Fallback"
+        }
+      ]
+    },
+    "Fallback": {
+      "Type": "Pass",
+      "Output": {
+        "result": "{% $states.input %}"
+      },
+      "End": true
+    },
+    "Finish": {
+      "Type": "Pass",
+      "Output": {
+        "result": "{% $states.input %}"
+      },
+      "End": true
+    }
+  }
+}

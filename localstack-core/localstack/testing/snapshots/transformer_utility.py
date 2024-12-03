@@ -767,12 +767,7 @@ class TransformerUtility:
             connection_name: The name of the connection to transform in the snapshot
         """
         snapshot.add_transformer(snapshot.transform.regex(connection_name, "<connection-name>"))
-        snapshot.add_transformer(
-            snapshot.transform.key_value("ConnectionArn", reference_replacement=False)
-        )
-        snapshot.add_transformer(
-            snapshot.transform.key_value("SecretArn", reference_replacement=False)
-        )
+        snapshot.add_transformer(TransformerUtility.resource_name())
         return snapshot
 
 

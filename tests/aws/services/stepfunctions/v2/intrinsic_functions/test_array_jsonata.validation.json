@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_array_jsonata.py::TestArrayJSONata::test_array_partition": {
+    "last_validated_date": "2024-11-15T16:16:35+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_array_jsonata.py::TestArrayJSONata::test_array_range": {
+    "last_validated_date": "2024-11-15T16:28:14+00:00"
+  }
+}

@@ -4,7 +4,7 @@ import hashlib
 import json
 import logging
 from datetime import datetime
-from typing import List, Optional, Union
+from typing import List, Optional, TypedDict, Union
 from urllib import parse as urlparse
 
 from jsonpatch import apply_patch
@@ -89,6 +89,11 @@ class OpenAPIExt:
     REQUEST_VALIDATOR = "x-amazon-apigateway-request-validator"
     REQUEST_VALIDATORS = "x-amazon-apigateway-request-validators"
     TAG_VALUE = "x-amazon-apigateway-tag-value"
+
+
+class AuthorizerConfig(TypedDict):
+    authorizer: Authorizer
+    authorization_scopes: Optional[list[str]]
 
 
 # TODO: make the CRUD operations in this file generic for the different model types (authorizes, validators, ...)
@@ -564,14 +569,14 @@ def import_api_from_openapi_spec(
 
             authorizers[security_scheme_name] = authorizer
 
-    def get_authorizer(path_payload: dict) -> Optional[Authorizer]:
+    def get_authorizer(path_payload: dict) -> Optional[AuthorizerConfig]:
         if not (security_schemes := path_payload.get("security")):
             return None
 
         for security_scheme in security_schemes:
-            for security_scheme_name in security_scheme.keys():
+            for security_scheme_name, scopes in security_scheme.items():
                 if authorizer := authorizers.get(security_scheme_name):
-                    return authorizer
+                    return AuthorizerConfig(authorizer=authorizer, authorization_scopes=scopes)
 
     def get_or_create_path(abs_path: str, base_path: str):
         parts = abs_path.rstrip("/").replace("//", "/").split("/")
@@ -815,7 +820,7 @@ def import_api_from_openapi_spec(
         kwargs = {}
 
         if authorizer := get_authorizer(method_schema) or default_authorizer:
-            method_authorizer = authorizer or default_authorizer
+            method_authorizer = authorizer["authorizer"]
             # override the authorizer_type if it's a TOKEN or REQUEST to CUSTOM
             if (authorizer_type := method_authorizer["type"]) in ("TOKEN", "REQUEST"):
                 authorization_type = "CUSTOM"
@@ -823,6 +828,9 @@ def import_api_from_openapi_spec(
                 authorization_type = authorizer_type
 
             kwargs["authorizer_id"] = method_authorizer["id"]
+
+            if authorization_scopes := authorizer.get("authorization_scopes"):
+                kwargs["authorization_scopes"] = authorization_scopes
 
         return child.add_method(
             method,

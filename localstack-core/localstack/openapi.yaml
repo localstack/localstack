@@ -162,7 +162,6 @@ components:
             text_part:
               type: string
           required:
-          - html_part
           - text_part
           type: object
         Destination:

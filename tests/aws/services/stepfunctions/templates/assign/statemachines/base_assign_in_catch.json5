@@ -1,0 +1,36 @@
+{
+  "Comment": "BASE_ASSIGN_IN_CATCH",
+  "StartAt": "Task",
+  "States": {
+    "Task": {
+      "QueryLanguage": "JSONata",
+      "Type": "Task",
+      "Assign": {
+        "result": "SUCCESS"
+      },
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "{% $states.input.input_value %}",
+        "Payload": {
+          "foo": "oof"
+        }
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Assign": {
+            "result": "{% $states.errorOutput %}"
+          },
+          "Next": "fallback"
+        }
+      ],
+      "End": true
+    },
+    "fallback": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

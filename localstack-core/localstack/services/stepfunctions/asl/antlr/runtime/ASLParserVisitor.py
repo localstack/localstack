@@ -39,6 +39,11 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#query_language_decl.
+    def visitQuery_language_decl(self, ctx:ASLParser.Query_language_declContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#state_stmt.
     def visitState_stmt(self, ctx:ASLParser.State_stmtContext):
         return self.visitChildren(ctx)
@@ -79,6 +84,11 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#input_path_decl_var.
+    def visitInput_path_decl_var(self, ctx:ASLParser.Input_path_decl_varContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#input_path_decl_path_context_object.
     def visitInput_path_decl_path_context_object(self, ctx:ASLParser.Input_path_decl_path_context_objectContext):
         return self.visitChildren(ctx)
@@ -96,6 +106,11 @@ class ASLParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ASLParser#result_path_decl.
     def visitResult_path_decl(self, ctx:ASLParser.Result_path_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#output_path_decl_var.
+    def visitOutput_path_decl_var(self, ctx:ASLParser.Output_path_decl_varContext):
         return self.visitChildren(ctx)
 
 
@@ -119,8 +134,18 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#error_decl.
-    def visitError_decl(self, ctx:ASLParser.Error_declContext):
+    # Visit a parse tree produced by ASLParser#error_jsonata.
+    def visitError_jsonata(self, ctx:ASLParser.Error_jsonataContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#error_string.
+    def visitError_string(self, ctx:ASLParser.Error_stringContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#error_path_decl_var.
+    def visitError_path_decl_var(self, ctx:ASLParser.Error_path_decl_varContext):
         return self.visitChildren(ctx)
 
 
@@ -129,13 +154,28 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#error_path_decl_context.
+    def visitError_path_decl_context(self, ctx:ASLParser.Error_path_decl_contextContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#error_path_decl_intrinsic.
     def visitError_path_decl_intrinsic(self, ctx:ASLParser.Error_path_decl_intrinsicContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#cause_decl.
-    def visitCause_decl(self, ctx:ASLParser.Cause_declContext):
+    # Visit a parse tree produced by ASLParser#cause_jsonata.
+    def visitCause_jsonata(self, ctx:ASLParser.Cause_jsonataContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#cause_string.
+    def visitCause_string(self, ctx:ASLParser.Cause_stringContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#cause_path_decl_var.
+    def visitCause_path_decl_var(self, ctx:ASLParser.Cause_path_decl_varContext):
         return self.visitChildren(ctx)
 
 
@@ -144,28 +184,63 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#cause_path_decl_context.
+    def visitCause_path_decl_context(self, ctx:ASLParser.Cause_path_decl_contextContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#cause_path_decl_intrinsic.
     def visitCause_path_decl_intrinsic(self, ctx:ASLParser.Cause_path_decl_intrinsicContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#seconds_decl.
-    def visitSeconds_decl(self, ctx:ASLParser.Seconds_declContext):
+    # Visit a parse tree produced by ASLParser#seconds_jsonata.
+    def visitSeconds_jsonata(self, ctx:ASLParser.Seconds_jsonataContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#seconds_path_decl.
-    def visitSeconds_path_decl(self, ctx:ASLParser.Seconds_path_declContext):
+    # Visit a parse tree produced by ASLParser#seconds_int.
+    def visitSeconds_int(self, ctx:ASLParser.Seconds_intContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#timestamp_decl.
-    def visitTimestamp_decl(self, ctx:ASLParser.Timestamp_declContext):
+    # Visit a parse tree produced by ASLParser#seconds_path_decl_var.
+    def visitSeconds_path_decl_var(self, ctx:ASLParser.Seconds_path_decl_varContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#timestamp_path_decl.
-    def visitTimestamp_path_decl(self, ctx:ASLParser.Timestamp_path_declContext):
+    # Visit a parse tree produced by ASLParser#seconds_path_decl_value.
+    def visitSeconds_path_decl_value(self, ctx:ASLParser.Seconds_path_decl_valueContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#timestamp_jsonata.
+    def visitTimestamp_jsonata(self, ctx:ASLParser.Timestamp_jsonataContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#timestamp_string.
+    def visitTimestamp_string(self, ctx:ASLParser.Timestamp_stringContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#timestamp_path_decl_var.
+    def visitTimestamp_path_decl_var(self, ctx:ASLParser.Timestamp_path_decl_varContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#timestamp_path_decl_value.
+    def visitTimestamp_path_decl_value(self, ctx:ASLParser.Timestamp_path_decl_valueContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#items_array.
+    def visitItems_array(self, ctx:ASLParser.Items_arrayContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#items_jsonata.
+    def visitItems_jsonata(self, ctx:ASLParser.Items_jsonataContext):
         return self.visitChildren(ctx)
 
 
@@ -174,18 +249,33 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#items_path_decl_path_var.
+    def visitItems_path_decl_path_var(self, ctx:ASLParser.Items_path_decl_path_varContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#items_path_decl_path.
     def visitItems_path_decl_path(self, ctx:ASLParser.Items_path_decl_pathContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#max_concurrency_decl.
-    def visitMax_concurrency_decl(self, ctx:ASLParser.Max_concurrency_declContext):
+    # Visit a parse tree produced by ASLParser#max_concurrency_jsonata.
+    def visitMax_concurrency_jsonata(self, ctx:ASLParser.Max_concurrency_jsonataContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#max_concurrency_path_decl.
-    def visitMax_concurrency_path_decl(self, ctx:ASLParser.Max_concurrency_path_declContext):
+    # Visit a parse tree produced by ASLParser#max_concurrency_int.
+    def visitMax_concurrency_int(self, ctx:ASLParser.Max_concurrency_intContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#max_concurrency_path_var.
+    def visitMax_concurrency_path_var(self, ctx:ASLParser.Max_concurrency_path_varContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#max_concurrency_path.
+    def visitMax_concurrency_path(self, ctx:ASLParser.Max_concurrency_pathContext):
         return self.visitChildren(ctx)
 
 
@@ -194,23 +284,53 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#timeout_seconds_decl.
-    def visitTimeout_seconds_decl(self, ctx:ASLParser.Timeout_seconds_declContext):
+    # Visit a parse tree produced by ASLParser#credentials_decl.
+    def visitCredentials_decl(self, ctx:ASLParser.Credentials_declContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#timeout_seconds_path_decl.
-    def visitTimeout_seconds_path_decl(self, ctx:ASLParser.Timeout_seconds_path_declContext):
+    # Visit a parse tree produced by ASLParser#timeout_seconds_jsonata.
+    def visitTimeout_seconds_jsonata(self, ctx:ASLParser.Timeout_seconds_jsonataContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#heartbeat_seconds_decl.
-    def visitHeartbeat_seconds_decl(self, ctx:ASLParser.Heartbeat_seconds_declContext):
+    # Visit a parse tree produced by ASLParser#timeout_seconds_int.
+    def visitTimeout_seconds_int(self, ctx:ASLParser.Timeout_seconds_intContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#heartbeat_seconds_path_decl.
-    def visitHeartbeat_seconds_path_decl(self, ctx:ASLParser.Heartbeat_seconds_path_declContext):
+    # Visit a parse tree produced by ASLParser#timeout_seconds_path_decl_var.
+    def visitTimeout_seconds_path_decl_var(self, ctx:ASLParser.Timeout_seconds_path_decl_varContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#timeout_seconds_path_decl_path.
+    def visitTimeout_seconds_path_decl_path(self, ctx:ASLParser.Timeout_seconds_path_decl_pathContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#heartbeat_seconds_jsonata.
+    def visitHeartbeat_seconds_jsonata(self, ctx:ASLParser.Heartbeat_seconds_jsonataContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#heartbeat_seconds_int.
+    def visitHeartbeat_seconds_int(self, ctx:ASLParser.Heartbeat_seconds_intContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#heartbeat_seconds_path_decl_var.
+    def visitHeartbeat_seconds_path_decl_var(self, ctx:ASLParser.Heartbeat_seconds_path_decl_varContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#heartbeat_seconds_path_decl_path.
+    def visitHeartbeat_seconds_path_decl_path(self, ctx:ASLParser.Heartbeat_seconds_path_decl_pathContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#variable_sample.
+    def visitVariable_sample(self, ctx:ASLParser.Variable_sampleContext):
         return self.visitChildren(ctx)
 
 
@@ -234,13 +354,13 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#payload_binding_value.
-    def visitPayload_binding_value(self, ctx:ASLParser.Payload_binding_valueContext):
+    # Visit a parse tree produced by ASLParser#payload_binding_var.
+    def visitPayload_binding_var(self, ctx:ASLParser.Payload_binding_varContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#intrinsic_func.
-    def visitIntrinsic_func(self, ctx:ASLParser.Intrinsic_funcContext):
+    # Visit a parse tree produced by ASLParser#payload_binding_value.
+    def visitPayload_binding_value(self, ctx:ASLParser.Payload_binding_valueContext):
         return self.visitChildren(ctx)
 
 
@@ -276,6 +396,156 @@ class ASLParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ASLParser#payload_value_str.
     def visitPayload_value_str(self, ctx:ASLParser.Payload_value_strContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#assign_decl.
+    def visitAssign_decl(self, ctx:ASLParser.Assign_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#assign_decl_body.
+    def visitAssign_decl_body(self, ctx:ASLParser.Assign_decl_bodyContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#assign_decl_binding.
+    def visitAssign_decl_binding(self, ctx:ASLParser.Assign_decl_bindingContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#assign_template_value_object.
+    def visitAssign_template_value_object(self, ctx:ASLParser.Assign_template_value_objectContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#assign_template_binding_path.
+    def visitAssign_template_binding_path(self, ctx:ASLParser.Assign_template_binding_pathContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#assign_template_binding_path_context.
+    def visitAssign_template_binding_path_context(self, ctx:ASLParser.Assign_template_binding_path_contextContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#assign_template_binding_var.
+    def visitAssign_template_binding_var(self, ctx:ASLParser.Assign_template_binding_varContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#assign_template_binding_intrinsic_func.
+    def visitAssign_template_binding_intrinsic_func(self, ctx:ASLParser.Assign_template_binding_intrinsic_funcContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#assign_template_binding_assign_value.
+    def visitAssign_template_binding_assign_value(self, ctx:ASLParser.Assign_template_binding_assign_valueContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#assign_template_value.
+    def visitAssign_template_value(self, ctx:ASLParser.Assign_template_valueContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#assign_template_value_array.
+    def visitAssign_template_value_array(self, ctx:ASLParser.Assign_template_value_arrayContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#assign_template_value_terminal_float.
+    def visitAssign_template_value_terminal_float(self, ctx:ASLParser.Assign_template_value_terminal_floatContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#assign_template_value_terminal_int.
+    def visitAssign_template_value_terminal_int(self, ctx:ASLParser.Assign_template_value_terminal_intContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#assign_template_value_terminal_bool.
+    def visitAssign_template_value_terminal_bool(self, ctx:ASLParser.Assign_template_value_terminal_boolContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#assign_template_value_terminal_null.
+    def visitAssign_template_value_terminal_null(self, ctx:ASLParser.Assign_template_value_terminal_nullContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#assign_template_value_terminal_expression.
+    def visitAssign_template_value_terminal_expression(self, ctx:ASLParser.Assign_template_value_terminal_expressionContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#assign_template_value_terminal_str.
+    def visitAssign_template_value_terminal_str(self, ctx:ASLParser.Assign_template_value_terminal_strContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#arguments_object.
+    def visitArguments_object(self, ctx:ASLParser.Arguments_objectContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#arguments_expr.
+    def visitArguments_expr(self, ctx:ASLParser.Arguments_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#output_decl.
+    def visitOutput_decl(self, ctx:ASLParser.Output_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#jsonata_template_value_object.
+    def visitJsonata_template_value_object(self, ctx:ASLParser.Jsonata_template_value_objectContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#jsonata_template_binding.
+    def visitJsonata_template_binding(self, ctx:ASLParser.Jsonata_template_bindingContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#jsonata_template_value.
+    def visitJsonata_template_value(self, ctx:ASLParser.Jsonata_template_valueContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#jsonata_template_value_array.
+    def visitJsonata_template_value_array(self, ctx:ASLParser.Jsonata_template_value_arrayContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#jsonata_template_value_terminal_float.
+    def visitJsonata_template_value_terminal_float(self, ctx:ASLParser.Jsonata_template_value_terminal_floatContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#jsonata_template_value_terminal_int.
+    def visitJsonata_template_value_terminal_int(self, ctx:ASLParser.Jsonata_template_value_terminal_intContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#jsonata_template_value_terminal_bool.
+    def visitJsonata_template_value_terminal_bool(self, ctx:ASLParser.Jsonata_template_value_terminal_boolContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#jsonata_template_value_terminal_null.
+    def visitJsonata_template_value_terminal_null(self, ctx:ASLParser.Jsonata_template_value_terminal_nullContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#jsonata_template_value_terminal_expression.
+    def visitJsonata_template_value_terminal_expression(self, ctx:ASLParser.Jsonata_template_value_terminal_expressionContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#jsonata_template_value_terminal_str.
+    def visitJsonata_template_value_terminal_str(self, ctx:ASLParser.Jsonata_template_value_terminal_strContext):
         return self.visitChildren(ctx)
 
 
@@ -324,13 +594,33 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#variable_decl_var.
+    def visitVariable_decl_var(self, ctx:ASLParser.Variable_decl_varContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#variable_decl_path_context_object.
     def visitVariable_decl_path_context_object(self, ctx:ASLParser.Variable_decl_path_context_objectContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#comparison_func.
-    def visitComparison_func(self, ctx:ASLParser.Comparison_funcContext):
+    # Visit a parse tree produced by ASLParser#condition_lit.
+    def visitCondition_lit(self, ctx:ASLParser.Condition_litContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#condition_expr.
+    def visitCondition_expr(self, ctx:ASLParser.Condition_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#comparison_func_var.
+    def visitComparison_func_var(self, ctx:ASLParser.Comparison_func_varContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#comparison_func_value.
+    def visitComparison_func_value(self, ctx:ASLParser.Comparison_func_valueContext):
         return self.visitChildren(ctx)
 
 
@@ -429,33 +719,63 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#max_items_decl.
-    def visitMax_items_decl(self, ctx:ASLParser.Max_items_declContext):
+    # Visit a parse tree produced by ASLParser#max_items_jsonata.
+    def visitMax_items_jsonata(self, ctx:ASLParser.Max_items_jsonataContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#max_items_path_decl.
-    def visitMax_items_path_decl(self, ctx:ASLParser.Max_items_path_declContext):
+    # Visit a parse tree produced by ASLParser#max_items_int.
+    def visitMax_items_int(self, ctx:ASLParser.Max_items_intContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#tolerated_failure_count_decl.
-    def visitTolerated_failure_count_decl(self, ctx:ASLParser.Tolerated_failure_count_declContext):
+    # Visit a parse tree produced by ASLParser#max_items_path_var.
+    def visitMax_items_path_var(self, ctx:ASLParser.Max_items_path_varContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#tolerated_failure_count_path_decl.
-    def visitTolerated_failure_count_path_decl(self, ctx:ASLParser.Tolerated_failure_count_path_declContext):
+    # Visit a parse tree produced by ASLParser#max_items_path.
+    def visitMax_items_path(self, ctx:ASLParser.Max_items_pathContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#tolerated_failure_percentage_decl.
-    def visitTolerated_failure_percentage_decl(self, ctx:ASLParser.Tolerated_failure_percentage_declContext):
+    # Visit a parse tree produced by ASLParser#tolerated_failure_count_jsonata.
+    def visitTolerated_failure_count_jsonata(self, ctx:ASLParser.Tolerated_failure_count_jsonataContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#tolerated_failure_percentage_path_decl.
-    def visitTolerated_failure_percentage_path_decl(self, ctx:ASLParser.Tolerated_failure_percentage_path_declContext):
+    # Visit a parse tree produced by ASLParser#tolerated_failure_count_int.
+    def visitTolerated_failure_count_int(self, ctx:ASLParser.Tolerated_failure_count_intContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#tolerated_failure_count_path_var.
+    def visitTolerated_failure_count_path_var(self, ctx:ASLParser.Tolerated_failure_count_path_varContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#tolerated_failure_count_path.
+    def visitTolerated_failure_count_path(self, ctx:ASLParser.Tolerated_failure_count_pathContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#tolerated_failure_percentage_jsonata.
+    def visitTolerated_failure_percentage_jsonata(self, ctx:ASLParser.Tolerated_failure_percentage_jsonataContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#tolerated_failure_percentage_number.
+    def visitTolerated_failure_percentage_number(self, ctx:ASLParser.Tolerated_failure_percentage_numberContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#tolerated_failure_percentage_path_var.
+    def visitTolerated_failure_percentage_path_var(self, ctx:ASLParser.Tolerated_failure_percentage_path_varContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#tolerated_failure_percentage_path.
+    def visitTolerated_failure_percentage_path(self, ctx:ASLParser.Tolerated_failure_percentage_pathContext):
         return self.visitChildren(ctx)
 
 

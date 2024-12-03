@@ -1,0 +1,31 @@
+{
+  "StartAt": "Init",
+  "States": {
+    "Init": {
+      "Type": "Pass",
+      "Assign": {
+        "var_input_value.$": "$.input_value",
+        "var_constant_1": 1
+      },
+      "Next": "State0"
+    },
+    "State0": {
+      "QueryLanguage": "JSONata",
+      "Type": "Task",
+      "Resource":  "__tbd__",
+      "Arguments": {
+        "ja_states_input": "{% $states.input %}",
+        "ja_var_access": "{% $var_input_value %}",
+        "ja_expr": "{% $sum($states.input.input_values) + $var_constant_1 %}"
+      },
+      "Output": {
+        "ja_var_access": "{% $var_input_value %}",
+        "ja_expr": "{% $sum($states.input.input_values) + $var_constant_1 %}",
+        "ja_states_input": "{% $states.input %}",
+        "ja_states_result": "{% $states.result %}",
+        "ja_states_result_access": "{% $states.result.ja_expr %}"
+      },
+      "End": true
+    }
+  }
+}

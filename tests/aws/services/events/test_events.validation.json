@@ -14,32 +14,41 @@
   "tests/aws/services/events/test_events.py::TestEventBridgeApiDestinations::test_create_api_destination_name_validation": {
     "last_validated_date": "2024-11-16T13:44:08+00:00"
   },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[api-key]": {
+    "last_validated_date": "2024-11-21T15:16:35+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[basic]": {
+    "last_validated_date": "2024-11-21T15:16:35+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[oauth]": {
+    "last_validated_date": "2024-11-21T15:16:36+00:00"
+  },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection": {
-    "last_validated_date": "2024-11-12T16:49:40+00:00"
+    "last_validated_date": "2024-11-21T14:58:26+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_invalid_parameters": {
-    "last_validated_date": "2024-11-12T16:49:47+00:00"
+    "last_validated_date": "2024-11-21T14:58:29+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_name_validation": {
-    "last_validated_date": "2024-11-12T16:49:49+00:00"
+    "last_validated_date": "2024-11-21T14:58:30+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params0]": {
-    "last_validated_date": "2024-11-12T16:49:41+00:00"
+    "last_validated_date": "2024-11-21T14:58:27+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params1]": {
-    "last_validated_date": "2024-11-12T16:49:41+00:00"
+    "last_validated_date": "2024-11-21T14:58:27+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params2]": {
-    "last_validated_date": "2024-11-12T16:49:42+00:00"
+    "last_validated_date": "2024-11-21T14:58:28+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_delete_connection": {
-    "last_validated_date": "2024-11-12T16:49:46+00:00"
+    "last_validated_date": "2024-11-21T15:47:45+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_list_connections": {
-    "last_validated_date": "2024-11-12T16:49:42+00:00"
+    "last_validated_date": "2024-11-21T14:58:28+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_update_connection": {
-    "last_validated_date": "2024-11-12T16:49:48+00:00"
+    "last_validated_date": "2024-11-21T15:39:32+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions0]": {
     "last_validated_date": "2024-06-19T10:54:07+00:00"
@@ -170,8 +179,20 @@
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_exceed_limit_ten_entries[default]": {
     "last_validated_date": "2024-06-19T10:40:55+00:00"
   },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_response_entries_order": {
+    "last_validated_date": "2024-11-21T11:48:24+00:00"
+  },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_time": {
     "last_validated_date": "2024-08-27T10:02:33+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_iam_permission_failure": {
+    "last_validated_date": "2024-11-20T12:32:10+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_target_delivery_failure": {
+    "last_validated_date": "2024-11-20T17:19:19+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_time_field": {
+    "last_validated_date": "2024-11-28T21:25:00+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_without_source": {
     "last_validated_date": "2024-06-19T10:40:50+00:00"

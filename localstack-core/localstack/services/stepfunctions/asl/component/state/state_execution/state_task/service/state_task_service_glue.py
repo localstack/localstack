@@ -132,6 +132,7 @@ class StateTaskServiceGlue(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        task_credentials: dict,
     ):
         # Source the action handler and delegate the evaluation.
         api_action_handler = self._get_api_action_handler()

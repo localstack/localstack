@@ -1,0 +1,16 @@
+{
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "Assign": {
+        "str_path_root.$": "$",
+        "str_path.$": "$.input_value",
+        "str_contextpath_root.$": "$$",
+        "str_contextpath.$": "$$.Execution.Id",
+        "str_intrinsic_func.$": "States.Format('Format Func {}', $.input_value)",
+      },
+      "End": true
+    }
+  }
+}

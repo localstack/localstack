@@ -4,9 +4,10 @@ import logging
 import re
 from typing import Any
 
-from localstack.services.events.models import InvalidEventPatternException
+from localstack.aws.api.events import InvalidEventPatternException
 
 CONTENT_BASE_FILTER_KEYWORDS = ["prefix", "anything-but", "numeric", "cidr", "exists"]
+_error_prefix = "Event pattern is not valid. Reason: "
 
 LOG = logging.getLogger(__name__)
 
@@ -245,11 +246,11 @@ def handle_numeric_conditions(conditions: list[any], value: int | float):
 
     # Invalid example for uneven list: { "numeric": [ ">", 0, "<" ] }
     if len(conditions) % 2 > 0:
-        raise InvalidEventPatternException("Bad numeric range operator")
+        raise InvalidEventPatternException(f"{_error_prefix}Bad numeric range operator")
 
     if not isinstance(value, (int, float)):
         raise InvalidEventPatternException(
-            f"The value {value} for the numeric comparison {conditions} is not a valid number"
+            f"{_error_prefix}The value {value} for the numeric comparison {conditions} is not a valid number"
         )
 
     for i in range(0, len(conditions), 2):
@@ -259,7 +260,7 @@ def handle_numeric_conditions(conditions: list[any], value: int | float):
             second_operand = float(second_operand_str)
         except ValueError:
             raise InvalidEventPatternException(
-                f"Could not convert filter value {second_operand_str} to a valid number"
+                f"{_error_prefix}Could not convert filter value {second_operand_str} to a valid number"
             )
 
         if operator == "<" and not (value < second_operand):

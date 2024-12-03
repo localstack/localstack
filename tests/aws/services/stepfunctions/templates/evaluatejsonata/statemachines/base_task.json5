@@ -1,0 +1,16 @@
+{
+  "Comment": "BASE_TASK",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "Payload": {},
+        "FunctionName": "%LAMBDA_FUNCTION_ARN_LITERAL_PLACEHOLDER%"
+      },
+      "End": true
+    },
+  }
+}

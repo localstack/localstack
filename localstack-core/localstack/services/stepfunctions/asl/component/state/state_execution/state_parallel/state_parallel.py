@@ -7,7 +7,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
     FailureEvent,
     FailureEventException,
 )
-from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
+from localstack.services.stepfunctions.asl.component.common.parargs import Parargs
 from localstack.services.stepfunctions.asl.component.common.retry.retry_outcome import RetryOutcome
 from localstack.services.stepfunctions.asl.component.state.state_execution.execute_state import (
     ExecutionState,
@@ -25,7 +25,7 @@ class StateParallel(ExecutionState):
     # machine object must have fields named States and StartAt, whose meanings are exactly
     # like those in the top level of a state machine.
     branches: BranchesDecl
-    parameters: Optional[Parameters]
+    parargs: Optional[Parargs]
 
     def __init__(self):
         super().__init__(
@@ -39,7 +39,7 @@ class StateParallel(ExecutionState):
             typ=BranchesDecl,
             raise_on_missing=ValueError(f"Missing Branches definition in props '{state_props}'."),
         )
-        self.parameters = state_props.get(Parameters)
+        self.parargs = state_props.get(Parargs)
 
     def _eval_execution(self, env: Environment) -> None:
         env.event_manager.add_event(
@@ -55,11 +55,11 @@ class StateParallel(ExecutionState):
 
     def _eval_state(self, env: Environment) -> None:
         # Initialise the retry counter for execution states.
-        env.context_object_manager.context_object["State"]["RetryCount"] = 0
+        env.states.context_object.context_object_data["State"]["RetryCount"] = 0
 
         # Compute the branches' input: if declared this is the parameters, else the current memory state.
-        if self.parameters is not None:
-            self.parameters.eval(env=env)
+        if self.parargs is not None:
+            self.parargs.eval(env=env)
         # In both cases, the inputs are copied by value to the branches, to avoid cross branch state manipulation, and
         # cached to allow them to be resubmitted in case of failure.
         input_value = copy.deepcopy(env.stack.pop())
@@ -71,7 +71,10 @@ class StateParallel(ExecutionState):
                 self._evaluate_with_timeout(env)
                 break
             except FailureEventException as failure_event_ex:
-                failure_event: FailureEvent = failure_event_ex.failure_event
+                failure_event: FailureEvent = self._from_error(env=env, ex=failure_event_ex)
+                error_output = self._construct_error_output_value(failure_event=failure_event)
+                env.states.set_error_output(error_output)
+                env.states.set_result(error_output)
 
                 if self.retry is not None:
                     retry_outcome: RetryOutcome = self._handle_retry(
@@ -86,9 +89,8 @@ class StateParallel(ExecutionState):
                 )
 
                 if self.catch is not None:
-                    catch_outcome: CatchOutcome = self._handle_catch(
-                        env=env, failure_event=failure_event
-                    )
+                    self._handle_catch(env=env, failure_event=failure_event)
+                    catch_outcome: CatchOutcome = env.stack[-1]
                     if catch_outcome == CatchOutcome.Caught:
                         break
 

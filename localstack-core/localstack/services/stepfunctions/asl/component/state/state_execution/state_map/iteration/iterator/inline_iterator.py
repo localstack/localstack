@@ -37,6 +37,7 @@ class InlineIterator(InlineIterationComponent):
     @classmethod
     def from_declaration(cls, iterator_decl: IteratorDecl):
         return cls(
+            query_language=iterator_decl.query_language,
             start_at=iterator_decl.start_at,
             states=iterator_decl.states,
             comment=iterator_decl.comment,

@@ -1,0 +1,44 @@
+{
+  "tests/aws/services/stepfunctions/v2/outputdecl/test_output.py::TestArgumentsBase::test_base_cases[BASE_DIRECT_EXPR]": {
+    "last_validated_date": "2024-11-04T13:16:37+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/outputdecl/test_output.py::TestArgumentsBase::test_base_cases[BASE_EMPTY]": {
+    "last_validated_date": "2024-11-04T13:15:44+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/outputdecl/test_output.py::TestArgumentsBase::test_base_cases[BASE_EXPR]": {
+    "last_validated_date": "2024-11-04T13:16:20+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/outputdecl/test_output.py::TestArgumentsBase::test_base_cases[BASE_LITERALS]": {
+    "last_validated_date": "2024-11-04T13:16:04+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/outputdecl/test_output.py::TestArgumentsBase::test_base_lambda[BASE_LAMBDA]": {
+    "last_validated_date": "2024-11-04T14:00:57+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/outputdecl/test_output.py::TestArgumentsBase::test_base_output_any_non_dict[BOOL]": {
+    "last_validated_date": "2024-11-20T18:24:44+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/outputdecl/test_output.py::TestArgumentsBase::test_base_output_any_non_dict[FLOAT]": {
+    "last_validated_date": "2024-11-20T18:24:29+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/outputdecl/test_output.py::TestArgumentsBase::test_base_output_any_non_dict[INT]": {
+    "last_validated_date": "2024-11-20T18:24:13+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/outputdecl/test_output.py::TestArgumentsBase::test_base_output_any_non_dict[JSONATA_EXPR]": {
+    "last_validated_date": "2024-11-20T18:25:14+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/outputdecl/test_output.py::TestArgumentsBase::test_base_output_any_non_dict[LIST_EMPY]": {
+    "last_validated_date": "2024-11-20T18:25:29+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/outputdecl/test_output.py::TestArgumentsBase::test_base_output_any_non_dict[LIST_RICH]": {
+    "last_validated_date": "2024-11-20T18:25:45+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/outputdecl/test_output.py::TestArgumentsBase::test_base_output_any_non_dict[NULL]": {
+    "last_validated_date": "2024-11-20T18:23:58+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/outputdecl/test_output.py::TestArgumentsBase::test_base_output_any_non_dict[STR_LIT]": {
+    "last_validated_date": "2024-11-20T18:24:59+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/outputdecl/test_output.py::TestArgumentsBase::test_base_task_lambda[BASE_TASK_LAMBDA]": {
+    "last_validated_date": "2024-11-04T14:15:16+00:00"
+  }
+}

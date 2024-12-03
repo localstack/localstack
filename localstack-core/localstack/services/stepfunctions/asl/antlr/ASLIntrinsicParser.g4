@@ -42,5 +42,6 @@ func_arg:
     | (TRUE | FALSE)      # func_arg_bool
     | CONTEXT_PATH_STRING # func_arg_context_path
     | JSON_PATH_STRING    # func_arg_json_path
+    | STRING_VARIABLE     # func_arg_var
     | states_func_decl    # func_arg_func_decl
 ;

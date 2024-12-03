@@ -39,6 +39,8 @@ ARCHIVE_NAME_ARN_PATTERN = re.compile(
     rf"{ARN_PARTITION_REGEX}:events:[a-z0-9-]+:\d{{12}}:archive/(?P<name>.+)$"
 )
 
+TARGET_ID_PATTERN = re.compile(r"[\.\-_A-Za-z0-9]+")
+
 
 class EventJSONEncoder(json.JSONEncoder):
     """This json encoder is used to serialize datetime object
@@ -179,6 +181,9 @@ def format_event(
     message_id = message.get("original_id", str(long_uid()))
     region = message.get("original_region", region)
     account_id = message.get("original_account", account_id)
+    # Format the datetime to ISO-8601 string
+    event_time = get_event_time(event)
+    formatted_time = event_time_to_time_string(event_time)
 
     formatted_event = {
         "version": "0",
@@ -186,7 +191,7 @@ def format_event(
         "detail-type": event.get("DetailType"),
         "source": event.get("Source"),
         "account": account_id,
-        "time": get_event_time(event),
+        "time": formatted_time,
         "region": region,
         "resources": event.get("Resources", []),
         "detail": json.loads(event.get("Detail", "{}")),

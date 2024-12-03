@@ -12,6 +12,7 @@ BounceStatusCode = str
 Charset = str
 Cidr = str
 ConfigurationSetName = str
+ConnectInstanceArn = str
 CustomRedirectDomain = str
 DefaultDimensionValue = str
 DiagnosticCode = str
@@ -527,6 +528,13 @@ class ConfigurationSet(TypedDict, total=False):
 
 ConfigurationSetAttributeList = List[ConfigurationSetAttribute]
 ConfigurationSets = List[ConfigurationSet]
+
+
+class ConnectAction(TypedDict, total=False):
+    InstanceARN: ConnectInstanceArn
+    IAMRoleARN: IAMRoleARN
+
+
 Counter = int
 
 
@@ -645,6 +653,7 @@ class ReceiptAction(TypedDict, total=False):
     StopAction: Optional[StopAction]
     AddHeaderAction: Optional[AddHeaderAction]
     SNSAction: Optional[SNSAction]
+    ConnectAction: Optional[ConnectAction]
 
 
 ReceiptActionsList = List[ReceiptAction]

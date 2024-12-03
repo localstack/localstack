@@ -125,6 +125,9 @@ from localstack.services.stepfunctions.asl.static_analyser.static_analyser impor
 from localstack.services.stepfunctions.asl.static_analyser.test_state.test_state_analyser import (
     TestStateStaticAnalyser,
 )
+from localstack.services.stepfunctions.asl.static_analyser.usage_metrics_static_analyser import (
+    UsageMetricsStaticAnalyser,
+)
 from localstack.services.stepfunctions.backend.activity import Activity, ActivityTask
 from localstack.services.stepfunctions.backend.execution import Execution, SyncExecution
 from localstack.services.stepfunctions.backend.state_machine import (
@@ -175,7 +178,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     )
 
     _ACTIVITY_ARN_REGEX: Final[re.Pattern] = re.compile(
-        rf"{ARN_PARTITION_REGEX}:states:[a-z0-9-]+:[0-9]{{12}}:activity:[a-zA-Z0-9-_]+$"
+        rf"{ARN_PARTITION_REGEX}:states:[a-z0-9-]+:[0-9]{{12}}:activity:[a-zA-Z0-9-_\.]{{1,80}}$"
     )
 
     @staticmethod
@@ -221,6 +224,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         # - special characters " # % \ ^ | ~ ` $ & , ; : /
         # - control characters (U+0000-001F, U+007F-009F)
         # https://docs.aws.amazon.com/step-functions/latest/apireference/API_CreateActivity.html#API_CreateActivity_RequestSyntax
+        if not (1 <= len(name) <= 80):
+            raise InvalidName(f"Invalid Name: '{name}'")
         invalid_chars = set(' <>{}[]?*"#%\\^|~`$&,;:/')
         control_chars = {chr(i) for i in range(32)} | {chr(i) for i in range(127, 160)}
         invalid_chars |= control_chars
@@ -478,6 +483,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                 state_machine_version_arn = state_machine_version.arn
                 state_machines[state_machine_version_arn] = state_machine_version
                 create_output["stateMachineVersionArn"] = state_machine_version_arn
+
+        # Run static analyser on definition and collect usage metrics
+        UsageMetricsStaticAnalyser.process(state_machine_definition)
 
         return create_output
 
@@ -972,6 +980,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         if not isinstance(state_machine, StateMachineRevision):
             self._raise_state_machine_does_not_exist(state_machine_arn)
 
+        # TODO: Add logic to handle metrics for when SFN definitions update
         if not any([definition, role_arn, logging_configuration]):
             raise MissingRequiredParameter(
                 "Either the definition, the role ARN, the LoggingConfiguration, "
@@ -1143,10 +1152,11 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         definition: Definition,
-        role_arn: Arn,
+        role_arn: Arn = None,
         input: SensitiveData = None,
         inspection_level: InspectionLevel = None,
         reveal_secrets: RevealSecrets = None,
+        variables: SensitiveData = None,
         **kwargs,
     ) -> TestStateOutput:
         StepFunctionsProvider._validate_definition(

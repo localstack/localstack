@@ -1,0 +1,29 @@
+{
+  "Comment": "MAP_STATE_ITEMS",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Pass",
+      "Output": "{% $states.input.items %}",
+      "Next": "MapIterateState"
+    },
+    "MapIterateState": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "Pass",
+        "States": {
+          "Pass": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

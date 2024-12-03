@@ -45,7 +45,7 @@ class JavaInstallerMixin:
         """
         if java_home := self.get_java_home():
             if is_mac_os():
-                return os.path.join(java_home, "Contents", "Home", "lib", "jli", "libjli.dylib")
+                return os.path.join(java_home, "lib", "jli", "libjli.dylib")
             return os.path.join(java_home, "lib", "server", "libjvm.so")
 
     def get_java_env_vars(self, path: str = None, ld_library_path: str = None) -> dict[str, str]:
@@ -142,7 +142,10 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         """
         Get JAVA_HOME for this installation of Java.
         """
-        return self.get_installed_dir()
+        installed_dir = self.get_installed_dir()
+        if is_mac_os():
+            return os.path.join(installed_dir, "Contents", "Home")
+        return installed_dir
 
     @property
     def arch(self) -> str | None:

@@ -31,6 +31,7 @@ TRACKED_ENV_VAR = [
     "ES_CUSTOM_BACKEND",  # deprecated in 0.14.0, removed in 3.0.0
     "ES_MULTI_CLUSTER",  # deprecated in 0.14.0, removed in 3.0.0
     "ES_ENDPOINT_STRATEGY",  # deprecated in 0.14.0, removed in 3.0.0
+    "EVENT_RULE_ENGINE",
     "IAM_SOFT_MODE",
     "KINESIS_PROVIDER",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
     "KINESIS_ERROR_PROBABILITY",

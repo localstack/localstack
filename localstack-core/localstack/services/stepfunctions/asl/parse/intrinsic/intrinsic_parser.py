@@ -1,6 +1,7 @@
 import abc
 
 from antlr4 import CommonTokenStream, InputStream
+from antlr4.ParserRuleContext import ParserRuleContext
 
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLIntrinsicLexer import ASLIntrinsicLexer
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLIntrinsicParser import (
@@ -12,7 +13,7 @@ from localstack.services.stepfunctions.asl.parse.intrinsic.preprocessor import P
 
 class IntrinsicParser(abc.ABC):
     @staticmethod
-    def parse(src: str) -> Function:
+    def parse(src: str) -> tuple[Function, ParserRuleContext]:
         input_stream = InputStream(src)
         lexer = ASLIntrinsicLexer(input_stream)
         stream = CommonTokenStream(lexer)
@@ -20,4 +21,4 @@ class IntrinsicParser(abc.ABC):
         tree = parser.func_decl()
         preprocessor = Preprocessor()
         function: Function = preprocessor.visit(tree)
-        return function
+        return function, tree

@@ -1,0 +1,95 @@
+{
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_assign_from_value[BASE_ASSIGN_FROM_INTRINSIC_FUNCTION]": {
+    "last_validated_date": "2024-11-06T22:54:42+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_assign_from_value[BASE_ASSIGN_FROM_PARAMETERS]": {
+    "last_validated_date": "2024-11-06T22:54:11+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_assign_from_value[BASE_ASSIGN_FROM_RESULT]": {
+    "last_validated_date": "2024-11-06T22:54:27+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_assign_in_catch_state": {
+    "last_validated_date": "2024-11-06T12:26:40+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_assign_in_choice_state[CORRECT]": {
+    "last_validated_date": "2024-11-12T14:40:08+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_assign_in_choice_state[INCORRECT]": {
+    "last_validated_date": "2024-11-12T14:40:20+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_assign_in_wait_state": {
+    "last_validated_date": "2024-11-06T11:46:11+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_assign[BASE_REFERENCE_IN_CHOICE]": {
+    "last_validated_date": "2024-11-12T14:43:37+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_assign[BASE_REFERENCE_IN_FAIL]": {
+    "last_validated_date": "2024-11-14T13:15:13+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_assign[BASE_REFERENCE_IN_INPUTPATH]": {
+    "last_validated_date": "2024-11-12T14:42:15+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_assign[BASE_REFERENCE_IN_INTRINSIC_FUNCTION]": {
+    "last_validated_date": "2024-11-12T14:42:54+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_assign[BASE_REFERENCE_IN_ITERATOR_OUTER_SCOPE]": {
+    "last_validated_date": "2024-11-13T08:58:04+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_assign[BASE_REFERENCE_IN_OUTPUTPATH]": {
+    "last_validated_date": "2024-11-12T14:42:37+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_assign[BASE_REFERENCE_IN_PARAMETERS]": {
+    "last_validated_date": "2024-11-12T14:41:11+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_assign[BASE_REFERENCE_IN_WAIT]": {
+    "last_validated_date": "2024-11-12T14:41:40+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_in_map_state[MAP_STATE_REFERENCE_IN_INTRINSIC_FUNCTION]": {
+    "last_validated_date": "2024-11-18T14:56:18+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_in_map_state[MAP_STATE_REFERENCE_IN_ITEMS_PATH]": {
+    "last_validated_date": "2024-11-18T14:56:35+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_in_map_state[MAP_STATE_REFERENCE_IN_ITEM_SELECTOR]": {
+    "last_validated_date": "2024-11-18T14:57:26+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_in_map_state[MAP_STATE_REFERENCE_IN_MAX_CONCURRENCY_PATH]": {
+    "last_validated_date": "2024-11-18T14:56:47+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_in_map_state[MAP_STATE_REFERENCE_IN_TOLERATED_FAILURE_PATH]": {
+    "last_validated_date": "2024-11-18T14:57:06+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_in_map_state_max_items_path[MAP_STATE_REFERENCE_IN_MAX_ITEMS_PATH]": {
+    "last_validated_date": "2024-11-14T16:33:42+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_reference_in_map_state_max_items_path[MAP_STATE_REFERENCE_IN_MAX_PER_BATCH_PATH]": {
+    "last_validated_date": "2024-11-14T16:34:06+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_state_assign_evaluation_order[BASE_EVALUATION_ORDER_PASS_STATE]": {
+    "last_validated_date": "2024-11-06T23:28:59+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_undefined_reference[BASE_UNDEFINED_ARGUMENTS]": {
+    "last_validated_date": "2024-11-21T11:19:43+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_undefined_reference[BASE_UNDEFINED_ARGUMENTS_FIELD]": {
+    "last_validated_date": "2024-11-21T11:20:19+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_undefined_reference[BASE_UNDEFINED_ASSIGN]": {
+    "last_validated_date": "2024-11-21T11:08:30+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_undefined_reference[BASE_UNDEFINED_OUTPUT]": {
+    "last_validated_date": "2024-11-21T11:07:38+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_undefined_reference[BASE_UNDEFINED_OUTPUT_FIELD]": {
+    "last_validated_date": "2024-11-21T11:07:56+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_undefined_reference[BASE_UNDEFINED_OUTPUT_MULTIPLE_STATES]": {
+    "last_validated_date": "2024-11-21T11:08:12+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_variables_in_lambda_task[BASE_ASSIGN_FROM_LAMBDA_TASK_RESULT]": {
+    "last_validated_date": "2024-11-07T10:03:33+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_reference_variables.py::TestAssignReferenceVariables::test_variables_in_lambda_task[BASE_REFERENCE_IN_LAMBDA_TASK_FIELDS]": {
+    "last_validated_date": "2024-11-07T10:03:14+00:00"
+  }
+}

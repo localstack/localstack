@@ -270,6 +270,11 @@ DEPRECATIONS = [
         "This option has no effect anymore. Please use OPENSEARCH_ENDPOINT_STRATEGY instead.",
     ),
     EnvVarDeprecation(
+        "PERSIST_ALL",
+        "2.3.2",
+        "LocalStack treats backends and assets the same with respect to persistence. Please remove PERSIST_ALL.",
+    ),
+    EnvVarDeprecation(
         "DNS_LOCAL_NAME_PATTERNS",
         "3.0.0",
         "This option was confusingly named. Please use DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM "
@@ -299,9 +304,11 @@ DEPRECATIONS = [
         " Please remove PROVIDER_OVERRIDE_STEPFUNCTIONS.",
     ),
     EnvVarDeprecation(
-        "PERSIST_ALL",
-        "2.3.2",
-        "LocalStack treats backends and assets the same with respect to persistence. Please remove PERSIST_ALL.",
+        "EVENT_RULE_ENGINE",
+        "4.0.3",
+        "The Java-based event ruler is deprecated because our latest Python-native implementation introduced in 4.0.3"
+        " is faster, achieves great AWS parity, and fixes compatibility issues with the StepFunctions JSONata feature."
+        " Please remove EVENT_RULE_ENGINE.",
     ),
 ]
 
