@@ -907,7 +907,7 @@ def opensearch_wait_for_cluster(aws_client):
             return status["Processing"] is False and "Endpoint" in status
 
         assert poll_condition(
-            finished_processing, timeout=25 * 60, interval=20
+            finished_processing, timeout=25 * 60, **({"interval": 10} if is_aws_cloud() else {})
         ), f"could not start domain: {domain_name}"
 
     return _wait_for_cluster
