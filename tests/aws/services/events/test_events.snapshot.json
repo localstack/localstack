@@ -1760,15 +1760,16 @@
       "put-events-too-big-detail-error": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "Total size of the entries in the request is over the limit."},
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 400
-          }
+          "Message": "Total size of the entries in the request is over the limit."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
-    },
-    "tests/aws/services/events/test_events.py::TestEvents::test_create_connection_validations": {
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_create_connection_validations": {
     "recorded-date": "14-11-2024, 20:29:49",
     "recorded-content": {
       "create_connection_exc": {
@@ -2745,6 +2746,132 @@
           }
         }
       ]
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_api_destinations_validated[auth0]": {
+    "recorded-date": "04-12-2024, 19:58:19",
+    "recorded-content": {
+      "api_destination": {
+        "ApiDestinationArn": "api-destination-arn",
+        "ApiDestinationState": "ACTIVE",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "rule": {
+        "RuleArn": "rule-arn",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "target": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "events": {
+        "Entries": [
+          {
+            "EventId": "event-id"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_api_destinations_validated[auth1]": {
+    "recorded-date": "04-12-2024, 19:58:25",
+    "recorded-content": {
+      "api_destination": {
+        "ApiDestinationArn": "api-destination-arn",
+        "ApiDestinationState": "ACTIVE",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "rule": {
+        "RuleArn": "rule-arn",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "target": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "events": {
+        "Entries": [
+          {
+            "EventId": "event-id"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_api_destinations_validated[auth2]": {
+    "recorded-date": "04-12-2024, 19:58:41",
+    "recorded-content": {
+      "api_destination": {
+        "ApiDestinationArn": "api-destination-arn",
+        "ApiDestinationState": "INACTIVE",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "rule": {
+        "RuleArn": "rule-arn",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "target": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "events": {
+        "Entries": [
+          {
+            "EventId": "event-id"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
     }
   }
 }

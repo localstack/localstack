@@ -161,6 +161,15 @@
   "tests/aws/services/events/test_events.py::TestEventTarget::test_put_target_id_validation": {
     "last_validated_date": "2024-06-19T10:42:49+00:00"
   },
+  "tests/aws/services/events/test_events.py::TestEvents::test_api_destinations_validated[auth0]": {
+    "last_validated_date": "2024-12-04T19:58:18+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_api_destinations_validated[auth1]": {
+    "last_validated_date": "2024-12-04T19:58:24+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_api_destinations_validated[auth2]": {
+    "last_validated_date": "2024-12-04T19:58:40+00:00"
+  },
   "tests/aws/services/events/test_events.py::TestEvents::test_create_connection_validations": {
     "last_validated_date": "2024-11-14T20:29:49+00:00"
   },
