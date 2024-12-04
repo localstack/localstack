@@ -157,7 +157,7 @@ class TestOpensearchProvider:
             plugins_url = (
                 f"https://{domain_status['Endpoint']}/_cat/plugins?s=component&h=component"
             )
-            plugins_response = requests.get(plugins_url, headers=COMMON_HEADERS)
+            plugins_response = requests.get(plugins_url, headers={"Accept": "application/json"})
             installed_plugins = {plugin["component"] for plugin in plugins_response.json()}
             requested_plugins = set(OPENSEARCH_PLUGIN_LIST)
             assert requested_plugins.issubset(installed_plugins)
