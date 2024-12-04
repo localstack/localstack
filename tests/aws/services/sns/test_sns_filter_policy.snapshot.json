@@ -1787,7 +1787,7 @@
     }
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_empty_array_payload": {
-    "recorded-date": "03-12-2024, 15:03:15",
+    "recorded-date": "04-12-2024, 10:22:15",
     "recorded-content": {
       "messages-queue": {
         "Messages": [
@@ -1805,7 +1805,7 @@
               "source": "aws.autoscaling",
               "account": "123456789012",
               "time": "date",
-              "region": "<region>",
+              "region": "my-region",
               "resources": [],
               "detail": {
                 "eventVersion": "",
@@ -1821,7 +1821,7 @@
     }
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_ip_address_condition": {
-    "recorded-date": "03-12-2024, 22:05:08",
+    "recorded-date": "04-12-2024, 10:36:46",
     "recorded-content": {
       "messages-queue": {
         "Messages": [
@@ -1837,7 +1837,7 @@
               "source": "test-source",
               "detail-type": "test-detail-type",
               "account": "123456789012",
-              "region": "us-east-2",
+              "region": "my-region",
               "time": "date",
               "detail": {
                 "sourceIPAddress": "10.0.0.255"
@@ -1855,11 +1855,11 @@
               "SentTimestamp": "timestamp"
             },
             "Body": {
-              "id": "1",
+              "id": "3",
               "source": "test-source",
               "detail-type": "test-detail-type",
               "account": "123456789012",
-              "region": "us-east-2",
+              "region": "my-region",
               "time": "date",
               "detail": {
                 "sourceIPAddressV6": "2001:0db8:1234:1a00:0000:0000:0000:0000"
