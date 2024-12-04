@@ -197,6 +197,8 @@ def validate_event(event: PutEventsRequestEntry) -> None | PutEventsResultEntry:
             "ErrorCode": "InvalidArgument",
             "ErrorMessage": "Parameter Detail is not valid. Reason: Detail is a required argument.",
         }
+    elif event.get("Detail") and len(event["Detail"]) >= 262144:
+        raise ValidationException("Total size of the entries in the request is over the limit.")
 
 
 def check_unique_tags(tags: TagsList) -> None:
