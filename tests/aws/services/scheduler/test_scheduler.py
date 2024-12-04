@@ -16,11 +16,9 @@ def test_list_schedules(aws_client):
 
 
 @markers.aws.validated
-def test_tag_resource(aws_client):
+def test_tag_resource(aws_client, events_scheduler_create_schedule_group, snapshot):
     name = short_uid()
-
-    response = aws_client.scheduler.create_schedule_group(Name=name)
-    schedule_group_arn = response["ScheduleGroupArn"]
+    schedule_group_arn = events_scheduler_create_schedule_group(name)
 
     response = aws_client.scheduler.tag_resource(
         ResourceArn=schedule_group_arn,
@@ -37,21 +35,19 @@ def test_tag_resource(aws_client):
     assert response["Tags"][0]["Key"] == "TagKey"
     assert response["Tags"][0]["Value"] == "TagValue"
 
+    snapshot.match("list-tagged-schedule", response)
+
 
 @markers.aws.validated
-def test_untag_resource(aws_client):
+def test_untag_resource(aws_client, events_scheduler_create_schedule_group, snapshot):
     name = short_uid()
-
-    response = aws_client.scheduler.create_schedule_group(
-        Name=name,
-        Tags=[
-            {
-                "Key": "TagKey",
-                "Value": "TagValue",
-            }
-        ],
-    )
-    schedule_group_arn = response["ScheduleGroupArn"]
+    tags = [
+        {
+            "Key": "TagKey",
+            "Value": "TagValue",
+        }
+    ]
+    schedule_group_arn = events_scheduler_create_schedule_group(name, Tags=tags)
 
     response = aws_client.scheduler.untag_resource(
         ResourceArn=schedule_group_arn, TagKeys=["TagKey"]
@@ -60,3 +56,5 @@ def test_untag_resource(aws_client):
     response = aws_client.scheduler.list_tags_for_resource(ResourceArn=schedule_group_arn)
 
     assert response["Tags"] == []
+
+    snapshot.match("list-untagged-schedule", response)
