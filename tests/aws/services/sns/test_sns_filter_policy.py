@@ -1181,7 +1181,7 @@ class TestSNSFilterPolicyBody:
             "source": "aws.autoscaling",
             "account": "123456789012",
             "time": "2015-11-11T21:31:47Z",
-            "region": "us-east-1",
+            "region": "my-region",
             "resources": [],
             "detail": {
                 "eventVersion": "",
@@ -1238,34 +1238,34 @@ class TestSNSFilterPolicyBody:
                 "source": "test-source",
                 "detail-type": "test-detail-type",
                 "account": "123456789012",
-                "region": "us-east-2",
+                "region": "my-region",
                 "time": "2022-07-13T13:48:01Z",
                 "detail": {"sourceIPAddress": "10.0.0.255"},
             },
             {
-                "id": "1",
+                "id": "2",
                 "source": "test-source",
                 "detail-type": "test-detail-type",
                 "account": "123456789012",
-                "region": "us-east-2",
+                "region": "my-region",
                 "time": "2022-07-13T13:48:01Z",
                 "detail": {"sourceIPAddress": "10.0.0.256"},
             },
             {
-                "id": "1",
+                "id": "3",
                 "source": "test-source",
                 "detail-type": "test-detail-type",
                 "account": "123456789012",
-                "region": "us-east-2",
+                "region": "my-region",
                 "time": "2022-07-13T13:48:01Z",
                 "detail": {"sourceIPAddressV6": "2001:0db8:1234:1a00:0000:0000:0000:0000"},
             },
             {
-                "id": "1",
+                "id": "4",
                 "source": "test-source",
                 "detail-type": "test-detail-type",
                 "account": "123456789012",
-                "region": "us-east-2",
+                "region": "my-region",
                 "time": "2022-07-13T13:48:01Z",
                 "detail": {"sourceIPAddressV6": "2001:0db8:123f:1a01:0000:0000:0000:0000"},
             },
@@ -1286,6 +1286,7 @@ class TestSNSFilterPolicyBody:
             _msg_list=recv_messages,
             expected=2,
         )
+        recv_messages.sort(key=itemgetter("Body"))
         snapshot.match("messages-queue", {"Messages": recv_messages})
 
 
