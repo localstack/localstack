@@ -303,7 +303,7 @@ class TestOpensearchProvider:
             plugins_url, auth=master_user_auth, headers={"Accept": "application/json"}
         )
         installed_plugins = {plugin["component"] for plugin in response.json()}
-        snapshot.match("sql_plugin_installed", "opensearch-sql" in installed_plugins)
+        assert "opensearch-sql" in installed_plugins
         assert "opensearch-sql" in installed_plugins, "Opensearch sql plugin is not present"
 
         # data insert preparation for sql query
