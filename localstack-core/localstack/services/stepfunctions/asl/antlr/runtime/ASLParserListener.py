@@ -512,6 +512,60 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLParser#role_arn_jsonata.
+    def enterRole_arn_jsonata(self, ctx:ASLParser.Role_arn_jsonataContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#role_arn_jsonata.
+    def exitRole_arn_jsonata(self, ctx:ASLParser.Role_arn_jsonataContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#role_arn_path.
+    def enterRole_arn_path(self, ctx:ASLParser.Role_arn_pathContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#role_arn_path.
+    def exitRole_arn_path(self, ctx:ASLParser.Role_arn_pathContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#role_arn_path_context_obj.
+    def enterRole_arn_path_context_obj(self, ctx:ASLParser.Role_arn_path_context_objContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#role_arn_path_context_obj.
+    def exitRole_arn_path_context_obj(self, ctx:ASLParser.Role_arn_path_context_objContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#role_arn_intrinsic_func.
+    def enterRole_arn_intrinsic_func(self, ctx:ASLParser.Role_arn_intrinsic_funcContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#role_arn_intrinsic_func.
+    def exitRole_arn_intrinsic_func(self, ctx:ASLParser.Role_arn_intrinsic_funcContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#role_arn_var.
+    def enterRole_arn_var(self, ctx:ASLParser.Role_arn_varContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#role_arn_var.
+    def exitRole_arn_var(self, ctx:ASLParser.Role_arn_varContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#role_arn_str.
+    def enterRole_arn_str(self, ctx:ASLParser.Role_arn_strContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#role_arn_str.
+    def exitRole_arn_str(self, ctx:ASLParser.Role_arn_strContext):
+        pass
+
+
     # Enter a parse tree produced by ASLParser#timeout_seconds_jsonata.
     def enterTimeout_seconds_jsonata(self, ctx:ASLParser.Timeout_seconds_jsonataContext):
         pass

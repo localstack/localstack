@@ -16,14 +16,13 @@ from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestSnfBase:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..redriveCount", "$..redriveStatus"])
     def test_state_fail(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -32,8 +31,8 @@ class TestSnfBase:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -45,7 +44,7 @@ class TestSnfBase:
     def test_state_fail_path(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -54,8 +53,8 @@ class TestSnfBase:
 
         exec_input = json.dumps({"Error": "error string", "Cause": "cause string"})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -66,7 +65,7 @@ class TestSnfBase:
     def test_state_fail_intrinsic(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -75,8 +74,8 @@ class TestSnfBase:
 
         exec_input = json.dumps({"Error": "error string", "Cause": "cause string"})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -88,7 +87,7 @@ class TestSnfBase:
     def test_state_fail_empty(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -97,8 +96,8 @@ class TestSnfBase:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -110,7 +109,7 @@ class TestSnfBase:
     def test_state_pass_result(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -119,8 +118,8 @@ class TestSnfBase:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -131,7 +130,7 @@ class TestSnfBase:
     def test_state_pass_result_jsonpaths(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -144,8 +143,8 @@ class TestSnfBase:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -163,7 +162,7 @@ class TestSnfBase:
     )
     def test_event_bridge_events_base(
         self,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         events_to_sqs_queue,
         sfn_events_to_sqs_queue,
@@ -175,7 +174,7 @@ class TestSnfBase:
         definition = json.dumps(template)
         execution_input = json.dumps(dict())
         create_and_record_events(
-            create_iam_role_for_sfn,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_events_to_sqs_queue,
             aws_client,
@@ -187,7 +186,7 @@ class TestSnfBase:
     @markers.aws.validated
     def test_decl_version_1_0(
         self,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         aws_client,
         sfn_snapshot,
@@ -197,8 +196,8 @@ class TestSnfBase:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -209,7 +208,7 @@ class TestSnfBase:
     @markers.aws.needs_fixing
     def test_event_bridge_events_failure(
         self,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_events_to_sqs_queue,
         aws_client,
@@ -221,7 +220,7 @@ class TestSnfBase:
 
         exec_input = json.dumps({})
         create_and_record_events(
-            create_iam_role_for_sfn,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_events_to_sqs_queue,
             aws_client,
@@ -234,7 +233,7 @@ class TestSnfBase:
     @markers.snapshot.skip_snapshot_verify(paths=["$..RedriveCount"])
     def test_query_context_object_values(
         self,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         aws_client,
         sfn_snapshot,
@@ -265,8 +264,8 @@ class TestSnfBase:
 
         exec_input = json.dumps({"message": "TestMessage"})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -277,7 +276,7 @@ class TestSnfBase:
     def test_state_pass_result_null_input_output_paths(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -286,8 +285,8 @@ class TestSnfBase:
 
         exec_input = json.dumps({"InputValue": 0})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -298,7 +297,7 @@ class TestSnfBase:
     def test_execution_dateformat(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
     ):
         """
@@ -315,7 +314,10 @@ class TestSnfBase:
 
         sm_name = f"test-dateformat-machine-{short_uid()}"
         sm = create_state_machine(
-            name=sm_name, definition=definition, roleArn=create_iam_role_for_sfn()
+            aws_client,
+            name=sm_name,
+            definition=definition,
+            roleArn=create_state_machine_iam_role(aws_client),
         )
 
         sm_arn = sm["stateMachineArn"]
@@ -341,7 +343,7 @@ class TestSnfBase:
     def test_state_pass_regex_json_path_base(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -357,8 +359,8 @@ class TestSnfBase:
             }
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -370,7 +372,7 @@ class TestSnfBase:
     def test_state_pass_regex_json_path(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -389,8 +391,8 @@ class TestSnfBase:
             }
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -407,7 +409,7 @@ class TestSnfBase:
     def test_json_path_array_access(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         json_path_string,
@@ -418,8 +420,8 @@ class TestSnfBase:
 
         exec_input = json.dumps({"items": [{"item_key": i} for i in range(11)]})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,

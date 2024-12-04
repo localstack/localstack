@@ -45,7 +45,6 @@ IDS_BASE_TEMPLATE_INPUT_BINDINGS: list[str] = [
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..tracingConfiguration",
         "$..SdkHttpMetadata",
         "$..SdkResponseMetadata",
     ]
@@ -62,19 +61,20 @@ class TestStateCaseScenarios:
     )
     def test_base_inspection_level_info(
         self,
-        stepfunctions_client_test_state,
-        create_iam_role_for_sfn,
+        aws_client,
+        aws_client_no_sync_prefix,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         tct_template,
         execution_input,
     ):
-        sfn_role_arn = create_iam_role_for_sfn()
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
 
         template = TST.load_sfn_template(tct_template)
         definition = json.dumps(template)
 
-        test_case_response = stepfunctions_client_test_state.test_state(
+        test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
             roleArn=sfn_role_arn,
             input=execution_input,
@@ -101,19 +101,20 @@ class TestStateCaseScenarios:
     )
     def test_base_inspection_level_debug(
         self,
-        stepfunctions_client_test_state,
-        create_iam_role_for_sfn,
+        aws_client,
+        aws_client_no_sync_prefix,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         tct_template,
         execution_input,
     ):
-        sfn_role_arn = create_iam_role_for_sfn()
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
 
         template = TST.load_sfn_template(tct_template)
         definition = json.dumps(template)
 
-        test_case_response = stepfunctions_client_test_state.test_state(
+        test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
             roleArn=sfn_role_arn,
             input=execution_input,
@@ -140,19 +141,20 @@ class TestStateCaseScenarios:
     )
     def test_base_inspection_level_trace(
         self,
-        stepfunctions_client_test_state,
-        create_iam_role_for_sfn,
+        aws_client,
+        aws_client_no_sync_prefix,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         tct_template,
         execution_input,
     ):
-        sfn_role_arn = create_iam_role_for_sfn()
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
 
         template = TST.load_sfn_template(tct_template)
         definition = json.dumps(template)
 
-        test_case_response = stepfunctions_client_test_state.test_state(
+        test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
             roleArn=sfn_role_arn,
             input=execution_input,
@@ -176,8 +178,9 @@ class TestStateCaseScenarios:
     )
     def test_base_lambda_task_state(
         self,
-        stepfunctions_client_test_state,
-        create_iam_role_for_sfn,
+        aws_client,
+        aws_client_no_sync_prefix,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         sfn_snapshot,
@@ -196,8 +199,8 @@ class TestStateCaseScenarios:
         definition = json.dumps(template)
         exec_input = json.dumps({"inputData": "HelloWorld"})
 
-        sfn_role_arn = create_iam_role_for_sfn()
-        test_case_response = stepfunctions_client_test_state.test_state(
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
+        test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
             roleArn=sfn_role_arn,
             input=exec_input,
@@ -219,8 +222,9 @@ class TestStateCaseScenarios:
     )
     def test_base_lambda_service_task_state(
         self,
-        stepfunctions_client_test_state,
-        create_iam_role_for_sfn,
+        aws_client,
+        aws_client_no_sync_prefix,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         sfn_snapshot,
@@ -238,8 +242,8 @@ class TestStateCaseScenarios:
         definition = json.dumps(template)
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
 
-        sfn_role_arn = create_iam_role_for_sfn()
-        test_case_response = stepfunctions_client_test_state.test_state(
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
+        test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
             roleArn=sfn_role_arn,
             input=exec_input,

@@ -11,6 +11,7 @@ from botocore.response import StreamingBody
 from localstack.aws.api.stepfunctions import (
     HistoryEventExecutionDataDetails,
     HistoryEventType,
+    TaskCredentials,
     TaskFailedEventDetails,
     TaskScheduledEventDetails,
     TaskStartedEventDetails,
@@ -27,6 +28,10 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
+    ComputedCredentials,
+    Credentials,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceRuntimePart,
@@ -231,11 +236,15 @@ class StateTaskService(StateTask, abc.ABC):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-        task_credentials: dict,
+        task_credentials: ComputedCredentials,
     ): ...
 
     def _before_eval_execution(
-        self, env: Environment, resource_runtime_part: ResourceRuntimePart, raw_parameters: dict
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        raw_parameters: dict,
+        task_credentials: TaskCredentials,
     ) -> None:
         parameters_str = to_json_str(raw_parameters)
 
@@ -253,6 +262,10 @@ class StateTaskService(StateTask, abc.ABC):
             self.heartbeat.eval(env=env)
             heartbeat_seconds = env.stack.pop()
             scheduled_event_details["heartbeatInSeconds"] = heartbeat_seconds
+        if self.credentials:
+            scheduled_event_details["taskCredentials"] = TaskCredentials(
+                roleArn=Credentials.get_role_arn_from(computed_credentials=task_credentials)
+            )
         env.event_manager.add_event(
             context=env.event_history_context,
             event_type=HistoryEventType.TaskScheduled,
@@ -274,6 +287,7 @@ class StateTaskService(StateTask, abc.ABC):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        task_credentials: ComputedCredentials,
     ) -> None:
         output = env.stack[-1]
         self._verify_size_quota(env=env, value=output)
@@ -295,15 +309,17 @@ class StateTaskService(StateTask, abc.ABC):
         resource_runtime_part: ResourceRuntimePart = env.stack.pop()
 
         raw_parameters = self._eval_parameters(env=env)
+        task_credentials = self._eval_credentials(env=env)
 
         self._before_eval_execution(
-            env=env, resource_runtime_part=resource_runtime_part, raw_parameters=raw_parameters
+            env=env,
+            resource_runtime_part=resource_runtime_part,
+            raw_parameters=raw_parameters,
+            task_credentials=task_credentials,
         )
 
         normalised_parameters = copy.deepcopy(raw_parameters)
         self._normalise_parameters(normalised_parameters)
-
-        task_credentials = self._eval_credentials(env=env)
 
         self._eval_service_task(
             env=env,
@@ -319,4 +335,5 @@ class StateTaskService(StateTask, abc.ABC):
             env=env,
             resource_runtime_part=resource_runtime_part,
             normalised_parameters=normalised_parameters,
+            task_credentials=task_credentials,
         )

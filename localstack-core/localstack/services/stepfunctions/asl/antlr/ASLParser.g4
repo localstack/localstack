@@ -178,7 +178,16 @@ max_concurrency_path_decl:
 
 parameters_decl: PARAMETERS COLON payload_tmpl_decl;
 
-credentials_decl: CREDENTIALS COLON payload_tmpl_decl;
+credentials_decl: CREDENTIALS COLON LBRACE role_arn_decl RBRACE;
+
+role_arn_decl:
+    ROLEARN COLON STRINGJSONATA              # role_arn_jsonata
+    | ROLEARNPATH COLON STRINGPATH           # role_arn_path
+    | ROLEARNPATH COLON STRINGPATHCONTEXTOBJ # role_arn_path_context_obj
+    | ROLEARNPATH COLON STRINGINTRINSICFUNC  # role_arn_intrinsic_func
+    | ROLEARNPATH COLON variable_sample      # role_arn_var
+    | ROLEARN COLON keyword_or_string        # role_arn_str
+;
 
 timeout_seconds_decl:
     TIMEOUTSECONDS COLON STRINGJSONATA # timeout_seconds_jsonata
@@ -648,6 +657,8 @@ keyword_or_string:
     | RESULT
     | PARAMETERS
     | CREDENTIALS
+    | ROLEARN
+    | ROLEARNPATH
     | RESULTSELECTOR
     | ITEMREADER
     | READERCONFIG

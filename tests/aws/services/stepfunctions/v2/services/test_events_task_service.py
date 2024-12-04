@@ -16,7 +16,6 @@ from tests.aws.services.stepfunctions.templates.services.services_templates impo
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..tracingConfiguration",
         # TODO: add support for Sdk Http metadata.
         "$..SdkHttpMetadata",
         "$..SdkResponseMetadata",
@@ -26,7 +25,7 @@ class TestTaskServiceEvents:
     @markers.aws.validated
     def test_put_events_base(
         self,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         events_to_sqs_queue,
         aws_client,
@@ -61,8 +60,8 @@ class TestTaskServiceEvents:
         ]
         exec_input = json.dumps({"Entries": entries})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -76,7 +75,7 @@ class TestTaskServiceEvents:
     @markers.aws.validated
     def test_put_events_malformed_detail(
         self,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         events_to_sqs_queue,
         aws_client,
@@ -100,8 +99,8 @@ class TestTaskServiceEvents:
         ]
         exec_input = json.dumps({"Entries": entries})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -115,7 +114,7 @@ class TestTaskServiceEvents:
     @markers.aws.validated
     def test_put_events_no_source(
         self,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         events_to_sqs_queue,
         aws_client,
@@ -143,8 +142,8 @@ class TestTaskServiceEvents:
         ]
         exec_input = json.dumps({"Entries": entries})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,

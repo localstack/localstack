@@ -18,6 +18,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.execu
     ExecutionState,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
+    ComputedCredentials,
     Credentials,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
@@ -68,7 +69,7 @@ class StateTask(ExecutionState, abc.ABC):
 
         return parameters
 
-    def _eval_credentials(self, env: Environment) -> dict:
+    def _eval_credentials(self, env: Environment) -> ComputedCredentials:
         if not self.credentials:
             task_credentials = dict()
         else:

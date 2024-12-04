@@ -5,8 +5,8 @@ from localstack_snapshot.snapshots.transformer import JsonpathTransformer, Regex
 
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import (
-    create,
     create_and_record_execution,
+    create_state_machine_with_iam_role,
 )
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate as BT
@@ -17,7 +17,6 @@ from tests.aws.services.stepfunctions.templates.services.services_templates impo
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..tracingConfiguration",
         # TODO: add support for Sdk Http metadata.
         "$..SdkHttpMetadata",
         "$..SdkResponseMetadata",
@@ -27,14 +26,14 @@ class TestTaskServiceAwsSdk:
     @markers.snapshot.skip_snapshot_verify(paths=["$..SecretList"])
     @markers.aws.validated
     def test_list_secrets(
-        self, aws_client, create_iam_role_for_sfn, create_state_machine, sfn_snapshot
+        self, aws_client, create_state_machine_iam_role, create_state_machine, sfn_snapshot
     ):
         template = ST.load_sfn_template(ST.AWSSDK_LIST_SECRETS)
         definition = json.dumps(template)
         exec_input = json.dumps(dict())
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -45,7 +44,7 @@ class TestTaskServiceAwsSdk:
     def test_dynamodb_put_get_item(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         dynamodb_create_table,
         snapshot,
@@ -66,8 +65,8 @@ class TestTaskServiceAwsSdk:
             }
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             snapshot,
             definition,
@@ -78,7 +77,7 @@ class TestTaskServiceAwsSdk:
     def test_dynamodb_put_delete_item(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         dynamodb_create_table,
         snapshot,
@@ -99,8 +98,8 @@ class TestTaskServiceAwsSdk:
             }
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             snapshot,
             definition,
@@ -111,7 +110,7 @@ class TestTaskServiceAwsSdk:
     def test_dynamodb_put_update_get_item(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         dynamodb_create_table,
         snapshot,
@@ -134,8 +133,8 @@ class TestTaskServiceAwsSdk:
             }
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             snapshot,
             definition,
@@ -162,7 +161,7 @@ class TestTaskServiceAwsSdk:
     def test_sfn_send_task_outcome_with_no_such_token(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         state_machine_template,
@@ -171,8 +170,8 @@ class TestTaskServiceAwsSdk:
 
         exec_input = json.dumps({"TaskToken": "NoSuchTaskToken"})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -183,14 +182,15 @@ class TestTaskServiceAwsSdk:
     def test_sfn_start_execution(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         template_target = BT.load_sfn_template(BT.BASE_RAISE_FAILURE)
         definition_target = json.dumps(template_target)
-        state_machine_arn_target = create(
-            create_iam_role_for_sfn,
+        state_machine_arn_target = create_state_machine_with_iam_role(
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition_target,
@@ -203,8 +203,8 @@ class TestTaskServiceAwsSdk:
             {"StateMachineArn": state_machine_arn_target, "Input": None, "Name": "TestStartTarget"}
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -215,7 +215,7 @@ class TestTaskServiceAwsSdk:
     def test_sfn_start_execution_implicit_json_serialisation(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -229,8 +229,9 @@ class TestTaskServiceAwsSdk:
 
         template_target = BT.load_sfn_template(BT.BASE_PASS_RESULT)
         definition_target = json.dumps(template_target)
-        state_machine_arn_target = create(
-            create_iam_role_for_sfn,
+        state_machine_arn_target = create_state_machine_with_iam_role(
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition_target,
@@ -244,8 +245,8 @@ class TestTaskServiceAwsSdk:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -262,7 +263,7 @@ class TestTaskServiceAwsSdk:
         self,
         aws_client,
         s3_create_bucket,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         file_body,
@@ -278,8 +279,8 @@ class TestTaskServiceAwsSdk:
 
         exec_input = json.dumps({"Bucket": bucket_name, "Key": file_key})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -304,7 +305,7 @@ class TestTaskServiceAwsSdk:
         self,
         aws_client,
         s3_create_bucket,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         body,
@@ -317,8 +318,8 @@ class TestTaskServiceAwsSdk:
 
         exec_input = json.dumps({"Bucket": bucket_name, "Key": "file-key", "Body": body})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
