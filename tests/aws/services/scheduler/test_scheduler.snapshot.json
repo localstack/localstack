@@ -1,0 +1,31 @@
+{
+  "tests/aws/services/scheduler/test_scheduler.py::test_tag_resource": {
+    "recorded-date": "04-12-2024, 10:07:28",
+    "recorded-content": {
+      "list-tagged-schedule": {
+        "Tags": [
+          {
+            "Key": "TagKey",
+            "Value": "TagValue"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::test_untag_resource": {
+    "recorded-date": "04-12-2024, 10:08:11",
+    "recorded-content": {
+      "list-untagged-schedule": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
