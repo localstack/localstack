@@ -3,7 +3,6 @@ import json
 import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
-from aws.services.stepfunctions.templates.base.base_templates import BaseTemplate as BT
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.config import SECONDARY_TEST_AWS_ACCOUNT_ID, TEST_AWS_ACCOUNT_ID
 from localstack.testing.pytest import markers
@@ -12,6 +11,9 @@ from localstack.testing.pytest.stepfunctions.utils import (
     create_state_machine_with_iam_role,
 )
 from localstack.utils.strings import short_uid
+from tests.aws.services.stepfunctions.templates.base.base_templates import (
+    BaseTemplate as BT,
+)
 from tests.aws.services.stepfunctions.templates.credentials.credentials_templates import (
     CredentialsTemplates as CT,
 )
