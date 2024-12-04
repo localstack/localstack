@@ -36,6 +36,10 @@ from localstack.services.lambda_.event_source_mapping.pollers.sqs_poller import 
 from localstack.services.lambda_.event_source_mapping.senders.lambda_sender import LambdaSender
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.client_types import ServicePrincipal
+from localstack.utils.lambda_debug_mode.lambda_debug_mode import (
+    DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS,
+    is_lambda_debug_mode,
+)
 
 
 class PollerHolder:
@@ -57,12 +61,22 @@ class EsmWorkerFactory:
     def get_esm_worker(self) -> EsmWorker:
         # Sender (always Lambda)
         function_arn = self.esm_config["FunctionArn"]
+
+        if is_lambda_debug_mode():
+            timeout_seconds = DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS
+        else:
+            # 900s is the maximum amount of time a Lambda can run for.
+            lambda_max_timeout_seconds = 900
+            invoke_timeout_buffer_seconds = 5
+            timeout_seconds = lambda_max_timeout_seconds + invoke_timeout_buffer_seconds
+
         lambda_client = get_internal_client(
             arn=function_arn,  # Only the function_arn is necessary since the Lambda should be able to invoke itself
             client_config=botocore.config.Config(
-                retries={"max_attempts": 0, "total_max_attempts": 1},
-                read_timeout=900,  # 900s is the maximum amount of time a Lambda can run for
-                connect_timeout=900,
+                retries={
+                    "total_max_attempts": 1
+                },  # Disable retries, to prevent re-invoking the Lambda
+                read_timeout=timeout_seconds,
                 tcp_keepalive=True,
             ),
         )
