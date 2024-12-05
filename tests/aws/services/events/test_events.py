@@ -50,6 +50,11 @@ TEST_EVENT_PATTERN_NO_SOURCE = {
     "detail": {"command": ["update-account"]},
 }
 
+TEST_EVENT_PATTERN_MALFORMED_DETAIL = {
+    "source": ["core.update-account-command"],
+    "detail-type": ["core.update-account-command"],
+}
+
 API_DESTINATION_AUTHS = [
     {
         "type": "BASIC",
@@ -129,6 +134,27 @@ class TestEvents:
                 "Source": "some.source",
                 "Detail": json.dumps(EVENT_DETAIL),
                 "DetailType": "",
+            },
+        ]
+        response = aws_client.events.put_events(Entries=entries)
+        snapshot.match("put-events", response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    @pytest.mark.parametrize(
+        "detail",
+        ["NotJSON", "[]", "{{}", json.dumps("NotJSON")],
+        ids=["STRING", "ARRAY", "MALFORMED_JSON", "SERIALIZED_STRING"],
+    )
+    def test_put_event_malformed_detail(self, snapshot, aws_client, detail):
+        entries = [
+            {
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": detail,
             },
         ]
         response = aws_client.events.put_events(Entries=entries)
