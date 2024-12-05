@@ -599,36 +599,34 @@ class TestDynamoDBEventSourceMapping:
                 1,
                 id="exists_filter_type",
             ),
-            # TODO: Fix native LocalStack implementation for exists
-            # pytest.param(
-            #     {"id": {"S": "id_value_1"}},
-            #     {"id": {"S": "id_value_2"}, "presentKey": {"S": "presentValue"}},
-            #     {"dynamodb": {"NewImage": {"presentKey": [{"exists": False}]}}},
-            #     2,
-            #     id="exists_false_filter",
-            # ),
+            pytest.param(
+                {"id": {"S": "id_value_1"}},
+                {"id": {"S": "id_value_2"}, "presentKey": {"S": "presentValue"}},
+                {"dynamodb": {"NewImage": {"presentKey": [{"exists": False}]}}},
+                2,
+                id="exists_false_filter",
+            ),
             # numeric filter
             # NOTE: numeric filters do not work with DynamoDB because all values are represented as string
             # and not converted to numbers for filtering.
             # The following AWS tutorial has a note about numeric filtering, which does not apply to DynamoDB strings:
             # https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.Lambda.Tutorial2.html
-            # TODO: Fix native LocalStack implementation for anything-but
-            # pytest.param(
-            #     {"id": {"S": "id_value_1"}, "numericFilter": {"N": "42"}},
-            #     {"id": {"S": "id_value_2"}, "numericFilter": {"N": "101"}},
-            #     {
-            #         "dynamodb": {
-            #             "NewImage": {
-            #                 "numericFilter": {
-            #                     # Filtering passes if at least one of the filter conditions matches
-            #                     "N": [{"numeric": [">", 100]}, {"anything-but": "101"}]
-            #                 }
-            #             }
-            #         }
-            #     },
-            #     1,
-            #     id="numeric_filter",
-            # ),
+            pytest.param(
+                {"id": {"S": "id_value_1"}, "numericFilter": {"N": "42"}},
+                {"id": {"S": "id_value_2"}, "numericFilter": {"N": "101"}},
+                {
+                    "dynamodb": {
+                        "NewImage": {
+                            "numericFilter": {
+                                # Filtering passes if at least one of the filter conditions matches
+                                "N": [{"numeric": [">", 100]}, {"anything-but": "101"}]
+                            }
+                        }
+                    }
+                },
+                1,
+                id="numeric_filter",
+            ),
             # Prefix
             pytest.param(
                 {"id": {"S": "id_value_1"}, "prefix": {"S": "us-1-other-suffix"}},
