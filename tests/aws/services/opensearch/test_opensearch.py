@@ -300,7 +300,9 @@ class TestOpensearchProvider:
         # make sure the sql plugin is installed (Sort and display component)
         plugins_url = f"https://{endpoint}/_cat/plugins?s=component&h=component"
         response = requests.get(
-            plugins_url, auth=master_user_auth, headers={**COMMON_HEADERS, "Accept": "application/json"}
+            plugins_url,
+            auth=master_user_auth,
+            headers={**COMMON_HEADERS, "Accept": "application/json"},
         )
         installed_plugins = {plugin["component"] for plugin in response.json()}
         assert "opensearch-sql" in installed_plugins
