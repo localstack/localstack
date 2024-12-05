@@ -12,6 +12,7 @@ from botocore.exceptions import ClientError
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 from tests.aws.services.events.helper_functions import (
+    is_old_provider,
     sqs_collect_messages,
 )
 
@@ -213,6 +214,10 @@ class TestEventPattern:
         snapshot.match("invalid-pattern", e.value.response)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not properly validate",
+    )
     def test_plain_string_payload(self, aws_client, snapshot):
         event = "plain string"
         pattern = {"body": {"test2": [{"numeric": [">", 100]}]}}
@@ -225,6 +230,10 @@ class TestEventPattern:
         snapshot.match("plain-string-payload-exc", e.value.response)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not properly validate",
+    )
     def test_invalid_event_payload(self, aws_client, snapshot):
         # following fields are mandatory: `id`, `account`, `source`, `time`, `region`, `resources`, `detail-type`
         event = {"testEvent": "value"}
