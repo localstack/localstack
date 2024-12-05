@@ -42,7 +42,7 @@
     "last_validated_date": "2024-04-10T09:21:59+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_exceptions": {
-    "last_validated_date": "2024-04-10T09:19:37+00:00"
+    "last_validated_date": "2024-12-05T10:52:30+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_lifecycle": {
     "last_validated_date": "2024-10-14T12:36:54+00:00"

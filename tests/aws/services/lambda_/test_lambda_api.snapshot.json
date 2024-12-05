@@ -5791,7 +5791,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_exceptions": {
-    "recorded-date": "10-04-2024, 09:19:37",
+    "recorded-date": "05-12-2024, 10:52:30",
     "recorded-content": {
       "get_unknown_uuid": {
         "Error": {
@@ -5848,6 +5848,18 @@
         },
         "Type": "User",
         "message": "Function does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "destination_config_failure": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Unsupported DestinationConfig parameter for given event source mapping type."
+        },
+        "Type": "User",
+        "message": "Unsupported DestinationConfig parameter for given event source mapping type.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
