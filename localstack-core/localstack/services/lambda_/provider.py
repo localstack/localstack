@@ -1889,6 +1889,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # TODO: test whether stream ARNs are valid sources for Pipes or ESM or whether only DynamoDB table ARNs work
         is_create_esm_request = context.operation.name == self.create_event_source_mapping.operation
 
+        if destination_config := request.get("DestinationConfig"):
+            if "OnSuccess" in destination_config:
+                raise InvalidParameterValueException(
+                    "Unsupported DestinationConfig parameter for given event source mapping type.",
+                    Type="User",
+                )
+
         service = None
         if "SelfManagedEventSource" in request:
             service = "kafka"

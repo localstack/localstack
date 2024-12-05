@@ -1,0 +1,29 @@
+Resources:
+  TestLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/events/test-log-group-${AWS::AccountId}"
+
+  TestRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+          - aws.s3
+        detail-type:
+          - Object Created
+        detail:
+          bucket:
+            name:
+              - test-s3-bucket
+          object:
+            key:
+              - suffix: /test.json
+      Targets:
+        - Id: "TestLogGroupTarget"
+          Arn: !GetAtt TestLogGroup.Arn
+
+Outputs:
+  RuleName:
+    Description: Name of the EventBridge Rule
+    Value: !Ref TestRule

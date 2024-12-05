@@ -197,7 +197,9 @@ def validate_event(event: PutEventsRequestEntry) -> None | PutEventsResultEntry:
             "ErrorCode": "InvalidArgument",
             "ErrorMessage": "Parameter Detail is not valid. Reason: Detail is a required argument.",
         }
-    else:
+    elif event.get("Detail") and len(event["Detail"]) >= 262144:
+        raise ValidationException("Total size of the entries in the request is over the limit.")
+    elif event.get("Detail"):
         try:
             json_detail = json.loads(event.get("Detail"))
             if isinstance(json_detail, dict):
@@ -209,7 +211,6 @@ def validate_event(event: PutEventsRequestEntry) -> None | PutEventsResultEntry:
             "ErrorCode": "MalformedDetail",
             "ErrorMessage": "Detail is malformed.",
         }
-
 
 def check_unique_tags(tags: TagsList) -> None:
     unique_tag_keys = {tag["Key"] for tag in tags}

@@ -638,6 +638,24 @@ class TestSns:
                 },
                 True,
             ),
+            (
+                "cidr filter with no match",
+                {"filter": [{"cidr": "10.0.0.0/24"}]},
+                {"filter": {"Type": "String", "Value": "10.0.0.256"}},
+                False,
+            ),
+            (
+                "cidr filter with no match 2",
+                {"filter": [{"cidr": "10.0.0.0/24"}]},
+                {"filter": {"Type": "String", "Value": "10.0.1.255"}},
+                False,
+            ),
+            (
+                "cidr filter with match",
+                {"filter": [{"cidr": "10.0.0.0/24"}]},
+                {"filter": {"Type": "String", "Value": "10.0.0.255"}},
+                True,
+            ),
         ]
 
         sub_filter = SubscriptionFilter()

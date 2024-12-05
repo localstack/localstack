@@ -5337,6 +5337,19 @@ class TestLambdaEventSourceMappings:
                 EventSourceArn="arn:aws:sqs:us-east-1:111111111111:somequeue",
             )
         snapshot.match("create_unknown_params", e.value.response)
+
+        with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
+            aws_client.lambda_.create_event_source_mapping(
+                FunctionName="doesnotexist",
+                EventSourceArn="arn:aws:sqs:us-east-1:111111111111:somequeue",
+                DestinationConfig={
+                    "OnSuccess": {
+                        "Destination": "arn:aws:sqs:us-east-1:111111111111:someotherqueue"
+                    }
+                },
+            )
+        snapshot.match("destination_config_failure", e.value.response)
+
         # TODO: add test for event source arn == failure destination
         # TODO: add test for adding success destination
         # TODO: add test_multiple_esm_conflict: create an event source mapping for a combination of function + target ARN that already exists

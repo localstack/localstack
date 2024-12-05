@@ -11,5 +11,43 @@
         "RuleWithoutNameRef": "<event-bus-name>|<rule-id>"
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_events.py::test_rule_pattern_transformation": {
+    "recorded-date": "08-11-2024, 15:49:06",
+    "recorded-content": {
+      "rule": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:rule/<name:1>",
+        "CreatedBy": "111111111111",
+        "EventBusName": "default",
+        "EventPattern": {
+          "detail-type": [
+            "Object Created"
+          ],
+          "source": [
+            "aws.s3"
+          ],
+          "detail": {
+            "bucket": {
+              "name": [
+                "test-s3-bucket"
+              ]
+            },
+            "object": {
+              "key": [
+                {
+                  "suffix": "/test.json"
+                }
+              ]
+            }
+          }
+        },
+        "Name": "<name:1>",
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

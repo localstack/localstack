@@ -1754,7 +1754,21 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events.py::TestEvents::test_create_connection_validations": {
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_with_too_big_detail": {
+    "recorded-date": "18-10-2024, 07:36:18",
+    "recorded-content": {
+      "put-events-too-big-detail-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Total size of the entries in the request is over the limit."},
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 400
+          }
+        }
+      }
+    },
+    "tests/aws/services/events/test_events.py::TestEvents::test_create_connection_validations": {
     "recorded-date": "14-11-2024, 20:29:49",
     "recorded-content": {
       "create_connection_exc": {

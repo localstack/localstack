@@ -98,7 +98,7 @@ jobs:
       - name: Add changed services to template
         if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
         id: markdown
-        uses: mad9000/actions-find-and-replace-string@4
+        uses: mad9000/actions-find-and-replace-string@5
         with:
           source: ${{ steps.template.outputs.content }}
           find: '{{ SERVICES }}'
