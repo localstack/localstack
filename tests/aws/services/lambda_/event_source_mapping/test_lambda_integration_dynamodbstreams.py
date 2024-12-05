@@ -672,8 +672,6 @@ class TestDynamoDBEventSourceMapping:
         Test assumption: The first item MUST always match the filter and the second item CAN match the filter.
         => This enables two-step testing (i.e., snapshots between inserts) but is unreliable and should be revised.
         """
-        if filter == {"eventName": ["INSERT"], "eventSource": ["aws:dynamodb"]}:
-            pytest.skip(reason="content_multiple_filters failing for ESM v2 (needs investigation)")
         function_name = f"lambda_func-{short_uid()}"
         table_name = f"test-table-{short_uid()}"
         max_retries = 50
