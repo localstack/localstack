@@ -62,10 +62,7 @@ class StringSplit(StatesFunction):
         if not isinstance(del_chars, str):
             raise ValueError(f"Expected string value, but got '{del_chars}'.")
 
-        patterns = []
-        for c in del_chars:
-            patterns.append(f"\\{c}")
-        pattern = "|".join(patterns)
+        pattern = "|".join(re.escape(c) for c in del_chars)
 
         parts = re.split(pattern, string)
         parts_clean = list(filter(bool, parts))

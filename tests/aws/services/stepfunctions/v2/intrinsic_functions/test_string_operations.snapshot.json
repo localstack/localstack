@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_string_operations.py::TestStringOperations::test_string_split": {
-    "recorded-date": "28-11-2023, 10:19:26",
+    "recorded-date": "05-12-2024, 20:34:43",
     "recorded-content": {
       "exec_hist_resp_0": {
         "events": [
@@ -463,6 +463,87 @@
                   "a",
                   "test",
                   "string"
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_hist_resp_6": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionInput": {
+                  "fst": "split on T and \nnew line",
+                  "snd": "T\n"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionInput": {
+                  "fst": "split on T and \nnew line",
+                  "snd": "T\n"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_0",
+              "output": {
+                "FunctionResult": [
+                  "split on ",
+                  " and ",
+                  "new line"
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FunctionResult": [
+                  "split on ",
+                  " and ",
+                  "new line"
                 ]
               },
               "outputDetails": {
