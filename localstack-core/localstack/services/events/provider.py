@@ -1209,6 +1209,25 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         """Test event pattern uses EventBridge event pattern matching:
         https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html
         """
+        try:
+            json_event = json.loads(event)
+        except json.JSONDecodeError:
+            raise ValidationException("Parameter Event is not valid.")
+
+        mandatory_fields = {
+            "id",
+            "account",
+            "source",
+            "time",
+            "region",
+            "detail-type",
+        }
+        # https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_TestEventPattern.html
+        # the documentation says that `resources` is mandatory, but it is not in reality
+
+        if not mandatory_fields.issubset(json_event):
+            raise ValidationException("Parameter Event is not valid.")
+
         result = matches_event(event_pattern, event)
         return TestEventPatternResponse(Result=result)
 

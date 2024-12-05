@@ -212,6 +212,31 @@ class TestEventPattern:
             )
         snapshot.match("invalid-pattern", e.value.response)
 
+    @markers.aws.validated
+    def test_plain_string_payload(self, aws_client, snapshot):
+        event = "plain string"
+        pattern = {"body": {"test2": [{"numeric": [">", 100]}]}}
+
+        with pytest.raises(ClientError) as e:
+            aws_client.events.test_event_pattern(
+                Event=event,
+                EventPattern=json.dumps(pattern),
+            )
+        snapshot.match("plain-string-payload-exc", e.value.response)
+
+    @markers.aws.validated
+    def test_invalid_event_payload(self, aws_client, snapshot):
+        # following fields are mandatory: `id`, `account`, `source`, `time`, `region`, `resources`, `detail-type`
+        event = {"testEvent": "value"}
+        pattern = {"body": {"test2": [{"numeric": [">", 100]}]}}
+
+        with pytest.raises(ClientError) as e:
+            aws_client.events.test_event_pattern(
+                Event=json.dumps(event),
+                EventPattern=json.dumps(pattern),
+            )
+        snapshot.match("plain-string-payload-exc", e.value.response)
+
 
 class TestRuleWithPattern:
     @markers.aws.validated
