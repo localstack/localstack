@@ -50,11 +50,6 @@ TEST_EVENT_PATTERN_NO_SOURCE = {
     "detail": {"command": ["update-account"]},
 }
 
-TEST_EVENT_PATTERN_MALFORMED_DETAIL = {
-    "source": ["core.update-account-command"],
-    "detail-type": ["core.update-account-command"],
-}
-
 API_DESTINATION_AUTHS = [
     {
         "type": "BASIC",

@@ -212,6 +212,7 @@ def validate_event(event: PutEventsRequestEntry) -> None | PutEventsResultEntry:
             "ErrorMessage": "Detail is malformed.",
         }
 
+
 def check_unique_tags(tags: TagsList) -> None:
     unique_tag_keys = {tag["Key"] for tag in tags}
     if len(unique_tag_keys) < len(tags):
