@@ -67,7 +67,7 @@ API_DESTINATION_AUTHS = [
         "parameters": {
             "AuthorizationEndpoint": "replace_this",
             "ClientParameters": {"ClientID": "id", "ClientSecret": "password"},
-            "HttpMethod": "put",
+            "HttpMethod": "POST",
             "OAuthHttpParameters": {
                 "BodyParameters": [{"Key": "oauthbody", "Value": "value1"}],
                 "HeaderParameters": [{"Key": "oauthheader", "Value": "value2"}],
@@ -439,108 +439,224 @@ class TestEvents:
         snapshot.match("create_connection_exc", e.value.response)
 
     @markers.aws.validated
-    def test_put_events_response_entries_order(
-        self, events_put_rule, create_sqs_events_target, aws_client, snapshot, clean_up
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
+    def test_api_destinations_validated(
+        self, auth, aws_client, create_rest_apigw, snapshot, create_role_with_policy, clean_up
     ):
-        """Test that put_events response contains each EventId only once, even with multiple targets."""
-
-        queue_url_1, queue_arn_1 = create_sqs_events_target()
-        queue_url_2, queue_arn_2 = create_sqs_events_target()
-
-        rule_name = f"test-rule-{short_uid()}"
-
+        """Test API destinations using API Gateway with direct integration"""
         snapshot.add_transformers_list(
             [
                 snapshot.transform.key_value("EventId", reference_replacement=False),
                 snapshot.transform.key_value("detail", reference_replacement=False),
-                snapshot.transform.regex(queue_arn_1, "<queue-1-arn>"),
-                snapshot.transform.regex(queue_arn_2, "<queue-2-arn>"),
-                snapshot.transform.regex(rule_name, "<rule-name>"),
-                *snapshot.transform.sqs_api(),
-                *snapshot.transform.sns_api(),
+                snapshot.transform.key_value("ApiDestinationArn", reference_replacement=False),
+                snapshot.transform.key_value("RuleArn", reference_replacement=False),
             ]
         )
 
-        events_put_rule(
-            Name=rule_name,
-            EventPattern=json.dumps(TEST_EVENT_PATTERN_NO_DETAIL),
+        api_id, _, root_id = create_rest_apigw(name=f"test-api-{short_uid()}")
+        region = aws_client.events.meta.region_name
+
+        resource = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="webhook"
         )
 
-        def check_rule_active():
-            rule = aws_client.events.describe_rule(Name=rule_name)
-            assert rule["State"] == "ENABLED"
+        aws_client.apigateway.put_method(
+            restApiId=api_id, resourceId=resource["id"], httpMethod="POST", authorizationType="NONE"
+        )
+        integration_response_template = """{
+            "body": $input.json('$'),
+            "headers": {
+                #foreach($header in $input.params().header.keySet())
+                "$header": "$util.escapeJavaScript($input.params().header.get($header))"
+                #if($foreach.hasNext),#end
+                #end
+            },
+            "queryParams": {
+                #foreach($param in $input.params().querystring.keySet())
+                "$param": "$util.escapeJavaScript($input.params().querystring.get($param))"
+                #if($foreach.hasNext),#end
+                #end
+            },
+            "pathParams": {
+                #foreach($param in $input.params().path.keySet())
+                "$param": "$util.escapeJavaScript($input.params().path.get($param))"
+                #if($foreach.hasNext),#end
+                #end
+            }
+        }"""
 
-        retry(check_rule_active, retries=10, sleep=1)
+        aws_client.apigateway.put_integration(
+            restApiId=api_id,
+            resourceId=resource["id"],
+            httpMethod="POST",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
 
-        target_id_1 = f"test-target-1-{short_uid()}"
-        target_id_2 = f"test-target-2-{short_uid()}"
+        aws_client.apigateway.put_method_response(
+            restApiId=api_id,
+            resourceId=resource["id"],
+            httpMethod="POST",
+            statusCode="200",
+            responseModels={"application/json": "Empty"},
+        )
+
+        aws_client.apigateway.put_integration_response(
+            restApiId=api_id,
+            resourceId=resource["id"],
+            httpMethod="POST",
+            statusCode="200",
+            responseTemplates={"application/json": integration_response_template},
+        )
+
+        # If OAuth, create token endpoint
+        if auth["type"] == "OAUTH_CLIENT_CREDENTIALS":
+            oauth_resource = aws_client.apigateway.create_resource(
+                restApiId=api_id, parentId=root_id, pathPart="oauth"
+            )
+
+            aws_client.apigateway.put_method(
+                restApiId=api_id,
+                resourceId=oauth_resource["id"],
+                httpMethod="POST",
+                authorizationType="NONE",
+            )
+
+            aws_client.apigateway.put_integration(
+                restApiId=api_id,
+                resourceId=oauth_resource["id"],
+                httpMethod="POST",
+                type="MOCK",
+                requestTemplates={"application/json": '{"statusCode": 200}'},
+            )
+
+            aws_client.apigateway.put_method_response(
+                restApiId=api_id,
+                resourceId=oauth_resource["id"],
+                httpMethod="POST",
+                statusCode="200",
+            )
+
+            aws_client.apigateway.put_integration_response(
+                restApiId=api_id,
+                resourceId=oauth_resource["id"],
+                httpMethod="POST",
+                statusCode="200",
+                responseTemplates={
+                    "application/json": """{
+                        "access_token": "test-token",
+                        "token_type": "Bearer",
+                        "expires_in": 86400
+                    }"""
+                },
+            )
+
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName="test")
+
+        api_url = f"https://{api_id}.execute-api.{region}.amazonaws.com/test"
+
+        if auth["type"] == "OAUTH_CLIENT_CREDENTIALS":
+            auth["parameters"]["AuthorizationEndpoint"] = f"{api_url}/oauth"
+
+        connection_name = f"c-{short_uid()}"
+        connection_arn = aws_client.events.create_connection(
+            Name=connection_name,
+            AuthorizationType=auth.get("type"),
+            AuthParameters={
+                auth.get("key"): auth.get("parameters"),
+                "InvocationHttpParameters": {
+                    "BodyParameters": [
+                        {"Key": "connection_body_param", "Value": "value", "IsValueSecret": False},
+                    ],
+                    "HeaderParameters": [
+                        {
+                            "Key": "connection-header-param",
+                            "Value": "value",
+                            "IsValueSecret": False,
+                        },
+                        {"Key": "overwritten-header", "Value": "original", "IsValueSecret": False},
+                    ],
+                    "QueryStringParameters": [
+                        {"Key": "connection_query_param", "Value": "value", "IsValueSecret": False},
+                        {"Key": "overwritten_query", "Value": "original", "IsValueSecret": False},
+                    ],
+                },
+            },
+        )["ConnectionArn"]
+
+        dest_name = f"d-{short_uid()}"
+        result = aws_client.events.create_api_destination(
+            Name=dest_name,
+            ConnectionArn=connection_arn,
+            InvocationEndpoint=f"{api_url}/webhook",
+            HttpMethod="POST",
+        )
+        snapshot.match("api_destination", result)
+
+        events_role_arn = create_role_with_policy(
+            "Allow",
+            "events:InvokeApiDestination",
+            json.dumps(
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {"Service": "events.amazonaws.com"},
+                            "Action": "sts:AssumeRole",
+                        }
+                    ],
+                }
+            ),
+            result["ApiDestinationArn"],
+        )[1]
+
+        rule_name = f"r-{short_uid()}"
+        target_id = f"t-{short_uid()}"
+        pattern = json.dumps({"source": ["source-123"], "detail-type": ["type-123"]})
+        rule_response = aws_client.events.put_rule(Name=rule_name, EventPattern=pattern)
+        snapshot.match("rule", rule_response)
+
         target_response = aws_client.events.put_targets(
             Rule=rule_name,
             Targets=[
-                {"Id": target_id_1, "Arn": queue_arn_1},
-                {"Id": target_id_2, "Arn": queue_arn_2},
+                {
+                    "Id": target_id,
+                    "Arn": result["ApiDestinationArn"],
+                    "RoleArn": events_role_arn,
+                    "Input": '{"target_value":"value"}',
+                    "HttpParameters": {
+                        "PathParameterValues": ["target_path"],
+                        "HeaderParameters": {
+                            "target-header": "target_header_value",
+                            "overwritten_header": "changed",
+                        },
+                        "QueryStringParameters": {
+                            "target_query": "t_query",
+                            "overwritten_query": "changed",
+                        },
+                    },
+                }
             ],
         )
+        snapshot.match("target", target_response)
+        assert target_response["FailedEntryCount"] == 0
 
-        assert (
-            target_response["FailedEntryCount"] == 0
-        ), f"Failed to add targets: {target_response.get('FailedEntries', [])}"
-
-        # Use the test constants for the event
-        test_event = {
-            "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
-            "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
-            "Detail": json.dumps(EVENT_DETAIL),
-        }
-
-        event_response = aws_client.events.put_events(Entries=[test_event])
-
-        snapshot.match("put-events-response", event_response)
-
-        assert len(event_response["Entries"]) == 1
-        event_id = event_response["Entries"][0]["EventId"]
-        assert event_id, "EventId not found in response"
-
-        def verify_message_content(message, original_event_id):
-            """Verify the message content matches what we sent."""
-            body = json.loads(message["Body"])
-
-            assert (
-                body["source"] == TEST_EVENT_PATTERN_NO_DETAIL["source"][0]
-            ), f"Unexpected source: {body['source']}"
-            assert (
-                body["detail-type"] == TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0]
-            ), f"Unexpected detail-type: {body['detail-type']}"
-
-            detail = body["detail"]  # detail is already parsed as dict
-            assert isinstance(detail, dict), f"Detail should be a dict, got {type(detail)}"
-            assert detail == EVENT_DETAIL, f"Unexpected detail content: {detail}"
-
-            assert (
-                body["id"] == original_event_id
-            ), f"Event ID mismatch. Expected {original_event_id}, got {body['id']}"
-
-            return body
-
-        try:
-            messages_1 = sqs_collect_messages(
-                aws_client, queue_url_1, expected_events_count=1, retries=30, wait_time=5
-            )
-            messages_2 = sqs_collect_messages(
-                aws_client, queue_url_2, expected_events_count=1, retries=30, wait_time=5
-            )
-        except Exception as e:
-            raise Exception(f"Failed to collect messages: {str(e)}")
-
-        assert len(messages_1) == 1, f"Expected 1 message in queue 1, got {len(messages_1)}"
-        assert len(messages_2) == 1, f"Expected 1 message in queue 2, got {len(messages_2)}"
-
-        verify_message_content(messages_1[0], event_id)
-        verify_message_content(messages_2[0], event_id)
-
-        snapshot.match(
-            "sqs-messages", {"queue1_messages": messages_1, "queue2_messages": messages_2}
+        events_response = aws_client.events.put_events(
+            Entries=[
+                {
+                    "Source": "source-123",
+                    "DetailType": "type-123",
+                    "Detail": '{"i": 0}',
+                }
+            ]
         )
+        snapshot.match("events", events_response)
+        assert events_response["FailedEntryCount"] == 0
 
     @markers.aws.validated
     def test_put_events_with_target_delivery_failure(
