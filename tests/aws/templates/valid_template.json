@@ -3,6 +3,11 @@
       "KeyExample": {
         "Description": "The EC2 Key Pair to allow SSH access to the instance",
         "Type": "AWS::EC2::KeyPair::KeyName"
+      },
+      "SecretKeyExample": {
+        "Description": "Secret value here",
+        "NoEcho": true,
+        "Type": "String"
       }
     },
     "Resources": {

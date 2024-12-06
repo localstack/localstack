@@ -77,7 +77,7 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_templates.py::test_validate_template": {
-    "recorded-date": "18-06-2024, 17:23:30",
+    "recorded-date": "26-11-2024, 12:47:02",
     "recorded-content": {
       "validate-template": {
         "Parameters": [
@@ -85,6 +85,11 @@
             "Description": "The EC2 Key Pair to allow SSH access to the instance",
             "NoEcho": false,
             "ParameterKey": "KeyExample"
+          },
+          {
+            "Description": "Secret value here",
+            "NoEcho": true,
+            "ParameterKey": "SecretKeyExample"
           }
         ],
         "ResponseMetadata": {
