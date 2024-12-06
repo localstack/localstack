@@ -56,6 +56,7 @@ class TestMockIntegration:
         mock_integration = RestApiMockIntegration()
 
         valid_templates = [
+            "{ statusCode: 200 }",  # this is what the CDK creates when configuring CORS for rest apis
             "{statusCode: 200,super{ f}oo: [ba r]}",
             "{statusCode: 200, \"value\": 'goog'}",
             "{statusCode: 200, foo}: [ba r]}",
@@ -64,8 +65,16 @@ class TestMockIntegration:
             "{statusCode: 200, }foo: ''}",
             '{statusCode: 200, " ": " "}',
             '{statusCode: 200, "": ""}',
+            "{'statusCode': 200, '': ''}",
+            '{"statusCode": 200, "": ""}',
+            '{"statusCode": 200 , }',
+            '{"statusCode": 200 ,, }',  # Because?? :cry-bear:
+            '{"statusCode": 200 , null: null }',
         ]
         invalid_templates = [
+            "{\"statusCode': 200 }",
+            "{'statusCode\": 200 }",
+            "{'statusCode: 200 }",
             "statusCode: 200",
             "{statusCode: 200, {foo: [ba r]}",
             # This test fails as we do not support nested objects

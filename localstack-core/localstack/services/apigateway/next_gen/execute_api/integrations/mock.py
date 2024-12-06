@@ -63,26 +63,32 @@ class RestApiMockIntegration(RestApiIntegration):
         CDK creates a MOCK OPTIONS route with in valid json. `{statusCode: 200}`
         Aws probably has a custom token parser. We can implement one
         at some point if we have user requests for it"""
+
+        def convert_null_value(value) -> str:
+            if value in ("null", ""):
+                return '""'
+            return value
+
         try:
             statuscode = ""
             matched = re.match(r"^\s*{(.+)}\s*$", body).group(1)
             pairs = [m.strip() for m in matched.split(",")]
             # TODO this is not right, but nested object would otherwise break the parsing
-            key_values = [s.split(":", maxsplit=1) for s in pairs]
+            key_values = [s.split(":", maxsplit=1) for s in pairs if s]
             for key_value in key_values:
                 assert len(key_value) == 2
                 key, value = [el.strip() for el in key_value]
-                key = key or '""'
-                value = value or '""'
+                key = convert_null_value(key)
+                value = convert_null_value(value)
+
+                if key in ("statusCode", "'statusCode'", '"statusCode"'):
+                    statuscode = int(value)
+                    continue
 
                 assert (leading_key_char := key[0]) not in "[{"
                 if leading_key_char in "'\"":
                     assert len(key) >= 2
                     assert key[-1] == leading_key_char
-
-                if key == "statusCode":
-                    statuscode = int(value)
-                    continue
 
                 if (leading_value_char := value[0]) in "[{'\"":
                     assert len(value) >= 2
