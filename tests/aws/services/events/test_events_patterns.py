@@ -251,7 +251,7 @@ class TestEventPattern:
         reason="V1 provider does not properly validate",
     )
     def test_invalid_event_payload(self, aws_client, snapshot):
-        # following fields are mandatory: `id`, `account`, `source`, `time`, `region`, `resources`, `detail-type`
+        # following fields are mandatory: `id`, `account`, `source`, `time`, `region`, `detail-type`
         event = {"testEvent": "value"}
         pattern = {"body": {"test2": [{"numeric": [">", 100]}]}}
 
