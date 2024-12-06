@@ -1,5 +1,11 @@
 {
   "tests/aws/services/scheduler/test_scheduler.py::test_list_schedules": {
     "last_validated_date": "2024-06-11T22:50:50+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::test_tag_resource": {
+    "last_validated_date": "2024-12-04T10:07:28+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::test_untag_resource": {
+    "last_validated_date": "2024-12-04T10:08:11+00:00"
   }
 }

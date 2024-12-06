@@ -115,8 +115,7 @@ class EventRuleEngine:
             return self._evaluate_numeric_condition(numeric_condition, value)
 
         elif cidr := condition.get("cidr"):
-            ips = [str(ip) for ip in ipaddress.IPv4Network(cidr)]
-            return value in ips
+            return self._evaluate_cidr(cidr, value)
 
         elif wildcard := condition.get("wildcard"):
             return self._evaluate_wildcard(wildcard, value)
@@ -134,6 +133,14 @@ class EventRuleEngine:
     @staticmethod
     def _evaluate_equal_ignore_case(condition: str, value: str) -> bool:
         return condition.lower() == value.lower()
+
+    @staticmethod
+    def _evaluate_cidr(condition: str, value: str) -> bool:
+        try:
+            ip = ipaddress.ip_address(value)
+            return ip in ipaddress.ip_network(condition)
+        except ValueError:
+            return False
 
     @staticmethod
     def _evaluate_wildcard(condition: str, value: str) -> bool:
@@ -460,12 +467,8 @@ class EventPatternCompiler:
                     self._validate_numeric_condition(value)
 
                 elif operator == "cidr":
-                    try:
-                        ipaddress.IPv4Network(value)
-                    except ValueError:
-                        raise InvalidEventPatternException(
-                            f"{self.error_prefix}Malformed CIDR, one '/' required"
-                        )
+                    self._validate_cidr_condition(value)
+
                 elif operator == "wildcard":
                     if from_ == "anything-but" and isinstance(value, list):
                         for v in value:
@@ -556,6 +559,31 @@ class EventPatternCompiler:
         if value.count("*") > 5:
             raise InvalidEventPatternException(
                 f"{self.error_prefix}Rule is too complex - try using fewer wildcard characters or fewer repeating character sequences after a wildcard character"
+            )
+
+    def _validate_cidr_condition(self, value):
+        if not isinstance(value, str):
+            # `cidr` returns the prefix error
+            raise InvalidEventPatternException(
+                f"{self.error_prefix}prefix match pattern must be a string"
+            )
+        ip_and_mask = value.split("/")
+        if len(ip_and_mask) != 2:
+            raise InvalidEventPatternException(
+                f"{self.error_prefix}Malformed CIDR, one '/' required"
+            )
+        ip_addr, mask = value.split("/")
+        try:
+            int(mask)
+        except ValueError:
+            raise InvalidEventPatternException(
+                f"{self.error_prefix}Malformed CIDR, mask bits must be an integer"
+            )
+        try:
+            ipaddress.ip_network(value)
+        except ValueError:
+            raise InvalidEventPatternException(
+                f"{self.error_prefix}Nonstandard IP address: {ip_addr}"
             )
 
     @staticmethod

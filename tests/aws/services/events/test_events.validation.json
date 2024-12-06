@@ -164,6 +164,20 @@
   "tests/aws/services/events/test_events.py::TestEvents::test_create_connection_validations": {
     "last_validated_date": "2024-11-14T20:29:49+00:00"
   },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_malformed_detail[ARRAY]": {
+    "last_validated_date": "2024-12-05T14:33:58+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_malformed_detail[MALFORMED_JSON]": {
+    "last_validated_date": "2024-12-05T14:33:58+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_malformed_detail[SERIALIZED_STRING]": {
+    "last_validated_date": "2024-12-05T14:33:58+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_malformed_detail[STRING]": {
+    "last_validated_date": "2024-12-05T14:33:58+00:00"
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_with_too_big_detail": {
+    "last_validated_date": "2024-10-18T07:36:18+00:00"
+  },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_event_without_detail": {
     "last_validated_date": "2024-06-19T10:40:51+00:00"
   },

@@ -529,6 +529,24 @@ class TestSNSFilterPolicyAttributes:
 
 
 class TestSNSFilterPolicyBody:
+    @staticmethod
+    def get_messages(aws_client, _queue_url: str, _msg_list: list, expected: int):
+        # due to the random nature of receiving SQS messages, we need to consolidate a single object to match
+        sqs_response = aws_client.sqs.receive_message(
+            QueueUrl=_queue_url,
+            WaitTimeSeconds=1,
+            VisibilityTimeout=0,
+            MessageAttributeNames=["All"],
+            AttributeNames=["All"],
+        )
+        for _message in sqs_response["Messages"]:
+            _msg_list.append(_message)
+            aws_client.sqs.delete_message(
+                QueueUrl=_queue_url, ReceiptHandle=_message["ReceiptHandle"]
+            )
+
+        assert len(_msg_list) == expected
+
     @markers.aws.validated
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
     def test_filter_policy_on_message_body(
@@ -908,31 +926,16 @@ class TestSNSFilterPolicyBody:
                 Message=json.dumps(message),
             )
 
-        def get_messages(_queue_url: str, _recv_messages: list):
-            # due to the random nature of receiving SQS messages, we need to consolidate a single object to match
-            sqs_response = aws_client.sqs.receive_message(
-                QueueUrl=_queue_url,
-                WaitTimeSeconds=1,
-                VisibilityTimeout=0,
-                MessageAttributeNames=["All"],
-                AttributeNames=["All"],
-            )
-            for _message in sqs_response["Messages"]:
-                _recv_messages.append(_message)
-                aws_client.sqs.delete_message(
-                    QueueUrl=_queue_url, ReceiptHandle=_message["ReceiptHandle"]
-                )
-
-            assert len(_recv_messages) == 2
-
         for i, queue_url in enumerate(queues):
             recv_messages = []
             retry(
-                get_messages,
+                self.get_messages,
                 retries=10,
                 sleep=0.1,
+                aws_client=aws_client,
                 _queue_url=queue_url,
-                _recv_messages=recv_messages,
+                _msg_list=recv_messages,
+                expected=2,
             )
             # we need to sort the list (the order does not matter as we're not using FIFO)
             recv_messages.sort(key=itemgetter("Body"))
@@ -1039,30 +1042,15 @@ class TestSNSFilterPolicyBody:
                 Message=json.dumps(message),
             )
 
-        def get_messages(_queue_url: str, _received_messages: list):
-            # due to the random nature of receiving SQS messages, we need to consolidate a single object to match
-            sqs_response = aws_client.sqs.receive_message(
-                QueueUrl=_queue_url,
-                WaitTimeSeconds=1,
-                VisibilityTimeout=0,
-                MessageAttributeNames=["All"],
-                AttributeNames=["All"],
-            )
-            for _message in sqs_response["Messages"]:
-                _received_messages.append(_message)
-                aws_client.sqs.delete_message(
-                    QueueUrl=_queue_url, ReceiptHandle=_message["ReceiptHandle"]
-                )
-
-            assert len(_received_messages) == 2
-
         received_messages = []
         retry(
-            get_messages,
+            self.get_messages,
             retries=10,
             sleep=0.1,
+            aws_client=aws_client,
             _queue_url=queue_url,
-            _received_messages=received_messages,
+            _msg_list=received_messages,
+            expected=2,
         )
         # we need to sort the list (the order does not matter as we're not using FIFO)
         received_messages.sort(key=itemgetter("Body"))
@@ -1103,7 +1091,7 @@ class TestSNSFilterPolicyBody:
         # publish messages that satisfies the filter policy, assert that messages are received
         messages = [
             # not passing
-            # wrong value for `metricName`
+            # wrong value for `detail.scope`
             {
                 "metricName": "CPUUtilization",
                 "detail": {"scope": "aws.cloudwatch", "type": "CloudWatch Alarm State Change"},
@@ -1119,6 +1107,16 @@ class TestSNSFilterPolicyBody:
             {"metricName": "CPUUtilization", "detail": {"scope": "Service"}},
             # missing value for `detail.scope` AND `detail.source` or `detail.type`
             {"metricName": "CPUUtilization", "scope": "Service"},
+            # wrong value for `metricName`
+            {
+                "metricName": "AWS/EC2",
+                "detail": {"scope": "Service", "type": "CloudWatch Alarm State Change"},
+            },
+            # wrong value for `namespace`
+            {
+                "namespace": "CPUUtilization",
+                "detail": {"scope": "Service", "type": "CloudWatch Alarm State Change"},
+            },
             # passing
             {
                 "metricName": "CPUUtilization",
@@ -1134,13 +1132,142 @@ class TestSNSFilterPolicyBody:
                 "metricName": "CPUUtilization",
                 "detail": {"scope": "Service", "type": "CloudWatch Alarm State Change"},
             },
+        ]
+        for message in messages:
+            aws_client.sns.publish(
+                TopicArn=topic_arn,
+                Message=json.dumps(message),
+            )
+
+        recv_messages = []
+        retry(
+            self.get_messages,
+            retries=10,
+            sleep=0.1,
+            aws_client=aws_client,
+            _queue_url=queue_url,
+            _msg_list=recv_messages,
+            expected=5,
+        )
+        # we need to sort the list (the order does not matter as we're not using FIFO)
+        recv_messages.sort(key=itemgetter("Body"))
+        snapshot.match("messages-queue", {"Messages": recv_messages})
+
+    @markers.aws.validated
+    def test_filter_policy_empty_array_payload(
+        self,
+        sqs_create_queue,
+        sns_create_topic,
+        sns_create_sqs_subscription_with_filter_policy,
+        snapshot,
+        aws_client,
+    ):
+        # this test is a regression test for having an empty array in the payload, which could fail the logic and is
+        # a special condition (`resources` would fail `exists`)
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+
+        filter_policy = {"detail": {"eventVersion": [""]}}
+        sns_create_sqs_subscription_with_filter_policy(
+            topic_arn=topic_arn,
+            queue_url=queue_url,
+            filter_scope="MessageBody",
+            filter_policy=filter_policy,
+        )
+        message = {
+            "version": "0",
+            "id": "3e3c153a-8339-4e30-8c35-687ebef853fe",
+            "detail-type": "EC2 Instance Launch Successful",
+            "source": "aws.autoscaling",
+            "account": "123456789012",
+            "time": "2015-11-11T21:31:47Z",
+            "region": "my-region",
+            "resources": [],
+            "detail": {
+                "eventVersion": "",
+                "responseElements": None,
+            },
+        }
+
+        aws_client.sns.publish(
+            TopicArn=topic_arn,
+            Message=json.dumps(message),
+        )
+
+        recv_messages = []
+        retry(
+            self.get_messages,
+            retries=10,
+            sleep=0.1,
+            aws_client=aws_client,
+            _queue_url=queue_url,
+            _msg_list=recv_messages,
+            expected=1,
+        )
+        snapshot.match("messages-queue", {"Messages": recv_messages})
+
+    @markers.aws.validated
+    def test_filter_policy_ip_address_condition(
+        self,
+        sqs_create_queue,
+        sns_create_topic,
+        sns_create_sqs_subscription_with_filter_policy,
+        snapshot,
+        aws_client,
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+
+        filter_policy = {
+            "detail": {
+                "$or": [
+                    {"sourceIPAddress": [{"cidr": "10.0.0.0/24"}]},
+                    {"sourceIPAddressV6": [{"cidr": "2001:db8:1234:1a00::/64"}]},
+                ],
+            },
+        }
+        sns_create_sqs_subscription_with_filter_policy(
+            topic_arn=topic_arn,
+            queue_url=queue_url,
+            filter_scope="MessageBody",
+            filter_policy=filter_policy,
+        )
+        messages = [
             {
-                "metricName": "AWS/EC2",
-                "detail": {"scope": "Service", "type": "CloudWatch Alarm State Change"},
+                "id": "1",
+                "source": "test-source",
+                "detail-type": "test-detail-type",
+                "account": "123456789012",
+                "region": "my-region",
+                "time": "2022-07-13T13:48:01Z",
+                "detail": {"sourceIPAddress": "10.0.0.255"},
             },
             {
-                "namespace": "CPUUtilization",
-                "detail": {"scope": "Service", "type": "CloudWatch Alarm State Change"},
+                "id": "2",
+                "source": "test-source",
+                "detail-type": "test-detail-type",
+                "account": "123456789012",
+                "region": "my-region",
+                "time": "2022-07-13T13:48:01Z",
+                "detail": {"sourceIPAddress": "10.0.0.256"},
+            },
+            {
+                "id": "3",
+                "source": "test-source",
+                "detail-type": "test-detail-type",
+                "account": "123456789012",
+                "region": "my-region",
+                "time": "2022-07-13T13:48:01Z",
+                "detail": {"sourceIPAddressV6": "2001:0db8:1234:1a00:0000:0000:0000:0000"},
+            },
+            {
+                "id": "4",
+                "source": "test-source",
+                "detail-type": "test-detail-type",
+                "account": "123456789012",
+                "region": "my-region",
+                "time": "2022-07-13T13:48:01Z",
+                "detail": {"sourceIPAddressV6": "2001:0db8:123f:1a01:0000:0000:0000:0000"},
             },
         ]
         for message in messages:
@@ -1149,34 +1276,18 @@ class TestSNSFilterPolicyBody:
                 Message=json.dumps(message),
             )
 
-        def get_messages(_queue_url: str, _recv_messages: list):
-            # due to the random nature of receiving SQS messages, we need to consolidate a single object to match
-            sqs_response = aws_client.sqs.receive_message(
-                QueueUrl=_queue_url,
-                WaitTimeSeconds=1,
-                VisibilityTimeout=0,
-                MessageAttributeNames=["All"],
-                AttributeNames=["All"],
-            )
-            for _message in sqs_response["Messages"]:
-                _recv_messages.append(_message)
-                aws_client.sqs.delete_message(
-                    QueueUrl=_queue_url, ReceiptHandle=_message["ReceiptHandle"]
-                )
-
-            assert len(_recv_messages) == 7
-
-            recv_messages = []
-            retry(
-                get_messages,
-                retries=10,
-                sleep=0.1,
-                _queue_url=queue_url,
-                _recv_messages=recv_messages,
-            )
-            # we need to sort the list (the order does not matter as we're not using FIFO)
-            recv_messages.sort(key=itemgetter("Body"))
-            snapshot.match("messages-queue", {"Messages": recv_messages})
+        recv_messages = []
+        retry(
+            self.get_messages,
+            retries=10,
+            sleep=0.1,
+            aws_client=aws_client,
+            _queue_url=queue_url,
+            _msg_list=recv_messages,
+            expected=2,
+        )
+        recv_messages.sort(key=itemgetter("Body"))
+        snapshot.match("messages-queue", {"Messages": recv_messages})
 
 
 class TestSNSFilterPolicyConditions:
@@ -1246,6 +1357,12 @@ class TestSNSFilterPolicyConditions:
             )
 
         with pytest.raises(ClientError) as e:
+            filter_policy = {"key": []}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-empty-array", e.value.response)
+
+        with pytest.raises(ClientError) as e:
             filter_policy = {"key": [{"suffix": 100}]}
             _subscribe(filter_policy)
         self._add_normalized_field_to_snapshot(e.value.response)
@@ -1287,7 +1404,41 @@ class TestSNSFilterPolicyConditions:
         self._add_normalized_field_to_snapshot(e.value.response)
         snapshot.match("error-condition-is-not-list-and-no-operator", e.value.response)
 
-        # TODO: add `cidr` string operator
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"cidr": ["bad-filter"]}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-bad-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"cidr": "bad-filter"}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-bad-cidr-str", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"cidr": "bad-filter/64"}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-bad-cidr-str-slash", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"cidr": "bad-/64filter"}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-bad-cidr-str-slash-2", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"cidr": "xx.11.xx/8"}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-bad-cidr-v4", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"cidr": "xxxx:db8:1234:1a00::/64"}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-bad-cidr-v6", e.value.response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
