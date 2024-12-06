@@ -468,8 +468,16 @@ class TestInputTransformer:
         is_old_provider(),
         reason="V1 provider does not support this feature",
     )
+    @pytest.mark.parametrize(
+        "input_template",
+        [
+            '{"method": "PUT", "path": "users-service/users/<userId>", "bod": <payload>}',
+            '"Payload of <payload> with path users-service/users/<userId>"',
+        ],
+    )
     def test_input_transformer_nested_keys_replacement(
         self,
+        input_template,
         put_events_with_filter_to_sqs,
         snapshot,
     ):
@@ -490,9 +498,6 @@ class TestInputTransformer:
             "userId": "$.detail.payload.acc_id",
             "payload": "$.detail.payload",
         }
-        input_template = (
-            '{"method": "PUT", "path": "users-service/users/<userId>", "bod": <payload>}'
-        )
         input_transformer = {
             "InputPathsMap": input_path_map,
             "InputTemplate": input_template,

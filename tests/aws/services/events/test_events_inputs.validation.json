@@ -17,6 +17,12 @@
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement": {
     "last_validated_date": "2024-12-06T11:07:17+00:00"
   },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"Payload of <payload> with path users-service/users/<userId>\"]": {
+    "last_validated_date": "2024-12-06T12:13:58+00:00"
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"method\": \"PUT\", \"path\": \"users-service/users/<userId>\", \"bod\": <payload>}]": {
+    "last_validated_date": "2024-12-06T12:10:34+00:00"
+  },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_predefined_variables[\"Message containing all pre defined variables <aws.events.rule-arn> <aws.events.rule-name> <aws.events.event.ingestion-time>\"]": {
     "last_validated_date": "2024-06-11T08:33:10+00:00"
   },
