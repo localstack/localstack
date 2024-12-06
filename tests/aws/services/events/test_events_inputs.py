@@ -462,3 +462,50 @@ class TestInputTransformer:
             ]
         )
         snapshot.match("messages", messages)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    def test_input_transformer_nested_keys_replacement(
+        self,
+        put_events_with_filter_to_sqs,
+        snapshot,
+    ):
+        """
+        Mapping a nested key via input path map e.g.
+        "userId" : "$.detail.id" maped to "users-service/users/<userId>"
+        """
+        entries = [
+            {
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": json.dumps(EVENT_DETAIL),
+            }
+        ]
+        entries_asserts = [(entries, True)]
+
+        input_path_map = {
+            "userId": "$.detail.payload.acc_id",
+            "payload": "$.detail.payload",
+        }
+        input_template = (
+            '{"method": "PUT", "path": "users-service/users/<userId>", "bod": <payload>}'
+        )
+        input_transformer = {
+            "InputPathsMap": input_path_map,
+            "InputTemplate": input_template,
+        }
+        messages = put_events_with_filter_to_sqs(
+            pattern=TEST_EVENT_PATTERN,
+            entries_asserts=entries_asserts,
+            input_transformer=input_transformer,
+        )
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+            ]
+        )
+        snapshot.match("input-transformed-messages", messages)
