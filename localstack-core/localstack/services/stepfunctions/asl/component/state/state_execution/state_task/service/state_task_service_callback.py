@@ -104,14 +104,15 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
     def _eval_sync(
         self,
         env: Environment,
-        timeout_seconds: int,
-        callback_endpoint: CallbackEndpoint,
-        heartbeat_endpoint: Optional[HeartbeatEndpoint],
         sync_resolver: Callable[[], Optional[Any]],
+        timeout_seconds: Optional[int],
+        callback_endpoint: Optional[CallbackEndpoint],
+        heartbeat_endpoint: Optional[HeartbeatEndpoint],
     ) -> CallbackOutcome | Any:
         callback_output: Optional[CallbackOutcome] = None
 
-        if ResourceCondition.WaitForTaskToken in self._supported_integration_patterns:
+        # Listen for WaitForTaskToken signals if an endpoint is provided.
+        if callback_endpoint is not None:
 
             def _local_update_wait_for_task_token():
                 nonlocal callback_output
@@ -133,15 +134,15 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
             #       an exception in this thread will invalidate env, and therefore the worker thread.
             #       hence why here there are no explicit stopping logic for thread_wait_for_task_token.
 
-            sync_result: Optional[Any] = None
-            while env.is_running():
-                sync_result = sync_resolver()
-                if callback_output or sync_result:
-                    break
-                else:
-                    time.sleep(_DELAY_SECONDS_SYNC_CONDITION_CHECK)
+        sync_result: Optional[Any] = None
+        while env.is_running():
+            sync_result = sync_resolver()
+            if callback_output or sync_result:
+                break
+            else:
+                time.sleep(_DELAY_SECONDS_SYNC_CONDITION_CHECK)
 
-            return callback_output or sync_result
+        return callback_output or sync_result
 
     def _eval_integration_pattern(
         self,
@@ -152,9 +153,11 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
     ) -> None:
         task_output = env.stack.pop()
 
-        # Initialise the Callback endpoint for this task.
-        callback_id = env.states.context_object.context_object_data["Task"]["Token"]
-        callback_endpoint = env.callback_pool_manager.get(callback_id)
+        # Initialise the waitForTaskToken Callback endpoint for this task if supported.
+        callback_endpoint: Optional[CallbackEndpoint] = None
+        if ResourceCondition.WaitForTaskToken in self._supported_integration_patterns:
+            callback_id = env.states.context_object.context_object_data["Task"]["Token"]
+            callback_endpoint = env.callback_pool_manager.get(callback_id)
 
         # Setup resources for timeout control.
         self.timeout.eval(env=env)
