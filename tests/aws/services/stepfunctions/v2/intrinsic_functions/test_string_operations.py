@@ -20,6 +20,7 @@ class TestStringOperations:
             {"fst": ",,,,", "snd": ","},
             {"fst": "1,2,3,4,5", "snd": ","},
             {"fst": "This.is+a,test=string", "snd": ".+,="},
+            {"fst": "split on T and \nnew line", "snd": "T\n"},
         ]
         create_and_test_on_inputs(
             aws_client.stepfunctions,
