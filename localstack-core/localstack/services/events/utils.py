@@ -273,3 +273,7 @@ def is_nested_in_string(template, match) -> bool:
         return False
 
     return left_quote != -1 and template[left_quote + 1 : right_quote].strip() != match.group(0)
+
+
+def dict_to_simple_string(d):
+    return "{" + ",".join(f"{k}:{v}" for k, v in d.items()) + "}"
