@@ -199,7 +199,9 @@ class CorsEnforcer(Handler):
         """Returns true if origin is allowed to perform cors requests, false otherwise."""
         origin = headers.get("origin")
         referer = headers.get("referer")
-        if origin:
+        if origin and ".elb." in origin:
+            return True
+        elif origin:
             return CorsEnforcer._is_in_allowed_origins(ALLOWED_CORS_ORIGINS, origin)
         elif referer:
             referer_uri = "{uri.scheme}://{uri.netloc}".format(uri=urlparse(referer))
