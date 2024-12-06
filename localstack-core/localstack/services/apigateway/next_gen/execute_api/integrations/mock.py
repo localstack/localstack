@@ -65,7 +65,7 @@ class RestApiMockIntegration(RestApiIntegration):
         at some point if we have user requests for it"""
 
         def convert_null_value(value) -> str:
-            if value in ("null", ""):
+            if (value := value.strip()) in ("null", ""):
                 return '""'
             return value
 
@@ -77,9 +77,7 @@ class RestApiMockIntegration(RestApiIntegration):
             key_values = [s.split(":", maxsplit=1) for s in pairs if s]
             for key_value in key_values:
                 assert len(key_value) == 2
-                key, value = [el.strip() for el in key_value]
-                key = convert_null_value(key)
-                value = convert_null_value(value)
+                key, value = [convert_null_value(el) for el in key_value]
 
                 if key in ("statusCode", "'statusCode'", '"statusCode"'):
                     statuscode = int(value)
