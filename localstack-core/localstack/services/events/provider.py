@@ -1225,7 +1225,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         # https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_TestEventPattern.html
         # the documentation says that `resources` is mandatory, but it is not in reality
 
-        if not mandatory_fields.issubset(json_event):
+        if not isinstance(json_event, dict) or not mandatory_fields.issubset(json_event):
             raise ValidationException("Parameter Event is not valid.")
 
         result = matches_event(event_pattern, event)

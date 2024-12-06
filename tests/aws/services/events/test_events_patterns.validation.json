@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/events/test_events_patterns.py::TestEventPattern::test_array_event_payload": {
+    "last_validated_date": "2024-12-06T09:49:56+00:00"
+  },
   "tests/aws/services/events/test_events_patterns.py::TestEventPattern::test_event_pattern[arrays]": {
     "last_validated_date": "2024-12-05T18:00:42+00:00"
   },

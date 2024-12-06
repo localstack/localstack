@@ -1196,5 +1196,20 @@
   "tests/aws/services/events/test_events_patterns.py::TestEventPattern::test_event_pattern[numeric-int-float]": {
     "recorded-date": "05-12-2024, 18:00:51",
     "recorded-content": {}
+  },
+  "tests/aws/services/events/test_events_patterns.py::TestEventPattern::test_array_event_payload": {
+    "recorded-date": "06-12-2024, 09:49:56",
+    "recorded-content": {
+      "array-event-payload-exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Parameter Event is not valid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
