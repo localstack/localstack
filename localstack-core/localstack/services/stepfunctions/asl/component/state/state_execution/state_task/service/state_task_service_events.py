@@ -103,11 +103,11 @@ class StateTaskServiceEvents(StateTaskServiceCallback):
 
         # If the response from PutEvents contains a non-zero FailedEntryCount then the
         #  Task state fails with the error EventBridge.FailedEntry.
-        if self.resource.api_action == "putevents":
+        if self.resource.api_action == "putEvents":
             failed_entry_count = response.get("FailedEntryCount", 0)
             if failed_entry_count > 0:
                 # TODO: pipe events' cause in the exception object. At them moment
                 #  LS events does not update this field.
-                raise SfnFailedEntryCountException(cause={"Cause": "Unsupported"})
+                raise SfnFailedEntryCountException(cause=response)
 
         env.stack.append(response)
