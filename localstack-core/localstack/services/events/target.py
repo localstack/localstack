@@ -16,6 +16,7 @@ from localstack.aws.connect import connect_to
 from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
 from localstack.services.events.target_helper import send_event_to_api_destination
 from localstack.services.events.utils import (
+    dict_to_simple_string,
     event_time_to_time_string,
     get_trace_header_encoded_region_account,
     is_nested_in_string,
@@ -91,6 +92,8 @@ def replace_template_placeholders(
                 return to_json_str(value)
         if isinstance(value, datetime.datetime):
             return event_time_to_time_string(value)
+        if isinstance(value, dict):
+            return dict_to_simple_string(value)
         return value
 
     formatted_template = TRANSFORMER_PLACEHOLDER_PATTERN.sub(replace_placeholder, template)
