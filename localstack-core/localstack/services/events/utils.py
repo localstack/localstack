@@ -248,3 +248,28 @@ def get_trace_header_encoded_region_account(
             return json.dumps({"original_id": original_id, "original_account": source_account_id})
         else:
             return json.dumps({"original_account": source_account_id})
+
+
+def is_nested_in_string(template, match) -> bool:
+    """
+    Check if the placeholder is nested within a larger string value.
+    This checks if there are quotes surrounding the larger string containing the placeholder.
+    e.g. "users-service/users/<userId>" with "<*?>" as match.
+    """
+    start = match.start()
+    end = match.end()
+
+    left_quote = template.rfind('"', 0, start)
+    right_quote = template.find('"', end)
+    next_comma = template.find(",", end)
+    next_brace = template.find("}", end)
+
+    # Nested if there's no right quote or comma or brace comes before the right quote,
+    if (
+        right_quote == -1
+        or (next_comma != -1 and next_comma < right_quote)
+        or (next_brace != -1 and next_brace < right_quote)
+    ):
+        return False
+
+    return left_quote != -1 and template[left_quote + 1 : right_quote].strip() != match.group(0)
