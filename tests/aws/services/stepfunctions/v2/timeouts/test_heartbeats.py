@@ -14,7 +14,6 @@ from tests.aws.services.stepfunctions.templates.timeouts.timeout_templates impor
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..tracingConfiguration",
         "$..SdkHttpMetadata",
         "$..SdkResponseMetadata",
     ]
@@ -24,7 +23,7 @@ class TestHeartbeats:
     def test_heartbeat_timeout(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
         sqs_send_task_success_state_machine,
@@ -50,8 +49,8 @@ class TestHeartbeats:
         message_txt = "test_message_txt"
         exec_input = json.dumps({"QueueUrl": queue_url, "Message": message_txt})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -62,7 +61,7 @@ class TestHeartbeats:
     def test_heartbeat_path_timeout(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
         sqs_send_task_success_state_machine,
@@ -92,8 +91,8 @@ class TestHeartbeats:
             {"QueueUrl": queue_url, "Message": message_txt, "HeartbeatSecondsPath": 5}
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -104,7 +103,7 @@ class TestHeartbeats:
     def test_heartbeat_no_timeout(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
         sqs_send_task_success_state_machine,
@@ -131,8 +130,8 @@ class TestHeartbeats:
         message_txt = "test_message_txt"
         exec_input = json.dumps({"QueueUrl": queue_url, "Message": message_txt})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,

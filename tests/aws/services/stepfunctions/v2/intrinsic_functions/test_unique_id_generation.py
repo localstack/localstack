@@ -11,11 +11,12 @@ from tests.aws.services.stepfunctions.templates.intrinsicfunctions.intrinsic_fun
 )
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestUniqueIdGeneration:
     @markers.aws.validated
-    def test_uuid(self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client):
-        snf_role_arn = create_iam_role_for_sfn()
+    def test_uuid(
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         sm_name: str = f"statemachine_{short_uid()}"
@@ -23,7 +24,7 @@ class TestUniqueIdGeneration:
         definition_str = json.dumps(definition)
 
         creation_resp = create_state_machine(
-            name=sm_name, definition=definition_str, roleArn=snf_role_arn
+            aws_client, name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
         state_machine_arn = creation_resp["stateMachineArn"]

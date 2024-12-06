@@ -7,11 +7,10 @@ from tests.aws.services.stepfunctions.v2.intrinsic_functions.utils import create
 # TODO: test for validation errors, and boundary testing.
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestStringOperations:
     @markers.aws.validated
     def test_string_split(
-        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         input_values = [
             {"fst": " ", "snd": ","},
@@ -23,8 +22,8 @@ class TestStringOperations:
             {"fst": "split on T and \nnew line", "snd": "T\n"},
         ]
         create_and_test_on_inputs(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             IFT.STRING_SPLIT,
@@ -33,7 +32,7 @@ class TestStringOperations:
 
     @markers.aws.validated
     def test_string_split_context_object(
-        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         input_values = [
             (
@@ -46,8 +45,8 @@ class TestStringOperations:
             )
         ]
         create_and_test_on_inputs(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             IFT.STRING_SPLIT_CONTEXT_OBJECT,

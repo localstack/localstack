@@ -12,7 +12,6 @@ from tests.aws.services.stepfunctions.templates.errorhandling.error_handling_tem
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..tracingConfiguration",
         # TODO: add support for Sdk Http metadata.
         "$..SdkHttpMetadata",
         "$..SdkResponseMetadata",
@@ -26,7 +25,7 @@ class TestTaskServiceDynamoDB:
     def test_invalid_param(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         dynamodb_create_table,
         snapshot,
@@ -40,8 +39,8 @@ class TestTaskServiceDynamoDB:
             {"TableName": f"no_such_sfn_test_table_{short_uid()}", "Key": None, "Item": None}
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             snapshot,
             definition,
@@ -52,7 +51,7 @@ class TestTaskServiceDynamoDB:
     def test_put_item_no_such_table(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         snapshot,
     ):
@@ -70,8 +69,8 @@ class TestTaskServiceDynamoDB:
             }
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             snapshot,
             definition,
@@ -87,7 +86,7 @@ class TestTaskServiceDynamoDB:
     def test_put_item_invalid_table_name(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         snapshot,
     ):
@@ -105,8 +104,8 @@ class TestTaskServiceDynamoDB:
             }
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             snapshot,
             definition,

@@ -12,7 +12,6 @@ from tests.aws.services.stepfunctions.templates.assign.assign_templates import A
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..tracingConfiguration",
         "$..redriveCount",
         "$..redriveStatus",
         "$..RedriveCount",
@@ -38,14 +37,19 @@ class TestAssignBase:
         ],
     )
     def test_base_cases(
-        self, aws_client, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, template_path
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        template_path,
     ):
         template = AssignTemplate.load_sfn_template(template_path)
         definition = json.dumps(template)
         exec_input = json.dumps({"input_value": "input_value_literal"})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -67,15 +71,20 @@ class TestAssignBase:
         ids=["BASE_SCOPE_PARALLEL"],
     )
     def test_base_parallel_cases(
-        self, aws_client, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, template_path
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        template_path,
     ):
         sfn_snapshot.add_transformer(SfnNoneRecursiveParallelTransformer())
         template = AssignTemplate.load_sfn_template(template_path)
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,

@@ -54,7 +54,7 @@ class TestAssignReferenceVariables:
     def test_reference_assign(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         template_path,
@@ -63,8 +63,8 @@ class TestAssignReferenceVariables:
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -112,7 +112,7 @@ class TestAssignReferenceVariables:
     def test_undefined_reference(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         template,
@@ -120,8 +120,8 @@ class TestAssignReferenceVariables:
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -145,7 +145,7 @@ class TestAssignReferenceVariables:
     def test_assign_from_value(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         template_path,
@@ -154,8 +154,8 @@ class TestAssignReferenceVariables:
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -176,7 +176,7 @@ class TestAssignReferenceVariables:
     def test_state_assign_evaluation_order(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         template_path,
@@ -185,8 +185,8 @@ class TestAssignReferenceVariables:
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -196,14 +196,19 @@ class TestAssignReferenceVariables:
     @pytest.mark.parametrize("input_value", ["42", "0"], ids=["CORRECT", "INCORRECT"])
     @markers.aws.validated
     def test_assign_in_choice_state(
-        self, aws_client, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, input_value
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        input_value,
     ):
         template = AT.load_sfn_template(AT.BASE_ASSIGN_IN_CHOICE)
         definition = json.dumps(template)
         exec_input = json.dumps({"input_value": input_value})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -212,14 +217,14 @@ class TestAssignReferenceVariables:
 
     @markers.aws.validated
     def test_assign_in_wait_state(
-        self, aws_client, create_iam_role_for_sfn, create_state_machine, sfn_snapshot
+        self, aws_client, create_state_machine_iam_role, create_state_machine, sfn_snapshot
     ):
         template = AT.load_sfn_template(AT.BASE_ASSIGN_IN_WAIT)
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -230,7 +235,7 @@ class TestAssignReferenceVariables:
     def test_assign_in_catch_state(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_lambda_function,
         create_state_machine,
         sfn_snapshot,
@@ -248,8 +253,8 @@ class TestAssignReferenceVariables:
         definition = json.dumps(template)
         exec_input = json.dumps({"input_value": function_arn})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -271,7 +276,7 @@ class TestAssignReferenceVariables:
     def test_variables_in_lambda_task(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         account_id,
@@ -293,8 +298,8 @@ class TestAssignReferenceVariables:
         definition = json.dumps(template)
         exec_input = json.dumps({"FunctionName": function_arn, "AccountID": account_id})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -328,7 +333,7 @@ class TestAssignReferenceVariables:
     def test_reference_in_map_state(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         template,
@@ -357,8 +362,8 @@ class TestAssignReferenceVariables:
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -390,7 +395,7 @@ class TestAssignReferenceVariables:
         self,
         aws_client,
         s3_create_bucket,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         template,
@@ -420,8 +425,8 @@ class TestAssignReferenceVariables:
         definition = json.dumps(template)
         exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,

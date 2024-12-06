@@ -12,7 +12,6 @@ from tests.aws.services.stepfunctions.templates.services.services_templates impo
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..tracingConfiguration",
         # # TODO: add support for Sdk Http metadata.
         "$..SdkHttpMetadata",
         "$..SdkResponseMetadata",
@@ -23,7 +22,7 @@ class TestTaskServiceDynamoDB:
     def test_put_get_item(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         dynamodb_create_table,
         sfn_snapshot,
@@ -44,8 +43,8 @@ class TestTaskServiceDynamoDB:
             }
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -56,7 +55,7 @@ class TestTaskServiceDynamoDB:
     def test_put_delete_item(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         dynamodb_create_table,
         sfn_snapshot,
@@ -77,8 +76,8 @@ class TestTaskServiceDynamoDB:
             }
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -89,7 +88,7 @@ class TestTaskServiceDynamoDB:
     def test_put_update_get_item(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         dynamodb_create_table,
         sfn_snapshot,
@@ -112,8 +111,8 @@ class TestTaskServiceDynamoDB:
             }
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,

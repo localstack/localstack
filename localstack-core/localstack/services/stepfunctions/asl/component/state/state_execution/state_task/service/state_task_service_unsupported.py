@@ -1,6 +1,9 @@
 import logging
 from typing import Final
 
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
+    ComputedCredentials,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceCondition,
     ResourceRuntimePart,
@@ -39,7 +42,7 @@ class StateTaskServiceUnsupported(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-        task_credentials: dict,
+        task_credentials: ComputedCredentials,
     ):
         # Logs that the evaluation of this optimised service integration is not supported
         # and relays the call to the target service with the computed parameters.
@@ -50,6 +53,7 @@ class StateTaskServiceUnsupported(StateTaskServiceCallback):
             region=resource_runtime_part.region,
             account=resource_runtime_part.account,
             service=service_name,
+            credentials=task_credentials,
         )
         response = getattr(boto_client, boto_action)(**normalised_parameters)
         response.pop("ResponseMetadata", None)

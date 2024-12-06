@@ -274,3 +274,4 @@ class ServicePrincipal(str):
     s3 = "s3"
     sns = "sns"
     sqs = "sqs"
+    states = "states"

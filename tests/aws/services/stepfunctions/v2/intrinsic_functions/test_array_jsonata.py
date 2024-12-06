@@ -5,11 +5,10 @@ from tests.aws.services.stepfunctions.templates.intrinsicfunctions.intrinsic_fun
 from tests.aws.services.stepfunctions.v2.intrinsic_functions.utils import create_and_test_on_inputs
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestArrayJSONata:
     @markers.aws.validated
     def test_array_partition(
-        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         # TODO: test and add support for raising exception on empty array.
         arrays = [list(range(i)) for i in range(1, 5)]
@@ -18,8 +17,8 @@ class TestArrayJSONata:
             for chunk_size in range(1, 6):
                 input_values.append({"fst": array, "snd": chunk_size})
         create_and_test_on_inputs(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             IFT.ARRAY_PARTITION_JSONATA,
@@ -28,7 +27,7 @@ class TestArrayJSONata:
 
     @markers.aws.validated
     def test_array_range(
-        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         ranges = [
             (0, 9, 3),
@@ -40,8 +39,8 @@ class TestArrayJSONata:
         for fst, lst, step in ranges:
             input_values.append({"fst": fst, "snd": lst, "trd": step})
         create_and_test_on_inputs(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             IFT.ARRAY_RANGE_JSONATA,

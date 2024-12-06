@@ -22,6 +22,9 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
+    ComputedCredentials,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceCondition,
     ResourceRuntimePart,
@@ -111,11 +114,13 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        task_credentials: ComputedCredentials,
     ) -> Callable[[], Optional[Any]]:
         sfn_client = boto_client_for(
             region=resource_runtime_part.region,
             account=resource_runtime_part.account,
             service="stepfunctions",
+            credentials=task_credentials,
         )
         submission_output: dict = env.stack.pop()
         execution_arn: str = submission_output["ExecutionArn"]
@@ -171,11 +176,13 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        task_credentials: ComputedCredentials,
     ) -> Callable[[], Optional[Any]]:
         sfn_client = boto_client_for(
             region=resource_runtime_part.region,
             account=resource_runtime_part.account,
             service="stepfunctions",
+            credentials=task_credentials,
         )
         submission_output: dict = env.stack.pop()
         execution_arn: str = submission_output["ExecutionArn"]
@@ -220,7 +227,7 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-        task_credentials: dict,
+        task_credentials: ComputedCredentials,
     ):
         service_name = self._get_boto_service_name()
         api_action = self._get_boto_service_action()
@@ -228,6 +235,7 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
             region=resource_runtime_part.region,
             account=resource_runtime_part.account,
             service=service_name,
+            credentials=task_credentials,
         )
         response = getattr(sfn_client, api_action)(**normalised_parameters)
         response.pop("ResponseMetadata", None)
