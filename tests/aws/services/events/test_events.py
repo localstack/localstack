@@ -153,6 +153,27 @@ class TestEvents:
         snapshot.match("put-events", response)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    @pytest.mark.parametrize(
+        "detail",
+        ["NotJSON", "[]", "{{}", json.dumps("NotJSON")],
+        ids=["STRING", "ARRAY", "MALFORMED_JSON", "SERIALIZED_STRING"],
+    )
+    def test_put_event_malformed_detail(self, snapshot, aws_client, detail):
+        entries = [
+            {
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": detail,
+            },
+        ]
+        response = aws_client.events.put_events(Entries=entries)
+        snapshot.match("put-events", response)
+
+    @markers.aws.validated
     def test_put_events_time(self, put_events_with_filter_to_sqs, snapshot):
         entries1 = [
             {
