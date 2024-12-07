@@ -851,6 +851,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         SchemaExtractor.invalidate_table_schema(table_name, context.account_id, global_table_region)
 
+        schema = SchemaExtractor.get_table_schema(
+            table_name, context.account_id, global_table_region
+        )
+
         # TODO: DDB streams must also be created for replicas
         if update_table_input.get("StreamSpecification"):
             create_dynamodb_stream(
@@ -860,7 +864,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 result["TableDescription"].get("LatestStreamLabel"),
             )
 
-        return result
+        return UpdateTableOutput(TableDescription=schema["Table"])
 
     def list_tables(
         self,
