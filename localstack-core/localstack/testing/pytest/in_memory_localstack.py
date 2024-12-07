@@ -53,8 +53,12 @@ def pytest_runtestloop(session: Session):
 
     from localstack.testing.aws.util import is_aws_cloud
 
-    if is_env_true("TEST_SKIP_LOCALSTACK_START") or is_aws_cloud():
+    if is_env_true("TEST_SKIP_LOCALSTACK_START"):
         LOG.info("TEST_SKIP_LOCALSTACK_START is set, not starting localstack")
+        return
+
+    if is_aws_cloud() and not is_env_true("TEST_FORCE_LOCALSTACK_START"):
+        LOG.info("Test running against aws, not starting localstack")
         return
 
     from localstack.utils.common import safe_requests
