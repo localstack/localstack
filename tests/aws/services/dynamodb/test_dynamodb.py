@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 from time import sleep
 from typing import Dict
+import sys
 
 import botocore.exceptions
 import pytest
@@ -1652,6 +1653,37 @@ class TestDynamoDB:
 
         result = aws_client.dynamodb.describe_table(TableName=table_name)
         assert "SSESpecification" not in result["Table"]
+
+    @markers.aws.validated
+    def test_dynamodb_update_table_without_sse_specification_change(
+        self, dynamodb_create_table_with_parameters, aws_client, account_id, region_name
+    ):
+        table_name = f"ddb-table-{short_uid()}"
+
+        kms_master_key_id = long_uid()
+        sse_specification = {"Enabled": True, "SSEType": "KMS", "KMSMasterKeyId": kms_master_key_id}
+        kms_master_key_arn = arns.kms_key_arn(
+            kms_master_key_id, account_id=account_id, region_name=region_name
+        )
+
+        _ = dynamodb_create_table_with_parameters(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": PARTITION_KEY, "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            SSESpecification=sse_specification,
+            Tags=TEST_DDB_TAGS,
+        )
+
+        update_result = aws_client.dynamodb.update_table(
+            TableName=table_name,
+            BillingMode="PAY_PER_REQUEST"
+        )
+
+        assert update_result["TableDescription"]["SSEDescription"]
+        assert update_result["TableDescription"]["SSEDescription"]["Status"] == "ENABLED"
+        assert update_result['TableDescription']['SSEDescription']['SSEType'] == 'KMS'
+        assert update_result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"] == kms_master_key_arn
 
     @markers.aws.validated
     def test_dynamodb_get_batch_items(
