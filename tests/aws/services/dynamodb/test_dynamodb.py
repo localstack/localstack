@@ -4,7 +4,6 @@ import time
 from datetime import datetime
 from time import sleep
 from typing import Dict
-import sys
 
 import botocore.exceptions
 import pytest
@@ -1676,14 +1675,16 @@ class TestDynamoDB:
         )
 
         update_result = aws_client.dynamodb.update_table(
-            TableName=table_name,
-            BillingMode="PAY_PER_REQUEST"
+            TableName=table_name, BillingMode="PAY_PER_REQUEST"
         )
 
         assert update_result["TableDescription"]["SSEDescription"]
         assert update_result["TableDescription"]["SSEDescription"]["Status"] == "ENABLED"
-        assert update_result['TableDescription']['SSEDescription']['SSEType'] == 'KMS'
-        assert update_result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"] == kms_master_key_arn
+        assert update_result["TableDescription"]["SSEDescription"]["SSEType"] == "KMS"
+        assert (
+            update_result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"]
+            == kms_master_key_arn
+        )
 
     @markers.aws.validated
     def test_dynamodb_get_batch_items(
