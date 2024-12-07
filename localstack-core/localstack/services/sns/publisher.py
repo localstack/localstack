@@ -237,7 +237,7 @@ class LambdaTopicPublisher(TopicPublisher):
         :param subscriber: the SNS subscription
         :return: an SNS message body formatted as a lambda Event in a JSON string
         """
-        external_url = external_service_url().rstrip("/")
+        external_url = get_cert_base_url()
         unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
         message_attributes = prepare_message_attributes(message_context.message_attributes)
 
@@ -958,7 +958,7 @@ def create_sns_message_body(
     if message_type == "Notification" and is_raw_message_delivery(subscriber):
         return message_content
 
-    external_url = external_service_url().rstrip("/")
+    external_url = get_cert_base_url()
 
     data = {
         "Type": message_type,
@@ -1127,6 +1127,13 @@ def store_delivery_log(
     return store_cloudwatch_logs(
         logs_client, log_group_name, log_stream_name, log_output, invocation_time
     )
+
+
+def get_cert_base_url() -> str:
+    if config.SNS_CERT_URL_HOST:
+        return f"https://{config.SNS_CERT_URL_HOST}"
+
+    return external_service_url().rstrip("/")
 
 
 def create_subscribe_url(external_url, topic_arn, subscription_token):

@@ -1125,6 +1125,8 @@ LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")
 
 SNS_SES_SENDER_ADDRESS = os.environ.get("SNS_SES_SENDER_ADDRESS", "").strip()
 
+SNS_CERT_URL_HOST = os.environ.get("SNS_CERT_URL_HOST", "").strip()
+
 # Whether the Next Gen APIGW invocation logic is enabled (on by default)
 APIGW_NEXT_GEN_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_APIGATEWAY", "") in ("next_gen", "")
 

@@ -22,6 +22,7 @@ from werkzeug import Response
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
+from localstack.config import external_service_url
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
 )
@@ -4350,6 +4351,51 @@ class TestSNSPublishDelivery:
         )
 
         snapshot.match("delivery-events", events)
+
+
+class TestSNSCertEndpoint:
+    @markers.aws.only_localstack
+    @pytest.mark.parametrize("cert_host", ["", "sns.us-east-1.amazonaws.com"])
+    def test_cert_endpoint_host(
+        self,
+        aws_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sns_create_sqs_subscription,
+        monkeypatch,
+        cert_host,
+    ):
+        """
+        Some SDK will validate the Cert URL matches a certain regex pattern. We validate the user can set the value
+        to arbitrary host, but those will obviously not resolve / return a valid certificate.
+        """
+        monkeypatch.setattr(config, "SNS_CERT_URL_HOST", cert_host)
+        topic_arn = sns_create_topic(
+            Attributes={
+                "DisplayName": "TestTopicSignature",
+                "SignatureVersion": "1",
+            },
+        )["TopicArn"]
+
+        queue_url = sqs_create_queue()
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+
+        aws_client.sns.publish(
+            TopicArn=topic_arn,
+            Message="test cert host",
+        )
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url,
+            WaitTimeSeconds=10,
+        )
+        message = json.loads(response["Messages"][0]["Body"])
+
+        cert_url = message["SigningCertURL"]
+        if not cert_host:
+            assert external_service_url() in cert_url
+        else:
+            assert cert_host in cert_url
+            assert external_service_url() not in cert_url
 
 
 @pytest.mark.usefixtures("openapi_validate")
