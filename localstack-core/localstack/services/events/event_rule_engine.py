@@ -148,6 +148,8 @@ class EventRuleEngine:
 
     @staticmethod
     def _evaluate_numeric_condition(conditions, value) -> bool:
+        if not isinstance(value, (int, float)):
+            return False
         try:
             # try if the value is numeric
             value = float(value)
