@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/events/test_api_destinations_cfn.py::TestApiDestinationsCfn::test_api_destination_integration[auth0]": {
+    "last_validated_date": "2024-12-09T16:50:47+00:00"
+  },
+  "tests/aws/services/events/test_api_destinations_cfn.py::TestApiDestinationsCfn::test_api_destination_integration[auth1]": {
+    "last_validated_date": "2024-12-09T16:53:12+00:00"
+  },
+  "tests/aws/services/events/test_api_destinations_cfn.py::TestApiDestinationsCfn::test_api_destination_integration[auth2]": {
+    "last_validated_date": "2024-12-09T16:55:38+00:00"
+  }
+}
