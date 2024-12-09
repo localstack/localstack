@@ -78,6 +78,10 @@ class DataShareStatusForProducer(StrEnum):
     REJECTED = "REJECTED"
 
 
+class DataShareType(StrEnum):
+    INTERNAL = "INTERNAL"
+
+
 class DescribeIntegrationsFilterName(StrEnum):
     integration_arn = "integration-arn"
     source_arn = "source-arn"
@@ -99,6 +103,11 @@ class LogDestinationType(StrEnum):
 class Mode(StrEnum):
     standard = "standard"
     high_performance = "high-performance"
+
+
+class NamespaceRegistrationStatus(StrEnum):
+    Registering = "Registering"
+    Deregistering = "Deregistering"
 
 
 class NodeConfigurationOptionsFilterName(StrEnum):
@@ -1752,6 +1761,9 @@ class ClustersMessage(TypedDict, total=False):
     Clusters: Optional[ClusterList]
 
 
+ConsumerIdentifierList = List[String]
+
+
 class CopyClusterSnapshotMessage(ServiceRequest):
     SourceSnapshotIdentifier: String
     SourceSnapshotClusterIdentifier: Optional[String]
@@ -2137,6 +2149,7 @@ class DataShare(TypedDict, total=False):
     AllowPubliclyAccessibleConsumers: Optional[Boolean]
     DataShareAssociations: Optional[DataShareAssociationList]
     ManagedBy: Optional[String]
+    DataShareType: Optional[DataShareType]
 
 
 DataShareList = List[DataShare]
@@ -2244,6 +2257,29 @@ class DeleteTagsMessage(ServiceRequest):
 
 class DeleteUsageLimitMessage(ServiceRequest):
     UsageLimitId: String
+
+
+class ProvisionedIdentifier(TypedDict, total=False):
+    ClusterIdentifier: String
+
+
+class ServerlessIdentifier(TypedDict, total=False):
+    NamespaceIdentifier: String
+    WorkgroupIdentifier: String
+
+
+class NamespaceIdentifierUnion(TypedDict, total=False):
+    ServerlessIdentifier: Optional[ServerlessIdentifier]
+    ProvisionedIdentifier: Optional[ProvisionedIdentifier]
+
+
+class DeregisterNamespaceInputMessage(ServiceRequest):
+    NamespaceIdentifier: NamespaceIdentifierUnion
+    ConsumerIdentifiers: ConsumerIdentifierList
+
+
+class DeregisterNamespaceOutputMessage(TypedDict, total=False):
+    Status: Optional[NamespaceRegistrationStatus]
 
 
 class DescribeAccountAttributesMessage(ServiceRequest):
@@ -3293,6 +3329,15 @@ class RebootClusterResult(TypedDict, total=False):
     Cluster: Optional[Cluster]
 
 
+class RegisterNamespaceInputMessage(ServiceRequest):
+    NamespaceIdentifier: NamespaceIdentifierUnion
+    ConsumerIdentifiers: ConsumerIdentifierList
+
+
+class RegisterNamespaceOutputMessage(TypedDict, total=False):
+    Status: Optional[NamespaceRegistrationStatus]
+
+
 class RejectDataShareMessage(ServiceRequest):
     DataShareArn: String
 
@@ -4080,6 +4125,16 @@ class RedshiftApi:
 
     @handler("DeleteUsageLimit")
     def delete_usage_limit(self, context: RequestContext, usage_limit_id: String, **kwargs) -> None:
+        raise NotImplementedError
+
+    @handler("DeregisterNamespace")
+    def deregister_namespace(
+        self,
+        context: RequestContext,
+        namespace_identifier: NamespaceIdentifierUnion,
+        consumer_identifiers: ConsumerIdentifierList,
+        **kwargs,
+    ) -> DeregisterNamespaceOutputMessage:
         raise NotImplementedError
 
     @handler("DescribeAccountAttributes")
@@ -4962,6 +5017,16 @@ class RedshiftApi:
     def reboot_cluster(
         self, context: RequestContext, cluster_identifier: String, **kwargs
     ) -> RebootClusterResult:
+        raise NotImplementedError
+
+    @handler("RegisterNamespace")
+    def register_namespace(
+        self,
+        context: RequestContext,
+        namespace_identifier: NamespaceIdentifierUnion,
+        consumer_identifiers: ConsumerIdentifierList,
+        **kwargs,
+    ) -> RegisterNamespaceOutputMessage:
         raise NotImplementedError
 
     @handler("RejectDataShare")

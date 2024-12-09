@@ -24,6 +24,9 @@ DataSourceName = str
 DeploymentType = str
 DescribePackagesFilterValue = str
 Description = str
+DirectQueryDataSourceDescription = str
+DirectQueryDataSourceName = str
+DirectQueryDataSourceRoleArn = str
 DomainArn = str
 DomainId = str
 DomainName = str
@@ -774,6 +777,32 @@ class Tag(TypedDict, total=False):
 
 
 TagList = List[Tag]
+DirectQueryOpenSearchARNList = List[ARN]
+
+
+class SecurityLakeDirectQueryDataSource(TypedDict, total=False):
+    RoleArn: DirectQueryDataSourceRoleArn
+
+
+class CloudWatchDirectQueryDataSource(TypedDict, total=False):
+    RoleArn: DirectQueryDataSourceRoleArn
+
+
+class DirectQueryDataSourceType(TypedDict, total=False):
+    CloudWatchLog: Optional[CloudWatchDirectQueryDataSource]
+    SecurityLake: Optional[SecurityLakeDirectQueryDataSource]
+
+
+class AddDirectQueryDataSourceRequest(ServiceRequest):
+    DataSourceName: DirectQueryDataSourceName
+    DataSourceType: DirectQueryDataSourceType
+    Description: Optional[DirectQueryDataSourceDescription]
+    OpenSearchArns: DirectQueryOpenSearchARNList
+    TagList: Optional[TagList]
+
+
+class AddDirectQueryDataSourceResponse(TypedDict, total=False):
+    DataSourceArn: Optional[String]
 
 
 class AddTagsRequest(ServiceRequest):
@@ -1554,6 +1583,10 @@ class DeleteDataSourceResponse(TypedDict, total=False):
     Message: Optional[String]
 
 
+class DeleteDirectQueryDataSourceRequest(ServiceRequest):
+    DataSourceName: DirectQueryDataSourceName
+
+
 class DeleteDomainRequest(ServiceRequest):
     DomainName: DomainName
 
@@ -2022,6 +2055,18 @@ class DescribeVpcEndpointsResponse(TypedDict, total=False):
     VpcEndpointErrors: VpcEndpointErrorList
 
 
+class DirectQueryDataSource(TypedDict, total=False):
+    DataSourceName: Optional[DirectQueryDataSourceName]
+    DataSourceType: Optional[DirectQueryDataSourceType]
+    Description: Optional[DirectQueryDataSourceDescription]
+    OpenSearchArns: Optional[DirectQueryOpenSearchARNList]
+    DataSourceArn: Optional[String]
+    TagList: Optional[TagList]
+
+
+DirectQueryDataSourceList = List[DirectQueryDataSource]
+
+
 class DissociatePackageRequest(ServiceRequest):
     PackageID: PackageID
     DomainName: DomainName
@@ -2097,6 +2142,18 @@ class GetDataSourceResponse(TypedDict, total=False):
     Name: Optional[DataSourceName]
     Description: Optional[DataSourceDescription]
     Status: Optional[DataSourceStatus]
+
+
+class GetDirectQueryDataSourceRequest(ServiceRequest):
+    DataSourceName: DirectQueryDataSourceName
+
+
+class GetDirectQueryDataSourceResponse(TypedDict, total=False):
+    DataSourceName: Optional[DirectQueryDataSourceName]
+    DataSourceType: Optional[DirectQueryDataSourceType]
+    Description: Optional[DirectQueryDataSourceDescription]
+    OpenSearchArns: Optional[DirectQueryOpenSearchARNList]
+    DataSourceArn: Optional[String]
 
 
 class GetDomainMaintenanceStatusRequest(ServiceRequest):
@@ -2215,6 +2272,15 @@ class ListDataSourcesRequest(ServiceRequest):
 
 class ListDataSourcesResponse(TypedDict, total=False):
     DataSources: Optional[DataSourceList]
+
+
+class ListDirectQueryDataSourcesRequest(ServiceRequest):
+    NextToken: Optional[NextToken]
+
+
+class ListDirectQueryDataSourcesResponse(TypedDict, total=False):
+    NextToken: Optional[NextToken]
+    DirectQueryDataSources: Optional[DirectQueryDataSourceList]
 
 
 class ListDomainMaintenancesRequest(ServiceRequest):
@@ -2433,6 +2499,17 @@ class UpdateDataSourceResponse(TypedDict, total=False):
     Message: Optional[String]
 
 
+class UpdateDirectQueryDataSourceRequest(ServiceRequest):
+    DataSourceName: DirectQueryDataSourceName
+    DataSourceType: DirectQueryDataSourceType
+    Description: Optional[DirectQueryDataSourceDescription]
+    OpenSearchArns: DirectQueryOpenSearchARNList
+
+
+class UpdateDirectQueryDataSourceResponse(TypedDict, total=False):
+    DataSourceArn: Optional[String]
+
+
 class UpdateDomainConfigRequest(ServiceRequest):
     DomainName: DomainName
     ClusterConfig: Optional[ClusterConfig]
@@ -2545,6 +2622,19 @@ class OpensearchApi:
         description: DataSourceDescription = None,
         **kwargs,
     ) -> AddDataSourceResponse:
+        raise NotImplementedError
+
+    @handler("AddDirectQueryDataSource")
+    def add_direct_query_data_source(
+        self,
+        context: RequestContext,
+        data_source_name: DirectQueryDataSourceName,
+        data_source_type: DirectQueryDataSourceType,
+        open_search_arns: DirectQueryOpenSearchARNList,
+        description: DirectQueryDataSourceDescription = None,
+        tag_list: TagList = None,
+        **kwargs,
+    ) -> AddDirectQueryDataSourceResponse:
         raise NotImplementedError
 
     @handler("AddTags")
@@ -2689,6 +2779,12 @@ class OpensearchApi:
     def delete_data_source(
         self, context: RequestContext, domain_name: DomainName, name: DataSourceName, **kwargs
     ) -> DeleteDataSourceResponse:
+        raise NotImplementedError
+
+    @handler("DeleteDirectQueryDataSource")
+    def delete_direct_query_data_source(
+        self, context: RequestContext, data_source_name: DirectQueryDataSourceName, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeleteDomain")
@@ -2883,6 +2979,12 @@ class OpensearchApi:
     ) -> GetDataSourceResponse:
         raise NotImplementedError
 
+    @handler("GetDirectQueryDataSource")
+    def get_direct_query_data_source(
+        self, context: RequestContext, data_source_name: DirectQueryDataSourceName, **kwargs
+    ) -> GetDirectQueryDataSourceResponse:
+        raise NotImplementedError
+
     @handler("GetDomainMaintenanceStatus")
     def get_domain_maintenance_status(
         self, context: RequestContext, domain_name: DomainName, maintenance_id: RequestId, **kwargs
@@ -2932,6 +3034,12 @@ class OpensearchApi:
     def list_data_sources(
         self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> ListDataSourcesResponse:
+        raise NotImplementedError
+
+    @handler("ListDirectQueryDataSources")
+    def list_direct_query_data_sources(
+        self, context: RequestContext, next_token: NextToken = None, **kwargs
+    ) -> ListDirectQueryDataSourcesResponse:
         raise NotImplementedError
 
     @handler("ListDomainMaintenances")
@@ -3118,6 +3226,18 @@ class OpensearchApi:
         status: DataSourceStatus = None,
         **kwargs,
     ) -> UpdateDataSourceResponse:
+        raise NotImplementedError
+
+    @handler("UpdateDirectQueryDataSource")
+    def update_direct_query_data_source(
+        self,
+        context: RequestContext,
+        data_source_name: DirectQueryDataSourceName,
+        data_source_type: DirectQueryDataSourceType,
+        open_search_arns: DirectQueryOpenSearchARNList,
+        description: DirectQueryDataSourceDescription = None,
+        **kwargs,
+    ) -> UpdateDirectQueryDataSourceResponse:
         raise NotImplementedError
 
     @handler("UpdateDomainConfig")

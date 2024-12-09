@@ -102,6 +102,7 @@ MaxParts = int
 MaxUploads = int
 Message = str
 MetadataKey = str
+MetadataTableStatus = str
 MetadataValue = str
 MetricsId = str
 Minutes = int
@@ -144,6 +145,10 @@ ResponseContentType = str
 Restore = str
 RestoreOutputPath = str
 Role = str
+S3TablesArn = str
+S3TablesBucketArn = str
+S3TablesName = str
+S3TablesNamespace = str
 SSECustomerAlgorithm = str
 SSECustomerKey = str
 SSECustomerKeyMD5 = str
@@ -276,6 +281,7 @@ class CompressionType(StrEnum):
 
 class DataRedundancy(StrEnum):
     SingleAvailabilityZone = "SingleAvailabilityZone"
+    SingleLocalZone = "SingleLocalZone"
 
 
 class DeleteMarkerReplicationStatus(StrEnum):
@@ -395,6 +401,7 @@ class JSONType(StrEnum):
 
 class LocationType(StrEnum):
     AvailabilityZone = "AvailabilityZone"
+    LocalZone = "LocalZone"
 
 
 class MFADelete(StrEnum):
@@ -1453,6 +1460,23 @@ class CreateBucketConfiguration(TypedDict, total=False):
     Bucket: Optional[BucketInfo]
 
 
+class S3TablesDestination(TypedDict, total=False):
+    TableBucketArn: S3TablesBucketArn
+    TableName: S3TablesName
+
+
+class MetadataTableConfiguration(TypedDict, total=False):
+    S3TablesDestination: S3TablesDestination
+
+
+class CreateBucketMetadataTableConfigurationRequest(ServiceRequest):
+    Bucket: BucketName
+    ContentMD5: Optional[ContentMD5]
+    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    MetadataTableConfiguration: MetadataTableConfiguration
+    ExpectedBucketOwner: Optional[AccountId]
+
+
 class CreateBucketOutput(TypedDict, total=False):
     Location: Optional[Location]
 
@@ -1600,6 +1624,11 @@ class DeleteBucketInventoryConfigurationRequest(ServiceRequest):
 
 
 class DeleteBucketLifecycleRequest(ServiceRequest):
+    Bucket: BucketName
+    ExpectedBucketOwner: Optional[AccountId]
+
+
+class DeleteBucketMetadataTableConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     ExpectedBucketOwner: Optional[AccountId]
 
@@ -1769,6 +1798,11 @@ End = int
 
 class EndEvent(TypedDict, total=False):
     pass
+
+
+class ErrorDetails(TypedDict, total=False):
+    ErrorCode: Optional[ErrorCode]
+    ErrorMessage: Optional[ErrorMessage]
 
 
 class ErrorDocument(TypedDict, total=False):
@@ -1995,6 +2029,32 @@ class GetBucketLoggingOutput(TypedDict, total=False):
 
 
 class GetBucketLoggingRequest(ServiceRequest):
+    Bucket: BucketName
+    ExpectedBucketOwner: Optional[AccountId]
+
+
+class S3TablesDestinationResult(TypedDict, total=False):
+    TableBucketArn: S3TablesBucketArn
+    TableName: S3TablesName
+    TableArn: S3TablesArn
+    TableNamespace: S3TablesNamespace
+
+
+class MetadataTableConfigurationResult(TypedDict, total=False):
+    S3TablesDestinationResult: S3TablesDestinationResult
+
+
+class GetBucketMetadataTableConfigurationResult(TypedDict, total=False):
+    MetadataTableConfigurationResult: MetadataTableConfigurationResult
+    Status: MetadataTableStatus
+    Error: Optional[ErrorDetails]
+
+
+class GetBucketMetadataTableConfigurationOutput(TypedDict, total=False):
+    GetBucketMetadataTableConfigurationResult: Optional[GetBucketMetadataTableConfigurationResult]
+
+
+class GetBucketMetadataTableConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     ExpectedBucketOwner: Optional[AccountId]
 
@@ -3594,6 +3654,19 @@ class S3Api:
     ) -> CreateBucketOutput:
         raise NotImplementedError
 
+    @handler("CreateBucketMetadataTableConfiguration")
+    def create_bucket_metadata_table_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        metadata_table_configuration: MetadataTableConfiguration,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
+    ) -> None:
+        raise NotImplementedError
+
     @handler("CreateMultipartUpload")
     def create_multipart_upload(
         self,
@@ -3706,6 +3779,16 @@ class S3Api:
 
     @handler("DeleteBucketLifecycle")
     def delete_bucket_lifecycle(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteBucketMetadataTableConfiguration")
+    def delete_bucket_metadata_table_configuration(
         self,
         context: RequestContext,
         bucket: BucketName,
@@ -3937,6 +4020,16 @@ class S3Api:
         expected_bucket_owner: AccountId = None,
         **kwargs,
     ) -> GetBucketLoggingOutput:
+        raise NotImplementedError
+
+    @handler("GetBucketMetadataTableConfiguration")
+    def get_bucket_metadata_table_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
+    ) -> GetBucketMetadataTableConfigurationOutput:
         raise NotImplementedError
 
     @handler("GetBucketMetricsConfiguration")
