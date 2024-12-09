@@ -2,6 +2,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.testing.pytest import markers
+from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.sync import poll_condition
 from tests.aws.services.events.helper_functions import is_old_provider
 
@@ -90,6 +91,11 @@ API_DESTINATION_AUTH_PARAMS = [
 
 
 class TestEventBridgeApiDestinations:
+    @pytest.fixture
+    def api_destination_snapshots(self, snapshot, destination_name):
+        """Common snapshot transformers for API destination tests."""
+        return TransformerUtility.eventbridge_api_destination(snapshot, destination_name)
+
     @markers.aws.validated
     @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
     @pytest.mark.skipif(
@@ -186,6 +192,11 @@ class TestEventBridgeApiDestinations:
 
 
 class TestEventBridgeApiDestinationConnections:
+    @pytest.fixture(autouse=True)
+    def connection_snapshots(self, snapshot, connection_name):
+        """Common snapshot transformers for connection tests."""
+        return TransformerUtility.eventbridge_connection(snapshot, connection_name)
+
     @markers.aws.validated
     @pytest.mark.skipif(
         is_old_provider(),
