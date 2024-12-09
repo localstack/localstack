@@ -9,7 +9,7 @@ attrs==24.2.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.23.2
+awscrt==0.23.4
     # via localstack-core (pyproject.toml)
 boto3==1.35.76
     # via localstack-core (pyproject.toml)
@@ -166,7 +166,7 @@ rich==13.9.4
     # via localstack-core (pyproject.toml)
 rolo==0.7.4
     # via localstack-core (pyproject.toml)
-rpds-py==0.22.0
+rpds-py==0.22.3
     # via
     #   jsonschema
     #   referencing
@@ -174,7 +174,7 @@ s3transfer==0.10.4
     # via boto3
 semver==3.0.2
     # via localstack-core (pyproject.toml)
-six==1.16.0
+six==1.17.0
     # via
     #   python-dateutil
     #   rfc3339-validator
