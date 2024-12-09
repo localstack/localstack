@@ -16,8 +16,10 @@ from localstack.aws.connect import connect_to
 from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
 from localstack.services.events.target_helper import send_event_to_api_destination
 from localstack.services.events.utils import (
+    dict_to_simple_string,
     event_time_to_time_string,
     get_trace_header_encoded_region_account,
+    is_nested_in_string,
     to_json_str,
 )
 from localstack.utils import collections
@@ -75,7 +77,7 @@ def get_template_replacements(
 
 
 def replace_template_placeholders(
-    template: str, replacements: dict[str, Any], is_json: bool
+    template: str, replacements: dict[str, Any], is_json_template: bool
 ) -> TransformedEvent:
     """Replace placeholders defined by <key> in the template with the values from the replacements dict.
     Can handle single template string or template dict."""
@@ -83,15 +85,20 @@ def replace_template_placeholders(
     def replace_placeholder(match):
         key = match.group(1)
         value = replacements.get(key, match.group(0))  # handle non defined placeholders
-        if is_json:
-            return to_json_str(value)
+        if is_json_template:
+            if is_nested_in_string(template, match):
+                return value  # Return raw string for nested placeholders
+            else:
+                return to_json_str(value)
         if isinstance(value, datetime.datetime):
             return event_time_to_time_string(value)
+        if isinstance(value, dict):
+            return dict_to_simple_string(value)
         return value
 
     formatted_template = TRANSFORMER_PLACEHOLDER_PATTERN.sub(replace_placeholder, template)
 
-    return json.loads(formatted_template) if is_json else formatted_template[1:-1]
+    return json.loads(formatted_template) if is_json_template else formatted_template[1:-1]
 
 
 class TargetSender(ABC):
@@ -164,9 +171,9 @@ class TargetSender(ABC):
         predefined_template_replacements = self._get_predefined_template_replacements(event)
         template_replacements.update(predefined_template_replacements)
 
-        is_json_format = input_template.strip().startswith(("{"))
+        is_json_template = input_template.strip().startswith(("{"))
         populated_template = replace_template_placeholders(
-            input_template, template_replacements, is_json_format
+            input_template, template_replacements, is_json_template
         )
 
         return populated_template
