@@ -1655,17 +1655,13 @@ class TestDynamoDB:
 
     @markers.aws.validated
     def test_dynamodb_update_table_without_sse_specification_change(
-        self, dynamodb_create_table_with_parameters, aws_client, account_id, region_name
+        self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
-        table_name = f"ddb-table-{short_uid()}"
+        table_name = f"test_table_{short_uid()}"
 
-        kms_master_key_id = long_uid()
-        sse_specification = {"Enabled": True, "SSEType": "KMS", "KMSMasterKeyId": kms_master_key_id}
-        kms_master_key_arn = arns.kms_key_arn(
-            kms_master_key_id, account_id=account_id, region_name=region_name
-        )
+        sse_specification = {"Enabled": True}
 
-        _ = dynamodb_create_table_with_parameters(
+        result = dynamodb_create_table_with_parameters(
             TableName=table_name,
             KeySchema=[{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": PARTITION_KEY, "AttributeType": "S"}],
@@ -1673,16 +1669,24 @@ class TestDynamoDB:
             SSESpecification=sse_specification,
             Tags=TEST_DDB_TAGS,
         )
+        snapshot.match("SSEDescription", result["TableDescription"]["SSEDescription"])
 
-        update_result = aws_client.dynamodb.update_table(
+        kms_master_key_arn = result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"]
+        result = aws_client.kms.describe_key(KeyId=kms_master_key_arn)
+        snapshot.match("KMSDescription", result)
+
+        result = aws_client.dynamodb.update_table(
             TableName=table_name, BillingMode="PAY_PER_REQUEST"
         )
+        snapshot.match(
+            "update-table-unchanged-sse-spec", result["TableDescription"]["SSEDescription"]
+        )
 
-        assert update_result["TableDescription"]["SSEDescription"]
-        assert update_result["TableDescription"]["SSEDescription"]["Status"] == "ENABLED"
-        assert update_result["TableDescription"]["SSEDescription"]["SSEType"] == "KMS"
+        # Verify that SSEDescription exists and remains unchanged after update_table
+        assert result["TableDescription"]["SSEDescription"]["Status"] == "ENABLED"
+        assert result["TableDescription"]["SSEDescription"]["SSEType"] == "KMS"
         assert (
-            update_result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"]
+            result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"]
             == kms_master_key_arn
         )
 
