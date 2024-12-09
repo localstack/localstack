@@ -28,6 +28,7 @@ from localstack.aws.api.events import (
     ConnectionDescription,
     ConnectionName,
     ConnectionState,
+    ConnectivityResourceParameters,
     CreateApiDestinationResponse,
     CreateArchiveResponse,
     CreateConnectionAuthRequestParameters,
@@ -529,6 +530,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         authorization_type: ConnectionAuthorizationType,
         auth_parameters: CreateConnectionAuthRequestParameters,
         description: ConnectionDescription = None,
+        invocation_connectivity_parameters: ConnectivityResourceParameters = None,
         **kwargs,
     ) -> CreateConnectionResponse:
         """Create a new connection."""
@@ -588,6 +590,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         description: ConnectionDescription = None,
         authorization_type: ConnectionAuthorizationType = None,
         auth_parameters: UpdateConnectionAuthRequestParameters = None,
+        invocation_connectivity_parameters: ConnectivityResourceParameters = None,
         **kwargs,
     ) -> UpdateConnectionResponse:
         store = self.get_store(context.region, context.account_id)
@@ -1273,11 +1276,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             target_id = target["Id"]
             if len(target_id) > 64:
                 raise ValidationException(
-                    rf"1 validation error detected: Value '{target_id}' at 'targets.{index+1}.member.id' failed to satisfy constraint: Member must have length less than or equal to 64"
+                    rf"1 validation error detected: Value '{target_id}' at 'targets.{index + 1}.member.id' failed to satisfy constraint: Member must have length less than or equal to 64"
                 )
             if not bool(TARGET_ID_PATTERN.match(target_id)):
                 raise ValidationException(
-                    rf"1 validation error detected: Value '{target_id}' at 'targets.{index+1}.member.id' failed to satisfy constraint: Member must satisfy regular expression pattern: [\.\-_A-Za-z0-9]+"
+                    rf"1 validation error detected: Value '{target_id}' at 'targets.{index + 1}.member.id' failed to satisfy constraint: Member must satisfy regular expression pattern: [\.\-_A-Za-z0-9]+"
                 )
             self.create_target_sender(target, rule_arn, rule_name, region, account_id)
 
