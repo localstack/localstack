@@ -16,6 +16,7 @@ Arn = str
 Baseline = bool
 Boolean = bool
 ClientToken = str
+CollectionRetentionDays = int
 Column = str
 DataProtectionPolicyDocument = str
 Days = int
@@ -58,12 +59,16 @@ FilterCount = int
 FilterName = str
 FilterPattern = str
 Flatten = bool
+Force = bool
 ForceUpdate = bool
 FromKey = str
 GrokMatch = str
 IncludeLinkedAccounts = bool
 InferredTokenName = str
 Integer = int
+IntegrationName = str
+IntegrationNamePrefix = str
+IntegrationStatusMessage = str
 Interleaved = bool
 IsSampled = bool
 Key = str
@@ -90,6 +95,12 @@ MetricNamespace = str
 MetricValue = str
 NextToken = str
 NonMatchValue = str
+OpenSearchApplicationEndpoint = str
+OpenSearchApplicationId = str
+OpenSearchCollectionEndpoint = str
+OpenSearchDataSourceName = str
+OpenSearchPolicyName = str
+OpenSearchWorkspaceId = str
 OverwriteIfExists = bool
 ParserFieldDelimiter = str
 PatternId = str
@@ -206,9 +217,25 @@ class InheritedProperty(StrEnum):
     ACCOUNT_DATA_PROTECTION = "ACCOUNT_DATA_PROTECTION"
 
 
+class IntegrationStatus(StrEnum):
+    PROVISIONING = "PROVISIONING"
+    ACTIVE = "ACTIVE"
+    FAILED = "FAILED"
+
+
+class IntegrationType(StrEnum):
+    OPENSEARCH = "OPENSEARCH"
+
+
 class LogGroupClass(StrEnum):
     STANDARD = "STANDARD"
     INFREQUENT_ACCESS = "INFREQUENT_ACCESS"
+
+
+class OpenSearchResourceStatusType(StrEnum):
+    ACTIVE = "ACTIVE"
+    NOT_FOUND = "NOT_FOUND"
+    ERROR = "ERROR"
 
 
 class OrderBy(StrEnum):
@@ -229,6 +256,12 @@ class PolicyType(StrEnum):
     SUBSCRIPTION_FILTER_POLICY = "SUBSCRIPTION_FILTER_POLICY"
     FIELD_INDEX_POLICY = "FIELD_INDEX_POLICY"
     TRANSFORMER_POLICY = "TRANSFORMER_POLICY"
+
+
+class QueryLanguage(StrEnum):
+    CWLI = "CWLI"
+    SQL = "SQL"
+    PPL = "PPL"
 
 
 class QueryStatus(StrEnum):
@@ -679,6 +712,7 @@ class CreateLogStreamRequest(ServiceRequest):
     logStreamName: LogStreamName
 
 
+DashboardViewerPrincipals = List[Arn]
 MatchPatterns = List[MatchPattern]
 
 
@@ -726,6 +760,15 @@ class DeleteIndexPolicyRequest(ServiceRequest):
 
 
 class DeleteIndexPolicyResponse(TypedDict, total=False):
+    pass
+
+
+class DeleteIntegrationRequest(ServiceRequest):
+    integrationName: IntegrationName
+    force: Optional[Force]
+
+
+class DeleteIntegrationResponse(TypedDict, total=False):
     pass
 
 
@@ -1094,9 +1137,11 @@ class DescribeQueriesRequest(ServiceRequest):
     status: Optional[QueryStatus]
     maxResults: Optional[DescribeQueriesMaxResults]
     nextToken: Optional[NextToken]
+    queryLanguage: Optional[QueryLanguage]
 
 
 class QueryInfo(TypedDict, total=False):
+    queryLanguage: Optional[QueryLanguage]
     queryId: Optional[QueryId]
     queryString: Optional[QueryString]
     status: Optional[QueryStatus]
@@ -1113,6 +1158,7 @@ class DescribeQueriesResponse(TypedDict, total=False):
 
 
 class DescribeQueryDefinitionsRequest(ServiceRequest):
+    queryLanguage: Optional[QueryLanguage]
     queryDefinitionNamePrefix: Optional[QueryDefinitionName]
     maxResults: Optional[QueryListMaxResults]
     nextToken: Optional[NextToken]
@@ -1122,6 +1168,7 @@ LogGroupNames = List[LogGroupName]
 
 
 class QueryDefinition(TypedDict, total=False):
+    queryLanguage: Optional[QueryLanguage]
     queryDefinitionId: Optional[QueryId]
     name: Optional[QueryDefinitionName]
     queryString: Optional[QueryDefinitionString]
@@ -1286,6 +1333,80 @@ class GetDeliverySourceResponse(TypedDict, total=False):
     deliverySource: Optional[DeliverySource]
 
 
+class GetIntegrationRequest(ServiceRequest):
+    integrationName: IntegrationName
+
+
+class OpenSearchResourceStatus(TypedDict, total=False):
+    status: Optional[OpenSearchResourceStatusType]
+    statusMessage: Optional[IntegrationStatusMessage]
+
+
+class OpenSearchLifecyclePolicy(TypedDict, total=False):
+    policyName: Optional[OpenSearchPolicyName]
+    status: Optional[OpenSearchResourceStatus]
+
+
+class OpenSearchDataAccessPolicy(TypedDict, total=False):
+    policyName: Optional[OpenSearchPolicyName]
+    status: Optional[OpenSearchResourceStatus]
+
+
+class OpenSearchNetworkPolicy(TypedDict, total=False):
+    policyName: Optional[OpenSearchPolicyName]
+    status: Optional[OpenSearchResourceStatus]
+
+
+class OpenSearchEncryptionPolicy(TypedDict, total=False):
+    policyName: Optional[OpenSearchPolicyName]
+    status: Optional[OpenSearchResourceStatus]
+
+
+class OpenSearchWorkspace(TypedDict, total=False):
+    workspaceId: Optional[OpenSearchWorkspaceId]
+    status: Optional[OpenSearchResourceStatus]
+
+
+class OpenSearchCollection(TypedDict, total=False):
+    collectionEndpoint: Optional[OpenSearchCollectionEndpoint]
+    collectionArn: Optional[Arn]
+    status: Optional[OpenSearchResourceStatus]
+
+
+class OpenSearchApplication(TypedDict, total=False):
+    applicationEndpoint: Optional[OpenSearchApplicationEndpoint]
+    applicationArn: Optional[Arn]
+    applicationId: Optional[OpenSearchApplicationId]
+    status: Optional[OpenSearchResourceStatus]
+
+
+class OpenSearchDataSource(TypedDict, total=False):
+    dataSourceName: Optional[OpenSearchDataSourceName]
+    status: Optional[OpenSearchResourceStatus]
+
+
+class OpenSearchIntegrationDetails(TypedDict, total=False):
+    dataSource: Optional[OpenSearchDataSource]
+    application: Optional[OpenSearchApplication]
+    collection: Optional[OpenSearchCollection]
+    workspace: Optional[OpenSearchWorkspace]
+    encryptionPolicy: Optional[OpenSearchEncryptionPolicy]
+    networkPolicy: Optional[OpenSearchNetworkPolicy]
+    accessPolicy: Optional[OpenSearchDataAccessPolicy]
+    lifecyclePolicy: Optional[OpenSearchLifecyclePolicy]
+
+
+class IntegrationDetails(TypedDict, total=False):
+    openSearchIntegrationDetails: Optional[OpenSearchIntegrationDetails]
+
+
+class GetIntegrationResponse(TypedDict, total=False):
+    integrationName: Optional[IntegrationName]
+    integrationType: Optional[IntegrationType]
+    integrationStatus: Optional[IntegrationStatus]
+    integrationDetails: Optional[IntegrationDetails]
+
+
 class GetLogAnomalyDetectorRequest(ServiceRequest):
     anomalyDetectorArn: AnomalyDetectorArn
 
@@ -1382,6 +1503,7 @@ QueryResults = List[ResultRows]
 
 
 class GetQueryResultsResponse(TypedDict, total=False):
+    queryLanguage: Optional[QueryLanguage]
     results: Optional[QueryResults]
     statistics: Optional[QueryStatistics]
     status: Optional[QueryStatus]
@@ -1574,6 +1696,15 @@ class InputLogEvent(TypedDict, total=False):
 InputLogEvents = List[InputLogEvent]
 
 
+class IntegrationSummary(TypedDict, total=False):
+    integrationName: Optional[IntegrationName]
+    integrationType: Optional[IntegrationType]
+    integrationStatus: Optional[IntegrationStatus]
+
+
+IntegrationSummaries = List[IntegrationSummary]
+
+
 class ListAnomaliesRequest(ServiceRequest):
     anomalyDetectorArn: Optional[AnomalyDetectorArn]
     suppressionState: Optional[SuppressionState]
@@ -1584,6 +1715,16 @@ class ListAnomaliesRequest(ServiceRequest):
 class ListAnomaliesResponse(TypedDict, total=False):
     anomalies: Optional[Anomalies]
     nextToken: Optional[NextToken]
+
+
+class ListIntegrationsRequest(ServiceRequest):
+    integrationNamePrefix: Optional[IntegrationNamePrefix]
+    integrationType: Optional[IntegrationType]
+    integrationStatus: Optional[IntegrationStatus]
+
+
+class ListIntegrationsResponse(TypedDict, total=False):
+    integrationSummaries: Optional[IntegrationSummaries]
 
 
 class ListLogAnomalyDetectorsRequest(ServiceRequest):
@@ -1666,6 +1807,14 @@ class MetricFilterMatchRecord(TypedDict, total=False):
 MetricFilterMatches = List[MetricFilterMatchRecord]
 
 
+class OpenSearchResourceConfig(TypedDict, total=False):
+    kmsKeyArn: Optional[Arn]
+    dataSourceRoleArn: Arn
+    dashboardViewerPrincipals: DashboardViewerPrincipals
+    applicationArn: Optional[Arn]
+    retentionDays: CollectionRetentionDays
+
+
 class PutAccountPolicyRequest(ServiceRequest):
     policyName: PolicyName
     policyDocument: AccountPolicyDocument
@@ -1746,6 +1895,21 @@ class PutIndexPolicyResponse(TypedDict, total=False):
     indexPolicy: Optional[IndexPolicy]
 
 
+class ResourceConfig(TypedDict, total=False):
+    openSearchResourceConfig: Optional[OpenSearchResourceConfig]
+
+
+class PutIntegrationRequest(ServiceRequest):
+    integrationName: IntegrationName
+    resourceConfig: ResourceConfig
+    integrationType: IntegrationType
+
+
+class PutIntegrationResponse(TypedDict, total=False):
+    integrationName: Optional[IntegrationName]
+    integrationStatus: Optional[IntegrationStatus]
+
+
 class PutLogEventsRequest(ServiceRequest):
     logGroupName: LogGroupName
     logStreamName: LogStreamName
@@ -1779,6 +1943,7 @@ class PutMetricFilterRequest(ServiceRequest):
 
 
 class PutQueryDefinitionRequest(ServiceRequest):
+    queryLanguage: Optional[QueryLanguage]
     name: QueryDefinitionName
     queryDefinitionId: Optional[QueryId]
     logGroupNames: Optional[LogGroupNames]
@@ -1838,6 +2003,7 @@ class StartLiveTailResponse(TypedDict, total=False):
 
 
 class StartQueryRequest(ServiceRequest):
+    queryLanguage: Optional[QueryLanguage]
     logGroupName: Optional[LogGroupName]
     logGroupNames: Optional[LogGroupNames]
     logGroupIdentifiers: Optional[LogGroupIdentifiers]
@@ -2068,6 +2234,16 @@ class LogsApi:
     ) -> DeleteIndexPolicyResponse:
         raise NotImplementedError
 
+    @handler("DeleteIntegration")
+    def delete_integration(
+        self,
+        context: RequestContext,
+        integration_name: IntegrationName,
+        force: Force = None,
+        **kwargs,
+    ) -> DeleteIntegrationResponse:
+        raise NotImplementedError
+
     @handler("DeleteLogAnomalyDetector")
     def delete_log_anomaly_detector(
         self, context: RequestContext, anomaly_detector_arn: AnomalyDetectorArn, **kwargs
@@ -2285,6 +2461,7 @@ class LogsApi:
         status: QueryStatus = None,
         max_results: DescribeQueriesMaxResults = None,
         next_token: NextToken = None,
+        query_language: QueryLanguage = None,
         **kwargs,
     ) -> DescribeQueriesResponse:
         raise NotImplementedError
@@ -2293,6 +2470,7 @@ class LogsApi:
     def describe_query_definitions(
         self,
         context: RequestContext,
+        query_language: QueryLanguage = None,
         query_definition_name_prefix: QueryDefinitionName = None,
         max_results: QueryListMaxResults = None,
         next_token: NextToken = None,
@@ -2381,6 +2559,12 @@ class LogsApi:
     ) -> GetDeliverySourceResponse:
         raise NotImplementedError
 
+    @handler("GetIntegration")
+    def get_integration(
+        self, context: RequestContext, integration_name: IntegrationName, **kwargs
+    ) -> GetIntegrationResponse:
+        raise NotImplementedError
+
     @handler("GetLogAnomalyDetector")
     def get_log_anomaly_detector(
         self, context: RequestContext, anomaly_detector_arn: AnomalyDetectorArn, **kwargs
@@ -2447,6 +2631,17 @@ class LogsApi:
         next_token: NextToken = None,
         **kwargs,
     ) -> ListAnomaliesResponse:
+        raise NotImplementedError
+
+    @handler("ListIntegrations")
+    def list_integrations(
+        self,
+        context: RequestContext,
+        integration_name_prefix: IntegrationNamePrefix = None,
+        integration_type: IntegrationType = None,
+        integration_status: IntegrationStatus = None,
+        **kwargs,
+    ) -> ListIntegrationsResponse:
         raise NotImplementedError
 
     @handler("ListLogAnomalyDetectors")
@@ -2573,6 +2768,17 @@ class LogsApi:
     ) -> PutIndexPolicyResponse:
         raise NotImplementedError
 
+    @handler("PutIntegration")
+    def put_integration(
+        self,
+        context: RequestContext,
+        integration_name: IntegrationName,
+        resource_config: ResourceConfig,
+        integration_type: IntegrationType,
+        **kwargs,
+    ) -> PutIntegrationResponse:
+        raise NotImplementedError
+
     @handler("PutLogEvents")
     def put_log_events(
         self,
@@ -2605,6 +2811,7 @@ class LogsApi:
         context: RequestContext,
         name: QueryDefinitionName,
         query_string: QueryDefinitionString,
+        query_language: QueryLanguage = None,
         query_definition_id: QueryId = None,
         log_group_names: LogGroupNames = None,
         client_token: ClientToken = None,
@@ -2676,6 +2883,7 @@ class LogsApi:
         start_time: Timestamp,
         end_time: Timestamp,
         query_string: QueryString,
+        query_language: QueryLanguage = None,
         log_group_name: LogGroupName = None,
         log_group_names: LogGroupNames = None,
         log_group_identifiers: LogGroupIdentifiers = None,

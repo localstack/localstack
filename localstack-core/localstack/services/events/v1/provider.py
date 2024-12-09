@@ -19,6 +19,7 @@ from localstack.aws.api.events import (
     ConnectionAuthorizationType,
     ConnectionDescription,
     ConnectionName,
+    ConnectivityResourceParameters,
     CreateConnectionAuthRequestParameters,
     CreateConnectionResponse,
     EventBusNameOrArn,
@@ -294,6 +295,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         authorization_type: ConnectionAuthorizationType,
         auth_parameters: CreateConnectionAuthRequestParameters,
         description: ConnectionDescription = None,
+        invocation_connectivity_parameters: ConnectivityResourceParameters = None,
         **kwargs,
     ) -> CreateConnectionResponse:
         errors = []
