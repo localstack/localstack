@@ -39,7 +39,7 @@ from tests.aws.services.lambda_.test_lambda import (
 #   - Sagemaker (pro)
 
 
-class TestEventTargetApiDestinations:
+class TestEventsTargetApiDestination:
     # TODO validate against AWS
     @markers.aws.only_localstack
     @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
