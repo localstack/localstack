@@ -1,8 +1,19 @@
 {
-  "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions0]": {
-    "last_validated_date": "2024-12-06T16:56:15+00:00"
-  },
-  "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions1]": {
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_nonexistent_event_bus": {
+    "last_validated_date": "2024-12-09T10:44:29+00:00"
+  }
+}
+
+}
+"
+  }
+}
+"
+  }
+}
+ }
+}
+ "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions1]": {
     "last_validated_date": "2024-12-06T16:56:17+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_multiple_event_buses_same_name": {
@@ -84,7 +95,7 @@
     "last_validated_date": "2024-12-06T16:59:46+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_put_list_with_prefix_describe_delete_rule[custom]": {
-    "last_validated_date": "2024-12-06T16:59:40+00:00"
+    "last_validated_date": "2024-12-09T10:35:32+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_put_list_with_prefix_describe_delete_rule[default]": {
     "last_validated_date": "2024-12-06T16:59:42+00:00"
@@ -140,6 +151,9 @@
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_exceed_limit_ten_entries[default]": {
     "last_validated_date": "2024-12-06T16:53:20+00:00"
   },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_response_entries_order": {
+    "last_validated_date": "2024-11-21T11:48:24+00:00"
+  },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_time": {
     "last_validated_date": "2024-12-06T16:53:18+00:00"
   },
@@ -151,8 +165,6 @@
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_without_source": {
     "last_validated_date": "2024-12-06T16:53:14+00:00"
-  },
-    "tests/aws/services/events/test_events.py::TestEvents::test_put_events_response_entries_order": {
-    "last_validated_date": "2024-11-21T11:48:24+00:00"
   }
+}
 }
