@@ -42,6 +42,7 @@ from tests.aws.services.lambda_.test_lambda import (
 class TestEventsTargetApiDestination:
     # TODO validate against AWS
     @markers.aws.only_localstack
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
     def test_put_events_to_target_api_destinations(
         self, httpserver: HTTPServer, auth, aws_client, clean_up
