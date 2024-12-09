@@ -200,6 +200,11 @@
 /tests/aws/services/s3/ @bentsku
 /tests/unit/test_s3.py @bentsku
 
+# s3control
+/localstack-core/localstack/aws/api/s3control/ @bentsku
+/localstack-core/localstack/services/s3control/ @bentsku
+/tests/aws/services/s3control/ @bentsku
+
 # scheduler
 /localstack-core/localstack/aws/api/scheduler/ @joe4dev
 /localstack-core/localstack/services/scheduler/ @joe4dev
