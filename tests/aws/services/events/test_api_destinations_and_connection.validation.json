@@ -1,0 +1,53 @@
+{
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinations::test_api_destinations[auth0]": {
+    "last_validated_date": "2024-12-09T10:21:06+00:00"
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinations::test_api_destinations[auth1]": {
+    "last_validated_date": "2024-12-09T10:21:08+00:00"
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinations::test_api_destinations[auth2]": {
+    "last_validated_date": "2024-12-09T10:21:10+00:00"
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinations::test_create_api_destination_invalid_parameters": {
+    "last_validated_date": "2024-12-09T10:21:11+00:00"
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinations::test_create_api_destination_name_validation": {
+    "last_validated_date": "2024-12-09T10:21:12+00:00"
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_connection_secrets[api-key]": {
+    "last_validated_date": "2024-12-09T10:16:25+00:00"
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_connection_secrets[basic]": {
+    "last_validated_date": "2024-12-09T10:16:24+00:00"
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_connection_secrets[oauth]": {
+    "last_validated_date": "2024-12-09T10:16:25+00:00"
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_create_connection": {
+    "last_validated_date": "2024-12-09T10:16:11+00:00"
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_create_connection_invalid_parameters": {
+    "last_validated_date": "2024-12-09T10:16:20+00:00"
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_create_connection_name_validation": {
+    "last_validated_date": "2024-12-09T10:16:22+00:00"
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params0]": {
+    "last_validated_date": "2024-12-09T10:16:12+00:00"
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params1]": {
+    "last_validated_date": "2024-12-09T10:16:12+00:00"
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params2]": {
+    "last_validated_date": "2024-12-09T10:16:13+00:00"
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_delete_connection": {
+    "last_validated_date": "2024-12-09T10:16:19+00:00"
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_list_connections": {
+    "last_validated_date": "2024-12-09T10:16:14+00:00"
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_update_connection": {
+    "last_validated_date": "2024-12-09T10:16:22+00:00"
+  }
+}
