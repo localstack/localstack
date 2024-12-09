@@ -12,13 +12,12 @@ from tests.aws.services.stepfunctions.templates.activities.activity_templates im
 )
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestActivities:
     @markers.aws.validated
     def test_activity_task(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_activity,
         sfn_activity_consumer,
@@ -42,8 +41,8 @@ class TestActivities:
 
         exec_input = json.dumps({"Value1": "HelloWorld"})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -54,7 +53,7 @@ class TestActivities:
     def test_activity_task_no_worker_name(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_activity,
         sfn_activity_consumer,
@@ -79,8 +78,8 @@ class TestActivities:
 
         exec_input = json.dumps({"Value1": "HelloWorld"})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -91,7 +90,7 @@ class TestActivities:
     def test_activity_task_on_deleted(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_activity,
         sfn_snapshot,
@@ -111,8 +110,8 @@ class TestActivities:
 
         exec_input = json.dumps({"Value1": "HelloWorld"})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -123,7 +122,7 @@ class TestActivities:
     def test_activity_task_failure(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_activity,
         sfn_activity_consumer,
@@ -149,8 +148,8 @@ class TestActivities:
 
         exec_input = json.dumps({"Value1": "HelloWorld"})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -161,7 +160,7 @@ class TestActivities:
     def test_activity_task_with_heartbeat(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_activity,
         sfn_activity_consumer,
@@ -187,8 +186,8 @@ class TestActivities:
 
         exec_input = json.dumps({"Value1": "HelloWorld"})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -199,7 +198,7 @@ class TestActivities:
     def test_activity_task_start_timeout(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_activity,
         sfn_activity_consumer,
@@ -225,8 +224,8 @@ class TestActivities:
 
         exec_input = json.dumps({"Value1": "HelloWorld"})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,

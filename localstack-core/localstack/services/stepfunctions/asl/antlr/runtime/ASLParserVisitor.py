@@ -289,6 +289,36 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#role_arn_jsonata.
+    def visitRole_arn_jsonata(self, ctx:ASLParser.Role_arn_jsonataContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#role_arn_path.
+    def visitRole_arn_path(self, ctx:ASLParser.Role_arn_pathContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#role_arn_path_context_obj.
+    def visitRole_arn_path_context_obj(self, ctx:ASLParser.Role_arn_path_context_objContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#role_arn_intrinsic_func.
+    def visitRole_arn_intrinsic_func(self, ctx:ASLParser.Role_arn_intrinsic_funcContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#role_arn_var.
+    def visitRole_arn_var(self, ctx:ASLParser.Role_arn_varContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#role_arn_str.
+    def visitRole_arn_str(self, ctx:ASLParser.Role_arn_strContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#timeout_seconds_jsonata.
     def visitTimeout_seconds_jsonata(self, ctx:ASLParser.Timeout_seconds_jsonataContext):
         return self.visitChildren(ctx)

@@ -25,7 +25,7 @@ class TestBaseQueryLanguage:
     def test_base_query_language_field(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         template,
@@ -33,8 +33,8 @@ class TestBaseQueryLanguage:
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -53,7 +53,7 @@ class TestBaseQueryLanguage:
     def test_query_language_field_override(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         template,
@@ -61,8 +61,8 @@ class TestBaseQueryLanguage:
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -74,7 +74,7 @@ class TestBaseQueryLanguage:
     def test_jsonata_query_language_field_downgrade_exception(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -88,7 +88,7 @@ class TestBaseQueryLanguage:
         try:
             create_and_record_execution(
                 stepfunctions_client=aws_client.stepfunctions,
-                create_iam_role_for_sfn=create_iam_role_for_sfn,
+                create_state_machine_iam_role=create_state_machine_iam_role,
                 create_state_machine=create_state_machine,
                 sfn_snapshot=sfn_snapshot,
                 definition=definition,

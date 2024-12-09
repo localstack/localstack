@@ -17,6 +17,9 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
+    ComputedCredentials,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceCondition,
     ResourceRuntimePart,
@@ -83,12 +86,19 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
         )
 
     def _before_eval_execution(
-        self, env: Environment, resource_runtime_part: ResourceRuntimePart, raw_parameters: dict
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        raw_parameters: dict,
+        task_credentials: ComputedCredentials,
     ) -> None:
         if self.resource.condition == ResourceCondition.Sync:
             self._attach_aws_environment_variables(parameters=raw_parameters)
         super()._before_eval_execution(
-            env=env, resource_runtime_part=resource_runtime_part, raw_parameters=raw_parameters
+            env=env,
+            resource_runtime_part=resource_runtime_part,
+            raw_parameters=raw_parameters,
+            task_credentials=task_credentials,
         )
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
@@ -128,6 +138,7 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        task_credentials: ComputedCredentials,
     ) -> Callable[[], Optional[Any]]:
         batch_client = boto_client_for(
             region=resource_runtime_part.region,
@@ -175,7 +186,7 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-        task_credentials: dict,
+        task_credentials: ComputedCredentials,
     ):
         service_name = self._get_boto_service_name()
         api_action = self._get_boto_service_action()
@@ -183,6 +194,7 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
             region=resource_runtime_part.region,
             account=resource_runtime_part.account,
             service=service_name,
+            credentials=task_credentials,
         )
         response = getattr(batch_client, api_action)(**normalised_parameters)
         response.pop("ResponseMetadata", None)

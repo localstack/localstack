@@ -203,6 +203,10 @@ PARAMETERS: '"Parameters"';
 
 CREDENTIALS: '"Credentials"';
 
+ROLEARN: '"RoleArn"';
+
+ROLEARNPATH: '"RoleArn.$"';
+
 RESULTSELECTOR: '"ResultSelector"';
 
 ITEMREADER: '"ItemReader"';

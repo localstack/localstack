@@ -33,18 +33,19 @@ class TestSfnApiExpress:
     @markers.aws.validated
     def test_create_describe_delete(
         self,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         aws_client,
     ):
-        snf_role_arn = create_iam_role_for_sfn()
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_str = json.dumps(definition)
 
         creation_response = create_state_machine(
+            aws_client,
             name=f"statemachine_{short_uid()}",
             definition=definition_str,
             roleArn=snf_role_arn,
@@ -67,7 +68,7 @@ class TestSfnApiExpress:
     @markers.aws.validated
     def test_start_async_describe_history_execution(
         self,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_create_log_group,
         sfn_snapshot,
@@ -78,7 +79,7 @@ class TestSfnApiExpress:
         execution_input = json.dumps(dict())
         state_machine_arn, execution_arn = create_and_record_express_async_execution(
             aws_client,
-            create_iam_role_for_sfn,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_create_log_group,
             sfn_snapshot,
@@ -105,18 +106,18 @@ class TestSfnApiExpress:
     @markers.aws.validated
     def test_start_sync_execution(
         self,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
-        stepfunctions_client_sync_executions,
+        aws_client_no_sync_prefix,
     ):
         template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition = json.dumps(template)
 
         exec_input = json.dumps({})
         create_and_record_express_sync_execution(
-            stepfunctions_client_sync_executions,
-            create_iam_role_for_sfn,
+            aws_client_no_sync_prefix,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -136,12 +137,12 @@ class TestSfnApiExpress:
     def test_illegal_callbacks(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         template,
     ):
-        snf_role_arn = create_iam_role_for_sfn()
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "sfn_role_arn"))
 
         template = CallbackTemplates.load_sfn_template(template)
@@ -149,6 +150,7 @@ class TestSfnApiExpress:
 
         with pytest.raises(Exception) as ex:
             create_state_machine(
+                aws_client,
                 name=f"express_statemachine_{short_uid()}",
                 definition=definition,
                 roleArn=snf_role_arn,
@@ -161,13 +163,13 @@ class TestSfnApiExpress:
     def test_illegal_activity_task(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_activity,
         sfn_activity_consumer,
         sfn_snapshot,
     ):
-        snf_role_arn = create_iam_role_for_sfn()
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "sfn_role_arn"))
 
         activity_name = f"activity-{short_uid()}"
@@ -183,6 +185,7 @@ class TestSfnApiExpress:
 
         with pytest.raises(Exception) as ex:
             create_state_machine(
+                aws_client,
                 name=f"express_statemachine_{short_uid()}",
                 definition=definition,
                 roleArn=snf_role_arn,

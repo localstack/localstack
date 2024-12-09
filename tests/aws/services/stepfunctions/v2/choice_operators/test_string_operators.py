@@ -24,13 +24,12 @@ TYPE_COMPARISONS_VARS: Final[list[Any]] = [
 ]
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestStrings:
     @markers.aws.validated
     def test_string_equals(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -39,8 +38,8 @@ class TestStrings:
             type_equals.append((var, "HelloWorld"))
 
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "StringEquals",
@@ -51,7 +50,7 @@ class TestStrings:
     def test_string_equals_path(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -63,8 +62,8 @@ class TestStrings:
             type_equals.append((var, 1.0))
 
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "StringEqualsPath",
@@ -76,13 +75,13 @@ class TestStrings:
     def test_string_greater_than(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "StringGreaterThan",
@@ -93,13 +92,13 @@ class TestStrings:
     def test_string_greater_than_path(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "StringGreaterThanPath",
@@ -111,13 +110,13 @@ class TestStrings:
     def test_string_greater_than_equals(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "StringGreaterThanEquals",
@@ -128,13 +127,13 @@ class TestStrings:
     def test_string_greater_than_equals_path(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "StringGreaterThanEqualsPath",
@@ -146,13 +145,13 @@ class TestStrings:
     def test_string_less_than(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "StringLessThan",
@@ -163,13 +162,13 @@ class TestStrings:
     def test_string_less_than_path(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "StringLessThanPath",
@@ -181,13 +180,13 @@ class TestStrings:
     def test_string_less_than_equals(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "StringLessThanEquals",
@@ -198,13 +197,13 @@ class TestStrings:
     def test_string_less_than_equals_path(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "StringLessThanEqualsPath",
