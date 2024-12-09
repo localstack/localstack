@@ -18,6 +18,6 @@
     "last_validated_date": "2024-06-18T17:25:49+00:00"
   },
   "tests/aws/services/cloudformation/api/test_templates.py::test_validate_template": {
-    "last_validated_date": "2024-06-18T17:23:30+00:00"
+    "last_validated_date": "2024-11-26T12:47:02+00:00"
   }
 }
