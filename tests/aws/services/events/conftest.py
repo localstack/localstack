@@ -4,6 +4,7 @@ from typing import Tuple
 
 import pytest
 
+from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.aws.arns import get_partition
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -445,3 +446,31 @@ def create_api_destination(aws_client, destination_name):
         )
 
     return _create_api_destination
+
+
+#############################
+# Common Transformer Fixtures
+#############################
+
+
+@pytest.fixture
+def api_destination_snapshot(snapshot, destination_name):
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.regex(destination_name, "<destination-name>"),
+            snapshot.transform.key_value("ApiDestinationArn", reference_replacement=False),
+            snapshot.transform.key_value("ConnectionArn", reference_replacement=False),
+        ]
+    )
+    return snapshot
+
+
+@pytest.fixture
+def connection_snapshot(snapshot, connection_name):
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.regex(connection_name, "<connection-name>"),
+            TransformerUtility.resource_name(),
+        ]
+    )
+    return snapshot

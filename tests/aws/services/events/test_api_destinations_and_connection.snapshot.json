@@ -1,6 +1,6 @@
 {
-  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinationConnections::test_create_connection": {
-    "recorded-date": "06-12-2024, 17:07:01",
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_create_connection": {
+    "recorded-date": "09-12-2024, 10:16:11",
     "recorded-content": {
       "create-connection": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
@@ -34,8 +34,8 @@
       }
     }
   },
-  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinationConnections::test_create_connection_with_auth[auth_params0]": {
-    "recorded-date": "06-12-2024, 17:07:02",
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params0]": {
+    "recorded-date": "09-12-2024, 10:16:12",
     "recorded-content": {
       "create-connection-auth": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
@@ -68,8 +68,8 @@
       }
     }
   },
-  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinationConnections::test_create_connection_with_auth[auth_params1]": {
-    "recorded-date": "06-12-2024, 17:07:02",
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params1]": {
+    "recorded-date": "09-12-2024, 10:16:13",
     "recorded-content": {
       "create-connection-auth": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
@@ -102,8 +102,8 @@
       }
     }
   },
-  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinationConnections::test_create_connection_with_auth[auth_params2]": {
-    "recorded-date": "06-12-2024, 17:07:03",
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params2]": {
+    "recorded-date": "09-12-2024, 10:16:13",
     "recorded-content": {
       "create-connection-auth": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
@@ -140,8 +140,8 @@
       }
     }
   },
-  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinationConnections::test_list_connections": {
-    "recorded-date": "06-12-2024, 17:07:04",
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_list_connections": {
+    "recorded-date": "09-12-2024, 10:16:14",
     "recorded-content": {
       "list-connections": {
         "Connections": [
@@ -162,8 +162,8 @@
       }
     }
   },
-  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinationConnections::test_delete_connection": {
-    "recorded-date": "06-12-2024, 17:07:11",
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_delete_connection": {
+    "recorded-date": "09-12-2024, 10:16:19",
     "recorded-content": {
       "create-connection-response": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
@@ -198,8 +198,8 @@
       }
     }
   },
-  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinationConnections::test_create_connection_invalid_parameters": {
-    "recorded-date": "06-12-2024, 17:07:12",
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_create_connection_invalid_parameters": {
+    "recorded-date": "09-12-2024, 10:16:20",
     "recorded-content": {
       "create-connection-invalid-auth-error": {
         "Error": {
@@ -213,8 +213,8 @@
       }
     }
   },
-  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinationConnections::test_update_connection": {
-    "recorded-date": "06-12-2024, 17:07:14",
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_update_connection": {
+    "recorded-date": "09-12-2024, 10:16:22",
     "recorded-content": {
       "create-connection": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
@@ -315,8 +315,8 @@
       }
     }
   },
-  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinationConnections::test_create_connection_name_validation": {
-    "recorded-date": "06-12-2024, 17:07:14",
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_create_connection_name_validation": {
+    "recorded-date": "09-12-2024, 10:16:22",
     "recorded-content": {
       "create-connection-invalid-name-error": {
         "Error": {
@@ -330,8 +330,8 @@
       }
     }
   },
-  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinationConnections::test_connection_secrets[basic]": {
-    "recorded-date": "06-12-2024, 17:07:15",
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_connection_secrets[basic]": {
+    "recorded-date": "09-12-2024, 10:16:24",
     "recorded-content": {
       "create-connection-auth": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
@@ -381,8 +381,8 @@
       }
     }
   },
-  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinationConnections::test_connection_secrets[api-key]": {
-    "recorded-date": "06-12-2024, 17:07:16",
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_connection_secrets[api-key]": {
+    "recorded-date": "09-12-2024, 10:16:25",
     "recorded-content": {
       "create-connection-auth": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
@@ -432,8 +432,8 @@
       }
     }
   },
-  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinationConnections::test_connection_secrets[oauth]": {
-    "recorded-date": "06-12-2024, 17:07:17",
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_connection_secrets[oauth]": {
+    "recorded-date": "09-12-2024, 10:16:25",
     "recorded-content": {
       "create-connection-auth": {
         "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
@@ -490,7 +490,7 @@
     }
   },
   "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinations::test_api_destinations[auth0]": {
-    "recorded-date": "06-12-2024, 17:07:33",
+    "recorded-date": "09-12-2024, 10:21:06",
     "recorded-content": {
       "create-api-destination": {
         "ApiDestinationArn": "api-destination-arn",
@@ -512,7 +512,7 @@
         "InvocationEndpoint": "https://example.com/api",
         "InvocationRateLimitPerSecond": 300,
         "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
+        "Name": "<destination-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -529,7 +529,7 @@
             "InvocationEndpoint": "https://example.com/api",
             "InvocationRateLimitPerSecond": 300,
             "LastModifiedTime": "datetime",
-            "Name": "<connection-name>"
+            "Name": "<destination-name>"
           }
         ],
         "ResponseMetadata": {
@@ -557,7 +557,7 @@
         "InvocationEndpoint": "https://example.com/api/v2",
         "InvocationRateLimitPerSecond": 300,
         "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
+        "Name": "<destination-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -572,7 +572,7 @@
       "describe-api-destination-not-found-error": {
         "Error": {
           "Code": "ResourceNotFoundException",
-          "Message": "Failed to describe the api-destination(s). An api-destination '<connection-name>' does not exist."
+          "Message": "Failed to describe the api-destination(s). An api-destination '<destination-name>' does not exist."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -582,7 +582,7 @@
     }
   },
   "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinations::test_api_destinations[auth1]": {
-    "recorded-date": "06-12-2024, 17:07:35",
+    "recorded-date": "09-12-2024, 10:21:08",
     "recorded-content": {
       "create-api-destination": {
         "ApiDestinationArn": "api-destination-arn",
@@ -604,7 +604,7 @@
         "InvocationEndpoint": "https://example.com/api",
         "InvocationRateLimitPerSecond": 300,
         "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
+        "Name": "<destination-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -621,7 +621,7 @@
             "InvocationEndpoint": "https://example.com/api",
             "InvocationRateLimitPerSecond": 300,
             "LastModifiedTime": "datetime",
-            "Name": "<connection-name>"
+            "Name": "<destination-name>"
           }
         ],
         "ResponseMetadata": {
@@ -649,7 +649,7 @@
         "InvocationEndpoint": "https://example.com/api/v2",
         "InvocationRateLimitPerSecond": 300,
         "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
+        "Name": "<destination-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -664,7 +664,7 @@
       "describe-api-destination-not-found-error": {
         "Error": {
           "Code": "ResourceNotFoundException",
-          "Message": "Failed to describe the api-destination(s). An api-destination '<connection-name>' does not exist."
+          "Message": "Failed to describe the api-destination(s). An api-destination '<destination-name>' does not exist."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -674,7 +674,7 @@
     }
   },
   "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinations::test_api_destinations[auth2]": {
-    "recorded-date": "06-12-2024, 17:07:37",
+    "recorded-date": "09-12-2024, 10:21:10",
     "recorded-content": {
       "create-api-destination": {
         "ApiDestinationArn": "api-destination-arn",
@@ -696,7 +696,7 @@
         "InvocationEndpoint": "https://example.com/api",
         "InvocationRateLimitPerSecond": 300,
         "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
+        "Name": "<destination-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -713,7 +713,7 @@
             "InvocationEndpoint": "https://example.com/api",
             "InvocationRateLimitPerSecond": 300,
             "LastModifiedTime": "datetime",
-            "Name": "<connection-name>"
+            "Name": "<destination-name>"
           }
         ],
         "ResponseMetadata": {
@@ -741,7 +741,7 @@
         "InvocationEndpoint": "https://example.com/api/v2",
         "InvocationRateLimitPerSecond": 300,
         "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
+        "Name": "<destination-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -756,7 +756,7 @@
       "describe-api-destination-not-found-error": {
         "Error": {
           "Code": "ResourceNotFoundException",
-          "Message": "Failed to describe the api-destination(s). An api-destination '<connection-name>' does not exist."
+          "Message": "Failed to describe the api-destination(s). An api-destination '<destination-name>' does not exist."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -766,7 +766,7 @@
     }
   },
   "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinations::test_create_api_destination_invalid_parameters": {
-    "recorded-date": "06-12-2024, 17:07:37",
+    "recorded-date": "09-12-2024, 10:21:11",
     "recorded-content": {
       "create-api-destination-invalid-parameters-error": {
         "Error": {
@@ -781,7 +781,7 @@
     }
   },
   "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinations::test_create_api_destination_name_validation": {
-    "recorded-date": "06-12-2024, 17:07:39",
+    "recorded-date": "09-12-2024, 10:21:12",
     "recorded-content": {
       "create-api-destination-invalid-name-error": {
         "Error": {
