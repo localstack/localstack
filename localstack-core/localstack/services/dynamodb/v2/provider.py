@@ -614,7 +614,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         global_table_region = self.get_global_table_region(context, table_name)
 
         try:
-            result = self._forward_request(context=context, region=global_table_region)
+            self._forward_request(context=context, region=global_table_region)
         except CommonServiceException as exc:
             # DynamoDBLocal refuses to update certain table params and raises.
             # But we still need to update this info in LocalStack stores
@@ -689,7 +689,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         SchemaExtractor.invalidate_table_schema(table_name, context.account_id, global_table_region)
 
-        return result
+        schema = SchemaExtractor.get_table_schema(
+            table_name, context.account_id, global_table_region
+        )
+
+        return UpdateTableOutput(TableDescription=schema["Table"])
 
     def list_tables(
         self,
