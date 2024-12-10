@@ -38,12 +38,16 @@ class TCPProxy(Server):
         port: int,
         host: str,
         handler: Callable[[bytes], tuple[bytes, bytes]] = None,
+        upstream_certificate_context: CertificateContext | None = None,
+        server_certificate_context: CertificateContext | None = None,
     ) -> None:
         super().__init__(port, host)
         self._target_address = target_address
         self._target_port = target_port
         self._handler = handler
         self._buffer_size = 1024
+        self._upstream_certificate_context = upstream_certificate_context
+        self._server_certificate_context = server_certificate_context
         # thread pool limited to 64 workers for now - can be increased or made configurable if this should not suffice
         # for certain use cases
         self._thread_pool = ThreadPoolExecutor(thread_name_prefix="tcp-proxy", max_workers=64)
