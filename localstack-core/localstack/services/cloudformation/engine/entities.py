@@ -5,6 +5,7 @@ from localstack.aws.api.cloudformation import Capability, ChangeSetType, Paramet
 from localstack.services.cloudformation.engine.parameters import (
     StackParameter,
     convert_stack_parameters_to_list,
+    mask_no_echo,
     strip_parameter_type,
 )
 from localstack.utils.aws import arns
@@ -167,7 +168,9 @@ class Stack:
             result["Outputs"] = outputs
         stack_parameters = convert_stack_parameters_to_list(self.resolved_parameters)
         if stack_parameters:
-            result["Parameters"] = [strip_parameter_type(sp) for sp in stack_parameters]
+            result["Parameters"] = [
+                mask_no_echo(strip_parameter_type(sp)) for sp in stack_parameters
+            ]
         if not result.get("DriftInformation"):
             result["DriftInformation"] = {"StackDriftStatus": "NOT_CHECKED"}
         for attr in ["Tags", "NotificationARNs"]:
