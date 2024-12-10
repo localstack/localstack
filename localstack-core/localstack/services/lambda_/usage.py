@@ -4,7 +4,7 @@ Usage reporting for Lambda service
 
 from localstack.utils.analytics.usage import UsageCounter, UsageSetCounter
 
-# usage of lambda hot-reload feature
+# number of Lambda API operations for CreateFunction using hot reloading
 hotreload = UsageCounter("lambda:hotreload")
 
 # number of function invocations per Lambda runtime (e.g. python3.7 invoked 10x times, nodejs14.x invoked 3x times, ...)
