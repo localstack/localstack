@@ -3688,5 +3688,876 @@
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batching_behaviour[100]": {
     "recorded-date": "26-11-2024, 14:23:08",
     "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[single-filter]": {
+    "recorded-date": "10-12-2024, 17:35:40",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "testItem": [
+                    "test24"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "testItem": "test24"
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "sent-timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[or-filter]": {
+    "recorded-date": "10-12-2024, 17:36:20",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "testItem": [
+                    "test24",
+                    "test45"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "testItem": "test45"
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "sent-timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[and-filter]": {
+    "recorded-date": "10-12-2024, 17:37:03",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "testItem": [
+                    "test24",
+                    "test45"
+                  ],
+                  "test2": [
+                    "go"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "testItem": "test45",
+                "test2": "go"
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "sent-timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[exists-filter]": {
+    "recorded-date": "10-12-2024, 17:37:41",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "test2": [
+                    {
+                      "exists": true
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "test2": "7411"
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "sent-timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[numeric-bigger]": {
+    "recorded-date": "10-12-2024, 19:37:10",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "my-number": [
+                    {
+                      "numeric": [
+                        ">",
+                        100
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "my-number": 101
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "sent-timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[numeric-smaller]": {
+    "recorded-date": "10-12-2024, 19:37:55",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "my-number": [
+                    {
+                      "numeric": [
+                        "<",
+                        100
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "my-number": 99
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "sent-timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[numeric-range]": {
+    "recorded-date": "10-12-2024, 19:38:28",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "my-number": [
+                    {
+                      "numeric": [
+                        ">=",
+                        100,
+                        "<",
+                        200
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "my-number": 100
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "sent-timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[numeric-prefix]": {
+    "recorded-date": "10-12-2024, 17:40:33",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "test2": [
+                    {
+                      "prefix": "us-1"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "test2": "us-1-48454"
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "sent-timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[single]": {
+    "recorded-date": "10-12-2024, 19:34:32",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "my-key": [
+                    "my-value"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "my-key": "my-value"
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "sent-timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[or]": {
+    "recorded-date": "10-12-2024, 19:35:19",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "my-key": [
+                    "my-value-one",
+                    "my-value-two"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "my-key": "my-value-two"
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "sent-timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[and]": {
+    "recorded-date": "10-12-2024, 19:35:54",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "my-key-one": [
+                    "other-filter",
+                    "my-value-one"
+                  ],
+                  "my-key-two": [
+                    "my-value-two"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "my-key-one": "my-value-one",
+                "my-key-two": "my-value-two"
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "sent-timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[exists]": {
+    "recorded-date": "10-12-2024, 19:36:24",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "my-key": [
+                    {
+                      "exists": true
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "my-key": "any-value-one"
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "sent-timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[plain-string-matching]": {
+    "recorded-date": "10-12-2024, 19:47:26",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[plain-string-filter]": {
+    "recorded-date": "10-12-2024, 19:47:31",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[valid-json-filter]": {
+    "recorded-date": "10-12-2024, 19:40:28",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "my-key": [
+                    "my-value"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "my-key": "my-value"
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "sent-timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[prefix]": {
+    "recorded-date": "10-12-2024, 19:47:22",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "my-key": [
+                    {
+                      "prefix": "yes"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "my-key": "yes-value"
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "sent-timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
   }
 }
