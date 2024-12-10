@@ -19,8 +19,6 @@ from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive, get_lambda_log_events
 
 
-# TODO: Fix for new Lambda provider (was tested for old provider)
-@pytest.mark.skip(reason="not implemented yet in new provider")
 @markers.aws.validated
 def test_lambda_w_dynamodb_event_filter(deploy_cfn_template, aws_client):
     function_name = f"test-fn-{short_uid()}"
@@ -53,15 +51,6 @@ def test_lambda_w_dynamodb_event_filter(deploy_cfn_template, aws_client):
     retry(_assert_single_lambda_call, retries=30)
 
 
-# TODO make a test simular to one above but for updated filtering
-
-
-@markers.snapshot.skip_snapshot_verify(
-    [
-        "$..EventSourceMappings..FunctionArn",
-        "$..EventSourceMappings..LastProcessingResult",
-    ]
-)
 @markers.aws.validated
 def test_lambda_w_dynamodb_event_filter_update(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.dynamodb_api())
@@ -261,7 +250,6 @@ def test_lambda_alias(deploy_cfn_template, snapshot, aws_client):
     not in_default_partition(), reason="Test not applicable in non-default partitions"
 )
 @markers.aws.validated
-@markers.snapshot.skip_snapshot_verify(paths=["$..DestinationConfig"])
 def test_lambda_code_signing_config(deploy_cfn_template, snapshot, account_id, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.lambda_api())
@@ -305,7 +293,12 @@ def test_event_invoke_config(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("event_invoke_config", event_invoke_config)
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..CodeSize"])
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        # Lambda ZIP flaky in CI
+        "$..CodeSize",
+    ]
+)
 @markers.aws.validated
 def test_lambda_version(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
@@ -462,7 +455,6 @@ def test_lambda_vpc(deploy_cfn_template, aws_client):
     aws_client.lambda_.invoke(FunctionName=fn_name, LogType="Tail", Payload=b"{}")
 
 
-@pytest.mark.skip(reason="fails/times out with new provider")  # FIXME
 @markers.aws.validated
 def test_update_lambda_permissions(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
@@ -619,16 +611,12 @@ class TestCfnLambdaIntegrations:
 
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..MaximumRetryAttempts",
-            "$..ParallelizationFactor",
-            "$..StateTransitionReason",
             # Lambda
             "$..Tags",
-            "$..Configuration.CodeSize",
-            "$..Configuration.Layers",
+            "$..Configuration.CodeSize",  # Lambda ZIP flaky in CI
             # SQS
             "$..Attributes.SqsManagedSseEnabled",
-            # # IAM
+            # IAM
             "$..PolicyNames",
             "$..PolicyName",
             "$..Role.Description",
@@ -742,12 +730,8 @@ class TestCfnLambdaIntegrations:
         with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
             aws_client.lambda_.get_event_source_mapping(UUID=esm_id)
 
-    # TODO: consider moving into the dedicated DynamoDB => Lambda tests
+    # TODO: consider moving into the dedicated DynamoDB => Lambda tests because it tests the filtering functionality rather than CloudFormation (just using CF to deploy resources)
     #  tests.aws.services.lambda_.test_lambda_integration_dynamodbstreams.TestDynamoDBEventSourceMapping.test_dynamodb_event_filter
-    @pytest.mark.skipif(
-        config.EVENT_RULE_ENGINE != "java",
-        reason="Filtering is broken with the Python rule engine for this specific case (exists:false) in ESM v2",
-    )
     @markers.aws.validated
     def test_lambda_dynamodb_event_filter(
         self, dynamodb_wait_for_table_active, deploy_cfn_template, aws_client, monkeypatch
@@ -786,8 +770,7 @@ class TestCfnLambdaIntegrations:
         paths=[
             # Lambda
             "$..Tags",
-            "$..Configuration.CodeSize",
-            "$..Configuration.Layers",
+            "$..Configuration.CodeSize",  # Lambda ZIP flaky in CI
             # IAM
             "$..PolicyNames",
             "$..policies..PolicyName",
@@ -801,12 +784,6 @@ class TestCfnLambdaIntegrations:
             "$..Table.Replicas",
             # stream result
             "$..StreamDescription.CreationRequestDateTime",
-            # event source mapping
-            "$..BisectBatchOnFunctionError",
-            "$..DestinationConfig",
-            "$..LastProcessingResult",
-            "$..MaximumRecordAgeInSeconds",
-            "$..TumblingWindowInSeconds",
         ]
     )
     @markers.aws.validated
@@ -929,16 +906,9 @@ class TestCfnLambdaIntegrations:
         paths=[
             "$..Role.Description",
             "$..Role.MaxSessionDuration",
-            "$..BisectBatchOnFunctionError",
-            "$..DestinationConfig",
-            "$..LastProcessingResult",
-            "$..MaximumRecordAgeInSeconds",
             "$..Configuration.CodeSize",
             "$..Tags",
-            "$..StreamDescription.StreamModeDetails",
-            "$..Configuration.Layers",
-            "$..TumblingWindowInSeconds",
-            # flaky because we currently don't actually wait in cloudformation for it to be active
+            # TODO: wait for ESM to become active in CloudFormation to mitigate these flaky fields
             "$..Configuration.LastUpdateStatus",
             "$..Configuration.State",
             "$..Configuration.StateReason",
@@ -1094,11 +1064,11 @@ class TestCfnLambdaDestinations:
 
     """
 
-    @pytest.mark.skip(reason="not supported atm and test needs further work")
     @pytest.mark.parametrize(
         ["on_success", "on_failure"],
         [
             ("sqs", "sqs"),
+            # TODO: test needs further work
             # ("sns", "sns"),
             # ("lambda", "lambda"),
             # ("eventbridge", "eventbridge")
