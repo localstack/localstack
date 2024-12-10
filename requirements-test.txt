@@ -14,7 +14,7 @@ antlr4-python3-runtime==4.13.2
     # via
     #   localstack-core
     #   moto-ext
-anyio==4.6.2.post1
+anyio==4.7.0
     # via httpx
 apispec==6.8.0
     # via localstack-core
@@ -27,7 +27,7 @@ attrs==24.2.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.213
+aws-cdk-asset-awscli-v1==2.2.214
     # via aws-cdk-lib
 aws-cdk-asset-kubectl-v20==2.1.3
     # via aws-cdk-lib
@@ -35,7 +35,7 @@ aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==38.0.1
     # via aws-cdk-lib
-aws-cdk-lib==2.171.1
+aws-cdk-lib==2.172.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.94.0
     # via
@@ -45,7 +45,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.36.17
     # via localstack-core
-awscrt==0.23.2
+awscrt==0.23.4
     # via localstack-core
 boto3==1.35.76
     # via
@@ -83,7 +83,7 @@ certifi==2024.8.30
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.20.2
+cfn-lint==1.21.0
     # via moto-ext
 charset-normalizer==3.4.0
     # via requests
@@ -97,7 +97,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.4.2
     # via aws-cdk-lib
-coverage==7.6.8
+coverage==7.6.9
     # via localstack-core (pyproject.toml)
 crontab==1.0.1
     # via localstack-core
@@ -151,7 +151,7 @@ hpack==4.0.0
     # via h2
 httpcore==1.0.7
     # via httpx
-httpx==0.28.0
+httpx==0.28.1
     # via localstack-core (pyproject.toml)
 hypercorn==0.17.3
     # via localstack-core
@@ -180,7 +180,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.0.0
+joserfc==1.0.1
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core
@@ -308,7 +308,7 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.10.2
+pydantic==2.10.3
     # via aws-sam-translator
 pydantic-core==2.27.1
     # via pydantic
@@ -391,7 +391,7 @@ rich==13.9.4
     #   localstack-core (pyproject.toml)
 rolo==0.7.4
     # via localstack-core
-rpds-py==0.22.0
+rpds-py==0.22.3
     # via
     #   jsonschema
     #   referencing
@@ -405,7 +405,7 @@ semver==3.0.2
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-six==1.16.0
+six==1.17.0
     # via
     #   airspeed-ext
     #   jsonpath-rw
@@ -430,6 +430,7 @@ typeguard==2.13.3
     #   jsii
 typing-extensions==4.12.2
     # via
+    #   anyio
     #   aws-sam-translator
     #   cfn-lint
     #   jsii
