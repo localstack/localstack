@@ -1,3 +1,4 @@
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
@@ -10,10 +11,12 @@ from localstack.aws.api.events import (
     ArchiveName,
     ArchiveState,
     Arn,
+    ConnectionAuthorizationType,
+    ConnectionDescription,
     ConnectionName,
+    ConnectionState,
+    CreateConnectionAuthRequestParameters,
     CreatedBy,
-    DescribeApiDestinationResponse,
-    DescribeConnectionResponse,
     EventBusName,
     EventPattern,
     EventResourceList,
@@ -45,6 +48,7 @@ from localstack.services.stores import (
 from localstack.utils.aws.arns import (
     event_bus_arn,
     events_archive_arn,
+    events_connection_arn,
     events_replay_arn,
     events_rule_arn,
 )
@@ -227,8 +231,46 @@ class EventBus:
 EventBusDict = dict[EventBusName, EventBus]
 
 
-ConnectionDict = dict[ConnectionName, DescribeConnectionResponse]
-ApiDestinationDict = dict[ApiDestinationName, DescribeApiDestinationResponse]
+@dataclass
+class Connection:
+    name: ConnectionName
+    region: str
+    account_id: str
+    authorization_type: ConnectionAuthorizationType
+    auth_parameters: CreateConnectionAuthRequestParameters
+    state: ConnectionState
+    secret_arn: Arn
+    description: ConnectionDescription | None = None
+    creation_time: Timestamp = field(init=False)
+    last_modified_time: Timestamp = field(init=False)
+    last_authorized_time: Timestamp = field(init=False)
+    tags: TagList = field(default_factory=list)
+    id: str = str(uuid.uuid4())
+
+    def __post_init__(self):
+        timestamp_now = datetime.now(timezone.utc)
+        self.creation_time = timestamp_now
+        self.last_modified_time = timestamp_now
+        self.last_authorized_time = timestamp_now
+        if self.tags is None:
+            self.tags = []
+
+    @property
+    def arn(self) -> Arn:
+        return events_connection_arn(self.name, self.id, self.account_id, self.region)
+
+
+ConnectionDict = dict[ConnectionName, Connection]
+
+
+@dataclass
+class ApiDestination:
+    name: ApiDestinationName
+    region: str
+    account_id: str
+
+
+ApiDestinationDict = dict[ApiDestinationName, ApiDestination]
 
 
 class EventsStore(BaseStore):
