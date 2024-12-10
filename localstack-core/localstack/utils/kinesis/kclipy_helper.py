@@ -93,16 +93,17 @@ def create_config_file(
     **kwargs,
 ):
     if not credentialsProvider:
-        credentialsProvider = "DefaultAWSCredentialsProviderChain"
+        credentialsProvider = "DefaultCredentialsProvider"
     content = f"""
         executableName = {executableName}
         streamName = {streamName}
         applicationName = {applicationName}
         AWSCredentialsProvider = {credentialsProvider}
+        clientVersionConfig = CLIENT_VERSION_CONFIG_COMPATIBLE_WITH_2x
         kinesisCredentialsProvider = {credentialsProvider}
         dynamoDBCredentialsProvider = {credentialsProvider}
         cloudWatchCredentialsProvider = {credentialsProvider}
-        processingLanguage = python/3.10
+        processingLanguage = python/3.11
         shardSyncIntervalMillis = 2000
         parentShardPollIntervalMillis = 2000
         idleTimeBetweenReadsInMillis = 1000
