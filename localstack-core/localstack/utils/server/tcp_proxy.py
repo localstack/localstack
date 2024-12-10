@@ -2,11 +2,20 @@ import logging
 import select
 import socket
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
+from os import PathLike
 from typing import Callable
 
 from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class CertificateContext:
+    certificate: str | PathLike[str] | None
+    key: str | PathLike[str] | None
+    certificate_authority: str | PathLike[str] | None
 
 
 class TCPProxy(Server):
