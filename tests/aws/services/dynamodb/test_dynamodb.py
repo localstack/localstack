@@ -1685,10 +1685,7 @@ class TestDynamoDB:
         # Verify that SSEDescription exists and remains unchanged after update_table
         assert result["TableDescription"]["SSEDescription"]["Status"] == "ENABLED"
         assert result["TableDescription"]["SSEDescription"]["SSEType"] == "KMS"
-        assert (
-            result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"]
-            == kms_master_key_arn
-        )
+        assert result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"] == kms_master_key_arn
 
     @markers.aws.validated
     def test_dynamodb_get_batch_items(
