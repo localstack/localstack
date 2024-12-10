@@ -35,6 +35,9 @@
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventInvokeConfig::test_lambda_eventinvokeconfig_lifecycle": {
     "last_validated_date": "2024-04-10T09:13:20+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_create_event_filter_criteria_validation": {
+    "last_validated_date": "2024-12-10T16:17:53+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_create_event_source_self_managed": {
     "last_validated_date": "2024-09-03T20:58:27+00:00"
   },

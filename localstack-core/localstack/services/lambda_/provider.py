@@ -225,6 +225,7 @@ from localstack.utils.aws.arns import (
 )
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import PaginatedList
+from localstack.utils.event_matcher import validate_event_pattern
 from localstack.utils.lambda_debug_mode.lambda_debug_mode_session import LambdaDebugModeSession
 from localstack.utils.strings import get_random_hex, short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition
@@ -1920,6 +1921,20 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
                     Type="User",
                 )
+
+        if (filter_criteria := request.get("FilterCriteria")) is not None:
+            for filter_ in filter_criteria.get("Filters", []):
+                pattern_str = filter_.get("Pattern")
+                if not pattern_str or not isinstance(pattern_str, str):
+                    raise InvalidParameterValueException(
+                        "Invalid filter pattern definition.", Type="User"
+                    )
+
+                if not validate_event_pattern(pattern_str):
+                    raise InvalidParameterValueException(
+                        "Invalid filter pattern definition.", Type="User"
+                    )
+
         # Can either have a FunctionName (i.e CreateEventSourceMapping request) or
         # an internal EventSourceMappingConfiguration representation
         request_function_name = request.get("FunctionName") or request.get("FunctionArn")

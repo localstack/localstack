@@ -756,7 +756,6 @@ class TestDynamoDBEventSourceMapping:
         snapshot.match("lambda-multiple-log-events", events)
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="Invalid filter detection not yet implemented in ESM v2")
     @pytest.mark.parametrize(
         "filter",
         [
