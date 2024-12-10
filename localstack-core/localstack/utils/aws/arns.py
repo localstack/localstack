@@ -245,6 +245,14 @@ def events_rule_arn(
     return _resource_arn(rule_name, pattern, account_id=account_id, region_name=region_name)
 
 
+def events_connection_arn(
+    connection_name: str, connection_id: str, account_id: str, region_name: str
+) -> str:
+    name = f"{connection_name}/{connection_id}"
+    pattern = "arn:%s:events:%s:%s:connection/%s"
+    return _resource_arn(name, pattern, account_id=account_id, region_name=region_name)
+
+
 #
 # Lambda
 #
