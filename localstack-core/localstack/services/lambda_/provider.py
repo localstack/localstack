@@ -209,7 +209,6 @@ from localstack.services.lambda_.runtimes import (
     DEPRECATED_RUNTIMES,
     DEPRECATED_RUNTIMES_UPGRADES,
     RUNTIMES_AGGREGATED,
-    SNAP_START_SUPPORTED_RUNTIMES,
     VALID_RUNTIMES,
 )
 from localstack.services.lambda_.urlrouter import FunctionUrlRouter
@@ -686,10 +685,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         ]:
             raise ValidationException(
                 f"1 validation error detected: Value '{apply_on}' at 'snapStart.applyOn' failed to satisfy constraint: Member must satisfy enum value set: [PublishedVersions, None]"
-            )
-        if runtime not in SNAP_START_SUPPORTED_RUNTIMES:
-            raise InvalidParameterValueException(
-                f"{runtime} is not supported for SnapStart enabled functions.", Type="User"
             )
 
     def _validate_layers(self, new_layers: list[str], region: str, account_id: str):

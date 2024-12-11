@@ -166,3 +166,17 @@ Once you verified that your test is running against AWS, you can record snapshot
 Snapshot tests helps to increase the parity with AWS and to raise the confidence in the service implementations. Therefore, snapshot tests are preferred over normal integrations tests.
 
 Please check our subsequent guide on [Parity Testing](../parity-testing/README.md) for a detailed explanation on how to write AWS validated snapshot tests.
+
+#### Force the start of a local instance
+
+When running test with `TEST_TARGET=AWS_CLOUD`, by default, no localstack instance will be created. This can be bypassed by also setting `TEST_FORCE_LOCALSTACK_START=1`.
+
+Note that the `aws_client` fixture will keep pointing at the aws instance and you will need to create your own client factory using the `aws_client_factory`.
+
+```python
+local_client = aws_client_factory(
+    endpoint_url=f"http://{localstack_host()}",
+    aws_access_key_id="test",
+    aws_secret_access_key="test",
+)
+```

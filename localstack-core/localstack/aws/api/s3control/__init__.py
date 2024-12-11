@@ -344,6 +344,7 @@ class S3ChecksumAlgorithm(StrEnum):
     CRC32C = "CRC32C"
     SHA1 = "SHA1"
     SHA256 = "SHA256"
+    CRC64NVME = "CRC64NVME"
 
 
 class S3GlacierJobTier(StrEnum):

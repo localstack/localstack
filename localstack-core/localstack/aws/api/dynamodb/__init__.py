@@ -245,6 +245,11 @@ class KeyType(StrEnum):
     RANGE = "RANGE"
 
 
+class MultiRegionConsistency(StrEnum):
+    EVENTUAL = "EVENTUAL"
+    STRONG = "STRONG"
+
+
 class PointInTimeRecoveryStatus(StrEnum):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
@@ -507,6 +512,12 @@ class ReplicaAlreadyExistsException(ServiceException):
 
 class ReplicaNotFoundException(ServiceException):
     code: str = "ReplicaNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class ReplicatedWriteConflictException(ServiceException):
+    code: str = "ReplicatedWriteConflictException"
     sender_fault: bool = False
     status_code: int = 400
 
@@ -1210,6 +1221,7 @@ class TableDescription(TypedDict, total=False):
     DeletionProtectionEnabled: Optional[DeletionProtectionEnabled]
     OnDemandThroughput: Optional[OnDemandThroughput]
     WarmThroughput: Optional[TableWarmThroughputDescription]
+    MultiRegionConsistency: Optional[MultiRegionConsistency]
 
 
 class CreateTableOutput(TypedDict, total=False):
@@ -2237,6 +2249,7 @@ class UpdateTableInput(ServiceRequest):
     ReplicaUpdates: Optional[ReplicationGroupUpdateList]
     TableClass: Optional[TableClass]
     DeletionProtectionEnabled: Optional[DeletionProtectionEnabled]
+    MultiRegionConsistency: Optional[MultiRegionConsistency]
     OnDemandThroughput: Optional[OnDemandThroughput]
     WarmThroughput: Optional[WarmThroughput]
 
@@ -2878,6 +2891,7 @@ class DynamodbApi:
         replica_updates: ReplicationGroupUpdateList = None,
         table_class: TableClass = None,
         deletion_protection_enabled: DeletionProtectionEnabled = None,
+        multi_region_consistency: MultiRegionConsistency = None,
         on_demand_throughput: OnDemandThroughput = None,
         warm_throughput: WarmThroughput = None,
         **kwargs,

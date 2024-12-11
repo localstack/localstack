@@ -25,6 +25,8 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
             if service.service_name in [
                 "bedrock-agent",
                 "bedrock-agent-runtime",
+                "bedrock-data-automation",
+                "bedrock-data-automation-runtime",
                 "chime",
                 "chime-sdk-identity",
                 "chime-sdk-media-pipelines",

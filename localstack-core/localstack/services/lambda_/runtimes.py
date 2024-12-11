@@ -149,10 +149,6 @@ TESTED_RUNTIMES: list[Runtime] = [
     runtime for runtime_group in RUNTIMES_AGGREGATED.values() for runtime in runtime_group
 ]
 
-# An unordered list of snapstart-enabled runtimes. Related to snapshots in test_snapstart_exceptions
-# https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html
-SNAP_START_SUPPORTED_RUNTIMES = [Runtime.java11, Runtime.java17, Runtime.java21]
-
 # An ordered list of all Lambda runtimes considered valid by AWS. Matching snapshots in test_create_lambda_exceptions
 VALID_RUNTIMES: str = "[nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9]"
 # An ordered list of all Lambda runtimes for layers considered valid by AWS. Matching snapshots in test_layer_exceptions
