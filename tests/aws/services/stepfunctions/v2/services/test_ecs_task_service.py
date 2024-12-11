@@ -273,7 +273,7 @@ class TestTaskServiceECS:
         sfn_ecs_snapshot.add_transformer(RegexTransformer(state_machine_arn, "state_machine_arn"))
 
         launch_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
+            target_aws_client=aws_client,
             sfn_snapshot=sfn_ecs_snapshot,
             state_machine_arn=state_machine_arn,
             execution_input=json.dumps({}),
@@ -313,7 +313,7 @@ class TestTaskServiceECS:
         sfn_ecs_snapshot.add_transformer(RegexTransformer(state_machine_arn, "state_machine_arn"))
 
         launch_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
+            target_aws_client=aws_client,
             sfn_snapshot=sfn_ecs_snapshot,
             state_machine_arn=state_machine_arn,
             execution_input=json.dumps({}),
@@ -350,7 +350,7 @@ class TestTaskServiceECS:
         sfn_ecs_snapshot.add_transformer(RegexTransformer(state_machine_arn, "state_machine_arn"))
 
         launch_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
+            target_aws_client=aws_client,
             sfn_snapshot=sfn_ecs_snapshot,
             state_machine_arn=state_machine_arn,
             execution_input=json.dumps({}),
@@ -390,7 +390,7 @@ class TestTaskServiceECS:
         sfn_ecs_snapshot.add_transformer(RegexTransformer(state_machine_arn, "state_machine_arn"))
 
         launch_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
+            target_aws_client=aws_client,
             sfn_snapshot=sfn_ecs_snapshot,
             state_machine_arn=state_machine_arn,
             execution_input=json.dumps({}),

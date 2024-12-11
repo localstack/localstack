@@ -298,6 +298,13 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
     Credentials,
+    RoleArn,
+    RoleArnConst,
+    RoleArnContextObject,
+    RoleArnIntrinsicFunction,
+    RoleArnJSONata,
+    RoleArnPath,
+    RoleArnVar,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     Resource,
@@ -544,10 +551,6 @@ class Preprocessor(ASLParserVisitor):
         )
         payload_tmpl: PayloadTmpl = self.visit(ctx.payload_tmpl_decl())
         return Parameters(payload_tmpl=payload_tmpl)
-
-    def visitCredentials_decl(self, ctx: ASLParser.Credentials_declContext) -> Credentials:
-        payload_template: PayloadTmpl = self.visit(ctx.payload_tmpl_decl())
-        return Credentials(payload_template=payload_template)
 
     def visitTimeout_seconds_int(self, ctx: ASLParser.Timeout_seconds_intContext) -> TimeoutSeconds:
         seconds = int(ctx.INT().getText())
@@ -936,6 +939,53 @@ class Preprocessor(ASLParserVisitor):
         )
         intrinsic_func: str = self._inner_string_of(parse_tree=ctx.STRINGINTRINSICFUNC())
         return CausePathIntrinsicFunction(value=intrinsic_func)
+
+    def visitRole_arn_str(self, ctx: ASLParser.Role_arn_strContext) -> RoleArn:
+        role_arn = self._inner_string_of(parse_tree=ctx.keyword_or_string())
+        return RoleArnConst(role_arn)
+
+    def visitRole_arn_path(self, ctx: ASLParser.Role_arn_pathContext) -> RoleArn:
+        self._raise_if_query_language_is_not(
+            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
+        )
+        ctx.STRINGPATH()
+        path = self._inner_string_of(parse_tree=ctx.STRINGPATH())
+        return RoleArnPath(path)
+
+    def visitRole_arn_path_context_obj(
+        self, ctx: ASLParser.Role_arn_path_context_objContext
+    ) -> RoleArn:
+        self._raise_if_query_language_is_not(
+            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
+        )
+        path = self._inner_string_of(parse_tree=ctx.STRINGPATHCONTEXTOBJ())
+        path_tail = path[1:]
+        return RoleArnContextObject(path_tail)
+
+    def visitRole_arn_intrinsic_func(
+        self, ctx: ASLParser.Role_arn_intrinsic_funcContext
+    ) -> RoleArn:
+        self._raise_if_query_language_is_not(
+            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
+        )
+        intrinsic_func: str = self._inner_string_of(parse_tree=ctx.STRINGINTRINSICFUNC())
+        return RoleArnIntrinsicFunction(value=intrinsic_func)
+
+    def visitRole_arn_var(self, ctx: ASLParser.Role_arn_varContext) -> RoleArn:
+        self._raise_if_query_language_is_not(
+            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
+        )
+        variable_sample: VariableSample = self.visit(ctx.variable_sample())
+        return RoleArnVar(variable_sample=variable_sample)
+
+    def visitRole_arn_jsonata(self, ctx: ASLParser.Role_arn_jsonataContext) -> RoleArn:
+        expression: str = self._inner_jsonata_expr(ctx=ctx.STRINGJSONATA())
+        ja_terminal_expr = JSONataTemplateValueTerminalExpression(expression=expression)
+        return RoleArnJSONata(jsonata_template_value_terminal_expression=ja_terminal_expr)
+
+    def visitCredentials_decl(self, ctx: ASLParser.Credentials_declContext) -> Credentials:
+        role_arn: RoleArn = self.visit(ctx.role_arn_decl())
+        return Credentials(role_arn=role_arn)
 
     def visitSeconds_int(self, ctx: ASLParser.Seconds_intContext) -> Seconds:
         return Seconds(seconds=int(ctx.INT().getText()))
