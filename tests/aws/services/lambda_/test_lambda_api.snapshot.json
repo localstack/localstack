@@ -18217,7 +18217,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_create_event_filter_criteria_validation": {
-    "recorded-date": "10-12-2024, 16:17:56",
+    "recorded-date": "11-12-2024, 11:29:54",
     "recorded-content": {
       "response-with-empty-filters": {
         "BatchSize": 100,
@@ -18225,7 +18225,7 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/table-2e5f8780/stream/<resource:1>",
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name>/stream/<resource:1>",
         "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<resource:2>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],

@@ -5625,6 +5625,9 @@ class TestLambdaEventSourceMappings:
         )
 
         table_name = f"table-{short_uid()}"
+        # FIXME: Why is this not being automatically transformed?
+        snapshot.add_transformer(snapshot.transform.regex(table_name, "<table-name>"))
+
         dynamodb_create_table(table_name=table_name, partition_key="id")
         _await_dynamodb_table_active(aws_client.dynamodb, table_name)
         update_table_response = aws_client.dynamodb.update_table(
