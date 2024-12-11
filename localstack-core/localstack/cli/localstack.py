@@ -911,7 +911,7 @@ def print_profile() -> None:
 
 
 def print_app() -> None:
-    console.print(" :globe_with_meridians: [bold]App:[/bold] \033https://app.localstack.cloud\033")
+    console.print(" :globe_with_meridians: [bold]App:[/bold] \033https://localstack.dev/app\033")
 
 
 def print_banner() -> None:
