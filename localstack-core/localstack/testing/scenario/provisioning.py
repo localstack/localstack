@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, ContextManager, Optional
 
 import aws_cdk as cdk
-from botocore.exceptions import WaiterError
+from botocore.exceptions import ClientError, WaiterError
 
 from localstack.config import is_env_true
 from localstack.testing.aws.util import is_aws_cloud
@@ -402,7 +402,12 @@ class InfraProvisioner:
         return f"localstack-testing-assets-{account_id}-{region}"
 
     def _create_bucket_if_not_exists(self, template_bucket_name: str):
-        create_s3_bucket(template_bucket_name, s3_client=self.aws_client.s3)
+        try:
+            self.aws_client.s3.head_bucket(Bucket=template_bucket_name)
+        except ClientError as exc:
+            if exc.response["Error"]["Message"] != "Not Found":
+                raise exc
+            create_s3_bucket(template_bucket_name, s3_client=self.aws_client.s3)
 
     def _synth(self):
         # TODO: this doesn't actually synth a CloudAssembly yet
