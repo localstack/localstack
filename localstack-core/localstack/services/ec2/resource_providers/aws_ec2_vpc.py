@@ -1,6 +1,7 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Optional, TypedDict
 
@@ -11,6 +12,8 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProvider,
     ResourceRequest,
 )
+
+LOG = logging.getLogger(__name__)
 
 
 class EC2VPCProperties(TypedDict):
@@ -58,6 +61,30 @@ def _get_default_acl_for_vpc(ec2_client, vpc_id: str) -> str:
     if len(acls) != 1:
         raise Exception(f"There should only be one default network ACL for this VPC ({vpc_id=})")
     return acls[0]["NetworkAclId"]
+
+
+def generate_vpc_read_response(ec2_client, vpc_id: str) -> EC2VPCProperties:
+    vpc = ec2_client.describe_vpcs(VpcIds=[vpc_id])["Vpcs"][0]
+
+    model = EC2VPCProperties(
+        **util.select_attributes(vpc, EC2VPCProvider.SCHEMA["properties"].keys())
+    )
+    model["CidrBlockAssociations"] = [
+        cba["AssociationId"] for cba in vpc["CidrBlockAssociationSet"]
+    ]
+    model["Ipv6CidrBlocks"] = [
+        ipv6_ass["Ipv6CidrBlock"] for ipv6_ass in vpc.get("Ipv6CidrBlockAssociationSet", [])
+    ]
+    model["DefaultNetworkAcl"] = _get_default_acl_for_vpc(ec2_client, model["VpcId"])
+    model["DefaultSecurityGroup"] = _get_default_security_group_for_vpc(ec2_client, model["VpcId"])
+    model["EnableDnsHostnames"] = ec2_client.describe_vpc_attribute(
+        Attribute="enableDnsHostnames", VpcId=vpc_id
+    )["EnableDnsHostnames"]["Value"]
+    model["EnableDnsSupport"] = ec2_client.describe_vpc_attribute(
+        Attribute="enableDnsSupport", VpcId=vpc_id
+    )["EnableDnsSupport"]["Value"]
+
+    return model
 
 
 class EC2VPCProvider(ResourceProvider[EC2VPCProperties]):
@@ -109,21 +136,10 @@ class EC2VPCProvider(ResourceProvider[EC2VPCProperties]):
                 params["TagSpecifications"] = tags
 
             response = ec2.create_vpc(**params)
-            model["VpcId"] = response["Vpc"]["VpcId"]
-
-            model["CidrBlockAssociations"] = [
-                cba["AssociationId"] for cba in response["Vpc"]["CidrBlockAssociationSet"]
-            ]
-
-            # TODO check if function used bellow need to be moved to this or another file
-            #   currently they are imported from GenericBase model
-            model["DefaultNetworkAcl"] = _get_default_acl_for_vpc(ec2, model["VpcId"])
-            model["DefaultSecurityGroup"] = _get_default_security_group_for_vpc(ec2, model["VpcId"])
-
-            # TODO modify additional attributes of VPC based on CF
-            # check aws_ec2_subnet resource for example
 
             request.custom_context[REPEATED_INVOCATION] = True
+            model = generate_vpc_read_response(ec2, response["Vpc"]["VpcId"])
+
             return ProgressEvent(
                 status=OperationStatus.IN_PROGRESS,
                 resource_model=model,
@@ -157,7 +173,28 @@ class EC2VPCProvider(ResourceProvider[EC2VPCProperties]):
           - ec2:DescribeNetworkAcls
           - ec2:DescribeVpcAttribute
         """
-        raise NotImplementedError
+        ec2 = request.aws_client_factory.ec2
+        vpc_id = request.desired_state["VpcId"]
+        try:
+            model = generate_vpc_read_response(ec2, vpc_id)
+        except ec2.exceptions.ClientError as e:
+            LOG.error(
+                "Error reading vpc with id '%s'. %s",
+                vpc_id,
+                e,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+            return ProgressEvent(
+                status=OperationStatus.FAILED,
+                message=e.response["Error"]["Message"],
+                error_code=e.response["Error"]["Code"],
+            )
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
 
     def delete(
         self,
