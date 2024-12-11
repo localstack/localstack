@@ -112,7 +112,26 @@ class KMSKeyProvider(ResourceProvider[KMSKeyProperties]):
           - kms:GetKeyRotationStatus
           - kms:ListResourceTags
         """
-        raise NotImplementedError
+        kms = request.aws_client_factory.kms
+        key_id = request.desired_state["KeyId"]
+
+        key = kms.describe_key(KeyId=key_id)
+
+        policy = kms.get_key_policy(KeyId=key_id, PolicyName="default")
+        rotation_status = kms.get_key_rotation_status(KeyId=key_id)
+        tags = kms.list_resource_tags(KeyId=key_id)
+
+        model = util.select_attributes(key["KeyMetadata"], self.SCHEMA["properties"])
+        model["KeyPolicy"] = json.loads(policy["Policy"])
+        model["EnableKeyRotation"] = rotation_status["KeyRotationEnabled"]
+        # Super consistent api... KMS api does return TagKey/TagValue, but the CC api transforms it to Key/Value
+        # It migth be worth noting if there are more apis for which CC does it again
+        model["Tags"] = [{"Key": tag["TagKey"], "Value": tag["TagValue"]} for tag in tags["Tags"]]
+
+        if "Origin" not in model:
+            model["Origin"] = "AWS_KMS"
+
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
 
     def delete(
         self,
@@ -155,3 +174,17 @@ class KMSKeyProvider(ResourceProvider[KMSKeyProperties]):
           - kms:UpdateKeyDescription
         """
         raise NotImplementedError
+
+    def list(self, request: ResourceRequest[KMSKeyProperties]) -> ProgressEvent[KMSKeyProperties]:
+        """
+        List a resource
+
+        IAM permissions required:
+          - kms:ListKeys
+          - kms:DescribeKey
+        """
+        kms = request.aws_client_factory.kms
+
+        response = kms.list_keys(Limit=10)
+        models = [{"KeyId": key["KeyId"]} for key in response["Keys"]]
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_models=models)
