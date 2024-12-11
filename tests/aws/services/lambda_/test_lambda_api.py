@@ -5608,6 +5608,67 @@ class TestLambdaEventSourceMappings:
         snapshot.match("error", response)
 
     @markers.aws.validated
+    def test_create_event_filter_criteria_validation(
+        self,
+        create_lambda_function,
+        lambda_su_role,
+        dynamodb_create_table,
+        snapshot,
+        aws_client,
+    ):
+        function_name = f"function-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
+
+        table_name = f"table-{short_uid()}"
+        # FIXME: Why is this not being automatically transformed?
+        snapshot.add_transformer(snapshot.transform.regex(table_name, "<table-name>"))
+
+        dynamodb_create_table(table_name=table_name, partition_key="id")
+        _await_dynamodb_table_active(aws_client.dynamodb, table_name)
+        update_table_response = aws_client.dynamodb.update_table(
+            TableName=table_name,
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
+        )
+        stream_arn = update_table_response["TableDescription"]["LatestStreamArn"]
+
+        response = aws_client.lambda_.create_event_source_mapping(
+            FunctionName=function_name,
+            EventSourceArn=stream_arn,
+            StartingPosition="LATEST",
+            FilterCriteria={"Filters": []},
+        )
+        snapshot.match("response-with-empty-filters", response)
+
+        with pytest.raises(ParamValidationError):
+            aws_client.lambda_.create_event_source_mapping(
+                FunctionName=function_name,
+                EventSourceArn=stream_arn,
+                StartingPosition="LATEST",
+                FilterCriteria={"Filters": [{"Pattern": []}]},
+            )
+
+        with pytest.raises(ParamValidationError):
+            aws_client.lambda_.create_event_source_mapping(
+                FunctionName=function_name,
+                EventSourceArn=stream_arn,
+                StartingPosition="LATEST",
+                FilterCriteria={"wrong": []},
+            )
+
+        with pytest.raises(ParamValidationError):
+            aws_client.lambda_.create_event_source_mapping(
+                FunctionName=function_name,
+                EventSourceArn=stream_arn,
+                StartingPosition="LATEST",
+                FilterCriteria=None,
+            )
+
+    @markers.aws.validated
     @pytest.mark.skip(reason="ESM v2 validation for Kafka poller only works with ext")
     def test_create_event_source_self_managed(
         self,
