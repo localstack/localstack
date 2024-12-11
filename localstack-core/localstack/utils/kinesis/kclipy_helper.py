@@ -95,11 +95,13 @@ def create_config_file(
 ):
     if not credentialsProvider:
         credentialsProvider = "DefaultCredentialsProvider"
+    # TODO properly migrate to v3 of KCL and remove the clientVersionConfig
     content = f"""
         executableName = {executableName}
         streamName = {streamName}
         applicationName = {applicationName}
         AWSCredentialsProvider = {credentialsProvider}
+        clientVersionConfig = CLIENT_VERSION_CONFIG_COMPATIBLE_WITH_2x
         kinesisCredentialsProvider = {credentialsProvider}
         dynamoDBCredentialsProvider = {credentialsProvider}
         cloudWatchCredentialsProvider = {credentialsProvider}
