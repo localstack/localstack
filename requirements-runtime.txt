@@ -6,7 +6,7 @@
 #
 airspeed-ext==0.6.7
     # via localstack-core (pyproject.toml)
-amazon-kclpy==2.1.5
+amazon-kclpy==3.0.1
     # via localstack-core (pyproject.toml)
 annotated-types==0.7.0
     # via pydantic
@@ -78,7 +78,7 @@ constantly==23.10.4
     # via localstack-twisted
 crontab==1.0.1
     # via localstack-core (pyproject.toml)
-cryptography==42.0.8
+cryptography==44.0.0
     # via
     #   joserfc
     #   localstack-core
