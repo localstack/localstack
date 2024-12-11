@@ -217,7 +217,11 @@ class TransformerUtility:
             ),
             TransformerUtility.key_value("X-Amzn-Apigateway-Api-Id"),
             TransformerUtility.key_value("X-Forwarded-For"),
-            TransformerUtility.key_value("X-Forwarded-Port"),
+            TransformerUtility.key_value(
+                "X-Forwarded-Port",
+                value_replacement="<X-Forwarded-Port>",
+                reference_replacement=False,
+            ),
             TransformerUtility.key_value(
                 "X-Forwarded-Proto",
                 value_replacement="<X-Forwarded-Proto>",
