@@ -210,7 +210,7 @@ class SecretsManagerSecretProvider(ResourceProvider[SecretsManagerSecretProperti
 
         model["ReplicaRegions"] = [
             {"KmsKeyId": replication_region["KmsKeyId"], "Region": replication_region["Region"]}
-            for replication_region in secret["ReplicationStatus"]
+            for replication_region in secret.get("ReplicationStatus", [])
         ]
         if "ReplicaRegions" not in model:
             model["ReplicaRegions"] = []
