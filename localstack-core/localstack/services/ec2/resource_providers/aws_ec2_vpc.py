@@ -63,7 +63,7 @@ def _get_default_acl_for_vpc(ec2_client, vpc_id: str) -> str:
     return acls[0]["NetworkAclId"]
 
 
-def generate_vpc_read_response(ec2_client, vpc_id: str) -> EC2VPCProperties:
+def generate_vpc_read_payload(ec2_client, vpc_id: str) -> EC2VPCProperties:
     vpc = ec2_client.describe_vpcs(VpcIds=[vpc_id])["Vpcs"][0]
 
     model = EC2VPCProperties(
@@ -138,7 +138,7 @@ class EC2VPCProvider(ResourceProvider[EC2VPCProperties]):
             response = ec2.create_vpc(**params)
 
             request.custom_context[REPEATED_INVOCATION] = True
-            model = generate_vpc_read_response(ec2, response["Vpc"]["VpcId"])
+            model = generate_vpc_read_payload(ec2, response["Vpc"]["VpcId"])
 
             return ProgressEvent(
                 status=OperationStatus.IN_PROGRESS,
@@ -174,25 +174,10 @@ class EC2VPCProvider(ResourceProvider[EC2VPCProperties]):
           - ec2:DescribeVpcAttribute
         """
         ec2 = request.aws_client_factory.ec2
-        vpc_id = request.desired_state["VpcId"]
-        try:
-            model = generate_vpc_read_response(ec2, vpc_id)
-        except ec2.exceptions.ClientError as e:
-            LOG.error(
-                "Error reading vpc with id '%s'. %s",
-                vpc_id,
-                e,
-                exc_info=LOG.isEnabledFor(logging.DEBUG),
-            )
-            return ProgressEvent(
-                status=OperationStatus.FAILED,
-                message=e.response["Error"]["Message"],
-                error_code=e.response["Error"]["Code"],
-            )
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
-            resource_model=model,
+            resource_model=generate_vpc_read_payload(ec2, request.desired_state["VpcId"]),
             custom_context=request.custom_context,
         )
 
@@ -227,11 +212,7 @@ class EC2VPCProvider(ResourceProvider[EC2VPCProperties]):
 
         # TODO security groups, gateways and other attached resources need to be deleted as well
         ec2.delete_vpc(VpcId=model["VpcId"])
-        return ProgressEvent(
-            status=OperationStatus.SUCCESS,
-            resource_model=model,
-            custom_context=request.custom_context,
-        )
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
 
     def update(
         self,
