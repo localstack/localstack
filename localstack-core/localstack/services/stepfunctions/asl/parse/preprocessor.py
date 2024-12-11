@@ -77,21 +77,13 @@ from localstack.services.stepfunctions.asl.component.common.parargs import (
     Parameters,
     Parargs,
 )
-from localstack.services.stepfunctions.asl.component.common.path.input_path import (
-    InputPathBase,
-    InputPathContextObject,
-    InputPathVar,
-)
+from localstack.services.stepfunctions.asl.component.common.path.input_path import InputPath
 from localstack.services.stepfunctions.asl.component.common.path.items_path import (
     ItemsPath,
     ItemsPathContextObject,
     ItemsPathVar,
 )
-from localstack.services.stepfunctions.asl.component.common.path.output_path import (
-    OutputPathBase,
-    OutputPathContextObject,
-    OutputPathVar,
-)
+from localstack.services.stepfunctions.asl.component.common.path.output_path import OutputPath
 from localstack.services.stepfunctions.asl.component.common.path.result_path import ResultPath
 from localstack.services.stepfunctions.asl.component.common.payload.payloadvalue.payload_value import (
     PayloadValue,
@@ -159,6 +151,16 @@ from localstack.services.stepfunctions.asl.component.common.retry.max_delay_seco
 from localstack.services.stepfunctions.asl.component.common.retry.retrier_decl import RetrierDecl
 from localstack.services.stepfunctions.asl.component.common.retry.retrier_props import RetrierProps
 from localstack.services.stepfunctions.asl.component.common.retry.retry_decl import RetryDecl
+from localstack.services.stepfunctions.asl.component.common.string.string import (
+    StringContextPath,
+    StringExpression,
+    StringIntrinsicFunction,
+    StringJSONata,
+    StringJsonPath,
+    StringLiteral,
+    StringSampler,
+    StringVariableSample,
+)
 from localstack.services.stepfunctions.asl.component.common.timeouts.heartbeat import (
     HeartbeatSeconds,
     HeartbeatSecondsJSONata,
@@ -306,22 +308,12 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     state_task_for,
 )
 from localstack.services.stepfunctions.asl.component.state.state_fail.cause_decl import (
-    CauseConst,
-    CauseDecl,
-    CauseJSONata,
-    CausePathContextObject,
-    CausePathIntrinsicFunction,
-    CausePathJsonPath,
-    CauseVar,
+    Cause,
+    CausePath,
 )
 from localstack.services.stepfunctions.asl.component.state.state_fail.error_decl import (
-    ErrorConst,
-    ErrorDecl,
-    ErrorJSONata,
-    ErrorPathContextObject,
-    ErrorPathIntrinsicFunction,
-    ErrorPathJsonPath,
-    ErrorVar,
+    Error,
+    ErrorPath,
 )
 from localstack.services.stepfunctions.asl.component.state.state_fail.state_fail import StateFail
 from localstack.services.stepfunctions.asl.component.state.state_pass.result import Result
@@ -431,17 +423,15 @@ class Preprocessor(ASLParserVisitor):
         return expression
 
     def visitComment_decl(self, ctx: ASLParser.Comment_declContext) -> Comment:
-        inner_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
+        inner_str = self._inner_string_of(parse_tree=ctx.string_literal())
         return Comment(comment=inner_str)
 
     def visitVersion_decl(self, ctx: ASLParser.Version_declContext) -> Version:
-        version_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
+        version_str = self._inner_string_of(parse_tree=ctx.string_literal())
         return Version(version=version_str)
 
     def visitStartat_decl(self, ctx: ASLParser.Startat_declContext) -> StartAt:
-        inner_str = self._inner_string_of(
-            parse_tree=ctx.keyword_or_string(),
-        )
+        inner_str = self._inner_string_of(parse_tree=ctx.string_literal())
         return StartAt(start_at_name=inner_str)
 
     def visitStates_decl(self, ctx: ASLParser.States_declContext) -> States:
@@ -463,7 +453,7 @@ class Preprocessor(ASLParserVisitor):
         return StateType(state_type)
 
     def visitResource_decl(self, ctx: ASLParser.Resource_declContext) -> Resource:
-        inner_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
+        inner_str = self._inner_string_of(parse_tree=ctx.string_literal())
         return Resource.from_resource_arn(inner_str)
 
     def visitEnd_decl(self, ctx: ASLParser.End_declContext) -> End:
@@ -476,7 +466,7 @@ class Preprocessor(ASLParserVisitor):
         return End(is_end=is_end)
 
     def visitNext_decl(self, ctx: ASLParser.Next_declContext) -> Next:
-        inner_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
+        inner_str = self._inner_string_of(parse_tree=ctx.string_literal())
         return Next(name=inner_str)
 
     def visitResult_path_decl(self, ctx: ASLParser.Result_path_declContext) -> ResultPath:
@@ -486,51 +476,20 @@ class Preprocessor(ASLParserVisitor):
         inner_str = self._inner_string_of(parse_tree=ctx.children[-1])
         return ResultPath(result_path_src=inner_str)
 
-    def visitInput_path_decl_path(
-        self, ctx: ASLParser.Input_path_decl_pathContext
-    ) -> InputPathBase:
+    def visitInput_path_decl(self, ctx: ASLParser.Input_path_declContext) -> InputPath:
+        string_sampler: Optional[StringSampler] = None
+        if not Antlr4Utils.is_terminal(pt=ctx.children[-1], token_type=ASLLexer.NULL):
+            string_sampler: StringSampler = self.visitString_sampler(ctx.string_sampler())
+        return InputPath(string_sampler=string_sampler)
+
+    def visitOutput_path_decl(self, ctx: ASLParser.Output_path_declContext) -> OutputPath:
         self._raise_if_query_language_is_not(
             query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
         )
-        inner_str = self._inner_string_of(parse_tree=ctx.children[-1])
-        return InputPathBase(path=inner_str)
-
-    def visitInput_path_decl_path_context_object(
-        self, ctx: ASLParser.Input_path_decl_path_context_objectContext
-    ) -> InputPathContextObject:
-        self._raise_if_query_language_is_not(
-            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
-        )
-        inner_str = self._inner_string_of(parse_tree=ctx.children[-1])
-        return InputPathContextObject(path=inner_str)
-
-    def visitInput_path_decl_var(self, ctx: ASLParser.Input_path_decl_varContext) -> InputPathVar:
-        variable_sample: VariableSample = self.visit(ctx.variable_sample())
-        return InputPathVar(variable_sample=variable_sample)
-
-    def visitOutput_path_decl_path(
-        self, ctx: ASLParser.Output_path_decl_pathContext
-    ) -> OutputPathBase:
-        self._raise_if_query_language_is_not(
-            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
-        )
-        inner_str = self._inner_string_of(parse_tree=ctx.children[-1])
-        return OutputPathBase(output_path=inner_str)
-
-    def visitOutput_path_decl_path_context_object(
-        self, ctx: ASLParser.Output_path_decl_path_context_objectContext
-    ) -> OutputPathContextObject:
-        self._raise_if_query_language_is_not(
-            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
-        )
-        inner_str = self._inner_string_of(parse_tree=ctx.children[-1])
-        return OutputPathContextObject(output_path=inner_str)
-
-    def visitOutput_path_decl_var(
-        self, ctx: ASLParser.Output_path_decl_varContext
-    ) -> OutputPathVar:
-        variable_sample: VariableSample = self.visit(ctx.variable_sample())
-        return OutputPathVar(variable_sample=variable_sample)
+        string_sampler: Optional[StringSampler] = None
+        if Antlr4Utils.is_production(ctx.children[-1], ASLParser.RULE_string_sampler):
+            string_sampler: StringSampler = self.visitString_sampler(ctx.children[-1])
+        return OutputPath(string_sampler=string_sampler)
 
     def visitResult_decl(self, ctx: ASLParser.Result_declContext) -> Result:
         json_decl = ctx.json_value_decl()
@@ -629,7 +588,7 @@ class Preprocessor(ASLParserVisitor):
         return state_props
 
     def visitState_decl(self, ctx: ASLParser.State_declContext) -> CommonStateField:
-        state_name = self._inner_string_of(parse_tree=ctx.state_name())
+        state_name = self._inner_string_of(parse_tree=ctx.string_literal())
         state_props: StateProps = self.visit(ctx.state_decl_body())
         state_props.name = state_name
         common_state_field = self._common_state_field_of(state_props=state_props)
@@ -743,7 +702,7 @@ class Preprocessor(ASLParserVisitor):
         return ComparisonFuncVar(operator_type=comparison_op, variable_sample=variable_sample)
 
     def visitDefault_decl(self, ctx: ASLParser.Default_declContext) -> DefaultDecl:
-        state_name = self._inner_string_of(parse_tree=ctx.keyword_or_string())
+        state_name = self._inner_string_of(parse_tree=ctx.string_literal())
         return DefaultDecl(state_name=state_name)
 
     def visitChoice_operator(
@@ -853,89 +812,27 @@ class Preprocessor(ASLParserVisitor):
                 rules.append(cmp)
         return ChoicesDecl(rules=rules)
 
-    def visitError_string(self, ctx: ASLParser.Error_stringContext) -> ErrorDecl:
-        error = self._inner_string_of(parse_tree=ctx.keyword_or_string())
-        return ErrorConst(value=error)
+    def visitError_decl(self, ctx: ASLParser.Error_declContext) -> Error:
+        string_expression: StringExpression = self.visit(ctx.children[-1])
+        return Error(string_expression=string_expression)
 
-    def visitError_jsonata(self, ctx: ASLParser.Error_jsonataContext) -> ErrorDecl:
-        expression: str = self._inner_jsonata_expr(ctx=ctx.STRINGJSONATA())
-        ja_terminal_expr = JSONataTemplateValueTerminalExpression(expression=expression)
-        return ErrorJSONata(jsonata_template_value_terminal_expression=ja_terminal_expr)
-
-    def visitError_path_decl_var(self, ctx: ASLParser.Error_path_decl_varContext) -> ErrorDecl:
+    def visitError_path_decl(self, ctx: ASLParser.Error_path_declContext) -> ErrorPath:
         self._raise_if_query_language_is_not(
             query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
         )
-        variable_sample: VariableSample = self.visit(ctx.variable_sample())
-        return ErrorVar(variable_sample=variable_sample)
+        string_expression: StringExpression = self.visit(ctx.children[-1])
+        return ErrorPath(string_expression=string_expression)
 
-    def visitError_path_decl_path(self, ctx: ASLParser.Error_path_decl_pathContext) -> ErrorDecl:
+    def visitCause_decl(self, ctx: ASLParser.Cause_declContext) -> Cause:
+        string_expression: StringExpression = self.visit(ctx.children[-1])
+        return Cause(string_expression=string_expression)
+
+    def visitCause_path_decl(self, ctx: ASLParser.Cause_path_declContext) -> CausePath:
         self._raise_if_query_language_is_not(
             query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
         )
-        path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
-        return ErrorPathJsonPath(value=path)
-
-    def visitError_path_decl_context(
-        self, ctx: ASLParser.Error_path_decl_contextContext
-    ) -> ErrorDecl:
-        self._raise_if_query_language_is_not(
-            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
-        )
-        path = self._inner_string_of(parse_tree=ctx.STRINGPATHCONTEXTOBJ())
-        path_tail = path[1:]
-        return ErrorPathContextObject(path_tail)
-
-    def visitError_path_decl_intrinsic(
-        self, ctx: ASLParser.Error_path_decl_intrinsicContext
-    ) -> ErrorDecl:
-        self._raise_if_query_language_is_not(
-            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
-        )
-        intrinsic_func: str = self._inner_string_of(parse_tree=ctx.STRINGINTRINSICFUNC())
-        return ErrorPathIntrinsicFunction(value=intrinsic_func)
-
-    def visitCause_string(self, ctx: ASLParser.Cause_stringContext) -> CauseDecl:
-        cause = self._inner_string_of(parse_tree=ctx.keyword_or_string())
-        return CauseConst(value=cause)
-
-    def visitCause_jsonata(self, ctx: ASLParser.Cause_jsonataContext) -> CauseDecl:
-        expression: str = self._inner_jsonata_expr(ctx=ctx.STRINGJSONATA())
-        ja_terminal_expr = JSONataTemplateValueTerminalExpression(expression=expression)
-        return CauseJSONata(jsonata_template_value_terminal_expression=ja_terminal_expr)
-
-    def visitCause_path_decl_var(self, ctx: ASLParser.Cause_path_decl_varContext) -> CauseDecl:
-        self._raise_if_query_language_is_not(
-            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
-        )
-        variable_sample: VariableSample = self.visit(ctx.variable_sample())
-        return CauseVar(variable_sample=variable_sample)
-
-    def visitCause_path_decl_path(self, ctx: ASLParser.Cause_path_decl_pathContext) -> CauseDecl:
-        self._raise_if_query_language_is_not(
-            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
-        )
-        path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
-        return CausePathJsonPath(value=path)
-
-    def visitCause_path_decl_context(
-        self, ctx: ASLParser.Cause_path_decl_contextContext
-    ) -> CauseDecl:
-        self._raise_if_query_language_is_not(
-            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
-        )
-        path = self._inner_string_of(parse_tree=ctx.STRINGPATHCONTEXTOBJ())
-        path_tail = path[1:]
-        return CausePathContextObject(path_tail)
-
-    def visitCause_path_decl_intrinsic(
-        self, ctx: ASLParser.Cause_path_decl_intrinsicContext
-    ) -> CauseDecl:
-        self._raise_if_query_language_is_not(
-            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
-        )
-        intrinsic_func: str = self._inner_string_of(parse_tree=ctx.STRINGINTRINSICFUNC())
-        return CausePathIntrinsicFunction(value=intrinsic_func)
+        string_expression: StringExpression = self.visit(ctx.children[-1])
+        return CausePath(string_expression=string_expression)
 
     def visitSeconds_int(self, ctx: ASLParser.Seconds_intContext) -> Seconds:
         return Seconds(seconds=int(ctx.INT().getText()))
@@ -1755,3 +1652,42 @@ class Preprocessor(ASLParserVisitor):
         expression: str = self._inner_jsonata_expr(ctx=ctx.STRINGJSONATA())
         ja_terminal_expr = JSONataTemplateValueTerminalExpression(expression=expression)
         return ItemsJSONata(jsonata_template_value_terminal_expression=ja_terminal_expr)
+
+    def visitString_sampler(self, ctx: ASLParser.String_samplerContext) -> StringSampler:
+        return self.visit(ctx.children[0])
+
+    def visitString_literal(self, ctx: ASLParser.String_literalContext) -> StringLiteral:
+        literal_value: str = self._inner_string_of(parse_tree=ctx)
+        return StringLiteral(literal_value=literal_value)
+
+    def visitString_jsonpath(self, ctx: ASLParser.String_jsonpathContext) -> StringJsonPath:
+        json_path: str = self._inner_string_of(parse_tree=ctx)
+        return StringJsonPath(json_path=json_path)
+
+    def visitString_context_path(
+        self, ctx: ASLParser.String_context_pathContext
+    ) -> StringContextPath:
+        context_object_path: str = self._inner_string_of(parse_tree=ctx)
+        return StringContextPath(context_object_path=context_object_path)
+
+    def visitString_variable_sample(
+        self, ctx: ASLParser.String_variable_sampleContext
+    ) -> StringVariableSample:
+        query_language_mode: QueryLanguageMode = (
+            self._get_current_query_language().query_language_mode
+        )
+        expression: str = self._inner_string_of(parse_tree=ctx)
+        return StringVariableSample(query_language_mode=query_language_mode, expression=expression)
+
+    def visitString_jsonata(self, ctx: ASLParser.String_jsonataContext) -> StringJSONata:
+        self._raise_if_query_language_is_not(query_language_mode=QueryLanguageMode.JSONata, ctx=ctx)
+        expression = self._inner_jsonata_expr(ctx=ctx)
+        return StringJSONata(expression=expression)
+
+    def visitString_intrinsic_function(
+        self, ctx: ASLParser.String_intrinsic_functionContext
+    ) -> StringIntrinsicFunction:
+        intrinsic_function_derivation: str = self._inner_string_of(
+            parse_tree=ctx.STRINGINTRINSICFUNC()
+        )
+        return StringIntrinsicFunction(intrinsic_function_derivation=intrinsic_function_derivation)

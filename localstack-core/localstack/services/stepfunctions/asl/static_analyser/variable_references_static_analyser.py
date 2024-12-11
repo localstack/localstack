@@ -46,11 +46,9 @@ class VariableReferencesStaticAnalyser(StaticAnalyser):
     def _exit_state(self) -> None:
         self._fringe_state_names.pop()
 
-    def visitState_name(self, ctx: ASLParser.State_nameContext) -> None:
-        state_name: str = ctx.keyword_or_string().getText()[1:-1]
-        self._enter_state(state_name)
-
     def visitState_decl(self, ctx: ASLParser.State_declContext) -> None:
+        state_name: str = ctx.string_literal().getText()[1:-1]
+        self._enter_state(state_name=state_name)
         super().visitState_decl(ctx=ctx)
         self._exit_state()
 

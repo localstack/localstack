@@ -21,11 +21,11 @@ top_layer_stmt:
     | timeout_seconds_decl
 ;
 
-startat_decl: STARTAT COLON keyword_or_string;
+startat_decl: STARTAT COLON string_literal;
 
-comment_decl: COMMENT COLON keyword_or_string;
+comment_decl: COMMENT COLON string_literal;
 
-version_decl: VERSION COLON keyword_or_string;
+version_decl: VERSION COLON string_literal;
 
 query_language_decl: QUERYLANGUAGE COLON (JSONPATH | JSONATA);
 
@@ -81,62 +81,35 @@ state_stmt:
 
 states_decl: STATES COLON LBRACE state_decl (COMMA state_decl)* RBRACE;
 
-state_name: keyword_or_string;
-
-// TODO: avoid redefinitions? -> check listener ok?
-state_decl: state_name COLON state_decl_body;
+state_decl: string_literal COLON state_decl_body;
 
 state_decl_body: LBRACE state_stmt (COMMA state_stmt)* RBRACE;
 
 type_decl: TYPE COLON state_type;
 
-next_decl: NEXT COLON keyword_or_string;
+next_decl: NEXT COLON string_literal;
 
-resource_decl: RESOURCE COLON keyword_or_string;
+resource_decl: RESOURCE COLON string_literal;
 
-input_path_decl:
-    INPUTPATH COLON variable_sample              # input_path_decl_var
-    | INPUTPATH COLON STRINGPATHCONTEXTOBJ       # input_path_decl_path_context_object
-    | INPUTPATH COLON (NULL | keyword_or_string) # input_path_decl_path
-;
+input_path_decl: INPUTPATH COLON (NULL | string_sampler);
 
 result_decl: RESULT COLON json_value_decl;
 
-result_path_decl: RESULTPATH COLON (NULL | keyword_or_string);
+result_path_decl: RESULTPATH COLON (NULL | string_jsonpath);
 
-output_path_decl:
-    OUTPUTPATH COLON variable_sample              # output_path_decl_var
-    | OUTPUTPATH COLON STRINGPATHCONTEXTOBJ       # output_path_decl_path_context_object
-    | OUTPUTPATH COLON (NULL | keyword_or_string) # output_path_decl_path
-;
+output_path_decl: OUTPUTPATH COLON (NULL | string_sampler);
 
 end_decl: END COLON (TRUE | FALSE);
 
-default_decl: DEFAULT COLON keyword_or_string;
+default_decl: DEFAULT COLON string_literal;
 
-error_decl:
-    ERROR COLON STRINGJSONATA       # error_jsonata
-    | ERROR COLON keyword_or_string # error_string
-;
+error_decl: ERROR COLON (string_jsonata | string_literal);
 
-error_path_decl:
-    ERRORPATH COLON variable_sample        # error_path_decl_var
-    | ERRORPATH COLON STRINGPATH           # error_path_decl_path
-    | ERRORPATH COLON STRINGPATHCONTEXTOBJ # error_path_decl_context
-    | ERRORPATH COLON STRINGINTRINSICFUNC  # error_path_decl_intrinsic
-;
+error_path_decl: ERRORPATH COLON string_expression;
 
-cause_decl:
-    CAUSE COLON STRINGJSONATA       # cause_jsonata
-    | CAUSE COLON keyword_or_string # cause_string
-;
+cause_decl: CAUSE COLON (string_jsonata | string_literal);
 
-cause_path_decl:
-    CAUSEPATH COLON variable_sample        # cause_path_decl_var
-    | CAUSEPATH COLON STRINGPATH           # cause_path_decl_path
-    | CAUSEPATH COLON STRINGPATHCONTEXTOBJ # cause_path_decl_context
-    | CAUSEPATH COLON STRINGINTRINSICFUNC  # cause_path_decl_intrinsic
-;
+cause_path_decl: CAUSEPATH COLON string_expression;
 
 seconds_decl: SECONDS COLON STRINGJSONATA # seconds_jsonata | SECONDS COLON INT # seconds_int;
 
@@ -319,9 +292,9 @@ comparison_variable_stmt:
 
 comparison_composite_stmt: comparison_composite | next_decl | assign_decl | comment_decl;
 
-comparison_composite
-    // TODO: this allows for Next definitions in nested choice_rules, is this supported at parse time?
-    : choice_operator COLON (choice_rule | LBRACK choice_rule (COMMA choice_rule)* RBRACK);
+comparison_composite:
+    choice_operator COLON (choice_rule | LBRACK choice_rule (COMMA choice_rule)* RBRACK)
+; // TODO: this allows for Next definitions in nested choice_rules, is this supported at parse time?
 
 variable_decl:
     VARIABLE COLON STRINGPATH             # variable_decl_path
@@ -384,8 +357,9 @@ input_type_decl: INPUTTYPE COLON keyword_or_string;
 
 csv_header_location_decl: CSVHEADERLOCATION COLON keyword_or_string;
 
-csv_headers_decl // TODO: are empty "CSVHeaders" list values supported?
-    : CSVHEADERS COLON LBRACK keyword_or_string (COMMA keyword_or_string)* RBRACK;
+csv_headers_decl:
+    CSVHEADERS COLON LBRACK keyword_or_string (COMMA keyword_or_string)* RBRACK
+; // TODO: are empty "CSVHeaders" list values supported?
 
 max_items_decl:
     MAXITEMS COLON STRINGJSONATA # max_items_jsonata
@@ -545,6 +519,109 @@ json_value_decl:
     | json_arr_decl
     | json_obj_decl
     | keyword_or_string
+;
+
+string_sampler    : string_jsonpath | string_context_path | string_variable_sample;
+string_expression : string_sampler | string_intrinsic_function | string_jsonata;
+
+string_jsonpath           : STRINGPATH;
+string_context_path       : STRINGPATHCONTEXTOBJ;
+string_variable_sample    : STRINGVAR;
+string_intrinsic_function : STRINGINTRINSICFUNC;
+string_jsonata            : STRINGJSONATA;
+string_literal:
+    STRING
+    | STRINGDOLLAR
+    | soft_string_keyword
+    | comparison_op
+    | choice_operator
+    | states_error_name
+    | string_jsonpath
+    | string_context_path
+    | string_variable_sample
+    | string_intrinsic_function
+    | string_jsonata
+;
+
+soft_string_keyword:
+    QUERYLANGUAGE
+    | ASSIGN
+    | ARGUMENTS
+    | OUTPUT
+    | COMMENT
+    | STATES
+    | STARTAT
+    | NEXTSTATE
+    | TYPE
+    | TASK
+    | CHOICE
+    | FAIL
+    | SUCCEED
+    | PASS
+    | WAIT
+    | PARALLEL
+    | MAP
+    | CHOICES
+    | CONDITION
+    | VARIABLE
+    | DEFAULT
+    | BRANCHES
+    | SECONDSPATH
+    | SECONDS
+    | TIMESTAMPPATH
+    | TIMESTAMP
+    | TIMEOUTSECONDS
+    | TIMEOUTSECONDSPATH
+    | HEARTBEATSECONDS
+    | HEARTBEATSECONDSPATH
+    | PROCESSORCONFIG
+    | MODE
+    | INLINE
+    | DISTRIBUTED
+    | EXECUTIONTYPE
+    | STANDARD
+    | ITEMS
+    | ITEMPROCESSOR
+    | ITERATOR
+    | ITEMSELECTOR
+    | MAXCONCURRENCY
+    | MAXCONCURRENCYPATH
+    | RESOURCE
+    | INPUTPATH
+    | OUTPUTPATH
+    | ITEMSPATH
+    | RESULTPATH
+    | RESULT
+    | PARAMETERS
+    | CREDENTIALS
+    | RESULTSELECTOR
+    | ITEMREADER
+    | READERCONFIG
+    | INPUTTYPE
+    | CSVHEADERLOCATION
+    | CSVHEADERS
+    | MAXITEMS
+    | MAXITEMSPATH
+    | TOLERATEDFAILURECOUNT
+    | TOLERATEDFAILURECOUNTPATH
+    | TOLERATEDFAILUREPERCENTAGE
+    | TOLERATEDFAILUREPERCENTAGEPATH
+    | LABEL
+    | RESULTWRITER
+    | NEXT
+    | END
+    | CAUSE
+    | ERROR
+    | RETRY
+    | ERROREQUALS
+    | INTERVALSECONDS
+    | MAXATTEMPTS
+    | BACKOFFRATE
+    | MAXDELAYSECONDS
+    | JITTERSTRATEGY
+    | FULL
+    | NONE
+    | CATCH
 ;
 
 keyword_or_string:
