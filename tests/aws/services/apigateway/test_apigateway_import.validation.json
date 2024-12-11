@@ -36,7 +36,7 @@
     "last_validated_date": "2024-04-15T21:37:44+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_cognito_auth_identity_source": {
-    "last_validated_date": "2024-11-26T21:33:17+00:00"
+    "last_validated_date": "2024-12-11T13:10:15+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_global_api_key_authorizer": {
     "last_validated_date": "2024-04-15T21:36:29+00:00"

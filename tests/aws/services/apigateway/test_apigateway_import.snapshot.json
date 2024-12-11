@@ -4810,7 +4810,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_cognito_auth_identity_source": {
-    "recorded-date": "26-11-2024, 21:33:17",
+    "recorded-date": "11-12-2024, 13:10:45",
     "recorded-content": {
       "import-swagger": {
         "apiKeySource": "HEADER",
@@ -5113,7 +5113,7 @@
           "passthroughBehavior": "WHEN_NO_MATCH",
           "timeoutInMillis": 29000,
           "type": "HTTP_PROXY",
-          "uri": "http://petstore.execute-api.us-west-1.amazonaws.com/petstore/pets"
+          "uri": "http://<external-aws-endpoint>.amazonaws.com/petstore/pets"
         },
         "methodResponses": {
           "200": {
@@ -5157,7 +5157,7 @@
         "passthroughBehavior": "WHEN_NO_MATCH",
         "timeoutInMillis": 29000,
         "type": "HTTP_PROXY",
-        "uri": "http://petstore.execute-api.us-west-1.amazonaws.com/petstore/pets",
+        "uri": "http://<external-aws-endpoint>.amazonaws.com/petstore/pets",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
