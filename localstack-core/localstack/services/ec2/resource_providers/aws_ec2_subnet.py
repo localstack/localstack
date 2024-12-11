@@ -186,33 +186,15 @@ class EC2SubnetProvider(ResourceProvider[EC2SubnetProperties]):
           - ec2:DescribeSubnets
           - ec2:DescribeNetworkAcls
         """
-        ec2 = request.aws_client_factory.ec2
-        subnet_id = request.desired_state["SubnetId"]
-        subnet = ec2.describe_subnets(SubnetIds=[subnet_id])["Subnets"][0]
-
-        model = EC2SubnetProperties(**util.select_attributes(subnet, self.SCHEMA["properties"]))
-
-        if "Tags" not in model:
-            model["Tags"] = []
-
-        if "EnableDns64" not in model:
-            model["EnableDns64"] = False
-
-        optional_bool_attrs = ["EnableResourceNameDnsAAAARecord", "EnableResourceNameDnsARecord"]
-        for attr in optional_bool_attrs:
-            if attr not in model["PrivateDnsNameOptionsOnLaunch"]:
-                model["PrivateDnsNameOptionsOnLaunch"][attr] = False
-
-        network_acl_associations = ec2.describe_network_acls(
-            Filters=[{"Name": "association.subnet-id", "Values": [subnet_id]}]
+        models = generate_subnet_read_payload(
+            ec2_client=request.aws_client_factory.ec2,
+            schema=self.SCHEMA["properties"],
+            subnet_ids=[request.desired_state["SubnetId"]],
         )
-        model["NetworkAclAssociationId"] = network_acl_associations["NetworkAcls"][0][
-            "NetworkAclId"
-        ]
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
-            resource_model=model,
+            resource_model=models[0],
             custom_context=request.custom_context,
         )
 
