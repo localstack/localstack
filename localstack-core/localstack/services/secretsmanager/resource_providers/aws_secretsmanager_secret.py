@@ -78,7 +78,11 @@ class SecretsManagerSecretProvider(ResourceProvider[SecretsManagerSecretProperti
         Read-only properties:
           - /properties/Id
 
-
+        IAM permissions required:
+          - secretsmanager:DescribeSecret
+          - secretsmanager:GetRandomPassword
+          - secretsmanager:CreateSecret
+          - secretsmanager:TagResource
 
         """
         model = request.desired_state
@@ -188,9 +192,30 @@ class SecretsManagerSecretProvider(ResourceProvider[SecretsManagerSecretProperti
         """
         Fetch resource information
 
-
+        IAM permissions required:
+          - secretsmanager:DescribeSecret
+          - secretsmanager:GetSecretValue
         """
-        raise NotImplementedError
+        secretsmanager = request.aws_client_factory.secretsmanager
+        secret_id = request.desired_state["Id"]
+
+        secret = secretsmanager.describe_secret(SecretId=secret_id)
+        model = SecretsManagerSecretProperties(
+            **util.select_attributes(secret, self.SCHEMA["properties"])
+        )
+        model["Id"] = secret["ARN"]
+
+        if "Tags" not in model:
+            model["Tags"] = []
+
+        model["ReplicaRegions"] = [
+            {"KmsKeyId": replication_region["KmsKeyId"], "Region": replication_region["Region"]}
+            for replication_region in secret["ReplicationStatus"]
+        ]
+        if "ReplicaRegions" not in model:
+            model["ReplicaRegions"] = []
+
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
 
     def delete(
         self,
@@ -199,7 +224,10 @@ class SecretsManagerSecretProvider(ResourceProvider[SecretsManagerSecretProperti
         """
         Delete a resource
 
-
+        IAM permissions required:
+          - secretsmanager:DeleteSecret
+          - secretsmanager:DescribeSecret
+          - secretsmanager:RemoveRegionsFromReplication
         """
         model = request.desired_state
         secrets_manager = request.aws_client_factory.secretsmanager
@@ -219,7 +247,14 @@ class SecretsManagerSecretProvider(ResourceProvider[SecretsManagerSecretProperti
         """
         Update a resource
 
-
+        IAM permissions required:
+          - secretsmanager:UpdateSecret
+          - secretsmanager:TagResource
+          - secretsmanager:UntagResource
+          - secretsmanager:GetRandomPassword
+          - secretsmanager:GetSecretValue
+          - secretsmanager:ReplicateSecretToRegions
+          - secretsmanager:RemoveRegionsFromReplication
         """
         raise NotImplementedError
 
