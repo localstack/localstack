@@ -900,7 +900,7 @@ def localstack_completion(ctx: click.Context, shell: str) -> None:
 
 
 def print_version() -> None:
-    console.print(f"- [bold]LocalStack CLI[/bold] [blue]{VERSION}[/blue]")
+    console.print(f"- [bold]LocalStack CLI:[/bold] [blue]{VERSION}[/blue]")
 
 
 def print_profile() -> None:
