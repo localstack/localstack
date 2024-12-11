@@ -24,6 +24,10 @@ from localstack.services.stepfunctions.asl.component.common.path.result_path imp
 from localstack.services.stepfunctions.asl.component.common.result_selector import ResultSelector
 from localstack.services.stepfunctions.asl.component.common.retry.retry_decl import RetryDecl
 from localstack.services.stepfunctions.asl.component.common.retry.retry_outcome import RetryOutcome
+from localstack.services.stepfunctions.asl.component.common.string.string import (
+    JSONPATH_ROOT_PATH,
+    StringJsonPath,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.execute_state import (
     ExecutionState,
 )
@@ -115,7 +119,9 @@ class StateMap(ExecutionState):
         super(StateMap, self).from_state_props(state_props)
         if self._is_language_query_jsonpath():
             self.items = None
-            self.items_path = state_props.get(ItemsPath) or ItemsPath()
+            self.items_path = state_props.get(ItemsPath) or ItemsPath(
+                string_sampler=StringJsonPath(JSONPATH_ROOT_PATH)
+            )
         else:
             # TODO: add snapshot test to assert what missing definitions of items means for a states map
             self.items_path = None

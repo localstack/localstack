@@ -3,7 +3,6 @@ from typing import Any, Final
 from localstack.services.stepfunctions.asl.component.common.flow.end import End
 from localstack.services.stepfunctions.asl.component.common.flow.next import Next
 from localstack.services.stepfunctions.asl.component.common.parargs import Parargs
-from localstack.services.stepfunctions.asl.component.common.path.items_path import ItemsPath
 from localstack.services.stepfunctions.asl.component.common.timeouts.heartbeat import Heartbeat
 from localstack.services.stepfunctions.asl.component.common.timeouts.timeout import Timeout
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_type import (
@@ -37,7 +36,6 @@ from localstack.services.stepfunctions.asl.parse.typed_props import TypedProps
 
 UNIQUE_SUBINSTANCES: Final[set[type]] = {
     Items,
-    ItemsPath,
     Resource,
     WaitFunction,
     Timeout,

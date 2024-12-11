@@ -43,13 +43,9 @@ state_stmt:
     | default_decl
     | choices_decl
     | error_decl
-    | error_path_decl
     | cause_decl
-    | cause_path_decl
     | seconds_decl
-    | seconds_path_decl
     | timestamp_decl
-    | timestamp_path_decl
     | items_decl
     | items_path_decl
     | item_processor_decl
@@ -57,11 +53,8 @@ state_stmt:
     | item_selector_decl
     | item_reader_decl
     | max_concurrency_decl
-    | max_concurrency_path_decl
     | timeout_seconds_decl
-    | timeout_seconds_path_decl
     | heartbeat_seconds_decl
-    | heartbeat_seconds_path_decl
     | branches_decl
     | parameters_decl
     | retry_decl
@@ -103,50 +96,38 @@ end_decl: END COLON (TRUE | FALSE);
 
 default_decl: DEFAULT COLON string_literal;
 
-error_decl: ERROR COLON (string_jsonata | string_literal);
+error_decl:
+    ERROR COLON (string_jsonata | string_literal) # error
+    | ERRORPATH COLON string_expression           # error_path
+;
 
-error_path_decl: ERRORPATH COLON string_expression;
+cause_decl:
+    CAUSE COLON (string_jsonata | string_literal) # cause
+    | CAUSEPATH COLON string_expression           # cause_path
+;
 
-cause_decl: CAUSE COLON (string_jsonata | string_literal);
-
-cause_path_decl: CAUSEPATH COLON string_expression;
-
-seconds_decl: SECONDS COLON STRINGJSONATA # seconds_jsonata | SECONDS COLON INT # seconds_int;
-
-seconds_path_decl:
-    SECONDSPATH COLON variable_sample     # seconds_path_decl_var
-    | SECONDSPATH COLON keyword_or_string # seconds_path_decl_value
+seconds_decl:
+    SECONDS COLON string_jsonata       # seconds_jsonata
+    | SECONDS COLON INT                # seconds_int
+    | SECONDSPATH COLON string_sampler # seconds_path
 ;
 
 timestamp_decl:
-    TIMESTAMP COLON STRINGJSONATA       # timestamp_jsonata
-    | TIMESTAMP COLON keyword_or_string # timestamp_string
-;
-
-timestamp_path_decl:
-    TIMESTAMPPATH COLON variable_sample     # timestamp_path_decl_var
-    | TIMESTAMPPATH COLON keyword_or_string # timestamp_path_decl_value
+    TIMESTAMP COLON (string_jsonata | string_literal) # timestamp
+    | TIMESTAMPPATH COLON string_sampler              # timestamp_path
 ;
 
 items_decl:
     ITEMS COLON jsonata_template_value_array # items_array
-    | ITEMS COLON STRINGJSONATA              # items_jsonata
+    | ITEMS COLON string_jsonata             # items_jsonata
 ;
 
-items_path_decl:
-    ITEMSPATH COLON STRINGPATHCONTEXTOBJ # items_path_decl_path_context_object
-    | ITEMSPATH COLON variable_sample    # items_path_decl_path_var
-    | ITEMSPATH COLON keyword_or_string  # items_path_decl_path
-;
+items_path_decl: ITEMSPATH COLON string_sampler;
 
 max_concurrency_decl:
-    MAXCONCURRENCY COLON STRINGJSONATA # max_concurrency_jsonata
-    | MAXCONCURRENCY COLON INT         # max_concurrency_int
-;
-
-max_concurrency_path_decl:
-    MAXCONCURRENCYPATH COLON variable_sample # max_concurrency_path_var
-    | MAXCONCURRENCYPATH COLON STRINGPATH    # max_concurrency_path
+    MAXCONCURRENCY COLON string_jsonata       # max_concurrency_jsonata
+    | MAXCONCURRENCY COLON INT                # max_concurrency_int
+    | MAXCONCURRENCYPATH COLON string_sampler # max_concurrency_path
 ;
 
 parameters_decl: PARAMETERS COLON payload_tmpl_decl;
@@ -154,23 +135,15 @@ parameters_decl: PARAMETERS COLON payload_tmpl_decl;
 credentials_decl: CREDENTIALS COLON payload_tmpl_decl;
 
 timeout_seconds_decl:
-    TIMEOUTSECONDS COLON STRINGJSONATA # timeout_seconds_jsonata
-    | TIMEOUTSECONDS COLON INT         # timeout_seconds_int
-;
-
-timeout_seconds_path_decl:
-    TIMEOUTSECONDSPATH COLON variable_sample # timeout_seconds_path_decl_var
-    | TIMEOUTSECONDSPATH COLON STRINGPATH    # timeout_seconds_path_decl_path
+    TIMEOUTSECONDS COLON string_jsonata       # timeout_seconds_jsonata
+    | TIMEOUTSECONDS COLON INT                # timeout_seconds_int
+    | TIMEOUTSECONDSPATH COLON string_sampler # timeout_seconds_path
 ;
 
 heartbeat_seconds_decl:
-    HEARTBEATSECONDS COLON STRINGJSONATA # heartbeat_seconds_jsonata
-    | HEARTBEATSECONDS COLON INT         # heartbeat_seconds_int
-;
-
-heartbeat_seconds_path_decl:
-    HEARTBEATSECONDSPATH COLON variable_sample # heartbeat_seconds_path_decl_var
-    | HEARTBEATSECONDSPATH COLON STRINGPATH    # heartbeat_seconds_path_decl_path
+    HEARTBEATSECONDS COLON string_jsonata       # heartbeat_seconds_jsonata
+    | HEARTBEATSECONDS COLON INT                # heartbeat_seconds_int
+    | HEARTBEATSECONDSPATH COLON string_sampler # heartbeat_seconds_path
 ;
 
 variable_sample: STRINGVAR;
@@ -178,12 +151,15 @@ variable_sample: STRINGVAR;
 payload_tmpl_decl: LBRACE payload_binding (COMMA payload_binding)* RBRACE | LBRACE RBRACE;
 
 payload_binding:
-    STRINGDOLLAR COLON STRINGPATH                # payload_binding_path
-    | STRINGDOLLAR COLON STRINGPATHCONTEXTOBJ    # payload_binding_path_context_obj
-    | STRINGDOLLAR COLON STRINGINTRINSICFUNC     # payload_binding_intrinsic_func
-    | STRINGDOLLAR COLON variable_sample         # payload_binding_var
-    | keyword_or_string COLON payload_value_decl # payload_binding_value
+    STRINGDOLLAR COLON string_sampler         # payload_binding_sample
+    | string_literal COLON payload_value_decl # payload_binding_value
 ;
+//    STRINGDOLLAR COLON STRINGPATH                # payload_binding_path
+//    | STRINGDOLLAR COLON STRINGPATHCONTEXTOBJ    # payload_binding_path_context_obj
+//    | STRINGDOLLAR COLON STRINGINTRINSICFUNC     # payload_binding_intrinsic_func
+//    | STRINGDOLLAR COLON variable_sample         # payload_binding_var
+//    | keyword_or_string COLON payload_value_decl # payload_binding_value
+//;
 
 payload_arr_decl: LBRACK payload_value_decl (COMMA payload_value_decl)* RBRACK | LBRACK RBRACK;
 

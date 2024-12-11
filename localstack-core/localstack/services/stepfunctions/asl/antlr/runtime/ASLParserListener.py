@@ -188,39 +188,39 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#error_decl.
-    def enterError_decl(self, ctx:ASLParser.Error_declContext):
+    # Enter a parse tree produced by ASLParser#error.
+    def enterError(self, ctx:ASLParser.ErrorContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#error_decl.
-    def exitError_decl(self, ctx:ASLParser.Error_declContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#error_path_decl.
-    def enterError_path_decl(self, ctx:ASLParser.Error_path_declContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#error_path_decl.
-    def exitError_path_decl(self, ctx:ASLParser.Error_path_declContext):
+    # Exit a parse tree produced by ASLParser#error.
+    def exitError(self, ctx:ASLParser.ErrorContext):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#cause_decl.
-    def enterCause_decl(self, ctx:ASLParser.Cause_declContext):
+    # Enter a parse tree produced by ASLParser#error_path.
+    def enterError_path(self, ctx:ASLParser.Error_pathContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#cause_decl.
-    def exitCause_decl(self, ctx:ASLParser.Cause_declContext):
+    # Exit a parse tree produced by ASLParser#error_path.
+    def exitError_path(self, ctx:ASLParser.Error_pathContext):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#cause_path_decl.
-    def enterCause_path_decl(self, ctx:ASLParser.Cause_path_declContext):
+    # Enter a parse tree produced by ASLParser#cause.
+    def enterCause(self, ctx:ASLParser.CauseContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#cause_path_decl.
-    def exitCause_path_decl(self, ctx:ASLParser.Cause_path_declContext):
+    # Exit a parse tree produced by ASLParser#cause.
+    def exitCause(self, ctx:ASLParser.CauseContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#cause_path.
+    def enterCause_path(self, ctx:ASLParser.Cause_pathContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#cause_path.
+    def exitCause_path(self, ctx:ASLParser.Cause_pathContext):
         pass
 
 
@@ -242,57 +242,30 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#seconds_path_decl_var.
-    def enterSeconds_path_decl_var(self, ctx:ASLParser.Seconds_path_decl_varContext):
+    # Enter a parse tree produced by ASLParser#seconds_path.
+    def enterSeconds_path(self, ctx:ASLParser.Seconds_pathContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#seconds_path_decl_var.
-    def exitSeconds_path_decl_var(self, ctx:ASLParser.Seconds_path_decl_varContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#seconds_path_decl_value.
-    def enterSeconds_path_decl_value(self, ctx:ASLParser.Seconds_path_decl_valueContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#seconds_path_decl_value.
-    def exitSeconds_path_decl_value(self, ctx:ASLParser.Seconds_path_decl_valueContext):
+    # Exit a parse tree produced by ASLParser#seconds_path.
+    def exitSeconds_path(self, ctx:ASLParser.Seconds_pathContext):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#timestamp_jsonata.
-    def enterTimestamp_jsonata(self, ctx:ASLParser.Timestamp_jsonataContext):
+    # Enter a parse tree produced by ASLParser#timestamp.
+    def enterTimestamp(self, ctx:ASLParser.TimestampContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#timestamp_jsonata.
-    def exitTimestamp_jsonata(self, ctx:ASLParser.Timestamp_jsonataContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#timestamp_string.
-    def enterTimestamp_string(self, ctx:ASLParser.Timestamp_stringContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#timestamp_string.
-    def exitTimestamp_string(self, ctx:ASLParser.Timestamp_stringContext):
+    # Exit a parse tree produced by ASLParser#timestamp.
+    def exitTimestamp(self, ctx:ASLParser.TimestampContext):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#timestamp_path_decl_var.
-    def enterTimestamp_path_decl_var(self, ctx:ASLParser.Timestamp_path_decl_varContext):
+    # Enter a parse tree produced by ASLParser#timestamp_path.
+    def enterTimestamp_path(self, ctx:ASLParser.Timestamp_pathContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#timestamp_path_decl_var.
-    def exitTimestamp_path_decl_var(self, ctx:ASLParser.Timestamp_path_decl_varContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#timestamp_path_decl_value.
-    def enterTimestamp_path_decl_value(self, ctx:ASLParser.Timestamp_path_decl_valueContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#timestamp_path_decl_value.
-    def exitTimestamp_path_decl_value(self, ctx:ASLParser.Timestamp_path_decl_valueContext):
+    # Exit a parse tree produced by ASLParser#timestamp_path.
+    def exitTimestamp_path(self, ctx:ASLParser.Timestamp_pathContext):
         pass
 
 
@@ -314,30 +287,12 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#items_path_decl_path_context_object.
-    def enterItems_path_decl_path_context_object(self, ctx:ASLParser.Items_path_decl_path_context_objectContext):
+    # Enter a parse tree produced by ASLParser#items_path_decl.
+    def enterItems_path_decl(self, ctx:ASLParser.Items_path_declContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#items_path_decl_path_context_object.
-    def exitItems_path_decl_path_context_object(self, ctx:ASLParser.Items_path_decl_path_context_objectContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#items_path_decl_path_var.
-    def enterItems_path_decl_path_var(self, ctx:ASLParser.Items_path_decl_path_varContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#items_path_decl_path_var.
-    def exitItems_path_decl_path_var(self, ctx:ASLParser.Items_path_decl_path_varContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#items_path_decl_path.
-    def enterItems_path_decl_path(self, ctx:ASLParser.Items_path_decl_pathContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#items_path_decl_path.
-    def exitItems_path_decl_path(self, ctx:ASLParser.Items_path_decl_pathContext):
+    # Exit a parse tree produced by ASLParser#items_path_decl.
+    def exitItems_path_decl(self, ctx:ASLParser.Items_path_declContext):
         pass
 
 
@@ -356,15 +311,6 @@ class ASLParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by ASLParser#max_concurrency_int.
     def exitMax_concurrency_int(self, ctx:ASLParser.Max_concurrency_intContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#max_concurrency_path_var.
-    def enterMax_concurrency_path_var(self, ctx:ASLParser.Max_concurrency_path_varContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#max_concurrency_path_var.
-    def exitMax_concurrency_path_var(self, ctx:ASLParser.Max_concurrency_path_varContext):
         pass
 
 
@@ -413,21 +359,12 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#timeout_seconds_path_decl_var.
-    def enterTimeout_seconds_path_decl_var(self, ctx:ASLParser.Timeout_seconds_path_decl_varContext):
+    # Enter a parse tree produced by ASLParser#timeout_seconds_path.
+    def enterTimeout_seconds_path(self, ctx:ASLParser.Timeout_seconds_pathContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#timeout_seconds_path_decl_var.
-    def exitTimeout_seconds_path_decl_var(self, ctx:ASLParser.Timeout_seconds_path_decl_varContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#timeout_seconds_path_decl_path.
-    def enterTimeout_seconds_path_decl_path(self, ctx:ASLParser.Timeout_seconds_path_decl_pathContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#timeout_seconds_path_decl_path.
-    def exitTimeout_seconds_path_decl_path(self, ctx:ASLParser.Timeout_seconds_path_decl_pathContext):
+    # Exit a parse tree produced by ASLParser#timeout_seconds_path.
+    def exitTimeout_seconds_path(self, ctx:ASLParser.Timeout_seconds_pathContext):
         pass
 
 
@@ -449,21 +386,12 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#heartbeat_seconds_path_decl_var.
-    def enterHeartbeat_seconds_path_decl_var(self, ctx:ASLParser.Heartbeat_seconds_path_decl_varContext):
+    # Enter a parse tree produced by ASLParser#heartbeat_seconds_path.
+    def enterHeartbeat_seconds_path(self, ctx:ASLParser.Heartbeat_seconds_pathContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#heartbeat_seconds_path_decl_var.
-    def exitHeartbeat_seconds_path_decl_var(self, ctx:ASLParser.Heartbeat_seconds_path_decl_varContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#heartbeat_seconds_path_decl_path.
-    def enterHeartbeat_seconds_path_decl_path(self, ctx:ASLParser.Heartbeat_seconds_path_decl_pathContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#heartbeat_seconds_path_decl_path.
-    def exitHeartbeat_seconds_path_decl_path(self, ctx:ASLParser.Heartbeat_seconds_path_decl_pathContext):
+    # Exit a parse tree produced by ASLParser#heartbeat_seconds_path.
+    def exitHeartbeat_seconds_path(self, ctx:ASLParser.Heartbeat_seconds_pathContext):
         pass
 
 
@@ -485,39 +413,12 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#payload_binding_path.
-    def enterPayload_binding_path(self, ctx:ASLParser.Payload_binding_pathContext):
+    # Enter a parse tree produced by ASLParser#payload_binding_sample.
+    def enterPayload_binding_sample(self, ctx:ASLParser.Payload_binding_sampleContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#payload_binding_path.
-    def exitPayload_binding_path(self, ctx:ASLParser.Payload_binding_pathContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#payload_binding_path_context_obj.
-    def enterPayload_binding_path_context_obj(self, ctx:ASLParser.Payload_binding_path_context_objContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#payload_binding_path_context_obj.
-    def exitPayload_binding_path_context_obj(self, ctx:ASLParser.Payload_binding_path_context_objContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#payload_binding_intrinsic_func.
-    def enterPayload_binding_intrinsic_func(self, ctx:ASLParser.Payload_binding_intrinsic_funcContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#payload_binding_intrinsic_func.
-    def exitPayload_binding_intrinsic_func(self, ctx:ASLParser.Payload_binding_intrinsic_funcContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#payload_binding_var.
-    def enterPayload_binding_var(self, ctx:ASLParser.Payload_binding_varContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#payload_binding_var.
-    def exitPayload_binding_var(self, ctx:ASLParser.Payload_binding_varContext):
+    # Exit a parse tree produced by ASLParser#payload_binding_sample.
+    def exitPayload_binding_sample(self, ctx:ASLParser.Payload_binding_sampleContext):
         pass
 
 

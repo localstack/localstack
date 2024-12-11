@@ -26,7 +26,11 @@ from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 JSONPATH_ROOT_PATH: Final[str] = "$"
 
 
-class String(EvalComponent, abc.ABC): ...
+class String(EvalComponent, abc.ABC):
+    literal_value: Final[str]
+
+    def __init__(self, literal_value: str):
+        self.literal_value = literal_value
 
 
 class StringExpression(String, abc.ABC): ...
@@ -36,11 +40,6 @@ class StringSampler(StringExpression, abc.ABC): ...
 
 
 class StringLiteral(String):
-    literal_value: Final[str]
-
-    def __init__(self, literal_value: str):
-        self.literal_value = literal_value
-
     def _eval_body(self, env: Environment) -> None:
         env.stack.append(self.literal_value)
 
@@ -49,10 +48,11 @@ class StringJsonPath(StringSampler):
     json_path: Final[str]
 
     def __init__(self, json_path: str):
+        super().__init__(literal_value=json_path)
         self.json_path = json_path
 
     def _eval_body(self, env: Environment) -> None:
-        input_value: Any = env.stack.pop()
+        input_value: Any = env.stack[-1]
         if self.json_path == JSONPATH_ROOT_PATH:
             output_value = input_value
         else:
@@ -77,7 +77,7 @@ class StringVariableSample(StringSampler):
     expression: Final[str]
 
     def __init__(self, query_language_mode: QueryLanguageMode, expression: str):
-        super().__init__()
+        super().__init__(literal_value=expression)
         self.query_language_mode = query_language_mode
         self.expression = expression
 
@@ -114,6 +114,7 @@ class StringIntrinsicFunction(StringExpression):
     function: Final[Function]
 
     def __init__(self, intrinsic_function_derivation: str) -> None:
+        super().__init__(literal_value=intrinsic_function_derivation)
         self.intrinsic_function_derivation = intrinsic_function_derivation
         self.function, _ = IntrinsicParser.parse(intrinsic_function_derivation)
 
@@ -125,7 +126,7 @@ class StringJSONata(StringExpression):
     expression: Final[str]
 
     def __init__(self, expression: str):
-        super().__init__()
+        super().__init__(literal_value=expression)
         # TODO: check for illegal functions ($, $$, $eval)
         self.expression = expression
 
