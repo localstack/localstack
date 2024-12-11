@@ -14,13 +14,12 @@ from tests.aws.services.stepfunctions.templates.services.services_templates impo
 )
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestTaskLambda:
     @markers.aws.validated
     def test_invoke_bytes_payload(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         sfn_snapshot,
@@ -41,8 +40,8 @@ class TestTaskLambda:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -53,7 +52,7 @@ class TestTaskLambda:
     def test_invoke_string_payload(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         sfn_snapshot,
@@ -74,8 +73,8 @@ class TestTaskLambda:
 
         exec_input = json.dumps("HelloWorld")
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -98,7 +97,7 @@ class TestTaskLambda:
     def test_invoke_json_values(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         sfn_snapshot,
@@ -120,8 +119,8 @@ class TestTaskLambda:
 
         exec_input = json.dumps(json_value)
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -132,7 +131,7 @@ class TestTaskLambda:
     def test_invoke_pipe(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         sfn_snapshot,
@@ -164,8 +163,8 @@ class TestTaskLambda:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -176,7 +175,7 @@ class TestTaskLambda:
     def test_lambda_task_filter_parameters_input(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         sfn_snapshot,
@@ -196,8 +195,8 @@ class TestTaskLambda:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,

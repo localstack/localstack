@@ -51,15 +51,16 @@ TYPE_COMPARISONS: Final[list[tuple[Any, bool]]] = [
 
 
 def create_and_test_comparison_function(
-    stepfunctions_client,
-    create_iam_role_for_sfn,
+    target_aws_client,
+    create_state_machine_iam_role,
     create_state_machine,
     sfn_snapshot,
     comparison_func_name: str,
     comparisons: list[tuple[Any, Any]],
     add_literal_value: bool = True,
 ):
-    snf_role_arn = create_iam_role_for_sfn()
+    stepfunctions_client = target_aws_client.stepfunctions
+    snf_role_arn = create_state_machine_iam_role(target_aws_client)
     sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
     base_sm_name: str = f"statemachine_{short_uid()}"
@@ -80,7 +81,10 @@ def create_and_test_comparison_function(
             new_definition_str = definition_str
 
         creation_resp = create_state_machine(
-            name=f"{base_sm_name}_{i}", definition=new_definition_str, roleArn=snf_role_arn
+            target_aws_client,
+            name=f"{base_sm_name}_{i}",
+            definition=new_definition_str,
+            roleArn=snf_role_arn,
         )
         state_machine_arn = creation_resp["stateMachineArn"]
 

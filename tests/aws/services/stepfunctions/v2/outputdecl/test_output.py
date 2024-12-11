@@ -43,7 +43,7 @@ class TestArgumentsBase:
         self,
         sfn_snapshot,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         template_path,
@@ -52,8 +52,8 @@ class TestArgumentsBase:
         definition = json.dumps(template)
         exec_input = json.dumps({"input_value": "string literal", "input_values": [1, 2, 3]})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -74,7 +74,7 @@ class TestArgumentsBase:
         self,
         sfn_snapshot,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         template_path,
@@ -92,8 +92,8 @@ class TestArgumentsBase:
         definition = json.dumps(template)
         exec_input = json.dumps({"input_value": "string literal", "input_values": [1, 2, 3]})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -114,7 +114,7 @@ class TestArgumentsBase:
         self,
         sfn_snapshot,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         template_path,
@@ -137,8 +137,8 @@ class TestArgumentsBase:
             }
         )
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -184,7 +184,7 @@ class TestArgumentsBase:
         self,
         sfn_snapshot,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         output_value,
@@ -195,8 +195,8 @@ class TestArgumentsBase:
 
         exec_input = json.dumps({"input_value": "stringliteral"})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,

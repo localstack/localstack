@@ -14,6 +14,9 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task import (
     lambda_eval_utils,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
+    ComputedCredentials,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceCondition,
     ResourceRuntimePart,
@@ -119,11 +122,12 @@ class StateTaskServiceLambda(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-        task_credentials: dict,
+        task_credentials: ComputedCredentials,
     ):
         lambda_eval_utils.exec_lambda_function(
             env=env,
             parameters=normalised_parameters,
             region=resource_runtime_part.region,
             account=resource_runtime_part.account,
+            credentials=task_credentials,
         )
