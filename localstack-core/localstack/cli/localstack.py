@@ -909,10 +909,10 @@ def print_profile() -> None:
             f" :bust_in_silhouette: [bold]Profile:[/bold] [blue]{', '.join(config.LOADED_PROFILES)}[/blue]"
         )
 
+
 def print_app() -> None:
-    console.print(
-        f" :globe_with_meridians: [bold]App:[/bold] \033https://app.localstack.cloud\033"
-    )
+    console.print(" :globe_with_meridians: [bold]App:[/bold] \033https://app.localstack.cloud\033")
+
 
 def print_banner() -> None:
     print(BANNER)
