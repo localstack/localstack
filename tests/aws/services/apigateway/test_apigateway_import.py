@@ -868,6 +868,13 @@ class TestApiGatewayImportRestApi:
                 ),
             ]
         )
+        snapshot.add_transformer(
+            snapshot.transform.regex(
+                regex="petstore.execute-api.us-west-1",
+                replacement="<external-aws-endpoint>",
+            ),
+            priority=-10,
+        )
         spec_file = load_file(TEST_OPENAPI_COGNITO_AUTH)
         # the authorizer does not need to exist in AWS
         spec_file = spec_file.replace(
