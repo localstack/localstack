@@ -480,7 +480,6 @@ class TestApiGatewayImportRestApi:
         apigw_create_rest_api,
         aws_client,
         snapshot,
-        apigateway_placeholder_authorizer_lambda_invocation_arn,
         apigw_snapshot_imported_resources,
         apigw_deploy_rest_api,
     ):

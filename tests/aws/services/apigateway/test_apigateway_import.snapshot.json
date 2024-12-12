@@ -2537,7 +2537,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_api_with_base_path_oas30[prepend]": {
-    "recorded-date": "15-04-2024, 21:36:04",
+    "recorded-date": "12-12-2024, 22:45:00",
     "recorded-content": {
       "put-rest-api-oas30-srv-var": {
         "apiKeySource": "HEADER",
@@ -2790,6 +2790,9 @@
         "rootResourceId": "<id:2>",
         "tags": {},
         "version": "2.0",
+        "warnings": [
+          "Invalid format for 'requestParameters'. Expected type string for property 'integration.request.header.nothing' of resource '/base-url/part/test' and method 'GET' but got 'true'"
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2846,7 +2849,8 @@
           },
           "passthroughBehavior": "WHEN_NO_MATCH",
           "requestParameters": {
-            "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+            "integration.request.header.X-Amz-Invocation-Type": "'Event'",
+            "integration.request.header.double-single": "'True'"
           },
           "requestTemplates": {
             "application/json": {
@@ -2898,7 +2902,8 @@
         },
         "passthroughBehavior": "WHEN_NO_MATCH",
         "requestParameters": {
-          "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+          "integration.request.header.X-Amz-Invocation-Type": "'Event'",
+          "integration.request.header.double-single": "'True'"
         },
         "requestTemplates": {
           "application/json": {
@@ -3022,7 +3027,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_api_with_base_path_oas30[split]": {
-    "recorded-date": "15-04-2024, 21:36:26",
+    "recorded-date": "12-12-2024, 22:45:36",
     "recorded-content": {
       "put-rest-api-oas30-srv-var": {
         "apiKeySource": "HEADER",
@@ -3269,6 +3274,9 @@
         "rootResourceId": "<id:2>",
         "tags": {},
         "version": "2.0",
+        "warnings": [
+          "Invalid format for 'requestParameters'. Expected type string for property 'integration.request.header.nothing' of resource '/part/test' and method 'GET' but got 'true'"
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3319,7 +3327,8 @@
           },
           "passthroughBehavior": "WHEN_NO_MATCH",
           "requestParameters": {
-            "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+            "integration.request.header.X-Amz-Invocation-Type": "'Event'",
+            "integration.request.header.double-single": "'True'"
           },
           "requestTemplates": {
             "application/json": {
@@ -3371,7 +3380,8 @@
         },
         "passthroughBehavior": "WHEN_NO_MATCH",
         "requestParameters": {
-          "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+          "integration.request.header.X-Amz-Invocation-Type": "'Event'",
+          "integration.request.header.double-single": "'True'"
         },
         "requestTemplates": {
           "application/json": {
@@ -3495,7 +3505,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_api_with_base_path_oas30[ignore]": {
-    "recorded-date": "15-04-2024, 21:35:47",
+    "recorded-date": "12-12-2024, 22:44:26",
     "recorded-content": {
       "put-rest-api-oas30-srv-var": {
         "apiKeySource": "HEADER",
@@ -3742,6 +3752,9 @@
         "rootResourceId": "<id:2>",
         "tags": {},
         "version": "2.0",
+        "warnings": [
+          "Invalid format for 'requestParameters'. Expected type string for property 'integration.request.header.nothing' of resource '/test' and method 'GET' but got 'true'"
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3786,7 +3799,8 @@
           },
           "passthroughBehavior": "WHEN_NO_MATCH",
           "requestParameters": {
-            "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+            "integration.request.header.X-Amz-Invocation-Type": "'Event'",
+            "integration.request.header.double-single": "'True'"
           },
           "requestTemplates": {
             "application/json": {
@@ -3838,7 +3852,8 @@
         },
         "passthroughBehavior": "WHEN_NO_MATCH",
         "requestParameters": {
-          "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+          "integration.request.header.X-Amz-Invocation-Type": "'Event'",
+          "integration.request.header.double-single": "'True'"
         },
         "requestTemplates": {
           "application/json": {
