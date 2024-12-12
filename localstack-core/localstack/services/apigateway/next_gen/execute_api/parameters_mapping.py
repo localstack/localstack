@@ -52,6 +52,15 @@ class ParametersMapper:
         case_sensitive_headers = build_multi_value_headers(invocation_request["headers"])
 
         for integration_mapping, request_mapping in request_parameters.items():
+            # TODO: remove this once the validation has been added to the provider, to avoid breaking
+            if not isinstance(integration_mapping, str) or not isinstance(request_mapping, str):
+                LOG.warning(
+                    "Wrong parameter mapping value type: %s: %s. They should both be string. Skipping this mapping.",
+                    integration_mapping,
+                    request_mapping,
+                )
+                continue
+
             integration_param_location, param_name = integration_mapping.removeprefix(
                 "integration.request."
             ).split(".")
