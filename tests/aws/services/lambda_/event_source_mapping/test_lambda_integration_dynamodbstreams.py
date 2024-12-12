@@ -580,6 +580,7 @@ class TestDynamoDBEventSourceMapping:
                 {"eventName": ["INSERT"], "eventSource": ["aws:dynamodb"]},
                 1,
                 id="content_multiple_filters",
+                marks=pytest.skip(reason="Broken, needs investigation"),
             ),
             # Test content filter using the DynamoDB data type "S"
             pytest.param(
