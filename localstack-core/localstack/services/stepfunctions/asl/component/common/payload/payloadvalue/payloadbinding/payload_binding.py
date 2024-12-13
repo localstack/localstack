@@ -15,9 +15,9 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.common.payload.payloadvalue.payload_value import (
     PayloadValue,
 )
-from localstack.services.stepfunctions.asl.component.common.string.string import (
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
+    StringExpressionSimple,
     StringJsonPath,
-    StringSampler,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
@@ -40,18 +40,18 @@ class PayloadBinding(PayloadValue, abc.ABC):
         env.stack.append(cnt)
 
 
-class PayloadBindingSample(PayloadBinding):
-    string_sampler: Final[StringSampler]
+class PayloadBindingStringExpressionSimple(PayloadBinding):
+    string_expression_simple: Final[StringExpressionSimple]
 
-    def __init__(self, field: str, string_sampler: StringSampler):
+    def __init__(self, field: str, string_expression_simple: StringExpressionSimple):
         super().__init__(field=field)
-        self.string_sampler = string_sampler
+        self.string_expression_simple = string_expression_simple
 
     def _eval_val(self, env: Environment) -> Any:
         try:
-            self.string_sampler.eval(env=env)
+            self.string_expression_simple.eval(env=env)
         except RuntimeError as runtime_error:
-            if isinstance(self.string_sampler, StringJsonPath):
+            if isinstance(self.string_expression_simple, StringJsonPath):
                 failure_event = FailureEvent(
                     env=env,
                     error_name=StatesErrorName(typ=StatesErrorNameType.StatesRuntime),
@@ -59,7 +59,7 @@ class PayloadBindingSample(PayloadBinding):
                     event_details=EventDetails(
                         taskFailedEventDetails=TaskFailedEventDetails(
                             error=StatesErrorNameType.StatesRuntime.to_name(),
-                            cause=f"The JSONPath {self.string_sampler.literal_value} specified for the field {self.field}.$ could not be found in the input {to_json_str(env.stack[-1])}",
+                            cause=f"The JSONPath {self.string_expression_simple.literal_value} specified for the field {self.field}.$ could not be found in the input {to_json_str(env.stack[-1])}",
                         )
                     ),
                 )

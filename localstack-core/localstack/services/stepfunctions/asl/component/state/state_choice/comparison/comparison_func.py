@@ -3,7 +3,9 @@ from __future__ import annotations
 import abc
 from typing import Any, Final
 
-from localstack.services.stepfunctions.asl.component.common.variable_sample import VariableSample
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
+    StringVariableSample,
+)
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_operator_type import (
     ComparisonOperatorType,
 )
@@ -38,16 +40,18 @@ class ComparisonFuncValue(ComparisonFunc):
         operator.eval(env=env, value=self.value)
 
 
-class ComparisonFuncVar(ComparisonFuncValue):
+class ComparisonFuncStringVariableSample(ComparisonFuncValue):
     _COMPARISON_FUNC_VAR_VALUE: Final[str] = "$"
-    variable_sample: Final[VariableSample]
+    string_variable_sample: Final[StringVariableSample]
 
-    def __init__(self, operator_type: ComparisonOperatorType, variable_sample: VariableSample):
+    def __init__(
+        self, operator_type: ComparisonOperatorType, string_variable_sample: StringVariableSample
+    ):
         super().__init__(operator_type=operator_type, value=self._COMPARISON_FUNC_VAR_VALUE)
-        self.variable_sample = variable_sample
+        self.string_variable_sample = string_variable_sample
 
     def _eval_body(self, env: Environment) -> None:
-        self.variable_sample.eval(env=env)
+        self.string_variable_sample.eval(env=env)
         super()._eval_body(env=env)
         # Purge the outcome of the variable sampling form the
         # stack as operators do not digest the input value.

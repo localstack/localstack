@@ -61,9 +61,7 @@ state_stmt:
     | catch_decl
     | result_selector_decl
     | tolerated_failure_count_decl
-    | tolerated_failure_count_path_decl
     | tolerated_failure_percentage_decl
-    | tolerated_failure_percentage_path_decl
     | label_decl
     | result_writer_decl
     | assign_decl
@@ -98,12 +96,12 @@ default_decl: DEFAULT COLON string_literal;
 
 error_decl:
     ERROR COLON (string_jsonata | string_literal) # error
-    | ERRORPATH COLON string_expression           # error_path
+    | ERRORPATH COLON string_expression_simple    # error_path
 ;
 
 cause_decl:
     CAUSE COLON (string_jsonata | string_literal) # cause
-    | CAUSEPATH COLON string_expression           # cause_path
+    | CAUSEPATH COLON string_expression_simple    # cause_path
 ;
 
 seconds_decl:
@@ -146,31 +144,23 @@ heartbeat_seconds_decl:
     | HEARTBEATSECONDSPATH COLON string_sampler # heartbeat_seconds_path
 ;
 
-variable_sample: STRINGVAR;
-
 payload_tmpl_decl: LBRACE payload_binding (COMMA payload_binding)* RBRACE | LBRACE RBRACE;
 
 payload_binding:
-    STRINGDOLLAR COLON string_sampler         # payload_binding_sample
-    | string_literal COLON payload_value_decl # payload_binding_value
+    STRINGDOLLAR COLON string_expression_simple # payload_binding_sample
+    | string_literal COLON payload_value_decl   # payload_binding_value
 ;
-//    STRINGDOLLAR COLON STRINGPATH                # payload_binding_path
-//    | STRINGDOLLAR COLON STRINGPATHCONTEXTOBJ    # payload_binding_path_context_obj
-//    | STRINGDOLLAR COLON STRINGINTRINSICFUNC     # payload_binding_intrinsic_func
-//    | STRINGDOLLAR COLON variable_sample         # payload_binding_var
-//    | keyword_or_string COLON payload_value_decl # payload_binding_value
-//;
 
 payload_arr_decl: LBRACK payload_value_decl (COMMA payload_value_decl)* RBRACK | LBRACK RBRACK;
 
 payload_value_decl: payload_arr_decl | payload_tmpl_decl | payload_value_lit;
 
 payload_value_lit:
-    NUMBER              # payload_value_float
-    | INT               # payload_value_int
-    | (TRUE | FALSE)    # payload_value_bool
-    | NULL              # payload_value_null
-    | keyword_or_string # payload_value_str
+    NUMBER           # payload_value_float
+    | INT            # payload_value_int
+    | (TRUE | FALSE) # payload_value_bool
+    | NULL           # payload_value_null
+    | string_literal # payload_value_str
 ;
 
 assign_decl: ASSIGN COLON assign_decl_body;
@@ -184,13 +174,9 @@ assign_template_value_object:
     | LBRACE assign_template_binding (COMMA assign_template_binding)* RBRACE
 ;
 
-// TODO: add support for jsonata expression in assign declarations.
 assign_template_binding:
-    STRINGDOLLAR COLON STRINGPATH             # assign_template_binding_path
-    | STRINGDOLLAR COLON STRINGPATHCONTEXTOBJ # assign_template_binding_path_context
-    | STRINGDOLLAR COLON variable_sample      # assign_template_binding_var
-    | STRINGDOLLAR COLON STRINGINTRINSICFUNC  # assign_template_binding_intrinsic_func
-    | STRING COLON assign_template_value      # assign_template_binding_assign_value
+    STRINGDOLLAR COLON string_expression_simple  # assign_template_binding_string_expression_simple
+    | string_literal COLON assign_template_value # assign_template_binding_value
 ;
 
 assign_template_value:
@@ -205,17 +191,17 @@ assign_template_value_array:
 ;
 
 assign_template_value_terminal:
-    NUMBER              # assign_template_value_terminal_float
-    | INT               # assign_template_value_terminal_int
-    | (TRUE | FALSE)    # assign_template_value_terminal_bool
-    | NULL              # assign_template_value_terminal_null
-    | STRINGJSONATA     # assign_template_value_terminal_expression
-    | keyword_or_string # assign_template_value_terminal_str
+    NUMBER           # assign_template_value_terminal_float
+    | INT            # assign_template_value_terminal_int
+    | (TRUE | FALSE) # assign_template_value_terminal_bool
+    | NULL           # assign_template_value_terminal_null
+    | string_jsonata # assign_template_value_terminal_string_jsonata
+    | string_literal # assign_template_value_terminal_string_literal
 ;
 
 arguments_decl:
-    ARGUMENTS COLON jsonata_template_value_object # arguments_object
-    | ARGUMENTS COLON STRINGJSONATA               # arguments_expr
+    ARGUMENTS COLON jsonata_template_value_object # arguments_jsonata_template_value_object
+    | ARGUMENTS COLON string_jsonata              # arguments_string_jsonata
 ;
 
 output_decl: OUTPUT COLON jsonata_template_value;
@@ -225,7 +211,7 @@ jsonata_template_value_object:
     | LBRACE jsonata_template_binding (COMMA jsonata_template_binding)* RBRACE
 ;
 
-jsonata_template_binding: keyword_or_string COLON jsonata_template_value;
+jsonata_template_binding: string_literal COLON jsonata_template_value;
 
 jsonata_template_value:
     jsonata_template_value_object
@@ -239,12 +225,12 @@ jsonata_template_value_array:
 ;
 
 jsonata_template_value_terminal:
-    NUMBER              # jsonata_template_value_terminal_float
-    | INT               # jsonata_template_value_terminal_int
-    | (TRUE | FALSE)    # jsonata_template_value_terminal_bool
-    | NULL              # jsonata_template_value_terminal_null
-    | STRINGJSONATA     # jsonata_template_value_terminal_expression
-    | keyword_or_string # jsonata_template_value_terminal_str
+    NUMBER           # jsonata_template_value_terminal_float
+    | INT            # jsonata_template_value_terminal_int
+    | (TRUE | FALSE) # jsonata_template_value_terminal_bool
+    | NULL           # jsonata_template_value_terminal_null
+    | string_jsonata # jsonata_template_value_terminal_string_jsonata
+    | string_literal # jsonata_template_value_terminal_string_literal
 ;
 
 result_selector_decl: RESULTSELECTOR COLON payload_tmpl_decl;
@@ -272,17 +258,13 @@ comparison_composite:
     choice_operator COLON (choice_rule | LBRACK choice_rule (COMMA choice_rule)* RBRACK)
 ; // TODO: this allows for Next definitions in nested choice_rules, is this supported at parse time?
 
-variable_decl:
-    VARIABLE COLON STRINGPATH             # variable_decl_path
-    | VARIABLE COLON variable_sample      # variable_decl_var
-    | VARIABLE COLON STRINGPATHCONTEXTOBJ # variable_decl_path_context_object
-;
+variable_decl: VARIABLE COLON string_sampler;
 
 comparison_func:
-    CONDITION COLON (TRUE | FALSE)        # condition_lit
-    | CONDITION COLON STRINGJSONATA       # condition_expr
-    | comparison_op COLON variable_sample # comparison_func_var
-    | comparison_op COLON json_value_decl # comparison_func_value
+    CONDITION COLON (TRUE | FALSE)               # condition_lit
+    | CONDITION COLON string_jsonata             # condition_string_jsonata
+    | comparison_op COLON string_variable_sample # comparison_func_string_variable_sample
+    | comparison_op COLON json_value_decl        # comparison_func_value
 ;
 
 branches_decl: BRANCHES COLON LBRACK program_decl (COMMA program_decl)* RBRACK;
@@ -326,48 +308,35 @@ reader_config_field:
     | csv_header_location_decl
     | csv_headers_decl
     | max_items_decl
-    | max_items_path_decl
 ;
 
-input_type_decl: INPUTTYPE COLON keyword_or_string;
+input_type_decl: INPUTTYPE COLON string_literal;
 
-csv_header_location_decl: CSVHEADERLOCATION COLON keyword_or_string;
+csv_header_location_decl: CSVHEADERLOCATION COLON string_literal;
 
 csv_headers_decl:
-    CSVHEADERS COLON LBRACK keyword_or_string (COMMA keyword_or_string)* RBRACK
+    CSVHEADERS COLON LBRACK string_literal (COMMA string_literal)* RBRACK
 ; // TODO: are empty "CSVHeaders" list values supported?
 
 max_items_decl:
-    MAXITEMS COLON STRINGJSONATA # max_items_jsonata
-    | MAXITEMS COLON INT         # max_items_int
-;
-
-max_items_path_decl:
-    MAXITEMSPATH COLON variable_sample # max_items_path_var
-    | MAXITEMSPATH COLON STRINGPATH    # max_items_path
+    MAXITEMS COLON string_jsonata       # max_items_string_jsonata
+    | MAXITEMS COLON INT                # max_items_int
+    | MAXITEMSPATH COLON string_sampler # max_items_path
 ;
 
 tolerated_failure_count_decl:
-    TOLERATEDFAILURECOUNT COLON STRINGJSONATA # tolerated_failure_count_jsonata
-    | TOLERATEDFAILURECOUNT COLON INT         # tolerated_failure_count_int
-;
-
-tolerated_failure_count_path_decl:
-    TOLERATEDFAILURECOUNTPATH COLON variable_sample # tolerated_failure_count_path_var
-    | TOLERATEDFAILURECOUNTPATH COLON STRINGPATH    # tolerated_failure_count_path
+    TOLERATEDFAILURECOUNT COLON string_jsonata       # tolerated_failure_count_string_jsonata
+    | TOLERATEDFAILURECOUNT COLON INT                # tolerated_failure_count_int
+    | TOLERATEDFAILURECOUNTPATH COLON string_sampler # tolerated_failure_count_path
 ;
 
 tolerated_failure_percentage_decl:
-    TOLERATEDFAILUREPERCENTAGE COLON STRINGJSONATA # tolerated_failure_percentage_jsonata
-    | TOLERATEDFAILUREPERCENTAGE COLON NUMBER      # tolerated_failure_percentage_number
+    TOLERATEDFAILUREPERCENTAGE COLON string_jsonata       # tolerated_failure_percentage_string_jsonata
+    | TOLERATEDFAILUREPERCENTAGE COLON NUMBER             # tolerated_failure_percentage_number
+    | TOLERATEDFAILUREPERCENTAGEPATH COLON string_sampler # tolerated_failure_percentage_path
 ;
 
-tolerated_failure_percentage_path_decl:
-    TOLERATEDFAILUREPERCENTAGEPATH COLON variable_sample # tolerated_failure_percentage_path_var
-    | TOLERATEDFAILUREPERCENTAGEPATH COLON STRINGPATH    # tolerated_failure_percentage_path
-;
-
-label_decl: LABEL COLON keyword_or_string;
+label_decl: LABEL COLON string_literal;
 
 result_writer_decl:
     RESULTWRITER COLON LBRACE result_writer_field (COMMA result_writer_field)* RBRACE
@@ -477,11 +446,11 @@ states_error_name:
     | ERRORNAMEStatesQueryEvaluationError
 ;
 
-error_name: states_error_name | keyword_or_string;
+error_name: states_error_name | string_literal;
 
 json_obj_decl: LBRACE json_binding (COMMA json_binding)* RBRACE | LBRACE RBRACE;
 
-json_binding: keyword_or_string COLON json_value_decl;
+json_binding: string_literal COLON json_value_decl;
 
 json_arr_decl: LBRACK json_value_decl (COMMA json_value_decl)* RBRACK | LBRACK RBRACK;
 
@@ -494,11 +463,12 @@ json_value_decl:
     | json_binding
     | json_arr_decl
     | json_obj_decl
-    | keyword_or_string
+    | string_literal
 ;
 
-string_sampler    : string_jsonpath | string_context_path | string_variable_sample;
-string_expression : string_sampler | string_intrinsic_function | string_jsonata;
+string_sampler           : string_jsonpath | string_context_path | string_variable_sample;
+string_expression_simple : string_sampler | string_intrinsic_function;
+string_expression        : string_expression_simple | string_jsonata;
 
 string_jsonpath           : STRINGPATH;
 string_context_path       : STRINGPATHCONTEXTOBJ;
@@ -512,11 +482,7 @@ string_literal:
     | comparison_op
     | choice_operator
     | states_error_name
-    | string_jsonpath
-    | string_context_path
-    | string_variable_sample
-    | string_intrinsic_function
-    | string_jsonata
+    | string_expression
 ;
 
 soft_string_keyword:
@@ -598,150 +564,4 @@ soft_string_keyword:
     | FULL
     | NONE
     | CATCH
-;
-
-keyword_or_string:
-    STRINGDOLLAR
-    | STRINGINTRINSICFUNC
-    | STRINGVAR
-    | STRINGPATHCONTEXTOBJ
-    | STRINGPATH
-    | STRINGJSONATA
-    | STRING
-    //
-    | QUERYLANGUAGE
-    | ASSIGN
-    | ARGUMENTS
-    | OUTPUT
-    | COMMENT
-    | STATES
-    | STARTAT
-    | NEXTSTATE
-    | TYPE
-    | TASK
-    | CHOICE
-    | FAIL
-    | SUCCEED
-    | PASS
-    | WAIT
-    | PARALLEL
-    | MAP
-    | CHOICES
-    | CONDITION
-    | VARIABLE
-    | DEFAULT
-    | BRANCHES
-    | AND
-    | BOOLEANEQUALS
-    | BOOLEANQUALSPATH
-    | ISBOOLEAN
-    | ISNULL
-    | ISNUMERIC
-    | ISPRESENT
-    | ISSTRING
-    | ISTIMESTAMP
-    | NOT
-    | NUMERICEQUALS
-    | NUMERICEQUALSPATH
-    | NUMERICGREATERTHAN
-    | NUMERICGREATERTHANPATH
-    | NUMERICGREATERTHANEQUALS
-    | NUMERICGREATERTHANEQUALSPATH
-    | NUMERICLESSTHAN
-    | NUMERICLESSTHANPATH
-    | NUMERICLESSTHANEQUALS
-    | NUMERICLESSTHANEQUALSPATH
-    | OR
-    | STRINGEQUALS
-    | STRINGEQUALSPATH
-    | STRINGGREATERTHAN
-    | STRINGGREATERTHANPATH
-    | STRINGGREATERTHANEQUALS
-    | STRINGGREATERTHANEQUALSPATH
-    | STRINGLESSTHAN
-    | STRINGLESSTHANPATH
-    | STRINGLESSTHANEQUALS
-    | STRINGLESSTHANEQUALSPATH
-    | STRINGMATCHES
-    | TIMESTAMPEQUALS
-    | TIMESTAMPEQUALSPATH
-    | TIMESTAMPGREATERTHAN
-    | TIMESTAMPGREATERTHANPATH
-    | TIMESTAMPGREATERTHANEQUALS
-    | TIMESTAMPGREATERTHANEQUALSPATH
-    | TIMESTAMPLESSTHAN
-    | TIMESTAMPLESSTHANPATH
-    | TIMESTAMPLESSTHANEQUALS
-    | TIMESTAMPLESSTHANEQUALSPATH
-    | SECONDSPATH
-    | SECONDS
-    | TIMESTAMPPATH
-    | TIMESTAMP
-    | TIMEOUTSECONDS
-    | TIMEOUTSECONDSPATH
-    | HEARTBEATSECONDS
-    | HEARTBEATSECONDSPATH
-    | PROCESSORCONFIG
-    | MODE
-    | INLINE
-    | DISTRIBUTED
-    | EXECUTIONTYPE
-    | STANDARD
-    | ITEMS
-    | ITEMPROCESSOR
-    | ITERATOR
-    | ITEMSELECTOR
-    | MAXCONCURRENCY
-    | MAXCONCURRENCYPATH
-    | RESOURCE
-    | INPUTPATH
-    | OUTPUTPATH
-    | ITEMSPATH
-    | RESULTPATH
-    | RESULT
-    | PARAMETERS
-    | CREDENTIALS
-    | RESULTSELECTOR
-    | ITEMREADER
-    | READERCONFIG
-    | INPUTTYPE
-    | CSVHEADERLOCATION
-    | CSVHEADERS
-    | MAXITEMS
-    | MAXITEMSPATH
-    | TOLERATEDFAILURECOUNT
-    | TOLERATEDFAILURECOUNTPATH
-    | TOLERATEDFAILUREPERCENTAGE
-    | TOLERATEDFAILUREPERCENTAGEPATH
-    | LABEL
-    | RESULTWRITER
-    | NEXT
-    | END
-    | CAUSE
-    | ERROR
-    | RETRY
-    | ERROREQUALS
-    | INTERVALSECONDS
-    | MAXATTEMPTS
-    | BACKOFFRATE
-    | MAXDELAYSECONDS
-    | JITTERSTRATEGY
-    | FULL
-    | NONE
-    | CATCH
-    | ERRORNAMEStatesALL
-    | ERRORNAMEStatesHeartbeatTimeout
-    | ERRORNAMEStatesTimeout
-    | ERRORNAMEStatesTaskFailed
-    | ERRORNAMEStatesPermissions
-    | ERRORNAMEStatesResultPathMatchFailure
-    | ERRORNAMEStatesParameterPathFailure
-    | ERRORNAMEStatesBranchFailed
-    | ERRORNAMEStatesNoChoiceMatched
-    | ERRORNAMEStatesIntrinsicFailure
-    | ERRORNAMEStatesExceedToleratedFailureThreshold
-    | ERRORNAMEStatesItemReaderFailed
-    | ERRORNAMEStatesResultWriterFailed
-    | ERRORNAMEStatesRuntime
-    | ERRORNAMEStatesQueryEvaluationError
 ;

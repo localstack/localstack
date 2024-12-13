@@ -1,6 +1,6 @@
 from typing import Final, Optional
 
-from localstack.services.stepfunctions.asl.component.common.string.string import (
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
     StringJsonPath,
     StringSampler,
 )

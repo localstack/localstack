@@ -45,7 +45,11 @@ class UsageMetricsStaticAnalyser(StaticAnalyser):
         if query_language_mode == QueryLanguageMode.JSONata:
             self.has_jsonata = True
 
-    def visitVariable_sample(self, ctx: ASLParser.Variable_sampleContext):
+    def visitString_literal(self, ctx: ASLParser.String_literalContext):
+        # Prune everything parsed as a string literal.
+        return
+
+    def visitString_variable_sample(self, ctx: ASLParser.String_variable_sampleContext):
         self.has_variable_sampling = True
 
     def visitAssign_decl(self, ctx: ASLParser.Assign_declContext):

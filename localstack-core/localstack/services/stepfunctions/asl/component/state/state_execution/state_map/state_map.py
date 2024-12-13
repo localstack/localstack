@@ -24,7 +24,7 @@ from localstack.services.stepfunctions.asl.component.common.path.result_path imp
 from localstack.services.stepfunctions.asl.component.common.result_selector import ResultSelector
 from localstack.services.stepfunctions.asl.component.common.retry.retry_decl import RetryDecl
 from localstack.services.stepfunctions.asl.component.common.retry.retry_outcome import RetryOutcome
-from localstack.services.stepfunctions.asl.component.common.string.string import (
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
     JSONPATH_ROOT_PATH,
     StringJsonPath,
 )
@@ -82,8 +82,8 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     ResultWriter,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.tolerated_failure import (
-    ToleratedFailureCount,
     ToleratedFailureCountDecl,
+    ToleratedFailureCountInt,
     ToleratedFailurePercentage,
     ToleratedFailurePercentageDecl,
 )
@@ -131,7 +131,7 @@ class StateMap(ExecutionState):
         self.parameters = state_props.get(Parargs)
         self.max_concurrency_decl = state_props.get(MaxConcurrencyDecl) or MaxConcurrency()
         self.tolerated_failure_count_decl = (
-            state_props.get(ToleratedFailureCountDecl) or ToleratedFailureCount()
+            state_props.get(ToleratedFailureCountDecl) or ToleratedFailureCountInt()
         )
         self.tolerated_failure_percentage_decl = (
             state_props.get(ToleratedFailurePercentageDecl) or ToleratedFailurePercentage()

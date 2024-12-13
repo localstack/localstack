@@ -14,7 +14,9 @@ from localstack.services.stepfunctions.asl.antlt4utils.antlr4utils import Antlr4
 from localstack.services.stepfunctions.asl.component.common.query_language import (
     QueryLanguageMode,
 )
-from localstack.services.stepfunctions.asl.component.common.variable_sample import VariableSample
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
+    StringVariableSample,
+)
 from localstack.services.stepfunctions.asl.component.component import Component
 from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument import (
     FunctionArgument,
@@ -111,10 +113,10 @@ class Preprocessor(ASLIntrinsicParserVisitor):
 
     def visitFunc_arg_var(self, ctx: ASLIntrinsicParser.Func_arg_varContext) -> FunctionArgumentVar:
         expression: str = ctx.STRING_VARIABLE().getText()
-        variable_sample = VariableSample(
+        string_variable_sample = StringVariableSample(
             query_language_mode=QueryLanguageMode.JSONPath, expression=expression
         )
-        return FunctionArgumentVar(variable_sample=variable_sample)
+        return FunctionArgumentVar(string_variable_sample=string_variable_sample)
 
     def visitFunc_arg_func_decl(
         self, ctx: ASLIntrinsicParser.Func_arg_func_declContext

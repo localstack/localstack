@@ -18,7 +18,9 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.common.jsonata.jsonata_template_value_array import (
     JSONataTemplateValueArray,
 )
-from localstack.services.stepfunctions.asl.component.common.string.string import StringJSONata
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
+    StringJSONata,
+)
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails

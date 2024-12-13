@@ -38,7 +38,7 @@ from localstack.services.stepfunctions.asl.component.common.query_language impor
     QueryLanguage,
     QueryLanguageMode,
 )
-from localstack.services.stepfunctions.asl.component.common.string.string import (
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
     JSONPATH_ROOT_PATH,
     StringJsonPath,
 )

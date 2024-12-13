@@ -4,7 +4,6 @@ from typing import Any, Final
 
 from localstack.services.stepfunctions.asl.component.common.query_language import QueryLanguageMode
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
-from localstack.services.stepfunctions.asl.component.intrinsic.function.function import Function
 from localstack.services.stepfunctions.asl.component.intrinsic.jsonata import (
     get_intrinsic_functions_declarations,
 )
@@ -20,26 +19,25 @@ from localstack.services.stepfunctions.asl.jsonata.jsonata import (
 from localstack.services.stepfunctions.asl.jsonata.validations import (
     validate_jsonata_expression_output,
 )
-from localstack.services.stepfunctions.asl.parse.intrinsic.intrinsic_parser import IntrinsicParser
 from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 JSONPATH_ROOT_PATH: Final[str] = "$"
 
 
-class String(EvalComponent, abc.ABC):
+class StringExpression(EvalComponent, abc.ABC):
     literal_value: Final[str]
 
     def __init__(self, literal_value: str):
         self.literal_value = literal_value
 
 
-class StringExpression(String, abc.ABC): ...
+class StringExpressionSimple(StringExpression, abc.ABC): ...
 
 
-class StringSampler(StringExpression, abc.ABC): ...
+class StringSampler(StringExpressionSimple, abc.ABC): ...
 
 
-class StringLiteral(String):
+class StringLiteral(StringExpression):
     def _eval_body(self, env: Environment) -> None:
         env.stack.append(self.literal_value)
 
@@ -68,8 +66,12 @@ class StringContextPath(StringJsonPath):
 
     def _eval_body(self, env: Environment) -> None:
         input_value = env.states.context_object.context_object_data
-        env.stack.append(input_value)
-        super()._eval_body(env=env)
+        if self.json_path == JSONPATH_ROOT_PATH:
+            output_value = input_value
+        else:
+            output_value = extract_json(self.json_path, input_value)
+        # TODO: introduce copy on write approach
+        env.stack.append(copy.deepcopy(output_value))
 
 
 class StringVariableSample(StringSampler):
@@ -109,14 +111,14 @@ class StringVariableSample(StringSampler):
         env.stack.append(result)
 
 
-class StringIntrinsicFunction(StringExpression):
+class StringIntrinsicFunction(StringExpressionSimple):
     intrinsic_function_derivation: Final[str]
-    function: Final[Function]
+    function: Final[EvalComponent]
 
-    def __init__(self, intrinsic_function_derivation: str) -> None:
+    def __init__(self, intrinsic_function_derivation: str, function: EvalComponent) -> None:
         super().__init__(literal_value=intrinsic_function_derivation)
         self.intrinsic_function_derivation = intrinsic_function_derivation
-        self.function, _ = IntrinsicParser.parse(intrinsic_function_derivation)
+        self.function = function
 
     def _eval_body(self, env: Environment) -> None:
         self.function.eval(env=env)

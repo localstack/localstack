@@ -15,11 +15,8 @@ from localstack.services.stepfunctions.asl.component.common.assign.assign_decl_b
 )
 from localstack.services.stepfunctions.asl.component.common.assign.assign_template_binding import (
     AssignTemplateBinding,
-    AssignTemplateBindingIntrinsicFunction,
-    AssignTemplateBindingPath,
-    AssignTemplateBindingPathContext,
+    AssignTemplateBindingStringExpressionSimple,
     AssignTemplateBindingValue,
-    AssignTemplateBindingVar,
 )
 from localstack.services.stepfunctions.asl.component.common.assign.assign_template_value import (
     AssignTemplateValue,
@@ -32,8 +29,8 @@ from localstack.services.stepfunctions.asl.component.common.assign.assign_templa
 )
 from localstack.services.stepfunctions.asl.component.common.assign.assign_template_value_terminal import (
     AssignTemplateValueTerminal,
-    AssignTemplateValueTerminalExpression,
     AssignTemplateValueTerminalLit,
+    AssignTemplateValueTerminalStringJSONata,
 )
 from localstack.services.stepfunctions.asl.component.common.catch.catch_decl import CatchDecl
 from localstack.services.stepfunctions.asl.component.common.catch.catcher_decl import CatcherDecl
@@ -68,12 +65,13 @@ from localstack.services.stepfunctions.asl.component.common.jsonata.jsonata_temp
     JSONataTemplateValueObject,
 )
 from localstack.services.stepfunctions.asl.component.common.jsonata.jsonata_template_value_terminal import (
-    JSONataTemplateValueTerminalExpression,
     JSONataTemplateValueTerminalLit,
+    JSONataTemplateValueTerminalStringJSONata,
 )
 from localstack.services.stepfunctions.asl.component.common.outputdecl import Output
 from localstack.services.stepfunctions.asl.component.common.parargs import (
-    Arguments,
+    ArgumentsJSONataTemplateValueObject,
+    ArgumentsStringJSONata,
     Parameters,
     Parargs,
 )
@@ -89,7 +87,7 @@ from localstack.services.stepfunctions.asl.component.common.payload.payloadvalue
 )
 from localstack.services.stepfunctions.asl.component.common.payload.payloadvalue.payloadbinding.payload_binding import (
     PayloadBinding,
-    PayloadBindingSample,
+    PayloadBindingStringExpressionSimple,
     PayloadBindingValue,
 )
 from localstack.services.stepfunctions.asl.component.common.payload.payloadvalue.payloadtmpl.payload_tmpl import (
@@ -134,10 +132,10 @@ from localstack.services.stepfunctions.asl.component.common.retry.max_delay_seco
 from localstack.services.stepfunctions.asl.component.common.retry.retrier_decl import RetrierDecl
 from localstack.services.stepfunctions.asl.component.common.retry.retrier_props import RetrierProps
 from localstack.services.stepfunctions.asl.component.common.retry.retry_decl import RetryDecl
-from localstack.services.stepfunctions.asl.component.common.string.string import (
-    String,
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
     StringContextPath,
     StringExpression,
+    StringExpressionSimple,
     StringIntrinsicFunction,
     StringJSONata,
     StringJsonPath,
@@ -155,7 +153,6 @@ from localstack.services.stepfunctions.asl.component.common.timeouts.timeout imp
     TimeoutSecondsJSONata,
     TimeoutSecondsPath,
 )
-from localstack.services.stepfunctions.asl.component.common.variable_sample import VariableSample
 from localstack.services.stepfunctions.asl.component.component import Component
 from localstack.services.stepfunctions.asl.component.program.program import Program
 from localstack.services.stepfunctions.asl.component.program.states import States
@@ -173,13 +170,13 @@ from localstack.services.stepfunctions.asl.component.state.state_choice.comparis
     ComparisonCompositeNot,
     ComparisonCompositeOr,
     ComparisonCompositeProps,
-    ConditionJSONataExpression,
     ConditionJSONataLit,
+    ConditionStringJSONata,
 )
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_func import (
     ComparisonFunc,
+    ComparisonFuncStringVariableSample,
     ComparisonFuncValue,
-    ComparisonFuncVar,
 )
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_operator_type import (
     ComparisonOperatorType,
@@ -192,9 +189,6 @@ from localstack.services.stepfunctions.asl.component.state.state_choice.comparis
 )
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.variable import (
     Variable,
-    VariableBase,
-    VariableContextObject,
-    VariableVar,
 )
 from localstack.services.stepfunctions.asl.component.state.state_choice.default_decl import (
     DefaultDecl,
@@ -218,11 +212,10 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     InputType,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.max_items_decl import (
-    MaxItems,
     MaxItemsDecl,
-    MaxItemsJSONata,
+    MaxItemsInt,
     MaxItemsPath,
-    MaxItemsPathVar,
+    MaxItemsStringJSONata,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.reader_config_decl import (
     ReaderConfig,
@@ -264,14 +257,11 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     StateMap,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.tolerated_failure import (
-    ToleratedFailureCount,
-    ToleratedFailureCountJSONata,
+    ToleratedFailureCountInt,
     ToleratedFailureCountPath,
-    ToleratedFailureCountPathVar,
     ToleratedFailurePercentage,
-    ToleratedFailurePercentageJSONata,
     ToleratedFailurePercentagePath,
-    ToleratedFailurePercentagePathVar,
+    ToleratedFailurePercentageStringJSONata,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_parallel.branches_decl import (
     BranchesDecl,
@@ -316,6 +306,7 @@ from localstack.services.stepfunctions.asl.component.state.state_wait.wait_funct
     Timestamp,
     TimestampPath,
 )
+from localstack.services.stepfunctions.asl.parse.intrinsic.intrinsic_parser import IntrinsicParser
 from localstack.services.stepfunctions.asl.parse.typed_props import TypedProps
 
 LOG = logging.getLogger(__name__)
@@ -601,38 +592,18 @@ class Preprocessor(ASLParserVisitor):
         bool_val: bool = bool_term_rule == ASLLexer.TRUE
         return ConditionJSONataLit(literal=bool_val)
 
-    def visitCondition_expr(
-        self, ctx: ASLParser.Condition_exprContext
-    ) -> ConditionJSONataExpression:
-        self._raise_if_query_language_is_not(query_language_mode=QueryLanguageMode.JSONata, ctx=ctx)
-        expression: str = self._inner_jsonata_expr(ctx=ctx.STRINGJSONATA())
-        ja_terminal_expr = JSONataTemplateValueTerminalExpression(expression=expression)
-        return ConditionJSONataExpression(
-            jsonata_template_value_terminal_expression=ja_terminal_expr
-        )
+    def visitCondition_string_jsonata(
+        self, ctx: ASLParser.Condition_string_jsonataContext
+    ) -> ConditionStringJSONata:
+        string_jsonata: StringJSONata = self.visitString_jsonata(ctx=ctx.string_jsonata())
+        return ConditionStringJSONata(string_jsonata=string_jsonata)
 
-    def visitVariable_decl_path(self, ctx: ASLParser.Variable_decl_pathContext) -> VariableBase:
+    def visitVariable_decl(self, ctx: ASLParser.Variable_declContext) -> Variable:
         self._raise_if_query_language_is_not(
             query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
         )
-        value: str = self._inner_string_of(parse_tree=ctx.children[-1])
-        return VariableBase(value=value)
-
-    def visitVariable_decl_path_context_object(
-        self, ctx: ASLParser.Variable_decl_path_context_objectContext
-    ) -> VariableContextObject:
-        self._raise_if_query_language_is_not(
-            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
-        )
-        value: str = self._inner_string_of(parse_tree=ctx.children[-1])
-        return VariableContextObject(value=value)
-
-    def visitVariable_decl_var(self, ctx: ASLParser.Variable_decl_varContext) -> VariableVar:
-        self._raise_if_query_language_is_not(
-            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
-        )
-        variable_sample: VariableSample = self.visit(ctx.variable_sample())
-        return VariableVar(variable_sample=variable_sample)
+        string_sampler: StringSampler = self.visitString_sampler(ctx=ctx.string_sampler())
+        return Variable(string_sampler=string_sampler)
 
     def visitComparison_op(self, ctx: ASLParser.Comparison_opContext) -> ComparisonOperatorType:
         self._raise_if_query_language_is_not(
@@ -656,15 +627,19 @@ class Preprocessor(ASLParserVisitor):
         json_obj: Any = json.loads(json_str)
         return ComparisonFuncValue(operator_type=comparison_op, value=json_obj)
 
-    def visitComparison_func_var(
-        self, ctx: ASLParser.Comparison_func_varContext
-    ) -> ComparisonFuncVar:
+    def visitComparison_func_string_variable_sample(
+        self, ctx: ASLParser.Comparison_func_string_variable_sampleContext
+    ) -> ComparisonFuncStringVariableSample:
         self._raise_if_query_language_is_not(
             query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
         )
         comparison_op: ComparisonOperatorType = self.visit(ctx.comparison_op())
-        variable_sample: VariableSample = self.visit(ctx.variable_sample())
-        return ComparisonFuncVar(operator_type=comparison_op, variable_sample=variable_sample)
+        string_variable_sample: StringVariableSample = self.visitString_variable_sample(
+            ctx.string_variable_sample()
+        )
+        return ComparisonFuncStringVariableSample(
+            operator_type=comparison_op, string_variable_sample=string_variable_sample
+        )
 
     def visitDefault_decl(self, ctx: ASLParser.Default_declContext) -> DefaultDecl:
         state_name = self._inner_string_of(parse_tree=ctx.string_literal())
@@ -853,7 +828,7 @@ class Preprocessor(ASLParserVisitor):
         return ctx.children[0].symbol.type
 
     def visitTimestamp(self, ctx: ASLParser.TimestampContext) -> Timestamp:
-        string: String = self.visit(ctx.children[-1])
+        string: StringExpression = self.visit(ctx.children[-1])
         return Timestamp(string=string)
 
     def visitTimestamp_path(self, ctx: ASLParser.Timestamp_pathContext) -> TimestampPath:
@@ -959,20 +934,20 @@ class Preprocessor(ASLParserVisitor):
         )
 
     def visitInput_type_decl(self, ctx: ASLParser.Input_type_declContext) -> InputType:
-        input_type = self._inner_string_of(ctx.keyword_or_string())
+        input_type = self._inner_string_of(ctx.string_literal())
         return InputType(input_type=input_type)
 
     def visitCsv_header_location_decl(
         self, ctx: ASLParser.Csv_header_location_declContext
     ) -> CSVHeaderLocation:
-        value = self._inner_string_of(ctx.keyword_or_string())
+        value = self._inner_string_of(ctx.string_literal())
         return CSVHeaderLocation(csv_header_location_value=value)
 
     def visitCsv_headers_decl(self, ctx: ASLParser.Csv_headers_declContext) -> CSVHeaders:
         csv_headers: list[str] = list()
         for child in ctx.children[3:-1]:
             maybe_str = Antlr4Utils.is_production(
-                pt=child, rule_index=ASLParser.RULE_keyword_or_string
+                pt=child, rule_index=ASLParser.RULE_string_literal
             )
             if maybe_str is not None:
                 csv_headers.append(self._inner_string_of(maybe_str))
@@ -983,41 +958,36 @@ class Preprocessor(ASLParserVisitor):
         self._raise_if_query_language_is_not(
             query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
         )
-        path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
-        return MaxItemsPath(path=path)
+        string_sampler: StringSampler = self.visitString_sampler(ctx=ctx.string_sampler())
+        return MaxItemsPath(string_sampler=string_sampler)
 
-    def visitMax_items_path_var(self, ctx: ASLParser.Max_items_path_varContext) -> MaxItemsPathVar:
-        self._raise_if_query_language_is_not(
-            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
-        )
-        variable_sample: VariableSample = self.visit(ctx.variable_sample())
-        return MaxItemsPathVar(variable_sample=variable_sample)
+    def visitMax_items_int(self, ctx: ASLParser.Max_items_intContext) -> MaxItemsInt:
+        return MaxItemsInt(max_items=int(ctx.INT().getText()))
 
-    def visitMax_items_int(self, ctx: ASLParser.Max_items_intContext) -> MaxItems:
-        return MaxItems(max_items=int(ctx.INT().getText()))
-
-    def visitMax_items_jsonata(self, ctx: ASLParser.Max_items_jsonataContext) -> MaxItemsJSONata:
-        expression: str = self._inner_jsonata_expr(ctx=ctx.STRINGJSONATA())
-        ja_terminal_expr = JSONataTemplateValueTerminalExpression(expression=expression)
-        return MaxItemsJSONata(jsonata_template_value_terminal_expression=ja_terminal_expr)
+    def visitMax_items_string_jsonata(
+        self, ctx: ASLParser.Max_items_string_jsonataContext
+    ) -> MaxItemsStringJSONata:
+        self._raise_if_query_language_is_not(query_language_mode=QueryLanguageMode.JSONata, ctx=ctx)
+        string_jsonata: StringJSONata = self.visitString_jsonata(ctx.string_jsonata())
+        return MaxItemsStringJSONata(string_jsonata=string_jsonata)
 
     def visitTolerated_failure_count_int(
         self, ctx: ASLParser.Tolerated_failure_count_intContext
-    ) -> ToleratedFailureCount:
+    ) -> ToleratedFailureCountInt:
         LOG.warning(
             "ToleratedFailureCount declarations currently have no effect on the program evaluation."
         )
         count = int(ctx.INT().getText())
-        return ToleratedFailureCount(tolerated_failure_count=count)
+        return ToleratedFailureCountInt(tolerated_failure_count=count)
 
-    def visitTolerated_failure_count_jsonata(
-        self, ctx: ASLParser.Tolerated_failure_count_jsonataContext
-    ) -> ToleratedFailureCountJSONata:
-        expression: str = self._inner_jsonata_expr(ctx=ctx.STRINGJSONATA())
-        ja_terminal_expr = JSONataTemplateValueTerminalExpression(expression=expression)
-        return ToleratedFailureCountJSONata(
-            jsonata_template_value_terminal_expression=ja_terminal_expr
+    def visitTolerated_failure_count_string_jsonata(
+        self, ctx: ASLParser.Tolerated_failure_count_string_jsonataContext
+    ) -> ToleratedFailurePercentageStringJSONata:
+        LOG.warning(
+            "ToleratedFailureCount declarations currently have no effect on the program evaluation."
         )
+        string_jsonata: StringJSONata = self.visitString_jsonata(ctx=ctx.string_jsonata())
+        return ToleratedFailurePercentageStringJSONata(string_jsonata=string_jsonata)
 
     def visitTolerated_failure_count_path(
         self, ctx: ASLParser.Tolerated_failure_count_pathContext
@@ -1028,20 +998,8 @@ class Preprocessor(ASLParserVisitor):
         LOG.warning(
             "ToleratedFailureCountPath declarations currently have no effect on the program evaluation."
         )
-        path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
-        return ToleratedFailureCountPath(tolerated_failure_count_path=path)
-
-    def visitTolerated_failure_count_path_var(
-        self, ctx: ASLParser.Tolerated_failure_count_path_varContext
-    ) -> ToleratedFailureCountPathVar:
-        self._raise_if_query_language_is_not(
-            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
-        )
-        LOG.warning(
-            "ToleratedFailureCountPath declarations currently have no effect on the program evaluation."
-        )
-        variable_sample: VariableSample = self.visit(ctx.variable_sample())
-        return ToleratedFailureCountPathVar(variable_sample=variable_sample)
+        string_sampler: StringSampler = self.visitString_sampler(ctx.string_sampler())
+        return ToleratedFailureCountPath(string_sampler=string_sampler)
 
     def visitTolerated_failure_percentage_number(
         self, ctx: ASLParser.Tolerated_failure_percentage_numberContext
@@ -1052,14 +1010,14 @@ class Preprocessor(ASLParserVisitor):
         percentage = float(ctx.NUMBER().getText())
         return ToleratedFailurePercentage(tolerated_failure_percentage=percentage)
 
-    def visitTolerated_failure_percentage_jsonata(
-        self, ctx: ASLParser.Tolerated_failure_percentage_jsonataContext
-    ) -> ToleratedFailurePercentageJSONata:
-        expression: str = self._inner_jsonata_expr(ctx=ctx.STRINGJSONATA())
-        ja_terminal_expr = JSONataTemplateValueTerminalExpression(expression=expression)
-        return ToleratedFailurePercentageJSONata(
-            jsonata_template_value_terminal_expression=ja_terminal_expr
+    def visitTolerated_failure_percentage_string_jsonata(
+        self, ctx: ASLParser.Tolerated_failure_percentage_string_jsonataContext
+    ) -> ToleratedFailurePercentageStringJSONata:
+        LOG.warning(
+            "ToleratedFailurePercentage declarations currently have no effect on the program evaluation."
         )
+        string_jsonata: StringJSONata = self.visitString_jsonata(ctx=ctx.string_jsonata())
+        return ToleratedFailurePercentageStringJSONata(string_jsonata=string_jsonata)
 
     def visitTolerated_failure_percentage_path(
         self, ctx: ASLParser.Tolerated_failure_percentage_pathContext
@@ -1070,23 +1028,11 @@ class Preprocessor(ASLParserVisitor):
         LOG.warning(
             "ToleratedFailurePercentagePath declarations currently have no effect on the program evaluation."
         )
-        path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
-        return ToleratedFailurePercentagePath(tolerate_failure_percentage_path=path)
-
-    def visitTolerated_failure_percentage_path_var(
-        self, ctx: ASLParser.Tolerated_failure_percentage_path_varContext
-    ) -> ToleratedFailurePercentagePathVar:
-        self._raise_if_query_language_is_not(
-            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
-        )
-        LOG.warning(
-            "ToleratedFailurePercentagePath declarations currently have no effect on the program evaluation."
-        )
-        variable_sample: VariableSample = self.visit(ctx.variable_sample())
-        return ToleratedFailurePercentagePathVar(variable_sample=variable_sample)
+        string_sampler: StringSampler = self.visitString_sampler(ctx.string_sampler())
+        return ToleratedFailurePercentagePath(string_sampler=string_sampler)
 
     def visitLabel_decl(self, ctx: ASLParser.Label_declContext) -> Label:
-        label = self._inner_string_of(parse_tree=ctx.keyword_or_string())
+        label = self._inner_string_of(parse_tree=ctx.string_literal())
         return Label(label=label)
 
     def visitResult_writer_decl(self, ctx: ASLParser.Result_writer_declContext) -> ResultWriter:
@@ -1144,7 +1090,7 @@ class Preprocessor(ASLParserVisitor):
             return self.visit(prc)
 
         # Case CustomErrorName.
-        error_name = self._inner_string_of(parse_tree=ctx.keyword_or_string())
+        error_name = self._inner_string_of(parse_tree=ctx.string_literal())
         return CustomErrorName(error_name=error_name)
 
     def visitStates_error_name(self, ctx: ASLParser.States_error_nameContext) -> StatesErrorName:
@@ -1219,16 +1165,20 @@ class Preprocessor(ASLParserVisitor):
         return PayloadValueNull()
 
     def visitPayload_value_str(self, ctx: ASLParser.Payload_value_strContext) -> PayloadValueStr:
-        str_val = self._inner_string_of(parse_tree=ctx.keyword_or_string())
+        str_val = self._inner_string_of(parse_tree=ctx.string_literal())
         return PayloadValueStr(val=str_val)
 
     def visitPayload_binding_sample(
         self, ctx: ASLParser.Payload_binding_sampleContext
-    ) -> PayloadBindingSample:
+    ) -> PayloadBindingStringExpressionSimple:
         string_dollar: str = self._inner_string_of(parse_tree=ctx.STRINGDOLLAR())
         field = string_dollar[:-2]
-        string_sampler: StringSampler = self.visitString_sampler(ctx=ctx.string_sampler())
-        return PayloadBindingSample(field=field, string_sampler=string_sampler)
+        string_expression_simple: StringExpressionSimple = self.visitString_expression_simple(
+            ctx.string_expression_simple()
+        )
+        return PayloadBindingStringExpressionSimple(
+            field=field, string_expression_simple=string_expression_simple
+        )
 
     def visitPayload_binding_value(
         self, ctx: ASLParser.Payload_binding_valueContext
@@ -1294,13 +1244,6 @@ class Preprocessor(ASLParserVisitor):
         query_language_mode = QueryLanguageMode(value=query_language_mode_int)
         return QueryLanguage(query_language_mode=query_language_mode)
 
-    def visitVariable_sample(self, ctx: ASLParser.Variable_sampleContext) -> VariableSample:
-        query_language_mode: QueryLanguageMode = (
-            self._get_current_query_language().query_language_mode
-        )
-        expression: str = self._inner_string_of(parse_tree=ctx.STRINGVAR())
-        return VariableSample(query_language_mode=query_language_mode, expression=expression)
-
     def visitAssign_template_value_terminal_float(
         self, ctx: ASLParser.Assign_template_value_terminal_floatContext
     ) -> AssignTemplateValueTerminalLit:
@@ -1325,27 +1268,23 @@ class Preprocessor(ASLParserVisitor):
     ) -> AssignTemplateValueTerminalLit:
         return AssignTemplateValueTerminalLit(value=None)
 
-    def visitAssign_template_value_terminal_expression(
-        self, ctx: ASLParser.Assign_template_value_terminal_expressionContext
+    def visitAssign_template_value_terminal_string_jsonata(
+        self, ctx: ASLParser.Assign_template_value_terminal_string_jsonataContext
     ) -> AssignTemplateValueTerminal:
-        # Strip the start and end quote from the production literal value.
-        inner_string_value = self._inner_string_of(parse_tree=ctx.STRINGJSONATA())
         # Return a JSONata expression resolver or a suppressed depending on the current language mode.
         current_query_language = self._get_current_query_language()
         if current_query_language.query_language_mode == QueryLanguageMode.JSONata:
-            # Strip the start and end jsonata symbols {%<body>%}
-            expression_body = inner_string_value[2:-2]
-            # Often leading and trailing spaces are used around the body: remove.
-            expression = expression_body.strip()
-            return AssignTemplateValueTerminalExpression(expression=expression)
+            string_jsonata: StringJSONata = self.visitString_jsonata(ctx.string_jsonata())
+            return AssignTemplateValueTerminalStringJSONata(string_jsonata=string_jsonata)
         else:
+            inner_string_value = self._inner_string_of(parse_tree=ctx.string_jsonata())
             return AssignTemplateValueTerminalLit(value=inner_string_value)
 
-    def visitAssign_template_value_terminal_str(
-        self, ctx: ASLParser.Assign_template_value_terminal_strContext
-    ) -> AssignTemplateValueTerminalLit:
-        str_value = self._inner_string_of(parse_tree=ctx.keyword_or_string())
-        return AssignTemplateValueTerminalLit(value=str_value)
+    def visitAssign_template_value_terminal_string_literal(
+        self, ctx: ASLParser.Assign_template_value_terminal_string_literalContext
+    ) -> AssignTemplateValueTerminal:
+        string_literal = self._inner_string_of(ctx.string_literal())
+        return AssignTemplateValueTerminalLit(value=string_literal)
 
     def visitAssign_template_value(self, ctx: ASLParser.Assign_template_valueContext):
         return self.visit(ctx.children[0])
@@ -1370,47 +1309,24 @@ class Preprocessor(ASLParserVisitor):
                 bindings.append(cmp)
         return AssignTemplateValueObject(bindings=bindings)
 
-    def visitAssign_template_binding_assign_value(
-        self, ctx: ASLParser.Assign_template_binding_assign_valueContext
-    ) -> AssignTemplateBinding:
-        identifier: str = self._inner_string_of(ctx.STRING())
+    def visitAssign_template_binding_value(
+        self, ctx: ASLParser.Assign_template_binding_valueContext
+    ) -> AssignTemplateBindingValue:
+        identifier: str = self._inner_string_of(ctx.string_literal())
         assign_value: AssignTemplateValue = self.visit(ctx.assign_template_value())
         return AssignTemplateBindingValue(identifier=identifier, assign_value=assign_value)
 
-    def visitAssign_template_binding_path(
-        self, ctx: ASLParser.Assign_template_binding_pathContext
-    ) -> AssignTemplateBindingPath:
+    def visitAssign_template_binding_string_expression_simple(
+        self, ctx: ASLParser.Assign_template_binding_string_expression_simpleContext
+    ) -> AssignTemplateBindingStringExpressionSimple:
         identifier: str = self._inner_string_of(ctx.STRINGDOLLAR())
         identifier = identifier[:-2]
-        path = self._inner_string_of(parse_tree=ctx.STRINGPATH())
-        return AssignTemplateBindingPath(identifier=identifier, path=path)
-
-    def visitAssign_template_binding_path_context(
-        self, ctx: ASLParser.Assign_template_binding_path_contextContext
-    ) -> AssignTemplateBindingPathContext:
-        identifier: str = self._inner_string_of(ctx.STRINGDOLLAR())
-        identifier = identifier[:-2]
-        path = self._inner_string_of(parse_tree=ctx.STRINGPATHCONTEXTOBJ())
-        path: str = path[1:]
-        return AssignTemplateBindingPathContext(identifier=identifier, path=path)
-
-    def visitAssign_template_binding_intrinsic_func(
-        self, ctx: ASLParser.Assign_template_binding_intrinsic_funcContext
-    ) -> AssignTemplateBindingIntrinsicFunction:
-        identifier: str = self._inner_string_of(ctx.STRINGDOLLAR())
-        identifier = identifier[:-2]
-        function_literal: str = self._inner_string_of(parse_tree=ctx.STRINGINTRINSICFUNC())
-        return AssignTemplateBindingIntrinsicFunction(
-            identifier=identifier, function_literal=function_literal
+        string_expression_simple: StringExpressionSimple = self.visitString_expression_simple(
+            ctx.string_expression_simple()
         )
-
-    def visitAssign_template_binding_var(
-        self, ctx: ASLParser.Assign_template_binding_varContext
-    ) -> AssignTemplateBindingVar:
-        identifier: str = self._inner_string_of(ctx.STRINGDOLLAR())
-        identifier = identifier[:-2]
-        variable_sample: VariableSample = self.visit(ctx.variable_sample())
-        return AssignTemplateBindingVar(identifier=identifier, variable_sample=variable_sample)
+        return AssignTemplateBindingStringExpressionSimple(
+            identifier=identifier, string_expression_simple=string_expression_simple
+        )
 
     def visitAssign_decl_binding(
         self, ctx: ASLParser.Assign_decl_bindingContext
@@ -1456,17 +1372,17 @@ class Preprocessor(ASLParserVisitor):
     ) -> JSONataTemplateValueTerminalLit:
         return JSONataTemplateValueTerminalLit(value=None)
 
-    def visitJsonata_template_value_terminal_expression(
-        self, ctx: ASLParser.Jsonata_template_value_terminal_expressionContext
-    ) -> JSONataTemplateValueTerminalExpression:
-        expression: str = self._inner_jsonata_expr(ctx=ctx.STRINGJSONATA())
-        return JSONataTemplateValueTerminalExpression(expression=expression)
+    def visitJsonata_template_value_terminal_string_jsonata(
+        self, ctx: ASLParser.Jsonata_template_value_terminal_string_jsonataContext
+    ) -> JSONataTemplateValueTerminalStringJSONata:
+        string_jsonata: StringJSONata = self.visitString_jsonata(ctx.string_jsonata())
+        return JSONataTemplateValueTerminalStringJSONata(string_jsonata=string_jsonata)
 
-    def visitJsonata_template_value_terminal_str(
-        self, ctx: ASLParser.Jsonata_template_value_terminal_strContext
+    def visitJsonata_template_value_terminal_string_literal(
+        self, ctx: ASLParser.Jsonata_template_value_terminal_string_literalContext
     ) -> JSONataTemplateValueTerminalLit:
-        str_value = self._inner_string_of(parse_tree=ctx.keyword_or_string())
-        return JSONataTemplateValueTerminalLit(value=str_value)
+        string = self._inner_string_of(ctx.string_literal())
+        return JSONataTemplateValueTerminalLit(value=string)
 
     def visitJsonata_template_value(
         self, ctx: ASLParser.Jsonata_template_valueContext
@@ -1496,21 +1412,27 @@ class Preprocessor(ASLParserVisitor):
     def visitJsonata_template_binding(
         self, ctx: ASLParser.Jsonata_template_bindingContext
     ) -> JSONataTemplateBinding:
-        identifier: str = self._inner_string_of(ctx.keyword_or_string())
+        identifier: str = self._inner_string_of(ctx.string_literal())
         value: JSONataTemplateValue = self.visit(ctx.jsonata_template_value())
         return JSONataTemplateBinding(identifier=identifier, value=value)
 
-    def visitArguments_object(self, ctx: ASLParser.Arguments_objectContext) -> Arguments:
+    def visitArguments_string_jsonata(
+        self, ctx: ASLParser.Arguments_string_jsonataContext
+    ) -> ArgumentsStringJSONata:
+        self._raise_if_query_language_is_not(query_language_mode=QueryLanguageMode.JSONata, ctx=ctx)
+        string_jsonata: StringJSONata = self.visitString_jsonata(ctx.string_jsonata())
+        return ArgumentsStringJSONata(string_jsonata=string_jsonata)
+
+    def visitArguments_jsonata_template_value_object(
+        self, ctx: ASLParser.Arguments_jsonata_template_value_objectContext
+    ) -> ArgumentsJSONataTemplateValueObject:
         self._raise_if_query_language_is_not(query_language_mode=QueryLanguageMode.JSONata, ctx=ctx)
         jsonata_template_value_object: JSONataTemplateValueObject = self.visit(
             ctx.jsonata_template_value_object()
         )
-        return Arguments(jsonata_payload_value=jsonata_template_value_object)
-
-    def visitArguments_expr(self, ctx: ASLParser.Arguments_exprContext) -> Arguments:
-        expression: str = self._inner_jsonata_expr(ctx=ctx.STRINGJSONATA())
-        jsonata_template_value = JSONataTemplateValueTerminalExpression(expression=expression)
-        return Arguments(jsonata_payload_value=jsonata_template_value)
+        return ArgumentsJSONataTemplateValueObject(
+            jsonata_template_value_object=jsonata_template_value_object
+        )
 
     def visitOutput_decl(self, ctx: ASLParser.Output_declContext) -> Output:
         jsonata_template_value: JSONataTemplateValue = self.visit(ctx.jsonata_template_value())
@@ -1563,4 +1485,7 @@ class Preprocessor(ASLParserVisitor):
         intrinsic_function_derivation: str = self._inner_string_of(
             parse_tree=ctx.STRINGINTRINSICFUNC()
         )
-        return StringIntrinsicFunction(intrinsic_function_derivation=intrinsic_function_derivation)
+        function, _ = IntrinsicParser.parse(intrinsic_function_derivation)
+        return StringIntrinsicFunction(
+            intrinsic_function_derivation=intrinsic_function_derivation, function=function
+        )

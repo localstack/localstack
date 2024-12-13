@@ -395,15 +395,6 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#variable_sample.
-    def enterVariable_sample(self, ctx:ASLParser.Variable_sampleContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#variable_sample.
-    def exitVariable_sample(self, ctx:ASLParser.Variable_sampleContext):
-        pass
-
-
     # Enter a parse tree produced by ASLParser#payload_tmpl_decl.
     def enterPayload_tmpl_decl(self, ctx:ASLParser.Payload_tmpl_declContext):
         pass
@@ -530,48 +521,21 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#assign_template_binding_path.
-    def enterAssign_template_binding_path(self, ctx:ASLParser.Assign_template_binding_pathContext):
+    # Enter a parse tree produced by ASLParser#assign_template_binding_string_expression_simple.
+    def enterAssign_template_binding_string_expression_simple(self, ctx:ASLParser.Assign_template_binding_string_expression_simpleContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#assign_template_binding_path.
-    def exitAssign_template_binding_path(self, ctx:ASLParser.Assign_template_binding_pathContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#assign_template_binding_path_context.
-    def enterAssign_template_binding_path_context(self, ctx:ASLParser.Assign_template_binding_path_contextContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#assign_template_binding_path_context.
-    def exitAssign_template_binding_path_context(self, ctx:ASLParser.Assign_template_binding_path_contextContext):
+    # Exit a parse tree produced by ASLParser#assign_template_binding_string_expression_simple.
+    def exitAssign_template_binding_string_expression_simple(self, ctx:ASLParser.Assign_template_binding_string_expression_simpleContext):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#assign_template_binding_var.
-    def enterAssign_template_binding_var(self, ctx:ASLParser.Assign_template_binding_varContext):
+    # Enter a parse tree produced by ASLParser#assign_template_binding_value.
+    def enterAssign_template_binding_value(self, ctx:ASLParser.Assign_template_binding_valueContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#assign_template_binding_var.
-    def exitAssign_template_binding_var(self, ctx:ASLParser.Assign_template_binding_varContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#assign_template_binding_intrinsic_func.
-    def enterAssign_template_binding_intrinsic_func(self, ctx:ASLParser.Assign_template_binding_intrinsic_funcContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#assign_template_binding_intrinsic_func.
-    def exitAssign_template_binding_intrinsic_func(self, ctx:ASLParser.Assign_template_binding_intrinsic_funcContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#assign_template_binding_assign_value.
-    def enterAssign_template_binding_assign_value(self, ctx:ASLParser.Assign_template_binding_assign_valueContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#assign_template_binding_assign_value.
-    def exitAssign_template_binding_assign_value(self, ctx:ASLParser.Assign_template_binding_assign_valueContext):
+    # Exit a parse tree produced by ASLParser#assign_template_binding_value.
+    def exitAssign_template_binding_value(self, ctx:ASLParser.Assign_template_binding_valueContext):
         pass
 
 
@@ -629,39 +593,39 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#assign_template_value_terminal_expression.
-    def enterAssign_template_value_terminal_expression(self, ctx:ASLParser.Assign_template_value_terminal_expressionContext):
+    # Enter a parse tree produced by ASLParser#assign_template_value_terminal_string_jsonata.
+    def enterAssign_template_value_terminal_string_jsonata(self, ctx:ASLParser.Assign_template_value_terminal_string_jsonataContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#assign_template_value_terminal_expression.
-    def exitAssign_template_value_terminal_expression(self, ctx:ASLParser.Assign_template_value_terminal_expressionContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#assign_template_value_terminal_str.
-    def enterAssign_template_value_terminal_str(self, ctx:ASLParser.Assign_template_value_terminal_strContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#assign_template_value_terminal_str.
-    def exitAssign_template_value_terminal_str(self, ctx:ASLParser.Assign_template_value_terminal_strContext):
+    # Exit a parse tree produced by ASLParser#assign_template_value_terminal_string_jsonata.
+    def exitAssign_template_value_terminal_string_jsonata(self, ctx:ASLParser.Assign_template_value_terminal_string_jsonataContext):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#arguments_object.
-    def enterArguments_object(self, ctx:ASLParser.Arguments_objectContext):
+    # Enter a parse tree produced by ASLParser#assign_template_value_terminal_string_literal.
+    def enterAssign_template_value_terminal_string_literal(self, ctx:ASLParser.Assign_template_value_terminal_string_literalContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#arguments_object.
-    def exitArguments_object(self, ctx:ASLParser.Arguments_objectContext):
+    # Exit a parse tree produced by ASLParser#assign_template_value_terminal_string_literal.
+    def exitAssign_template_value_terminal_string_literal(self, ctx:ASLParser.Assign_template_value_terminal_string_literalContext):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#arguments_expr.
-    def enterArguments_expr(self, ctx:ASLParser.Arguments_exprContext):
+    # Enter a parse tree produced by ASLParser#arguments_jsonata_template_value_object.
+    def enterArguments_jsonata_template_value_object(self, ctx:ASLParser.Arguments_jsonata_template_value_objectContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#arguments_expr.
-    def exitArguments_expr(self, ctx:ASLParser.Arguments_exprContext):
+    # Exit a parse tree produced by ASLParser#arguments_jsonata_template_value_object.
+    def exitArguments_jsonata_template_value_object(self, ctx:ASLParser.Arguments_jsonata_template_value_objectContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#arguments_string_jsonata.
+    def enterArguments_string_jsonata(self, ctx:ASLParser.Arguments_string_jsonataContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#arguments_string_jsonata.
+    def exitArguments_string_jsonata(self, ctx:ASLParser.Arguments_string_jsonataContext):
         pass
 
 
@@ -746,21 +710,21 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#jsonata_template_value_terminal_expression.
-    def enterJsonata_template_value_terminal_expression(self, ctx:ASLParser.Jsonata_template_value_terminal_expressionContext):
+    # Enter a parse tree produced by ASLParser#jsonata_template_value_terminal_string_jsonata.
+    def enterJsonata_template_value_terminal_string_jsonata(self, ctx:ASLParser.Jsonata_template_value_terminal_string_jsonataContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#jsonata_template_value_terminal_expression.
-    def exitJsonata_template_value_terminal_expression(self, ctx:ASLParser.Jsonata_template_value_terminal_expressionContext):
+    # Exit a parse tree produced by ASLParser#jsonata_template_value_terminal_string_jsonata.
+    def exitJsonata_template_value_terminal_string_jsonata(self, ctx:ASLParser.Jsonata_template_value_terminal_string_jsonataContext):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#jsonata_template_value_terminal_str.
-    def enterJsonata_template_value_terminal_str(self, ctx:ASLParser.Jsonata_template_value_terminal_strContext):
+    # Enter a parse tree produced by ASLParser#jsonata_template_value_terminal_string_literal.
+    def enterJsonata_template_value_terminal_string_literal(self, ctx:ASLParser.Jsonata_template_value_terminal_string_literalContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#jsonata_template_value_terminal_str.
-    def exitJsonata_template_value_terminal_str(self, ctx:ASLParser.Jsonata_template_value_terminal_strContext):
+    # Exit a parse tree produced by ASLParser#jsonata_template_value_terminal_string_literal.
+    def exitJsonata_template_value_terminal_string_literal(self, ctx:ASLParser.Jsonata_template_value_terminal_string_literalContext):
         pass
 
 
@@ -836,30 +800,12 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#variable_decl_path.
-    def enterVariable_decl_path(self, ctx:ASLParser.Variable_decl_pathContext):
+    # Enter a parse tree produced by ASLParser#variable_decl.
+    def enterVariable_decl(self, ctx:ASLParser.Variable_declContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#variable_decl_path.
-    def exitVariable_decl_path(self, ctx:ASLParser.Variable_decl_pathContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#variable_decl_var.
-    def enterVariable_decl_var(self, ctx:ASLParser.Variable_decl_varContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#variable_decl_var.
-    def exitVariable_decl_var(self, ctx:ASLParser.Variable_decl_varContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#variable_decl_path_context_object.
-    def enterVariable_decl_path_context_object(self, ctx:ASLParser.Variable_decl_path_context_objectContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#variable_decl_path_context_object.
-    def exitVariable_decl_path_context_object(self, ctx:ASLParser.Variable_decl_path_context_objectContext):
+    # Exit a parse tree produced by ASLParser#variable_decl.
+    def exitVariable_decl(self, ctx:ASLParser.Variable_declContext):
         pass
 
 
@@ -872,21 +818,21 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#condition_expr.
-    def enterCondition_expr(self, ctx:ASLParser.Condition_exprContext):
+    # Enter a parse tree produced by ASLParser#condition_string_jsonata.
+    def enterCondition_string_jsonata(self, ctx:ASLParser.Condition_string_jsonataContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#condition_expr.
-    def exitCondition_expr(self, ctx:ASLParser.Condition_exprContext):
+    # Exit a parse tree produced by ASLParser#condition_string_jsonata.
+    def exitCondition_string_jsonata(self, ctx:ASLParser.Condition_string_jsonataContext):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#comparison_func_var.
-    def enterComparison_func_var(self, ctx:ASLParser.Comparison_func_varContext):
+    # Enter a parse tree produced by ASLParser#comparison_func_string_variable_sample.
+    def enterComparison_func_string_variable_sample(self, ctx:ASLParser.Comparison_func_string_variable_sampleContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#comparison_func_var.
-    def exitComparison_func_var(self, ctx:ASLParser.Comparison_func_varContext):
+    # Exit a parse tree produced by ASLParser#comparison_func_string_variable_sample.
+    def exitComparison_func_string_variable_sample(self, ctx:ASLParser.Comparison_func_string_variable_sampleContext):
         pass
 
 
@@ -1070,12 +1016,12 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#max_items_jsonata.
-    def enterMax_items_jsonata(self, ctx:ASLParser.Max_items_jsonataContext):
+    # Enter a parse tree produced by ASLParser#max_items_string_jsonata.
+    def enterMax_items_string_jsonata(self, ctx:ASLParser.Max_items_string_jsonataContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#max_items_jsonata.
-    def exitMax_items_jsonata(self, ctx:ASLParser.Max_items_jsonataContext):
+    # Exit a parse tree produced by ASLParser#max_items_string_jsonata.
+    def exitMax_items_string_jsonata(self, ctx:ASLParser.Max_items_string_jsonataContext):
         pass
 
 
@@ -1088,15 +1034,6 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#max_items_path_var.
-    def enterMax_items_path_var(self, ctx:ASLParser.Max_items_path_varContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#max_items_path_var.
-    def exitMax_items_path_var(self, ctx:ASLParser.Max_items_path_varContext):
-        pass
-
-
     # Enter a parse tree produced by ASLParser#max_items_path.
     def enterMax_items_path(self, ctx:ASLParser.Max_items_pathContext):
         pass
@@ -1106,12 +1043,12 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#tolerated_failure_count_jsonata.
-    def enterTolerated_failure_count_jsonata(self, ctx:ASLParser.Tolerated_failure_count_jsonataContext):
+    # Enter a parse tree produced by ASLParser#tolerated_failure_count_string_jsonata.
+    def enterTolerated_failure_count_string_jsonata(self, ctx:ASLParser.Tolerated_failure_count_string_jsonataContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#tolerated_failure_count_jsonata.
-    def exitTolerated_failure_count_jsonata(self, ctx:ASLParser.Tolerated_failure_count_jsonataContext):
+    # Exit a parse tree produced by ASLParser#tolerated_failure_count_string_jsonata.
+    def exitTolerated_failure_count_string_jsonata(self, ctx:ASLParser.Tolerated_failure_count_string_jsonataContext):
         pass
 
 
@@ -1124,15 +1061,6 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#tolerated_failure_count_path_var.
-    def enterTolerated_failure_count_path_var(self, ctx:ASLParser.Tolerated_failure_count_path_varContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#tolerated_failure_count_path_var.
-    def exitTolerated_failure_count_path_var(self, ctx:ASLParser.Tolerated_failure_count_path_varContext):
-        pass
-
-
     # Enter a parse tree produced by ASLParser#tolerated_failure_count_path.
     def enterTolerated_failure_count_path(self, ctx:ASLParser.Tolerated_failure_count_pathContext):
         pass
@@ -1142,12 +1070,12 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#tolerated_failure_percentage_jsonata.
-    def enterTolerated_failure_percentage_jsonata(self, ctx:ASLParser.Tolerated_failure_percentage_jsonataContext):
+    # Enter a parse tree produced by ASLParser#tolerated_failure_percentage_string_jsonata.
+    def enterTolerated_failure_percentage_string_jsonata(self, ctx:ASLParser.Tolerated_failure_percentage_string_jsonataContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#tolerated_failure_percentage_jsonata.
-    def exitTolerated_failure_percentage_jsonata(self, ctx:ASLParser.Tolerated_failure_percentage_jsonataContext):
+    # Exit a parse tree produced by ASLParser#tolerated_failure_percentage_string_jsonata.
+    def exitTolerated_failure_percentage_string_jsonata(self, ctx:ASLParser.Tolerated_failure_percentage_string_jsonataContext):
         pass
 
 
@@ -1157,15 +1085,6 @@ class ASLParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by ASLParser#tolerated_failure_percentage_number.
     def exitTolerated_failure_percentage_number(self, ctx:ASLParser.Tolerated_failure_percentage_numberContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#tolerated_failure_percentage_path_var.
-    def enterTolerated_failure_percentage_path_var(self, ctx:ASLParser.Tolerated_failure_percentage_path_varContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#tolerated_failure_percentage_path_var.
-    def exitTolerated_failure_percentage_path_var(self, ctx:ASLParser.Tolerated_failure_percentage_path_varContext):
         pass
 
 
@@ -1394,6 +1313,15 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLParser#string_expression_simple.
+    def enterString_expression_simple(self, ctx:ASLParser.String_expression_simpleContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#string_expression_simple.
+    def exitString_expression_simple(self, ctx:ASLParser.String_expression_simpleContext):
+        pass
+
+
     # Enter a parse tree produced by ASLParser#string_expression.
     def enterString_expression(self, ctx:ASLParser.String_expressionContext):
         pass
@@ -1463,15 +1391,6 @@ class ASLParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by ASLParser#soft_string_keyword.
     def exitSoft_string_keyword(self, ctx:ASLParser.Soft_string_keywordContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#keyword_or_string.
-    def enterKeyword_or_string(self, ctx:ASLParser.Keyword_or_stringContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#keyword_or_string.
-    def exitKeyword_or_string(self, ctx:ASLParser.Keyword_or_stringContext):
         pass
 
 

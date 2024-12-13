@@ -1,6 +1,8 @@
 from typing import Final
 
-from localstack.services.stepfunctions.asl.component.common.string.string import StringJSONata
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
+    StringJSONata,
+)
 from localstack.services.stepfunctions.asl.component.state.state_wait.wait_function.wait_function import (
     WaitFunction,
 )

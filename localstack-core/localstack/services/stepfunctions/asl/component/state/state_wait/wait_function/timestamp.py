@@ -13,8 +13,8 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
 )
-from localstack.services.stepfunctions.asl.component.common.string.string import (
-    String,
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
+    StringExpression,
     StringLiteral,
 )
 from localstack.services.stepfunctions.asl.component.state.state_wait.wait_function.wait_function import (
@@ -34,9 +34,9 @@ def parse_timestamp(timestamp: str) -> datetime.datetime:
 
 
 class Timestamp(WaitFunction):
-    string: Final[String]
+    string: Final[StringExpression]
 
-    def __init__(self, string: String):
+    def __init__(self, string: StringExpression):
         self.string = string
         # If it's a string literal, assert it encodes a timestamp
         if isinstance(string, StringLiteral):

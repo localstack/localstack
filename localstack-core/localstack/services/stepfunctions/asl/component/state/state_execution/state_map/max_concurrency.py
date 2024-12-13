@@ -12,7 +12,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
 )
-from localstack.services.stepfunctions.asl.component.common.string.string import (
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
     StringJSONata,
     StringSampler,
 )
