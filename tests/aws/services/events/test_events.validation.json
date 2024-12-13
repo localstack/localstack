@@ -1,7 +1,9 @@
 {
-  "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_nonexistent_event_bus": {
-    "last_validated_date": "2024-12-09T10:44:29+00:00"
+  "tests/aws/services/events/test_events.py::TestEvents::test_create_connection_validations": {
+    "last_validated_date": "2024-12-13T10:54:30+00:00"
   }
+}
+ }
 }
 
 }

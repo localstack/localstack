@@ -232,12 +232,12 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_create_connection_validations": {
-    "recorded-date": "09-12-2024, 10:36:03",
+    "recorded-date": "13-12-2024, 10:54:30",
     "recorded-content": {
       "create_connection_exc": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "3 validation errors detected: Value 'This should fail with two errors 123467890123412341234123412341234' at 'name' failed to satisfy constraint: Member must have length less than or equal to 64; Value 'This should fail with two errors 123467890123412341234123412341234' at 'name' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+; Value 'INVALID' at 'authorizationType' failed to satisfy constraint: Member must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]"
+          "Message": "3 validation errors detected: Value 'This should fail with two errors 123467890123412341234123412341234' at 'name' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+; Value 'This should fail with two errors 123467890123412341234123412341234' at 'name' failed to satisfy constraint: Member must have length less than or equal to 64; Value 'INVALID' at 'authorizationType' failed to satisfy constraint: Member must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
