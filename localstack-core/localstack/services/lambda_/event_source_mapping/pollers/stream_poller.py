@@ -298,6 +298,13 @@ class StreamPoller(Poller):
                         e,
                     )
                     raise CustomerInvocationError from e
+            elif "TrimmedDataAccessException" in str(e):
+                LOG.debug(
+                    "Attempted to iterate over trimmed record or expired shard iterator %s for stream %s, re-initializing shards",
+                    shard_iterator,
+                    self.source_arn,
+                )
+                self.initialize_shards()
             else:
                 LOG.debug("ClientError during get_records for stream %s: %s", self.source_arn, e)
                 raise PipeInternalError from e

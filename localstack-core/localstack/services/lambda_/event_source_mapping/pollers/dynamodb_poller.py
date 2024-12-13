@@ -74,18 +74,6 @@ class DynamoDBPoller(StreamPoller):
             "eventVersion": "1.1",
         }
 
-    def get_records(self, shard_iterator: str) -> dict:
-        try:
-            return super().get_records(shard_iterator)
-        except self.source_client.exceptions.TrimmedDataAccessException as e:
-            LOG.debug(
-                "Attempted to iterate over trimmed record or expired shard iterator %s for stream %s, re-initializing shards",
-                shard_iterator,
-                self.source_arn,
-            )
-            self.shards = self.initialize_shards()
-            raise e
-
     def transform_into_events(self, records: list[dict], shard_id) -> list[dict]:
         events = []
         for record in records:
