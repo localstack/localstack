@@ -24895,5 +24895,155 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_nested_config_distributed": {
+    "recorded-date": "13-12-2024, 13:38:16",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SetupState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "SetupState",
+              "output": {
+                "values": [
+                  {
+                    "sub-values": [
+                      {
+                        "num": 1,
+                        "str": "A"
+                      },
+                      {
+                        "num": 2,
+                        "str": "B"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "values": [
+                  {
+                    "sub-values": [
+                      {
+                        "num": 1,
+                        "str": "A"
+                      },
+                      {
+                        "num": 2,
+                        "str": "B"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 5,
+            "mapStateStartedEventDetails": {
+              "length": 1
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 6,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:<partition>:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 9,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"sub-values\":[{\"num\":1,\"str\":\"A\"},{\"num\":2,\"str\":\"B\"}],\"result\":[{\"num\":1,\"str\":\"A\"},{\"num\":2,\"str\":\"B\"}]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"sub-values\":[{\"num\":1,\"str\":\"A\"},{\"num\":2,\"str\":\"B\"}],\"result\":[{\"num\":1,\"str\":\"A\"},{\"num\":2,\"str\":\"B\"}]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
