@@ -8,6 +8,7 @@ import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
     OperationStatus,
     ProgressEvent,
+    Properties,
     ResourceProvider,
     ResourceRequest,
 )
@@ -125,7 +126,11 @@ class EC2SecurityGroupProvider(ResourceProvider[EC2SecurityGroupProperties]):
         else:
             model["Id"] = params["GroupName"]
 
-        return self.read(request)
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
 
     def read(
         self,
@@ -145,6 +150,16 @@ class EC2SecurityGroupProvider(ResourceProvider[EC2SecurityGroupProperties]):
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=security_group,
+        )
+
+    def list(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
+        security_groups = request.aws_client_factory.ec2.describe_security_groups()[
+            "SecurityGroups"
+        ]
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=security_groups,
         )
 
     def delete(
