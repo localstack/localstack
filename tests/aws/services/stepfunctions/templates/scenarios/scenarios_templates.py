@@ -82,6 +82,9 @@ class ScenariosTemplate(TemplateLoader):
     MAP_STATE_NESTED: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_nested.json5"
     )
+    MAP_STATE_NESTED_CONFIG_DISTRIBUTED: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_nested_config_distributed.json5"
+    )
     MAP_STATE_NO_PROCESSOR_CONFIG: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_no_processor_config.json5"
     )

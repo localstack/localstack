@@ -1354,6 +1354,28 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..events[8].previousEventId"])
+    def test_map_state_nested_config_distributed(
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_NESTED_CONFIG_DISTRIBUTED)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client,
+            create_state_machine_iam_role,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
     def test_map_state_result_writer(
         self,
         aws_client,

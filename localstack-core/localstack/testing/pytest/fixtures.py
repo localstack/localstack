@@ -2137,7 +2137,7 @@ def echo_http_server_post(echo_http_server):
     if is_aws_cloud():
         return f"{PUBLIC_HTTP_ECHO_SERVER_URL}/post"
 
-    return f"{echo_http_server}/post"
+    return f"{echo_http_server}post"
 
 
 def create_policy_doc(effect: str, actions: List, resource=None) -> Dict:
