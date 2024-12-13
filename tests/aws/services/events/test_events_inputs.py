@@ -11,7 +11,11 @@ from tests.aws.services.events.helper_functions import (
     is_old_provider,
     sqs_collect_messages,
 )
-from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTERN
+from tests.aws.services.events.test_events import (
+    EVENT_DETAIL,
+    SPECIAL_EVENT_DETAIL,
+    TEST_EVENT_PATTERN,
+)
 
 EVENT_DETAIL_DUPLICATED_KEY = {
     "command": "update-account",
@@ -397,6 +401,10 @@ class TestInputTransformer:
         "input_template",
         [INPUT_TEMPLATE_PREDEFINE_VARIABLES_STR, INPUT_TEMPLATE_PREDEFINED_VARIABLES_JSON],
     )
+    # Todo deal with
+    # "instance": "$.detail.resources[0].id",
+    # "platform": "$.detail.resources[0].details.awsEc2Instance.platform",
+    # "region": "$.detail.resources[0].region",
     def test_input_transformer_predefined_variables(
         self,
         input_template,
@@ -473,6 +481,9 @@ class TestInputTransformer:
         [
             '{"method": "PUT", "path": "users-service/users/<userId>", "bod": <payload>}',
             '"Payload of <payload> with path users-service/users/<userId>"',
+            '{"method": "PUT", "path": "users-service/users/<userId>", "bod": "<userId>"}',
+            '{"method": "PUT", "path": "users-service/users/<userId>", "bod": [<userId>, "hardcoded"]}',
+            '"<listsingle> single list item"\n"<listmulti> multiple list items"\n"<systemstring> system account id"\n"<payload> payload"\n"<userId> user id"',
         ],
     )
     def test_input_transformer_nested_keys_replacement(
@@ -489,7 +500,7 @@ class TestInputTransformer:
             {
                 "Source": TEST_EVENT_PATTERN["source"][0],
                 "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(SPECIAL_EVENT_DETAIL),
             }
         ]
         entries_asserts = [(entries, True)]
@@ -497,6 +508,9 @@ class TestInputTransformer:
         input_path_map = {
             "userId": "$.detail.payload.acc_id",
             "payload": "$.detail.payload",
+            "systemstring": "$.detail.awsAccountId",
+            "listsingle": "$.detail.listsingle",
+            "listmulti": "$.detail.listmulti",
         }
         input_transformer = {
             "InputPathsMap": input_path_map,
@@ -514,3 +528,43 @@ class TestInputTransformer:
             ]
         )
         snapshot.match("input-transformed-messages", messages)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    @pytest.mark.parametrize(
+        "input_template",
+        [
+            '{"not_valid": "users-service/users/<payload>", "bod": <payload>}',
+        ],
+    )
+    def test_input_transformer_nested_keys_replacement_not_valid(
+        self,
+        input_template,
+        put_events_with_filter_to_sqs,
+    ):
+        """
+        Mapping a nested key via input path map must be a valid string or json
+        else it will be silently ignored
+        """
+        entries = [
+            {
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": json.dumps(SPECIAL_EVENT_DETAIL),
+            }
+        ]
+        entries_asserts = [(entries, False)]
+
+        input_path_map = {"userId": "$.detail.payload.acc_id", "payload": "$.detail.payload"}
+        input_transformer = {
+            "InputPathsMap": input_path_map,
+            "InputTemplate": input_template,
+        }
+        put_events_with_filter_to_sqs(
+            pattern=TEST_EVENT_PATTERN,
+            entries_asserts=entries_asserts,
+            input_transformer=input_transformer,
+        )
