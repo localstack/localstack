@@ -483,6 +483,7 @@ class TestInputTransformer:
             '"Payload of <payload> with path users-service/users/<userId>"',
             '{"method": "PUT", "path": "users-service/users/<userId>", "bod": "<userId>"}',
             '{"method": "PUT", "path": "users-service/users/<userId>", "bod": [<userId>, "hardcoded"]}',
+            '{"method": "PUT", "nested": {"level1": {"level2": {"level3": "users-service/users/<userId>"} } }, "bod": "<userId>"}',
             '"<listsingle> single list item"\n"<listmulti> multiple list items"\n"<systemstring> system account id"\n"<payload> payload"\n"<userId> user id"',
         ],
     )

@@ -268,7 +268,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"method\": \"PUT\", \"path\": \"users-service/users/<userId>\", \"bod\": <payload>}]": {
-    "recorded-date": "13-12-2024, 12:23:34",
+    "recorded-date": "13-12-2024, 13:20:27",
     "recorded-content": {
       "input-transformed-messages": [
         {
@@ -288,7 +288,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"Payload of <payload> with path users-service/users/<userId>\"]": {
-    "recorded-date": "13-12-2024, 12:23:37",
+    "recorded-date": "13-12-2024, 13:20:30",
     "recorded-content": {
       "input-transformed-messages": [
         {
@@ -301,7 +301,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"method\": \"PUT\", \"path\": \"users-service/users/<userId>\", \"bod\": \"<userId>\"}]": {
-    "recorded-date": "13-12-2024, 12:23:39",
+    "recorded-date": "13-12-2024, 13:20:32",
     "recorded-content": {
       "input-transformed-messages": [
         {
@@ -318,7 +318,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"method\": \"PUT\", \"path\": \"users-service/users/<userId>\", \"bod\": [<userId>, \"hardcoded\"]}]": {
-    "recorded-date": "13-12-2024, 12:23:41",
+    "recorded-date": "13-12-2024, 13:20:34",
     "recorded-content": {
       "input-transformed-messages": [
         {
@@ -338,7 +338,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"<listsingle> single list item\"\\n\"<listmulti> multiple list items\"\\n\"<systemstring> system account id\"\\n\"<payload> payload\"\\n\"<userId> user id\"]": {
-    "recorded-date": "13-12-2024, 12:23:43",
+    "recorded-date": "13-12-2024, 13:20:39",
     "recorded-content": {
       "input-transformed-messages": [
         {
@@ -346,6 +346,29 @@
           "ReceiptHandle": "<receipt-handle:1>",
           "MD5OfBody": "<m-d5-of-body:1>",
           "Body": "\"[HIGH] single list item\"\n\"[ACTIVE,INACTIVE] multiple list items\"\n\" system account id\"\n\"{acc_id:0a787ecb-4015,sf_id:baz} payload\"\n\"0a787ecb-4015 user id\""
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"method\": \"PUT\", \"nested\": {\"level1\": {\"level2\": {\"level3\": \"users-service/users/<userId>\"} } }, \"bod\": \"<userId>\"}]": {
+    "recorded-date": "13-12-2024, 13:20:37",
+    "recorded-content": {
+      "input-transformed-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "method": "PUT",
+            "nested": {
+              "level1": {
+                "level2": {
+                  "level3": "users-service/users/0a787ecb-4015"
+                }
+              }
+            },
+            "bod": "0a787ecb-4015"
+          }
         }
       ]
     }
