@@ -392,6 +392,12 @@ class TestInputTransformer:
         snapshot.add_transformer(snapshot.transform.regex(target_id, "<target-id>"))
         snapshot.match("missing-key-exception-error", exception)
 
+    # TODO test wrong input template
+    # '{"userId": "users/<userId>/profile/<type>"}',
+    # ("prefix_<userId>_suffix",)
+    # ("multi_replacement/users/<userId>/second/<userId>",)
+    # "abc:  <userId>",
+
     @markers.aws.validated
     @pytest.mark.skipif(
         is_old_provider(),
@@ -489,6 +495,7 @@ class TestInputTransformer:
             '"<listmulti> multiple list items"',
             '{"singlelistitem": <listsingle>}',
             '"<listsingle> single list item <listmulti> multiple list items <systemstring> system account id <payload> payload <userId> user id"',
+            '{"multi_replacement": "users/<userId>/second/<userId>"}',
             # TODO known limitation due to sqs message handling sting with new line
             # '"<listsingle> single list item\n<listmulti> multiple list items"',
         ],

@@ -268,7 +268,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"method\": \"PUT\", \"path\": \"users-service/users/<userId>\", \"bod\": <payload>}]": {
-    "recorded-date": "13-12-2024, 17:27:29",
+    "recorded-date": "13-12-2024, 18:03:12",
     "recorded-content": {
       "input-transformed-messages": [
         {
@@ -288,7 +288,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"Payload of <payload> with path users-service/users/<userId> and <userId>\"]": {
-    "recorded-date": "13-12-2024, 17:27:32",
+    "recorded-date": "13-12-2024, 18:03:14",
     "recorded-content": {
       "input-transformed-messages": [
         {
@@ -301,7 +301,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"method\": \"PUT\", \"path\": \"users-service/users/<userId>\", \"id\": <userId>, \"body\": <payload>}]": {
-    "recorded-date": "13-12-2024, 17:27:36",
+    "recorded-date": "13-12-2024, 18:03:18",
     "recorded-content": {
       "input-transformed-messages": [
         {
@@ -322,7 +322,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"method\": \"PUT\", \"path\": \"users-service/users/<userId>\", \"bod\": [<userId>, \"hardcoded\"]}]": {
-    "recorded-date": "13-12-2024, 17:27:39",
+    "recorded-date": "13-12-2024, 18:03:21",
     "recorded-content": {
       "input-transformed-messages": [
         {
@@ -342,7 +342,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"method\": \"PUT\", \"nested\": {\"level1\": {\"level2\": {\"level3\": \"users-service/users/<userId>\"} } }, \"bod\": \"<userId>\"}]": {
-    "recorded-date": "13-12-2024, 17:27:41",
+    "recorded-date": "13-12-2024, 18:03:23",
     "recorded-content": {
       "input-transformed-messages": [
         {
@@ -378,7 +378,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"id\" : <userId>}]": {
-    "recorded-date": "13-12-2024, 17:27:34",
+    "recorded-date": "13-12-2024, 18:03:16",
     "recorded-content": {
       "input-transformed-messages": [
         {
@@ -401,7 +401,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"<listsingle> single list item\"]": {
-    "recorded-date": "13-12-2024, 17:27:43",
+    "recorded-date": "13-12-2024, 18:03:25",
     "recorded-content": {
       "input-transformed-messages": [
         {
@@ -414,7 +414,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"<listmulti> multiple list items\"]": {
-    "recorded-date": "13-12-2024, 17:27:46",
+    "recorded-date": "13-12-2024, 18:03:28",
     "recorded-content": {
       "input-transformed-messages": [
         {
@@ -435,7 +435,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"singlelistitem\": <listsingle>}]": {
-    "recorded-date": "13-12-2024, 17:27:48",
+    "recorded-date": "13-12-2024, 18:03:30",
     "recorded-content": {
       "input-transformed-messages": [
         {
@@ -452,7 +452,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"<listsingle> single list item <listmulti> multiple list items <systemstring> system account id <payload> payload <userId> user id\"]": {
-    "recorded-date": "13-12-2024, 17:40:06",
+    "recorded-date": "13-12-2024, 18:03:32",
     "recorded-content": {
       "input-transformed-messages": [
         {
@@ -460,6 +460,21 @@
           "ReceiptHandle": "<receipt-handle:1>",
           "MD5OfBody": "<m-d5-of-body:1>",
           "Body": "\"[HIGH] single list item [ACTIVE,INACTIVE] multiple list items  system account id {acc_id:0a787ecb-4015,sf_id:baz} payload 0a787ecb-4015 user id\""
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"multi_replacement\": \"users/<userId>/second/<userId>\"}]": {
+    "recorded-date": "13-12-2024, 18:03:35",
+    "recorded-content": {
+      "input-transformed-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "multi_replacement": "users/0a787ecb-4015/second/0a787ecb-4015"
+          }
         }
       ]
     }
