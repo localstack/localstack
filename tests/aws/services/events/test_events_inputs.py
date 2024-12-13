@@ -480,11 +480,17 @@ class TestInputTransformer:
         "input_template",
         [
             '{"method": "PUT", "path": "users-service/users/<userId>", "bod": <payload>}',
-            '"Payload of <payload> with path users-service/users/<userId>"',
-            '{"method": "PUT", "path": "users-service/users/<userId>", "bod": "<userId>"}',
+            '"Payload of <payload> with path users-service/users/<userId> and <userId>"',
+            '{"id" : <userId>}',
+            '{"method": "PUT", "path": "users-service/users/<userId>", "id": <userId>, "body": <payload>}',
             '{"method": "PUT", "path": "users-service/users/<userId>", "bod": [<userId>, "hardcoded"]}',
             '{"method": "PUT", "nested": {"level1": {"level2": {"level3": "users-service/users/<userId>"} } }, "bod": "<userId>"}',
-            '"<listsingle> single list item"\n"<listmulti> multiple list items"\n"<systemstring> system account id"\n"<payload> payload"\n"<userId> user id"',
+            '"<listsingle> single list item"',
+            '"<listmulti> multiple list items"',
+            '{"singlelistitem": <listsingle>}',
+            '"<listsingle> single list item <listmulti> multiple list items <systemstring> system account id <payload> payload <userId> user id"',
+            # TODO known limitation due to sqs message handling sting with new line
+            # '"<listsingle> single list item\n<listmulti> multiple list items"',
         ],
     )
     def test_input_transformer_nested_keys_replacement(
@@ -496,6 +502,8 @@ class TestInputTransformer:
         """
         Mapping a nested key via input path map e.g.
         "userId" : "$.detail.id" maped to "users-service/users/<userId>"
+        replacement values that are valid json strings cannot be placed in quotes in the input template
+        since this will result in a non valid json string
         """
         entries = [
             {
@@ -509,7 +517,7 @@ class TestInputTransformer:
         input_path_map = {
             "userId": "$.detail.payload.acc_id",
             "payload": "$.detail.payload",
-            "systemstring": "$.detail.awsAccountId",
+            "systemstring": "$.detail.awsAccountId",  # with resolve to empty value
             "listsingle": "$.detail.listsingle",
             "listmulti": "$.detail.listmulti",
         }
@@ -539,6 +547,8 @@ class TestInputTransformer:
         "input_template",
         [
             '{"not_valid": "users-service/users/<payload>", "bod": <payload>}',
+            '{"payload": "<payload>"}',  # json value must not be enclosed in quotes
+            '{"singlelistitem": "<listsingle>"}',  # list value must not be enclosed in quotes
         ],
     )
     def test_input_transformer_nested_keys_replacement_not_valid(
@@ -559,7 +569,11 @@ class TestInputTransformer:
         ]
         entries_asserts = [(entries, False)]
 
-        input_path_map = {"userId": "$.detail.payload.acc_id", "payload": "$.detail.payload"}
+        input_path_map = {
+            "userId": "$.detail.payload.acc_id",
+            "payload": "$.detail.payload",
+            "listsingle": "$.detail.listsingle",
+        }
         input_transformer = {
             "InputPathsMap": input_path_map,
             "InputTemplate": input_template,
