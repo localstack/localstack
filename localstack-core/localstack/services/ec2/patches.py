@@ -5,7 +5,6 @@ from moto.ec2 import models as ec2_models
 from moto.utilities.id_generator import TAG_KEY_CUSTOM_ID, Tags
 
 from localstack.services.ec2.exceptions import (
-    InvalidSecurityGroupDuplicateCustomIdError,
     InvalidSubnetDuplicateCustomIdError,
     InvalidVpcDuplicateCustomIdError,
 )
@@ -120,11 +119,6 @@ def apply_patches():
         # Extract tags and custom ID
         tags: dict[str, str] = tags or {}
         custom_id = tags.get(TAG_KEY_CUSTOM_ID)
-        vpc_id: str = kwargs["vpc_id"] if "vpc_id" in kwargs else args[2]
-
-        # Check if custom id is unique
-        if not force and custom_id in self.groups[vpc_id]:
-            raise InvalidSecurityGroupDuplicateCustomIdError(custom_id)
 
         # Generate security group with moto library
         result: ec2_models.security_groups.SecurityGroup = fn(
@@ -133,9 +127,9 @@ def apply_patches():
 
         if custom_id:
             # Remove the security group from the default dict and add it back with the custom id
-            self.groups[vpc_id].pop(result.group_id)
+            self.groups[result.vpc_id].pop(result.group_id)
             result.group_id = result.id = custom_id
-            self.groups[vpc_id][custom_id] = result
+            self.groups[result.vpc_id][custom_id] = result
 
         return result
 
