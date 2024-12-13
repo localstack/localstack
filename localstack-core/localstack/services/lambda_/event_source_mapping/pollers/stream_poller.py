@@ -284,7 +284,6 @@ class StreamPoller(Poller):
                 raise CustomerInvocationError from e
             elif "ResourceNotFoundException" in str(e):
                 # FIXME: The 'Invalid ShardId in ShardIterator' error is returned by DynamoDB-local. Unsure when/why this is returned.
-                #
                 if "Invalid ShardId in ShardIterator" in str(e):
                     LOG.warning(
                         "Invalid ShardId in ShardIterator for %s. Re-initializing shards.",
