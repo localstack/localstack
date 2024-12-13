@@ -16,7 +16,6 @@ from localstack.aws.connect import connect_to
 from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
 from localstack.services.events.target_helper import send_event_to_api_destination
 from localstack.services.events.utils import (
-    dict_to_simple_string,
     event_time_to_time_string,
     get_trace_header_encoded_region_account,
     is_nested_in_string,
@@ -85,20 +84,43 @@ def replace_template_placeholders(
     def replace_placeholder(match):
         key = match.group(1)
         value = replacements.get(key, match.group(0))  # handle non defined placeholders
-        if is_json_template:
-            if is_nested_in_string(template, match):
-                return value  # Return raw string for nested placeholders
-            else:
-                return to_json_str(value)
         if isinstance(value, datetime.datetime):
             return event_time_to_time_string(value)
         if isinstance(value, dict):
-            return dict_to_simple_string(value)
-        return value
+            json_str = to_json_str(value)
+            if is_json_template:
+                return json_str
+            return json_str.replace('"', "")
+        if isinstance(value, list):
+            if is_json_template:
+                return json.dumps(value)
+            return f"[{','.join(value)}]"
+        if is_nested_in_string(template, match):
+            return value
+        return json.dumps(value)
 
-    formatted_template = TRANSFORMER_PLACEHOLDER_PATTERN.sub(replace_placeholder, template)
+    formatted_template = (
+        TRANSFORMER_PLACEHOLDER_PATTERN.sub(replace_placeholder, template)
+        .replace('""', '"')
+        .replace("\\n", "\n")
+    )
 
-    return json.loads(formatted_template) if is_json_template else formatted_template[1:-1]
+    if is_json_template:
+        # fixed_formatted_template = fix_json_string(formatted_template)
+        try:
+            loaded_json_template = json.loads(formatted_template)
+            return loaded_json_template
+        except json.JSONDecodeError:
+            LOG.info(
+                json.dumps(
+                    {
+                        "InfoCode": "InternalInfoEvents at transform_event",
+                        "InfoMessage": f"Replaced template is not valid json: {formatted_template}",
+                    }
+                )
+            )
+    else:
+        return formatted_template[1:-1]
 
 
 class TargetSender(ABC):
