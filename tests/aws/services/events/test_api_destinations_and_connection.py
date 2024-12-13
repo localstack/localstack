@@ -32,37 +32,6 @@ API_DESTINATION_AUTHS = [
     },
 ]
 
-API_DESTINATION_AUTHS = [
-    {
-        "type": "BASIC",
-        "key": "BasicAuthParameters",
-        "parameters": {"Username": "user", "Password": "pass"},
-    },
-    {
-        "type": "API_KEY",
-        "key": "ApiKeyAuthParameters",
-        "parameters": {"ApiKeyName": "ApiKey", "ApiKeyValue": "secret"},
-    },
-    {
-        "type": "OAUTH_CLIENT_CREDENTIALS",
-        "key": "OAuthParameters",
-        "parameters": {
-            "ClientParameters": {"ClientID": "id", "ClientSecret": "password"},
-            "AuthorizationEndpoint": "https://example.com/oauth",
-            "HttpMethod": "POST",
-            "OAuthHttpParameters": {
-                "BodyParameters": [{"Key": "oauthbody", "Value": "value1", "IsValueSecret": False}],
-                "HeaderParameters": [
-                    {"Key": "oauthheader", "Value": "value2", "IsValueSecret": False}
-                ],
-                "QueryStringParameters": [
-                    {"Key": "oauthquery", "Value": "value3", "IsValueSecret": False}
-                ],
-            },
-        },
-    },
-]
-
 API_DESTINATION_AUTH_PARAMS = [
     {
         "AuthorizationType": "BASIC",
