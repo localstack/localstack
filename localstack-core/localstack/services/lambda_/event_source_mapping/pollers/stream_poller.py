@@ -264,10 +264,7 @@ class StreamPoller(Poller):
             )
             return get_records_response
         # TODO: test iterator expired with conditional error scenario (requires failure destinations)
-        except (
-            self.source_client.exceptions.ExpiredIteratorException,
-            self.source_client.exceptions.TrimmedDataAccessException,
-        ) as e:
+        except self.source_client.exceptions.ExpiredIteratorExceptionas as e:
             LOG.debug(
                 "Shard iterator %s expired for stream %s, re-initializing shards",
                 shard_iterator,
