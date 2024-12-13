@@ -52,8 +52,22 @@ class EventJSONEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-def to_json_str(obj: Any, separators: Optional[tuple[str, str]] = (",", ":")) -> str:
-    return json.dumps(obj, cls=EventJSONEncoder, separators=separators)
+def to_json_str(obj: Any, separators: Optional[tuple[str, str]] = (",", ":")) -> str | None:
+    if not obj:
+        return None
+    json_str = json.dumps(obj, cls=EventJSONEncoder, separators=separators)
+    return json_str.replace('\\"', '"')
+
+
+def fix_json_string(s):
+    try:
+        json.loads(s)
+        return s
+    except json.JSONDecodeError:
+        # Find unquoted values and quote them
+        pattern = r'(?:[:,{[]]\s*)([^",\{\}\[\]\s][^,\}\]]*)'
+        fixed = re.sub(pattern, r': "\1"', s)
+        return fixed
 
 
 def extract_region_and_account_id(
@@ -273,7 +287,3 @@ def is_nested_in_string(template, match) -> bool:
         return False
 
     return left_quote != -1 and template[left_quote + 1 : right_quote].strip() != match.group(0)
-
-
-def dict_to_simple_string(d):
-    return "{" + ",".join(f"{k}:{v}" for k, v in d.items()) + "}"
