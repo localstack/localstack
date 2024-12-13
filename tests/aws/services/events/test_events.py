@@ -29,6 +29,12 @@ from tests.aws.services.events.helper_functions import (
 )
 
 EVENT_DETAIL = {"command": "update-account", "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"}}
+SPECIAL_EVENT_DETAIL = {
+    "command": "update-account",
+    "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"},
+    "listsingle": ["HIGH"],
+    "listmulti": ["ACTIVE", "INACTIVE"],
+}
 
 TEST_EVENT_PATTERN = {
     "source": ["core.update-account-command"],
