@@ -116,4 +116,4 @@ jobs:
           commit-message: "update generated ASF APIs to latest version"
           labels: "area: asf, area: dependencies, semver: patch"
           token: ${{ secrets.PRO_ACCESS_TOKEN }}
-          reviewers: alexrashed
+          reviewers: silv-io,alexrashed

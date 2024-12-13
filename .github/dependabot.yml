@@ -5,6 +5,7 @@ updates:
     schedule:
       interval: "weekly"
     reviewers:
+      - "silv-io"
       - "alexrashed"
     ignore:
       - dependency-name: "python"
@@ -23,6 +24,7 @@ updates:
     schedule:
       interval: "weekly"
     reviewers:
+      - "silv-io"
       - "alexrashed"
     labels:
       - "area: dependencies"
