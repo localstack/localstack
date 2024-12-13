@@ -283,12 +283,21 @@ class StreamPoller(Poller):
                 )
                 raise CustomerInvocationError from e
             elif "ResourceNotFoundException" in str(e):
-                LOG.warning(
-                    "Source stream %s does not exist: %s",
-                    self.source_arn,
-                    e,
-                )
-                raise CustomerInvocationError from e
+                # FIXME: The 'Invalid ShardId in ShardIterator' error is returned by DynamoDB-local. Unsure when/why this is returned.
+                #
+                if "Invalid ShardId in ShardIterator" in str(e):
+                    LOG.warning(
+                        "Invalid ShardId in ShardIterator for %s. Re-initializing shards.",
+                        self.source_arn,
+                    )
+                    self.initialize_shards()
+                else:
+                    LOG.warning(
+                        "Source stream %s does not exist: %s",
+                        self.source_arn,
+                        e,
+                    )
+                    raise CustomerInvocationError from e
             else:
                 LOG.debug("ClientError during get_records for stream %s: %s", self.source_arn, e)
                 raise PipeInternalError from e
