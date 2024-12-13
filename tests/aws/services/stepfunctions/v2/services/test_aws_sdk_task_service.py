@@ -8,7 +8,7 @@ from localstack.testing.pytest.stepfunctions.utils import (
     create_and_record_execution,
     create_state_machine_with_iam_role,
 )
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import short_uid, to_str
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate as BT
 from tests.aws.services.stepfunctions.templates.services.services_templates import (
     ServicesTemplates as ST,
@@ -310,13 +310,15 @@ class TestTaskServiceAwsSdk:
         sfn_snapshot,
         body,
     ):
+        file_key = f"file-key-{short_uid()}"
         bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(file_key, "file-key"))
         sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
 
         template = ST.load_sfn_template(ST.AWS_SDK_S3_PUT_OBJECT)
         definition = json.dumps(template)
 
-        exec_input = json.dumps({"Bucket": bucket_name, "Key": "file-key", "Body": body})
+        exec_input = json.dumps({"Bucket": bucket_name, "Key": file_key, "Body": body})
         create_and_record_execution(
             aws_client,
             create_state_machine_iam_role,
@@ -325,3 +327,7 @@ class TestTaskServiceAwsSdk:
             definition,
             exec_input,
         )
+        get_object_response = aws_client.s3.get_object(Bucket=bucket_name, Key=file_key)
+        body = get_object_response["Body"].read()
+        body_str = to_str(body)
+        sfn_snapshot.match("s3-object-content-body", body_str)

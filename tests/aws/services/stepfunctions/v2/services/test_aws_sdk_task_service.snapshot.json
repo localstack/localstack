@@ -2348,7 +2348,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[str]": {
-    "recorded-date": "11-06-2024, 07:42:53",
+    "recorded-date": "13-12-2024, 15:20:04",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2465,11 +2465,12 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
-      }
+      },
+      "s3-object-content-body": "\"text data\""
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[dict]": {
-    "recorded-date": "11-06-2024, 07:43:09",
+    "recorded-date": "13-12-2024, 15:20:52",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2592,11 +2593,14 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "s3-object-content-body": {
+        "Dict": "Value"
       }
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[list]": {
-    "recorded-date": "11-06-2024, 07:43:26",
+    "recorded-date": "13-12-2024, 15:21:44",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2722,11 +2726,12 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
-      }
+      },
+      "s3-object-content-body": "[\"List\",\"Data\"]"
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[bool]": {
-    "recorded-date": "11-06-2024, 07:43:42",
+    "recorded-date": "13-12-2024, 15:22:31",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2843,11 +2848,12 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
-      }
+      },
+      "s3-object-content-body": "false"
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[num]": {
-    "recorded-date": "11-06-2024, 07:43:58",
+    "recorded-date": "13-12-2024, 15:23:18",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2964,7 +2970,8 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
-      }
+      },
+      "s3-object-content-body": "0"
     }
   }
 }
