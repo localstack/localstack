@@ -130,7 +130,12 @@ max_concurrency_decl:
 
 parameters_decl: PARAMETERS COLON payload_tmpl_decl;
 
-credentials_decl: CREDENTIALS COLON payload_tmpl_decl;
+credentials_decl: CREDENTIALS COLON LBRACE role_arn_decl RBRACE;
+
+role_arn_decl:
+    ROLEARN COLON (string_jsonata | string_literal) # role_arn
+    | ROLEARNPATH COLON string_expression_simple    # role_path
+;
 
 timeout_seconds_decl:
     TIMEOUTSECONDS COLON string_jsonata       # timeout_seconds_jsonata
@@ -536,6 +541,8 @@ soft_string_keyword:
     | RESULT
     | PARAMETERS
     | CREDENTIALS
+    | ROLEARN
+    | ROLEARNPATH
     | RESULTSELECTOR
     | ITEMREADER
     | READERCONFIG

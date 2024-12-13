@@ -499,6 +499,7 @@ def cmd_start(
         print_banner()
         print_version()
         print_profile()
+        print_app()
         console.line()
 
     from localstack.utils import bootstrap
@@ -899,14 +900,16 @@ def localstack_completion(ctx: click.Context, shell: str) -> None:
 
 
 def print_version() -> None:
-    console.print(f" :laptop_computer: [bold]LocalStack CLI[/bold] [blue]{VERSION}[/blue]")
+    console.print(f"- [bold]LocalStack CLI:[/bold] [blue]{VERSION}[/blue]")
 
 
 def print_profile() -> None:
     if config.LOADED_PROFILES:
-        console.print(
-            f" :bust_in_silhouette: [bold]Profile:[/bold] [blue]{', '.join(config.LOADED_PROFILES)}[/blue]"
-        )
+        console.print(f"- [bold]Profile:[/bold] [blue]{', '.join(config.LOADED_PROFILES)}[/blue]")
+
+
+def print_app() -> None:
+    console.print("- [bold]App:[/bold] https://app.localstack.cloud")
 
 
 def print_banner() -> None:

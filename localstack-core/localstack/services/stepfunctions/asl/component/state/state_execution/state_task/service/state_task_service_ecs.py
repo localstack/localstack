@@ -1,5 +1,8 @@
 from typing import Any, Callable, Final, Optional
 
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
+    ComputedCredentials,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceCondition,
     ResourceRuntimePart,
@@ -43,12 +46,19 @@ class StateTaskServiceEcs(StateTaskServiceCallback):
         return _SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     def _before_eval_execution(
-        self, env: Environment, resource_runtime_part: ResourceRuntimePart, raw_parameters: dict
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        raw_parameters: dict,
+        task_credentials: ComputedCredentials,
     ) -> None:
         if self.resource.condition == ResourceCondition.Sync:
             raw_parameters[_STARTED_BY_PARAMETER_RAW_KEY] = _STARTED_BY_PARAMETER_VALUE
         super()._before_eval_execution(
-            env=env, resource_runtime_part=resource_runtime_part, raw_parameters=raw_parameters
+            env=env,
+            resource_runtime_part=resource_runtime_part,
+            raw_parameters=raw_parameters,
+            task_credentials=task_credentials,
         )
 
     def _eval_service_task(
@@ -56,7 +66,7 @@ class StateTaskServiceEcs(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-        task_credentials: dict,
+        task_credentials: ComputedCredentials,
     ):
         service_name = self._get_boto_service_name()
         api_action = self._get_boto_service_action()
@@ -64,6 +74,7 @@ class StateTaskServiceEcs(StateTaskServiceCallback):
             region=resource_runtime_part.region,
             account=resource_runtime_part.account,
             service=service_name,
+            credentials=task_credentials,
         )
         response = getattr(ecs_client, api_action)(**normalised_parameters)
         response.pop("ResponseMetadata", None)
@@ -91,11 +102,13 @@ class StateTaskServiceEcs(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        task_credentials: ComputedCredentials,
     ) -> Callable[[], Optional[Any]]:
         ecs_client = boto_client_for(
             region=resource_runtime_part.region,
             account=resource_runtime_part.account,
             service="ecs",
+            credentials=task_credentials,
         )
         submission_output: dict = env.stack.pop()
         task_arn: str = submission_output["Tasks"][0]["TaskArn"]

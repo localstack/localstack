@@ -53,9 +53,9 @@ Issues = "https://github.com/localstack/localstack/issues"
 # minimal required to actually run localstack on the host for services natively implemented in python
 base-runtime = [
     # pinned / updated by ASF update action
-    "boto3==1.35.71",
+    "boto3==1.35.76",
     # pinned / updated by ASF update action
-    "botocore==1.35.71",
+    "botocore==1.35.76",
     "awscrt>=0.13.14",
     "cbor2>=5.2.0",
     "dnspython>=1.16.0",
@@ -80,21 +80,19 @@ runtime = [
     # pinned / updated by ASF update action
     "awscli>=1.32.117",
     "airspeed-ext>=0.6.3",
-    # TODO upgrade to kclpy 3+
-    "amazon_kclpy>=2.0.6,!=2.1.0,!=2.1.4,<3.0.0",
+    "amazon_kclpy>=3.0.0",
     # antlr4-python3-runtime: exact pin because antlr4 runtime is tightly coupled to the generated parser code
     "antlr4-python3-runtime==4.13.2",
     "apispec>=5.1.1",
     "aws-sam-translator>=1.15.1",
     "crontab>=0.22.6",
-    # TODO remove upper limit once https://github.com/getmoto/moto/pull/7876 is in our moto-ext version
-    "cryptography>=41.0.5,<43.0.0",
+    "cryptography>=41.0.5",
     # allow Python programs full access to Java class libraries. Used for opt-in event ruler.
     "jpype1-ext>=0.0.1",
     "json5>=0.9.11",
     "jsonpath-ng>=1.6.1",
     "jsonpath-rw>=1.4.0",
-    "moto-ext[all]==5.0.20.post1",
+    "moto-ext[all]==5.0.22.post1",
     "opensearch-py>=2.4.1",
     "pymongo>=4.2.0",
     "pyopenssl>=23.0.0",

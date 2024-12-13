@@ -1,4 +1,5 @@
 import datetime
+from datetime import timezone
 from typing import Dict, List
 
 from localstack.aws.api.cloudwatch import CompositeAlarm, DashboardBody, MetricAlarm, StateValue
@@ -24,7 +25,7 @@ class LocalStackMetricAlarm:
         self.set_default_attributes()
 
     def set_default_attributes(self):
-        current_time = datetime.datetime.utcnow()
+        current_time = datetime.datetime.now(timezone.utc)
         self.alarm["AlarmArn"] = arns.cloudwatch_alarm_arn(
             self.alarm["AlarmName"], account_id=self.account_id, region_name=self.region
         )
@@ -52,8 +53,19 @@ class LocalStackCompositeAlarm:
         self.set_default_attributes()
 
     def set_default_attributes(self):
-        # TODO
-        pass
+        current_time = datetime.datetime.now(timezone.utc)
+        self.alarm["AlarmArn"] = arns.cloudwatch_alarm_arn(
+            self.alarm["AlarmName"], account_id=self.account_id, region_name=self.region
+        )
+        self.alarm["AlarmConfigurationUpdatedTimestamp"] = current_time
+        self.alarm.setdefault("ActionsEnabled", True)
+        self.alarm.setdefault("OKActions", [])
+        self.alarm.setdefault("AlarmActions", [])
+        self.alarm.setdefault("InsufficientDataActions", [])
+        self.alarm["StateValue"] = StateValue.INSUFFICIENT_DATA
+        self.alarm["StateReason"] = "Unchecked: Initial alarm creation"
+        self.alarm["StateUpdatedTimestamp"] = current_time
+        self.alarm["StateTransitionedTimestamp"] = current_time
 
 
 class LocalStackDashboard:

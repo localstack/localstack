@@ -5,7 +5,6 @@ import pytest
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer, SortingTransformer
 
-from localstack import config
 from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
 from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled
 from localstack.testing.aws.util import is_aws_cloud
@@ -1287,11 +1286,6 @@ class TestSQSEventSourceMapping:
         aws_client,
         monkeypatch,
     ):
-        if item_not_matching == "this is a test string" and config.EVENT_RULE_ENGINE != "java":
-            pytest.skip(
-                "String comparison is broken in the Python rule engine for this specific case in ESM v2"
-            )
-
         function_name = f"lambda_func-{short_uid()}"
         queue_name_1 = f"queue-{short_uid()}-1"
         mapping_uuid = None
@@ -1355,7 +1349,6 @@ class TestSQSEventSourceMapping:
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
         assert rs.get("Messages", []) == []
 
-    @pytest.mark.skip(reason="Invalid filter detection not yet implemented in ESM v2")
     @markers.aws.validated
     @pytest.mark.parametrize(
         "invalid_filter", [None, "simple string", {"eventSource": "aws:sqs"}, {"eventSource": []}]

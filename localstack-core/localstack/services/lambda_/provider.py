@@ -209,7 +209,6 @@ from localstack.services.lambda_.runtimes import (
     DEPRECATED_RUNTIMES,
     DEPRECATED_RUNTIMES_UPGRADES,
     RUNTIMES_AGGREGATED,
-    SNAP_START_SUPPORTED_RUNTIMES,
     VALID_RUNTIMES,
 )
 from localstack.services.lambda_.urlrouter import FunctionUrlRouter
@@ -225,6 +224,7 @@ from localstack.utils.aws.arns import (
 )
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import PaginatedList
+from localstack.utils.event_matcher import validate_event_pattern
 from localstack.utils.lambda_debug_mode.lambda_debug_mode_session import LambdaDebugModeSession
 from localstack.utils.strings import get_random_hex, short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition
@@ -685,10 +685,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         ]:
             raise ValidationException(
                 f"1 validation error detected: Value '{apply_on}' at 'snapStart.applyOn' failed to satisfy constraint: Member must satisfy enum value set: [PublishedVersions, None]"
-            )
-        if runtime not in SNAP_START_SUPPORTED_RUNTIMES:
-            raise InvalidParameterValueException(
-                f"{runtime} is not supported for SnapStart enabled functions.", Type="User"
             )
 
     def _validate_layers(self, new_layers: list[str], region: str, account_id: str):
@@ -1920,6 +1916,20 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
                     Type="User",
                 )
+
+        if (filter_criteria := request.get("FilterCriteria")) is not None:
+            for filter_ in filter_criteria.get("Filters", []):
+                pattern_str = filter_.get("Pattern")
+                if not pattern_str or not isinstance(pattern_str, str):
+                    raise InvalidParameterValueException(
+                        "Invalid filter pattern definition.", Type="User"
+                    )
+
+                if not validate_event_pattern(pattern_str):
+                    raise InvalidParameterValueException(
+                        "Invalid filter pattern definition.", Type="User"
+                    )
+
         # Can either have a FunctionName (i.e CreateEventSourceMapping request) or
         # an internal EventSourceMappingConfiguration representation
         request_function_name = request.get("FunctionName") or request.get("FunctionArn")

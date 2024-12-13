@@ -1026,7 +1026,6 @@ class TestKinesisEventFiltering:
         paths=[
             "$..Messages..Body.KinesisBatchInfo.shardId",
             "$..Messages..Body.KinesisBatchInfo.streamArn",
-            "$..EventSourceMappingArn",
         ],
     )
     @markers.aws.validated

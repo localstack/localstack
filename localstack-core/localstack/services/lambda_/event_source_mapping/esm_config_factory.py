@@ -113,4 +113,6 @@ class EsmConfigFactory:
         #  esm_config
         esm_config.pop("Enabled", "")
         esm_config.pop("FunctionName", "")
+        if not esm_config.get("FilterCriteria", {}).get("Filters", []):
+            esm_config.pop("FilterCriteria", "")
         return esm_config

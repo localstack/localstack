@@ -271,6 +271,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
     Credentials,
+    RoleArn,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     Resource,
@@ -470,10 +471,6 @@ class Preprocessor(ASLParserVisitor):
         )
         payload_tmpl: PayloadTmpl = self.visit(ctx.payload_tmpl_decl())
         return Parameters(payload_tmpl=payload_tmpl)
-
-    def visitCredentials_decl(self, ctx: ASLParser.Credentials_declContext) -> Credentials:
-        payload_template: PayloadTmpl = self.visit(ctx.payload_tmpl_decl())
-        return Credentials(payload_template=payload_template)
 
     def visitTimeout_seconds_int(self, ctx: ASLParser.Timeout_seconds_intContext) -> TimeoutSeconds:
         seconds = int(ctx.INT().getText())
@@ -773,6 +770,23 @@ class Preprocessor(ASLParserVisitor):
         )
         string_expression: StringExpression = self.visit(ctx.children[-1])
         return CausePath(string_expression=string_expression)
+
+    def visitRole_arn(self, ctx: ASLParser.Role_arnContext) -> RoleArn:
+        string_expression: StringExpression = self.visit(ctx.children[-1])
+        return RoleArn(string_expression=string_expression)
+
+    def visitRole_path(self, ctx: ASLParser.Role_pathContext) -> RoleArn:
+        self._raise_if_query_language_is_not(
+            query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
+        )
+        string_expression_simple: StringExpressionSimple = self.visitString_expression_simple(
+            ctx=ctx.string_expression_simple()
+        )
+        return RoleArn(string_expression=string_expression_simple)
+
+    def visitCredentials_decl(self, ctx: ASLParser.Credentials_declContext) -> Credentials:
+        role_arn: RoleArn = self.visit(ctx.role_arn_decl())
+        return Credentials(role_arn=role_arn)
 
     def visitSeconds_int(self, ctx: ASLParser.Seconds_intContext) -> Seconds:
         return Seconds(seconds=int(ctx.INT().getText()))

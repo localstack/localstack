@@ -341,6 +341,24 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLParser#role_arn.
+    def enterRole_arn(self, ctx:ASLParser.Role_arnContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#role_arn.
+    def exitRole_arn(self, ctx:ASLParser.Role_arnContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#role_path.
+    def enterRole_path(self, ctx:ASLParser.Role_pathContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#role_path.
+    def exitRole_path(self, ctx:ASLParser.Role_pathContext):
+        pass
+
+
     # Enter a parse tree produced by ASLParser#timeout_seconds_jsonata.
     def enterTimeout_seconds_jsonata(self, ctx:ASLParser.Timeout_seconds_jsonataContext):
         pass

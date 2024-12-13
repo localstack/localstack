@@ -21,7 +21,6 @@ from tests.aws.services.stepfunctions.templates.services.services_templates impo
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..tracingConfiguration",
         # TODO: add support for Sdk Http metadata.
         "$..SdkHttpMetadata",
         "$..SdkResponseMetadata",
@@ -188,7 +187,7 @@ class TestTaskApiGateway:
         aws_client,
         create_lambda_function,
         create_role_with_policy,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_rest_apigw,
         sfn_snapshot,
@@ -215,8 +214,8 @@ class TestTaskApiGateway:
             {"ApiEndpoint": api_url, "Method": http_method, "Path": part_path, "Stage": api_stage}
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -238,7 +237,7 @@ class TestTaskApiGateway:
         aws_client,
         create_lambda_function,
         create_role_with_policy,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_rest_apigw,
         sfn_snapshot,
@@ -272,8 +271,8 @@ class TestTaskApiGateway:
             }
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -298,7 +297,7 @@ class TestTaskApiGateway:
         aws_client,
         create_lambda_function,
         create_role_with_policy,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_rest_apigw,
         sfn_snapshot,
@@ -333,8 +332,8 @@ class TestTaskApiGateway:
             }
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -354,7 +353,7 @@ class TestTaskApiGateway:
         aws_client,
         create_lambda_function,
         create_role_with_policy,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_rest_apigw,
         sfn_snapshot,
@@ -390,8 +389,8 @@ class TestTaskApiGateway:
             }
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -412,7 +411,7 @@ class TestTaskApiGateway:
         aws_client,
         create_lambda_function,
         create_role_with_policy,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_rest_apigw,
         sfn_snapshot,
@@ -445,8 +444,8 @@ class TestTaskApiGateway:
             }
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,

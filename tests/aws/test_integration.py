@@ -188,7 +188,7 @@ class TestIntegration:
             )
             assert stream_info["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
 
-        retry(_assert_active, sleep=1, retries=30)
+        retry(_assert_active, sleep=1, retries=60)
 
         # create target S3 bucket
         s3_create_bucket(Bucket=TEST_BUCKET_NAME)

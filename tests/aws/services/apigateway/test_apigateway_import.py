@@ -480,7 +480,6 @@ class TestApiGatewayImportRestApi:
         apigw_create_rest_api,
         aws_client,
         snapshot,
-        apigateway_placeholder_authorizer_lambda_invocation_arn,
         apigw_snapshot_imported_resources,
         apigw_deploy_rest_api,
     ):
@@ -867,6 +866,13 @@ class TestApiGatewayImportRestApi:
                     "$.get-authorizers..id", value_replacement="authorizer-id"
                 ),
             ]
+        )
+        snapshot.add_transformer(
+            snapshot.transform.regex(
+                regex="petstore.execute-api.us-west-1",
+                replacement="<external-aws-endpoint>",
+            ),
+            priority=-10,
         )
         spec_file = load_file(TEST_OPENAPI_COGNITO_AUTH)
         # the authorizer does not need to exist in AWS

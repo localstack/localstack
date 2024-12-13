@@ -35,7 +35,7 @@ class TestMixedQueryLanguageFlow:
     def test_variable_sampling(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         template,
@@ -43,8 +43,8 @@ class TestMixedQueryLanguageFlow:
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -63,7 +63,7 @@ class TestMixedQueryLanguageFlow:
     def test_output_to_state(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         template,
@@ -71,8 +71,8 @@ class TestMixedQueryLanguageFlow:
         definition = json.dumps(template)
         exec_input = json.dumps({"input_data": "test"})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -83,7 +83,7 @@ class TestMixedQueryLanguageFlow:
     def test_task_dataflow_to_state(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         sfn_snapshot,
@@ -103,8 +103,8 @@ class TestMixedQueryLanguageFlow:
         definition = json.dumps(template)
         exec_input = json.dumps({"functionName": function_arn})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -130,7 +130,7 @@ class TestMixedQueryLanguageFlow:
     def test_lambda_task_resource_data_flow(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         create_lambda_function,
@@ -154,8 +154,8 @@ class TestMixedQueryLanguageFlow:
         )
         exec_input = json.dumps({})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,

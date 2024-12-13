@@ -6,7 +6,7 @@
 #
 airspeed-ext==0.6.7
     # via localstack-core (pyproject.toml)
-amazon-kclpy==2.1.5
+amazon-kclpy==3.0.1
     # via localstack-core (pyproject.toml)
 annotated-types==0.7.0
     # via pydantic
@@ -29,17 +29,17 @@ aws-sam-translator==1.94.0
     #   localstack-core (pyproject.toml)
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.36.12
+awscli==1.36.17
     # via localstack-core (pyproject.toml)
-awscrt==0.23.2
+awscrt==0.23.4
     # via localstack-core
-boto3==1.35.71
+boto3==1.35.76
     # via
     #   amazon-kclpy
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-botocore==1.35.71
+botocore==1.35.76
     # via
     #   aws-xray-sdk
     #   awscli
@@ -64,7 +64,7 @@ certifi==2024.8.30
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.20.2
+cfn-lint==1.21.0
     # via moto-ext
 charset-normalizer==3.4.0
     # via requests
@@ -78,7 +78,7 @@ constantly==23.10.4
     # via localstack-twisted
 crontab==1.0.1
     # via localstack-core (pyproject.toml)
-cryptography==42.0.8
+cryptography==44.0.0
     # via
     #   joserfc
     #   localstack-core
@@ -141,7 +141,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.0.0
+joserfc==1.0.1
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core (pyproject.toml)
@@ -190,7 +190,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.5.0
     # via openapi-core
-moto-ext==5.0.20.post1
+moto-ext==5.0.22.post1
     # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
@@ -241,7 +241,7 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.10.2
+pydantic==2.10.3
     # via aws-sam-translator
 pydantic-core==2.27.1
     # via pydantic
@@ -309,7 +309,7 @@ rich==13.9.4
     #   localstack-core (pyproject.toml)
 rolo==0.7.4
     # via localstack-core
-rpds-py==0.22.0
+rpds-py==0.22.3
     # via
     #   jsonschema
     #   referencing
@@ -323,7 +323,7 @@ semver==3.0.2
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-six==1.16.0
+six==1.17.0
     # via
     #   airspeed-ext
     #   jsonpath-rw

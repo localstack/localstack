@@ -18,7 +18,6 @@ from tests.aws.services.stepfunctions.templates.scenarios.scenarios_templates im
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..tracingConfiguration",
         "$..billingDetails",
         "$..output.Cause",
     ]
@@ -32,18 +31,18 @@ class TestExpressSync:
     )
     def test_base(
         self,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
         sfn_snapshot,
-        stepfunctions_client_sync_executions,
+        aws_client_no_sync_prefix,
         template,
     ):
         definition = json.dumps(BaseTemplate.load_sfn_template(template))
         exec_input = json.dumps({})
         create_and_record_express_sync_execution(
-            stepfunctions_client_sync_executions,
-            create_iam_role_for_sfn,
+            aws_client_no_sync_prefix,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -54,9 +53,9 @@ class TestExpressSync:
     @markers.aws.validated
     def test_query_runtime_memory(
         self,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
-        stepfunctions_client_sync_executions,
+        aws_client_no_sync_prefix,
         sfn_snapshot,
     ):
         sfn_snapshot.add_transformer(
@@ -85,8 +84,8 @@ class TestExpressSync:
 
         exec_input = json.dumps({"message": "TestMessage"})
         create_and_record_express_sync_execution(
-            stepfunctions_client_sync_executions,
-            create_iam_role_for_sfn,
+            aws_client_no_sync_prefix,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -96,8 +95,8 @@ class TestExpressSync:
     @markers.aws.validated
     def test_catch(
         self,
-        stepfunctions_client_sync_executions,
-        create_iam_role_for_sfn,
+        aws_client_no_sync_prefix,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         sfn_snapshot,
@@ -122,8 +121,8 @@ class TestExpressSync:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_express_sync_execution(
-            stepfunctions_client_sync_executions,
-            create_iam_role_for_sfn,
+            aws_client_no_sync_prefix,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -134,8 +133,8 @@ class TestExpressSync:
     def test_retry(
         self,
         aws_client,
-        stepfunctions_client_sync_executions,
-        create_iam_role_for_sfn,
+        aws_client_no_sync_prefix,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         sfn_snapshot,
@@ -162,8 +161,8 @@ class TestExpressSync:
 
         exec_input = json.dumps({})
         create_and_record_express_sync_execution(
-            stepfunctions_client_sync_executions,
-            create_iam_role_for_sfn,
+            aws_client_no_sync_prefix,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,

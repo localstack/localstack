@@ -56,6 +56,8 @@ CurrentGenerationFlag = bool
 CustomerGatewayId = str
 DITMaxResults = int
 DITOMaxResults = int
+DeclarativePoliciesMaxResults = int
+DeclarativePoliciesReportId = str
 DedicatedHostFlag = bool
 DedicatedHostId = str
 DefaultNetworkCardIndex = int
@@ -157,6 +159,7 @@ GetManagedPrefixListAssociationsMaxResults = int
 GetNetworkInsightsAccessScopeAnalysisFindingsMaxResults = int
 GetSecurityGroupsForVpcRequestMaxResults = int
 GetSubnetCidrReservationsMaxResults = int
+GetVerifiedAccessEndpointTargetsMaxResults = int
 GpuDeviceCount = int
 GpuDeviceManufacturerName = str
 GpuDeviceMemorySize = int
@@ -166,6 +169,8 @@ HostReservationId = str
 Hour = int
 IamInstanceProfileAssociationId = str
 ImageId = str
+ImageProvider = str
+ImageProviderRequest = str
 ImportImageTaskId = str
 ImportManifestUrl = str
 ImportSnapshotTaskId = str
@@ -277,6 +282,9 @@ ProcessorSustainedClockSpeed = float
 ProtocolInt = int
 PublicIpAddress = str
 RamdiskId = str
+RdsDbClusterArn = str
+RdsDbInstanceArn = str
+RdsDbProxyArn = str
 ReplaceRootVolumeTaskId = str
 ReportInstanceStatusRequestDescription = str
 ReservationId = str
@@ -284,6 +292,7 @@ ReservedInstancesListingId = str
 ReservedInstancesModificationId = str
 ReservedInstancesOfferingId = str
 ResourceArn = str
+ResourceConfigurationArn = str
 RestoreSnapshotTierRequestTemporaryRestoreDays = int
 ResultRange = int
 RetentionPeriodRequestDays = int
@@ -301,6 +310,7 @@ SecurityGroupName = str
 SecurityGroupRuleId = str
 SensitiveUrl = str
 SensitiveUserData = str
+ServiceNetworkArn = str
 SnapshotCompletionDurationMinutesRequest = int
 SnapshotCompletionDurationMinutesResponse = int
 SnapshotId = str
@@ -354,6 +364,7 @@ VpnConnectionDeviceTypeId = str
 VpnConnectionId = str
 VpnGatewayId = str
 customerGatewayConfiguration = str
+maxResults = int
 preSharedKey = str
 totalFpgaMemory = int
 totalGpuMemory = int
@@ -440,6 +451,15 @@ class AllocationStrategy(StrEnum):
 
 class AllocationType(StrEnum):
     used = "used"
+
+
+class AllowedImagesSettingsDisabledState(StrEnum):
+    disabled = "disabled"
+
+
+class AllowedImagesSettingsEnabledState(StrEnum):
+    enabled = "enabled"
+    audit_mode = "audit-mode"
 
 
 class AllowsMultipleInstanceTypes(StrEnum):
@@ -2171,6 +2191,24 @@ class InstanceType(StrEnum):
     x8g_48xlarge = "x8g.48xlarge"
     x8g_metal_24xl = "x8g.metal-24xl"
     x8g_metal_48xl = "x8g.metal-48xl"
+    i7ie_large = "i7ie.large"
+    i7ie_xlarge = "i7ie.xlarge"
+    i7ie_2xlarge = "i7ie.2xlarge"
+    i7ie_3xlarge = "i7ie.3xlarge"
+    i7ie_6xlarge = "i7ie.6xlarge"
+    i7ie_12xlarge = "i7ie.12xlarge"
+    i7ie_18xlarge = "i7ie.18xlarge"
+    i7ie_24xlarge = "i7ie.24xlarge"
+    i7ie_48xlarge = "i7ie.48xlarge"
+    i8g_large = "i8g.large"
+    i8g_xlarge = "i8g.xlarge"
+    i8g_2xlarge = "i8g.2xlarge"
+    i8g_4xlarge = "i8g.4xlarge"
+    i8g_8xlarge = "i8g.8xlarge"
+    i8g_12xlarge = "i8g.12xlarge"
+    i8g_16xlarge = "i8g.16xlarge"
+    i8g_24xlarge = "i8g.24xlarge"
+    i8g_metal_24xl = "i8g.metal-24xl"
 
 
 class InstanceTypeHypervisor(StrEnum):
@@ -2551,6 +2589,11 @@ class LogDestinationType(StrEnum):
     kinesis_data_firehose = "kinesis-data-firehose"
 
 
+class ManagedBy(StrEnum):
+    account = "account"
+    declarative_policy = "declarative-policy"
+
+
 class MarketType(StrEnum):
     spot = "spot"
     capacity_block = "capacity-block"
@@ -2828,6 +2871,13 @@ class ReportInstanceReasonCodes(StrEnum):
     other = "other"
 
 
+class ReportState(StrEnum):
+    running = "running"
+    cancelled = "cancelled"
+    complete = "complete"
+    error = "error"
+
+
 class ReportStatusType(StrEnum):
     ok = "ok"
     impaired = "impaired"
@@ -2863,6 +2913,7 @@ class ResourceType(StrEnum):
     customer_gateway = "customer-gateway"
     carrier_gateway = "carrier-gateway"
     coip_pool = "coip-pool"
+    declarative_policies_report = "declarative-policies-report"
     dedicated_host = "dedicated-host"
     dhcp_options = "dhcp-options"
     egress_only_internet_gateway = "egress-only-internet-gateway"
@@ -2946,6 +2997,7 @@ class ResourceType(StrEnum):
     ipam_resource_discovery = "ipam-resource-discovery"
     ipam_resource_discovery_association = "ipam-resource-discovery-association"
     instance_connect_endpoint = "instance-connect-endpoint"
+    verified_access_endpoint_target = "verified-access-endpoint-target"
     ipam_external_resource_verification_token = "ipam-external-resource-verification-token"
 
 
@@ -3088,6 +3140,7 @@ class State(StrEnum):
     Rejected = "Rejected"
     Failed = "Failed"
     Expired = "Expired"
+    Partial = "Partial"
 
 
 class StaticSourcesSupportValue(StrEnum):
@@ -3410,6 +3463,7 @@ class VerifiedAccessEndpointAttachmentType(StrEnum):
 class VerifiedAccessEndpointProtocol(StrEnum):
     http = "http"
     https = "https"
+    tcp = "tcp"
 
 
 class VerifiedAccessEndpointStatusCode(StrEnum):
@@ -3423,6 +3477,8 @@ class VerifiedAccessEndpointStatusCode(StrEnum):
 class VerifiedAccessEndpointType(StrEnum):
     load_balancer = "load-balancer"
     network_interface = "network-interface"
+    rds = "rds"
+    cidr = "cidr"
 
 
 class VerifiedAccessLogDeliveryStatusCode(StrEnum):
@@ -3504,6 +3560,11 @@ class VpcBlockPublicAccessExclusionState(StrEnum):
     disable_complete = "disable-complete"
 
 
+class VpcBlockPublicAccessExclusionsAllowed(StrEnum):
+    allowed = "allowed"
+    not_allowed = "not-allowed"
+
+
 class VpcBlockPublicAccessState(StrEnum):
     default_state = "default-state"
     update_in_progress = "update-in-progress"
@@ -3523,6 +3584,8 @@ class VpcEndpointType(StrEnum):
     Interface = "Interface"
     Gateway = "Gateway"
     GatewayLoadBalancer = "GatewayLoadBalancer"
+    Resource = "Resource"
+    ServiceNetwork = "ServiceNetwork"
 
 
 class VpcPeeringConnectionStateReasonCode(StrEnum):
@@ -4918,6 +4981,11 @@ class AttachVerifiedAccessTrustProviderRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
 
+class VerifiedAccessInstanceCustomSubDomain(TypedDict, total=False):
+    SubDomain: Optional[String]
+    Nameservers: Optional[ValueStringList]
+
+
 class VerifiedAccessTrustProviderCondensed(TypedDict, total=False):
     VerifiedAccessTrustProviderId: Optional[String]
     Description: Optional[String]
@@ -4937,6 +5005,17 @@ class VerifiedAccessInstance(TypedDict, total=False):
     LastUpdatedTime: Optional[String]
     Tags: Optional[TagList]
     FipsEnabled: Optional[Boolean]
+    CidrEndpointsCustomSubDomain: Optional[VerifiedAccessInstanceCustomSubDomain]
+
+
+class NativeApplicationOidcOptions(TypedDict, total=False):
+    PublicSigningKeyEndpoint: Optional[String]
+    Issuer: Optional[String]
+    AuthorizationEndpoint: Optional[String]
+    TokenEndpoint: Optional[String]
+    UserInfoEndpoint: Optional[String]
+    ClientId: Optional[String]
+    Scope: Optional[String]
 
 
 class VerifiedAccessSseSpecificationResponse(TypedDict, total=False):
@@ -4972,6 +5051,7 @@ class VerifiedAccessTrustProvider(TypedDict, total=False):
     LastUpdatedTime: Optional[String]
     Tags: Optional[TagList]
     SseSpecification: Optional[VerifiedAccessSseSpecificationResponse]
+    NativeApplicationOidcOptions: Optional[NativeApplicationOidcOptions]
 
 
 class AttachVerifiedAccessTrustProviderResult(TypedDict, total=False):
@@ -5012,6 +5092,26 @@ class AttachmentEnaSrdSpecification(TypedDict, total=False):
 
 class AttributeBooleanValue(TypedDict, total=False):
     Value: Optional[Boolean]
+
+
+class RegionalSummary(TypedDict, total=False):
+    RegionName: Optional[String]
+    NumberOfMatchedAccounts: Optional[Integer]
+    NumberOfUnmatchedAccounts: Optional[Integer]
+
+
+RegionalSummaryList = List[RegionalSummary]
+
+
+class AttributeSummary(TypedDict, total=False):
+    AttributeName: Optional[String]
+    MostFrequentValue: Optional[String]
+    NumberOfMatchedAccounts: Optional[Integer]
+    NumberOfUnmatchedAccounts: Optional[Integer]
+    RegionalSummaries: Optional[RegionalSummaryList]
+
+
+AttributeSummaryList = List[AttributeSummary]
 
 
 class AttributeValue(TypedDict, total=False):
@@ -5393,6 +5493,15 @@ class CancelConversionRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     ConversionTaskId: ConversionTaskId
     ReasonMessage: Optional[String]
+
+
+class CancelDeclarativePoliciesReportRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    ReportId: DeclarativePoliciesReportId
+
+
+class CancelDeclarativePoliciesReportResult(TypedDict, total=False):
+    Return: Optional[Boolean]
 
 
 class CancelExportTaskRequest(ServiceRequest):
@@ -8898,19 +9007,44 @@ class CreateTransitGatewayVpcAttachmentResult(TypedDict, total=False):
     TransitGatewayVpcAttachment: Optional[TransitGatewayVpcAttachment]
 
 
+class CreateVerifiedAccessEndpointPortRange(TypedDict, total=False):
+    FromPort: Optional[VerifiedAccessEndpointPortNumber]
+    ToPort: Optional[VerifiedAccessEndpointPortNumber]
+
+
+CreateVerifiedAccessEndpointPortRangeList = List[CreateVerifiedAccessEndpointPortRange]
+CreateVerifiedAccessEndpointSubnetIdList = List[SubnetId]
+
+
+class CreateVerifiedAccessEndpointCidrOptions(TypedDict, total=False):
+    Protocol: Optional[VerifiedAccessEndpointProtocol]
+    SubnetIds: Optional[CreateVerifiedAccessEndpointSubnetIdList]
+    Cidr: Optional[String]
+    PortRanges: Optional[CreateVerifiedAccessEndpointPortRangeList]
+
+
 class CreateVerifiedAccessEndpointEniOptions(TypedDict, total=False):
     NetworkInterfaceId: Optional[NetworkInterfaceId]
     Protocol: Optional[VerifiedAccessEndpointProtocol]
     Port: Optional[VerifiedAccessEndpointPortNumber]
-
-
-CreateVerifiedAccessEndpointSubnetIdList = List[SubnetId]
+    PortRanges: Optional[CreateVerifiedAccessEndpointPortRangeList]
 
 
 class CreateVerifiedAccessEndpointLoadBalancerOptions(TypedDict, total=False):
     Protocol: Optional[VerifiedAccessEndpointProtocol]
     Port: Optional[VerifiedAccessEndpointPortNumber]
     LoadBalancerArn: Optional[LoadBalancerArn]
+    SubnetIds: Optional[CreateVerifiedAccessEndpointSubnetIdList]
+    PortRanges: Optional[CreateVerifiedAccessEndpointPortRangeList]
+
+
+class CreateVerifiedAccessEndpointRdsOptions(TypedDict, total=False):
+    Protocol: Optional[VerifiedAccessEndpointProtocol]
+    Port: Optional[VerifiedAccessEndpointPortNumber]
+    RdsDbInstanceArn: Optional[RdsDbInstanceArn]
+    RdsDbClusterArn: Optional[RdsDbClusterArn]
+    RdsDbProxyArn: Optional[RdsDbProxyArn]
+    RdsEndpoint: Optional[String]
     SubnetIds: Optional[CreateVerifiedAccessEndpointSubnetIdList]
 
 
@@ -8926,9 +9060,9 @@ class CreateVerifiedAccessEndpointRequest(ServiceRequest):
     VerifiedAccessGroupId: VerifiedAccessGroupId
     EndpointType: VerifiedAccessEndpointType
     AttachmentType: VerifiedAccessEndpointAttachmentType
-    DomainCertificateArn: CertificateArn
-    ApplicationDomain: String
-    EndpointDomainPrefix: String
+    DomainCertificateArn: Optional[CertificateArn]
+    ApplicationDomain: Optional[String]
+    EndpointDomainPrefix: Optional[String]
     SecurityGroupIds: Optional[SecurityGroupIdList]
     LoadBalancerOptions: Optional[CreateVerifiedAccessEndpointLoadBalancerOptions]
     NetworkInterfaceOptions: Optional[CreateVerifiedAccessEndpointEniOptions]
@@ -8938,6 +9072,36 @@ class CreateVerifiedAccessEndpointRequest(ServiceRequest):
     ClientToken: Optional[String]
     DryRun: Optional[Boolean]
     SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
+    RdsOptions: Optional[CreateVerifiedAccessEndpointRdsOptions]
+    CidrOptions: Optional[CreateVerifiedAccessEndpointCidrOptions]
+
+
+VerifiedAccessEndpointSubnetIdList = List[SubnetId]
+
+
+class VerifiedAccessEndpointPortRange(TypedDict, total=False):
+    FromPort: Optional[VerifiedAccessEndpointPortNumber]
+    ToPort: Optional[VerifiedAccessEndpointPortNumber]
+
+
+VerifiedAccessEndpointPortRangeList = List[VerifiedAccessEndpointPortRange]
+
+
+class VerifiedAccessEndpointCidrOptions(TypedDict, total=False):
+    Cidr: Optional[String]
+    PortRanges: Optional[VerifiedAccessEndpointPortRangeList]
+    Protocol: Optional[VerifiedAccessEndpointProtocol]
+    SubnetIds: Optional[VerifiedAccessEndpointSubnetIdList]
+
+
+class VerifiedAccessEndpointRdsOptions(TypedDict, total=False):
+    Protocol: Optional[VerifiedAccessEndpointProtocol]
+    Port: Optional[VerifiedAccessEndpointPortNumber]
+    RdsDbInstanceArn: Optional[String]
+    RdsDbClusterArn: Optional[String]
+    RdsDbProxyArn: Optional[String]
+    RdsEndpoint: Optional[String]
+    SubnetIds: Optional[VerifiedAccessEndpointSubnetIdList]
 
 
 class VerifiedAccessEndpointStatus(TypedDict, total=False):
@@ -8949,9 +9113,7 @@ class VerifiedAccessEndpointEniOptions(TypedDict, total=False):
     NetworkInterfaceId: Optional[NetworkInterfaceId]
     Protocol: Optional[VerifiedAccessEndpointProtocol]
     Port: Optional[VerifiedAccessEndpointPortNumber]
-
-
-VerifiedAccessEndpointSubnetIdList = List[SubnetId]
+    PortRanges: Optional[VerifiedAccessEndpointPortRangeList]
 
 
 class VerifiedAccessEndpointLoadBalancerOptions(TypedDict, total=False):
@@ -8959,6 +9121,7 @@ class VerifiedAccessEndpointLoadBalancerOptions(TypedDict, total=False):
     Port: Optional[VerifiedAccessEndpointPortNumber]
     LoadBalancerArn: Optional[String]
     SubnetIds: Optional[VerifiedAccessEndpointSubnetIdList]
+    PortRanges: Optional[VerifiedAccessEndpointPortRangeList]
 
 
 class VerifiedAccessEndpoint(TypedDict, total=False):
@@ -8981,6 +9144,8 @@ class VerifiedAccessEndpoint(TypedDict, total=False):
     DeletionTime: Optional[String]
     Tags: Optional[TagList]
     SseSpecification: Optional[VerifiedAccessSseSpecificationResponse]
+    RdsOptions: Optional[VerifiedAccessEndpointRdsOptions]
+    CidrOptions: Optional[VerifiedAccessEndpointCidrOptions]
 
 
 class CreateVerifiedAccessEndpointResult(TypedDict, total=False):
@@ -9020,10 +9185,22 @@ class CreateVerifiedAccessInstanceRequest(ServiceRequest):
     ClientToken: Optional[String]
     DryRun: Optional[Boolean]
     FIPSEnabled: Optional[Boolean]
+    CidrEndpointsCustomSubDomain: Optional[String]
 
 
 class CreateVerifiedAccessInstanceResult(TypedDict, total=False):
     VerifiedAccessInstance: Optional[VerifiedAccessInstance]
+
+
+class CreateVerifiedAccessNativeApplicationOidcOptions(TypedDict, total=False):
+    PublicSigningKeyEndpoint: Optional[String]
+    Issuer: Optional[String]
+    AuthorizationEndpoint: Optional[String]
+    TokenEndpoint: Optional[String]
+    UserInfoEndpoint: Optional[String]
+    ClientId: Optional[String]
+    ClientSecret: Optional[ClientSecretType]
+    Scope: Optional[String]
 
 
 class CreateVerifiedAccessTrustProviderDeviceOptions(TypedDict, total=False):
@@ -9053,6 +9230,7 @@ class CreateVerifiedAccessTrustProviderRequest(ServiceRequest):
     ClientToken: Optional[String]
     DryRun: Optional[Boolean]
     SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
+    NativeApplicationOidcOptions: Optional[CreateVerifiedAccessNativeApplicationOidcOptions]
 
 
 class CreateVerifiedAccessTrustProviderResult(TypedDict, total=False):
@@ -9150,7 +9328,7 @@ class CreateVpcEndpointRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     VpcEndpointType: Optional[VpcEndpointType]
     VpcId: VpcId
-    ServiceName: String
+    ServiceName: Optional[String]
     PolicyDocument: Optional[String]
     RouteTableIds: Optional[VpcEndpointRouteTableIdList]
     SubnetIds: Optional[VpcEndpointSubnetIdList]
@@ -9161,7 +9339,17 @@ class CreateVpcEndpointRequest(ServiceRequest):
     PrivateDnsEnabled: Optional[Boolean]
     TagSpecifications: Optional[TagSpecificationList]
     SubnetConfigurations: Optional[SubnetConfigurationsList]
+    ServiceNetworkArn: Optional[ServiceNetworkArn]
+    ResourceConfigurationArn: Optional[ResourceConfigurationArn]
     ServiceRegion: Optional[String]
+
+
+class SubnetIpPrefixes(TypedDict, total=False):
+    SubnetId: Optional[String]
+    IpPrefixes: Optional[ValueStringList]
+
+
+SubnetIpPrefixesList = List[SubnetIpPrefixes]
 
 
 class LastError(TypedDict, total=False):
@@ -9210,6 +9398,11 @@ class VpcEndpoint(TypedDict, total=False):
     Tags: Optional[TagList]
     OwnerId: Optional[String]
     LastError: Optional[LastError]
+    Ipv4Prefixes: Optional[SubnetIpPrefixesList]
+    Ipv6Prefixes: Optional[SubnetIpPrefixesList]
+    FailureReason: Optional[String]
+    ServiceNetworkArn: Optional[ServiceNetworkArn]
+    ResourceConfigurationArn: Optional[ResourceConfigurationArn]
     ServiceRegion: Optional[String]
 
 
@@ -9617,6 +9810,20 @@ class DataResponse(TypedDict, total=False):
 
 
 DataResponses = List[DataResponse]
+
+
+class DeclarativePoliciesReport(TypedDict, total=False):
+    ReportId: Optional[String]
+    S3Bucket: Optional[String]
+    S3Prefix: Optional[String]
+    TargetId: Optional[String]
+    StartTime: Optional[MillisecondDateTime]
+    EndTime: Optional[MillisecondDateTime]
+    Status: Optional[ReportState]
+    Tags: Optional[TagList]
+
+
+DeclarativePoliciesReportList = List[DeclarativePoliciesReport]
 
 
 class DeleteCarrierGatewayRequest(ServiceRequest):
@@ -10831,6 +11038,18 @@ class DescribeCustomerGatewaysResult(TypedDict, total=False):
     CustomerGateways: Optional[CustomerGatewayList]
 
 
+class DescribeDeclarativePoliciesReportsRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    NextToken: Optional[String]
+    MaxResults: Optional[DeclarativePoliciesMaxResults]
+    ReportIds: Optional[ValueStringList]
+
+
+class DescribeDeclarativePoliciesReportsResult(TypedDict, total=False):
+    NextToken: Optional[String]
+    Reports: Optional[DeclarativePoliciesReportList]
+
+
 DhcpOptionsIdStringList = List[DhcpOptionsId]
 
 
@@ -11507,6 +11726,7 @@ class Image(TypedDict, total=False):
     SourceInstanceId: Optional[String]
     DeregistrationProtection: Optional[String]
     LastLaunchedTime: Optional[String]
+    ImageAllowed: Optional[Boolean]
     SourceImageId: Optional[String]
     SourceImageRegion: Optional[String]
     ImageId: Optional[String]
@@ -11724,6 +11944,7 @@ class ImageMetadata(TypedDict, total=False):
     ImageOwnerAlias: Optional[String]
     CreationDate: Optional[String]
     DeprecationTime: Optional[String]
+    ImageAllowed: Optional[Boolean]
     IsPublic: Optional[Boolean]
 
 
@@ -14739,6 +14960,8 @@ class VpcBlockPublicAccessOptions(TypedDict, total=False):
     InternetGatewayBlockMode: Optional[InternetGatewayBlockMode]
     Reason: Optional[String]
     LastUpdateTimestamp: Optional[MillisecondDateTime]
+    ManagedBy: Optional[ManagedBy]
+    ExclusionsAllowed: Optional[VpcBlockPublicAccessExclusionsAllowed]
 
 
 class DescribeVpcBlockPublicAccessOptionsResult(TypedDict, total=False):
@@ -14776,6 +14999,37 @@ VpcClassicLinkList = List[VpcClassicLink]
 
 class DescribeVpcClassicLinkResult(TypedDict, total=False):
     Vpcs: Optional[VpcClassicLinkList]
+
+
+class DescribeVpcEndpointAssociationsRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    VpcEndpointIds: Optional[VpcEndpointIdList]
+    Filters: Optional[FilterList]
+    MaxResults: Optional[maxResults]
+    NextToken: Optional[String]
+
+
+class VpcEndpointAssociation(TypedDict, total=False):
+    Id: Optional[String]
+    VpcEndpointId: Optional[VpcEndpointId]
+    ServiceNetworkArn: Optional[ServiceNetworkArn]
+    ServiceNetworkName: Optional[String]
+    AssociatedResourceAccessibility: Optional[String]
+    FailureReason: Optional[String]
+    FailureCode: Optional[String]
+    DnsEntry: Optional[DnsEntry]
+    PrivateDnsEntry: Optional[DnsEntry]
+    AssociatedResourceArn: Optional[String]
+    ResourceConfigurationGroupArn: Optional[String]
+    Tags: Optional[TagList]
+
+
+VpcEndpointAssociationSet = List[VpcEndpointAssociation]
+
+
+class DescribeVpcEndpointAssociationsResult(TypedDict, total=False):
+    VpcEndpointAssociations: Optional[VpcEndpointAssociationSet]
+    NextToken: Optional[String]
 
 
 class DescribeVpcEndpointConnectionNotificationsRequest(ServiceRequest):
@@ -15028,6 +15282,9 @@ class DetachVpnGatewayRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
 
+DeviceTrustProviderTypeList = List[DeviceTrustProviderType]
+
+
 class DisableAddressTransferRequest(ServiceRequest):
     AllocationId: AllocationId
     DryRun: Optional[Boolean]
@@ -15035,6 +15292,14 @@ class DisableAddressTransferRequest(ServiceRequest):
 
 class DisableAddressTransferResult(TypedDict, total=False):
     AddressTransfer: Optional[AddressTransfer]
+
+
+class DisableAllowedImagesSettingsRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+
+
+class DisableAllowedImagesSettingsResult(TypedDict, total=False):
+    AllowedImagesSettingsState: Optional[AllowedImagesSettingsDisabledState]
 
 
 class DisableAwsNetworkPerformanceMetricSubscriptionRequest(ServiceRequest):
@@ -15448,6 +15713,15 @@ class EnableAddressTransferResult(TypedDict, total=False):
     AddressTransfer: Optional[AddressTransfer]
 
 
+class EnableAllowedImagesSettingsRequest(ServiceRequest):
+    AllowedImagesSettingsState: AllowedImagesSettingsEnabledState
+    DryRun: Optional[Boolean]
+
+
+class EnableAllowedImagesSettingsResult(TypedDict, total=False):
+    AllowedImagesSettingsState: Optional[AllowedImagesSettingsEnabledState]
+
+
 class EnableAwsNetworkPerformanceMetricSubscriptionRequest(ServiceRequest):
     Source: Optional[String]
     Destination: Optional[String]
@@ -15722,6 +15996,72 @@ class ExportTransitGatewayRoutesResult(TypedDict, total=False):
     S3Location: Optional[String]
 
 
+class ExportVerifiedAccessInstanceClientConfigurationRequest(ServiceRequest):
+    VerifiedAccessInstanceId: VerifiedAccessInstanceId
+    DryRun: Optional[Boolean]
+
+
+class VerifiedAccessInstanceOpenVpnClientConfigurationRoute(TypedDict, total=False):
+    Cidr: Optional[String]
+
+
+VerifiedAccessInstanceOpenVpnClientConfigurationRouteList = List[
+    VerifiedAccessInstanceOpenVpnClientConfigurationRoute
+]
+
+
+class VerifiedAccessInstanceOpenVpnClientConfiguration(TypedDict, total=False):
+    Config: Optional[String]
+    Routes: Optional[VerifiedAccessInstanceOpenVpnClientConfigurationRouteList]
+
+
+VerifiedAccessInstanceOpenVpnClientConfigurationList = List[
+    VerifiedAccessInstanceOpenVpnClientConfiguration
+]
+
+
+class VerifiedAccessInstanceUserTrustProviderClientConfiguration(TypedDict, total=False):
+    Type: Optional[UserTrustProviderType]
+    Scopes: Optional[String]
+    Issuer: Optional[String]
+    AuthorizationEndpoint: Optional[String]
+    PublicSigningKeyEndpoint: Optional[String]
+    TokenEndpoint: Optional[String]
+    UserInfoEndpoint: Optional[String]
+    ClientId: Optional[String]
+    ClientSecret: Optional[ClientSecretType]
+    PkceEnabled: Optional[Boolean]
+
+
+class ExportVerifiedAccessInstanceClientConfigurationResult(TypedDict, total=False):
+    Version: Optional[String]
+    VerifiedAccessInstanceId: Optional[String]
+    Region: Optional[String]
+    DeviceTrustProviders: Optional[DeviceTrustProviderTypeList]
+    UserTrustProvider: Optional[VerifiedAccessInstanceUserTrustProviderClientConfiguration]
+    OpenVpnConfigurations: Optional[VerifiedAccessInstanceOpenVpnClientConfigurationList]
+
+
+class GetAllowedImagesSettingsRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+
+
+ImageProviderList = List[ImageProvider]
+
+
+class ImageCriterion(TypedDict, total=False):
+    ImageProviders: Optional[ImageProviderList]
+
+
+ImageCriterionList = List[ImageCriterion]
+
+
+class GetAllowedImagesSettingsResult(TypedDict, total=False):
+    State: Optional[String]
+    ImageCriteria: Optional[ImageCriterionList]
+    ManagedBy: Optional[ManagedBy]
+
+
 class GetAssociatedEnclaveCertificateIamRolesRequest(ServiceRequest):
     CertificateArn: CertificateId
     DryRun: Optional[Boolean]
@@ -15828,6 +16168,23 @@ class GetConsoleScreenshotResult(TypedDict, total=False):
     InstanceId: Optional[String]
 
 
+class GetDeclarativePoliciesReportSummaryRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    ReportId: DeclarativePoliciesReportId
+
+
+class GetDeclarativePoliciesReportSummaryResult(TypedDict, total=False):
+    ReportId: Optional[String]
+    S3Bucket: Optional[String]
+    S3Prefix: Optional[String]
+    TargetId: Optional[String]
+    StartTime: Optional[MillisecondDateTime]
+    EndTime: Optional[MillisecondDateTime]
+    NumberOfAccounts: Optional[Integer]
+    NumberOfFailedAccounts: Optional[Integer]
+    AttributeSummaries: Optional[AttributeSummaryList]
+
+
 class GetDefaultCreditSpecificationRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     InstanceFamily: UnlimitedSupportedInstanceFamily
@@ -15921,6 +16278,7 @@ class GetImageBlockPublicAccessStateRequest(ServiceRequest):
 
 class GetImageBlockPublicAccessStateResult(TypedDict, total=False):
     ImageBlockPublicAccessState: Optional[String]
+    ManagedBy: Optional[ManagedBy]
 
 
 class GetInstanceMetadataDefaultsRequest(ServiceRequest):
@@ -15932,6 +16290,8 @@ class InstanceMetadataDefaultsResponse(TypedDict, total=False):
     HttpPutResponseHopLimit: Optional[BoxedInteger]
     HttpEndpoint: Optional[InstanceMetadataEndpointState]
     InstanceMetadataTags: Optional[InstanceMetadataTagsState]
+    ManagedBy: Optional[ManagedBy]
+    ManagedExceptionMessage: Optional[String]
 
 
 class GetInstanceMetadataDefaultsResult(TypedDict, total=False):
@@ -16377,6 +16737,7 @@ class GetSerialConsoleAccessStatusRequest(ServiceRequest):
 
 class GetSerialConsoleAccessStatusResult(TypedDict, total=False):
     SerialConsoleAccessEnabled: Optional[Boolean]
+    ManagedBy: Optional[ManagedBy]
 
 
 class GetSnapshotBlockPublicAccessStateRequest(ServiceRequest):
@@ -16385,6 +16746,7 @@ class GetSnapshotBlockPublicAccessStateRequest(ServiceRequest):
 
 class GetSnapshotBlockPublicAccessStateResult(TypedDict, total=False):
     State: Optional[SnapshotBlockPublicAccessState]
+    ManagedBy: Optional[ManagedBy]
 
 
 class InstanceRequirementsWithMetadataRequest(TypedDict, total=False):
@@ -16609,6 +16971,27 @@ class GetVerifiedAccessEndpointPolicyResult(TypedDict, total=False):
     PolicyDocument: Optional[String]
 
 
+class GetVerifiedAccessEndpointTargetsRequest(ServiceRequest):
+    VerifiedAccessEndpointId: VerifiedAccessEndpointId
+    MaxResults: Optional[GetVerifiedAccessEndpointTargetsMaxResults]
+    NextToken: Optional[NextToken]
+    DryRun: Optional[Boolean]
+
+
+class VerifiedAccessEndpointTarget(TypedDict, total=False):
+    VerifiedAccessEndpointId: Optional[VerifiedAccessEndpointId]
+    VerifiedAccessEndpointTargetIpAddress: Optional[String]
+    VerifiedAccessEndpointTargetDns: Optional[String]
+
+
+VerifiedAccessEndpointTargetList = List[VerifiedAccessEndpointTarget]
+
+
+class GetVerifiedAccessEndpointTargetsResult(TypedDict, total=False):
+    VerifiedAccessEndpointTargets: Optional[VerifiedAccessEndpointTargetList]
+    NextToken: Optional[NextToken]
+
+
 class GetVerifiedAccessGroupPolicyRequest(ServiceRequest):
     VerifiedAccessGroupId: VerifiedAccessGroupId
     DryRun: Optional[Boolean]
@@ -16701,6 +17084,16 @@ class ImageAttribute(TypedDict, total=False):
     LaunchPermissions: Optional[LaunchPermissionList]
     ProductCodes: Optional[ProductCodeList]
     BlockDeviceMappings: Optional[BlockDeviceMappingList]
+
+
+ImageProviderRequestList = List[ImageProviderRequest]
+
+
+class ImageCriterionRequest(TypedDict, total=False):
+    ImageProviders: Optional[ImageProviderRequestList]
+
+
+ImageCriterionRequestList = List[ImageCriterionRequest]
 
 
 class UserBucket(TypedDict, total=False):
@@ -17728,9 +18121,22 @@ class ModifyTransitGatewayVpcAttachmentResult(TypedDict, total=False):
     TransitGatewayVpcAttachment: Optional[TransitGatewayVpcAttachment]
 
 
+class ModifyVerifiedAccessEndpointPortRange(TypedDict, total=False):
+    FromPort: Optional[VerifiedAccessEndpointPortNumber]
+    ToPort: Optional[VerifiedAccessEndpointPortNumber]
+
+
+ModifyVerifiedAccessEndpointPortRangeList = List[ModifyVerifiedAccessEndpointPortRange]
+
+
+class ModifyVerifiedAccessEndpointCidrOptions(TypedDict, total=False):
+    PortRanges: Optional[ModifyVerifiedAccessEndpointPortRangeList]
+
+
 class ModifyVerifiedAccessEndpointEniOptions(TypedDict, total=False):
     Protocol: Optional[VerifiedAccessEndpointProtocol]
     Port: Optional[VerifiedAccessEndpointPortNumber]
+    PortRanges: Optional[ModifyVerifiedAccessEndpointPortRangeList]
 
 
 ModifyVerifiedAccessEndpointSubnetIdList = List[SubnetId]
@@ -17740,6 +18146,7 @@ class ModifyVerifiedAccessEndpointLoadBalancerOptions(TypedDict, total=False):
     SubnetIds: Optional[ModifyVerifiedAccessEndpointSubnetIdList]
     Protocol: Optional[VerifiedAccessEndpointProtocol]
     Port: Optional[VerifiedAccessEndpointPortNumber]
+    PortRanges: Optional[ModifyVerifiedAccessEndpointPortRangeList]
 
 
 class ModifyVerifiedAccessEndpointPolicyRequest(ServiceRequest):
@@ -17757,6 +18164,12 @@ class ModifyVerifiedAccessEndpointPolicyResult(TypedDict, total=False):
     SseSpecification: Optional[VerifiedAccessSseSpecificationResponse]
 
 
+class ModifyVerifiedAccessEndpointRdsOptions(TypedDict, total=False):
+    SubnetIds: Optional[ModifyVerifiedAccessEndpointSubnetIdList]
+    Port: Optional[VerifiedAccessEndpointPortNumber]
+    RdsEndpoint: Optional[String]
+
+
 class ModifyVerifiedAccessEndpointRequest(ServiceRequest):
     VerifiedAccessEndpointId: VerifiedAccessEndpointId
     VerifiedAccessGroupId: Optional[VerifiedAccessGroupId]
@@ -17765,6 +18178,8 @@ class ModifyVerifiedAccessEndpointRequest(ServiceRequest):
     Description: Optional[String]
     ClientToken: Optional[String]
     DryRun: Optional[Boolean]
+    RdsOptions: Optional[ModifyVerifiedAccessEndpointRdsOptions]
+    CidrOptions: Optional[ModifyVerifiedAccessEndpointCidrOptions]
 
 
 class ModifyVerifiedAccessEndpointResult(TypedDict, total=False):
@@ -17839,10 +18254,22 @@ class ModifyVerifiedAccessInstanceRequest(ServiceRequest):
     Description: Optional[String]
     DryRun: Optional[Boolean]
     ClientToken: Optional[String]
+    CidrEndpointsCustomSubDomain: Optional[String]
 
 
 class ModifyVerifiedAccessInstanceResult(TypedDict, total=False):
     VerifiedAccessInstance: Optional[VerifiedAccessInstance]
+
+
+class ModifyVerifiedAccessNativeApplicationOidcOptions(TypedDict, total=False):
+    PublicSigningKeyEndpoint: Optional[String]
+    Issuer: Optional[String]
+    AuthorizationEndpoint: Optional[String]
+    TokenEndpoint: Optional[String]
+    UserInfoEndpoint: Optional[String]
+    ClientId: Optional[String]
+    ClientSecret: Optional[ClientSecretType]
+    Scope: Optional[String]
 
 
 class ModifyVerifiedAccessTrustProviderDeviceOptions(TypedDict, total=False):
@@ -17867,6 +18294,7 @@ class ModifyVerifiedAccessTrustProviderRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     ClientToken: Optional[String]
     SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
+    NativeApplicationOidcOptions: Optional[ModifyVerifiedAccessNativeApplicationOidcOptions]
 
 
 class ModifyVerifiedAccessTrustProviderResult(TypedDict, total=False):
@@ -18459,6 +18887,15 @@ class ReplaceIamInstanceProfileAssociationResult(TypedDict, total=False):
     IamInstanceProfileAssociation: Optional[IamInstanceProfileAssociation]
 
 
+class ReplaceImageCriteriaInAllowedImagesSettingsRequest(ServiceRequest):
+    ImageCriteria: Optional[ImageCriterionRequestList]
+    DryRun: Optional[Boolean]
+
+
+class ReplaceImageCriteriaInAllowedImagesSettingsResult(TypedDict, total=False):
+    ReturnValue: Optional[Boolean]
+
+
 class ReplaceNetworkAclAssociationRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     AssociationId: NetworkAclAssociationId
@@ -18985,6 +19422,18 @@ SecurityGroupRuleDescriptionList = List[SecurityGroupRuleDescription]
 class SendDiagnosticInterruptRequest(ServiceRequest):
     InstanceId: InstanceId
     DryRun: Optional[Boolean]
+
+
+class StartDeclarativePoliciesReportRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    S3Bucket: String
+    S3Prefix: Optional[String]
+    TargetId: String
+    TagSpecifications: Optional[TagSpecificationList]
+
+
+class StartDeclarativePoliciesReportResult(TypedDict, total=False):
+    ReportId: Optional[String]
 
 
 class StartInstancesRequest(ServiceRequest):
@@ -19740,6 +20189,16 @@ class Ec2Api:
         reason_message: String = None,
         **kwargs,
     ) -> None:
+        raise NotImplementedError
+
+    @handler("CancelDeclarativePoliciesReport")
+    def cancel_declarative_policies_report(
+        self,
+        context: RequestContext,
+        report_id: DeclarativePoliciesReportId,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> CancelDeclarativePoliciesReportResult:
         raise NotImplementedError
 
     @handler("CancelExportTask")
@@ -20873,9 +21332,9 @@ class Ec2Api:
         verified_access_group_id: VerifiedAccessGroupId,
         endpoint_type: VerifiedAccessEndpointType,
         attachment_type: VerifiedAccessEndpointAttachmentType,
-        domain_certificate_arn: CertificateArn,
-        application_domain: String,
-        endpoint_domain_prefix: String,
+        domain_certificate_arn: CertificateArn = None,
+        application_domain: String = None,
+        endpoint_domain_prefix: String = None,
         security_group_ids: SecurityGroupIdList = None,
         load_balancer_options: CreateVerifiedAccessEndpointLoadBalancerOptions = None,
         network_interface_options: CreateVerifiedAccessEndpointEniOptions = None,
@@ -20885,6 +21344,8 @@ class Ec2Api:
         client_token: String = None,
         dry_run: Boolean = None,
         sse_specification: VerifiedAccessSseSpecificationRequest = None,
+        rds_options: CreateVerifiedAccessEndpointRdsOptions = None,
+        cidr_options: CreateVerifiedAccessEndpointCidrOptions = None,
         **kwargs,
     ) -> CreateVerifiedAccessEndpointResult:
         raise NotImplementedError
@@ -20913,6 +21374,7 @@ class Ec2Api:
         client_token: String = None,
         dry_run: Boolean = None,
         fips_enabled: Boolean = None,
+        cidr_endpoints_custom_sub_domain: String = None,
         **kwargs,
     ) -> CreateVerifiedAccessInstanceResult:
         raise NotImplementedError
@@ -20932,6 +21394,7 @@ class Ec2Api:
         client_token: String = None,
         dry_run: Boolean = None,
         sse_specification: VerifiedAccessSseSpecificationRequest = None,
+        native_application_oidc_options: CreateVerifiedAccessNativeApplicationOidcOptions = None,
         **kwargs,
     ) -> CreateVerifiedAccessTrustProviderResult:
         raise NotImplementedError
@@ -20996,9 +21459,9 @@ class Ec2Api:
         self,
         context: RequestContext,
         vpc_id: VpcId,
-        service_name: String,
         dry_run: Boolean = None,
         vpc_endpoint_type: VpcEndpointType = None,
+        service_name: String = None,
         policy_document: String = None,
         route_table_ids: VpcEndpointRouteTableIdList = None,
         subnet_ids: VpcEndpointSubnetIdList = None,
@@ -21009,6 +21472,8 @@ class Ec2Api:
         private_dns_enabled: Boolean = None,
         tag_specifications: TagSpecificationList = None,
         subnet_configurations: SubnetConfigurationsList = None,
+        service_network_arn: ServiceNetworkArn = None,
+        resource_configuration_arn: ResourceConfigurationArn = None,
         service_region: String = None,
         **kwargs,
     ) -> CreateVpcEndpointResult:
@@ -22226,6 +22691,18 @@ class Ec2Api:
         dry_run: Boolean = None,
         **kwargs,
     ) -> DescribeCustomerGatewaysResult:
+        raise NotImplementedError
+
+    @handler("DescribeDeclarativePoliciesReports")
+    def describe_declarative_policies_reports(
+        self,
+        context: RequestContext,
+        dry_run: Boolean = None,
+        next_token: String = None,
+        max_results: DeclarativePoliciesMaxResults = None,
+        report_ids: ValueStringList = None,
+        **kwargs,
+    ) -> DescribeDeclarativePoliciesReportsResult:
         raise NotImplementedError
 
     @handler("DescribeDhcpOptions")
@@ -23802,6 +24279,19 @@ class Ec2Api:
     ) -> DescribeVpcClassicLinkDnsSupportResult:
         raise NotImplementedError
 
+    @handler("DescribeVpcEndpointAssociations")
+    def describe_vpc_endpoint_associations(
+        self,
+        context: RequestContext,
+        dry_run: Boolean = None,
+        vpc_endpoint_ids: VpcEndpointIdList = None,
+        filters: FilterList = None,
+        max_results: maxResults = None,
+        next_token: String = None,
+        **kwargs,
+    ) -> DescribeVpcEndpointAssociationsResult:
+        raise NotImplementedError
+
     @handler("DescribeVpcEndpointConnectionNotifications")
     def describe_vpc_endpoint_connection_notifications(
         self,
@@ -24005,6 +24495,12 @@ class Ec2Api:
         dry_run: Boolean = None,
         **kwargs,
     ) -> DisableAddressTransferResult:
+        raise NotImplementedError
+
+    @handler("DisableAllowedImagesSettings")
+    def disable_allowed_images_settings(
+        self, context: RequestContext, dry_run: Boolean = None, **kwargs
+    ) -> DisableAllowedImagesSettingsResult:
         raise NotImplementedError
 
     @handler("DisableAwsNetworkPerformanceMetricSubscription")
@@ -24307,6 +24803,16 @@ class Ec2Api:
     ) -> EnableAddressTransferResult:
         raise NotImplementedError
 
+    @handler("EnableAllowedImagesSettings")
+    def enable_allowed_images_settings(
+        self,
+        context: RequestContext,
+        allowed_images_settings_state: AllowedImagesSettingsEnabledState,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> EnableAllowedImagesSettingsResult:
+        raise NotImplementedError
+
     @handler("EnableAwsNetworkPerformanceMetricSubscription")
     def enable_aws_network_performance_metric_subscription(
         self,
@@ -24510,6 +25016,22 @@ class Ec2Api:
     ) -> ExportTransitGatewayRoutesResult:
         raise NotImplementedError
 
+    @handler("ExportVerifiedAccessInstanceClientConfiguration")
+    def export_verified_access_instance_client_configuration(
+        self,
+        context: RequestContext,
+        verified_access_instance_id: VerifiedAccessInstanceId,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> ExportVerifiedAccessInstanceClientConfigurationResult:
+        raise NotImplementedError
+
+    @handler("GetAllowedImagesSettings")
+    def get_allowed_images_settings(
+        self, context: RequestContext, dry_run: Boolean = None, **kwargs
+    ) -> GetAllowedImagesSettingsResult:
+        raise NotImplementedError
+
     @handler("GetAssociatedEnclaveCertificateIamRoles")
     def get_associated_enclave_certificate_iam_roles(
         self,
@@ -24591,6 +25113,16 @@ class Ec2Api:
         wake_up: Boolean = None,
         **kwargs,
     ) -> GetConsoleScreenshotResult:
+        raise NotImplementedError
+
+    @handler("GetDeclarativePoliciesReportSummary")
+    def get_declarative_policies_report_summary(
+        self,
+        context: RequestContext,
+        report_id: DeclarativePoliciesReportId,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> GetDeclarativePoliciesReportSummaryResult:
         raise NotImplementedError
 
     @handler("GetDefaultCreditSpecification")
@@ -25020,6 +25552,18 @@ class Ec2Api:
         dry_run: Boolean = None,
         **kwargs,
     ) -> GetVerifiedAccessEndpointPolicyResult:
+        raise NotImplementedError
+
+    @handler("GetVerifiedAccessEndpointTargets")
+    def get_verified_access_endpoint_targets(
+        self,
+        context: RequestContext,
+        verified_access_endpoint_id: VerifiedAccessEndpointId,
+        max_results: GetVerifiedAccessEndpointTargetsMaxResults = None,
+        next_token: NextToken = None,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> GetVerifiedAccessEndpointTargetsResult:
         raise NotImplementedError
 
     @handler("GetVerifiedAccessGroupPolicy")
@@ -25817,6 +26361,8 @@ class Ec2Api:
         description: String = None,
         client_token: String = None,
         dry_run: Boolean = None,
+        rds_options: ModifyVerifiedAccessEndpointRdsOptions = None,
+        cidr_options: ModifyVerifiedAccessEndpointCidrOptions = None,
         **kwargs,
     ) -> ModifyVerifiedAccessEndpointResult:
         raise NotImplementedError
@@ -25870,6 +26416,7 @@ class Ec2Api:
         description: String = None,
         dry_run: Boolean = None,
         client_token: String = None,
+        cidr_endpoints_custom_sub_domain: String = None,
         **kwargs,
     ) -> ModifyVerifiedAccessInstanceResult:
         raise NotImplementedError
@@ -25897,6 +26444,7 @@ class Ec2Api:
         dry_run: Boolean = None,
         client_token: String = None,
         sse_specification: VerifiedAccessSseSpecificationRequest = None,
+        native_application_oidc_options: ModifyVerifiedAccessNativeApplicationOidcOptions = None,
         **kwargs,
     ) -> ModifyVerifiedAccessTrustProviderResult:
         raise NotImplementedError
@@ -26444,6 +26992,16 @@ class Ec2Api:
     ) -> ReplaceIamInstanceProfileAssociationResult:
         raise NotImplementedError
 
+    @handler("ReplaceImageCriteriaInAllowedImagesSettings")
+    def replace_image_criteria_in_allowed_images_settings(
+        self,
+        context: RequestContext,
+        image_criteria: ImageCriterionRequestList = None,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> ReplaceImageCriteriaInAllowedImagesSettingsResult:
+        raise NotImplementedError
+
     @handler("ReplaceNetworkAclAssociation")
     def replace_network_acl_association(
         self,
@@ -26834,6 +27392,19 @@ class Ec2Api:
     def send_diagnostic_interrupt(
         self, context: RequestContext, instance_id: InstanceId, dry_run: Boolean = None, **kwargs
     ) -> None:
+        raise NotImplementedError
+
+    @handler("StartDeclarativePoliciesReport")
+    def start_declarative_policies_report(
+        self,
+        context: RequestContext,
+        s3_bucket: String,
+        target_id: String,
+        dry_run: Boolean = None,
+        s3_prefix: String = None,
+        tag_specifications: TagSpecificationList = None,
+        **kwargs,
+    ) -> StartDeclarativePoliciesReportResult:
         raise NotImplementedError
 
     @handler("StartInstances")

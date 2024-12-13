@@ -194,6 +194,16 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#role_arn.
+    def visitRole_arn(self, ctx:ASLParser.Role_arnContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#role_path.
+    def visitRole_path(self, ctx:ASLParser.Role_pathContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#timeout_seconds_jsonata.
     def visitTimeout_seconds_jsonata(self, ctx:ASLParser.Timeout_seconds_jsonataContext):
         return self.visitChildren(ctx)

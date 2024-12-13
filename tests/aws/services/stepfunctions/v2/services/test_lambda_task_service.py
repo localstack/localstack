@@ -17,7 +17,6 @@ from tests.aws.services.stepfunctions.templates.services.services_templates impo
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..tracingConfiguration",
         # TODO: add support for Sdk Http metadata.
         "$..SdkHttpMetadata",
         "$..SdkResponseMetadata",
@@ -28,7 +27,7 @@ class TestTaskServiceLambda:
     def test_invoke(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         sfn_snapshot,
@@ -46,8 +45,8 @@ class TestTaskServiceLambda:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -58,7 +57,7 @@ class TestTaskServiceLambda:
     def test_invoke_bytes_payload(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         sfn_snapshot,
@@ -78,8 +77,8 @@ class TestTaskServiceLambda:
             {"FunctionName": function_name, "Payload": json.dumps("'{'Hello':'World'}'")}
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -91,7 +90,7 @@ class TestTaskServiceLambda:
     def test_invoke_unsupported_param(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         sfn_snapshot,
@@ -114,8 +113,8 @@ class TestTaskServiceLambda:
             {"FunctionName": function_name, "Payload": None, "LogType": LogType.Tail}
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -138,7 +137,7 @@ class TestTaskServiceLambda:
     def test_invoke_json_values(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         sfn_snapshot,
@@ -160,8 +159,8 @@ class TestTaskServiceLambda:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": json.dumps(json_value)})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -176,7 +175,7 @@ class TestTaskServiceLambda:
     def test_list_functions(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -185,8 +184,8 @@ class TestTaskServiceLambda:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
