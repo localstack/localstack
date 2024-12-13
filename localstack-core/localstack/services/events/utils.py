@@ -266,9 +266,11 @@ def get_trace_header_encoded_region_account(
 
 def is_nested_in_string(template, match) -> bool:
     """
-    Check if the placeholder is nested within a larger string value.
-    This checks if there are quotes surrounding the larger string containing the placeholder.
-    e.g. "users-service/users/<userId>" with "<*?>" as match.
+    Determines if a match (string) is nested within a larger string value in the given template.
+
+    This function checks if there are quotes surrounding the larger string that contains the placeholder.
+    True for "users-service/users/<userId>"
+    False for "<userId>"
     """
     start = match.start()
     end = match.end()
