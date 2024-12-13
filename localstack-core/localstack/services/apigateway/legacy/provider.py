@@ -378,11 +378,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def put_rest_api(self, context: RequestContext, request: PutRestApiRequest) -> RestApi:
         # TODO: take into account the mode: overwrite or merge
         # the default is now `merge`, but we are removing everything
-        body_data = request["body"].read()
         rest_api = get_moto_rest_api(context, request["restApiId"])
+        rest_api, warnings = import_api_from_openapi_spec(
+            rest_api, context=context, request=request
+        )
 
-        openapi_spec = parse_json_or_yaml(to_str(body_data))
-        rest_api = import_api_from_openapi_spec(rest_api, openapi_spec, context=context)
         rest_api.root_resource_id = get_moto_rest_api_root_resource(rest_api)
         response = rest_api.to_dict()
         remove_empty_attributes_from_rest_api(response)
@@ -391,6 +391,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         # TODO: verify this
         response = to_rest_api_response_json(response)
         response.setdefault("tags", {})
+
+        # TODO Failing still keeps all applied mutations. We need to revert to the previous state instead
+        if warnings:
+            response["warnings"] = warnings
+
         return response
 
     @handler("CreateDomainName")
