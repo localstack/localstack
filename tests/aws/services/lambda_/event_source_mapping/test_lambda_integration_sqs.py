@@ -1220,55 +1220,100 @@ class TestSQSEventSourceMapping:
 
     @markers.aws.validated
     @pytest.mark.parametrize(
+        # EventBridge event pattern filtering test suite: tests/aws/services/events/test_events_patterns.py
+        # Event filtering: https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html
+        # Special cases behavior: https://docs.aws.amazon.com/lambda/latest/dg/with-sqs-filtering.html
         "filter, item_matching, item_not_matching",
         [
             # test single filter
-            (
-                {"body": {"testItem": ["test24"]}},
-                {"testItem": "test24"},
-                {"testItem": "tesWER"},
+            pytest.param(
+                {"body": {"my-key": ["my-value"]}},
+                {"my-key": "my-value"},
+                {"my-key": "other-value"},
+                id="single",
             ),
             # test OR filter
-            (
-                {"body": {"testItem": ["test24", "test45"]}},
-                {"testItem": "test45"},
-                {"testItem": "WERTD"},
+            pytest.param(
+                {"body": {"my-key": ["my-value-one", "my-value-two"]}},
+                {"my-key": "my-value-two"},
+                {"my-key": "other-value"},
+                id="or",
             ),
             # test AND filter
-            (
-                {"body": {"testItem": ["test24", "test45"], "test2": ["go"]}},
-                {"testItem": "test45", "test2": "go"},
-                {"testItem": "test67", "test2": "go"},
+            pytest.param(
+                {
+                    "body": {
+                        "my-key-one": ["other-filter", "my-value-one"],
+                        "my-key-two": ["my-value-two"],
+                    }
+                },
+                {"my-key-one": "my-value-one", "my-key-two": "my-value-two"},
+                {"my-key-one": "other-value-", "my-key-two": "my-value-two"},
+                id="and",
             ),
             # exists
-            (
-                {"body": {"test2": [{"exists": True}]}},
-                {"test2": "7411"},
-                {"test5": "74545"},
+            pytest.param(
+                {"body": {"my-key": [{"exists": True}]}},
+                {"my-key": "any-value-one"},
+                {"other-key": "any-value-two"},
+                id="exists",
             ),
             # numeric (bigger)
-            (
-                {"body": {"test2": [{"numeric": [">", 100]}]}},
-                {"test2": 105},
-                "this is a test string",  # normal string should be dropped as well aka not fitting to filter
+            pytest.param(
+                {"body": {"my-number": [{"numeric": [">", 100]}]}},
+                {"my-number": 101},
+                {"my-number": 100},
+                id="numeric-bigger",
             ),
             # numeric (smaller)
-            (
-                {"body": {"test2": [{"numeric": ["<", 100]}]}},
-                {"test2": 93},
-                {"test2": 105},
+            pytest.param(
+                {"body": {"my-number": [{"numeric": ["<", 100]}]}},
+                {"my-number": 99},
+                {"my-number": 100},
+                id="numeric-smaller",
             ),
             # numeric (range)
-            (
-                {"body": {"test2": [{"numeric": [">=", 100, "<", 200]}]}},
-                {"test2": 105},
-                {"test2": 200},
+            pytest.param(
+                {"body": {"my-number": [{"numeric": [">=", 100, "<", 200]}]}},
+                {"my-number": 100},
+                {"my-number": 200},
+                id="numeric-range",
             ),
             # prefix
-            (
-                {"body": {"test2": [{"prefix": "us-1"}]}},
-                {"test2": "us-1-48454"},
-                {"test2": "eu-wert"},
+            pytest.param(
+                {"body": {"my-key": [{"prefix": "yes"}]}},
+                {"my-key": "yes-value"},
+                {"my-key": "no-value"},
+                id="prefix",
+            ),
+            # plain string matching
+            # TODO: How is plain string matching supposed to work?
+            #  https://docs.aws.amazon.com/lambda/latest/dg/with-sqs-filtering.html
+            pytest.param(
+                {"body": "plain-string"},
+                "plain-string",
+                "plain-string-not-matching",
+                id="plain-string-matching",
+                marks=pytest.mark.skip(reason="figure out how plain string matching works"),
+            ),
+            # plain string filter
+            # TODO: How is plain string matching supposed to work?
+            #  https://docs.aws.amazon.com/lambda/latest/dg/with-sqs-filtering.html
+            pytest.param(
+                {"body": "plain-string"},
+                "plain-string",
+                # valid json body vs. plain string filter for body -> drop the message
+                {"valid-json-key": "plain-string"},
+                id="plain-string-filter",
+                marks=pytest.mark.skip(reason="figure out how plain string matching works"),
+            ),
+            # valid json filter
+            pytest.param(
+                {"body": {"my-key": ["my-value"]}},
+                {"my-key": "my-value"},
+                # plain string body vs. valid json filter for body -> drop the message
+                "plain-string",
+                id="valid-json-filter",
             ),
         ],
     )
