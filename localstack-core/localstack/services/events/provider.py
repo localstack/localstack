@@ -115,6 +115,10 @@ from localstack.aws.api.events import Connection as ApiTypeConnection
 from localstack.aws.api.events import EventBus as ApiTypeEventBus
 from localstack.aws.api.events import Replay as ApiTypeReplay
 from localstack.aws.api.events import Rule as ApiTypeRule
+from localstack.services.events.api_destination import (
+    APIDestinationService,
+    ApiDestinationServiceDict,
+)
 from localstack.services.events.archive import ArchiveService, ArchiveServiceDict
 from localstack.services.events.connection import (
     ConnectionService,
@@ -150,6 +154,7 @@ from localstack.services.events.target import (
 from localstack.services.events.usage import rule_error, rule_invocation
 from localstack.services.events.utils import (
     TARGET_ID_PATTERN,
+    extract_connection_name,
     extract_event_bus_name,
     extract_region_and_account_id,
     format_event,
@@ -232,6 +237,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self._archive_service_store: ArchiveServiceDict = {}
         self._replay_service_store: ReplayServiceDict = {}
         self._connection_service_store: ConnectionServiceDict = {}
+        self._api_destination_service_store: ApiDestinationServiceDict = {}
 
     def on_before_start(self):
         JobScheduler.start()
@@ -254,75 +260,36 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond = None,
         **kwargs,
     ) -> CreateApiDestinationResponse:
-        store = self.get_store(context.region, context.account_id)
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
+        if name in store.api_destinations:
+            raise ResourceAlreadyExistsException(f"An api-destination '{name}' already exists.")
+        APIDestinationService.validate_input(name, connection_arn, http_method, invocation_endpoint)
+        connection_name = extract_connection_name(connection_arn)
+        connection = self.get_connection(connection_name, store)
+        api_destination_service = self.create_api_destinations_service(
+            name,
+            region,
+            account_id,
+            connection_arn,
+            connection,
+            invocation_endpoint,
+            http_method,
+            description,
+            invocation_rate_limit_per_second,
+        )
+        store.api_destinations[api_destination_service.api_destination.name] = (
+            api_destination_service.api_destination
+        )
 
-        def create():
-            validation_errors = []
-            validation_errors.extend(self._validate_api_destination_name(name))
-            if not re.match(
-                r"^arn:aws([a-z]|\-)*:events:[a-z0-9\-]+:\d{12}:connection/[\.\-_A-Za-z0-9]+/[\-A-Za-z0-9]+$",
-                connection_arn,
-            ):
-                validation_errors.append(
-                    f"Value '{connection_arn}' at 'connectionArn' failed to satisfy constraint: "
-                    "Member must satisfy regular expression pattern: "
-                    "^arn:aws([a-z]|\\-)*:events:([a-z]|\\d|\\-)*:([0-9]{12})?:connection\\/[\\.\\-_A-Za-z0-9]+\\/[\\-A-Za-z0-9]+$"
-                )
-
-            allowed_methods = ["HEAD", "POST", "PATCH", "DELETE", "PUT", "GET", "OPTIONS"]
-            if http_method not in allowed_methods:
-                validation_errors.append(
-                    f"Value '{http_method}' at 'httpMethod' failed to satisfy constraint: "
-                    f"Member must satisfy enum value set: [{', '.join(allowed_methods)}]"
-                )
-
-            endpoint_pattern = (
-                r"^((%[0-9A-Fa-f]{2}|[-()_.!~*';/?:@&=+$,A-Za-z0-9])+)([).!';/?:,])?$"
-            )
-            if not re.match(endpoint_pattern, invocation_endpoint):
-                validation_errors.append(
-                    f"Value '{invocation_endpoint}' at 'invocationEndpoint' failed to satisfy constraint: "
-                    "Member must satisfy regular expression pattern: "
-                    "^((%[0-9A-Fa-f]{2}|[-()_.!~*';/?:@&=+$,A-Za-z0-9])+)([).!';/?:,])?$"
-                )
-
-            if validation_errors:
-                error_message = f"{len(validation_errors)} validation error{'s' if len(validation_errors) > 1 else ''} detected: "
-                error_message += "; ".join(validation_errors)
-                raise ValidationException(error_message)
-
-            if name in store.api_destinations:
-                raise ResourceAlreadyExistsException(f"An api-destination '{name}' already exists.")
-
-            connection = self._get_connection_by_arn(connection_arn)
-            if not connection:
-                raise ResourceNotFoundException(f"Connection '{connection_arn}' does not exist.")
-
-            api_destination_state = self._determine_api_destination_state(
-                connection["ConnectionState"]
-            )
-
-            api_destination = self._create_api_destination_object(
-                context,
-                name,
-                connection_arn,
-                invocation_endpoint,
-                http_method,
-                description,
-                invocation_rate_limit_per_second,
-                api_destination_state=api_destination_state,
-            )
-
-            store.api_destinations[name] = api_destination
-
-            return CreateApiDestinationResponse(
-                ApiDestinationArn=api_destination["ApiDestinationArn"],
-                ApiDestinationState=api_destination["ApiDestinationState"],
-                CreationTime=api_destination["CreationTime"],
-                LastModifiedTime=api_destination["LastModifiedTime"],
-            )
-
-        return self._handle_api_destination_operation("creating", create)
+        response = CreateApiDestinationResponse(
+            ApiDestinationArn=api_destination_service.arn,
+            ApiDestinationState=api_destination_service.state,
+            CreationTime=api_destination_service.creation_time,
+            LastModifiedTime=api_destination_service.last_modified_time,
+        )
+        return response
 
     @handler("DescribeApiDestination")
     def describe_api_destination(
@@ -1504,6 +1471,32 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         )
         self._connection_service_store[connection_service.arn] = connection_service
         return connection_service
+
+    def create_api_destinations_service(
+        self,
+        name: ConnectionName,
+        region: str,
+        account_id: str,
+        connection_arn: ConnectionArn,
+        connection: Connection,
+        invocation_endpoint: HttpsEndpoint,
+        http_method: ApiDestinationHttpMethod,
+        invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond,
+        description: ApiDestinationDescription,
+    ) -> APIDestinationService:
+        api_destination_service = APIDestinationService(
+            name,
+            region,
+            account_id,
+            connection_arn,
+            connection,
+            invocation_endpoint,
+            http_method,
+            description,
+            invocation_rate_limit_per_second,
+        )
+        self._api_destination_service_store[api_destination_service.arn] = api_destination_service
+        return api_destination_service
 
     def _delete_connection(self, connection_arn: Arn) -> None:
         del self._connection_service_store[connection_arn]
