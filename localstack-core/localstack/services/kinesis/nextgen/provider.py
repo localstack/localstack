@@ -1,3 +1,5 @@
+from typing import Tuple
+
 from localstack.aws.api import RequestContext
 from localstack.aws.api.kinesis import (
     BooleanObject,
@@ -13,6 +15,7 @@ from localstack.aws.api.kinesis import (
     GetRecordsOutput,
     GetResourcePolicyOutput,
     HashKey,
+    InvalidArgumentException,
     KeyId,
     KinesisApi,
     ListShardsInputLimit,
@@ -32,6 +35,7 @@ from localstack.aws.api.kinesis import (
     PutRecordsRequestEntryList,
     RegisterStreamConsumerOutput,
     ResourceARN,
+    ResourceNotFoundException,
     RetentionPeriodHours,
     ScalingType,
     SequenceNumber,
@@ -40,8 +44,11 @@ from localstack.aws.api.kinesis import (
     ShardIterator,
     StartingPosition,
     StreamARN,
+    StreamMode,
     StreamModeDetails,
     StreamName,
+    StreamStatus,
+    StreamSummary,
     SubscribeToShardOutput,
     TagKey,
     TagKeyList,
@@ -49,9 +56,45 @@ from localstack.aws.api.kinesis import (
     Timestamp,
     UpdateShardCountOutput,
 )
+from localstack.services.kinesis.nextgen.models import Stream, kinesis_stores
+from localstack.utils.aws.arns import parse_arn
 
 
 class KinesisProvider(KinesisApi):
+    @staticmethod
+    def _get_stream(account_id: str, region_name: str, name: str) -> Stream:
+        store = kinesis_stores[account_id][region_name]
+
+        if name not in store.streams:
+            raise ResourceNotFoundException("TODO")  # TODO
+
+        return store.streams.get(name)
+
+    @staticmethod
+    def _resolve_stream(
+        context: RequestContext, arn: str | None, name: str | None
+    ) -> Tuple[str, str, str]:
+        if arn is None and name is None:
+            raise InvalidArgumentException("TODO")  # TODO
+
+        if arn:
+            arn_data = parse_arn(arn)
+            return (
+                arn_data["account"],
+                arn_data["region"],
+                arn_data["resource"].removeprefix("stream/"),
+            )
+
+        return context.account_id, context.region, name
+
+    @staticmethod
+    def _validate_stream_mode(stream_mode_details: StreamModeDetails | None) -> str:
+        stream_mode_details = stream_mode_details or {}
+        mode = stream_mode_details.get("StreamMode") or StreamMode.ON_DEMAND
+        if mode not in StreamMode.__members__:
+            raise InvalidArgumentException("TODO")  # TODO
+        return mode
+
     #
     # Streams CRUD
     #
@@ -65,7 +108,20 @@ class KinesisProvider(KinesisApi):
         tags: TagMap = None,
         **kwargs,
     ) -> None:
-        raise NotImplementedError
+        store = kinesis_stores[context.account_id][context.region]
+        # TODO check if stream name exists
+
+        mode = self._validate_stream_mode(stream_mode_details)
+
+        stream = Stream(
+            account_id=context.account_id,
+            region_name=context.region,
+            name=stream_name,
+            mode=mode,
+            shard_count=shard_count,
+        )
+
+        store.streams[stream_name] = stream
 
     def describe_stream(
         self,
@@ -95,7 +151,25 @@ class KinesisProvider(KinesisApi):
         next_token: NextToken = None,
         **kwargs,
     ) -> ListStreamsOutput:
-        raise NotImplementedError
+        store = kinesis_stores[context.account_id][context.region]
+
+        summaries = []
+        for stream in store.streams.values():
+            summaries.append(
+                StreamSummary(
+                    StreamName=stream.name,
+                    StreamARN=stream.arn,
+                    StreamStatus=StreamStatus.ACTIVE,
+                    StreamModeDetails=StreamModeDetails(StreamMode=stream.mode),
+                    StreamCreationTimestamp=stream.created_timestamp,
+                )
+            )
+
+        return ListStreamsOutput(
+            HasMoreStreams=False,
+            StreamNames=store.streams.keys(),
+            StreamSummaries=summaries,
+        )
 
     def delete_stream(
         self,
@@ -105,11 +179,12 @@ class KinesisProvider(KinesisApi):
         stream_arn: StreamARN = None,
         **kwargs,
     ) -> None:
-        raise NotImplementedError
+        # Check if the stream exists
+        self._get_stream(*self._resolve_stream(context, stream_arn, stream_name))
 
-    #
-    # Stream modes
-    #
+        # TODO: if enforce_consumer_deletion is set, raise ResourceInUseException if consumers are registered
+
+        del kinesis_stores[context.account_id][context.region].streams[stream_name]
 
     def update_stream_mode(
         self,
@@ -118,10 +193,12 @@ class KinesisProvider(KinesisApi):
         stream_mode_details: StreamModeDetails,
         **kwargs,
     ) -> None:
-        raise NotImplementedError
+        stream = self._get_stream(*self._resolve_stream(context, stream_arn, None))
+
+        stream.mode = self._validate_stream_mode(stream_mode_details)
 
     #
-    # Stream retention
+    # Stream Retention
     #
 
     def increase_stream_retention_period(
@@ -268,7 +345,7 @@ class KinesisProvider(KinesisApi):
         raise NotImplementedError
 
     #
-    # Stream consumers
+    # Enhanced Fan Out
     #
 
     def register_stream_consumer(
