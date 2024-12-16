@@ -83,7 +83,7 @@ def replace_template_placeholders(
 
     def replace_placeholder(match):
         key = match.group(1)
-        value = replacements.get(key, match.group(0))  # handle non defined placeholders
+        value = replacements.get(key, "")  # handle non defined placeholders
         if isinstance(value, datetime.datetime):
             return event_time_to_time_string(value)
         if isinstance(value, dict):
@@ -97,11 +97,13 @@ def replace_template_placeholders(
             return f"[{','.join(value)}]"
         if is_nested_in_string(template, match):
             return value
-        return json.dumps(value)
+        if is_json_template:
+            return json.dumps(value)
+        return value
 
     formatted_template = (
         TRANSFORMER_PLACEHOLDER_PATTERN.sub(replace_placeholder, template)
-        .replace('""', '"')
+        # .replace('""', '"')
         .replace("\\n", "\n")
     )
 
