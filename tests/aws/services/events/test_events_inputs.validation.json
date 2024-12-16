@@ -35,6 +35,9 @@
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"Payload of <payload> with path users-service/users/<userId>\"]": {
     "last_validated_date": "2024-12-13T13:20:30+00:00"
   },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"id\" : \"<userId>\"}]": {
+    "last_validated_date": "2024-12-16T12:26:02+00:00"
+  },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"id\" : <userId>}]": {
     "last_validated_date": "2024-12-13T18:03:16+00:00"
   },
