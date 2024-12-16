@@ -13,6 +13,7 @@ from localstack.aws.api.events import (
     ApiDestinationHttpMethod,
     ApiDestinationInvocationRateLimitPerSecond,
     ApiDestinationName,
+    ApiDestinationResponseList,
     ArchiveDescription,
     ArchiveName,
     ArchiveResponseList,
@@ -110,6 +111,7 @@ from localstack.aws.api.events import (
     UpdateConnectionAuthRequestParameters,
     UpdateConnectionResponse,
 )
+from localstack.aws.api.events import ApiDestination as ApiTypeApiDestination
 from localstack.aws.api.events import Archive as ApiTypeArchive
 from localstack.aws.api.events import Connection as ApiTypeConnection
 from localstack.aws.api.events import EventBus as ApiTypeEventBus
@@ -126,6 +128,8 @@ from localstack.services.events.connection import (
 )
 from localstack.services.events.event_bus import EventBusService, EventBusServiceDict
 from localstack.services.events.models import (
+    ApiDestination,
+    ApiDestinationDict,
     Archive,
     ArchiveDict,
     Connection,
@@ -296,17 +300,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self, context: RequestContext, name: ApiDestinationName, **kwargs
     ) -> DescribeApiDestinationResponse:
         store = self.get_store(context.region, context.account_id)
-        try:
-            if name not in store.api_destinations:
-                raise ResourceNotFoundException(
-                    f"Failed to describe the api-destination(s). An api-destination '{name}' does not exist."
-                )
-            api_destination = store.api_destinations[name]
-            return DescribeApiDestinationResponse(**api_destination)
-        except ResourceNotFoundException as e:
-            raise e
-        except Exception as e:
-            raise ValidationException(f"Error describing API destination: {str(e)}")
+        api_destination = self.get_api_destination(name, store)
+
+        response = self._api_destination_to_api_type_api_destination(api_destination)
+        return response
 
     @handler("UpdateApiDestination")
     def update_api_destination(
@@ -376,16 +373,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self, context: RequestContext, name: ApiDestinationName, **kwargs
     ) -> DeleteApiDestinationResponse:
         store = self.get_store(context.region, context.account_id)
-
-        def delete():
-            if name not in store.api_destinations:
-                raise ResourceNotFoundException(
-                    f"Failed to describe the api-destination(s). An api-destination '{name}' does not exist."
-                )
+        if api_destination := self.get_api_destination(name, store):
+            del self._api_destination_service_store[api_destination.arn]
             del store.api_destinations[name]
-            return DeleteApiDestinationResponse()
+            del store.TAGS[api_destination.arn]
 
-        return self._handle_api_destination_operation("deleting", delete)
+        return DeleteApiDestinationResponse()
 
     @handler("ListApiDestinations")
     def list_api_destinations(
@@ -398,44 +391,23 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> ListApiDestinationsResponse:
         store = self.get_store(context.region, context.account_id)
-        try:
-            api_destinations = list(store.api_destinations.values())
+        api_destinations = (
+            get_filtered_dict(name_prefix, store.api_destinations)
+            if name_prefix
+            else store.api_destinations
+        )
+        limited_rules, next_token = self._get_limited_dict_and_next_token(
+            api_destinations, next_token, limit
+        )
 
-            if name_prefix:
-                api_destinations = [
-                    dest for dest in api_destinations if dest["Name"].startswith(name_prefix)
-                ]
-            if connection_arn:
-                api_destinations = [
-                    dest for dest in api_destinations if dest["ConnectionArn"] == connection_arn
-                ]
-
-            api_destinations.sort(key=lambda x: x["Name"])
-            if limit:
-                api_destinations = api_destinations[:limit]
-
-            # Prepare summaries
-            api_destination_summaries = []
-            for dest in api_destinations:
-                summary = {
-                    "ApiDestinationArn": dest["ApiDestinationArn"],
-                    "Name": dest["Name"],
-                    "ApiDestinationState": dest["ApiDestinationState"],
-                    "ConnectionArn": dest["ConnectionArn"],
-                    "InvocationEndpoint": dest["InvocationEndpoint"],
-                    "HttpMethod": dest["HttpMethod"],
-                    "CreationTime": dest["CreationTime"],
-                    "LastModifiedTime": dest["LastModifiedTime"],
-                    "InvocationRateLimitPerSecond": dest.get("InvocationRateLimitPerSecond", 300),
-                }
-                api_destination_summaries.append(summary)
-
-            return ListApiDestinationsResponse(
-                ApiDestinations=api_destination_summaries,
-                NextToken=None,  # Pagination token handling can be added if needed
+        response = ListApiDestinationsResponse(
+            ApiDestinations=list(
+                self._api_destination_dict_to_api_destination_response_list(limited_rules)
             )
-        except Exception as e:
-            raise ValidationException(f"Error listing API destinations: {str(e)}")
+        )
+        if next_token is not None:
+            response["NextToken"] = next_token
+        return response
 
     #############
     # Connections
@@ -485,22 +457,20 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         region = context.region
         account_id = context.account_id
         store = self.get_store(region, account_id)
-        try:
-            if connection := self.get_connection(name, store):
-                connection_service = self._connection_service_store.pop(connection.arn)
-                connection_service.delete()
-                del store.connections[name]
-                del store.TAGS[connection.arn]
-            response = DeleteConnectionResponse(
-                ConnectionArn=connection.arn,
-                ConnectionState=connection.state,
-                CreationTime=connection.creation_time,
-                LastModifiedTime=connection.last_modified_time,
-                LastAuthorizedTime=connection.last_authorized_time,
-            )
-            return response
-        except ResourceNotFoundException as error:
-            return error
+        if connection := self.get_connection(name, store):
+            connection_service = self._connection_service_store.pop(connection.arn)
+            connection_service.delete()
+            del store.connections[name]
+            del store.TAGS[connection.arn]
+
+        response = DeleteConnectionResponse(
+            ConnectionArn=connection.arn,
+            ConnectionState=connection.state,
+            CreationTime=connection.creation_time,
+            LastModifiedTime=connection.last_modified_time,
+            LastAuthorizedTime=connection.last_authorized_time,
+        )
+        return response
 
     @handler("ListConnections")
     def list_connections(
@@ -1335,6 +1305,13 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             f"Failed to describe the connection(s). Connection '{name}' does not exist."
         )
 
+    def get_api_destination(self, name: ApiDestinationName, store: EventsStore) -> ApiDestination:
+        if api_destination := store.api_destinations.get(name):
+            return api_destination
+        raise ResourceNotFoundException(
+            f"Failed to describe the api-destination(s). An api-destination '{name}' does not exist."
+        )
+
     def get_rule_service(
         self,
         region: str,
@@ -1769,6 +1746,31 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             for connection in connections.values()
         ]
         return connection_list
+
+    def _api_destination_to_api_type_api_destination(
+        self, api_destination: ApiDestination
+    ) -> ApiTypeApiDestination:
+        api_destination = {
+            "ApiDestinationArn": api_destination.arn,
+            "Name": api_destination.name,
+            "ApiDestinationState": api_destination.state,
+            "InvocationEndpoint": api_destination.invocation_endpoint,
+            "HttpMethod": api_destination.http_method,
+            "InvocationRateLimitPerSecond": api_destination.invocation_rate_limit_per_second,
+            "CreationTime": api_destination.creation_time,
+            "LastModifiedTime": api_destination.last_modified_time,
+        }
+        return {key: value for key, value in api_destination.items() if value is not None}
+
+    def _api_destination_dict_to_api_destination_response_list(
+        self, api_destinations: ApiDestinationDict
+    ) -> ApiDestinationResponseList:
+        """Return a converted dict of ApiDestination model objects as a list of connections in API type ApiDestination format."""
+        api_destination_list = [
+            self._api_destination_to_api_type_api_destination(api_destination)
+            for api_destination in api_destinations.values()
+        ]
+        return api_destination_list
 
     def _put_to_archive(
         self,
