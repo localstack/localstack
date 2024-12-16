@@ -478,5 +478,20 @@
         }
       ]
     }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"id\" : \"<userId>\"}]": {
+    "recorded-date": "16-12-2024, 12:26:02",
+    "recorded-content": {
+      "input-transformed-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "id": "0a787ecb-4015"
+          }
+        }
+      ]
+    }
   }
 }
