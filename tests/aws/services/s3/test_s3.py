@@ -10354,9 +10354,6 @@ class TestS3PresignedPost:
         )
 
     @markers.aws.validated
-    @pytest.mark.skip(
-        reason="failing sporadically with new HTTP gateway (only in CI)",
-    )
     def test_post_object_with_files(self, s3_bucket, aws_client):
         object_key = "test-presigned-post-key"
 
@@ -10556,9 +10553,6 @@ class TestS3PresignedPost:
         snapshot.match("exception-no-sig-related-fields", exception)
 
     @markers.aws.validated
-    @pytest.mark.skip(
-        reason="sporadically failing in CI: presigned-post does not set the body, and then etag is wrong",
-    )
     def test_s3_presigned_post_success_action_status_201_response(
         self, s3_bucket, aws_client, region_name
     ):
@@ -10748,11 +10742,8 @@ class TestS3PresignedPost:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..HostId",
-            "$..ContentLength",
-            "$..ETag",
-        ],  # missing from the exception XML, and failing in CI
+        # missing from the exception XML
+        paths=["$..HostId"],
     )
     def test_post_object_with_storage_class(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformers_list(
@@ -10841,11 +10832,7 @@ class TestS3PresignedPost:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..ContentLength",
-            "$..ETag",
-            "$..HostId",
-        ],  # FIXME: in CI, it fails sporadically and the form is empty
+        paths=["$..HostId"],
     )
     def test_post_object_with_file_as_string(self, s3_bucket, aws_client, snapshot):
         # this is a test for https://github.com/localstack/localstack/issues/10309
@@ -11084,6 +11071,37 @@ class TestS3PresignedPost:
         response = self.post_generated_presigned_post_with_default_file(presigned_request)
         # assert that it's accepted
         assert response.status_code == 204
+
+        # test wrong value for $eq condition
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Fields={"x-amz-meta-foo": "not-bar"},
+            Conditions=[
+                {"bucket": s3_bucket},
+                ["eq", "$x-amz-meta-foo", "bar"],
+            ],
+        )
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
+        # assert that it's rejected
+        assert response.status_code != 200
+        snapshot.match("invalid-metadata", xmltodict.parse(response.content))
+
+        # test missing value for $eq condition
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Conditions=[
+                {"bucket": s3_bucket},
+                ["eq", "$x-amz-meta-foo", "bar"],
+            ],
+        )
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
+        # assert that it's rejected
+        assert response.status_code != 200
+        snapshot.match("missing-metadata", xmltodict.parse(response.content))
 
     @markers.snapshot.skip_snapshot_verify(
         paths=[
