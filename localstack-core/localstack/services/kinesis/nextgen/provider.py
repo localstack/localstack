@@ -109,7 +109,9 @@ class KinesisProvider(KinesisApi):
         **kwargs,
     ) -> None:
         store = kinesis_stores[context.account_id][context.region]
-        # TODO check if stream name exists
+
+        if stream_name in store.streams:
+            raise InvalidArgumentException("TODO")  # TODO
 
         mode = self._validate_stream_mode(stream_mode_details)
 
@@ -132,7 +134,20 @@ class KinesisProvider(KinesisApi):
         stream_arn: StreamARN = None,
         **kwargs,
     ) -> DescribeStreamOutput:
-        raise NotImplementedError
+        stream = self._get_stream(*self._resolve_stream(context, stream_arn, stream_name))
+
+        # TODO: obey exclusive_start_shard_id
+
+        return DescribeStreamOutput(
+            StreamName=stream_name,
+            StreamARN=stream_arn,
+            StreamCreationTimestamp=stream.created_timestamp,
+            StreamModeDetails=StreamModeDetails(StreamMode=stream.mode),
+            StreamStatus=StreamStatus.ACTIVE,
+            RetentionPeriodHours=stream.retention_period,
+            HasMoreShards=False,
+            Shards=[],
+        )
 
     def describe_stream_summary(
         self,
@@ -141,7 +156,16 @@ class KinesisProvider(KinesisApi):
         stream_arn: StreamARN = None,
         **kwargs,
     ) -> DescribeStreamSummaryOutput:
-        raise NotImplementedError
+        stream = self._get_stream(*self._resolve_stream(context, stream_arn, stream_name))
+
+        return DescribeStreamSummaryOutput(
+            StreamName=stream_name,
+            StreamARN=stream_arn,
+            StreamCreationTimestamp=stream.created_timestamp,
+            StreamModeDetails=StreamModeDetails(StreamMode=stream.mode),
+            StreamStatus=StreamStatus.ACTIVE,
+            RetentionPeriodHours=stream.retention_period,
+        )
 
     def list_streams(
         self,
