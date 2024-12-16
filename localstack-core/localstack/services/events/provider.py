@@ -223,8 +223,8 @@ def check_unique_tags(tags: TagsList) -> None:
 
 
 class EventsProvider(EventsApi, ServiceLifecycleHook):
-    # api methods are grouped by resource type and sorted in hierarchical order
-    # each group is sorted alphabetically
+    # api methods are grouped by resource type and sorted in alphabetical order
+    # functions in each group is sorted alphabetically
     def __init__(self):
         self._event_bus_services_store: EventBusServiceDict = {}
         self._rule_services_store: RuleServiceDict = {}
@@ -511,32 +511,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         response = self._connection_to_api_type_connection(connection)
         return response
 
-    @handler("UpdateConnection")
-    def update_connection(
-        self,
-        context: RequestContext,
-        name: ConnectionName,
-        description: ConnectionDescription = None,
-        authorization_type: ConnectionAuthorizationType = None,
-        auth_parameters: UpdateConnectionAuthRequestParameters = None,
-        **kwargs,
-    ) -> UpdateConnectionResponse:
-        region = context.region
-        account_id = context.account_id
-        store = self.get_store(region, account_id)
-        connection = self.get_connection(name, store)
-        connection_service = self._connection_service_store[connection.arn]
-        connection_service.update(description, authorization_type, auth_parameters)
-
-        response = UpdateConnectionResponse(
-            ConnectionArn=connection_service.arn,
-            ConnectionState=connection_service.state,
-            CreationTime=connection_service.creation_time,
-            LastModifiedTime=connection_service.last_modified_time,
-            LastAuthorizedTime=connection_service.last_authorized_time,
-        )
-        return response
-
     @handler("DeleteConnection")
     def delete_connection(
         self, context: RequestContext, name: ConnectionName, **kwargs
@@ -586,6 +560,32 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         )
         if next_token is not None:
             response["NextToken"] = next_token
+        return response
+
+    @handler("UpdateConnection")
+    def update_connection(
+        self,
+        context: RequestContext,
+        name: ConnectionName,
+        description: ConnectionDescription = None,
+        authorization_type: ConnectionAuthorizationType = None,
+        auth_parameters: UpdateConnectionAuthRequestParameters = None,
+        **kwargs,
+    ) -> UpdateConnectionResponse:
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
+        connection = self.get_connection(name, store)
+        connection_service = self._connection_service_store[connection.arn]
+        connection_service.update(description, authorization_type, auth_parameters)
+
+        response = UpdateConnectionResponse(
+            ConnectionArn=connection_service.arn,
+            ConnectionState=connection_service.state,
+            CreationTime=connection_service.creation_time,
+            LastModifiedTime=connection_service.last_modified_time,
+            LastAuthorizedTime=connection_service.last_authorized_time,
+        )
         return response
 
     ##########
@@ -1267,7 +1267,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             re_formatted_event_to_replay = replay_service.re_format_events_from_archive(
                 events_to_replay, replay_name
             )
-            # TODO should this really be run synchronously within the request?
             self._process_entries(context, re_formatted_event_to_replay)
         replay_service.finish()
 
@@ -1381,15 +1380,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(rule_name, event_bus)
         return self._rule_services_store[rule.arn]
-
-    # def get_connection_service(
-    #     self, region: str, account_id: str, name: ConnectionName
-    # ) -> ConnectionService:
-    #     store = self.get_store(region, account_id)
-    #     if connection := store.connections.get(name):
-    #         return self._connection_service_store[connection["ConnectionArn"]]
-    #     raise ResourceNotFoundException(f"Connection {name} does not exist.")
-    # )
 
     def create_event_bus_service(
         self,
