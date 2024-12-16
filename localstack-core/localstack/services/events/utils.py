@@ -264,7 +264,7 @@ def get_trace_header_encoded_region_account(
             return json.dumps({"original_account": source_account_id})
 
 
-def is_nested_in_string(template, match) -> bool:
+def is_nested_in_string(template: str, match: re.Match[str]) -> bool:
     """
     Determines if a match (string) is nested within a larger string value in the given template.
 
