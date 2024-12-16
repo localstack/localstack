@@ -10,7 +10,7 @@ from localstack.services.events.utils import is_nested_in_string
     [
         # Basic cases
         ('"users-service/users/<userId>"', True),
-        ("<userId>", False),
+        ('"<userId>"', True),
         # Edge cases with commas and braces
         ('{"path": "users/<userId>", "id": <userId>}', True),
         ('{"id": <userId>}', False),
@@ -19,6 +19,7 @@ from localstack.services.events.utils import is_nested_in_string
         # Nested JSON structures
         ('{"data": {"path": "users/<userId>"}}', True),
         ('{"data": <userId>}', False),
+        ('{"data": "<userId>"}', True),
     ],
 )
 def test_is_nested_in_string(template, expected):
