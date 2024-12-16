@@ -195,7 +195,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_async_invocation": {
-    "recorded-date": "27-02-2023, 16:55:08",
+    "recorded-date": "11-12-2024, 09:54:54",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
@@ -204,9 +204,10 @@
           "OnFailure": {}
         },
         "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
-        "LastModified": "datetime",
+        "LastModified": "<datetime>",
         "LastProcessingResult": "No records processed",
         "MaximumBatchingWindowInSeconds": 0,
         "MaximumRecordAgeInSeconds": -1,
@@ -233,7 +234,7 @@
                   "partitionKey": "test_0",
                   "sequenceNumber": "<sequence-number:1>",
                   "data": "eyJyZWNvcmRfaWQiOiAwfQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
@@ -249,7 +250,7 @@
                   "partitionKey": "test_0",
                   "sequenceNumber": "<sequence-number:2>",
                   "data": "eyJyZWNvcmRfaWQiOiAxfQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
@@ -265,7 +266,7 @@
                   "partitionKey": "test_0",
                   "sequenceNumber": "<sequence-number:3>",
                   "data": "eyJyZWNvcmRfaWQiOiAyfQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
@@ -281,7 +282,7 @@
                   "partitionKey": "test_0",
                   "sequenceNumber": "<sequence-number:4>",
                   "data": "eyJyZWNvcmRfaWQiOiAzfQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
@@ -297,7 +298,7 @@
                   "partitionKey": "test_0",
                   "sequenceNumber": "<sequence-number:5>",
                   "data": "eyJyZWNvcmRfaWQiOiA0fQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
@@ -313,7 +314,7 @@
                   "partitionKey": "test_0",
                   "sequenceNumber": "<sequence-number:6>",
                   "data": "eyJyZWNvcmRfaWQiOiA1fQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
@@ -329,7 +330,7 @@
                   "partitionKey": "test_0",
                   "sequenceNumber": "<sequence-number:7>",
                   "data": "eyJyZWNvcmRfaWQiOiA2fQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
@@ -345,7 +346,7 @@
                   "partitionKey": "test_0",
                   "sequenceNumber": "<sequence-number:8>",
                   "data": "eyJyZWNvcmRfaWQiOiA3fQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
@@ -361,7 +362,7 @@
                   "partitionKey": "test_0",
                   "sequenceNumber": "<sequence-number:9>",
                   "data": "eyJyZWNvcmRfaWQiOiA4fQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
@@ -377,7 +378,7 @@
                   "partitionKey": "test_0",
                   "sequenceNumber": "<sequence-number:10>",
                   "data": "eyJyZWNvcmRfaWQiOiA5fQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
@@ -400,7 +401,7 @@
                   "partitionKey": "test_1",
                   "sequenceNumber": "<sequence-number:11>",
                   "data": "eyJyZWNvcmRfaWQiOiAwfQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
@@ -416,7 +417,7 @@
                   "partitionKey": "test_1",
                   "sequenceNumber": "<sequence-number:12>",
                   "data": "eyJyZWNvcmRfaWQiOiAxfQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
@@ -432,7 +433,7 @@
                   "partitionKey": "test_1",
                   "sequenceNumber": "<sequence-number:13>",
                   "data": "eyJyZWNvcmRfaWQiOiAyfQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
@@ -448,7 +449,7 @@
                   "partitionKey": "test_1",
                   "sequenceNumber": "<sequence-number:14>",
                   "data": "eyJyZWNvcmRfaWQiOiAzfQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
@@ -464,7 +465,7 @@
                   "partitionKey": "test_1",
                   "sequenceNumber": "<sequence-number:15>",
                   "data": "eyJyZWNvcmRfaWQiOiA0fQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
@@ -480,7 +481,7 @@
                   "partitionKey": "test_1",
                   "sequenceNumber": "<sequence-number:16>",
                   "data": "eyJyZWNvcmRfaWQiOiA1fQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
@@ -496,7 +497,7 @@
                   "partitionKey": "test_1",
                   "sequenceNumber": "<sequence-number:17>",
                   "data": "eyJyZWNvcmRfaWQiOiA2fQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
@@ -512,7 +513,7 @@
                   "partitionKey": "test_1",
                   "sequenceNumber": "<sequence-number:18>",
                   "data": "eyJyZWNvcmRfaWQiOiA3fQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
@@ -528,7 +529,7 @@
                   "partitionKey": "test_1",
                   "sequenceNumber": "<sequence-number:19>",
                   "data": "eyJyZWNvcmRfaWQiOiA4fQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
@@ -544,7 +545,7 @@
                   "partitionKey": "test_1",
                   "sequenceNumber": "<sequence-number:20>",
                   "data": "eyJyZWNvcmRfaWQiOiA5fQ==",
-                  "approximateArrivalTimestamp": "timestamp"
+                  "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
                 },
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
