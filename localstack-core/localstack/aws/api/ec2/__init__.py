@@ -565,6 +565,12 @@ class AvailabilityZoneState(StrEnum):
     constrained = "constrained"
 
 
+class BandwidthWeightingType(StrEnum):
+    default = "default"
+    vpc_1 = "vpc-1"
+    ebs_1 = "ebs-1"
+
+
 class BareMetal(StrEnum):
     included = "included"
     required = "required"
@@ -1246,6 +1252,12 @@ class InstanceAttributeName(StrEnum):
 class InstanceAutoRecoveryState(StrEnum):
     disabled = "disabled"
     default = "default"
+
+
+class InstanceBandwidthWeighting(StrEnum):
+    default = "default"
+    vpc_1 = "vpc-1"
+    ebs_1 = "ebs-1"
 
 
 class InstanceBootModeValues(StrEnum):
@@ -5303,6 +5315,9 @@ class AvailableCapacity(TypedDict, total=False):
     AvailableVCpus: Optional[Integer]
 
 
+BandwidthWeightingTypeList = List[BandwidthWeightingType]
+
+
 class BaselineEbsBandwidthMbps(TypedDict, total=False):
     Min: Optional[Integer]
     Max: Optional[Integer]
@@ -7238,6 +7253,10 @@ class OperatorRequest(TypedDict, total=False):
     Principal: Optional[String]
 
 
+class LaunchTemplateNetworkPerformanceOptionsRequest(TypedDict, total=False):
+    BandwidthWeighting: Optional[InstanceBandwidthWeighting]
+
+
 class LaunchTemplateInstanceMaintenanceOptionsRequest(TypedDict, total=False):
     AutoRecovery: Optional[LaunchTemplateAutoRecoveryState]
 
@@ -7471,6 +7490,7 @@ class RequestLaunchTemplateData(TypedDict, total=False):
     MaintenanceOptions: Optional[LaunchTemplateInstanceMaintenanceOptionsRequest]
     DisableApiStop: Optional[Boolean]
     Operator: Optional[OperatorRequest]
+    NetworkPerformanceOptions: Optional[LaunchTemplateNetworkPerformanceOptionsRequest]
 
 
 class CreateLaunchTemplateRequest(ServiceRequest):
@@ -7525,6 +7545,10 @@ class CreateLaunchTemplateVersionRequest(ServiceRequest):
     VersionDescription: Optional[VersionDescription]
     LaunchTemplateData: RequestLaunchTemplateData
     ResolveAlias: Optional[Boolean]
+
+
+class LaunchTemplateNetworkPerformanceOptions(TypedDict, total=False):
+    BandwidthWeighting: Optional[InstanceBandwidthWeighting]
 
 
 class LaunchTemplateInstanceMaintenanceOptions(TypedDict, total=False):
@@ -7752,6 +7776,7 @@ class ResponseLaunchTemplateData(TypedDict, total=False):
     MaintenanceOptions: Optional[LaunchTemplateInstanceMaintenanceOptions]
     DisableApiStop: Optional[Boolean]
     Operator: Optional[OperatorResponse]
+    NetworkPerformanceOptions: Optional[LaunchTemplateNetworkPerformanceOptions]
 
 
 class LaunchTemplateVersion(TypedDict, total=False):
@@ -10280,6 +10305,11 @@ class DeleteSecurityGroupRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
 
+class DeleteSecurityGroupResult(TypedDict, total=False):
+    Return: Optional[Boolean]
+    GroupId: Optional[SecurityGroupId]
+
+
 class DeleteSnapshotRequest(ServiceRequest):
     SnapshotId: SnapshotId
     DryRun: Optional[Boolean]
@@ -12252,6 +12282,7 @@ class NetworkInfo(TypedDict, total=False):
     EfaInfo: Optional[EfaInfo]
     EncryptionInTransitSupported: Optional[EncryptionInTransitSupported]
     EnaSrdSupported: Optional[EnaSrdSupported]
+    BandwidthWeightings: Optional[BandwidthWeightingTypeList]
 
 
 class EbsOptimizedInfo(TypedDict, total=False):
@@ -12373,6 +12404,10 @@ class DescribeInstancesRequest(ServiceRequest):
 
 class Monitoring(TypedDict, total=False):
     State: Optional[MonitoringState]
+
+
+class InstanceNetworkPerformanceOptions(TypedDict, total=False):
+    BandwidthWeighting: Optional[InstanceBandwidthWeighting]
 
 
 class InstanceMaintenanceOptions(TypedDict, total=False):
@@ -12562,6 +12597,7 @@ class Instance(TypedDict, total=False):
     TpmSupport: Optional[String]
     MaintenanceOptions: Optional[InstanceMaintenanceOptions]
     CurrentInstanceBootMode: Optional[InstanceBootModeValues]
+    NetworkPerformanceOptions: Optional[InstanceNetworkPerformanceOptions]
     Operator: Optional[OperatorResponse]
     InstanceId: Optional[String]
     ImageId: Optional[String]
@@ -17333,6 +17369,10 @@ class InstanceMonitoring(TypedDict, total=False):
 InstanceMonitoringList = List[InstanceMonitoring]
 
 
+class InstanceNetworkPerformanceOptionsRequest(TypedDict, total=False):
+    BandwidthWeighting: Optional[InstanceBandwidthWeighting]
+
+
 class InstanceStateChange(TypedDict, total=False):
     InstanceId: Optional[String]
     CurrentState: Optional[InstanceState]
@@ -17747,6 +17787,17 @@ class ModifyInstanceMetadataOptionsRequest(ServiceRequest):
 class ModifyInstanceMetadataOptionsResult(TypedDict, total=False):
     InstanceId: Optional[String]
     InstanceMetadataOptions: Optional[InstanceMetadataOptionsResponse]
+
+
+class ModifyInstanceNetworkPerformanceRequest(ServiceRequest):
+    InstanceId: InstanceId
+    BandwidthWeighting: InstanceBandwidthWeighting
+    DryRun: Optional[Boolean]
+
+
+class ModifyInstanceNetworkPerformanceResult(TypedDict, total=False):
+    InstanceId: Optional[InstanceId]
+    BandwidthWeighting: Optional[InstanceBandwidthWeighting]
 
 
 class ModifyInstancePlacementRequest(ServiceRequest):
@@ -19251,6 +19302,7 @@ class RunInstancesRequest(ServiceRequest):
     MaintenanceOptions: Optional[InstanceMaintenanceOptionsRequest]
     DisableApiStop: Optional[Boolean]
     EnablePrimaryIpv6: Optional[Boolean]
+    NetworkPerformanceOptions: Optional[InstanceNetworkPerformanceOptionsRequest]
     Operator: Optional[OperatorRequest]
     DryRun: Optional[Boolean]
     DisableApiTermination: Optional[Boolean]
@@ -21976,7 +22028,7 @@ class Ec2Api:
         group_name: SecurityGroupName = None,
         dry_run: Boolean = None,
         **kwargs,
-    ) -> None:
+    ) -> DeleteSecurityGroupResult:
         raise NotImplementedError
 
     @handler("DeleteSnapshot")
@@ -26027,6 +26079,17 @@ class Ec2Api:
     ) -> ModifyInstanceMetadataOptionsResult:
         raise NotImplementedError
 
+    @handler("ModifyInstanceNetworkPerformanceOptions")
+    def modify_instance_network_performance_options(
+        self,
+        context: RequestContext,
+        instance_id: InstanceId,
+        bandwidth_weighting: InstanceBandwidthWeighting,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> ModifyInstanceNetworkPerformanceResult:
+        raise NotImplementedError
+
     @handler("ModifyInstancePlacement")
     def modify_instance_placement(
         self,
@@ -27323,6 +27386,7 @@ class Ec2Api:
         maintenance_options: InstanceMaintenanceOptionsRequest = None,
         disable_api_stop: Boolean = None,
         enable_primary_ipv6: Boolean = None,
+        network_performance_options: InstanceNetworkPerformanceOptionsRequest = None,
         operator: OperatorRequest = None,
         dry_run: Boolean = None,
         disable_api_termination: Boolean = None,
