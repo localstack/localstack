@@ -10903,7 +10903,13 @@ class TestS3PresignedPost:
         ],
     )
     @markers.aws.validated
-    def test_post_object_policy_conditions_validation_eq(self, s3_bucket, aws_client, snapshot):
+    @pytest.mark.parametrize(
+        "signature_version",
+        ["s3", "s3v4"],
+    )
+    def test_post_object_policy_conditions_validation_eq(
+        self, s3_bucket, aws_client, snapshot, signature_version
+    ):
         snapshot.add_transformers_list(
             [
                 snapshot.transform.key_value(
@@ -10916,9 +10922,13 @@ class TestS3PresignedPost:
             ]
         )
         object_key = "validate-policy-1"
+        s3_presigned_client = _s3_client_pre_signed_client(
+            Config(signature_version=signature_version),
+            endpoint_url=_endpoint_url(),
+        )
 
         redirect_location = "http://localhost.test/random"
-        presigned_request = aws_client.s3.generate_presigned_post(
+        presigned_request = s3_presigned_client.generate_presigned_post(
             Bucket=s3_bucket,
             Key=object_key,
             Fields={"success_action_redirect": redirect_location},
@@ -10937,7 +10947,7 @@ class TestS3PresignedPost:
         snapshot.match("invalid-condition-eq", xmltodict.parse(response.content))
 
         # PostObject with a wrong condition (missing $ prefix)
-        presigned_request = aws_client.s3.generate_presigned_post(
+        presigned_request = s3_presigned_client.generate_presigned_post(
             Bucket=s3_bucket,
             Key=object_key,
             Fields={"success_action_redirect": redirect_location},
@@ -10954,7 +10964,7 @@ class TestS3PresignedPost:
         snapshot.match("invalid-condition-missing-prefix", xmltodict.parse(response.content))
 
         # PostObject with a wrong condition (multiple condition in one dict)
-        presigned_request = aws_client.s3.generate_presigned_post(
+        presigned_request = s3_presigned_client.generate_presigned_post(
             Bucket=s3_bucket,
             Key=object_key,
             Fields={"success_action_redirect": redirect_location},
@@ -10971,7 +10981,7 @@ class TestS3PresignedPost:
         snapshot.match("invalid-condition-wrong-condition", xmltodict.parse(response.content))
 
         # PostObject with a wrong condition value casing
-        presigned_request = aws_client.s3.generate_presigned_post(
+        presigned_request = s3_presigned_client.generate_presigned_post(
             Bucket=s3_bucket,
             Key=object_key,
             Fields={"success_action_redirect": redirect_location},
@@ -10990,7 +11000,7 @@ class TestS3PresignedPost:
         )
 
         # test casing for x-amz-meta and specific Content-Type/Expires S3 headers
-        presigned_request = aws_client.s3.generate_presigned_post(
+        presigned_request = s3_presigned_client.generate_presigned_post(
             Bucket=s3_bucket,
             Key=object_key,
             ExpiresIn=60,
@@ -11018,7 +11028,7 @@ class TestS3PresignedPost:
         snapshot.match("head-object-metadata", head_object)
 
         # PostObject with a wrong condition key casing, should still work
-        presigned_request = aws_client.s3.generate_presigned_post(
+        presigned_request = s3_presigned_client.generate_presigned_post(
             Bucket=s3_bucket,
             Key=object_key,
             Fields={"success_action_redirect": redirect_location},
@@ -11047,7 +11057,7 @@ class TestS3PresignedPost:
         snapshot.match("final-object", final_object)
 
         # test casing for x-amz-meta and specific Content-Type/Expires S3 headers, but without eq
-        presigned_request = aws_client.s3.generate_presigned_post(
+        presigned_request = s3_presigned_client.generate_presigned_post(
             Bucket=s3_bucket,
             Key=object_key,
             ExpiresIn=60,
@@ -11073,7 +11083,7 @@ class TestS3PresignedPost:
         assert response.status_code == 204
 
         # test wrong value for $eq condition
-        presigned_request = aws_client.s3.generate_presigned_post(
+        presigned_request = s3_presigned_client.generate_presigned_post(
             Bucket=s3_bucket,
             Key=object_key,
             ExpiresIn=60,
@@ -11084,12 +11094,14 @@ class TestS3PresignedPost:
             ],
         )
         response = self.post_generated_presigned_post_with_default_file(presigned_request)
-        # assert that it's rejected
-        assert response.status_code != 200
-        snapshot.match("invalid-metadata", xmltodict.parse(response.content))
+        snapshot_data = {
+            "content": xmltodict.parse(response.content),
+            "statusCode": response.status_code,
+        }
+        snapshot.match("invalid-metadata", snapshot_data)
 
         # test missing value for $eq condition
-        presigned_request = aws_client.s3.generate_presigned_post(
+        presigned_request = s3_presigned_client.generate_presigned_post(
             Bucket=s3_bucket,
             Key=object_key,
             ExpiresIn=60,
@@ -11099,9 +11111,11 @@ class TestS3PresignedPost:
             ],
         )
         response = self.post_generated_presigned_post_with_default_file(presigned_request)
-        # assert that it's rejected
-        assert response.status_code != 200
-        snapshot.match("missing-metadata", xmltodict.parse(response.content))
+        snapshot_data = {
+            "content": xmltodict.parse(response.content),
+            "statusCode": response.status_code,
+        }
+        snapshot.match("missing-metadata", snapshot_data)
 
     @markers.snapshot.skip_snapshot_verify(
         paths=[

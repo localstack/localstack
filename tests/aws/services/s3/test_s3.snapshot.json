@@ -11789,91 +11789,6 @@
       }
     }
   },
-  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_conditions_validation_eq": {
-    "recorded-date": "16-12-2024, 14:26:07",
-    "recorded-content": {
-      "invalid-condition-eq": {
-        "Error": {
-          "Code": "AccessDenied",
-          "HostId": "<host-id>",
-          "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"$success_action_redirect\", \"http://localhost.test/random\"]",
-          "RequestId": "<request-id:1>"
-        }
-      },
-      "invalid-condition-missing-prefix": {
-        "Error": {
-          "Code": "AccessDenied",
-          "HostId": "<host-id>",
-          "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"success_action_redirect\", \"http://localhost.test/random\"]",
-          "RequestId": "<request-id:2>"
-        }
-      },
-      "invalid-condition-wrong-condition": {
-        "Error": {
-          "Code": "InvalidPolicyDocument",
-          "HostId": "<host-id>",
-          "Message": "Invalid Policy: Invalid Simple-Condition: Simple-Conditions must have exactly one property specified.",
-          "RequestId": "<request-id:3>"
-        }
-      },
-      "invalid-condition-wrong-value-casing": {
-        "Error": {
-          "Code": "AccessDenied",
-          "HostId": "<host-id>",
-          "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"$success_action_redirect\", \"HTTP://localhost.test/random\"]",
-          "RequestId": "<request-id:4>"
-        }
-      },
-      "head-object-metadata": {
-        "AcceptRanges": "bytes",
-        "ContentLength": 6,
-        "ContentType": "text/plain",
-        "ETag": "\"e80b5017098950fc58aad83c8c14978e\"",
-        "Expires": "datetime",
-        "ExpiresString": "<expires>",
-        "LastModified": "datetime",
-        "Metadata": {
-          "test-1": "test-meta-1",
-          "test-2": "test-meta-2"
-        },
-        "ServerSideEncryption": "AES256",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "final-object": {
-        "AcceptRanges": "bytes",
-        "Body": "abcdef",
-        "ContentLength": 6,
-        "ContentType": "binary/octet-stream",
-        "ETag": "\"e80b5017098950fc58aad83c8c14978e\"",
-        "LastModified": "datetime",
-        "Metadata": {},
-        "ServerSideEncryption": "AES256",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "invalid-metadata": {
-        "Error": {
-          "Code": "AccessDenied",
-          "HostId": "<host-id>",
-          "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"$x-amz-meta-foo\", \"bar\"]",
-          "RequestId": "<request-id:7>"
-        }
-      },
-      "missing-metadata": {
-        "Error": {
-          "Code": "AccessDenied",
-          "HostId": "<host-id>",
-          "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"$x-amz-meta-foo\", \"bar\"]",
-          "RequestId": "<request-id:8>"
-        }
-      }
-    }
-  },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_conditions_validation_starts_with": {
     "recorded-date": "24-05-2024, 15:11:14",
     "recorded-content": {
@@ -13567,6 +13482,188 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
         }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_conditions_validation_eq[s3]": {
+    "recorded-date": "16-12-2024, 15:13:56",
+    "recorded-content": {
+      "invalid-condition-eq": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HostId": "<host-id>",
+          "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"$success_action_redirect\", \"http://localhost.test/random\"]",
+          "RequestId": "<request-id:1>"
+        }
+      },
+      "invalid-condition-missing-prefix": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HostId": "<host-id>",
+          "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"success_action_redirect\", \"http://localhost.test/random\"]",
+          "RequestId": "<request-id:2>"
+        }
+      },
+      "invalid-condition-wrong-condition": {
+        "Error": {
+          "Code": "InvalidPolicyDocument",
+          "HostId": "<host-id>",
+          "Message": "Invalid Policy: Invalid Simple-Condition: Simple-Conditions must have exactly one property specified.",
+          "RequestId": "<request-id:3>"
+        }
+      },
+      "invalid-condition-wrong-value-casing": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HostId": "<host-id>",
+          "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"$success_action_redirect\", \"HTTP://localhost.test/random\"]",
+          "RequestId": "<request-id:4>"
+        }
+      },
+      "head-object-metadata": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 6,
+        "ContentType": "text/plain",
+        "ETag": "\"e80b5017098950fc58aad83c8c14978e\"",
+        "Expires": "datetime",
+        "ExpiresString": "<expires>",
+        "LastModified": "datetime",
+        "Metadata": {
+          "test-1": "test-meta-1",
+          "test-2": "test-meta-2"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "final-object": {
+        "AcceptRanges": "bytes",
+        "Body": "abcdef",
+        "ContentLength": 6,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e80b5017098950fc58aad83c8c14978e\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invalid-metadata": {
+        "content": {
+          "Error": {
+            "Code": "AccessDenied",
+            "HostId": "<host-id>",
+            "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"$x-amz-meta-foo\", \"bar\"]",
+            "RequestId": "<request-id:7>"
+          }
+        },
+        "statusCode": 403
+      },
+      "missing-metadata": {
+        "content": {
+          "Error": {
+            "Code": "AccessDenied",
+            "HostId": "<host-id>",
+            "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"$x-amz-meta-foo\", \"bar\"]",
+            "RequestId": "<request-id:8>"
+          }
+        },
+        "statusCode": 403
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_conditions_validation_eq[s3v4]": {
+    "recorded-date": "16-12-2024, 15:14:00",
+    "recorded-content": {
+      "invalid-condition-eq": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HostId": "<host-id>",
+          "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"$success_action_redirect\", \"http://localhost.test/random\"]",
+          "RequestId": "<request-id:1>"
+        }
+      },
+      "invalid-condition-missing-prefix": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HostId": "<host-id>",
+          "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"success_action_redirect\", \"http://localhost.test/random\"]",
+          "RequestId": "<request-id:2>"
+        }
+      },
+      "invalid-condition-wrong-condition": {
+        "Error": {
+          "Code": "InvalidPolicyDocument",
+          "HostId": "<host-id>",
+          "Message": "Invalid Policy: Invalid Simple-Condition: Simple-Conditions must have exactly one property specified.",
+          "RequestId": "<request-id:3>"
+        }
+      },
+      "invalid-condition-wrong-value-casing": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HostId": "<host-id>",
+          "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"$success_action_redirect\", \"HTTP://localhost.test/random\"]",
+          "RequestId": "<request-id:4>"
+        }
+      },
+      "head-object-metadata": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 6,
+        "ContentType": "text/plain",
+        "ETag": "\"e80b5017098950fc58aad83c8c14978e\"",
+        "Expires": "datetime",
+        "ExpiresString": "<expires>",
+        "LastModified": "datetime",
+        "Metadata": {
+          "test-1": "test-meta-1",
+          "test-2": "test-meta-2"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "final-object": {
+        "AcceptRanges": "bytes",
+        "Body": "abcdef",
+        "ContentLength": 6,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e80b5017098950fc58aad83c8c14978e\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invalid-metadata": {
+        "content": {
+          "Error": {
+            "Code": "AccessDenied",
+            "HostId": "<host-id>",
+            "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"$x-amz-meta-foo\", \"bar\"]",
+            "RequestId": "<request-id:7>"
+          }
+        },
+        "statusCode": 403
+      },
+      "missing-metadata": {
+        "content": {
+          "Error": {
+            "Code": "AccessDenied",
+            "HostId": "<host-id>",
+            "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"$x-amz-meta-foo\", \"bar\"]",
+            "RequestId": "<request-id:8>"
+          }
+        },
+        "statusCode": 403
       }
     }
   }
