@@ -1,6 +1,6 @@
 import unittest
 
-from localstack.utils.tagging import TaggingService
+from localstack.utils.tagging import TaggingService, convert_to_taglist
 
 
 class TestTaggingService(unittest.TestCase):
@@ -28,3 +28,13 @@ class TestTaggingService(unittest.TestCase):
         self.svc.untag_resource("arn", ["key_key"])
         result = self.svc.list_tags_for_resource("arn")
         self.assertEqual({"Tags": []}, result)
+
+
+class TestTagging:
+    def test_convert_to_taglist(self):
+        assert convert_to_taglist({}) == []
+        assert convert_to_taglist({"lorem": "ipsum"}) == [{"Key": "lorem", "Value": "ipsum"}]
+        assert convert_to_taglist({"lorem": "ipsum", "dolor": "sit"}) == [
+            {"Key": "lorem", "Value": "ipsum"},
+            {"Key": "dolor", "Value": "sit"},
+        ]

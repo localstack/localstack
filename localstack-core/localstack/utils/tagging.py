@@ -32,3 +32,20 @@ class TaggingService:
 
     def __delitem__(self, arn: str):
         self.del_resource(arn)
+
+
+def convert_to_taglist(tag_map: dict[str, str]) -> list[dict[str, str]]:
+    """
+    Converts a Tag Map to a Tag List.
+
+    These are the two common schemas for representing resource tags in Botocore specs.
+
+    Tag Maps are structured as::
+
+        {'a': 'b', 'x': 'y"}
+
+    Tag Lists are structured as::
+
+        [{'Key': 'a', 'Value': 'b'}, {'Key': 'x': 'Value': 'y'}]
+    """
+    return [{"Key": key, "Value": value} for key, value in tag_map.items()]

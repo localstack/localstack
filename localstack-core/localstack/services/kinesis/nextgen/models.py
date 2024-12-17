@@ -2,8 +2,14 @@ from datetime import datetime, timezone
 from typing import Dict
 
 from localstack.aws.api.kinesis import StreamName
-from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
+from localstack.services.stores import (
+    AccountRegionBundle,
+    BaseStore,
+    CrossRegionAttribute,
+    LocalAttribute,
+)
 from localstack.utils.aws.arns import kinesis_stream_arn
+from localstack.utils.tagging import TaggingService
 
 
 class Stream:
@@ -23,8 +29,18 @@ class Stream:
         return kinesis_stream_arn(self.name, self.account_id, self.region_name)
 
 
+# Shards have:
+# - ID
+# Records have:
+# - sequence number
+# - partition key
+# - data
+
+
 class KinesisStore(BaseStore):
     streams: Dict[StreamName, Stream] = LocalAttribute(default=dict)
+
+    TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
 
 
 kinesis_stores = AccountRegionBundle("kinesis", KinesisStore)

@@ -58,6 +58,7 @@ from localstack.aws.api.kinesis import (
 )
 from localstack.services.kinesis.nextgen.models import Stream, kinesis_stores
 from localstack.utils.aws.arns import parse_arn
+from localstack.utils.tagging import convert_to_taglist
 
 
 class KinesisProvider(KinesisApi):
@@ -74,6 +75,7 @@ class KinesisProvider(KinesisApi):
     def _resolve_stream(
         context: RequestContext, arn: str | None, name: str | None
     ) -> Tuple[str, str, str]:
+        # TODO: consider invoking from _get_stream()
         if arn is None and name is None:
             raise InvalidArgumentException("TODO")  # TODO
 
@@ -113,6 +115,8 @@ class KinesisProvider(KinesisApi):
         if stream_name in store.streams:
             raise InvalidArgumentException("TODO")  # TODO
 
+        # TODO: for provisioned mode, shard count is required
+
         mode = self._validate_stream_mode(stream_mode_details)
 
         stream = Stream(
@@ -124,6 +128,10 @@ class KinesisProvider(KinesisApi):
         )
 
         store.streams[stream_name] = stream
+
+        if tags:
+            tag_list = convert_to_taglist(tags)
+            store.TAGS.tag_resource(stream.arn, tag_list)
 
     def describe_stream(
         self,
@@ -257,7 +265,10 @@ class KinesisProvider(KinesisApi):
         stream_arn: StreamARN = None,
         **kwargs,
     ) -> None:
-        raise NotImplementedError
+        stream = self._get_stream(*self._resolve_stream(context, stream_arn, stream_name))
+        tag_list = convert_to_taglist(tags)
+        store = kinesis_stores[context.account_id][context.region]
+        store.TAGS.tag_resource(stream.arn, tag_list)
 
     def list_tags_for_stream(
         self,
@@ -268,7 +279,13 @@ class KinesisProvider(KinesisApi):
         stream_arn: StreamARN = None,
         **kwargs,
     ) -> ListTagsForStreamOutput:
-        raise NotImplementedError
+        stream = self._get_stream(*self._resolve_stream(context, stream_arn, stream_name))
+        store = kinesis_stores[context.account_id][context.region]
+        tag_list = store.TAGS.list_tags_for_resource(stream.arn)["Tags"]
+        return ListTagsForStreamOutput(
+            Tags=tag_list,
+            HasMoreTags=False,
+        )
 
     def remove_tags_from_stream(
         self,
@@ -278,7 +295,9 @@ class KinesisProvider(KinesisApi):
         stream_arn: StreamARN = None,
         **kwargs,
     ) -> None:
-        raise NotImplementedError
+        stream = self._get_stream(*self._resolve_stream(context, stream_arn, stream_name))
+        store = kinesis_stores[context.account_id][context.region]
+        store.TAGS.untag_resource(stream.arn, tag_keys)
 
     #
     # Shards CRUD
