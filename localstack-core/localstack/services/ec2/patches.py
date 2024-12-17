@@ -5,6 +5,7 @@ from moto.ec2 import models as ec2_models
 from moto.utilities.id_generator import TAG_KEY_CUSTOM_ID, Tags
 
 from localstack.services.ec2.exceptions import (
+    InvalidSecurityGroupDuplicateCustomIdError,
     InvalidSubnetDuplicateCustomIdError,
     InvalidVpcDuplicateCustomIdError,
 )
@@ -119,6 +120,9 @@ def apply_patches():
         # Extract tags and custom ID
         tags: dict[str, str] = tags or {}
         custom_id = tags.get(TAG_KEY_CUSTOM_ID)
+
+        if not force and self.get_security_group_from_id(custom_id):
+            raise InvalidSecurityGroupDuplicateCustomIdError(custom_id)
 
         # Generate security group with moto library
         result: ec2_models.security_groups.SecurityGroup = fn(
