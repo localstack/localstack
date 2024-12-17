@@ -1099,7 +1099,7 @@ class TestDynamoDB:
             TableName=table_name, ReplicaUpdates=[{"Delete": {"RegionName": "us-east-1"}}]
         )
         response = dynamodb_ap_south_1.describe_table(TableName=table_name)
-        assert len(response["Table"]["Replicas"]) == 0
+        assert "Replicas" not in response["Table"]
 
     @markers.aws.only_localstack
     def test_global_tables(self, aws_client, ddb_test_table):
