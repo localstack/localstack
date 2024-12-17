@@ -450,7 +450,9 @@ class KinesisProvider(KinesisApi):
         stream_arn: StreamARN = None,
         **kwargs,
     ) -> None:
-        raise NotImplementedError
+        # When encryption is enabled on AWS Kinesis, only the stream data at rest is encrypted.
+        # In this implementation, this is just treated as a no-op. Future work could involve checking key validity.
+        pass
 
     def stop_stream_encryption(
         self,
@@ -461,7 +463,7 @@ class KinesisProvider(KinesisApi):
         stream_arn: StreamARN = None,
         **kwargs,
     ) -> None:
-        raise NotImplementedError
+        pass
 
     #
     # Resource Policies
