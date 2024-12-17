@@ -35,6 +35,7 @@ from localstack.aws.api.kinesis import (
     PutRecordsRequestEntryList,
     RegisterStreamConsumerOutput,
     ResourceARN,
+    ResourceInUseException,
     ResourceNotFoundException,
     RetentionPeriodHours,
     ScalingType,
@@ -55,6 +56,7 @@ from localstack.aws.api.kinesis import (
     TagMap,
     Timestamp,
     UpdateShardCountOutput,
+    ValidationException,
 )
 from localstack.services.kinesis.native.models import Stream, kinesis_stores
 from localstack.utils.aws.arns import parse_arn
@@ -67,7 +69,7 @@ class KinesisProvider(KinesisApi):
         store = kinesis_stores[account_id][region_name]
 
         if name not in store.streams:
-            raise ResourceNotFoundException("TODO")  # TODO
+            raise ResourceNotFoundException(f"Stream {name} under account {account_id} not found.")
 
         return store.streams.get(name)
 
@@ -77,7 +79,9 @@ class KinesisProvider(KinesisApi):
     ) -> Tuple[str, str, str]:
         # TODO: consider invoking from _get_stream()
         if arn is None and name is None:
-            raise InvalidArgumentException("TODO")  # TODO
+            raise InvalidArgumentException(
+                "Stream arn and stream name can't be empty at the same time"
+            )
 
         if arn:
             arn_data = parse_arn(arn)
@@ -94,7 +98,9 @@ class KinesisProvider(KinesisApi):
         stream_mode_details = stream_mode_details or {}
         mode = stream_mode_details.get("StreamMode") or StreamMode.ON_DEMAND
         if mode not in StreamMode.__members__:
-            raise InvalidArgumentException("TODO")  # TODO
+            raise ValidationException(
+                f"1 validation error detected: Value '{mode}' at 'streamModeDetails.streamMode' failed to satisfy constraint: Member must satisfy enum value set: [ON_DEMAND, PROVISIONED]"
+            )
         return mode
 
     #
@@ -113,11 +119,15 @@ class KinesisProvider(KinesisApi):
         store = kinesis_stores[context.account_id][context.region]
 
         if stream_name in store.streams:
-            raise InvalidArgumentException("TODO")  # TODO
-
-        # TODO: for provisioned mode, shard count is required
+            raise ResourceInUseException(
+                f"Stream {stream_name} under account {context.account_id} already exists."
+            )
 
         mode = self._validate_stream_mode(stream_mode_details)
+        if mode == StreamMode.PROVISIONED and shard_count is None:
+            raise InvalidArgumentException(
+                "ShardCount cannot be null when creating stream in PROVISIONED StreamMode"
+            )
 
         stream = Stream(
             account_id=context.account_id,
