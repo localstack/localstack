@@ -752,7 +752,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             if replica_region != context.region:
                 replica_description_list.append(replica_description)
 
-        table_description.update({"Replicas": replica_description_list})
+        if replica_description_list:
+            table_description.update({"Replicas": replica_description_list})
 
         # update only TableId and SSEDescription if present
         if table_definitions := store.table_definitions.get(table_name):

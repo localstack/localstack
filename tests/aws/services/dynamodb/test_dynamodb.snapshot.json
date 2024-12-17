@@ -1419,14 +1419,14 @@
     }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_update_table_without_sse_specification_change": {
-    "recorded-date": "09-12-2024, 16:09:53",
+    "recorded-date": "17-12-2024, 10:40:03",
     "recorded-content": {
-      "SSEDescription": {
+      "create_table_sse_description": {
         "KMSMasterKeyArn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "SSEType": "KMS",
         "Status": "ENABLED"
       },
-      "KMSDescription": {
+      "describe_kms_key": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
           "Arn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
@@ -1450,7 +1450,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "update-table-unchanged-sse-spec": {
+      "update_table_sse_description": {
         "KMSMasterKeyArn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "SSEType": "KMS",
         "Status": "ENABLED"
