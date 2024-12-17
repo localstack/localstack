@@ -1,6 +1,6 @@
 {
   "tests/aws/services/cloudformation/resources/test_stepfunctions.py::test_cfn_statemachine_default_s3_location": {
-    "recorded-date": "16-12-2024, 18:48:48",
+    "recorded-date": "17-12-2024, 16:06:46",
     "recorded-content": {
       "describe_state_machine_output_on_create": {
         "creationDate": "datetime",

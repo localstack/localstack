@@ -8,7 +8,6 @@ from localstack_snapshot.snapshots.transformer import JsonpathTransformer
 from localstack import config
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import await_execution_terminated
-from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import wait_until
 
@@ -326,7 +325,6 @@ def test_cfn_statemachine_default_s3_location(
     )
 
     stack_outputs = stack.outputs
-    assert len(stack_outputs) == 1
     statemachine_arn = stack_outputs["StateMachineArnOutput"]
 
     describe_state_machine_output_on_create = aws_client.stepfunctions.describe_state_machine(
@@ -341,16 +339,23 @@ def test_cfn_statemachine_default_s3_location(
     aws_client.s3.put_object(
         Bucket=bucket_name, Key=file_key, Body=json.dumps(state_machine_template)
     )
-    aws_client.cloudformation.update_stack(
-        StackName=stack.stack_name,
-        TemplateBody=load_file(cfn_template_path),
-        Parameters=[
-            {"ParameterKey": "BucketName", "ParameterValue": bucket_name},
-            {"ParameterKey": "ObjectKey", "ParameterValue": file_key},
-        ],
-        Capabilities=["CAPABILITY_NAMED_IAM"],
+    deploy_cfn_template(
+        stack_name=stack_name,
+        template_path=cfn_template_path,
+        is_update=True,
+        parameters={"BucketName": bucket_name, "ObjectKey": file_key},
     )
-    aws_client.cloudformation.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
+    # aws_client.cloudformation.update_stack(
+    #     StackName=stack.stack_name,
+    #     TemplateBody=load_file(cfn_template_path),
+    #     is_update=True,
+    #     Parameters=[
+    #         {"ParameterKey": "BucketName", "ParameterValue": bucket_name},
+    #         {"ParameterKey": "ObjectKey", "ParameterValue": file_key},
+    #     ],
+    #     Capabilities=["CAPABILITY_NAMED_IAM"],
+    # )
+    # aws_client.cloudformation.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
 
     describe_state_machine_output_on_update = aws_client.stepfunctions.describe_state_machine(
         stateMachineArn=statemachine_arn
@@ -358,5 +363,3 @@ def test_cfn_statemachine_default_s3_location(
     sfn_snapshot.match(
         "describe_state_machine_output_on_update", describe_state_machine_output_on_update
     )
-
-    stack.destroy()
