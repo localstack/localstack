@@ -345,17 +345,6 @@ def test_cfn_statemachine_default_s3_location(
         is_update=True,
         parameters={"BucketName": bucket_name, "ObjectKey": file_key},
     )
-    # aws_client.cloudformation.update_stack(
-    #     StackName=stack.stack_name,
-    #     TemplateBody=load_file(cfn_template_path),
-    #     is_update=True,
-    #     Parameters=[
-    #         {"ParameterKey": "BucketName", "ParameterValue": bucket_name},
-    #         {"ParameterKey": "ObjectKey", "ParameterValue": file_key},
-    #     ],
-    #     Capabilities=["CAPABILITY_NAMED_IAM"],
-    # )
-    # aws_client.cloudformation.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
 
     describe_state_machine_output_on_update = aws_client.stepfunctions.describe_state_machine(
         stateMachineArn=statemachine_arn
