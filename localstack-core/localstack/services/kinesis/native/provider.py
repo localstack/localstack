@@ -56,7 +56,7 @@ from localstack.aws.api.kinesis import (
     Timestamp,
     UpdateShardCountOutput,
 )
-from localstack.services.kinesis.nextgen.models import Stream, kinesis_stores
+from localstack.services.kinesis.native.models import Stream, kinesis_stores
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.tagging import convert_to_taglist
 

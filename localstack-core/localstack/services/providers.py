@@ -181,9 +181,9 @@ def kinesis():
     )
 
 
-@aws_provider(api="kinesis", name="nextgen")
+@aws_provider(api="kinesis", name="native")
 def kinesis_nextgen():
-    from localstack.services.kinesis.nextgen.provider import KinesisProvider
+    from localstack.services.kinesis.native.provider import KinesisProvider
 
     provider = KinesisProvider()
     return Service.for_provider(provider)
