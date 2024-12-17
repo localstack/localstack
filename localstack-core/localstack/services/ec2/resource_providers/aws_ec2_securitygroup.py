@@ -64,6 +64,7 @@ def model_from_description(sg_description: dict) -> dict:
         "GroupName": sg_description.get("GroupName"),
         "GroupDescription": sg_description.get("Description"),
         "SecurityGroupEgress": [],
+        "SecurityGroupIngress": [],
     }
 
     for i, egress in enumerate(sg_description.get("IpPermissionsEgress", [])):
@@ -77,7 +78,6 @@ def model_from_description(sg_description: dict) -> dict:
                 }
             )
 
-    model["SecurityGroupIngress"] = []
     for i, ingress in enumerate(sg_description.get("IpPermissions", [])):
         for ip_range in ingress.get("IpRanges", []):
             model["SecurityGroupIngress"].append(
