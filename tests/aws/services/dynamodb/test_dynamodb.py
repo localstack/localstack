@@ -1669,18 +1669,16 @@ class TestDynamoDB:
             SSESpecification=sse_specification,
             Tags=TEST_DDB_TAGS,
         )
-        snapshot.match("SSEDescription", result["TableDescription"]["SSEDescription"])
+        snapshot.match("create_table_sse_description", result["TableDescription"]["SSEDescription"])
 
         kms_master_key_arn = result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"]
         result = aws_client.kms.describe_key(KeyId=kms_master_key_arn)
-        snapshot.match("KMSDescription", result)
+        snapshot.match("describe_kms_key", result)
 
         result = aws_client.dynamodb.update_table(
             TableName=table_name, BillingMode="PAY_PER_REQUEST"
         )
-        snapshot.match(
-            "update-table-unchanged-sse-spec", result["TableDescription"]["SSEDescription"]
-        )
+        snapshot.match("update_table_sse_description", result["TableDescription"]["SSEDescription"])
 
         # Verify that SSEDescription exists and remains unchanged after update_table
         assert result["TableDescription"]["SSEDescription"]["Status"] == "ENABLED"
