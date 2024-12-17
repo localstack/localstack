@@ -145,11 +145,39 @@ class EC2SecurityGroupProvider(ResourceProvider[EC2SecurityGroupProperties]):
         security_group = request.aws_client_factory.ec2.describe_security_groups(
             GroupIds=[model["Id"]]
         )["SecurityGroups"][0]
-        security_group["Id"] = model["Id"]
+        model["GroupId"] = security_group.get("GroupId")
+        model["GroupName"] = security_group.get("GroupName")
+        model["GroupDescription"] = security_group.get("Description")
+
+        model["SecurityGroupEgress"] = []
+        for i, egress in enumerate(security_group.get("IpPermissionsEgress", [])):
+            for ip_range in egress.get("IpRanges", []):
+                model["SecurityGroupEgress"].append(
+                    {
+                        "CidrIp": ip_range.get("CidrIp"),
+                        "FromPort": egress.get("FromPort", -1),
+                        "IpProtocol": egress.get("IpProtocol", "-1"),
+                        "ToPort": egress.get("ToPort", -1),
+                    }
+                )
+
+        model["SecurityGroupIngress"] = []
+        for i, ingress in enumerate(security_group.get("IpPermissions", [])):
+            for ip_range in ingress.get("IpRanges", []):
+                model["SecurityGroupIngress"].append(
+                    {
+                        "CidrIp": ip_range.get("CidrIp"),
+                        "FromPort": ingress.get("FromPort", -1),
+                        "IpProtocol": ingress.get("IpProtocol", "-1"),
+                        "ToPort": ingress.get("ToPort", -1),
+                    }
+                )
+
+        model["VpcId"] = security_group.get("VpcId")
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
-            resource_model=security_group,
+            resource_model=model,
         )
 
     def list(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
