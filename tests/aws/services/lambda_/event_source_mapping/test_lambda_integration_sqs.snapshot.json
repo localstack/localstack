@@ -1664,7 +1664,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batch_size[15]": {
-    "recorded-date": "26-11-2024, 13:43:42",
+    "recorded-date": "11-12-2024, 13:42:57",
     "recorded-content": {
       "create-event-source-mapping-response": {
         "BatchSize": 15,
@@ -1673,7 +1673,7 @@
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "<datetime>",
-        "MaximumBatchingWindowInSeconds": 10,
+        "MaximumBatchingWindowInSeconds": "maximum-batching-window-in-seconds",
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
         "UUID": "<uuid:1>",
@@ -1785,8 +1785,8 @@
             "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
           },
           "messageAttributes": {},
-          "md5OfMessageAttributes": null,
           "md5OfBody": "<md5-of-body:1>",
+          "md5OfMessageAttributes": null,
           "eventSource": "aws:sqs",
           "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "awsRegion": "<region>"
@@ -1836,8 +1836,8 @@
             "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
           },
           "messageAttributes": {},
-          "md5OfMessageAttributes": null,
           "md5OfBody": "<md5-of-body:4>",
+          "md5OfMessageAttributes": null,
           "eventSource": "aws:sqs",
           "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "awsRegion": "<region>"
@@ -1904,8 +1904,8 @@
             "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
           },
           "messageAttributes": {},
-          "md5OfMessageAttributes": null,
           "md5OfBody": "<md5-of-body:8>",
+          "md5OfMessageAttributes": null,
           "eventSource": "aws:sqs",
           "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "awsRegion": "<region>"
@@ -2023,8 +2023,8 @@
             "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
           },
           "messageAttributes": {},
-          "md5OfMessageAttributes": null,
           "md5OfBody": "<md5-of-body:15>",
+          "md5OfMessageAttributes": null,
           "eventSource": "aws:sqs",
           "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "awsRegion": "<region>"
@@ -2579,7 +2579,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batch_size[100]": {
-    "recorded-date": "26-11-2024, 13:44:40",
+    "recorded-date": "11-12-2024, 13:43:49",
     "recorded-content": {
       "create-event-source-mapping-response": {
         "BatchSize": 100,
@@ -2588,7 +2588,7 @@
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "<datetime>",
-        "MaximumBatchingWindowInSeconds": 10,
+        "MaximumBatchingWindowInSeconds": "maximum-batching-window-in-seconds",
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
         "UUID": "<uuid:1>",
@@ -2734,8 +2734,8 @@
             "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
           },
           "messageAttributes": {},
-          "md5OfBody": "<md5-of-body:3>",
           "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:3>",
           "eventSource": "aws:sqs",
           "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "awsRegion": "<region>"
@@ -2751,8 +2751,8 @@
             "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
           },
           "messageAttributes": {},
-          "md5OfBody": "<md5-of-body:4>",
           "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:4>",
           "eventSource": "aws:sqs",
           "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "awsRegion": "<region>"
@@ -2768,8 +2768,8 @@
             "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
           },
           "messageAttributes": {},
-          "md5OfBody": "<md5-of-body:5>",
           "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:5>",
           "eventSource": "aws:sqs",
           "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "awsRegion": "<region>"
@@ -2802,8 +2802,8 @@
             "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
           },
           "messageAttributes": {},
-          "md5OfBody": "<md5-of-body:7>",
           "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:7>",
           "eventSource": "aws:sqs",
           "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "awsRegion": "<region>"
@@ -2819,8 +2819,8 @@
             "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
           },
           "messageAttributes": {},
-          "md5OfBody": "<md5-of-body:8>",
           "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:8>",
           "eventSource": "aws:sqs",
           "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "awsRegion": "<region>"
@@ -2836,8 +2836,8 @@
             "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
           },
           "messageAttributes": {},
-          "md5OfBody": "<md5-of-body:9>",
           "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:9>",
           "eventSource": "aws:sqs",
           "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "awsRegion": "<region>"
@@ -2853,8 +2853,8 @@
             "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
           },
           "messageAttributes": {},
-          "md5OfBody": "<md5-of-body:10>",
           "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:10>",
           "eventSource": "aws:sqs",
           "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "awsRegion": "<region>"
@@ -2904,8 +2904,8 @@
             "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
           },
           "messageAttributes": {},
-          "md5OfBody": "<md5-of-body:13>",
           "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:13>",
           "eventSource": "aws:sqs",
           "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "awsRegion": "<region>"
@@ -2938,8 +2938,8 @@
             "ApproximateFirstReceiveTimestamp": "<approximate-first-receive-timestamp>"
           },
           "messageAttributes": {},
-          "md5OfBody": "<md5-of-body:15>",
           "md5OfMessageAttributes": null,
+          "md5OfBody": "<md5-of-body:15>",
           "eventSource": "aws:sqs",
           "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "awsRegion": "<region>"
@@ -2948,7 +2948,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batch_size[1000]": {
-    "recorded-date": "26-11-2024, 13:45:41",
+    "recorded-date": "11-12-2024, 13:44:40",
     "recorded-content": {
       "create-event-source-mapping-response": {
         "BatchSize": 1000,
@@ -2957,7 +2957,7 @@
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "<datetime>",
-        "MaximumBatchingWindowInSeconds": 10,
+        "MaximumBatchingWindowInSeconds": "maximum-batching-window-in-seconds",
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
         "UUID": "<uuid:1>",
@@ -3317,7 +3317,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batch_size[10000]": {
-    "recorded-date": "26-11-2024, 13:46:48",
+    "recorded-date": "11-12-2024, 13:45:32",
     "recorded-content": {
       "create-event-source-mapping-response": {
         "BatchSize": 10000,
@@ -3326,7 +3326,7 @@
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "<datetime>",
-        "MaximumBatchingWindowInSeconds": 10,
+        "MaximumBatchingWindowInSeconds": "maximum-batching-window-in-seconds",
         "State": "Creating",
         "StateTransitionReason": "USER_INITIATED",
         "UUID": "<uuid:1>",

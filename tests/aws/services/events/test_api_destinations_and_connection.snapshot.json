@@ -1,0 +1,798 @@
+{
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_create_connection": {
+    "recorded-date": "09-12-2024, 10:16:11",
+    "recorded-content": {
+      "create-connection": {
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection": {
+        "AuthParameters": {
+          "ApiKeyAuthParameters": {
+            "ApiKeyName": "ApiKey"
+          },
+          "InvocationHttpParameters": {}
+        },
+        "AuthorizationType": "API_KEY",
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params0]": {
+    "recorded-date": "09-12-2024, 10:16:12",
+    "recorded-content": {
+      "create-connection-auth": {
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection-auth": {
+        "AuthParameters": {
+          "BasicAuthParameters": {
+            "Username": "user"
+          }
+        },
+        "AuthorizationType": "BASIC",
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params1]": {
+    "recorded-date": "09-12-2024, 10:16:13",
+    "recorded-content": {
+      "create-connection-auth": {
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection-auth": {
+        "AuthParameters": {
+          "ApiKeyAuthParameters": {
+            "ApiKeyName": "ApiKey"
+          }
+        },
+        "AuthorizationType": "API_KEY",
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params2]": {
+    "recorded-date": "09-12-2024, 10:16:13",
+    "recorded-content": {
+      "create-connection-auth": {
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZING",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection-auth": {
+        "AuthParameters": {
+          "OAuthParameters": {
+            "AuthorizationEndpoint": "https://example.com/oauth",
+            "ClientParameters": {
+              "ClientID": "client_id"
+            },
+            "HttpMethod": "POST"
+          }
+        },
+        "AuthorizationType": "OAUTH_CLIENT_CREDENTIALS",
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZING",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_list_connections": {
+    "recorded-date": "09-12-2024, 10:16:14",
+    "recorded-content": {
+      "list-connections": {
+        "Connections": [
+          {
+            "AuthorizationType": "BASIC",
+            "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+            "ConnectionState": "AUTHORIZED",
+            "CreationTime": "datetime",
+            "LastAuthorizedTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<connection-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_delete_connection": {
+    "recorded-date": "09-12-2024, 10:16:19",
+    "recorded-content": {
+      "create-connection-response": {
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-connection": {
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "DELETING",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-deleted-connection": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Failed to describe the connection(s). Connection '<connection-name>' does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_create_connection_invalid_parameters": {
+    "recorded-date": "09-12-2024, 10:16:20",
+    "recorded-content": {
+      "create-connection-invalid-auth-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'INVALID_AUTH_TYPE' at 'authorizationType' failed to satisfy constraint: Member must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_update_connection": {
+    "recorded-date": "09-12-2024, 10:16:22",
+    "recorded-content": {
+      "create-connection": {
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-created-connection": {
+        "AuthParameters": {
+          "BasicAuthParameters": {
+            "Username": "user"
+          },
+          "InvocationHttpParameters": {}
+        },
+        "AuthorizationType": "BASIC",
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "connection-secret-before-update": {
+        "ARN": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "CreatedDate": "datetime",
+        "Name": "events!connection/<connection-name>/<secret-uuid>",
+        "SecretString": {
+          "username": "user",
+          "password": "pass",
+          "invocation_http_parameters": {}
+        },
+        "VersionId": "<uuid:1>",
+        "VersionStages": [
+          "AWSCURRENT"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-connection": {
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-updated-connection": {
+        "AuthParameters": {
+          "BasicAuthParameters": {
+            "Username": "new_user"
+          },
+          "InvocationHttpParameters": {}
+        },
+        "AuthorizationType": "BASIC",
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "connection-secret-after-update": {
+        "ARN": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "CreatedDate": "datetime",
+        "Name": "events!connection/<connection-name>/<secret-uuid>",
+        "SecretString": {
+          "username": "new_user",
+          "password": "new_pass",
+          "invocation_http_parameters": {}
+        },
+        "VersionId": "<uuid:2>",
+        "VersionStages": [
+          "AWSCURRENT"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_create_connection_name_validation": {
+    "recorded-date": "09-12-2024, 10:16:22",
+    "recorded-content": {
+      "create-connection-invalid-name-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'Invalid Name With Spaces!' at 'name' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_connection_secrets[basic]": {
+    "recorded-date": "09-12-2024, 10:16:24",
+    "recorded-content": {
+      "create-connection-auth": {
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection-auth": {
+        "AuthParameters": {
+          "BasicAuthParameters": {
+            "Username": "user"
+          }
+        },
+        "AuthorizationType": "BASIC",
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "connection-secret": {
+        "ARN": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "CreatedDate": "datetime",
+        "Name": "events!connection/<connection-name>/<secret-uuid>",
+        "SecretString": {
+          "username": "user",
+          "password": "pass"
+        },
+        "VersionId": "<uuid:1>",
+        "VersionStages": [
+          "AWSCURRENT"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_connection_secrets[api-key]": {
+    "recorded-date": "09-12-2024, 10:16:25",
+    "recorded-content": {
+      "create-connection-auth": {
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection-auth": {
+        "AuthParameters": {
+          "ApiKeyAuthParameters": {
+            "ApiKeyName": "ApiKey"
+          }
+        },
+        "AuthorizationType": "API_KEY",
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZED",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "connection-secret": {
+        "ARN": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "CreatedDate": "datetime",
+        "Name": "events!connection/<connection-name>/<secret-uuid>",
+        "SecretString": {
+          "api_key_name": "ApiKey",
+          "api_key_value": "secret"
+        },
+        "VersionId": "<uuid:1>",
+        "VersionStages": [
+          "AWSCURRENT"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeConnections::test_connection_secrets[oauth]": {
+    "recorded-date": "09-12-2024, 10:16:25",
+    "recorded-content": {
+      "create-connection-auth": {
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZING",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-connection-auth": {
+        "AuthParameters": {
+          "OAuthParameters": {
+            "AuthorizationEndpoint": "https://example.com/oauth",
+            "ClientParameters": {
+              "ClientID": "client_id"
+            },
+            "HttpMethod": "POST"
+          }
+        },
+        "AuthorizationType": "OAUTH_CLIENT_CREDENTIALS",
+        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
+        "ConnectionState": "AUTHORIZING",
+        "CreationTime": "datetime",
+        "LastAuthorizedTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<connection-name>",
+        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "connection-secret": {
+        "ARN": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
+        "CreatedDate": "datetime",
+        "Name": "events!connection/<connection-name>/<secret-uuid>",
+        "SecretString": {
+          "client_id": "client_id",
+          "client_secret": "client_secret",
+          "authorization_endpoint": "https://example.com/oauth",
+          "http_method": "POST"
+        },
+        "VersionId": "<uuid:1>",
+        "VersionStages": [
+          "AWSCURRENT"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinations::test_api_destinations[auth0]": {
+    "recorded-date": "09-12-2024, 10:21:06",
+    "recorded-content": {
+      "create-api-destination": {
+        "ApiDestinationArn": "api-destination-arn",
+        "ApiDestinationState": "ACTIVE",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-api-destination": {
+        "ApiDestinationArn": "api-destination-arn",
+        "ApiDestinationState": "ACTIVE",
+        "ConnectionArn": "connection-arn",
+        "CreationTime": "datetime",
+        "Description": "Test API destination",
+        "HttpMethod": "POST",
+        "InvocationEndpoint": "https://example.com/api",
+        "InvocationRateLimitPerSecond": 300,
+        "LastModifiedTime": "datetime",
+        "Name": "<destination-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-api-destinations": {
+        "ApiDestinations": [
+          {
+            "ApiDestinationArn": "api-destination-arn",
+            "ApiDestinationState": "ACTIVE",
+            "ConnectionArn": "connection-arn",
+            "CreationTime": "datetime",
+            "HttpMethod": "POST",
+            "InvocationEndpoint": "https://example.com/api",
+            "InvocationRateLimitPerSecond": 300,
+            "LastModifiedTime": "datetime",
+            "Name": "<destination-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-api-destination": {
+        "ApiDestinationArn": "api-destination-arn",
+        "ApiDestinationState": "ACTIVE",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-updated-api-destination": {
+        "ApiDestinationArn": "api-destination-arn",
+        "ApiDestinationState": "ACTIVE",
+        "ConnectionArn": "connection-arn",
+        "CreationTime": "datetime",
+        "Description": "Updated API destination",
+        "HttpMethod": "PUT",
+        "InvocationEndpoint": "https://example.com/api/v2",
+        "InvocationRateLimitPerSecond": 300,
+        "LastModifiedTime": "datetime",
+        "Name": "<destination-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-api-destination": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-api-destination-not-found-error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Failed to describe the api-destination(s). An api-destination '<destination-name>' does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinations::test_api_destinations[auth1]": {
+    "recorded-date": "09-12-2024, 10:21:08",
+    "recorded-content": {
+      "create-api-destination": {
+        "ApiDestinationArn": "api-destination-arn",
+        "ApiDestinationState": "ACTIVE",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-api-destination": {
+        "ApiDestinationArn": "api-destination-arn",
+        "ApiDestinationState": "ACTIVE",
+        "ConnectionArn": "connection-arn",
+        "CreationTime": "datetime",
+        "Description": "Test API destination",
+        "HttpMethod": "POST",
+        "InvocationEndpoint": "https://example.com/api",
+        "InvocationRateLimitPerSecond": 300,
+        "LastModifiedTime": "datetime",
+        "Name": "<destination-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-api-destinations": {
+        "ApiDestinations": [
+          {
+            "ApiDestinationArn": "api-destination-arn",
+            "ApiDestinationState": "ACTIVE",
+            "ConnectionArn": "connection-arn",
+            "CreationTime": "datetime",
+            "HttpMethod": "POST",
+            "InvocationEndpoint": "https://example.com/api",
+            "InvocationRateLimitPerSecond": 300,
+            "LastModifiedTime": "datetime",
+            "Name": "<destination-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-api-destination": {
+        "ApiDestinationArn": "api-destination-arn",
+        "ApiDestinationState": "ACTIVE",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-updated-api-destination": {
+        "ApiDestinationArn": "api-destination-arn",
+        "ApiDestinationState": "ACTIVE",
+        "ConnectionArn": "connection-arn",
+        "CreationTime": "datetime",
+        "Description": "Updated API destination",
+        "HttpMethod": "PUT",
+        "InvocationEndpoint": "https://example.com/api/v2",
+        "InvocationRateLimitPerSecond": 300,
+        "LastModifiedTime": "datetime",
+        "Name": "<destination-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-api-destination": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-api-destination-not-found-error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Failed to describe the api-destination(s). An api-destination '<destination-name>' does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinations::test_api_destinations[auth2]": {
+    "recorded-date": "09-12-2024, 10:21:10",
+    "recorded-content": {
+      "create-api-destination": {
+        "ApiDestinationArn": "api-destination-arn",
+        "ApiDestinationState": "INACTIVE",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-api-destination": {
+        "ApiDestinationArn": "api-destination-arn",
+        "ApiDestinationState": "INACTIVE",
+        "ConnectionArn": "connection-arn",
+        "CreationTime": "datetime",
+        "Description": "Test API destination",
+        "HttpMethod": "POST",
+        "InvocationEndpoint": "https://example.com/api",
+        "InvocationRateLimitPerSecond": 300,
+        "LastModifiedTime": "datetime",
+        "Name": "<destination-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-api-destinations": {
+        "ApiDestinations": [
+          {
+            "ApiDestinationArn": "api-destination-arn",
+            "ApiDestinationState": "INACTIVE",
+            "ConnectionArn": "connection-arn",
+            "CreationTime": "datetime",
+            "HttpMethod": "POST",
+            "InvocationEndpoint": "https://example.com/api",
+            "InvocationRateLimitPerSecond": 300,
+            "LastModifiedTime": "datetime",
+            "Name": "<destination-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-api-destination": {
+        "ApiDestinationArn": "api-destination-arn",
+        "ApiDestinationState": "INACTIVE",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-updated-api-destination": {
+        "ApiDestinationArn": "api-destination-arn",
+        "ApiDestinationState": "INACTIVE",
+        "ConnectionArn": "connection-arn",
+        "CreationTime": "datetime",
+        "Description": "Updated API destination",
+        "HttpMethod": "PUT",
+        "InvocationEndpoint": "https://example.com/api/v2",
+        "InvocationRateLimitPerSecond": 300,
+        "LastModifiedTime": "datetime",
+        "Name": "<destination-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-api-destination": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-api-destination-not-found-error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Failed to describe the api-destination(s). An api-destination '<destination-name>' does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinations::test_create_api_destination_invalid_parameters": {
+    "recorded-date": "09-12-2024, 10:21:11",
+    "recorded-content": {
+      "create-api-destination-invalid-parameters-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "2 validation errors detected: Value 'invalid-connection-arn' at 'connectionArn' failed to satisfy constraint: Member must satisfy regular expression pattern: ^arn:aws([a-z]|\\-)*:events:([a-z]|\\d|\\-)*:([0-9]{12})?:connection\\/[\\.\\-_A-Za-z0-9]+\\/[\\-A-Za-z0-9]+$; Value 'INVALID_METHOD' at 'httpMethod' failed to satisfy constraint: Member must satisfy enum value set: [HEAD, POST, PATCH, DELETE, PUT, GET, OPTIONS]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_api_destinations_and_connection.py::TestEventBridgeApiDestinations::test_create_api_destination_name_validation": {
+    "recorded-date": "09-12-2024, 10:21:12",
+    "recorded-content": {
+      "create-api-destination-invalid-name-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'Invalid Name With Spaces!' at 'name' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}

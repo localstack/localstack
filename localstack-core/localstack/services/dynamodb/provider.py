@@ -752,7 +752,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             if replica_region != context.region:
                 replica_description_list.append(replica_description)
 
-        table_description.update({"Replicas": replica_description_list})
+        if replica_description_list:
+            table_description.update({"Replicas": replica_description_list})
 
         # update only TableId and SSEDescription if present
         if table_definitions := store.table_definitions.get(table_name):
@@ -851,6 +852,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         SchemaExtractor.invalidate_table_schema(table_name, context.account_id, global_table_region)
 
+        schema = SchemaExtractor.get_table_schema(
+            table_name, context.account_id, global_table_region
+        )
+
         # TODO: DDB streams must also be created for replicas
         if update_table_input.get("StreamSpecification"):
             create_dynamodb_stream(
@@ -860,7 +865,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 result["TableDescription"].get("LatestStreamLabel"),
             )
 
-        return result
+        return UpdateTableOutput(TableDescription=schema["Table"])
 
     def list_tables(
         self,

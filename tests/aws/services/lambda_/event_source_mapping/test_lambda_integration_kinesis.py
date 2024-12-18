@@ -59,17 +59,12 @@ def _snapshot_transformers(snapshot):
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
+        # TODO: Fix transformer conflict between shardId and AWS account number (e.g., 000000000000):
+        #  'shardId-000000000000:<sequence-number:1>' → 'shardId-111111111111:<sequence-number:1>' (expected → actual)
         "$..Records..eventID",
-        "$..BisectBatchOnFunctionError",
-        "$..DestinationConfig",
-        "$..LastProcessingResult",
-        "$..EventSourceMappingArn",
-        "$..MaximumBatchingWindowInSeconds",
-        "$..MaximumRecordAgeInSeconds",
-        "$..ResponseMetadata.HTTPStatusCode",
-        "$..State",
-        "$..Topics",
-        "$..TumblingWindowInSeconds",
+        # TODO: Fix transformer issue: 'shardId-000000000000' → 'shardId-111111111111' ... (expected → actual)
+        "$..Messages..Body.KinesisBatchInfo.shardId",
+        "$..Message.KinesisBatchInfo.shardId",
     ],
 )
 class TestKinesisSource:
@@ -255,10 +250,7 @@ class TestKinesisSource:
             StartingPosition="LATEST",
         )
 
-    # TODO: is this test relevant for the new provider without patching SYNCHRONOUS_KINESIS_EVENTS?
-    #   At least, it is flagged as AWS-validated.
     @markers.aws.validated
-    @pytest.mark.skip(reason="deprecated config that only worked using the legacy provider")
     def test_kinesis_event_source_mapping_with_async_invocation(
         self,
         create_lambda_function,
@@ -269,6 +261,8 @@ class TestKinesisSource:
         snapshot,
         aws_client,
     ):
+        """Tests that records are processed in sequence when submitting 2 batches with 10 records each
+        because Kinesis streams ensure strict ordering."""
         function_name = f"lambda_func-{short_uid()}"
         stream_name = f"test-foobar-{short_uid()}"
         num_records_per_batch = 10
@@ -319,6 +313,8 @@ class TestKinesisSource:
         invocation_events = retry(_send_and_receive_messages, retries=3)
         snapshot.match("invocation_events", invocation_events)
 
+        # Processing of the second batch should happen at least 5 seconds after first batch because the Lambda function
+        # of the first batch waits for 5 seconds.
         assert (invocation_events[1]["executionStart"] - invocation_events[0]["executionStart"]) > 5
 
     @markers.aws.validated
@@ -456,12 +452,6 @@ class TestKinesisSource:
             aws_client.logs, function_name, expected_num_events=1, retries=10
         )
 
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Messages..Body.KinesisBatchInfo.shardId",
-            "$..Messages..Body.KinesisBatchInfo.streamArn",
-        ],
-    )
     @markers.aws.validated
     def test_kinesis_event_source_mapping_with_on_failure_destination_config(
         self,
@@ -544,11 +534,8 @@ class TestKinesisSource:
 
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            # FIXME Conflict between shardId and AWS account number when transforming
-            # i.e "shardId-000000000000" versus AWS Account ID 000000000000
-            "$..Messages..Body.KinesisBatchInfo.shardId",
-            "$..Messages..Body.KinesisBatchInfo.streamArn",
-            "$..Records",  # FIXME Figure out why there is an extra log record
+            # TODO: Figure out why there is an extra log record
+            "$..Records",
         ],
     )
     @markers.aws.validated
@@ -643,11 +630,6 @@ class TestKinesisSource:
         snapshot.match("kinesis_records", {"Records": sorted_records})
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Messages..Body.KinesisBatchInfo.shardId",
-        ],
-    )
     @pytest.mark.parametrize(
         "set_lambda_response",
         [
@@ -746,12 +728,6 @@ class TestKinesisSource:
         invocation_events = [event for event in events if "Records" in event]
         snapshot.match("kinesis_events", invocation_events)
 
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Message.KinesisBatchInfo.shardId",
-            "$..Message.KinesisBatchInfo.streamArn",
-        ],
-    )
     @markers.aws.validated
     def test_kinesis_event_source_mapping_with_sns_on_failure_destination_config(
         self,
@@ -859,11 +835,6 @@ class TestKinesisSource:
         snapshot.match("failure_sns_message", failure_sns_message)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Messages..Body.KinesisBatchInfo.shardId",
-        ],
-    )
     @pytest.mark.parametrize(
         "set_lambda_response",
         [
@@ -950,7 +921,8 @@ class TestKinesisSource:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..Messages..Body.KinesisBatchInfo.shardId",
+            # TODO: Fix flaky status 'OK' → 'No records processed' ... (expected → actual)
+            "$..LastProcessingResult",
         ],
     )
     def test_kinesis_empty_provided(
@@ -1016,18 +988,6 @@ class TestKinesisSource:
 # TODO: add tests for different edge cases in filtering (e.g. message isn't json => needs to be dropped)
 # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-kinesis
 class TestKinesisEventFiltering:
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            # Lifecycle updates not yet implemented in ESM v2
-            "$..LastProcessingResult",
-        ],
-    )
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Messages..Body.KinesisBatchInfo.shardId",
-            "$..Messages..Body.KinesisBatchInfo.streamArn",
-        ],
-    )
     @markers.aws.validated
     def test_kinesis_event_filtering_json_pattern(
         self,

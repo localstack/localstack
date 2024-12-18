@@ -206,9 +206,9 @@
 /tests/aws/services/s3control/ @bentsku
 
 # scheduler
-/localstack-core/localstack/aws/api/scheduler/ @joe4dev
-/localstack-core/localstack/services/scheduler/ @joe4dev
-/tests/aws/services/scheduler/ @joe4dev
+/localstack-core/localstack/aws/api/scheduler/ @zaingz @joe4dev
+/localstack-core/localstack/services/scheduler/ @zaingz @joe4dev
+/tests/aws/services/scheduler/ @zaingz @joe4dev
 
 # secretsmanager
 /localstack-core/localstack/aws/api/secretsmanager/ @dominikschubert @macnev2013 @MEPalma
