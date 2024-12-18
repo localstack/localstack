@@ -4,16 +4,16 @@
 #
 #    pip-compile --extra=base-runtime --output-file=requirements-base-runtime.txt --strip-extras --unsafe-package=distribute --unsafe-package=localstack-core --unsafe-package=pip --unsafe-package=setuptools pyproject.toml
 #
-attrs==24.2.0
+attrs==24.3.0
     # via
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.23.4
+awscrt==0.23.5
     # via localstack-core (pyproject.toml)
-boto3==1.35.76
+boto3==1.35.81
     # via localstack-core (pyproject.toml)
-botocore==1.35.76
+botocore==1.35.81
     # via
     #   boto3
     #   localstack-core (pyproject.toml)
@@ -24,7 +24,7 @@ cachetools==5.5.0
     # via localstack-core (pyproject.toml)
 cbor2==5.6.5
     # via localstack-core (pyproject.toml)
-certifi==2024.8.30
+certifi==2024.12.14
     # via requests
 cffi==1.17.1
     # via cryptography

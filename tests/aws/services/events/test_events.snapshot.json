@@ -1,6 +1,6 @@
 {
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_without_source": {
-    "recorded-date": "19-06-2024, 10:40:50",
+    "recorded-date": "09-12-2024, 10:35:56",
     "recorded-content": {
       "put-events": {
         "Entries": [
@@ -18,7 +18,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_event_without_detail": {
-    "recorded-date": "19-06-2024, 10:40:51",
+    "recorded-date": "09-12-2024, 10:35:56",
     "recorded-content": {
       "put-events": {
         "Entries": [
@@ -35,8 +35,113 @@
       }
     }
   },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_with_too_big_detail": {
+    "recorded-date": "09-12-2024, 10:35:57",
+    "recorded-content": {
+      "put-events-too-big-detail-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Total size of the entries in the request is over the limit."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_without_detail_type": {
+    "recorded-date": "09-12-2024, 10:35:57",
+    "recorded-content": {
+      "put-events": {
+        "Entries": [
+          {
+            "ErrorCode": "InvalidArgument",
+            "ErrorMessage": "Parameter DetailType is not valid. Reason: DetailType is a required argument."
+          }
+        ],
+        "FailedEntryCount": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_malformed_detail[STRING]": {
+    "recorded-date": "09-12-2024, 10:35:57",
+    "recorded-content": {
+      "put-events": {
+        "Entries": [
+          {
+            "ErrorCode": "MalformedDetail",
+            "ErrorMessage": "Detail is malformed."
+          }
+        ],
+        "FailedEntryCount": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_malformed_detail[ARRAY]": {
+    "recorded-date": "09-12-2024, 10:35:58",
+    "recorded-content": {
+      "put-events": {
+        "Entries": [
+          {
+            "ErrorCode": "MalformedDetail",
+            "ErrorMessage": "Detail is malformed."
+          }
+        ],
+        "FailedEntryCount": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_malformed_detail[MALFORMED_JSON]": {
+    "recorded-date": "09-12-2024, 10:35:58",
+    "recorded-content": {
+      "put-events": {
+        "Entries": [
+          {
+            "ErrorCode": "MalformedDetail",
+            "ErrorMessage": "Detail is malformed."
+          }
+        ],
+        "FailedEntryCount": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_malformed_detail[SERIALIZED_STRING]": {
+    "recorded-date": "09-12-2024, 10:35:58",
+    "recorded-content": {
+      "put-events": {
+        "Entries": [
+          {
+            "ErrorCode": "MalformedDetail",
+            "ErrorMessage": "Detail is malformed."
+          }
+        ],
+        "FailedEntryCount": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_time": {
-    "recorded-date": "27-08-2024, 10:02:33",
+    "recorded-date": "09-12-2024, 10:36:00",
     "recorded-content": {
       "messages": [
         {
@@ -97,7 +202,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_exceed_limit_ten_entries[custom]": {
-    "recorded-date": "19-06-2024, 10:40:54",
+    "recorded-date": "09-12-2024, 10:36:02",
     "recorded-content": {
       "put-events-exceed-limit-error": {
         "Error": {
@@ -112,7 +217,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_exceed_limit_ten_entries[default]": {
-    "recorded-date": "19-06-2024, 10:40:55",
+    "recorded-date": "09-12-2024, 10:36:03",
     "recorded-content": {
       "put-events-exceed-limit-error": {
         "Error": {
@@ -126,8 +231,132 @@
       }
     }
   },
+  "tests/aws/services/events/test_events.py::TestEvents::test_create_connection_validations": {
+    "recorded-date": "13-12-2024, 10:54:30",
+    "recorded-content": {
+      "create_connection_exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "3 validation errors detected: Value 'This should fail with two errors 123467890123412341234123412341234' at 'name' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+; Value 'This should fail with two errors 123467890123412341234123412341234' at 'name' failed to satisfy constraint: Member must have length less than or equal to 64; Value 'INVALID' at 'authorizationType' failed to satisfy constraint: Member must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_response_entries_order": {
+    "recorded-date": "09-12-2024, 10:41:48",
+    "recorded-content": {
+      "put-events-response": {
+        "Entries": [
+          {
+            "EventId": "event-id"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "sqs-messages": {
+        "queue1_messages": [
+          {
+            "Body": {
+              "version": "0",
+              "id": "<uuid:1>",
+              "detail-type": "core.update-account-command",
+              "source": "core.update-account-command",
+              "account": "111111111111",
+              "time": "date",
+              "region": "<region>",
+              "resources": [],
+              "detail": "detail"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "queue2_messages": [
+          {
+            "Body": {
+              "version": "0",
+              "id": "<uuid:1>",
+              "detail-type": "core.update-account-command",
+              "source": "core.update-account-command",
+              "account": "111111111111",
+              "time": "date",
+              "region": "<region>",
+              "resources": [],
+              "detail": "detail"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_target_delivery_failure": {
+    "recorded-date": "09-12-2024, 10:38:50",
+    "recorded-content": {
+      "put-events-response": {
+        "Entries": [
+          {
+            "EventId": "<event-id:1>"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_time_field": {
+    "recorded-date": "09-12-2024, 10:38:51",
+    "recorded-content": {
+      "put-events": {
+        "Entries": [
+          {
+            "EventId": "<uuid:1>"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "sqs-messages": [
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:1>",
+            "detail-type": "test-detail-type",
+            "source": "test-source",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "message": "test message"
+            }
+          }
+        }
+      ]
+    }
+  },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions0]": {
-    "recorded-date": "19-06-2024, 10:54:07",
+    "recorded-date": "09-12-2024, 10:38:53",
     "recorded-content": {
       "create-custom-event-bus-us-east-1": {
         "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
@@ -176,7 +405,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions1]": {
-    "recorded-date": "19-06-2024, 10:54:09",
+    "recorded-date": "09-12-2024, 10:38:55",
     "recorded-content": {
       "create-custom-event-bus-us-east-1": {
         "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
@@ -313,26 +542,26 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_multiple_event_buses_same_name": {
-    "recorded-date": "19-06-2024, 10:41:05",
+    "recorded-date": "09-12-2024, 10:38:55",
     "recorded-content": {
       "create-multiple-event-buses-same-name": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the CreateEventBus operation: Event bus <bus-name> already exists.') tblen=4>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_describe_delete_not_existing_event_bus": {
-    "recorded-date": "19-06-2024, 10:41:07",
+    "recorded-date": "09-12-2024, 10:38:57",
     "recorded-content": {
       "describe-not-existing-event-bus-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeEventBus operation: Event bus <bus-name> does not exist.') tblen=3>",
       "delete-not-existing-event-bus": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeEventBus operation: Event bus <bus-name> does not exist.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_delete_default_event_bus": {
-    "recorded-date": "19-06-2024, 10:41:07",
+    "recorded-date": "09-12-2024, 10:38:57",
     "recorded-content": {
       "delete-default-event-bus-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the DeleteEventBus operation: Cannot delete event bus default.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_list_event_buses_with_prefix": {
-    "recorded-date": "19-06-2024, 10:49:27",
+    "recorded-date": "09-12-2024, 10:38:58",
     "recorded-content": {
       "list-event-buses-prefix-complete-name": {
         "EventBuses": [
@@ -365,7 +594,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_list_event_buses_with_limit": {
-    "recorded-date": "19-06-2024, 10:50:45",
+    "recorded-date": "09-12-2024, 10:39:00",
     "recorded-content": {
       "list-event-buses-limit": {
         "EventBuses": [
@@ -423,7 +652,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[custom]": {
-    "recorded-date": "19-06-2024, 10:41:14",
+    "recorded-date": "09-12-2024, 10:39:05",
     "recorded-content": {
       "put-permission": {
         "ResponseMetadata": {
@@ -555,7 +784,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[default]": {
-    "recorded-date": "19-06-2024, 10:41:15",
+    "recorded-date": "09-12-2024, 10:39:07",
     "recorded-content": {
       "put-permission": {
         "ResponseMetadata": {
@@ -687,13 +916,13 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission_non_existing_event_bus": {
-    "recorded-date": "19-06-2024, 10:41:15",
+    "recorded-date": "09-12-2024, 10:39:07",
     "recorded-content": {
       "remove-permission-non-existing-sid-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the PutPermission operation: Event bus <bus-name> does not exist.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission[custom]": {
-    "recorded-date": "19-06-2024, 10:41:17",
+    "recorded-date": "09-12-2024, 10:39:09",
     "recorded-content": {
       "remove-permission": {
         "ResponseMetadata": {
@@ -744,7 +973,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission[default]": {
-    "recorded-date": "19-06-2024, 10:41:18",
+    "recorded-date": "09-12-2024, 10:39:10",
     "recorded-content": {
       "remove-permission": {
         "ResponseMetadata": {
@@ -795,31 +1024,118 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[True-custom]": {
-    "recorded-date": "19-06-2024, 10:41:18",
+    "recorded-date": "09-12-2024, 10:39:11",
     "recorded-content": {
       "remove-permission-non-existing-sid-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the RemovePermission operation: Statement with the provided id does not exist.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[True-default]": {
-    "recorded-date": "19-06-2024, 10:41:19",
+    "recorded-date": "09-12-2024, 10:39:12",
     "recorded-content": {
       "remove-permission-non-existing-sid-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the RemovePermission operation: Statement with the provided id does not exist.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[False-custom]": {
-    "recorded-date": "19-06-2024, 10:41:20",
+    "recorded-date": "09-12-2024, 10:39:13",
     "recorded-content": {
       "remove-permission-non-existing-sid-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the RemovePermission operation: Statement with the provided id does not exist.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[False-default]": {
-    "recorded-date": "19-06-2024, 10:41:21",
+    "recorded-date": "09-12-2024, 10:39:14",
     "recorded-content": {
       "remove-permission-non-existing-sid-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the RemovePermission operation: Statement with the provided id does not exist.') tblen=3>"
     }
   },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_bus_to_bus[standard]": {
+    "recorded-date": "09-12-2024, 10:39:27",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_bus_to_bus[domain]": {
+    "recorded-date": "09-12-2024, 10:39:42",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_bus_to_bus[path]": {
+    "recorded-date": "09-12-2024, 10:39:57",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_to_default_eventbus_for_custom_eventbus": {
-    "recorded-date": "19-06-2024, 10:41:47",
+    "recorded-date": "09-12-2024, 10:40:25",
     "recorded-content": {
       "create-custom-event-bus": {
         "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<resource:1>",
@@ -898,7 +1214,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_nonexistent_event_bus": {
-    "recorded-date": "19-06-2024, 10:45:41",
+    "recorded-date": "09-12-2024, 10:44:29",
     "recorded-content": {
       "put-events": {
         "Entries": [
@@ -948,7 +1264,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_put_list_with_prefix_describe_delete_rule[custom]": {
-    "recorded-date": "19-06-2024, 10:42:07",
+    "recorded-date": "09-12-2024, 10:40:45",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
@@ -1024,7 +1340,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_put_list_with_prefix_describe_delete_rule[default]": {
-    "recorded-date": "19-06-2024, 10:42:08",
+    "recorded-date": "09-12-2024, 10:40:47",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
@@ -1100,7 +1416,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_put_multiple_rules_with_same_name": {
-    "recorded-date": "19-06-2024, 10:42:09",
+    "recorded-date": "09-12-2024, 10:40:48",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
@@ -1146,7 +1462,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_list_rule_with_limit": {
-    "recorded-date": "19-06-2024, 10:42:12",
+    "recorded-date": "09-12-2024, 10:40:51",
     "recorded-content": {
       "list-rules-limit": {
         "NextToken": "<next_token:1>",
@@ -1282,13 +1598,13 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_describe_nonexistent_rule": {
-    "recorded-date": "19-06-2024, 10:42:14",
+    "recorded-date": "09-12-2024, 10:40:53",
     "recorded-content": {
       "describe-not-existing-rule-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeRule operation: Rule <rule-name> does not exist on EventBus default.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_disable_re_enable_rule[custom]": {
-    "recorded-date": "19-06-2024, 10:42:15",
+    "recorded-date": "09-12-2024, 10:40:54",
     "recorded-content": {
       "disable-rule": {
         "ResponseMetadata": {
@@ -1353,7 +1669,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_disable_re_enable_rule[default]": {
-    "recorded-date": "19-06-2024, 10:42:17",
+    "recorded-date": "09-12-2024, 10:40:56",
     "recorded-content": {
       "disable-rule": {
         "ResponseMetadata": {
@@ -1418,13 +1734,13 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_delete_rule_with_targets": {
-    "recorded-date": "19-06-2024, 10:42:18",
+    "recorded-date": "09-12-2024, 10:40:57",
     "recorded-content": {
       "delete-rule-with-targets-error": "<ExceptionInfo ClientError(\"An error occurred (ValidationException) when calling the DeleteRule operation: Rule can't be deleted since it has targets.\") tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_update_rule_with_targets": {
-    "recorded-date": "19-06-2024, 10:42:20",
+    "recorded-date": "09-12-2024, 10:40:59",
     "recorded-content": {
       "list-targets": {
         "Targets": [
@@ -1460,7 +1776,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventPattern::test_put_events_pattern_with_values_in_array": {
-    "recorded-date": "19-06-2024, 10:42:28",
+    "recorded-date": "09-12-2024, 10:41:07",
     "recorded-content": {
       "messages": [
         {
@@ -1496,7 +1812,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventPattern::test_put_events_pattern_nested": {
-    "recorded-date": "19-06-2024, 10:42:40",
+    "recorded-date": "09-12-2024, 10:41:20",
     "recorded-content": {
       "messages": [
         {
@@ -1515,7 +1831,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_put_list_remove_target[custom]": {
-    "recorded-date": "19-06-2024, 10:42:42",
+    "recorded-date": "09-12-2024, 10:41:22",
     "recorded-content": {
       "put-target": {
         "FailedEntries": [],
@@ -1555,7 +1871,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_put_list_remove_target[default]": {
-    "recorded-date": "19-06-2024, 10:42:44",
+    "recorded-date": "09-12-2024, 10:41:24",
     "recorded-content": {
       "put-target": {
         "FailedEntries": [],
@@ -1595,13 +1911,13 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_add_exceed_fife_targets_per_rule": {
-    "recorded-date": "19-06-2024, 10:42:45",
+    "recorded-date": "09-12-2024, 10:41:25",
     "recorded-content": {
       "put-targets-client-error": "<ExceptionInfo LimitExceededException('An error occurred (LimitExceededException) when calling the PutTargets operation: The requested resource exceeds the maximum number allowed.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_list_target_by_rule_limit": {
-    "recorded-date": "19-06-2024, 10:42:47",
+    "recorded-date": "09-12-2024, 10:41:27",
     "recorded-content": {
       "list-targets-limit": {
         "NextToken": "<next_token:1>",
@@ -1643,7 +1959,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_put_target_id_validation": {
-    "recorded-date": "19-06-2024, 10:42:49",
+    "recorded-date": "09-12-2024, 10:41:30",
     "recorded-content": {
       "put-targets-invalid-id-error": {
         "Error": {
@@ -1663,1158 +1979,6 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_bus_to_bus[standard]": {
-    "recorded-date": "20-06-2024, 08:47:59",
-    "recorded-content": {
-      "messages": [
-        {
-          "MessageId": "<uuid:1>",
-          "ReceiptHandle": "receipt-handle",
-          "MD5OfBody": "m-d5-of-body",
-          "Body": {
-            "version": "0",
-            "id": "<uuid:2>",
-            "detail-type": "core.update-account-command",
-            "source": "core.update-account-command",
-            "account": "111111111111",
-            "time": "date",
-            "region": "<region>",
-            "resources": [],
-            "detail": {
-              "command": "update-account",
-              "payload": {
-                "acc_id": "0a787ecb-4015",
-                "sf_id": "baz"
-              }
-            }
-          }
-        }
-      ]
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_bus_to_bus[domain]": {
-    "recorded-date": "20-06-2024, 08:48:13",
-    "recorded-content": {
-      "messages": [
-        {
-          "MessageId": "<uuid:1>",
-          "ReceiptHandle": "receipt-handle",
-          "MD5OfBody": "m-d5-of-body",
-          "Body": {
-            "version": "0",
-            "id": "<uuid:2>",
-            "detail-type": "core.update-account-command",
-            "source": "core.update-account-command",
-            "account": "111111111111",
-            "time": "date",
-            "region": "<region>",
-            "resources": [],
-            "detail": {
-              "command": "update-account",
-              "payload": {
-                "acc_id": "0a787ecb-4015",
-                "sf_id": "baz"
-              }
-            }
-          }
-        }
-      ]
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_bus_to_bus[path]": {
-    "recorded-date": "20-06-2024, 08:48:28",
-    "recorded-content": {
-      "messages": [
-        {
-          "MessageId": "<uuid:1>",
-          "ReceiptHandle": "receipt-handle",
-          "MD5OfBody": "m-d5-of-body",
-          "Body": {
-            "version": "0",
-            "id": "<uuid:2>",
-            "detail-type": "core.update-account-command",
-            "source": "core.update-account-command",
-            "account": "111111111111",
-            "time": "date",
-            "region": "<region>",
-            "resources": [],
-            "detail": {
-              "command": "update-account",
-              "payload": {
-                "acc_id": "0a787ecb-4015",
-                "sf_id": "baz"
-              }
-            }
-          }
-        }
-      ]
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_with_too_big_detail": {
-    "recorded-date": "18-10-2024, 07:36:18",
-    "recorded-content": {
-      "put-events-too-big-detail-error": {
-        "Error": {
-          "Code": "ValidationException",
-          "Message": "Total size of the entries in the request is over the limit."},
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 400
-          }
-        }
-      }
-    },
-    "tests/aws/services/events/test_events.py::TestEvents::test_create_connection_validations": {
-    "recorded-date": "14-11-2024, 20:29:49",
-    "recorded-content": {
-      "create_connection_exc": {
-        "Error": {
-          "Code": "ValidationException",
-          "Message": "3 validation errors detected: Value 'This should fail with two errors 123467890123412341234123412341234' at 'name' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+; Value 'This should fail with two errors 123467890123412341234123412341234' at 'name' failed to satisfy constraint: Member must have length less than or equal to 64; Value 'INVALID' at 'authorizationType' failed to satisfy constraint: Member must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection": {
-    "recorded-date": "21-11-2024, 14:49:50",
-    "recorded-content": {
-      "create-connection": {
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "AUTHORIZED",
-        "CreationTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-connection": {
-        "AuthParameters": {
-          "ApiKeyAuthParameters": {
-            "ApiKeyName": "ApiKey"
-          },
-          "InvocationHttpParameters": {}
-        },
-        "AuthorizationType": "API_KEY",
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "AUTHORIZED",
-        "CreationTime": "datetime",
-        "LastAuthorizedTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
-        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<resource:2>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params0]": {
-    "recorded-date": "21-11-2024, 14:49:51",
-    "recorded-content": {
-      "create-connection-auth": {
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "AUTHORIZED",
-        "CreationTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-connection-auth": {
-        "AuthParameters": {
-          "BasicAuthParameters": {
-            "Username": "user"
-          }
-        },
-        "AuthorizationType": "BASIC",
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "AUTHORIZED",
-        "CreationTime": "datetime",
-        "LastAuthorizedTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
-        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<resource:2>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params1]": {
-    "recorded-date": "21-11-2024, 14:49:51",
-    "recorded-content": {
-      "create-connection-auth": {
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "AUTHORIZED",
-        "CreationTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-connection-auth": {
-        "AuthParameters": {
-          "ApiKeyAuthParameters": {
-            "ApiKeyName": "ApiKey"
-          }
-        },
-        "AuthorizationType": "API_KEY",
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "AUTHORIZED",
-        "CreationTime": "datetime",
-        "LastAuthorizedTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
-        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<resource:2>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_with_auth[auth_params2]": {
-    "recorded-date": "21-11-2024, 14:49:51",
-    "recorded-content": {
-      "create-connection-auth": {
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "AUTHORIZING",
-        "CreationTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-connection-auth": {
-        "AuthParameters": {
-          "OAuthParameters": {
-            "AuthorizationEndpoint": "https://example.com/oauth",
-            "ClientParameters": {
-              "ClientID": "client_id"
-            },
-            "HttpMethod": "POST"
-          }
-        },
-        "AuthorizationType": "OAUTH_CLIENT_CREDENTIALS",
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "AUTHORIZING",
-        "CreationTime": "datetime",
-        "LastAuthorizedTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
-        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<resource:2>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_list_connections": {
-    "recorded-date": "21-11-2024, 14:49:52",
-    "recorded-content": {
-      "list-connections": {
-        "Connections": [
-          {
-            "AuthorizationType": "BASIC",
-            "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-            "ConnectionState": "AUTHORIZED",
-            "CreationTime": "datetime",
-            "LastAuthorizedTime": "datetime",
-            "LastModifiedTime": "datetime",
-            "Name": "<connection-name>"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_invalid_parameters": {
-    "recorded-date": "21-11-2024, 14:49:53",
-    "recorded-content": {
-      "create-connection-invalid-auth-error": {
-        "Error": {
-          "Code": "ValidationException",
-          "Message": "1 validation error detected: Value 'INVALID_AUTH_TYPE' at 'authorizationType' failed to satisfy constraint: Member must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_update_connection": {
-    "recorded-date": "21-11-2024, 15:39:32",
-    "recorded-content": {
-      "create-connection": {
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "AUTHORIZED",
-        "CreationTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-created-connection": {
-        "AuthParameters": {
-          "BasicAuthParameters": {
-            "Username": "user"
-          },
-          "InvocationHttpParameters": {}
-        },
-        "AuthorizationType": "BASIC",
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "AUTHORIZED",
-        "CreationTime": "datetime",
-        "LastAuthorizedTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
-        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "connection-secret-before-update": {
-        "ARN": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
-        "CreatedDate": "datetime",
-        "Name": "events!connection/<connection-name>/<secret-uuid>",
-        "SecretString": {
-          "username": "user",
-          "password": "pass",
-          "invocation_http_parameters": {}
-        },
-        "VersionId": "<uuid:1>",
-        "VersionStages": [
-          "AWSCURRENT"
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "update-connection": {
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "AUTHORIZED",
-        "CreationTime": "datetime",
-        "LastAuthorizedTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-updated-connection": {
-        "AuthParameters": {
-          "BasicAuthParameters": {
-            "Username": "new_user"
-          },
-          "InvocationHttpParameters": {}
-        },
-        "AuthorizationType": "BASIC",
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "AUTHORIZED",
-        "CreationTime": "datetime",
-        "LastAuthorizedTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
-        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "connection-secret-after-update": {
-        "ARN": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
-        "CreatedDate": "datetime",
-        "Name": "events!connection/<connection-name>/<secret-uuid>",
-        "SecretString": {
-          "username": "new_user",
-          "password": "new_pass",
-          "invocation_http_parameters": {}
-        },
-        "VersionId": "<uuid:2>",
-        "VersionStages": [
-          "AWSCURRENT"
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_create_connection_name_validation": {
-    "recorded-date": "21-11-2024, 14:49:54",
-    "recorded-content": {
-      "create-connection-invalid-name-error": {
-        "Error": {
-          "Code": "ValidationException",
-          "Message": "1 validation error detected: Value 'Invalid Name With Spaces!' at 'name' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_delete_connection": {
-    "recorded-date": "21-11-2024, 15:47:45",
-    "recorded-content": {
-      "create-connection-response": {
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "AUTHORIZED",
-        "CreationTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "delete-connection": {
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "DELETING",
-        "CreationTime": "datetime",
-        "LastAuthorizedTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-deleted-connection": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Failed to describe the connection(s). Connection '<connection-name>' does not exist."
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeEndpoints::test_create_endpoint": {
-    "recorded-date": "16-11-2024, 13:01:35",
-    "recorded-content": {}
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeEndpoints::test_list_endpoints": {
-    "recorded-date": "16-11-2024, 13:01:36",
-    "recorded-content": {}
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeEndpoints::test_delete_endpoint": {
-    "recorded-date": "16-11-2024, 12:56:52",
-    "recorded-content": {}
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeEndpoints::test_update_endpoint": {
-    "recorded-date": "16-11-2024, 12:56:52",
-    "recorded-content": {}
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeEndpoints::test_create_endpoint_invalid_parameters": {
-    "recorded-date": "16-11-2024, 12:56:52",
-    "recorded-content": {}
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeEndpoints::test_create_endpoint_name_validation": {
-    "recorded-date": "16-11-2024, 12:56:52",
-    "recorded-content": {}
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeApiDestinations::test_api_destinations[auth0]": {
-    "recorded-date": "16-11-2024, 13:44:03",
-    "recorded-content": {
-      "create-api-destination": {
-        "ApiDestinationArn": "api-destination-arn",
-        "ApiDestinationState": "ACTIVE",
-        "CreationTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-api-destination": {
-        "ApiDestinationArn": "api-destination-arn",
-        "ApiDestinationState": "ACTIVE",
-        "ConnectionArn": "connection-arn",
-        "CreationTime": "datetime",
-        "Description": "Test API destination",
-        "HttpMethod": "POST",
-        "InvocationEndpoint": "https://example.com/api",
-        "InvocationRateLimitPerSecond": 300,
-        "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-api-destinations": {
-        "ApiDestinations": [
-          {
-            "ApiDestinationArn": "api-destination-arn",
-            "ApiDestinationState": "ACTIVE",
-            "ConnectionArn": "connection-arn",
-            "CreationTime": "datetime",
-            "HttpMethod": "POST",
-            "InvocationEndpoint": "https://example.com/api",
-            "InvocationRateLimitPerSecond": 300,
-            "LastModifiedTime": "datetime",
-            "Name": "<connection-name>"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "update-api-destination": {
-        "ApiDestinationArn": "api-destination-arn",
-        "ApiDestinationState": "ACTIVE",
-        "CreationTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-updated-api-destination": {
-        "ApiDestinationArn": "api-destination-arn",
-        "ApiDestinationState": "ACTIVE",
-        "ConnectionArn": "connection-arn",
-        "CreationTime": "datetime",
-        "Description": "Updated API destination",
-        "HttpMethod": "PUT",
-        "InvocationEndpoint": "https://example.com/api/v2",
-        "InvocationRateLimitPerSecond": 300,
-        "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "delete-api-destination": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-api-destination-not-found-error": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Failed to describe the api-destination(s). An api-destination '<connection-name>' does not exist."
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeApiDestinations::test_api_destinations[auth1]": {
-    "recorded-date": "16-11-2024, 13:44:04",
-    "recorded-content": {
-      "create-api-destination": {
-        "ApiDestinationArn": "api-destination-arn",
-        "ApiDestinationState": "ACTIVE",
-        "CreationTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-api-destination": {
-        "ApiDestinationArn": "api-destination-arn",
-        "ApiDestinationState": "ACTIVE",
-        "ConnectionArn": "connection-arn",
-        "CreationTime": "datetime",
-        "Description": "Test API destination",
-        "HttpMethod": "POST",
-        "InvocationEndpoint": "https://example.com/api",
-        "InvocationRateLimitPerSecond": 300,
-        "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-api-destinations": {
-        "ApiDestinations": [
-          {
-            "ApiDestinationArn": "api-destination-arn",
-            "ApiDestinationState": "ACTIVE",
-            "ConnectionArn": "connection-arn",
-            "CreationTime": "datetime",
-            "HttpMethod": "POST",
-            "InvocationEndpoint": "https://example.com/api",
-            "InvocationRateLimitPerSecond": 300,
-            "LastModifiedTime": "datetime",
-            "Name": "<connection-name>"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "update-api-destination": {
-        "ApiDestinationArn": "api-destination-arn",
-        "ApiDestinationState": "ACTIVE",
-        "CreationTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-updated-api-destination": {
-        "ApiDestinationArn": "api-destination-arn",
-        "ApiDestinationState": "ACTIVE",
-        "ConnectionArn": "connection-arn",
-        "CreationTime": "datetime",
-        "Description": "Updated API destination",
-        "HttpMethod": "PUT",
-        "InvocationEndpoint": "https://example.com/api/v2",
-        "InvocationRateLimitPerSecond": 300,
-        "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "delete-api-destination": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-api-destination-not-found-error": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Failed to describe the api-destination(s). An api-destination '<connection-name>' does not exist."
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeApiDestinations::test_api_destinations[auth2]": {
-    "recorded-date": "16-11-2024, 13:44:07",
-    "recorded-content": {
-      "create-api-destination": {
-        "ApiDestinationArn": "api-destination-arn",
-        "ApiDestinationState": "INACTIVE",
-        "CreationTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-api-destination": {
-        "ApiDestinationArn": "api-destination-arn",
-        "ApiDestinationState": "INACTIVE",
-        "ConnectionArn": "connection-arn",
-        "CreationTime": "datetime",
-        "Description": "Test API destination",
-        "HttpMethod": "POST",
-        "InvocationEndpoint": "https://example.com/api",
-        "InvocationRateLimitPerSecond": 300,
-        "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-api-destinations": {
-        "ApiDestinations": [
-          {
-            "ApiDestinationArn": "api-destination-arn",
-            "ApiDestinationState": "INACTIVE",
-            "ConnectionArn": "connection-arn",
-            "CreationTime": "datetime",
-            "HttpMethod": "POST",
-            "InvocationEndpoint": "https://example.com/api",
-            "InvocationRateLimitPerSecond": 300,
-            "LastModifiedTime": "datetime",
-            "Name": "<connection-name>"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "update-api-destination": {
-        "ApiDestinationArn": "api-destination-arn",
-        "ApiDestinationState": "INACTIVE",
-        "CreationTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-updated-api-destination": {
-        "ApiDestinationArn": "api-destination-arn",
-        "ApiDestinationState": "INACTIVE",
-        "ConnectionArn": "connection-arn",
-        "CreationTime": "datetime",
-        "Description": "Updated API destination",
-        "HttpMethod": "PUT",
-        "InvocationEndpoint": "https://example.com/api/v2",
-        "InvocationRateLimitPerSecond": 300,
-        "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "delete-api-destination": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-api-destination-not-found-error": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Failed to describe the api-destination(s). An api-destination '<connection-name>' does not exist."
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeApiDestinations::test_create_api_destination_invalid_parameters": {
-    "recorded-date": "16-11-2024, 13:44:07",
-    "recorded-content": {
-      "create-api-destination-invalid-parameters-error": {
-        "Error": {
-          "Code": "ValidationException",
-          "Message": "2 validation errors detected: Value 'invalid-connection-arn' at 'connectionArn' failed to satisfy constraint: Member must satisfy regular expression pattern: ^arn:aws([a-z]|\\-)*:events:([a-z]|\\d|\\-)*:([0-9]{12})?:connection\\/[\\.\\-_A-Za-z0-9]+\\/[\\-A-Za-z0-9]+$; Value 'INVALID_METHOD' at 'httpMethod' failed to satisfy constraint: Member must satisfy enum value set: [HEAD, POST, PATCH, DELETE, PUT, GET, OPTIONS]"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeApiDestinations::test_create_api_destination_name_validation": {
-    "recorded-date": "16-11-2024, 13:44:08",
-    "recorded-content": {
-      "create-api-destination-invalid-name-error": {
-        "Error": {
-          "Code": "ValidationException",
-          "Message": "1 validation error detected: Value 'Invalid Name With Spaces!' at 'name' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_without_detail_type": {
-    "recorded-date": "14-11-2024, 22:43:09",
-    "recorded-content": {
-      "put-events": {
-        "Entries": [
-          {
-            "ErrorCode": "InvalidArgument",
-            "ErrorMessage": "Parameter DetailType is not valid. Reason: DetailType is a required argument."
-          }
-        ],
-        "FailedEntryCount": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_response_entries_order": {
-    "recorded-date": "20-11-2024, 12:32:18",
-    "recorded-content": {
-      "put-events-response": {
-        "Entries": [
-          {
-            "EventId": "event-id"
-          }
-        ],
-        "FailedEntryCount": 0,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "sqs-messages": {
-        "queue1_messages": [
-          {
-            "Body": {
-              "version": "0",
-              "id": "<uuid:1>",
-              "detail-type": "core.update-account-command",
-              "source": "core.update-account-command",
-              "account": "111111111111",
-              "time": "date",
-              "region": "<region>",
-              "resources": [],
-              "detail": "detail"
-            },
-            "MD5OfBody": "<md5-hash>",
-            "MessageId": "<uuid:2>",
-            "ReceiptHandle": "<receipt-handle:1>"
-          }
-        ],
-        "queue2_messages": [
-          {
-            "Body": {
-              "version": "0",
-              "id": "<uuid:1>",
-              "detail-type": "core.update-account-command",
-              "source": "core.update-account-command",
-              "account": "111111111111",
-              "time": "date",
-              "region": "<region>",
-              "resources": [],
-              "detail": "detail"
-            },
-            "MD5OfBody": "<md5-hash>",
-            "MessageId": "<uuid:3>",
-            "ReceiptHandle": "<receipt-handle:2>"
-          }
-        ]
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_iam_permission_failure": {
-    "recorded-date": "20-11-2024, 12:32:10",
-    "recorded-content": {
-      "put-events-response": {
-        "Entries": [
-          {
-            "EventId": "<event-id:1>"
-          }
-        ],
-        "FailedEntryCount": 0,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_target_delivery_failure": {
-    "recorded-date": "20-11-2024, 17:19:19",
-    "recorded-content": {
-      "put-events-response": {
-        "Entries": [
-          {
-            "EventId": "<event-id:1>"
-          }
-        ],
-        "FailedEntryCount": 0,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[basic]": {
-    "recorded-date": "21-11-2024, 15:16:35",
-    "recorded-content": {
-      "create-connection-auth": {
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "AUTHORIZED",
-        "CreationTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-connection-auth": {
-        "AuthParameters": {
-          "BasicAuthParameters": {
-            "Username": "user"
-          }
-        },
-        "AuthorizationType": "BASIC",
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "AUTHORIZED",
-        "CreationTime": "datetime",
-        "LastAuthorizedTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
-        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "connection-secret": {
-        "ARN": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
-        "CreatedDate": "datetime",
-        "Name": "events!connection/<connection-name>/<secret-uuid>",
-        "SecretString": {
-          "username": "user",
-          "password": "pass"
-        },
-        "VersionId": "<uuid:1>",
-        "VersionStages": [
-          "AWSCURRENT"
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[api-key]": {
-    "recorded-date": "21-11-2024, 15:16:35",
-    "recorded-content": {
-      "create-connection-auth": {
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "AUTHORIZED",
-        "CreationTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-connection-auth": {
-        "AuthParameters": {
-          "ApiKeyAuthParameters": {
-            "ApiKeyName": "ApiKey"
-          }
-        },
-        "AuthorizationType": "API_KEY",
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "AUTHORIZED",
-        "CreationTime": "datetime",
-        "LastAuthorizedTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
-        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "connection-secret": {
-        "ARN": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
-        "CreatedDate": "datetime",
-        "Name": "events!connection/<connection-name>/<secret-uuid>",
-        "SecretString": {
-          "api_key_name": "ApiKey",
-          "api_key_value": "secret"
-        },
-        "VersionId": "<uuid:1>",
-        "VersionStages": [
-          "AWSCURRENT"
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventBridgeConnections::test_connection_secrets[oauth]": {
-    "recorded-date": "21-11-2024, 15:16:36",
-    "recorded-content": {
-      "create-connection-auth": {
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "AUTHORIZING",
-        "CreationTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-connection-auth": {
-        "AuthParameters": {
-          "OAuthParameters": {
-            "AuthorizationEndpoint": "https://example.com/oauth",
-            "ClientParameters": {
-              "ClientID": "client_id"
-            },
-            "HttpMethod": "POST"
-          }
-        },
-        "AuthorizationType": "OAUTH_CLIENT_CREDENTIALS",
-        "ConnectionArn": "arn:<partition>:events:<region>:111111111111:connection/<connection-name>/<resource:1>",
-        "ConnectionState": "AUTHORIZING",
-        "CreationTime": "datetime",
-        "LastAuthorizedTime": "datetime",
-        "LastModifiedTime": "datetime",
-        "Name": "<connection-name>",
-        "SecretArn": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "connection-secret": {
-        "ARN": "arn:<partition>:secretsmanager:<region>:111111111111:secret:events!connection/<connection-name>/<secret-uuid>-<secret-id-suffix>",
-        "CreatedDate": "datetime",
-        "Name": "events!connection/<connection-name>/<secret-uuid>",
-        "SecretString": {
-          "client_id": "client_id",
-          "client_secret": "client_secret",
-          "authorization_endpoint": "https://example.com/oauth",
-          "http_method": "POST"
-        },
-        "VersionId": "<uuid:1>",
-        "VersionStages": [
-          "AWSCURRENT"
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_time_field": {
-    "recorded-date": "28-11-2024, 21:25:00",
-    "recorded-content": {
-      "put-events": {
-        "Entries": [
-          {
-            "EventId": "<uuid:1>"
-          }
-        ],
-        "FailedEntryCount": 0,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "sqs-messages": [
-        {
-          "MessageId": "<uuid:2>",
-          "ReceiptHandle": "<receipt-handle:1>",
-          "MD5OfBody": "m-d5-of-body",
-          "Body": {
-            "version": "0",
-            "id": "<uuid:1>",
-            "detail-type": "test-detail-type",
-            "source": "test-source",
-            "account": "111111111111",
-            "time": "date",
-            "region": "<region>",
-            "resources": [],
-            "detail": {
-              "message": "test message"
-            }
-          }
-        }
-      ]
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_malformed_detail[STRING]": {
-    "recorded-date": "05-12-2024, 14:33:58",
-    "recorded-content": {
-      "put-events": {
-        "Entries": [
-          {
-            "ErrorCode": "MalformedDetail",
-            "ErrorMessage": "Detail is malformed."
-          }
-        ],
-        "FailedEntryCount": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_malformed_detail[ARRAY]": {
-    "recorded-date": "05-12-2024, 14:33:58",
-    "recorded-content": {
-      "put-events": {
-        "Entries": [
-          {
-            "ErrorCode": "MalformedDetail",
-            "ErrorMessage": "Detail is malformed."
-          }
-        ],
-        "FailedEntryCount": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_malformed_detail[MALFORMED_JSON]": {
-    "recorded-date": "05-12-2024, 14:33:58",
-    "recorded-content": {
-      "put-events": {
-        "Entries": [
-          {
-            "ErrorCode": "MalformedDetail",
-            "ErrorMessage": "Detail is malformed."
-          }
-        ],
-        "FailedEntryCount": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_malformed_detail[SERIALIZED_STRING]": {
-    "recorded-date": "05-12-2024, 14:33:58",
-    "recorded-content": {
-      "put-events": {
-        "Entries": [
-          {
-            "ErrorCode": "MalformedDetail",
-            "ErrorMessage": "Detail is malformed."
-          }
-        ],
-        "FailedEntryCount": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
         }
       }
     }

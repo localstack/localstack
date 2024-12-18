@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaDestinations::test_generic_destination_routing[sqs-sqs]": {
+    "last_validated_date": "2024-12-10T16:48:04+00:00"
+  },
   "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_dynamodb_source": {
     "last_validated_date": "2024-10-12T10:46:17+00:00"
   },
@@ -39,7 +42,7 @@
     "last_validated_date": "2024-04-09T07:21:37+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_w_dynamodb_event_filter_update": {
-    "last_validated_date": "2024-10-12T10:42:00+00:00"
+    "last_validated_date": "2024-12-11T09:03:52+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_multiple_lambda_permissions_for_singlefn": {
     "last_validated_date": "2024-04-09T07:25:05+00:00"

@@ -53,6 +53,9 @@
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_streams_describe_with_exclusive_start_shard_id": {
     "last_validated_date": "2023-10-22T20:27:28+00:00"
   },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_update_table_without_sse_specification_change": {
+    "last_validated_date": "2024-12-17T10:39:19+00:00"
+  },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_empty_and_binary_values": {
     "last_validated_date": "2023-08-23T14:32:29+00:00"
   },

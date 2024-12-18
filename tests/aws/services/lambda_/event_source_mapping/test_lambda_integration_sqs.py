@@ -55,18 +55,6 @@ def _snapshot_transformers(snapshot):
     )
 
 
-@markers.snapshot.skip_snapshot_verify(
-    paths=[
-        # FIXME: this is most of the event source mapping unfortunately
-        "$..ParallelizationFactor",
-        "$..LastProcessingResult",
-        "$..Topics",
-        "$..MaximumRetryAttempts",
-        "$..MaximumBatchingWindowInSeconds",
-        "$..StartingPosition",
-        "$..StateTransitionReason",
-    ]
-)
 @markers.aws.validated
 def test_failing_lambda_retries_after_visibility_timeout(
     create_lambda_function,
@@ -242,17 +230,6 @@ def test_message_body_and_attributes_passed_correctly(
     snapshot.match("first_attempt", response)
 
 
-@markers.snapshot.skip_snapshot_verify(
-    paths=[
-        "$..ParallelizationFactor",
-        "$..LastProcessingResult",
-        "$..Topics",
-        "$..MaximumRetryAttempts",
-        "$..MaximumBatchingWindowInSeconds",
-        "$..StartingPosition",
-        "$..StateTransitionReason",
-    ]
-)
 @markers.aws.validated
 def test_redrive_policy_with_failing_lambda(
     create_lambda_function,
@@ -412,27 +389,6 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
 
 
 # TODO: flaky against AWS
-@markers.snapshot.skip_snapshot_verify(
-    paths=[
-        # FIXME: we don't seem to be returning SQS FIFO sequence numbers correctly
-        "$..SequenceNumber",
-        # no idea why this one fails
-        "$..receiptHandle",
-        # matching these attributes doesn't work well because of the dynamic nature of messages
-        "$..md5OfBody",
-        "$..MD5OfMessageBody",
-        # FIXME: this is most of the event source mapping unfortunately
-        "$..create_event_source_mapping.ParallelizationFactor",
-        "$..create_event_source_mapping.LastProcessingResult",
-        "$..create_event_source_mapping.Topics",
-        "$..create_event_source_mapping.MaximumRetryAttempts",
-        "$..create_event_source_mapping.MaximumBatchingWindowInSeconds",
-        "$..create_event_source_mapping.StartingPosition",
-        "$..create_event_source_mapping.StateTransitionReason",
-        "$..create_event_source_mapping.State",
-        "$..create_event_source_mapping.ResponseMetadata",
-    ]
-)
 @markers.aws.validated
 def test_report_batch_item_failures(
     create_lambda_function,
@@ -923,17 +879,6 @@ def test_fifo_message_group_parallelism(
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        # create event source mapping attributes
-        "$..FunctionResponseTypes",
-        "$..LastProcessingResult",
-        "$..MaximumBatchingWindowInSeconds",
-        "$..MaximumRetryAttempts",
-        "$..ParallelizationFactor",
-        "$..ResponseMetadata.HTTPStatusCode",
-        "$..StartingPosition",
-        "$..State",
-        "$..StateTransitionReason",
-        "$..Topics",
         # events attribute
         "$..Records..md5OfMessageAttributes",
     ],
@@ -1057,6 +1002,12 @@ class TestSQSEventSourceMapping:
     ):
         snapshot.add_transformer(snapshot.transform.sqs_api())
         snapshot.add_transformer(SortingTransformer("Records", lambda s: s["body"]), priority=-1)
+        # Intentional parity difference to speed up testing in LocalStack
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "MaximumBatchingWindowInSeconds", reference_replacement=False
+            )
+        )
 
         destination_queue_name = f"destination-queue-{short_uid()}"
         function_name = f"lambda_func-{short_uid()}"
@@ -1078,6 +1029,7 @@ class TestSQSEventSourceMapping:
         create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
             EventSourceArn=queue_arn,
             FunctionName=function_name,
+            # Speed up testing in LocalStack by waiting only up to 2s instead of up to 10s; AWS is slower.
             MaximumBatchingWindowInSeconds=10 if is_aws_cloud() else 2,
             BatchSize=batch_size,
         )
@@ -1086,17 +1038,17 @@ class TestSQSEventSourceMapping:
         snapshot.match("create-event-source-mapping-response", create_event_source_mapping_response)
         _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
 
-        reponse_batch_send_10 = aws_client.sqs.send_message_batch(
+        response_batch_send_10 = aws_client.sqs.send_message_batch(
             QueueUrl=queue_url,
             Entries=[{"Id": f"{i}-0", "MessageBody": f"{i}-0-message-{i}"} for i in range(10)],
         )
-        snapshot.match("send-message-batch-result-10", reponse_batch_send_10)
+        snapshot.match("send-message-batch-result-10", response_batch_send_10)
 
-        reponse_batch_send_5 = aws_client.sqs.send_message_batch(
+        response_batch_send_5 = aws_client.sqs.send_message_batch(
             QueueUrl=queue_url,
             Entries=[{"Id": f"{i}-1", "MessageBody": f"{i}-1-message-{i}"} for i in range(5)],
         )
-        snapshot.match("send-message-batch-result-5", reponse_batch_send_5)
+        snapshot.match("send-message-batch-result-5", response_batch_send_5)
 
         batches = []
 
@@ -1220,55 +1172,100 @@ class TestSQSEventSourceMapping:
 
     @markers.aws.validated
     @pytest.mark.parametrize(
+        # EventBridge event pattern filtering test suite: tests/aws/services/events/test_events_patterns.py
+        # Event filtering: https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html
+        # Special cases behavior: https://docs.aws.amazon.com/lambda/latest/dg/with-sqs-filtering.html
         "filter, item_matching, item_not_matching",
         [
             # test single filter
-            (
-                {"body": {"testItem": ["test24"]}},
-                {"testItem": "test24"},
-                {"testItem": "tesWER"},
+            pytest.param(
+                {"body": {"my-key": ["my-value"]}},
+                {"my-key": "my-value"},
+                {"my-key": "other-value"},
+                id="single",
             ),
             # test OR filter
-            (
-                {"body": {"testItem": ["test24", "test45"]}},
-                {"testItem": "test45"},
-                {"testItem": "WERTD"},
+            pytest.param(
+                {"body": {"my-key": ["my-value-one", "my-value-two"]}},
+                {"my-key": "my-value-two"},
+                {"my-key": "other-value"},
+                id="or",
             ),
             # test AND filter
-            (
-                {"body": {"testItem": ["test24", "test45"], "test2": ["go"]}},
-                {"testItem": "test45", "test2": "go"},
-                {"testItem": "test67", "test2": "go"},
+            pytest.param(
+                {
+                    "body": {
+                        "my-key-one": ["other-filter", "my-value-one"],
+                        "my-key-two": ["my-value-two"],
+                    }
+                },
+                {"my-key-one": "my-value-one", "my-key-two": "my-value-two"},
+                {"my-key-one": "other-value-", "my-key-two": "my-value-two"},
+                id="and",
             ),
             # exists
-            (
-                {"body": {"test2": [{"exists": True}]}},
-                {"test2": "7411"},
-                {"test5": "74545"},
+            pytest.param(
+                {"body": {"my-key": [{"exists": True}]}},
+                {"my-key": "any-value-one"},
+                {"other-key": "any-value-two"},
+                id="exists",
             ),
             # numeric (bigger)
-            (
-                {"body": {"test2": [{"numeric": [">", 100]}]}},
-                {"test2": 105},
-                "this is a test string",  # normal string should be dropped as well aka not fitting to filter
+            pytest.param(
+                {"body": {"my-number": [{"numeric": [">", 100]}]}},
+                {"my-number": 101},
+                {"my-number": 100},
+                id="numeric-bigger",
             ),
             # numeric (smaller)
-            (
-                {"body": {"test2": [{"numeric": ["<", 100]}]}},
-                {"test2": 93},
-                {"test2": 105},
+            pytest.param(
+                {"body": {"my-number": [{"numeric": ["<", 100]}]}},
+                {"my-number": 99},
+                {"my-number": 100},
+                id="numeric-smaller",
             ),
             # numeric (range)
-            (
-                {"body": {"test2": [{"numeric": [">=", 100, "<", 200]}]}},
-                {"test2": 105},
-                {"test2": 200},
+            pytest.param(
+                {"body": {"my-number": [{"numeric": [">=", 100, "<", 200]}]}},
+                {"my-number": 100},
+                {"my-number": 200},
+                id="numeric-range",
             ),
             # prefix
-            (
-                {"body": {"test2": [{"prefix": "us-1"}]}},
-                {"test2": "us-1-48454"},
-                {"test2": "eu-wert"},
+            pytest.param(
+                {"body": {"my-key": [{"prefix": "yes"}]}},
+                {"my-key": "yes-value"},
+                {"my-key": "no-value"},
+                id="prefix",
+            ),
+            # plain string matching
+            # TODO: How is plain string matching supposed to work?
+            #  https://docs.aws.amazon.com/lambda/latest/dg/with-sqs-filtering.html
+            pytest.param(
+                {"body": "plain-string"},
+                "plain-string",
+                "plain-string-not-matching",
+                id="plain-string-matching",
+                marks=pytest.mark.skip(reason="figure out how plain string matching works"),
+            ),
+            # plain string filter
+            # TODO: How is plain string matching supposed to work?
+            #  https://docs.aws.amazon.com/lambda/latest/dg/with-sqs-filtering.html
+            pytest.param(
+                {"body": "plain-string"},
+                "plain-string",
+                # valid json body vs. plain string filter for body -> drop the message
+                {"valid-json-key": "plain-string"},
+                id="plain-string-filter",
+                marks=pytest.mark.skip(reason="figure out how plain string matching works"),
+            ),
+            # valid json filter
+            pytest.param(
+                {"body": {"my-key": ["my-value"]}},
+                {"my-key": "my-value"},
+                # plain string body vs. valid json filter for body -> drop the message
+                "plain-string",
+                id="valid-json-filter",
             ),
         ],
     )

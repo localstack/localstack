@@ -1099,7 +1099,7 @@ class TestDynamoDB:
             TableName=table_name, ReplicaUpdates=[{"Delete": {"RegionName": "us-east-1"}}]
         )
         response = dynamodb_ap_south_1.describe_table(TableName=table_name)
-        assert len(response["Table"]["Replicas"]) == 0
+        assert "Replicas" not in response["Table"]
 
     @markers.aws.only_localstack
     def test_global_tables(self, aws_client, ddb_test_table):
@@ -1652,6 +1652,38 @@ class TestDynamoDB:
 
         result = aws_client.dynamodb.describe_table(TableName=table_name)
         assert "SSESpecification" not in result["Table"]
+
+    @markers.aws.validated
+    def test_dynamodb_update_table_without_sse_specification_change(
+        self, dynamodb_create_table_with_parameters, snapshot, aws_client
+    ):
+        table_name = f"test_table_{short_uid()}"
+
+        sse_specification = {"Enabled": True}
+
+        result = dynamodb_create_table_with_parameters(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": PARTITION_KEY, "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            SSESpecification=sse_specification,
+            Tags=TEST_DDB_TAGS,
+        )
+        snapshot.match("create_table_sse_description", result["TableDescription"]["SSEDescription"])
+
+        kms_master_key_arn = result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"]
+        result = aws_client.kms.describe_key(KeyId=kms_master_key_arn)
+        snapshot.match("describe_kms_key", result)
+
+        result = aws_client.dynamodb.update_table(
+            TableName=table_name, BillingMode="PAY_PER_REQUEST"
+        )
+        snapshot.match("update_table_sse_description", result["TableDescription"]["SSEDescription"])
+
+        # Verify that SSEDescription exists and remains unchanged after update_table
+        assert result["TableDescription"]["SSEDescription"]["Status"] == "ENABLED"
+        assert result["TableDescription"]["SSEDescription"]["SSEType"] == "KMS"
+        assert result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"] == kms_master_key_arn
 
     @markers.aws.validated
     def test_dynamodb_get_batch_items(
