@@ -32,15 +32,15 @@ from localstack.services.stepfunctions.asl.component.common.flow.next import Nex
 from localstack.services.stepfunctions.asl.component.common.outputdecl import Output
 from localstack.services.stepfunctions.asl.component.common.path.input_path import (
     InputPath,
-    InputPathBase,
 )
-from localstack.services.stepfunctions.asl.component.common.path.output_path import (
-    OutputPath,
-    OutputPathBase,
-)
+from localstack.services.stepfunctions.asl.component.common.path.output_path import OutputPath
 from localstack.services.stepfunctions.asl.component.common.query_language import (
     QueryLanguage,
     QueryLanguageMode,
+)
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
+    JSONPATH_ROOT_PATH,
+    StringJsonPath,
 )
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.component.state.state_continue_with import (
@@ -95,9 +95,6 @@ class CommonStateField(EvalComponent, ABC):
         state_entered_event_type: HistoryEventType,
         state_exited_event_type: Optional[HistoryEventType],
     ):
-        self.comment = None
-        self.input_path = InputPathBase(InputPathBase.DEFAULT_PATH)
-        self.output_path = OutputPathBase(OutputPathBase.DEFAULT_PATH)
         self.state_entered_event_type = state_entered_event_type
         self.state_exited_event_type = state_exited_event_type
 
@@ -112,11 +109,11 @@ class CommonStateField(EvalComponent, ABC):
         self.assign_decl = state_props.get(AssignDecl)
         # JSONPath sub-productions.
         if self.query_language.query_language_mode == QueryLanguageMode.JSONPath:
-            self.input_path = state_props.get(InputPath) or InputPathBase(
-                InputPathBase.DEFAULT_PATH
+            self.input_path = state_props.get(InputPath) or InputPath(
+                StringJsonPath(JSONPATH_ROOT_PATH)
             )
-            self.output_path = state_props.get(OutputPath) or OutputPathBase(
-                OutputPathBase.DEFAULT_PATH
+            self.output_path = state_props.get(OutputPath) or OutputPath(
+                StringJsonPath(JSONPATH_ROOT_PATH)
             )
             self.output = None
         # JSONata sub-productions.

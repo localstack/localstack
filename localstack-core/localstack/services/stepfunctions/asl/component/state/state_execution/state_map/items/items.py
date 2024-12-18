@@ -18,8 +18,8 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.common.jsonata.jsonata_template_value_array import (
     JSONataTemplateValueArray,
 )
-from localstack.services.stepfunctions.asl.component.common.jsonata.jsonata_template_value_terminal import (
-    JSONataTemplateValueTerminalExpression,
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
+    StringJSONata,
 )
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
@@ -42,15 +42,13 @@ class ItemsArray(Items):
 
 
 class ItemsJSONata(Items):
-    jsonata_template_value_terminal_expression: Final[JSONataTemplateValueTerminalExpression]
+    string_jsonata: Final[StringJSONata]
 
-    def __init__(
-        self, jsonata_template_value_terminal_expression: JSONataTemplateValueTerminalExpression
-    ):
-        self.jsonata_template_value_terminal_expression = jsonata_template_value_terminal_expression
+    def __init__(self, string_jsonata: StringJSONata):
+        self.string_jsonata = string_jsonata
 
     def _eval_body(self, env: Environment) -> None:
-        self.jsonata_template_value_terminal_expression.eval(env=env)
+        self.string_jsonata.eval(env=env)
         items = env.stack[-1]
         if not isinstance(items, list):
             # FIXME: If we pass in a 'function' type, the JSONata lib will return a dict and the
@@ -68,7 +66,7 @@ class ItemsJSONata(Items):
                     case dict():
                         return to_json_str(items, separators=(",", ":")), "object"
 
-            expr = self.jsonata_template_value_terminal_expression.expression
+            expr = self.string_jsonata.literal_value
             if jsonata_pair := _get_jsonata_value_type_pair(items):
                 jsonata_value, jsonata_type = jsonata_pair
                 error_cause = (

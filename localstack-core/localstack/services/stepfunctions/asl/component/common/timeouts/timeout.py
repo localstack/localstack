@@ -1,13 +1,16 @@
 import abc
 from typing import Final, Optional
 
-from localstack.services.stepfunctions.asl.component.common.jsonata.jsonata_template_value_terminal import (
-    JSONataTemplateValueTerminalExpression,
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
+    StringJSONata,
+    StringSampler,
 )
-from localstack.services.stepfunctions.asl.component.common.variable_sample import VariableSample
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.utils.json_path import extract_json
+
+
+class EvalTimeoutError(TimeoutError):
+    pass
 
 
 class Timeout(EvalComponent, abc.ABC):
@@ -43,61 +46,36 @@ class TimeoutSeconds(Timeout):
 
 
 class TimeoutSecondsJSONata(Timeout):
-    jsonata_template_value_terminal_expression: Final[JSONataTemplateValueTerminalExpression]
+    string_jsonata: Final[StringJSONata]
 
-    def __init__(
-        self, jsonata_template_value_terminal_expression: JSONataTemplateValueTerminalExpression
-    ):
+    def __init__(self, string_jsonata: StringJSONata):
         super().__init__()
-        self.jsonata_template_value_terminal_expression = jsonata_template_value_terminal_expression
+        self.string_jsonata = string_jsonata
 
     def is_default_value(self) -> bool:
         return False
 
     def _eval_seconds(self, env: Environment) -> int:
-        self.jsonata_template_value_terminal_expression.eval(env=env)
+        self.string_jsonata.eval(env=env)
         # TODO: add snapshot tests to verify AWS's behaviour about non integer values.
         seconds = int(env.stack.pop())
         return seconds
 
 
 class TimeoutSecondsPath(Timeout):
-    def __init__(self, path: str):
-        self.path: Final[str] = path
+    string_sampler: Final[StringSampler]
 
-    @classmethod
-    def from_raw(cls, path: str):
-        return cls(path=path)
+    def __init__(self, string_sampler: StringSampler):
+        self.string_sampler = string_sampler
 
     def is_default_value(self) -> bool:
         return False
 
     def _eval_seconds(self, env: Environment) -> int:
-        inp = env.stack[-1]
-        seconds = extract_json(self.path, inp)
-        if not isinstance(seconds, int) and seconds <= 0:
-            raise ValueError(
-                f"Expected non-negative integer for TimeoutSecondsPath, got '{seconds}' instead."
-            )
-        return seconds
-
-
-class TimeoutSecondsPathVar(TimeoutSecondsPath):
-    variable_sample: Final[VariableSample]
-
-    def __init__(self, variable_sample: VariableSample):
-        super().__init__(path=variable_sample.expression)
-        self.variable_sample = variable_sample
-
-    def _eval_seconds(self, env: Environment) -> int:
-        self.variable_sample.eval(env=env)
+        self.string_sampler.eval(env=env)
         seconds = env.stack.pop()
         if not isinstance(seconds, int) and seconds <= 0:
             raise ValueError(
                 f"Expected non-negative integer for TimeoutSecondsPath, got '{seconds}' instead."
             )
         return seconds
-
-
-class EvalTimeoutError(TimeoutError):
-    pass
