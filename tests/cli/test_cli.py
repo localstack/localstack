@@ -27,7 +27,7 @@ def runner():
     return CliRunner()
 
 
-def container_exists(client, container_name):
+def container_exists(client: ContainerClient, container_name: str) -> bool:
     try:
         return bool(client.get_container_id(container_name))
     except Exception:
