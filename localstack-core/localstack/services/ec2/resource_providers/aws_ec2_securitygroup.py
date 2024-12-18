@@ -194,9 +194,7 @@ class EC2SecurityGroupProvider(ResourceProvider[EC2SecurityGroupProperties]):
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
-            resource_models=[
-                model_from_description(description) for description in security_groups
-            ],
+            resource_models=[{"Id": description["GroupId"]} for description in security_groups],
         )
 
     def delete(
