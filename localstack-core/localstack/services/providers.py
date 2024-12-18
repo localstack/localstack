@@ -181,6 +181,14 @@ def kinesis():
     )
 
 
+@aws_provider(api="kinesis", name="native")
+def kinesis_nextgen():
+    from localstack.services.kinesis.native.provider import KinesisProvider
+
+    provider = KinesisProvider()
+    return Service.for_provider(provider)
+
+
 @aws_provider()
 def kms():
     from localstack.services.kms.provider import KmsProvider
