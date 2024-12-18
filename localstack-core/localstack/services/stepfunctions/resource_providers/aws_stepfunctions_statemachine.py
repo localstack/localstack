@@ -216,9 +216,10 @@ class StepFunctionsStateMachineProvider(ResourceProvider[StepFunctionsStateMachi
         if not model.get("Arn"):
             model["Arn"] = request.previous_state["Arn"]
 
+        definition_str = self._get_definition(model, request.aws_client_factory.s3)
         params = {
             "stateMachineArn": model["Arn"],
-            "definition": model["DefinitionString"],
+            "definition": definition_str,
         }
 
         step_function.update_state_machine(**params)

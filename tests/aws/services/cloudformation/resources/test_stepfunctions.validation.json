@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_stepfunctions.py::test_cfn_statemachine_default_s3_location": {
+    "last_validated_date": "2024-12-17T16:06:46+00:00"
+  }
+}

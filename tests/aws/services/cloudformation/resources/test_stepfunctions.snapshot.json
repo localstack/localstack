@@ -1,0 +1,70 @@
+{
+  "tests/aws/services/cloudformation/resources/test_stepfunctions.py::test_cfn_statemachine_default_s3_location": {
+    "recorded-date": "17-12-2024, 16:06:46",
+    "recorded-content": {
+      "describe_state_machine_output_on_create": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "step: on create",
+          "StartAt": "S0",
+          "States": {
+            "S0": {
+              "Type": "Succeed"
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<state-machine-name:1>",
+        "roleArn": "<role-arn:1>",
+        "stateMachineArn": "<state-machine-arn:1>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_state_machine_output_on_update": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "step: on update",
+          "StartAt": "S0",
+          "States": {
+            "S0": {
+              "Type": "Succeed"
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<state-machine-name:1>",
+        "revisionId": "<uuid:1>",
+        "roleArn": "<role-arn:1>",
+        "stateMachineArn": "<state-machine-arn:1>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
