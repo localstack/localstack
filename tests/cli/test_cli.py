@@ -29,8 +29,7 @@ def runner():
 
 def container_exists(client, container_name):
     try:
-        container_id = client.get_container_id(container_name)
-        return True if container_id else False
+        return bool(client.get_container_id(container_name))
     except Exception:
         return False
 
