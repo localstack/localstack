@@ -62,7 +62,3 @@ class SecondsPath(WaitFunction):
         seconds = env.stack.pop()
         self._validate_seconds_value(env=env, seconds=seconds)
         return seconds
-        # inp = env.stack[-1]
-        # seconds = extract_json(self.path, inp)
-        # self._validate_seconds_value(env=env, seconds=seconds)
-        # return seconds

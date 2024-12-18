@@ -68,7 +68,7 @@ class MaxConcurrencyPath(MaxConcurrency):
     def _eval_max_concurrency(self, env: Environment) -> int:
         self.string_sampler.eval(env=env)
         max_concurrency_value = env.stack.pop()
-        #
+
         if not isinstance(max_concurrency_value, int):
             try:
                 max_concurrency_value = int(max_concurrency_value)

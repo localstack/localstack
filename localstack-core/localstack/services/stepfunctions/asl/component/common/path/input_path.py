@@ -19,6 +19,6 @@ class InputPath(EvalComponent):
             env.stack.append(dict())
             return
         if isinstance(self.string_sampler, StringJsonPath):
-            # JsonPaths are sampled form a given state, hence pass the state's input.
+            # JsonPaths are sampled from a given state, hence pass the state's input.
             env.stack.append(env.states.get_input())
         self.string_sampler.eval(env=env)

@@ -80,16 +80,3 @@ class VariableReferencesStaticAnalyser(StaticAnalyser):
     def visitString_literal(self, ctx: ASLParser.String_literalContext):
         # Prune everything parsed as a string literal.
         return
-
-    # def visitTerminal(self, node) -> None:
-    #     maybe_string_var = Antlr4Utils.is_terminal(pt=node, token_type=ASLLexer.STRINGVAR)
-    #     if maybe_string_var is not None:
-    #         self._extract_variable_references_from_string_var(terminal_node=maybe_string_var)
-    #
-    #     maybe_intrinsic_function = Antlr4Utils.is_terminal(
-    #         pt=node, token_type=ASLLexer.STRINGINTRINSICFUNC
-    #     )
-    #     if maybe_intrinsic_function is not None:
-    #         self._extract_variable_references_from_intrinsic_function(
-    #             terminal_node=maybe_intrinsic_function
-    #         )
