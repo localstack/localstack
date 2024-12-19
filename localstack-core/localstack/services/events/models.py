@@ -275,12 +275,11 @@ class ApiDestination:
     name: ApiDestinationName
     region: str
     account_id: str
-    connection: Connection
     invocation_endpoint: HttpsEndpoint
     http_method: ApiDestinationHttpMethod
     state: ApiDestinationState
+    invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond
     description: ApiDestinationDescription | None = None
-    invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond | None = None
     creation_time: Timestamp = field(init=False)
     last_modified_time: Timestamp = field(init=False)
     last_authorized_time: Timestamp = field(init=False)
