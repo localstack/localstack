@@ -27,7 +27,6 @@ from localstack.aws.api.events import (
     ConnectionName,
     ConnectionResponseList,
     ConnectionState,
-    ConnectivityResourceParameters,
     CreateApiDestinationResponse,
     CreateArchiveResponse,
     CreateConnectionAuthRequestParameters,
@@ -279,8 +278,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             connection,
             invocation_endpoint,
             http_method,
-            description,
             invocation_rate_limit_per_second,
+            description,
         )
         store.api_destinations[api_destination_service.api_destination.name] = (
             api_destination_service.api_destination
@@ -1725,12 +1724,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         api_destination = {
             "ApiDestinationArn": api_destination.arn,
             "Name": api_destination.name,
+            "ConnectionArn": api_destination.connection_arn,
             "ApiDestinationState": api_destination.state,
             "InvocationEndpoint": api_destination.invocation_endpoint,
             "HttpMethod": api_destination.http_method,
             "InvocationRateLimitPerSecond": api_destination.invocation_rate_limit_per_second,
             "CreationTime": api_destination.creation_time,
             "LastModifiedTime": api_destination.last_modified_time,
+            "Description": api_destination.description,
         }
         return {key: value for key, value in api_destination.items() if value is not None}
 
