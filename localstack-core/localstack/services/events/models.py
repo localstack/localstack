@@ -15,6 +15,7 @@ from localstack.aws.api.events import (
     ArchiveName,
     ArchiveState,
     Arn,
+    ConnectionArn,
     ConnectionAuthorizationType,
     ConnectionDescription,
     ConnectionName,
@@ -275,10 +276,11 @@ class ApiDestination:
     name: ApiDestinationName
     region: str
     account_id: str
+    connection_arn: ConnectionArn
     invocation_endpoint: HttpsEndpoint
     http_method: ApiDestinationHttpMethod
     state: ApiDestinationState
-    invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond
+    _invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond | None = None
     description: ApiDestinationDescription | None = None
     creation_time: Timestamp = field(init=False)
     last_modified_time: Timestamp = field(init=False)
@@ -297,6 +299,16 @@ class ApiDestination:
     @property
     def arn(self) -> Arn:
         return events_api_destination_arn(self.name, self.id, self.account_id, self.region)
+
+    @property
+    def invocation_rate_limit_per_second(self) -> int:
+        return self._invocation_rate_limit_per_second or 300  # Default value
+
+    @invocation_rate_limit_per_second.setter
+    def invocation_rate_limit_per_second(
+        self, value: ApiDestinationInvocationRateLimitPerSecond | None
+    ):
+        self._invocation_rate_limit_per_second = value
 
 
 ApiDestinationDict = dict[ApiDestinationName, ApiDestination]
