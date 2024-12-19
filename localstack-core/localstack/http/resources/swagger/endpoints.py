@@ -7,10 +7,17 @@ from localstack.config import external_service_url
 from localstack.http import Response
 
 
+def _get_service_url(request: Request) -> str:
+    # special case for ephemeral instances
+    if "sandbox.localstack.cloud" in request.host:
+        return external_service_url(protocol="https", port=443)
+    return external_service_url(protocol=request.scheme)
+
+
 class SwaggerUIApi:
     @route("/_localstack/swagger", methods=["GET"])
     def server_swagger_ui(self, request: Request) -> Response:
-        init_path = f"{external_service_url(protocol=request.scheme)}/openapi.yaml"
+        init_path = f"{_get_service_url(request)}/openapi.yaml"
         oas_path = os.path.join(os.path.dirname(__file__), "templates")
         env = Environment(loader=FileSystemLoader(oas_path))
         template = env.get_template("index.html")
