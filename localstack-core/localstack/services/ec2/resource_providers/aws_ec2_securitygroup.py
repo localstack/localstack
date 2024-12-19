@@ -8,6 +8,7 @@ import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
     OperationStatus,
     ProgressEvent,
+    Properties,
     ResourceProvider,
     ResourceRequest,
 )
@@ -54,6 +55,42 @@ class Tag(TypedDict):
 
 
 REPEATED_INVOCATION = "repeated_invocation"
+
+
+def model_from_description(sg_description: dict) -> dict:
+    model = {
+        "Id": sg_description.get("GroupId"),
+        "GroupId": sg_description.get("GroupId"),
+        "GroupName": sg_description.get("GroupName"),
+        "GroupDescription": sg_description.get("Description"),
+        "SecurityGroupEgress": [],
+        "SecurityGroupIngress": [],
+    }
+
+    for i, egress in enumerate(sg_description.get("IpPermissionsEgress", [])):
+        for ip_range in egress.get("IpRanges", []):
+            model["SecurityGroupEgress"].append(
+                {
+                    "CidrIp": ip_range.get("CidrIp"),
+                    "FromPort": egress.get("FromPort", -1),
+                    "IpProtocol": egress.get("IpProtocol", "-1"),
+                    "ToPort": egress.get("ToPort", -1),
+                }
+            )
+
+    for i, ingress in enumerate(sg_description.get("IpPermissions", [])):
+        for ip_range in ingress.get("IpRanges", []):
+            model["SecurityGroupIngress"].append(
+                {
+                    "CidrIp": ip_range.get("CidrIp"),
+                    "FromPort": ingress.get("FromPort", -1),
+                    "IpProtocol": ingress.get("IpProtocol", "-1"),
+                    "ToPort": ingress.get("ToPort", -1),
+                }
+            )
+
+    model["VpcId"] = sg_description.get("VpcId")
+    return model
 
 
 class EC2SecurityGroupProvider(ResourceProvider[EC2SecurityGroupProperties]):
@@ -137,10 +174,28 @@ class EC2SecurityGroupProvider(ResourceProvider[EC2SecurityGroupProperties]):
     ) -> ProgressEvent[EC2SecurityGroupProperties]:
         """
         Fetch resource information
-
-
         """
-        raise NotImplementedError
+
+        model = request.desired_state
+
+        security_group = request.aws_client_factory.ec2.describe_security_groups(
+            GroupIds=[model["Id"]]
+        )["SecurityGroups"][0]
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model_from_description(security_group),
+        )
+
+    def list(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
+        security_groups = request.aws_client_factory.ec2.describe_security_groups()[
+            "SecurityGroups"
+        ]
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[{"Id": description["GroupId"]} for description in security_groups],
+        )
 
     def delete(
         self,
