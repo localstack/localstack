@@ -60,15 +60,15 @@ Install the LocalStack CLI through our [official LocalStack Brew Tap](https://gi
 brew install localstack/tap/localstack-cli
 ```
 
-### Binary download (MacOS, Linux, Windows)
+### Binary download (macOS, Linux, Windows)
 
 If Brew is not installed on your machine, you can download the pre-built LocalStack CLI binary directly:
 
 - Visit [localstack/localstack-cli](https://github.com/localstack/localstack-cli/releases/latest) and download the latest release for your platform.
 - Extract the downloaded archive to a directory included in your `PATH` variable:
-    -   For MacOS/Linux, use the command: `sudo tar xvzf ~/Downloads/localstack-cli-*-darwin-*-onefile.tar.gz -C /usr/local/bin`
+    -   For macOS/Linux, use the command: `sudo tar xvzf ~/Downloads/localstack-cli-*-darwin-*-onefile.tar.gz -C /usr/local/bin`
 
-### PyPI (MacOS, Linux, Windows)
+### PyPI (macOS, Linux, Windows)
 
 LocalStack is developed using Python. To install the LocalStack CLI using `pip`, run the following command:
 
