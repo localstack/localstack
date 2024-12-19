@@ -32,22 +32,22 @@ class APIDestinationService:
         connection: Connection,
         invocation_endpoint: HttpsEndpoint,
         http_method: ApiDestinationHttpMethod,
+        invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond | None = 300,
         description: ApiDestinationDescription | None = None,
-        invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond | None = None,
     ):
         self.validate_input(name, connection_arn, http_method, invocation_endpoint)
-        state = self._get_initial_state(connection.state)
+        self.connection = connection
+        state = self._get_state()
 
         self.api_destination = ApiDestination(
             name,
             region,
             account_id,
-            connection,
             invocation_endpoint,
             http_method,
             state,
-            description,
             invocation_rate_limit_per_second,
+            description,
         )
 
     @property
@@ -68,13 +68,36 @@ class APIDestinationService:
 
     def set_state(self, state: ApiDestinationState) -> None:
         if hasattr(self, "api_destination"):
+            if state == ApiDestinationState.ACTIVE:
+                state = self._get_state()
             self.api_destination.state = state
 
-    def _get_initial_state(self, connection_state: ConnectionState) -> ApiDestinationState:
+    def update(
+        self,
+        connection,
+        invocation_endpoint,
+        http_method,
+        invocation_rate_limit_per_second,
+        description,
+    ):
+        self.set_state(ApiDestinationState.INACTIVE)
+        self.connection = connection
+        if invocation_endpoint:
+            self.api_destination.invocation_endpoint = invocation_endpoint
+        if http_method:
+            self.api_destination.http_method = http_method
+        if invocation_rate_limit_per_second:
+            self.api_destination.invocation_rate_limit_per_second = invocation_rate_limit_per_second
+        if description:
+            self.api_destination.description = description
+        self.api_destination.last_modified_time = Timestamp.now()
+        self.set_state(ApiDestinationState.ACTIVE)
+
+    def _get_state(self) -> ApiDestinationState:
         """Determine ApiDestinationState based on ConnectionState."""
         return (
             ApiDestinationState.ACTIVE
-            if connection_state == ConnectionState.AUTHORIZED
+            if self.connection.state == ConnectionState.AUTHORIZED
             else ApiDestinationState.INACTIVE
         )
 

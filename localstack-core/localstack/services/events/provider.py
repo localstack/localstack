@@ -2,7 +2,6 @@ import base64
 import json
 import logging
 import re
-from datetime import datetime
 from typing import Callable, Optional
 
 from localstack.aws.api import RequestContext, handler
@@ -305,69 +304,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         response = self._api_destination_to_api_type_api_destination(api_destination)
         return response
 
-    @handler("UpdateApiDestination")
-    def update_api_destination(
-        self,
-        context: RequestContext,
-        name: ApiDestinationName,
-        description: ApiDestinationDescription = None,
-        connection_arn: ConnectionArn = None,
-        invocation_endpoint: HttpsEndpoint = None,
-        http_method: ApiDestinationHttpMethod = None,
-        invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond = None,
-        **kwargs,
-    ) -> UpdateApiDestinationResponse:
-        store = self.get_store(context.region, context.account_id)
-
-        def update():
-            if name not in store.api_destinations:
-                raise ResourceNotFoundException(
-                    f"Failed to describe the api-destination(s). An api-destination '{name}' does not exist."
-                )
-            api_destination = store.api_destinations[name]
-
-            if description is not None:
-                api_destination["Description"] = description
-            if connection_arn is not None:
-                connection = self._get_connection_by_arn(connection_arn)
-                if not connection:
-                    raise ResourceNotFoundException(
-                        f"Connection '{connection_arn}' does not exist."
-                    )
-                api_destination["ConnectionArn"] = connection_arn
-                api_destination["ApiDestinationState"] = self._determine_api_destination_state(
-                    connection["ConnectionState"]
-                )
-            else:
-                connection = self._get_connection_by_arn(api_destination["ConnectionArn"])
-                if connection:
-                    api_destination["ApiDestinationState"] = self._determine_api_destination_state(
-                        connection["ConnectionState"]
-                    )
-                else:
-                    api_destination["ApiDestinationState"] = "INACTIVE"
-
-            if invocation_endpoint is not None:
-                api_destination["InvocationEndpoint"] = invocation_endpoint
-            if http_method is not None:
-                api_destination["HttpMethod"] = http_method
-            if invocation_rate_limit_per_second is not None:
-                api_destination["InvocationRateLimitPerSecond"] = invocation_rate_limit_per_second
-            else:
-                if "InvocationRateLimitPerSecond" not in api_destination:
-                    api_destination["InvocationRateLimitPerSecond"] = 300
-
-            api_destination["LastModifiedTime"] = datetime.utcnow()
-
-            return UpdateApiDestinationResponse(
-                ApiDestinationArn=api_destination["ApiDestinationArn"],
-                ApiDestinationState=api_destination["ApiDestinationState"],
-                CreationTime=api_destination["CreationTime"],
-                LastModifiedTime=api_destination["LastModifiedTime"],
-            )
-
-        return self._handle_api_destination_operation("updating", update)
-
     @handler("DeleteApiDestination")
     def delete_api_destination(
         self, context: RequestContext, name: ApiDestinationName, **kwargs
@@ -407,6 +343,42 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         )
         if next_token is not None:
             response["NextToken"] = next_token
+        return response
+
+    @handler("UpdateApiDestination")
+    def update_api_destination(
+        self,
+        context: RequestContext,
+        name: ApiDestinationName,
+        description: ApiDestinationDescription = None,
+        connection_arn: ConnectionArn = None,
+        invocation_endpoint: HttpsEndpoint = None,
+        http_method: ApiDestinationHttpMethod = None,
+        invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond = None,
+        **kwargs,
+    ) -> UpdateApiDestinationResponse:
+        store = self.get_store(context.region, context.account_id)
+        api_destination = self.get_api_destination(name, store)
+        api_destination_service = self._api_destination_service_store[api_destination.arn]
+        if connection_arn:
+            connection_name = extract_connection_name(connection_arn)
+            connection = self.get_connection(connection_name, store)
+        else:
+            connection = api_destination_service.connection
+        api_destination_service.update(
+            connection,
+            invocation_endpoint,
+            http_method,
+            invocation_rate_limit_per_second,
+            description,
+        )
+
+        response = UpdateApiDestinationResponse(
+            ApiDestinationArn=api_destination_service.arn,
+            ApiDestinationState=api_destination_service.state,
+            CreationTime=api_destination_service.creation_time,
+            LastModifiedTime=api_destination_service.last_modified_time,
+        )
         return response
 
     #############
@@ -1469,8 +1441,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             connection,
             invocation_endpoint,
             http_method,
-            description,
             invocation_rate_limit_per_second,
+            description,
         )
         self._api_destination_service_store[api_destination_service.arn] = api_destination_service
         return api_destination_service
