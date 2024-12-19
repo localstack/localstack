@@ -42,6 +42,7 @@ class LocalStackCliGroup(click.Group):
         "pod",
         "state",
         "ephemeral",
+        "replicator",
     ]
 
     def invoke(self, ctx: click.Context):
