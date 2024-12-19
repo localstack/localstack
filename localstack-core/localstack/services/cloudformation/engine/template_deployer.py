@@ -243,8 +243,8 @@ def resolve_refs_recursively(
                 ssm_client = connect_to(aws_access_key_id=account_id, region_name=region_name).ssm
                 try:
                     return ssm_client.get_parameter(Name=reference_key)["Parameter"]["Value"]
-                except ClientError:
-                    LOG.error("client error accessing SSM parameter '%s'", reference_key)
+                except ClientError as e:
+                    LOG.error("client error accessing SSM parameter '%s': %s", reference_key, e)
                     raise
             elif service_name == "ssm-secure":
                 ssm_client = connect_to(aws_access_key_id=account_id, region_name=region_name).ssm
@@ -252,8 +252,8 @@ def resolve_refs_recursively(
                     return ssm_client.get_parameter(Name=reference_key, WithDecryption=True)[
                         "Parameter"
                     ]["Value"]
-                except ClientError:
-                    LOG.error("client error accessing SSM parameter '%s'", reference_key)
+                except ClientError as e:
+                    LOG.error("client error accessing SSM parameter '%s': %s", reference_key, e)
                     raise
             elif service_name == "secretsmanager":
                 # reference key needs to be parsed further
@@ -285,7 +285,7 @@ def resolve_refs_recursively(
                         SecretId=secret_id, **kwargs
                     )["SecretString"]
                 except ClientError:
-                    LOG.error("client error while trying to access key '%s'", secret_id)
+                    LOG.error("client error while trying to access key '%s': %s", secret_id)
                     raise
 
                 if json_key:
@@ -414,6 +414,9 @@ def _resolve_refs_recursively(
 
             none_values = [v for v in join_values if v is None]
             if none_values:
+                LOG.warning(
+                    "Cannot resolve Fn::Join '%s' due to null values: '%s'", value, join_values
+                )
                 raise Exception(
                     f"Cannot resolve CF Fn::Join {value} due to null values: {join_values}"
                 )
@@ -490,6 +493,12 @@ def _resolve_refs_recursively(
                 first_level_attribute,
             )
 
+            if first_level_attribute not in selected_map:
+                raise Exception(
+                    f"Cannot find map key '{first_level_attribute}' in mapping '{mapping_id}'"
+                )
+            first_level_mapping = selected_map[first_level_attribute]
+
             second_level_attribute = value[keys_list[0]][2]
             if not isinstance(second_level_attribute, str):
                 second_level_attribute = resolve_refs_recursively(
@@ -502,8 +511,12 @@ def _resolve_refs_recursively(
                     parameters,
                     second_level_attribute,
                 )
+            if second_level_attribute not in first_level_mapping:
+                raise Exception(
+                    f"Cannot find map key '{second_level_attribute}' in mapping '{mapping_id}' under key '{first_level_attribute}'"
+                )
 
-            return selected_map.get(first_level_attribute).get(second_level_attribute)
+            return first_level_mapping[second_level_attribute]
 
         if stripped_fn_lower == "importvalue":
             import_value_key = resolve_refs_recursively(
@@ -530,7 +543,17 @@ def _resolve_refs_recursively(
 
         if stripped_fn_lower == "if":
             condition, option1, option2 = value[keys_list[0]]
-            condition = conditions[condition]
+            condition = conditions.get(condition)
+            if condition is None:
+                LOG.warning(
+                    "Cannot find condition '%s' in conditions mapping: '%s'",
+                    condition,
+                    conditions.keys(),
+                )
+                raise KeyError(
+                    f"Cannot find condition '{condition}' in conditions mapping: '{conditions.keys()}'"
+                )
+
             result = resolve_refs_recursively(
                 account_id,
                 region_name,
@@ -546,7 +569,12 @@ def _resolve_refs_recursively(
         if stripped_fn_lower == "condition":
             # FIXME: this should only allow strings, no evaluation should be performed here
             #   see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-condition.html
-            return conditions[value[keys_list[0]]]
+            key = value[keys_list[0]]
+            result = conditions.get(key)
+            if result is None:
+                LOG.warning("Cannot find key '%s' in conditions: '%s'", key, conditions.keys())
+                raise KeyError(f"Cannot find key '{key}' in conditions: '{conditions.keys()}'")
+            return result
 
         if stripped_fn_lower == "not":
             condition = value[keys_list[0]][0]
