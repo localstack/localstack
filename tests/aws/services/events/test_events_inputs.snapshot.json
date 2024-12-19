@@ -266,5 +266,232 @@
         }
       ]
     }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"method\": \"PUT\", \"path\": \"users-service/users/<userId>\", \"bod\": <payload>}]": {
+    "recorded-date": "13-12-2024, 18:03:12",
+    "recorded-content": {
+      "input-transformed-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "method": "PUT",
+            "path": "users-service/users/0a787ecb-4015",
+            "bod": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"Payload of <payload> with path users-service/users/<userId> and <userId>\"]": {
+    "recorded-date": "13-12-2024, 18:03:14",
+    "recorded-content": {
+      "input-transformed-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": "\"Payload of {acc_id:0a787ecb-4015,sf_id:baz} with path users-service/users/0a787ecb-4015 and 0a787ecb-4015\""
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"method\": \"PUT\", \"path\": \"users-service/users/<userId>\", \"id\": <userId>, \"body\": <payload>}]": {
+    "recorded-date": "13-12-2024, 18:03:18",
+    "recorded-content": {
+      "input-transformed-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "method": "PUT",
+            "path": "users-service/users/0a787ecb-4015",
+            "id": "0a787ecb-4015",
+            "body": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"method\": \"PUT\", \"path\": \"users-service/users/<userId>\", \"bod\": [<userId>, \"hardcoded\"]}]": {
+    "recorded-date": "13-12-2024, 18:03:21",
+    "recorded-content": {
+      "input-transformed-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "method": "PUT",
+            "path": "users-service/users/0a787ecb-4015",
+            "bod": [
+              "0a787ecb-4015",
+              "hardcoded"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"method\": \"PUT\", \"nested\": {\"level1\": {\"level2\": {\"level3\": \"users-service/users/<userId>\"} } }, \"bod\": \"<userId>\"}]": {
+    "recorded-date": "13-12-2024, 18:03:23",
+    "recorded-content": {
+      "input-transformed-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "method": "PUT",
+            "nested": {
+              "level1": {
+                "level2": {
+                  "level3": "users-service/users/0a787ecb-4015"
+                }
+              }
+            },
+            "bod": "0a787ecb-4015"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"<listsingle> single list item\"\\n\"<listmulti> multiple list items\"\\n\"<systemstring> system account id\"\\n\"<payload> payload\"\\n\"<userId> user id\"]": {
+    "recorded-date": "13-12-2024, 17:27:50",
+    "recorded-content": {
+      "input-transformed-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": "\"[HIGH] single list item\"\n\"[ACTIVE,INACTIVE] multiple list items\"\n\" system account id\"\n\"{acc_id:0a787ecb-4015,sf_id:baz} payload\"\n\"0a787ecb-4015 user id\""
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"id\" : <userId>}]": {
+    "recorded-date": "13-12-2024, 18:03:16",
+    "recorded-content": {
+      "input-transformed-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "id": "0a787ecb-4015"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[<listsingle> single list item]": {
+    "recorded-date": "13-12-2024, 17:13:22",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[<listmulti> multiple list items]": {
+    "recorded-date": "13-12-2024, 17:13:36",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"<listsingle> single list item\"]": {
+    "recorded-date": "13-12-2024, 18:03:25",
+    "recorded-content": {
+      "input-transformed-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": "\"[HIGH] single list item\""
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"<listmulti> multiple list items\"]": {
+    "recorded-date": "13-12-2024, 18:03:28",
+    "recorded-content": {
+      "input-transformed-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": "\"[ACTIVE,INACTIVE] multiple list items\""
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"singlelistitem\": \"<listsingle>\", \"multiplelistitems\": \"<listmulti>\"}]": {
+    "recorded-date": "13-12-2024, 17:15:23",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"singlelistitem\": \"<listsingle>\"}]": {
+    "recorded-date": "13-12-2024, 17:16:48",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"singlelistitem\": <listsingle>}]": {
+    "recorded-date": "13-12-2024, 18:03:30",
+    "recorded-content": {
+      "input-transformed-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "singlelistitem": [
+              "HIGH"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"<listsingle> single list item <listmulti> multiple list items <systemstring> system account id <payload> payload <userId> user id\"]": {
+    "recorded-date": "13-12-2024, 18:03:32",
+    "recorded-content": {
+      "input-transformed-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": "\"[HIGH] single list item [ACTIVE,INACTIVE] multiple list items  system account id {acc_id:0a787ecb-4015,sf_id:baz} payload 0a787ecb-4015 user id\""
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"multi_replacement\": \"users/<userId>/second/<userId>\"}]": {
+    "recorded-date": "13-12-2024, 18:03:35",
+    "recorded-content": {
+      "input-transformed-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "multi_replacement": "users/0a787ecb-4015/second/0a787ecb-4015"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"id\" : \"<userId>\"}]": {
+    "recorded-date": "16-12-2024, 12:26:02",
+    "recorded-content": {
+      "input-transformed-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "id": "0a787ecb-4015"
+          }
+        }
+      ]
+    }
   }
 }
