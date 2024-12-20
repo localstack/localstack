@@ -19,8 +19,8 @@ class LambdaLayerVersionProperties(TypedDict):
     CompatibleArchitectures: Optional[list[str]]
     CompatibleRuntimes: Optional[list[str]]
     Description: Optional[str]
-    Id: Optional[str]
     LayerName: Optional[str]
+    LayerVersionArn: Optional[str]
     LicenseInfo: Optional[str]
 
 
@@ -45,7 +45,7 @@ class LambdaLayerVersionProvider(ResourceProvider[LambdaLayerVersionProperties])
         Create a new resource.
 
         Primary identifier fields:
-          - /properties/Id
+          - /properties/LayerVersionArn
 
         Required properties:
           - Content
@@ -59,9 +59,12 @@ class LambdaLayerVersionProvider(ResourceProvider[LambdaLayerVersionProperties])
           - /properties/Content
 
         Read-only properties:
-          - /properties/Id
+          - /properties/LayerVersionArn
 
-
+        IAM permissions required:
+          - lambda:PublishLayerVersion
+          - s3:GetObject
+          - s3:GetObjectVersion
 
         """
         model = request.desired_state
@@ -69,7 +72,7 @@ class LambdaLayerVersionProvider(ResourceProvider[LambdaLayerVersionProperties])
         if not model.get("LayerName"):
             model["LayerName"] = f"layer-{short_uid()}"
         response = lambda_client.publish_layer_version(**model)
-        model["Id"] = response["LayerVersionArn"]
+        model["LayerVersionArn"] = response["LayerVersionArn"]
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
@@ -84,7 +87,8 @@ class LambdaLayerVersionProvider(ResourceProvider[LambdaLayerVersionProperties])
         """
         Fetch resource information
 
-
+        IAM permissions required:
+          - lambda:GetLayerVersion
         """
         raise NotImplementedError
 
@@ -95,11 +99,13 @@ class LambdaLayerVersionProvider(ResourceProvider[LambdaLayerVersionProperties])
         """
         Delete a resource
 
-
+        IAM permissions required:
+          - lambda:GetLayerVersion
+          - lambda:DeleteLayerVersion
         """
         model = request.desired_state
         lambda_client = request.aws_client_factory.lambda_
-        version = int(model["Id"].split(":")[-1])
+        version = int(model["LayerVersionArn"].split(":")[-1])
 
         lambda_client.delete_layer_version(LayerName=model["LayerName"], VersionNumber=version)
         return ProgressEvent(
