@@ -1077,9 +1077,6 @@ class TestSQSEventSourceMapping:
         events = retry(get_msg_from_q, retries=15, sleep=5)
         snapshot.match("Records", events)
 
-    # FIXME: this fails due to ESM not correctly collecting and sending batches
-    # where size exceeds 10 messages.
-    @markers.snapshot.skip_snapshot_verify(paths=["$..total_batches_received"])
     @markers.aws.validated
     def test_sqs_event_source_mapping_batching_reserved_concurrency(
         self,
