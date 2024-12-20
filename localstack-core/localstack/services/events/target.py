@@ -101,14 +101,11 @@ def replace_template_placeholders(
             return json.dumps(value)
         return value
 
-    formatted_template = (
-        TRANSFORMER_PLACEHOLDER_PATTERN.sub(replace_placeholder, template)
-        # .replace('""', '"')
-        .replace("\\n", "\n")
+    formatted_template = TRANSFORMER_PLACEHOLDER_PATTERN.sub(replace_placeholder, template).replace(
+        "\\n", "\n"
     )
 
     if is_json_template:
-        # fixed_formatted_template = fix_json_string(formatted_template)
         try:
             loaded_json_template = json.loads(formatted_template)
             return loaded_json_template
