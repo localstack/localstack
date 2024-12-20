@@ -662,7 +662,7 @@ def resolve_dns_from_upstream(hostname: str) -> str:
 
     ip_addresses = []
     for answer in response.answer:
-        if answer.match(dns.rdataclass.IN, dns.rdatatype.A, dns.rdatatype.TYPE0):
+        if answer.match(dns.rdataclass.IN, dns.rdatatype.A, dns.rdatatype.NONE):
             ip_addresses.extend(answer.items.keys())
 
     if not ip_addresses:
