@@ -1,6 +1,7 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Optional, TypedDict
 
@@ -8,10 +9,14 @@ import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
     OperationStatus,
     ProgressEvent,
+    Properties,
     ResourceProvider,
     ResourceRequest,
 )
+from localstack.services.lambda_.api_utils import parse_layer_arn
 from localstack.utils.strings import short_uid
+
+LOG = logging.getLogger(__name__)
 
 
 class LambdaLayerVersionProperties(TypedDict):
@@ -19,8 +24,8 @@ class LambdaLayerVersionProperties(TypedDict):
     CompatibleArchitectures: Optional[list[str]]
     CompatibleRuntimes: Optional[list[str]]
     Description: Optional[str]
-    Id: Optional[str]
     LayerName: Optional[str]
+    LayerVersionArn: Optional[str]
     LicenseInfo: Optional[str]
 
 
@@ -45,7 +50,7 @@ class LambdaLayerVersionProvider(ResourceProvider[LambdaLayerVersionProperties])
         Create a new resource.
 
         Primary identifier fields:
-          - /properties/Id
+          - /properties/LayerVersionArn
 
         Required properties:
           - Content
@@ -59,9 +64,12 @@ class LambdaLayerVersionProvider(ResourceProvider[LambdaLayerVersionProperties])
           - /properties/Content
 
         Read-only properties:
-          - /properties/Id
+          - /properties/LayerVersionArn
 
-
+        IAM permissions required:
+          - lambda:PublishLayerVersion
+          - s3:GetObject
+          - s3:GetObjectVersion
 
         """
         model = request.desired_state
@@ -69,7 +77,7 @@ class LambdaLayerVersionProvider(ResourceProvider[LambdaLayerVersionProperties])
         if not model.get("LayerName"):
             model["LayerName"] = f"layer-{short_uid()}"
         response = lambda_client.publish_layer_version(**model)
-        model["Id"] = response["LayerVersionArn"]
+        model["LayerVersionArn"] = response["LayerVersionArn"]
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
@@ -84,9 +92,61 @@ class LambdaLayerVersionProvider(ResourceProvider[LambdaLayerVersionProperties])
         """
         Fetch resource information
 
-
+        IAM permissions required:
+          - lambda:GetLayerVersion
         """
-        raise NotImplementedError
+        lambda_client = request.aws_client_factory.lambda_
+        layer_version_arn = request.desired_state.get("LayerVersionArn")
+
+        try:
+            _, _, layer_name, version = parse_layer_arn(layer_version_arn)
+        except AttributeError as e:
+            LOG.info(
+                "Invalid Arn: '%s', %s",
+                layer_version_arn,
+                e,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+            return ProgressEvent(
+                status=OperationStatus.FAILED,
+                message="Caught unexpected syntax violation. Consider using ARN.fromString().",
+                error_code="InternalFailure",
+            )
+
+        if not version:
+            return ProgressEvent(
+                status=OperationStatus.FAILED,
+                message="Invalid request provided: Layer Version ARN contains invalid layer name or version",
+                error_code="InvalidRequest",
+            )
+
+        try:
+            response = lambda_client.get_layer_version_by_arn(Arn=layer_version_arn)
+        except lambda_client.exceptions.ResourceNotFoundException as e:
+            return ProgressEvent(
+                status=OperationStatus.FAILED,
+                message="The resource you requested does not exist. "
+                f"(Service: Lambda, Status Code: 404, Request ID: {e.response['ResponseMetadata']['RequestId']})",
+                error_code="NotFound",
+            )
+        layer = util.select_attributes(
+            response,
+            [
+                "CompatibleRuntimes",
+                "Description",
+                "LayerVersionArn",
+                "CompatibleArchitectures",
+            ],
+        )
+        layer.setdefault("CompatibleRuntimes", [])
+        layer.setdefault("CompatibleArchitectures", [])
+        layer.setdefault("LayerName", layer_name)
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=layer,
+            custom_context=request.custom_context,
+        )
 
     def delete(
         self,
@@ -95,11 +155,13 @@ class LambdaLayerVersionProvider(ResourceProvider[LambdaLayerVersionProperties])
         """
         Delete a resource
 
-
+        IAM permissions required:
+          - lambda:GetLayerVersion
+          - lambda:DeleteLayerVersion
         """
         model = request.desired_state
         lambda_client = request.aws_client_factory.lambda_
-        version = int(model["Id"].split(":")[-1])
+        version = int(model["LayerVersionArn"].split(":")[-1])
 
         lambda_client.delete_layer_version(LayerName=model["LayerName"], VersionNumber=version)
         return ProgressEvent(
@@ -118,3 +180,32 @@ class LambdaLayerVersionProvider(ResourceProvider[LambdaLayerVersionProperties])
 
         """
         raise NotImplementedError
+
+    def list(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
+        """
+        List resources
+
+        IAM permissions required:
+          - lambda:ListLayerVersions
+        """
+
+        lambda_client = request.aws_client_factory.lambda_
+
+        lambda_layer = request.desired_state.get("LayerName")
+        if not lambda_layer:
+            return ProgressEvent(
+                status=OperationStatus.FAILED,
+                message="Layer Name cannot be empty",
+                error_code="InvalidRequest",
+            )
+
+        layer_versions = lambda_client.list_layer_versions(LayerName=lambda_layer)
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[
+                LambdaLayerVersionProperties(LayerVersionArn=layer_version["LayerVersionArn"])
+                for layer_version in layer_versions["LayerVersions"]
+            ],
+            custom_context=request.custom_context,
+        )

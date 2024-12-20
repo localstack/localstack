@@ -1,50 +1,22 @@
 {
   "typeName": "AWS::Lambda::LayerVersion",
   "description": "Resource Type definition for AWS::Lambda::LayerVersion",
-  "additionalProperties": false,
-  "properties": {
-    "CompatibleRuntimes": {
-      "type": "array",
-      "uniqueItems": false,
-      "items": {
-        "type": "string"
-      }
-    },
-    "LicenseInfo": {
-      "type": "string"
-    },
-    "Description": {
-      "type": "string"
-    },
-    "LayerName": {
-      "type": "string"
-    },
-    "Content": {
-      "$ref": "#/definitions/Content"
-    },
-    "Id": {
-      "type": "string"
-    },
-    "CompatibleArchitectures": {
-      "type": "array",
-      "uniqueItems": false,
-      "items": {
-        "type": "string"
-      }
-    }
-  },
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-lambda.git",
   "definitions": {
     "Content": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
         "S3ObjectVersion": {
+          "description": "For versioned objects, the version of the layer archive object to use.",
           "type": "string"
         },
         "S3Bucket": {
+          "description": "The Amazon S3 bucket of the layer archive.",
           "type": "string"
         },
         "S3Key": {
+          "description": "The Amazon S3 key of the layer archive.",
           "type": "string"
         }
       },
@@ -54,6 +26,46 @@
       ]
     }
   },
+  "properties": {
+    "CompatibleRuntimes": {
+      "description": "A list of compatible function runtimes. Used for filtering with ListLayers and ListLayerVersions.",
+      "type": "array",
+      "insertionOrder": false,
+      "uniqueItems": false,
+      "items": {
+        "type": "string"
+      }
+    },
+    "LicenseInfo": {
+      "description": "The layer's software license.",
+      "type": "string"
+    },
+    "Description": {
+      "description": "The description of the version.",
+      "type": "string"
+    },
+    "LayerName": {
+      "description": "The name or Amazon Resource Name (ARN) of the layer.",
+      "type": "string"
+    },
+    "Content": {
+      "description": "The function layer archive.",
+      "$ref": "#/definitions/Content"
+    },
+    "LayerVersionArn": {
+      "type": "string"
+    },
+    "CompatibleArchitectures": {
+      "description": "A list of compatible instruction set architectures.",
+      "type": "array",
+      "insertionOrder": false,
+      "uniqueItems": false,
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false,
   "required": [
     "Content"
   ],
@@ -65,10 +77,44 @@
     "/properties/Description",
     "/properties/Content"
   ],
-  "primaryIdentifier": [
-    "/properties/Id"
-  ],
   "readOnlyProperties": [
-    "/properties/Id"
-  ]
+    "/properties/LayerVersionArn"
+  ],
+  "writeOnlyProperties": [
+    "/properties/Content"
+  ],
+  "primaryIdentifier": [
+    "/properties/LayerVersionArn"
+  ],
+  "tagging": {
+    "taggable": false,
+    "tagOnCreate": false,
+    "tagUpdatable": false,
+    "cloudFormationSystemTags": false
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "lambda:PublishLayerVersion",
+        "s3:GetObject",
+        "s3:GetObjectVersion"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "lambda:GetLayerVersion"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "lambda:GetLayerVersion",
+        "lambda:DeleteLayerVersion"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "lambda:ListLayerVersions"
+      ]
+    }
+  }
 }

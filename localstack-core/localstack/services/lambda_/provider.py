@@ -3606,7 +3606,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         store = lambda_stores[account_id][region_name]
-        layer_version = store.layers.get(layer_name, {}).layer_versions.get(layer_version)
+        if not (layers := store.layers.get(layer_name)):
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )
+
+        layer_version = layers.layer_versions.get(layer_version)
 
         if not layer_version:
             raise ResourceNotFoundException(

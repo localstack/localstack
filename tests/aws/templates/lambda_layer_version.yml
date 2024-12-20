@@ -1,0 +1,71 @@
+Parameters:
+  LayerBucket:
+    Type: String
+  LayerName:
+    Type: String
+Resources:
+  FunctionServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  Layer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      LayerName: !Ref LayerName
+      CompatibleArchitectures:
+        - arm64
+      CompatibleRuntimes:
+        - python3.11
+        - python3.12
+      Content:
+        S3Bucket: !Ref LayerBucket
+        S3Key: layer.zip
+      Description: "layer to test cfn"
+  Function:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: "function to test lambda layer"
+      Layers:
+        - !Ref Layer
+      Code:
+        ZipFile: |
+          def handler(event, *args, **kwargs):
+              return "CRUD test"
+      Role:
+        Fn::GetAtt:
+          - FunctionServiceRole
+          - Arn
+      Handler: index.handler
+      Runtime: python3.12
+
+    DependsOn:
+      - FunctionServiceRole
+Outputs:
+  LambdaName:
+    Value:
+      Ref: Function
+  LambdaArn:
+    Value:
+      Fn::GetAtt:
+        - Function
+        - Arn
+  LayerVersionRef:
+    Value:
+      Ref: Layer
+  LayerVersionArn:
+    Value:
+      Fn::GetAtt:
+        - Layer
+        - LayerVersionArn

@@ -1237,3 +1237,30 @@ def test_lambda_cfn_dead_letter_config_async_invocation(
 
     retry(check_dlq_message, response=response, retries=5, sleep=2.5)
     snapshot.match("failed-async-lambda", response)
+
+
+@markers.aws.validated
+def test_lambda_layer_crud(deploy_cfn_template, aws_client, s3_bucket, snapshot):
+    snapshot.add_transformers_list(
+        [snapshot.transform.key_value("LambdaName"), snapshot.transform.key_value("layer-name")]
+    )
+
+    layer_name = f"layer-{short_uid()}"
+    snapshot.match("layer-name", layer_name)
+
+    bucket_key = "layer.zip"
+    zip_file = create_lambda_archive(
+        "hello",
+        get_content=True,
+        runtime=Runtime.python3_12,
+        file_name="hello.txt",
+    )
+    aws_client.s3.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
+
+    deployment = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/lambda_layer_version.yml"
+        ),
+        parameters={"LayerBucket": s3_bucket, "LayerName": layer_name},
+    )
+    snapshot.match("cfn-output", deployment.outputs)

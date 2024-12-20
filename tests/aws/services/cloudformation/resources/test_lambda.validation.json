@@ -38,6 +38,9 @@
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_function_tags": {
     "last_validated_date": "2024-10-01T12:52:51+00:00"
   },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_layer_crud": {
+    "last_validated_date": "2024-12-20T18:23:31+00:00"
+  },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_version": {
     "last_validated_date": "2024-04-09T07:21:37+00:00"
   },
