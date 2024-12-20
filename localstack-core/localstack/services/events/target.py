@@ -13,8 +13,8 @@ from botocore.client import BaseClient
 from localstack import config
 from localstack.aws.api.events import Arn, InputTransformer, RuleName, Target, TargetInputPath
 from localstack.aws.connect import connect_to
+from localstack.services.events.api_destination import send_event_to_api_destination
 from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
-from localstack.services.events.target_helper import send_event_to_api_destination
 from localstack.services.events.utils import (
     event_time_to_time_string,
     get_trace_header_encoded_region_account,
