@@ -36,13 +36,14 @@ class ConnectionService:
         secret_arn = self.create_connection_secret(
             region, account_id, name, authorization_type, auth_parameters
         )
+        public_auth_parameters = self._get_public_parameters(authorization_type, auth_parameters)
 
         self.connection = Connection(
             name,
             region,
             account_id,
             authorization_type,
-            auth_parameters,
+            public_auth_parameters,
             state,
             secret_arn,
             description,
@@ -99,25 +100,31 @@ class ConnectionService:
             self._validate_auth_type(auth_type)
         else:
             auth_type = self.connection.authorization_type
-        auth_params = auth_parameters if auth_parameters else self.connection.auth_parameters
 
         try:
             if self.connection.secret_arn:
-                self.update_connection_secret(self.connection.secret_arn, auth_type, auth_params)
+                self.update_connection_secret(
+                    self.connection.secret_arn, auth_type, auth_parameters
+                )
             else:
                 secret_arn = self.create_connection_secret(
                     self.connection.region,
                     self.connection.account_id,
                     self.connection.name,
                     auth_type,
-                    auth_params,
+                    auth_parameters,
                 )
                 self.connection.secret_arn = secret_arn
                 self.connection.last_authorized_time = datetime.now(timezone.utc)
 
             # Set new values
             self.connection.authorization_type = auth_type
-            self.connection.auth_parameters = auth_params
+            public_auth_parameters = (
+                self._get_public_parameters(authorization_type, auth_parameters)
+                if auth_parameters
+                else self.connection.auth_parameters
+            )
+            self.connection.auth_parameters = public_auth_parameters
             self.set_state(ConnectionState.AUTHORIZED)
             self.connection.last_modified_time = datetime.now(timezone.utc)
 
@@ -191,6 +198,11 @@ class ConnectionService:
         except Exception as error:
             LOG.warning("Secret with id %s deleting failed with errors: %s.", secret_arn, error)
 
+    def _get_initial_state(self, auth_type: str) -> ConnectionState:
+        if auth_type == "OAUTH_CLIENT_CREDENTIALS":
+            return ConnectionState.AUTHORIZING
+        return ConnectionState.AUTHORIZED
+
     def _get_secret_value(
         self,
         authorization_type: ConnectionAuthorizationType,
@@ -223,10 +235,50 @@ class ConnectionService:
 
         return json.dumps(result)
 
-    def _get_initial_state(self, auth_type: str) -> ConnectionState:
-        if auth_type == "OAUTH_CLIENT_CREDENTIALS":
-            return ConnectionState.AUTHORIZING
-        return ConnectionState.AUTHORIZED
+    def _get_public_parameters(
+        self,
+        auth_type: ConnectionAuthorizationType,
+        auth_parameters: CreateConnectionAuthRequestParameters
+        | UpdateConnectionAuthRequestParameters,
+    ) -> CreateConnectionAuthRequestParameters:
+        """Extract public parameters (without secrets) based on auth type."""
+        public_params = {}
+
+        if (
+            auth_type == ConnectionAuthorizationType.BASIC
+            and "BasicAuthParameters" in auth_parameters
+        ):
+            public_params["BasicAuthParameters"] = {
+                "Username": auth_parameters["BasicAuthParameters"]["Username"]
+            }
+
+        elif (
+            auth_type == ConnectionAuthorizationType.API_KEY
+            and "ApiKeyAuthParameters" in auth_parameters
+        ):
+            public_params["ApiKeyAuthParameters"] = {
+                "ApiKeyName": auth_parameters["ApiKeyAuthParameters"]["ApiKeyName"]
+            }
+
+        elif (
+            auth_type == ConnectionAuthorizationType.OAUTH_CLIENT_CREDENTIALS
+            and "OAuthParameters" in auth_parameters
+        ):
+            oauth_params = auth_parameters["OAuthParameters"]
+            public_params["OAuthParameters"] = {
+                "AuthorizationEndpoint": oauth_params["AuthorizationEndpoint"],
+                "HttpMethod": oauth_params["HttpMethod"],
+                "ClientParameters": {"ClientID": oauth_params["ClientParameters"]["ClientID"]},
+            }
+            if "OAuthHttpParameters" in oauth_params:
+                public_params["OAuthParameters"]["OAuthHttpParameters"] = oauth_params.get(
+                    "OAuthHttpParameters"
+                )
+
+        if "InvocationHttpParameters" in auth_parameters:
+            public_params["InvocationHttpParameters"] = auth_parameters["InvocationHttpParameters"]
+
+        return public_params
 
     def _validate_input(
         self,
