@@ -59,17 +59,6 @@ def to_json_str(obj: Any, separators: Optional[tuple[str, str]] = (",", ":")) ->
     return json_str.replace('\\"', '"')
 
 
-def fix_json_string(s):
-    try:
-        json.loads(s)
-        return s
-    except json.JSONDecodeError:
-        # Find unquoted values and quote them
-        pattern = r'(?:[:,{[]]\s*)([^",\{\}\[\]\s][^,\}\]]*)'
-        fixed = re.sub(pattern, r': "\1"', s)
-        return fixed
-
-
 def extract_region_and_account_id(
     name_or_arn: EventBusNameOrArn, context: RequestContext
 ) -> tuple[str, str]:
