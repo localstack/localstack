@@ -78,7 +78,7 @@ def get_endpoint_for_network(network: Optional[str] = None) -> str:
                 ]
             else:
                 # In a non-Linux host-mode environment, we need to determine the IP of the host by running a container
-                # (basically MacOS host mode, i.e. this is a feature to improve the developer experience)
+                # (basically macOS host mode, i.e. this is a feature to improve the developer experience)
                 image_name = constants.DOCKER_IMAGE_NAME
                 out, _ = DOCKER_CLIENT.run_container(
                     image_name,

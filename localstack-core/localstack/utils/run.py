@@ -198,7 +198,7 @@ def is_root() -> bool:
 
 @lru_cache()
 def get_os_user() -> str:
-    # using getpass.getuser() seems to be reporting a different/invalid user in Docker/MacOS
+    # using getpass.getuser() seems to be reporting a different/invalid user in Docker/macOS
     return run("whoami").strip()
 
 

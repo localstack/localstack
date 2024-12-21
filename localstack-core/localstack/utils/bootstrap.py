@@ -1267,7 +1267,7 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
     # Set up signal handler, to enable clean shutdown across different operating systems.
     #  There are subtle differences across operating systems and terminal emulators when it
     #  comes to handling of CTRL-C - in particular, Linux sends SIGINT to the parent process,
-    #  whereas MacOS sends SIGINT to the process group, which can result in multiple SIGINT signals
+    #  whereas macOS sends SIGINT to the process group, which can result in multiple SIGINT signals
     #  being received (e.g., when running the localstack CLI as part of a "npm run .." script).
     #  Hence, using a shutdown handler and synchronization event here, to avoid inconsistencies.
     def shutdown_handler(*args):

@@ -43,7 +43,7 @@ The basic steps include:
 
 ### Building the Docker image for Development
 
-We generally recommend using this command to build the `localstack/localstack` Docker image locally (works on Linux/MacOS):
+We generally recommend using this command to build the `localstack/localstack` Docker image locally (works on Linux/macOS):
 
 ```bash
 IMAGE_NAME="localstack/localstack" ./bin/docker-helper.sh build
