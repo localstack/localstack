@@ -157,6 +157,11 @@
 /localstack-core/localstack/services/iam/ @dfangl @pinzon
 /tests/aws/services/iam/ @dfangl @pinzon
 
+# kinesis
+/localstack-core/localstack/aws/api/kinesis/ @viren-nadkarni
+/localstack-core/localstack/services/kinesis/ @viren-nadkarni
+/tests/aws/services/kinesis/ @viren-nadkarni
+
 # kms
 /localstack-core/localstack/aws/api/kms/ @sannya-singal
 /localstack-core/localstack/services/kms/ @sannya-singal
