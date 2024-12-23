@@ -1594,5 +1594,17 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_layer_crud": {
+    "recorded-date": "20-12-2024, 18:23:31",
+    "recorded-content": {
+      "layer-name": "<layer-name:1>",
+      "cfn-output": {
+        "LambdaArn": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-name:1>",
+        "LambdaName": "<lambda-name:1>",
+        "LayerVersionArn": "arn:<partition>:lambda:<region>:111111111111:layer:<layer-name:1>:1",
+        "LayerVersionRef": "arn:<partition>:lambda:<region>:111111111111:layer:<layer-name:1>:1"
+      }
+    }
   }
 }
