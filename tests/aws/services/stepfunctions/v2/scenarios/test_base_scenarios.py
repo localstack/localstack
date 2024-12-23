@@ -41,7 +41,7 @@ class TestBaseScenarios:
         create_res = create_lambda_function(
             func_name=function_name,
             handler_file=SerT.LAMBDA_ID_FUNCTION,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
         function_arn = create_res["CreateFunctionResponse"]["FunctionArn"]
@@ -73,7 +73,7 @@ class TestBaseScenarios:
         create_res = create_lambda_function(
             func_name=function_name,
             handler_file=SerT.LAMBDA_ID_FUNCTION,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
         function_arn = create_res["CreateFunctionResponse"]["FunctionArn"]
@@ -2133,7 +2133,7 @@ class TestBaseScenarios:
         create_res = create_lambda_function(
             func_name=function_name,
             handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
         function_arn = create_res["CreateFunctionResponse"]["FunctionArn"]
@@ -2166,7 +2166,7 @@ class TestBaseScenarios:
         create_1_res = create_lambda_function(
             func_name=function_1_name,
             handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_1_name, "<lambda_function_1_name>"))
 
@@ -2211,7 +2211,7 @@ class TestBaseScenarios:
         create_1_res = create_lambda_function(
             func_name=function_1_name,
             handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_1_name, "<lambda_function_1_name>"))
 
@@ -2256,7 +2256,7 @@ class TestBaseScenarios:
         create_lambda_function(
             func_name=function_1_name,
             handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_1_name, "<lambda_function_1_name>"))
 
@@ -2288,7 +2288,7 @@ class TestBaseScenarios:
         create_res = create_lambda_function(
             func_name=function_name,
             handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
         function_arn = create_res["CreateFunctionResponse"]["FunctionArn"]
@@ -2320,7 +2320,7 @@ class TestBaseScenarios:
         create_res = create_lambda_function(
             func_name=function_name,
             handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
         function_arn = create_res["CreateFunctionResponse"]["FunctionArn"]

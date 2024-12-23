@@ -142,7 +142,7 @@ class Environment:
             )
         frame.callback_pool_manager = env.callback_pool_manager
         frame.map_run_record_pool_manager = env.map_run_record_pool_manager
-        frame.heap = env.heap
+        frame.heap = dict()
         frame._program_state = copy.deepcopy(env._program_state)
         return frame
 

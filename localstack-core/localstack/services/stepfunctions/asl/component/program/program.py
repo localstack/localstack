@@ -87,18 +87,11 @@ class Program(EvalComponent):
     def _eval_body(self, env: Environment) -> None:
         try:
             while env.is_running():
-                # Store the heap values at this depth for garbage collection.
-                heap_values = set(env.heap.keys())
-
                 next_state: CommonStateField = self._get_state(env.next_state_name)
                 next_state.eval(env)
-
                 # Garbage collect hanging values added by this last state.
                 env.stack.clear()
-                clear_heap_values = set(env.heap.keys()) - heap_values
-                for heap_value in clear_heap_values:
-                    env.heap.pop(heap_value, None)
-
+                env.heap.clear()
         except FailureEventException as ex:
             env.set_error(error=ex.get_execution_failed_event_details())
         except Exception as ex:
