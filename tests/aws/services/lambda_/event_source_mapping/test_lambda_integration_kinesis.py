@@ -17,6 +17,7 @@ from localstack.testing.aws.lambda_utils import (
 )
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.utils.aws.arns import s3_bucket_arn
 from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
 from tests.aws.services.lambda_.event_source_mapping.utils import (
@@ -833,6 +834,102 @@ class TestKinesisSource:
         failure_sns_message = json.loads(failure_sns_body_json)
 
         snapshot.match("failure_sns_message", failure_sns_message)
+
+    @markers.aws.validated
+    def test_kinesis_event_source_mapping_with_s3_on_failure_destination(
+        self,
+        s3_bucket,
+        create_lambda_function,
+        aws_client,
+        cleanups,
+        wait_for_stream_ready,
+        create_iam_role_with_policy,
+        region_name,
+        snapshot,
+    ):
+        # set up s3, lambda, kinesis
+
+        function_name = f"lambda_func-{short_uid()}"
+        role = f"test-lambda-role-{short_uid()}"
+        policy_name = f"test-lambda-policy-{short_uid()}"
+        kinesis_name = f"test-kinesis-{short_uid()}"
+
+        bucket_name = s3_bucket
+        bucket_arn = s3_bucket_arn(bucket_name, region=region_name)
+
+        role_arn = create_iam_role_with_policy(
+            RoleName=role,
+            PolicyName=policy_name,
+            RoleDefinition=lambda_role,
+            PolicyDefinition=s3_lambda_permission,  # why it is called s3_lambda_permission?
+        )
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=role_arn,
+        )
+
+        aws_client.kinesis.create_stream(StreamName=kinesis_name, ShardCount=1)
+        cleanups.append(
+            lambda: aws_client.kinesis.delete_stream(
+                StreamName=kinesis_name, EnforceConsumerDeletion=True
+            )
+        )
+        result = aws_client.kinesis.describe_stream(StreamName=kinesis_name)["StreamDescription"]
+        kinesis_arn = result["StreamARN"]
+        wait_for_stream_ready(stream_name=kinesis_name)
+
+        # create event source mapping
+
+        destination_config = {"OnFailure": {"Destination": bucket_arn}}
+        message = {
+            "input": "hello",
+            "value": "world",
+            lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1,
+        }
+
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            FunctionName=function_name,
+            BatchSize=1,
+            StartingPosition="TRIM_HORIZON",
+            EventSourceArn=kinesis_arn,
+            MaximumBatchingWindowInSeconds=1,
+            MaximumRetryAttempts=1,
+            DestinationConfig=destination_config,
+        )
+        cleanups.append(
+            lambda: aws_client.lambda_.delete_event_source_mapping(UUID=event_source_mapping_uuid)
+        )
+        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
+        event_source_mapping_uuid = create_event_source_mapping_response["UUID"]
+        _await_event_source_mapping_enabled(aws_client.lambda_, event_source_mapping_uuid)
+
+        # trigger ESM source
+
+        aws_client.kinesis.put_record(
+            StreamName=kinesis_name, Data=to_bytes(json.dumps(message)), PartitionKey="custom"
+        )
+
+        # verify failure
+
+        def verify_failure_received():
+            result = aws_client.s3.get_object(
+                Bucket=bucket_name,
+                Key="""
+            aws/lambda/<ESM-UUID>/<shardID>/YYYY/MM/DD/YYYY-MM-DDTHH.MM.SS-<Random UUID>
+            https://docs.aws.amazon.com/lambda/latest/dg/kinesis-on-failure-destination.html
+            """,
+            )
+            # TODO assert result
+            return result
+
+        sleep = 15 if is_aws_cloud() else 5
+        s3_invocation_record = retry(
+            verify_failure_received, retries=15, sleep=sleep, sleep_before=5
+        )
+        snapshot.match("s3_invocation_record", s3_invocation_record)
 
     @markers.aws.validated
     @pytest.mark.parametrize(
