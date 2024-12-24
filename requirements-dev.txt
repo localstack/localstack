@@ -27,7 +27,7 @@ attrs==24.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.215
+aws-cdk-asset-awscli-v1==2.2.216
     # via aws-cdk-lib
 aws-cdk-asset-kubectl-v20==2.1.3
     # via aws-cdk-lib
@@ -35,7 +35,7 @@ aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==38.0.1
     # via aws-cdk-lib
-aws-cdk-lib==2.173.1
+aws-cdk-lib==2.173.2
     # via localstack-core
 aws-sam-translator==1.94.0
     # via
@@ -45,7 +45,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.36.22
     # via localstack-core
-awscrt==0.23.5
+awscrt==0.23.6
     # via localstack-core
 boto3==1.35.81
     # via
@@ -89,7 +89,7 @@ cfn-lint==1.22.2
     # via moto-ext
 charset-normalizer==3.4.0
     # via requests
-click==8.1.7
+click==8.1.8
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -190,7 +190,7 @@ iniconfig==2.0.0
     # via pytest
 isodate==0.7.2
     # via openapi-core
-jinja2==3.1.4
+jinja2==3.1.5
     # via moto-ext
 jmespath==1.0.1
     # via
@@ -319,7 +319,7 @@ priority==1.3.0
     # via
     #   hypercorn
     #   localstack-twisted
-psutil==6.1.0
+psutil==6.1.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -338,9 +338,9 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.10.3
+pydantic==2.10.4
     # via aws-sam-translator
-pydantic-core==2.27.1
+pydantic-core==2.27.2
     # via pydantic
 pygments==2.18.0
     # via rich
@@ -433,7 +433,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.8.3
+ruff==0.8.4
     # via localstack-core (pyproject.toml)
 s3transfer==0.10.4
     # via
@@ -476,7 +476,7 @@ typing-extensions==4.12.2
     #   pydantic
     #   pydantic-core
     #   readerwriterlock
-urllib3==2.2.3
+urllib3==2.3.0
     # via
     #   botocore
     #   docker
