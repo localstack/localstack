@@ -200,6 +200,9 @@ class ScenariosTemplate(TemplateLoader):
     CHOICE_STATE_SINGLETON_COMPOSITE_JSONATA: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/choice_state_singleton_composite_jsonata.json5"
     )
+    CHOICE_STATE_SINGLETON_COMPOSITE_LITERAL_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/choice_state_singleton_composite_literal_string_jsonata.json5"
+    )
     CHOICE_STATE_AWS_SCENARIO: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/choice_state_aws_scenario.json5"
     )
