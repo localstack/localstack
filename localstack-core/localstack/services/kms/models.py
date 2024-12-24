@@ -22,6 +22,7 @@ from cryptography.hazmat.primitives.asymmetric.padding import PSS, PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.asymmetric.utils import Prehashed
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack.aws.api.kms import (
     CreateAliasRequest,
@@ -379,13 +380,17 @@ class KmsKey:
                     f"{self.metadata['Arn']} key usage is {self.metadata['KeyUsage']} which is not valid for DeriveSharedSecret."
                 )
 
+        # Deserialize public key from DER encoded data to EllipticCurvePublicKey.
+        pub_key = load_der_public_key(public_key)
+        shared_secret = self.crypto_key.key.exchange(ec.ECDH(), pub_key)
+        # Perform shared secret derivation.
         return HKDF(
             algorithm=algorithm,
             salt=None,
             info=b"",
             length=algorithm.digest_size,
             backend=default_backend(),
-        ).derive(public_key)
+        ).derive(shared_secret)
 
     # This method gets called when a key is replicated to another region. It's meant to populate the required metadata
     # fields in a new replica key.

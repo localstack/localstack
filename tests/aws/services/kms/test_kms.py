@@ -1330,15 +1330,27 @@ class TestKMS:
 
         # Create two keys and derive the shared secret
         key1 = kms_create_key(KeySpec="ECC_NIST_P256", KeyUsage="KEY_AGREEMENT")
+        pub_key1 = aws_client.kms.get_public_key(KeyId=key1["KeyId"])["PublicKey"]
 
         key2 = kms_create_key(KeySpec="ECC_NIST_P256", KeyUsage="KEY_AGREEMENT")
         pub_key2 = aws_client.kms.get_public_key(KeyId=key2["KeyId"])["PublicKey"]
 
-        secret = aws_client.kms.derive_shared_secret(
-            KeyId=key1["KeyId"], KeyAgreementAlgorithm="ECDH", PublicKey=pub_key2
+        secret1 = aws_client.kms.derive_shared_secret(
+            KeyId=key1["KeyId"],
+            KeyAgreementAlgorithm="ECDH",
+            PublicKey=pub_key2,
         )
 
-        snapshot.match("response", secret)
+        snapshot.match("response", secret1)
+
+        # Check the two derived shared secrets are equal
+        secret2 = aws_client.kms.derive_shared_secret(
+            KeyId=key2["KeyId"],
+            KeyAgreementAlgorithm="ECDH",
+            PublicKey=pub_key1,
+        )
+
+        assert secret1["SharedSecret"] == secret2["SharedSecret"]
 
         # Create a key with invalid key usage
         key3 = kms_create_key(KeySpec="ECC_NIST_P256", KeyUsage="SIGN_VERIFY")
