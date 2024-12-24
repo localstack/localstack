@@ -14,7 +14,7 @@ cffi==1.17.1
     # via cryptography
 charset-normalizer==3.4.0
     # via requests
-click==8.1.7
+click==8.1.8
     # via localstack-core (pyproject.toml)
 cryptography==44.0.0
     # via localstack-core (pyproject.toml)
@@ -34,7 +34,7 @@ packaging==24.2
     # via build
 plux==1.12.1
     # via localstack-core (pyproject.toml)
-psutil==6.1.0
+psutil==6.1.1
     # via localstack-core (pyproject.toml)
 pycparser==2.22
     # via cffi
@@ -54,5 +54,5 @@ semver==3.0.2
     # via localstack-core (pyproject.toml)
 tailer==0.4.1
     # via localstack-core (pyproject.toml)
-urllib3==2.2.3
+urllib3==2.3.0
     # via requests
