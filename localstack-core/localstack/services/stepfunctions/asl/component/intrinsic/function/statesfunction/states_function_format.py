@@ -1,10 +1,8 @@
 from typing import Any, Final
 
-from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_list import (
-    FunctionArgumentList,
-)
-from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_string import (
-    FunctionArgumentString,
+from localstack.services.stepfunctions.asl.component.intrinsic.argument.argument import (
+    ArgumentList,
+    ArgumentLiteral,
 )
 from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.states_function import (
     StatesFunction,
@@ -21,26 +19,30 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 class StatesFunctionFormat(StatesFunction):
     _DELIMITER: Final[str] = "{}"
 
-    def __init__(self, arg_list: FunctionArgumentList):
+    def __init__(self, argument_list: ArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.Format),
-            arg_list=arg_list,
+            argument_list=argument_list,
         )
-        if arg_list.size > 0:
+        if argument_list.size == 0:
             raise ValueError(
-                f"Expected at least 1 argument for function type '{type(self)}', but got: '{arg_list}'."
+                f"Expected at least 1 argument for function type '{type(self)}', but got: '{argument_list}'."
             )
-        if not isinstance(arg_list.arg_list[0], FunctionArgumentString):
+        first_argument = argument_list.arguments[0]
+        if not (
+            isinstance(first_argument, ArgumentLiteral)
+            and isinstance(first_argument.definition_value, str)
+        ):
             raise ValueError(
-                f"Expected the first argument for function type '{type(self)}' to be a string, but got: '{arg_list.arg_list[0]}'."
+                f"Expected the first argument for function type '{type(self)}' to be a string, but got: '{first_argument}'."
             )
 
     def _eval_body(self, env: Environment) -> None:
         # TODO: investigate behaviour for incorrect number of arguments in string format.
-        self.arg_list.eval(env=env)
+        self.argument_list.eval(env=env)
 
         values: list[Any] = list()
-        for _ in range(self.arg_list.size):
+        for _ in range(self.argument_list.size):
             values.append(env.stack.pop())
         string_format: str = values.pop()
         values.reverse()

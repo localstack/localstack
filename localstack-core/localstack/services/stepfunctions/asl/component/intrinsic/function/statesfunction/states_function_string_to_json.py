@@ -1,7 +1,7 @@
 import json
 
-from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_list import (
-    FunctionArgumentList,
+from localstack.services.stepfunctions.asl.component.intrinsic.argument.argument import (
+    ArgumentList,
 )
 from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.states_function import (
     StatesFunction,
@@ -16,18 +16,18 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class StatesFunctionStringToJson(StatesFunction):
-    def __init__(self, arg_list: FunctionArgumentList):
+    def __init__(self, argument_list: ArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.StringToJson),
-            arg_list=arg_list,
+            argument_list=argument_list,
         )
-        if arg_list.size != 1:
+        if argument_list.size != 1:
             raise ValueError(
-                f"Expected 1 argument for function type '{type(self)}', but got: '{arg_list}'."
+                f"Expected 1 argument for function type '{type(self)}', but got: '{argument_list}'."
             )
 
     def _eval_body(self, env: Environment) -> None:
-        self.arg_list.eval(env=env)
+        self.argument_list.eval(env=env)
         string_json: str = env.stack.pop()
         json_obj: json = json.loads(string_json)
         env.stack.append(json_obj)

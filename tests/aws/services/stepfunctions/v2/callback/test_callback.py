@@ -4,6 +4,7 @@ import threading
 import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.services.stepfunctions.asl.eval.count_down_latch import CountDownLatch
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -467,7 +468,7 @@ class TestCallback:
         lambda_creation_response = create_lambda_function(
             func_name=function_name,
             handler_file=TT.LAMBDA_WAIT_60_SECONDS,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_1_name>"))
         lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]

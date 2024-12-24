@@ -1,8 +1,8 @@
 import decimal
 from typing import Any
 
-from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_list import (
-    FunctionArgumentList,
+from localstack.services.stepfunctions.asl.component.intrinsic.argument.argument import (
+    ArgumentList,
 )
 from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.states_function import (
     StatesFunction,
@@ -44,14 +44,14 @@ class MathAdd(StatesFunction):
     # Returns
     # {"value1": 110 }
 
-    def __init__(self, arg_list: FunctionArgumentList):
+    def __init__(self, argument_list: ArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.MathAdd),
-            arg_list=arg_list,
+            argument_list=argument_list,
         )
-        if arg_list.size != 2:
+        if argument_list.size != 2:
             raise ValueError(
-                f"Expected 2 arguments for function type '{type(self)}', but got: '{arg_list}'."
+                f"Expected 2 arguments for function type '{type(self)}', but got: '{argument_list}'."
             )
 
     @staticmethod
@@ -68,7 +68,7 @@ class MathAdd(StatesFunction):
         return value
 
     def _eval_body(self, env: Environment) -> None:
-        self.arg_list.eval(env=env)
+        self.argument_list.eval(env=env)
         args = env.stack.pop()
 
         a = self._validate_integer_value(args[0])
