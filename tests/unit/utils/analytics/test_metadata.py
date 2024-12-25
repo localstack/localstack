@@ -52,7 +52,7 @@ def test_get_session_id_cache_not_process_local():
 
         assert sid1 == sid2
     except AttributeError as e:
-        # fix for MacOS (and potentially other systems) where local functions cannot be used for multiprocessing
+        # fix for macOS (and potentially other systems) where local functions cannot be used for multiprocessing
         if "Can't pickle local object" not in str(e):
             raise
 
