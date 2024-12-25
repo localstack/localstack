@@ -12,7 +12,7 @@ from collections import namedtuple
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
-from cryptography.exceptions import InvalidSignature
+from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.primitives import serialization as crypto_serialization
@@ -381,7 +381,10 @@ class KmsKey:
                 )
 
         # Deserialize public key from DER encoded data to EllipticCurvePublicKey.
-        pub_key = load_der_public_key(public_key)
+        try:
+            pub_key = load_der_public_key(public_key)
+        except (UnsupportedAlgorithm, ValueError):
+            raise ValidationException("")
         shared_secret = self.crypto_key.key.exchange(ec.ECDH(), pub_key)
         # Perform shared secret derivation.
         return HKDF(

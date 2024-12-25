@@ -1380,6 +1380,13 @@ class TestKMS:
             )
         snapshot.match("response-invalid-key", e.value.response)
 
+        # Call derive shared secret function with invalid public key
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.derive_shared_secret(
+                KeyId=key1["KeyId"], KeyAgreementAlgorithm="ECDH", PublicKey=b"InvalidPublicKey"
+            )
+        snapshot.match("response-invalid-public-key", e.value.response)
+
 
 class TestKMSMultiAccounts:
     @markers.aws.needs_fixing
