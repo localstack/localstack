@@ -95,6 +95,8 @@ def apply_iam_patches():
     ):
         fn(self, name, account_id, region, default_version_id, description, document, **kwargs)
         self.document = document
+        if "tags" in kwargs and TAG_KEY_CUSTOM_ID in kwargs["tags"]:
+            self.id = kwargs["tags"][TAG_KEY_CUSTOM_ID]["Value"]
 
     @patch(IAMBackend.create_role)
     def iam_backend_create_role(
