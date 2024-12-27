@@ -209,7 +209,7 @@ class CommonStateField(EvalComponent, ABC):
 
         # Exec the state's logic.
         self._eval_state(env)
-        #
+
         if not isinstance(env.program_state(), ProgramRunning):
             return
 

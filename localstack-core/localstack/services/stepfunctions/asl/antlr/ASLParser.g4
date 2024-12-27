@@ -254,6 +254,7 @@ comparison_variable_stmt:
     | comparison_func
     | next_decl
     | assign_decl
+    | output_decl
     | comment_decl
 ;
 

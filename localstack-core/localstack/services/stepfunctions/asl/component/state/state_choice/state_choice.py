@@ -1,3 +1,4 @@
+import datetime
 from typing import Optional
 
 from localstack.aws.api.stepfunctions import HistoryEventType
@@ -12,12 +13,13 @@ from localstack.services.stepfunctions.asl.component.state.state_choice.default_
 )
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.eval.environment import Environment
+from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
+from localstack.services.stepfunctions.asl.eval.states import StateData
 
 
 class StateChoice(CommonStateField):
     choices_decl: ChoicesDecl
     default_state: Optional[DefaultDecl]
-    _next_state_name: Optional[str]
 
     def __init__(self):
         super(StateChoice, self).__init__(
@@ -39,13 +41,10 @@ class StateChoice(CommonStateField):
             )
 
     def _set_next(self, env: Environment) -> None:
-        if self._next_state_name is None:
-            raise RuntimeError(f"No Next option from state: '{self}'.")
-        env.next_state_name = self._next_state_name
+        pass
 
     def _eval_state(self, env: Environment) -> None:
-        if self.default_state:
-            self._next_state_name = self.default_state.state_name
+        next_state_name = None
 
         for rule in self.choices_decl.rules:
             rule.eval(env)
@@ -55,8 +54,56 @@ class StateChoice(CommonStateField):
                     raise RuntimeError(
                         f"Missing Next definition for state_choice rule '{rule}' in choices '{self}'."
                     )
-                self._next_state_name = rule.next_stmt.name
+                next_state_name = rule.next_stmt.name
                 break
+        if next_state_name is not None:
+            env.next_state_name = next_state_name
+            return
 
+        if self.default_state is None:
+            raise RuntimeError("No branching option reached in state %s", self.name)
+
+        env.next_state_name = self.default_state.state_name
         if self.assign_decl:
             self.assign_decl.eval(env=env)
+        if self.output:
+            self.output.eval(env=env)
+
+    def _eval_body(self, env: Environment) -> None:
+        env.event_manager.add_event(
+            context=env.event_history_context,
+            event_type=self.state_entered_event_type,
+            event_details=EventDetails(
+                stateEnteredEventDetails=self._get_state_entered_event_details(env=env)
+            ),
+        )
+
+        env.states.context_object.context_object_data["State"] = StateData(
+            EnteredTime=datetime.datetime.now(tz=datetime.timezone.utc).isoformat(), Name=self.name
+        )
+
+        # Filter the input onto the stack.
+        if self.input_path:
+            self.input_path.eval(env)
+        else:
+            env.stack.append(env.states.get_input())
+
+        # Exec the state's logic.
+        self._eval_state(env)
+
+        # Handle legacy output sequences if in JsonPath mode.
+        if self._is_language_query_jsonpath():
+            if self.output_path:
+                self.output_path.eval(env=env)
+            else:
+                current_output = env.stack.pop()
+                env.states.reset(input_value=current_output)
+
+        if self.state_exited_event_type is not None:
+            env.event_manager.add_event(
+                context=env.event_history_context,
+                event_type=self.state_exited_event_type,
+                event_details=EventDetails(
+                    stateExitedEventDetails=self._get_state_exited_event_details(env=env),
+                ),
+            )
