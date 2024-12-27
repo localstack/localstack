@@ -7,6 +7,7 @@ from datetime import datetime
 from botocore.client import BaseClient
 
 from localstack.aws.api.kinesis import StreamStatus
+from localstack.aws.api.lambda_ import EventSourceMappingConfiguration
 from localstack.aws.api.pipes import (
     KinesisStreamStartPosition,
 )
@@ -30,6 +31,7 @@ class KinesisPoller(StreamPoller):
     def __init__(
         self,
         source_arn: str,
+        esm_config: EventSourceMappingConfiguration,
         source_parameters: dict | None = None,
         source_client: BaseClient | None = None,
         processor: EventProcessor | None = None,
@@ -39,6 +41,7 @@ class KinesisPoller(StreamPoller):
     ):
         super().__init__(
             source_arn,
+            esm_config,
             source_parameters,
             source_client,
             processor,
