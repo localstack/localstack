@@ -7,6 +7,7 @@ from typing import Iterator
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
 
+from localstack.aws.api.lambda_ import EventSourceMappingConfiguration
 from localstack.aws.api.pipes import (
     OnPartialBatchItemFailureStreams,
 )
@@ -27,7 +28,7 @@ from localstack.services.lambda_.event_source_mapping.pollers.poller import (
     get_batch_item_failures,
 )
 from localstack.services.lambda_.event_source_mapping.pollers.sqs_poller import get_queue_url
-from localstack.utils.aws.arns import parse_arn
+from localstack.utils.aws.arns import parse_arn, s3_bucket_name
 
 LOG = logging.getLogger(__name__)
 
@@ -40,6 +41,8 @@ class StreamPoller(Poller):
     # Iterator for round-robin polling from different shards because a batch cannot contain events from different shards
     # This is a workaround for not handling shards in parallel.
     iterator_over_shards: Iterator[tuple[str, str]] | None
+    # data from ESM configuration is needed in failure processing
+    esm_config: EventSourceMappingConfiguration
 
     # The ARN of the processor (e.g., Pipe ARN)
     partner_resource_arn: str | None
@@ -47,12 +50,14 @@ class StreamPoller(Poller):
     def __init__(
         self,
         source_arn: str,
+        esm_config: EventSourceMappingConfiguration,
         source_parameters: dict | None = None,
         source_client: BaseClient | None = None,
         processor: EventProcessor | None = None,
         partner_resource_arn: str | None = None,
     ):
         super().__init__(source_arn, source_parameters, source_client, processor)
+        self.esm_config = esm_config
         self.partner_resource_arn = partner_resource_arn
         self.shards = {}
         self.iterator_over_shards = None
@@ -326,6 +331,14 @@ class StreamPoller(Poller):
             elif service == "sns":
                 sns_client = get_internal_client(dlq_arn)
                 sns_client.publish(TopicArn=dlq_arn, Message=json.dumps(dlq_event))
+            elif service == "s3":
+                s3_client = get_internal_client(dlq_arn)
+                dlq_event_with_payload = self.add_payload_to_dlq_event(dlq_event, events)
+                s3_client.put_object(
+                    Bucket=s3_bucket_name(dlq_arn),
+                    Key=self.get_failure_s3_object_key(shard_id),
+                    Body=json.dumps(dlq_event_with_payload),
+                )  # TODO include payload and check other specifics for S3
             else:
                 LOG.warning("Unsupported DLQ service %s", service)
 
@@ -356,6 +369,10 @@ class StreamPoller(Poller):
             "version": "1.0",
         }
 
+    def add_payload_to_dlq_event(self, dlq_event: dict, events) -> dict:
+        # TODO add payload from the original event
+        return dlq_event
+
     def max_retries_exceeded(self, attempts: int) -> bool:
         maximum_retry_attempts = self.stream_parameters.get("MaximumRetryAttempts", -1)
         # Infinite retries until the source expires
@@ -375,3 +392,14 @@ class StreamPoller(Poller):
                 return events[:i], events[i:]
 
         return events, []
+
+    def get_failure_s3_object_key(self, shard_id):
+        return (
+            f'aws/lambda/{self.esm_config["UUID"]}/{shard_id}/TODO'  # TODO finish according to spec
+        )
+
+        # TODO:
+        # from https://docs.aws.amazon.com/lambda/latest/dg/kinesis-on-failure-destination.html:
+        #
+        # The S3 object containing the invocation record uses the following naming convention:
+        # aws/lambda/<ESM-UUID>/<shardID>/YYYY/MM/DD/YYYY-MM-DDTHH.MM.SS-<Random UUID>
