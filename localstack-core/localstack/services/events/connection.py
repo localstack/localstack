@@ -10,6 +10,7 @@ from localstack.aws.api.events import (
     ConnectionDescription,
     ConnectionName,
     ConnectionState,
+    ConnectivityResourceParameters,
     CreateConnectionAuthRequestParameters,
     Timestamp,
     UpdateConnectionAuthRequestParameters,
@@ -30,6 +31,7 @@ class ConnectionService:
         authorization_type: ConnectionAuthorizationType,
         auth_parameters: CreateConnectionAuthRequestParameters,
         description: ConnectionDescription | None = None,
+        invocation_connectivity_parameters: ConnectivityResourceParameters | None = None,
     ):
         self._validate_input(name, authorization_type)
         state = self._get_initial_state(authorization_type)
@@ -47,6 +49,7 @@ class ConnectionService:
             state,
             secret_arn,
             description,
+            invocation_connectivity_parameters,
         )
 
     @property
@@ -86,10 +89,13 @@ class ConnectionService:
         description: ConnectionDescription,
         authorization_type: ConnectionAuthorizationType,
         auth_parameters: UpdateConnectionAuthRequestParameters,
+        invocation_connectivity_parameters: ConnectivityResourceParameters | None = None,
     ) -> None:
         self.set_state(ConnectionState.UPDATING)
         if description:
             self.connection.description = description
+        if invocation_connectivity_parameters:
+            self.connection.invocation_connectivity_parameters = invocation_connectivity_parameters
         # Use existing values if not provided in update
         if authorization_type:
             auth_type = (

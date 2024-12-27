@@ -20,6 +20,7 @@ from localstack.aws.api.events import (
     ConnectionDescription,
     ConnectionName,
     ConnectionState,
+    ConnectivityResourceParameters,
     CreateConnectionAuthRequestParameters,
     CreatedBy,
     EventBusName,
@@ -249,6 +250,7 @@ class Connection:
     state: ConnectionState
     secret_arn: Arn
     description: ConnectionDescription | None = None
+    invocation_connectivity_parameters: ConnectivityResourceParameters | None = None
     creation_time: Timestamp = field(init=False)
     last_modified_time: Timestamp = field(init=False)
     last_authorized_time: Timestamp = field(init=False)

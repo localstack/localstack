@@ -27,6 +27,7 @@ from localstack.aws.api.events import (
     ConnectionName,
     ConnectionResponseList,
     ConnectionState,
+    ConnectivityResourceParameters,
     CreateApiDestinationResponse,
     CreateArchiveResponse,
     CreateConnectionAuthRequestParameters,
@@ -391,6 +392,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         authorization_type: ConnectionAuthorizationType,
         auth_parameters: CreateConnectionAuthRequestParameters,
         description: ConnectionDescription = None,
+        invocation_connectivity_parameters: ConnectivityResourceParameters = None,
         **kwargs,
     ) -> CreateConnectionResponse:
         region = context.region
@@ -399,7 +401,13 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if name in store.connections:
             raise ResourceAlreadyExistsException(f"Connection {name} already exists.")
         connection_service = self.create_connection_service(
-            name, region, account_id, authorization_type, auth_parameters, description
+            name,
+            region,
+            account_id,
+            authorization_type,
+            auth_parameters,
+            description,
+            invocation_connectivity_parameters,
         )
         store.connections[connection_service.connection.name] = connection_service.connection
 
@@ -478,6 +486,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         description: ConnectionDescription = None,
         authorization_type: ConnectionAuthorizationType = None,
         auth_parameters: UpdateConnectionAuthRequestParameters = None,
+        invocation_connectivity_parameters: ConnectivityResourceParameters = None,
         **kwargs,
     ) -> UpdateConnectionResponse:
         region = context.region
@@ -485,7 +494,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         store = self.get_store(region, account_id)
         connection = self.get_connection(name, store)
         connection_service = self._connection_service_store[connection.arn]
-        connection_service.update(description, authorization_type, auth_parameters)
+        connection_service.update(
+            description, authorization_type, auth_parameters, invocation_connectivity_parameters
+        )
 
         response = UpdateConnectionResponse(
             ConnectionArn=connection_service.arn,
@@ -1408,6 +1419,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         authorization_type: ConnectionAuthorizationType,
         auth_parameters: CreateConnectionAuthRequestParameters,
         description: ConnectionDescription,
+        invocation_connectivity_parameters: ConnectivityResourceParameters,
     ) -> ConnectionService:
         connection_service = ConnectionService(
             name,
@@ -1416,6 +1428,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             authorization_type,
             auth_parameters,
             description,
+            invocation_connectivity_parameters,
         )
         self._connection_service_store[connection_service.arn] = connection_service
         return connection_service
