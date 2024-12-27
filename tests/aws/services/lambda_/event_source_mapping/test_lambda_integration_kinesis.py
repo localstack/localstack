@@ -915,14 +915,15 @@ class TestKinesisSource:
         # verify failure
 
         def verify_failure_received():
+            list_objects_response = aws_client.s3.list_objects_v2(Bucket=bucket_name)
+            bucket_objects = list_objects_response["Contents"]
+            assert len(bucket_objects) == 1
+            object_key = bucket_objects[0]["Key"]
+
             result = aws_client.s3.get_object(
                 Bucket=bucket_name,
-                Key="""
-            aws/lambda/<ESM-UUID>/<shardID>/YYYY/MM/DD/YYYY-MM-DDTHH.MM.SS-<Random UUID>
-            https://docs.aws.amazon.com/lambda/latest/dg/kinesis-on-failure-destination.html
-            """,
+                Key=object_key,
             )
-            # TODO assert result
             return result
 
         sleep = 15 if is_aws_cloud() else 5

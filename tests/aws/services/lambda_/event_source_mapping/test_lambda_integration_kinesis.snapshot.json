@@ -3079,5 +3079,76 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_s3_on_failure_destination": {
+    "recorded-date": "26-12-2024, 18:06:42",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:<partition>:s3:::<resource:1>"
+          }
+        },
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "s3_invocation_record": {
+        "AcceptRanges": "bytes",
+        "Body": {
+          "requestContext": {
+            "requestId": "<uuid:2>",
+            "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+            "condition": "RetryAttemptsExhausted",
+            "approximateInvokeCount": 2
+          },
+          "responseContext": {
+            "statusCode": 200,
+            "executedVersion": "$LATEST",
+            "functionError": "Unhandled"
+          },
+          "version": "1.0",
+          "payload": "{\"Records\":[{\"kinesis\":{\"kinesisSchemaVersion\":\"1.0\",\"partitionKey\":\"custom\",\"sequenceNumber\":\"49659010315856526710810015429194486176186859345735057410\",\"data\":\"eyJpbnB1dCI6ICJoZWxsbyIsICJ2YWx1ZSI6ICJ3b3JsZCIsICJyYWlzZV9lcnJvciI6IDF9\",\"approximateArrivalTimestamp\":1.735236331572E9},\"eventSource\":\"aws:kinesis\",\"eventVersion\":\"1.0\",\"eventID\":\"shardId-000000000000:49659010315856526710810015429194486176186859345735057410\",\"eventName\":\"aws:kinesis:record\",\"invokeIdentityArn\":\"arn:<partition>:iam::111111111111:role/test-lambda-role-bf05eead\",\"awsRegion\":\"<region>\",\"eventSourceARN\":\"arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>\"}]}",
+          "timestamp": "<timestamp:2022-07-13T13:48:01.000Z>",
+          "KinesisBatchInfo": {
+            "shardId": "shardId-000000000000",
+            "startSequenceNumber": "49659010315856526710810015429194486176186859345735057410",
+            "endSequenceNumber": "49659010315856526710810015429194486176186859345735057410",
+            "approximateArrivalOfFirstRecord": "<timestamp:2022-07-13T13:48:01.000Z>",
+            "approximateArrivalOfLastRecord": "<timestamp:2022-07-13T13:48:01.000Z>",
+            "batchSize": 1,
+            "streamArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>"
+          }
+        },
+        "ContentLength": 1508,
+        "ContentType": "application/octet-stream",
+        "ETag": "\"af5c92b4209fa09486d6dde7dbd7464e\"",
+        "LastModified": "<datetime>",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
