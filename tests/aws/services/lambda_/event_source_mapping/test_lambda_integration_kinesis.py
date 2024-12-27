@@ -918,26 +918,24 @@ class TestKinesisSource:
 
         # verify failure record data
 
-        def verify_failure_received():
+        def get_invocation_record():
             list_objects_response = aws_client.s3.list_objects_v2(Bucket=bucket_name)
             bucket_objects = list_objects_response["Contents"]
             assert len(bucket_objects) == 1
             object_key = bucket_objects[0]["Key"]
 
-            result = aws_client.s3.get_object(
+            invocation_record = aws_client.s3.get_object(
                 Bucket=bucket_name,
                 Key=object_key,
             )
-            result_body = json.loads(result["Body"].read().decode("utf-8"))
-            payload = json.loads(result_body["payload"])
-            return result, payload
+            return invocation_record
 
         sleep = 15 if is_aws_cloud() else 5
-        s3_invocation_record, record_payload = retry(
-            verify_failure_received, retries=15, sleep=sleep, sleep_before=5
-        )
+        s3_invocation_record = retry(get_invocation_record, retries=15, sleep=sleep, sleep_before=5)
         snapshot.match("s3_invocation_record", s3_invocation_record)
-        snapshot.match("record_payload", record_payload)
+
+        record_body = json.loads(s3_invocation_record["Body"].read().decode("utf-8"))
+        snapshot.match("record_body", record_body)
 
     @markers.aws.validated
     @pytest.mark.parametrize(
