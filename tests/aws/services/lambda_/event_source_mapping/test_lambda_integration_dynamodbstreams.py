@@ -12,8 +12,8 @@ from localstack.testing.aws.lambda_utils import (
     _await_dynamodb_table_active,
     _await_event_source_mapping_enabled,
     _get_lambda_invocation_events,
+    esm_lambda_permission,
     lambda_role,
-    s3_lambda_permission,
 )
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -113,7 +113,7 @@ class TestDynamoDBEventSourceMapping:
             RoleName=role,
             PolicyName=policy_name,
             RoleDefinition=lambda_role,
-            PolicyDefinition=s3_lambda_permission,
+            PolicyDefinition=esm_lambda_permission,
         )
 
         create_lambda_function(
@@ -401,7 +401,7 @@ class TestDynamoDBEventSourceMapping:
             RoleName=role,
             PolicyName=policy_name,
             RoleDefinition=lambda_role,
-            PolicyDefinition=s3_lambda_permission,
+            PolicyDefinition=esm_lambda_permission,
         )
 
         create_lambda_function(
@@ -493,7 +493,7 @@ class TestDynamoDBEventSourceMapping:
             RoleName=role,
             PolicyName=policy_name,
             RoleDefinition=lambda_role,
-            PolicyDefinition=s3_lambda_permission,
+            PolicyDefinition=esm_lambda_permission,
         )
 
         create_lambda_function(
@@ -841,7 +841,7 @@ class TestDynamoDBEventSourceMapping:
             RoleName=role,
             PolicyName=policy_name,
             RoleDefinition=lambda_role,
-            PolicyDefinition=s3_lambda_permission,
+            PolicyDefinition=esm_lambda_permission,
         )
 
         create_lambda_function(

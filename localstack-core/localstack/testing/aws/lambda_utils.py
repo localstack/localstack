@@ -276,7 +276,7 @@ lambda_role = {
         }
     ],
 }
-s3_lambda_permission = {
+esm_lambda_permission = {
     "Version": "2012-10-17",
     "Statement": [
         {
@@ -298,6 +298,8 @@ s3_lambda_permission = {
                 "logs:CreateLogGroup",
                 "logs:CreateLogStream",
                 "logs:PutLogEvents",
+                "s3:ListBucket",
+                "s3:PutObject",
             ],
             "Resource": ["*"],
         }
