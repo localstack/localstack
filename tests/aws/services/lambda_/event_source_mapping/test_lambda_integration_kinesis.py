@@ -915,6 +915,7 @@ class TestKinesisSource:
         # add snapshot transformers
 
         snapshot.add_transformer(snapshot.transform.key_value("ETag"))
+        snapshot.add_transformer(snapshot.transform.regex(r"shardId-\d+", "<kinesis-shard-id>"))
 
         # verify failure record data
 
