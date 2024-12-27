@@ -1982,5 +1982,9 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_process_to_multiple_matching_rules": {
+    "recorded-date": "27-12-2024, 19:02:05",
+    "recorded-content": {}
   }
 }

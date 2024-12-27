@@ -1,11 +1,7 @@
 {
-  "tests/aws/services/events/test_events.py::TestEvents::test_create_connection_validations": {
-    "last_validated_date": "2024-12-13T10:54:30+00:00"
+  "tests/aws/services/events/test_events.py::TestEventRule::test_process_to_multiple_matching_rules": {
+    "last_validated_date": "2024-12-27T19:07:55+00:00"
   }
-}
- }
-}
-
 }
 "
   }

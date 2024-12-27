@@ -29,11 +29,17 @@ from tests.aws.services.events.helper_functions import (
 )
 
 EVENT_DETAIL = {"command": "update-account", "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"}}
+
 SPECIAL_EVENT_DETAIL = {
     "command": "update-account",
     "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"},
     "listsingle": ["HIGH"],
     "listmulti": ["ACTIVE", "INACTIVE"],
+}
+
+TEST_EVENT_DETAIL = {
+    "command": "update-account",
+    "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"},
 }
 
 TEST_EVENT_PATTERN = {
@@ -73,7 +79,7 @@ class TestEvents:
         entries = [
             {
                 "DetailType": TEST_EVENT_PATTERN_NO_SOURCE["detail-type"][0],
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
             },
         ]
         response = aws_client.events.put_events(Entries=entries)
@@ -121,7 +127,7 @@ class TestEvents:
         entries = [
             {
                 "Source": "some.source",
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
                 "DetailType": "",
             },
         ]
@@ -212,7 +218,7 @@ class TestEvents:
                 {
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
                     "EventBusName": bus_name,
                 }
             )
@@ -328,7 +334,7 @@ class TestEvents:
         test_event = {
             "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
             "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
-            "Detail": json.dumps(EVENT_DETAIL),
+            "Detail": json.dumps(TEST_EVENT_DETAIL),
         }
 
         event_response = aws_client.events.put_events(Entries=[test_event])
@@ -352,7 +358,7 @@ class TestEvents:
 
             detail = body["detail"]  # detail is already parsed as dict
             assert isinstance(detail, dict), f"Detail should be a dict, got {type(detail)}"
-            assert detail == EVENT_DETAIL, f"Unexpected detail content: {detail}"
+            assert detail == TEST_EVENT_DETAIL, f"Unexpected detail content: {detail}"
 
             assert (
                 body["id"] == original_event_id
@@ -419,7 +425,7 @@ class TestEvents:
         test_event = {
             "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
             "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
-            "Detail": json.dumps(EVENT_DETAIL),
+            "Detail": json.dumps(TEST_EVENT_DETAIL),
         }
 
         response = aws_client.events.put_events(Entries=[test_event])
@@ -962,7 +968,7 @@ class TestEventBus:
                     "EventBusName": bus_name_one,
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
                 }
             ]
         )
@@ -1402,11 +1408,10 @@ class TestEventRule:
         sqs_get_queue_arn,
         events_put_rule,
         aws_client,
-        snapshot,
     ):
         """two rules with each two sqs targets, all 4 ques should receive the event"""
 
-        custom_bus_name = f"test-eventbus-{short_uid()}"
+        custom_bus_name = f"test-bus-{short_uid()}"
         events_create_event_bus(Name=custom_bus_name)
 
         # create sqs queues targets
@@ -1423,7 +1428,7 @@ class TestEventRule:
             rule = events_put_rule(
                 Name=rule_name,
                 EventBusName=custom_bus_name,
-                EventPattern=json.dumps(TEST_EVENT_PATTERN),
+                EventPattern=json.dumps(TEST_EVENT_PATTERN_NO_DETAIL),
                 State="ENABLED",
             )
             rule_arn = rule["RuleArn"]
@@ -1444,7 +1449,7 @@ class TestEventRule:
                 )
 
                 aws_client.events.put_targets(
-                    Rule=rules[f"rule_{rule}"]["rule_name"],
+                    Rule=rules[f"rule_{rule_idx}"]["rule_name"],
                     EventBusName=custom_bus_name,
                     Targets=[
                         {"Id": f"test-target-{target_idx}-{short_uid()}", "Arn": queue_arn},
@@ -1453,11 +1458,27 @@ class TestEventRule:
 
         # put event
         aws_client.events.put_events(
-            Entries={
-                "Source": TEST_EVENT_PATTERN["source"][0],
-                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                "Detail": TEST_EVENT_PATTERN["detail"],
-            }
+            Entries=[
+                {
+                    "EventBusName": custom_bus_name,
+                    "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                    "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
+                }
+            ],
+        )
+
+        sqs_collect_messages(
+            aws_client, targets["sqs_target_0"]["queue_url"], expected_events_count=1
+        )
+        sqs_collect_messages(
+            aws_client, targets["sqs_target_1"]["queue_url"], expected_events_count=1
+        )
+        sqs_collect_messages(
+            aws_client, targets["sqs_target_2"]["queue_url"], expected_events_count=1
+        )
+        sqs_collect_messages(
+            aws_client, targets["sqs_target_3"]["queue_url"], expected_events_count=1
         )
 
 
