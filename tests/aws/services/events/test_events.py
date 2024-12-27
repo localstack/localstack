@@ -1394,6 +1394,72 @@ class TestEventRule:
         response = aws_client.events.list_targets_by_rule(Rule=rule_name)
         snapshot.match("list-targets-after-update", response)
 
+    @markers.aws.validated
+    def test_process_to_multiple_matching_rules(
+        self,
+        events_create_event_bus,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        events_put_rule,
+        aws_client,
+        snapshot,
+    ):
+        """two rules with each two sqs targets, all 4 ques should receive the event"""
+
+        custom_bus_name = f"test-eventbus-{short_uid()}"
+        events_create_event_bus(Name=custom_bus_name)
+
+        # create sqs queues targets
+        targets = {}
+        for i in range(4):
+            queue_url = sqs_create_queue()
+            queue_arn = sqs_get_queue_arn(queue_url)
+            targets[f"sqs_target_{i}"] = {"queue_url": queue_url, "queue_arn": queue_arn}
+
+        # create rules
+        rules = {}
+        for i in range(2):
+            rule_name = f"test-rule-{i}-{short_uid()}"
+            rule = events_put_rule(
+                Name=rule_name,
+                EventBusName=custom_bus_name,
+                EventPattern=json.dumps(TEST_EVENT_PATTERN),
+                State="ENABLED",
+            )
+            rule_arn = rule["RuleArn"]
+            rules[f"rule_{i}"] = {"rule_name": rule_name, "rule_arn": rule_arn}
+
+        # attach targets to rule
+        combinations = [("0", ["0", "1"]), ("1", ["2", "3"])]
+        for rule_idx, targets_idxs in combinations:
+            rule_arn = rules[f"rule_{rule_idx}"]["rule_arn"]
+            for target_idx in targets_idxs:
+                queue_url = targets[f"sqs_target_{target_idx}"]["queue_url"]
+                queue_arn = targets[f"sqs_target_{target_idx}"]["queue_arn"]
+                allow_event_rule_to_sqs_queue(
+                    aws_client=aws_client,
+                    sqs_queue_url=queue_url,
+                    sqs_queue_arn=queue_arn,
+                    event_rule_arn=rule_arn,
+                )
+
+                aws_client.events.put_targets(
+                    Rule=rules[f"rule_{rule}"]["rule_name"],
+                    EventBusName=custom_bus_name,
+                    Targets=[
+                        {"Id": f"test-target-{target_idx}-{short_uid()}", "Arn": queue_arn},
+                    ],
+                )
+
+        # put event
+        aws_client.events.put_events(
+            Entries={
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": TEST_EVENT_PATTERN["detail"],
+            }
+        )
+
 
 class TestEventPattern:
     @markers.aws.validated
