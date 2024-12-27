@@ -11,9 +11,9 @@ from localstack.testing.aws.lambda_utils import (
     _await_event_source_mapping_enabled,
     _await_event_source_mapping_state,
     _get_lambda_invocation_events,
+    esm_lambda_permission,
     get_lambda_log_events,
     lambda_role,
-    s3_lambda_permission,
 )
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -478,7 +478,7 @@ class TestKinesisSource:
             RoleName=role,
             PolicyName=policy_name,
             RoleDefinition=lambda_role,
-            PolicyDefinition=s3_lambda_permission,
+            PolicyDefinition=esm_lambda_permission,
         )
 
         create_lambda_function(
@@ -565,7 +565,7 @@ class TestKinesisSource:
             RoleName=role,
             PolicyName=policy_name,
             RoleDefinition=lambda_role,
-            PolicyDefinition=s3_lambda_permission,
+            PolicyDefinition=esm_lambda_permission,
         )
 
         create_lambda_function(
@@ -755,7 +755,7 @@ class TestKinesisSource:
             RoleName=role,
             PolicyName=policy_name,
             RoleDefinition=lambda_role,
-            PolicyDefinition=s3_lambda_permission,
+            PolicyDefinition=esm_lambda_permission,
         )
 
         # create topic and queue
@@ -861,7 +861,7 @@ class TestKinesisSource:
             RoleName=role,
             PolicyName=policy_name,
             RoleDefinition=lambda_role,
-            PolicyDefinition=s3_lambda_permission,  # why it is called s3_lambda_permission?
+            PolicyDefinition=esm_lambda_permission,
         )
 
         create_lambda_function(
@@ -1113,7 +1113,7 @@ class TestKinesisEventFiltering:
             RoleName=role,
             PolicyName=policy_name,
             RoleDefinition=lambda_role,
-            PolicyDefinition=s3_lambda_permission,
+            PolicyDefinition=esm_lambda_permission,
         )
 
         create_lambda_function(
