@@ -912,7 +912,11 @@ class TestKinesisSource:
             StreamName=kinesis_name, Data=to_bytes(json.dumps(message)), PartitionKey="custom"
         )
 
-        # verify failure
+        # add snapshot transformers
+
+        snapshot.add_transformer(snapshot.transform.key_value("ETag"))
+
+        # verify failure record data
 
         def verify_failure_received():
             list_objects_response = aws_client.s3.list_objects_v2(Bucket=bucket_name)
