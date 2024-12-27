@@ -924,13 +924,16 @@ class TestKinesisSource:
                 Bucket=bucket_name,
                 Key=object_key,
             )
-            return result
+            result_body = json.loads(result["Body"].read().decode("utf-8"))
+            payload = json.loads(result_body["payload"])
+            return result, payload
 
         sleep = 15 if is_aws_cloud() else 5
-        s3_invocation_record = retry(
+        s3_invocation_record, record_payload = retry(
             verify_failure_received, retries=15, sleep=sleep, sleep_before=5
         )
         snapshot.match("s3_invocation_record", s3_invocation_record)
+        snapshot.match("record_payload", record_payload)
 
     @markers.aws.validated
     @pytest.mark.parametrize(
