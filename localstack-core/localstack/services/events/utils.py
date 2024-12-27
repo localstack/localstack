@@ -52,11 +52,8 @@ class EventJSONEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-def to_json_str(obj: Any, separators: Optional[tuple[str, str]] = (",", ":")) -> str | None:
-    if not obj:
-        return None
-    json_str = json.dumps(obj, cls=EventJSONEncoder, separators=separators)
-    return json_str.replace('\\"', '"')
+def to_json_str(obj: Any, separators: Optional[tuple[str, str]] = (",", ":")) -> str:
+    return json.dumps(obj, cls=EventJSONEncoder, separators=separators)
 
 
 def extract_region_and_account_id(

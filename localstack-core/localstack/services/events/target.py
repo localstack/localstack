@@ -87,7 +87,7 @@ def replace_template_placeholders(
         if isinstance(value, datetime.datetime):
             return event_time_to_time_string(value)
         if isinstance(value, dict):
-            json_str = to_json_str(value)
+            json_str = to_json_str(value).replace('\\"', '"')
             if is_json_template:
                 return json_str
             return json_str.replace('"', "")
@@ -182,7 +182,10 @@ class TargetSender(ABC):
                 event = transform_event_with_target_input_path(input_path, event)
             if input_transformer := self.target.get("InputTransformer"):
                 event = self.transform_event_with_target_input_transformer(input_transformer, event)
-        self.send_event(event)
+        if event:
+            self.send_event(event)
+        else:
+            LOG.info("No event to send to target %s", self.target.get("Id"))
 
     def transform_event_with_target_input_transformer(
         self, input_transformer: InputTransformer, event: FormattedEvent
