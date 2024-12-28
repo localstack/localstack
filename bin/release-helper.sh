@@ -94,9 +94,16 @@ function release_env_compute() {
 
     export CURRENT_VER=$(get_current_version)
     export RELEASE_VER=${RELEASE_VER}
+    # development after patch releases happens on the release branch which increments the patch version
+    # development after major/minor releases happens on the main branch which increments the minor version
+    if [[ $1 == "patch" ]]; then
+        export DEVELOP_VER=$(echo ${RELEASE_VER} | increment_patch | add_dev_suffix)
+    else
+        export DEVELOP_VER=$(echo ${RELEASE_VER} | increment_minor | add_dev_suffix)
+    fi
     export DEVELOP_VER=$(echo ${RELEASE_VER} | increment_patch | add_dev_suffix)
-    # uses only the minor version. for 1.0.1 -> patch the boundary would be 1.1
-    export BOUNDARY_VER=$(echo ${DEVELOP_VER} | increment_minor | cut -d'.' -f-2)
+    # uses only the minor version. for 1.0.x -> patch the boundary would be 1.1
+    export BOUNDARY_VER=$(echo ${RELEASE_VER} | increment_minor | cut -d'.' -f-2)
 
     release_env_validate || { echo "invalid release environment"; exit 1; }
 }
