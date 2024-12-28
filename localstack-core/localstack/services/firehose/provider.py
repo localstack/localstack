@@ -138,9 +138,20 @@ def _get_description_or_raise_not_found(
     store = FirehoseProvider.get_store(context.account_id, context.region)
     delivery_stream_description = store.delivery_streams.get(delivery_stream_name)
     if not delivery_stream_description:
-        raise ResourceNotFoundException(
-            f"Firehose {delivery_stream_name} under account {context.account_id} " f"not found."
-        )
+        # the random name may be created (compare without random part)
+        full_name = None
+        random_index = delivery_stream_name.rfind('-')
+        without_random_part = delivery_stream_name[:random_index]
+        for name in store.delivery_streams.keys():
+            if name.startswith(without_random_part):
+                full_name = name
+                LOG.info(f"Name {name} is used instead of provided name {delivery_stream_name}.")
+        if full_name:
+            delivery_stream_description = store.delivery_streams.get(full_name)
+        else:
+            raise ResourceNotFoundException(
+                f"Firehose {delivery_stream_name} under account {context.account_id} " f"not found."
+            )
     return delivery_stream_description
 
 

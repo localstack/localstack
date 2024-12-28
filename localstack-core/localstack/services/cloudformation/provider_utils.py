@@ -17,14 +17,12 @@ from botocore.model import Shape, StructureShape
 
 
 def generate_default_name(stack_name: str, logical_resource_id: str):
-    random_id_part = str(uuid.uuid4())[0:8]
-    resource_id_part = logical_resource_id[:24]
-    stack_name_part = stack_name[: 63 - 2 - (len(random_id_part) + len(resource_id_part))]
-    return f"{stack_name_part}-{resource_id_part}-{random_id_part}"
+    random_id_part = str(uuid.uuid4())[0:8].upper()
+    return f"{stack_name}-{logical_resource_id}-{random_id_part}"
 
 
 def generate_default_name_without_stack(logical_resource_id: str):
-    random_id_part = str(uuid.uuid4())[0:8]
+    random_id_part = str(uuid.uuid4())[0:8].upper()
     resource_id_part = logical_resource_id[: 63 - 1 - len(random_id_part)]
     return f"{resource_id_part}-{random_id_part}"
 
