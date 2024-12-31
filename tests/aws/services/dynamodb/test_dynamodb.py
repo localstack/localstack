@@ -747,6 +747,34 @@ class TestDynamoDB:
         aws_client.dynamodb.delete_table(TableName=table_name)
 
     @markers.aws.validated
+    def test_dynamodb_execute_statement_empy_parameter(
+        self, dynamodb_create_table_with_parameters, snapshot, aws_client
+    ):
+        table_name = f"test_table_{short_uid()}"
+        dynamodb_create_table_with_parameters(
+            TableName=table_name,
+            KeySchema=[
+                {"AttributeName": "Artist", "KeyType": "HASH"},
+                {"AttributeName": "SongTitle", "KeyType": "RANGE"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "Artist", "AttributeType": "S"},
+                {"AttributeName": "SongTitle", "AttributeType": "S"},
+            ],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        )
+
+        aws_client.dynamodb.put_item(
+            TableName=table_name,
+            Item={"Artist": {"S": "The Queen"}, "SongTitle": {"S": "Bohemian Rhapsody"}},
+        )
+
+        statement = f"SELECT * FROM {table_name}"
+        with pytest.raises(Exception) as e:
+            aws_client.dynamodb.execute_statement(Statement=statement, Parameters=[])
+        snapshot.match("invalid-param-error", e.value)
+
+    @markers.aws.validated
     def test_dynamodb_partiql_missing(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
