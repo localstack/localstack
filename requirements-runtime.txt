@@ -64,9 +64,9 @@ certifi==2024.12.14
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.22.2
+cfn-lint==1.22.3
     # via moto-ext
-charset-normalizer==3.4.0
+charset-normalizer==3.4.1
     # via requests
 click==8.1.8
     # via
