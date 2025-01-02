@@ -1635,6 +1635,10 @@ class TestEventRule:
             snapshot.match(f"events-{source}", events)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
     def test_process_pattern_to_single_matching_rules_single_target(
         self,
         create_lambda_function,
