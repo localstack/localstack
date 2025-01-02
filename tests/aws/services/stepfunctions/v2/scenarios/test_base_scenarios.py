@@ -2505,8 +2505,20 @@ class TestBaseScenarios:
             ST.load_sfn_template(ST.INVALID_JSONPATH_IN_CAUSEPATH),
             ST.load_sfn_template(ST.INVALID_JSONPATH_IN_INPUTPATH),
             ST.load_sfn_template(ST.INVALID_JSONPATH_IN_OUTPUTPATH),
-            ST.load_sfn_template(ST.INVALID_JSONPATH_IN_TIMEOUTSECONDSPATH),
-            ST.load_sfn_template(ST.INVALID_JSONPATH_IN_HEARTBEATSECONDSPATH),
+            pytest.param(
+                ST.load_sfn_template(ST.INVALID_JSONPATH_IN_TIMEOUTSECONDSPATH),
+                marks=pytest.mark.skipif(
+                    condition=not is_aws_cloud(),
+                    reason="timeout computation is run at the state's level",
+                ),
+            ),
+            pytest.param(
+                ST.load_sfn_template(ST.INVALID_JSONPATH_IN_HEARTBEATSECONDSPATH),
+                marks=pytest.mark.skipif(
+                    condition=not is_aws_cloud(),
+                    reason="heartbeat computation is run at the state's level",
+                ),
+            ),
         ],
         ids=[
             "INVALID_JSONPATH_IN_ERRORPATH",

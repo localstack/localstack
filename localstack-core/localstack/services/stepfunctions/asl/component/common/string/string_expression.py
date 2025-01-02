@@ -73,26 +73,7 @@ class StringJsonPath(StringSampler):
         if self.json_path == JSONPATH_ROOT_PATH:
             output_value = input_value
         else:
-            try:
-                output_value = extract_json(self.json_path, input_value)
-            except NoSuchJsonPathError:
-                input_value_json_str = to_json_str(input_value)
-                cause = (
-                    f"The JSONPath '{self.json_path}' specified for the field '{env.next_field_name}' "
-                    f"could not be found in the input '{input_value_json_str}'"
-                )
-                raise FailureEventException(
-                    failure_event=FailureEvent(
-                        env=env,
-                        error_name=StatesErrorName(typ=StatesErrorNameType.StatesRuntime),
-                        event_type=HistoryEventType.TaskFailed,
-                        event_details=EventDetails(
-                            taskFailedEventDetails=TaskFailedEventDetails(
-                                error=StatesErrorNameType.StatesRuntime.to_name(), cause=cause
-                            )
-                        ),
-                    )
-                )
+            output_value = extract_json(self.json_path, input_value)
         # TODO: introduce copy on write approach
         env.stack.append(copy.deepcopy(output_value))
 
