@@ -1,11 +1,9 @@
 import json
 import re
-from typing import Final
+from typing import Any, Final
 
 from jsonpath_ng.ext import parse
 from jsonpath_ng.jsonpath import Index
-
-from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 _PATTERN_SINGLETON_ARRAY_ACCESS_OUTPUT: Final[str] = r"\[\d+\]$"
 
@@ -15,14 +13,12 @@ def _is_singleton_array_access(path: str) -> bool:
     return bool(re.search(_PATTERN_SINGLETON_ARRAY_ACCESS_OUTPUT, path))
 
 
-def extract_json(path: str, data: json) -> json:
+def extract_json(path: str, data: Any) -> json:
     input_expr = parse(path)
 
     matches = input_expr.find(data)
     if not matches:
-        raise RuntimeError(
-            f"The JSONPath {path} could not be found in the input {to_json_str(data)}"
-        )
+        raise ValueError(f"The JSONPath {path} could not be found in the input")
 
     if len(matches) > 1 or isinstance(matches[0].path, Index):
         value = [match.value for match in matches]

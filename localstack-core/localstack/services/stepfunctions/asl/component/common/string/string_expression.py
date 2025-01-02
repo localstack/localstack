@@ -1,13 +1,26 @@
 import abc
 import copy
-from typing import Any, Final
+from typing import Any, Final, Optional
 
+from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
+from localstack.services.events.utils import to_json_str
+from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
+    FailureEvent,
+    FailureEventException,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
+    StatesErrorName,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
+    StatesErrorNameType,
+)
 from localstack.services.stepfunctions.asl.component.common.query_language import QueryLanguageMode
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.component.intrinsic.jsonata import (
     get_intrinsic_functions_declarations,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
+from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.jsonata.jsonata import (
     JSONataExpression,
     VariableDeclarations,
@@ -19,9 +32,23 @@ from localstack.services.stepfunctions.asl.jsonata.jsonata import (
 from localstack.services.stepfunctions.asl.jsonata.validations import (
     validate_jsonata_expression_output,
 )
-from localstack.services.stepfunctions.asl.utils.json_path import extract_json
+from localstack.services.stepfunctions.asl.utils.json_path import (
+    extract_json,
+)
 
 JSONPATH_ROOT_PATH: Final[str] = "$"
+
+
+class NoSuchJsonPathError(Exception):
+    json_path: Final[str]
+    data: Final[str]
+
+    def __init__(self, json_path: str, data: str):
+        self.json_path = json_path
+        self.data = data
+
+    def __str__(self):
+        return f"The JSONPath '{self.json_path}' could not be found in the input '{self.data}'"
 
 
 class StringExpression(EvalComponent, abc.ABC):
@@ -29,6 +56,9 @@ class StringExpression(EvalComponent, abc.ABC):
 
     def __init__(self, literal_value: str):
         self.literal_value = literal_value
+
+    def _field_name(self) -> Optional[str]:
+        return None
 
 
 class StringExpressionSimple(StringExpression, abc.ABC): ...
@@ -54,22 +84,50 @@ class StringJsonPath(StringSampler):
         if self.json_path == JSONPATH_ROOT_PATH:
             output_value = input_value
         else:
-            output_value = extract_json(self.json_path, input_value)
+            try:
+                output_value = extract_json(self.json_path, input_value)
+            except ValueError:
+                input_value_json_str = to_json_str(input_value)
+                if env.next_field_name is not None:
+                    cause = (
+                        f"The JSONPath '{self.json_path}' specified for the field '{env.next_field_name}' "
+                        f"could not be found in the input '{input_value_json_str}'"
+                    )
+                    raise FailureEventException(
+                        failure_event=FailureEvent(
+                            env=env,
+                            error_name=StatesErrorName(typ=StatesErrorNameType.StatesRuntime),
+                            event_type=HistoryEventType.TaskFailed,
+                            event_details=EventDetails(
+                                taskFailedEventDetails=TaskFailedEventDetails(
+                                    error=StatesErrorNameType.StatesRuntime.to_name(), cause=cause
+                                )
+                            ),
+                        )
+                    )
+                raise NoSuchJsonPathError(self.json_path, input_value_json_str)
         # TODO: introduce copy on write approach
         env.stack.append(copy.deepcopy(output_value))
 
 
 class StringContextPath(StringJsonPath):
+    context_object_path: Final[str]
+
     def __init__(self, context_object_path: str):
         json_path = context_object_path[1:]
         super().__init__(json_path=json_path)
+        self.context_object_path = context_object_path
 
     def _eval_body(self, env: Environment) -> None:
         input_value = env.states.context_object.context_object_data
         if self.json_path == JSONPATH_ROOT_PATH:
             output_value = input_value
         else:
-            output_value = extract_json(self.json_path, input_value)
+            try:
+                output_value = extract_json(self.json_path, input_value)
+            except ValueError:
+                input_value_json_str = to_json_str(input_value)
+                raise NoSuchJsonPathError(self.context_object_path, input_value_json_str)
         # TODO: introduce copy on write approach
         env.stack.append(copy.deepcopy(output_value))
 

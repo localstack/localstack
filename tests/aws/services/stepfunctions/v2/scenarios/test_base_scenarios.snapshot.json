@@ -25045,5 +25045,194 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_invalid_jsonpath[INVALID_JSONPATH_IN_ERRORPATH]": {
+    "recorded-date": "30-12-2024, 14:57:21",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "pass",
+              "output": {
+                "Error": "error-value"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "error-value"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "fail"
+            },
+            "timestamp": "timestamp",
+            "type": "FailStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'fail' (entered at the event id #4). The JSONPath '$.ErrorX' specified for the field 'ErrorPath' could not be found in the input '{\"Error\":\"error-value\"}'",
+              "error": "States.Runtime"
+            },
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_invalid_jsonpath[INVALID_JSONPATH_IN_STRING_EXPR_JSONPATH]": {
+    "recorded-date": "30-12-2024, 14:57:36",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'pass' (entered at the event id #2). The JSONPath '$.no_such_jsonpath' specified for the field 'value.$' could not be found in the input '{\"int-literal\": 0}'",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_invalid_jsonpath[INVALID_JSONPATH_IN_STRING_EXPR_CONTEXTPATH]": {
+    "recorded-date": "30-12-2024, 14:57:51",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'pass' (entered at the event id #2). The JSONPath '$$.Execution.Input.no_such_jsonpath' specified for the field 'value.$' could not be found in the input '{\"Execution\":{\"Id\":\"arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>\",\"Input\":{\"int-literal\":0},\"StartTime\":\"date\",\"Name\":\"<ExecArnPart_0idx>\",\"RoleArn\":\"snf_role_arn\",\"RedriveCount\":0},\"StateMachine\":{\"Id\":\"arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>\",\"Name\":\"<ArnPart_0idx>\"},\"State\":{\"Name\":\"pass\",\"EnteredTime\":\"date\"}}'",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -16,12 +16,11 @@ from localstack.services.stepfunctions.asl.component.common.payload.payloadvalue
     PayloadValue,
 )
 from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
+    NoSuchJsonPathError,
     StringExpressionSimple,
-    StringJsonPath,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
-from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 
 class PayloadBinding(PayloadValue, abc.ABC):
@@ -50,25 +49,23 @@ class PayloadBindingStringExpressionSimple(PayloadBinding):
     def _eval_val(self, env: Environment) -> Any:
         try:
             self.string_expression_simple.eval(env=env)
-        except RuntimeError as runtime_error:
-            if isinstance(self.string_expression_simple, StringJsonPath):
-                input_value_str = (
-                    to_json_str(env.stack[1]) if env.stack else "<no input value found>"
-                )
-                failure_event = FailureEvent(
+        except NoSuchJsonPathError as error:
+            cause = (
+                f"The JSONPath '{error.json_path}' specified for the field '{self.field}.$' "
+                f"could not be found in the input '{error.data}'"
+            )
+            raise FailureEventException(
+                failure_event=FailureEvent(
                     env=env,
                     error_name=StatesErrorName(typ=StatesErrorNameType.StatesRuntime),
                     event_type=HistoryEventType.TaskFailed,
                     event_details=EventDetails(
                         taskFailedEventDetails=TaskFailedEventDetails(
-                            error=StatesErrorNameType.StatesRuntime.to_name(),
-                            cause=f"The JSONPath {self.string_expression_simple.literal_value} specified for the field {self.field}.$ could not be found in the input {input_value_str}",
+                            error=StatesErrorNameType.StatesRuntime.to_name(), cause=cause
                         )
                     ),
                 )
-                raise FailureEventException(failure_event=failure_event)
-            else:
-                raise runtime_error
+            )
 
         value = env.stack.pop()
         return value

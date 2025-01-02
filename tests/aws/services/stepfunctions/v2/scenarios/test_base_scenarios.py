@@ -2494,3 +2494,42 @@ class TestBaseScenarios:
             definition,
             exec_input,
         )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "template",
+        [
+            ST.load_sfn_template(ST.INVALID_JSONPATH_IN_ERRORPATH),
+            ST.load_sfn_template(ST.INVALID_JSONPATH_IN_STRING_EXPR_JSONPATH),
+            pytest.param(
+                ST.load_sfn_template(ST.INVALID_JSONPATH_IN_STRING_EXPR_CONTEXTPATH),
+                marks=pytest.mark.skipif(
+                    condition=not is_aws_cloud(),
+                    reason="serialisation of the context object bindings is unordered",
+                ),
+            ),
+        ],
+        ids=[
+            "INVALID_JSONPATH_IN_ERRORPATH",
+            "INVALID_JSONPATH_IN_STRING_EXPR_JSONPATH",
+            "INVALID_JSONPATH_IN_STRING_EXPR_CONTEXTPATH",
+        ],
+    )
+    def test_invalid_jsonpath(
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        snapshot,
+        template,
+    ):
+        definition = json.dumps(template)
+        exec_input = json.dumps({"int-literal": 0})
+        create_and_record_execution(
+            aws_client,
+            create_state_machine_iam_role,
+            create_state_machine,
+            snapshot,
+            definition,
+            exec_input,
+        )

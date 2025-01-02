@@ -247,3 +247,13 @@ class ScenariosTemplate(TemplateLoader):
     RAISE_FAILURE_CAUSE_JSONATA: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/fail_cause_jsonata.json5"
     )
+
+    INVALID_JSONPATH_IN_ERRORPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_errorpath.json5"
+    )
+    INVALID_JSONPATH_IN_STRING_EXPR_JSONPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_string_expr_jsonpath.json5"
+    )
+    INVALID_JSONPATH_IN_STRING_EXPR_CONTEXTPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_string_expr_contextpath.json5"
+    )
