@@ -23,10 +23,10 @@ from localstack.utils.strings import md5
 
 from .paths import CommunityContainerPaths, ContainerPaths, HostPaths, ProContainerPaths
 
-# TODO: docs
+# Type representing how to extract a specific path from a common root path, typically a lambda function
 PathMappingExtractor = Callable[[HostPaths], Path]
 
-# TODO: docs
+# Declaration of which local packages can be mounted into the container, and their locations on the host
 HOST_PATH_MAPPINGS: dict[
     str,
     PathMappingExtractor,
