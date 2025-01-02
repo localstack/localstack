@@ -24,7 +24,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
     FailureEvent,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
-    ComputedCredentials,
+    StateCredentials,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceCondition,
@@ -294,7 +294,7 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-        task_credentials: ComputedCredentials,
+        state_credentials: StateCredentials,
     ):
         # TODO: add support for task credentials
 

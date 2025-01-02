@@ -1,4 +1,5 @@
-from typing import Final, Optional
+from dataclasses import dataclass
+from typing import Final
 
 from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
     StringExpression,
@@ -6,8 +7,10 @@ from localstack.services.stepfunctions.asl.component.common.string.string_expres
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 
-_CREDENTIALS_ROLE_ARN_KEY: Final[str] = "RoleArn"
-ComputedCredentials = dict
+
+@dataclass
+class StateCredentials:
+    role_arn: str
 
 
 class RoleArn(EvalComponent):
@@ -26,12 +29,8 @@ class Credentials(EvalComponent):
     def __init__(self, role_arn: RoleArn):
         self.role_arn = role_arn
 
-    @staticmethod
-    def get_role_arn_from(computed_credentials: ComputedCredentials) -> Optional[str]:
-        return computed_credentials.get(_CREDENTIALS_ROLE_ARN_KEY)
-
     def _eval_body(self, env: Environment) -> None:
         self.role_arn.eval(env=env)
         role_arn = env.stack.pop()
-        computes_credentials: ComputedCredentials = {_CREDENTIALS_ROLE_ARN_KEY: role_arn}
+        computes_credentials = StateCredentials(role_arn=role_arn)
         env.stack.append(computes_credentials)
