@@ -1634,6 +1634,105 @@ class TestEventRule:
             )
             snapshot.match(f"events-{source}", events)
 
+    @markers.aws.validated
+    def test_process_pattern_to_single_matching_rules_single_target(
+        self,
+        create_lambda_function,
+        events_create_event_bus,
+        events_put_rule,
+        aws_client,
+        snapshot,
+    ):
+        """Three rules with all the same lambda target, but different patterns as condition.
+        The lambda should onl be invoked by the rule matching the event pattern."""
+
+        bus_name = f"test-bus-{short_uid()}"
+        events_create_event_bus(Name=bus_name)
+
+        # create lambda target
+        function_name = f"lambda-func-{short_uid()}"
+        create_lambda_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+        )
+        lambda_function_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
+
+        # create rules
+        input_path_map = {"detail": "$.detail"}
+        patterns = [
+            {"detail": {"payload": {"id": [{"exists": True}]}}},
+            {"detail": {"id": [{"exists": True}]}},
+        ]
+        input_transformers = [
+            {
+                "InputPathsMap": input_path_map,
+                "InputTemplate": '{"detail-payload-with-id": <detail>}',
+            },
+            {
+                "InputPathsMap": input_path_map,
+                "InputTemplate": '{"detail-with-id": <detail>}',
+            },
+        ]
+        for i, pattern, input_transformer in zip(range(3), patterns, input_transformers):
+            rule_name = f"test-rule-{i}-{short_uid()}"
+            rule = events_put_rule(
+                Name=rule_name,
+                EventBusName=bus_name,
+                EventPattern=json.dumps(pattern),
+                State="ENABLED",
+            )
+            rule_arn = rule["RuleArn"]
+
+            aws_client.lambda_.add_permission(
+                FunctionName=function_name,
+                StatementId=f"{rule_name}-Event",
+                Action="lambda:InvokeFunction",
+                Principal="events.amazonaws.com",
+                SourceArn=rule_arn,
+            )
+
+            target_id = f"test-target-{i}-{short_uid()}"
+            aws_client.events.put_targets(
+                Rule=rule_name,
+                EventBusName=bus_name,
+                Targets=[
+                    {
+                        "Id": target_id,
+                        "Arn": lambda_function_arn,
+                        "InputTransformer": input_transformer,
+                    }
+                ],
+            )
+
+        details = [
+            {"payload": {"id": "123"}},
+            {"id": "123"},
+        ]
+        for i, detail in zip(range(3), details):
+            num_events = i + 1
+            aws_client.events.put_events(
+                Entries=[
+                    {
+                        "EventBusName": bus_name,
+                        "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                        "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                        "Detail": json.dumps(detail),
+                    }
+                ],
+            )
+
+            # check lambda invocation
+            events = retry(
+                check_expected_lambda_log_events_length,
+                retries=3,
+                sleep=1,
+                function_name=function_name,
+                expected_length=num_events,
+                logs_client=aws_client.logs,
+            )
+            snapshot.match(f"events-{num_events}", events)
+
 
 class TestEventPattern:
     @markers.aws.validated

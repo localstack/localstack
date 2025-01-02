@@ -2140,5 +2140,33 @@
         }
       ]
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_process_pattern_to_single_matching_rules_single_target": {
+    "recorded-date": "02-01-2025, 12:47:30",
+    "recorded-content": {
+      "events-1": [
+        {
+          "detail-payload-with-id": {
+            "payload": {
+              "id": "123"
+            }
+          }
+        }
+      ],
+      "events-2": [
+        {
+          "detail-payload-with-id": {
+            "payload": {
+              "id": "123"
+            }
+          }
+        },
+        {
+          "detail-with-id": {
+            "id": "123"
+          }
+        }
+      ]
+    }
   }
 }
