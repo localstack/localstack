@@ -140,12 +140,13 @@ def _get_description_or_raise_not_found(
     if not delivery_stream_description:
         # the random name may be created (compare without random part)
         full_name = None
-        random_index = delivery_stream_name.rfind('-')
+        random_index = delivery_stream_name.rfind("-")
         without_random_part = delivery_stream_name[:random_index]
         for name in store.delivery_streams.keys():
             if name.startswith(without_random_part):
                 full_name = name
-                LOG.info(f"Name {name} is used instead of provided name {delivery_stream_name}.")
+                message = f"Name {name} is used instead of provided name {delivery_stream_name}."
+                LOG.info(message)
         if full_name:
             delivery_stream_description = store.delivery_streams.get(full_name)
         else:
