@@ -20,6 +20,7 @@ from localstack.utils.run import run_interactive
 from localstack.utils.strings import short_uid
 
 from .configurators import (
+    HOST_PATH_MAPPINGS,
     ConfigEnvironmentConfigurator,
     DependencyMountConfigurator,
     EntryPointMountConfigurator,
@@ -119,6 +120,7 @@ from .paths import HostPaths
     "-l",
     multiple=True,
     required=False,
+    type=click.Choice(HOST_PATH_MAPPINGS.keys(), case_sensitive=False),
     help="Mount specified packages into the container",
 )
 @click.argument("command", nargs=-1, required=False)
@@ -306,6 +308,7 @@ def run(
                 SourceVolumeMountConfigurator(
                     host_paths=host_paths,
                     pro=pro,
+                    chosen_packages=local_packages,
                 )
             )
         if mount_entrypoints:

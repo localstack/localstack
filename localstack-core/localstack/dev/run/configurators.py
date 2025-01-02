@@ -6,6 +6,7 @@ import gzip
 import os
 from pathlib import Path, PurePosixPath
 from tempfile import gettempdir
+from typing import Callable
 
 from localstack import config, constants
 from localstack.utils.bootstrap import ContainerConfigurators
@@ -21,6 +22,20 @@ from localstack.utils.run import run
 from localstack.utils.strings import md5
 
 from .paths import CommunityContainerPaths, ContainerPaths, HostPaths, ProContainerPaths
+
+# TODO: docs
+PathMappingExtractor = Callable[[HostPaths], Path]
+
+# TODO: docs
+HOST_PATH_MAPPINGS: dict[
+    str,
+    PathMappingExtractor,
+] = {
+    "moto": lambda paths: paths.moto_project_dir / "moto",
+    "postgresql_proxy": lambda paths: paths.postgresql_proxy / "postgresql_proxy",
+    "rolo": lambda paths: paths.rolo_dir / "rolo",
+    "plux": lambda paths: paths.workspace_dir / "plux" / "plugin",
+}
 
 
 class ConfigEnvironmentConfigurator:
@@ -117,10 +132,12 @@ class SourceVolumeMountConfigurator:
         *,
         host_paths: HostPaths = None,
         pro: bool = False,
+        chosen_packages: list[str] | None = None,
     ):
         self.host_paths = host_paths or HostPaths()
         self.container_paths = ProContainerPaths() if pro else CommunityContainerPaths()
         self.pro = pro
+        self.chosen_packages = chosen_packages or []
 
     def __call__(self, cfg: ContainerConfiguration):
         # localstack source code if available
@@ -142,17 +159,10 @@ class SourceVolumeMountConfigurator:
                     )
                 )
 
-        # moto code if available
-        self.try_mount_to_site_packages(cfg, self.host_paths.moto_project_dir / "moto")
-
-        # postgresql-proxy code if available
-        self.try_mount_to_site_packages(cfg, self.host_paths.postgresql_proxy / "postgresql_proxy")
-
-        # rolo code if available
-        self.try_mount_to_site_packages(cfg, self.host_paths.rolo_dir / "rolo")
-
-        # plux
-        self.try_mount_to_site_packages(cfg, self.host_paths.workspace_dir / "plux" / "plugin")
+        # mount local code checkouts if possible
+        for name, path_extractor in HOST_PATH_MAPPINGS.items():
+            if name in self.chosen_packages:
+                self.try_mount_to_site_packages(cfg, path_extractor(self.host_paths))
 
         # docker entrypoint
         if self.pro:
