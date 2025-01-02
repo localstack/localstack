@@ -5,6 +5,9 @@ from typing import Callable, Final
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.resource_eval.resource_eval import (
     ResourceEval,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
+    StateCredentials,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceRuntimePart,
 )
@@ -15,31 +18,41 @@ from localstack.utils.strings import camel_to_snake_case, to_str
 
 class ResourceEvalS3(ResourceEval):
     _HANDLER_REFLECTION_PREFIX: Final[str] = "_handle_"
-    _API_ACTION_HANDLER_TYPE = Callable[[Environment, ResourceRuntimePart], None]
+    _API_ACTION_HANDLER_TYPE = Callable[[Environment, ResourceRuntimePart, StateCredentials], None]
 
     @staticmethod
-    def _get_s3_client(resource_runtime_part: ResourceRuntimePart):
+    def _get_s3_client(
+        resource_runtime_part: ResourceRuntimePart, state_credentials: StateCredentials
+    ):
         return boto_client_for(
-            region=resource_runtime_part.region,
-            account=resource_runtime_part.account,
-            service="s3",
+            region=resource_runtime_part.region, service="s3", state_credentials=state_credentials
         )
 
     @staticmethod
-    def _handle_get_object(env: Environment, resource_runtime_part: ResourceRuntimePart) -> None:
-        s3_client = ResourceEvalS3._get_s3_client(resource_runtime_part=resource_runtime_part)
+    def _handle_get_object(
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        state_credentials: StateCredentials,
+    ) -> None:
+        s3_client = ResourceEvalS3._get_s3_client(
+            resource_runtime_part=resource_runtime_part, state_credentials=state_credentials
+        )
         parameters = env.stack.pop()
-        response = s3_client.get_object(**parameters)
+        response = s3_client.get_object(**parameters)  # noqa
         content = to_str(response["Body"].read())
         env.stack.append(content)
 
     @staticmethod
     def _handle_list_objects_v2(
-        env: Environment, resource_runtime_part: ResourceRuntimePart
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        state_credentials: StateCredentials,
     ) -> None:
-        s3_client = ResourceEvalS3._get_s3_client(resource_runtime_part=resource_runtime_part)
+        s3_client = ResourceEvalS3._get_s3_client(
+            resource_runtime_part=resource_runtime_part, state_credentials=state_credentials
+        )
         parameters = env.stack.pop()
-        response = s3_client.list_objects_v2(**parameters)
+        response = s3_client.list_objects_v2(**parameters)  # noqa
         contents = response["Contents"]
         env.stack.append(contents)
 
@@ -55,4 +68,5 @@ class ResourceEvalS3(ResourceEval):
         self.resource.eval(env=env)
         resource_runtime_part: ResourceRuntimePart = env.stack.pop()
         resolver_handler = self._get_api_action_handler()
-        resolver_handler(env, resource_runtime_part)
+        state_credentials = StateCredentials(role_arn=env.aws_execution_details.role_arn)
+        resolver_handler(env, resource_runtime_part, state_credentials)

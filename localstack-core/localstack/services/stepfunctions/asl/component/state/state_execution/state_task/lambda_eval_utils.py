@@ -4,7 +4,7 @@ from typing import IO, Any, Final, Optional, Union
 
 from localstack.aws.api.lambda_ import InvocationResponse
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
-    ComputedCredentials,
+    StateCredentials,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
@@ -39,10 +39,10 @@ def _from_payload(payload_streaming_body: IO[bytes]) -> Union[json, str]:
 
 
 def exec_lambda_function(
-    env: Environment, parameters: dict, region: str, account: str, credentials: ComputedCredentials
+    env: Environment, parameters: dict, region: str, state_credentials: StateCredentials
 ) -> None:
     lambda_client = boto_client_for(
-        region=region, account=account, service="lambda", credentials=credentials
+        service="lambda", region=region, state_credentials=state_credentials
     )
 
     invocation_resp: InvocationResponse = lambda_client.invoke(**parameters)
