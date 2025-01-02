@@ -18,6 +18,7 @@ from localstack.services.events.target_helper import send_event_to_api_destinati
 from localstack.services.events.utils import (
     event_time_to_time_string,
     get_trace_header_encoded_region_account,
+    is_nested_in_string,
     to_json_str,
 )
 from localstack.utils import collections
@@ -75,23 +76,50 @@ def get_template_replacements(
 
 
 def replace_template_placeholders(
-    template: str, replacements: dict[str, Any], is_json: bool
+    template: str, replacements: dict[str, Any], is_json_template: bool
 ) -> TransformedEvent:
     """Replace placeholders defined by <key> in the template with the values from the replacements dict.
     Can handle single template string or template dict."""
 
     def replace_placeholder(match):
         key = match.group(1)
-        value = replacements.get(key, match.group(0))  # handle non defined placeholders
-        if is_json:
-            return to_json_str(value)
+        value = replacements.get(key, "")  # handle non defined placeholders
         if isinstance(value, datetime.datetime):
             return event_time_to_time_string(value)
+        if isinstance(value, dict):
+            json_str = to_json_str(value).replace('\\"', '"')
+            if is_json_template:
+                return json_str
+            return json_str.replace('"', "")
+        if isinstance(value, list):
+            if is_json_template:
+                return json.dumps(value)
+            return f"[{','.join(value)}]"
+        if is_nested_in_string(template, match):
+            return value
+        if is_json_template:
+            return json.dumps(value)
         return value
 
-    formatted_template = TRANSFORMER_PLACEHOLDER_PATTERN.sub(replace_placeholder, template)
+    formatted_template = TRANSFORMER_PLACEHOLDER_PATTERN.sub(replace_placeholder, template).replace(
+        "\\n", "\n"
+    )
 
-    return json.loads(formatted_template) if is_json else formatted_template[1:-1]
+    if is_json_template:
+        try:
+            loaded_json_template = json.loads(formatted_template)
+            return loaded_json_template
+        except json.JSONDecodeError:
+            LOG.info(
+                json.dumps(
+                    {
+                        "InfoCode": "InternalInfoEvents at transform_event",
+                        "InfoMessage": f"Replaced template is not valid json: {formatted_template}",
+                    }
+                )
+            )
+    else:
+        return formatted_template[1:-1]
 
 
 class TargetSender(ABC):
@@ -154,7 +182,10 @@ class TargetSender(ABC):
                 event = transform_event_with_target_input_path(input_path, event)
             if input_transformer := self.target.get("InputTransformer"):
                 event = self.transform_event_with_target_input_transformer(input_transformer, event)
-        self.send_event(event)
+        if event:
+            self.send_event(event)
+        else:
+            LOG.info("No event to send to target %s", self.target.get("Id"))
 
     def transform_event_with_target_input_transformer(
         self, input_transformer: InputTransformer, event: FormattedEvent
@@ -164,9 +195,9 @@ class TargetSender(ABC):
         predefined_template_replacements = self._get_predefined_template_replacements(event)
         template_replacements.update(predefined_template_replacements)
 
-        is_json_format = input_template.strip().startswith(("{"))
+        is_json_template = input_template.strip().startswith(("{"))
         populated_template = replace_template_placeholders(
-            input_template, template_replacements, is_json_format
+            input_template, template_replacements, is_json_template
         )
 
         return populated_template
