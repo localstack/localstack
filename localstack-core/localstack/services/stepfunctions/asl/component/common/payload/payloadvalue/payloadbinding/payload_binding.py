@@ -1,26 +1,13 @@
 import abc
-from typing import Any, Final
+from typing import Any, Final, Optional
 
-from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
-from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
-    FailureEvent,
-    FailureEventException,
-)
-from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
-    StatesErrorName,
-)
-from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
-    StatesErrorNameType,
-)
 from localstack.services.stepfunctions.asl.component.common.payload.payloadvalue.payload_value import (
     PayloadValue,
 )
 from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
-    NoSuchJsonPathError,
     StringExpressionSimple,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 
 
 class PayloadBinding(PayloadValue, abc.ABC):
@@ -28,6 +15,9 @@ class PayloadBinding(PayloadValue, abc.ABC):
 
     def __init__(self, field: str):
         self.field = field
+
+    def _field_name(self) -> Optional[str]:
+        return self.field
 
     @abc.abstractmethod
     def _eval_val(self, env: Environment) -> Any: ...
@@ -46,27 +36,11 @@ class PayloadBindingStringExpressionSimple(PayloadBinding):
         super().__init__(field=field)
         self.string_expression_simple = string_expression_simple
 
-    def _eval_val(self, env: Environment) -> Any:
-        try:
-            self.string_expression_simple.eval(env=env)
-        except NoSuchJsonPathError as error:
-            cause = (
-                f"The JSONPath '{error.json_path}' specified for the field '{self.field}.$' "
-                f"could not be found in the input '{error.data}'"
-            )
-            raise FailureEventException(
-                failure_event=FailureEvent(
-                    env=env,
-                    error_name=StatesErrorName(typ=StatesErrorNameType.StatesRuntime),
-                    event_type=HistoryEventType.TaskFailed,
-                    event_details=EventDetails(
-                        taskFailedEventDetails=TaskFailedEventDetails(
-                            error=StatesErrorNameType.StatesRuntime.to_name(), cause=cause
-                        )
-                    ),
-                )
-            )
+    def _field_name(self) -> Optional[str]:
+        return f"{self.field}.$"
 
+    def _eval_val(self, env: Environment) -> Any:
+        self.string_expression_simple.eval(env=env)
         value = env.stack.pop()
         return value
 

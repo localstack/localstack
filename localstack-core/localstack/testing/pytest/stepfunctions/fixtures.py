@@ -178,7 +178,7 @@ def create_state_machine_iam_role(cleanups, create_state_machine):
                     "Statement": [
                         {
                             "Effect": "Allow",
-                            "Action": "s3:ListBuckets",
+                            "Action": ["*"],
                             "Resource": ["*"],
                         }
                     ],

@@ -251,9 +251,24 @@ class ScenariosTemplate(TemplateLoader):
     INVALID_JSONPATH_IN_ERRORPATH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/invalid_jsonpath_in_errorpath.json5"
     )
+    INVALID_JSONPATH_IN_CAUSEPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_causepath.json5"
+    )
     INVALID_JSONPATH_IN_STRING_EXPR_JSONPATH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/invalid_jsonpath_in_string_expr_jsonpath.json5"
     )
     INVALID_JSONPATH_IN_STRING_EXPR_CONTEXTPATH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/invalid_jsonpath_in_string_expr_contextpath.json5"
+    )
+    INVALID_JSONPATH_IN_HEARTBEATSECONDSPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_heartbeatsecondspath.json5"
+    )
+    INVALID_JSONPATH_IN_TIMEOUTSECONDSPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_timeoutsecondspath.json5"
+    )
+    INVALID_JSONPATH_IN_INPUTPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_inputpath.json5"
+    )
+    INVALID_JSONPATH_IN_OUTPUTPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_outputpath.json5"
     )

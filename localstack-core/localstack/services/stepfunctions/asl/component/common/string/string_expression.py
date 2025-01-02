@@ -33,22 +33,11 @@ from localstack.services.stepfunctions.asl.jsonata.validations import (
     validate_jsonata_expression_output,
 )
 from localstack.services.stepfunctions.asl.utils.json_path import (
+    NoSuchJsonPathError,
     extract_json,
 )
 
 JSONPATH_ROOT_PATH: Final[str] = "$"
-
-
-class NoSuchJsonPathError(Exception):
-    json_path: Final[str]
-    data: Final[str]
-
-    def __init__(self, json_path: str, data: str):
-        self.json_path = json_path
-        self.data = data
-
-    def __str__(self):
-        return f"The JSONPath '{self.json_path}' could not be found in the input '{self.data}'"
 
 
 class StringExpression(EvalComponent, abc.ABC):
@@ -86,26 +75,24 @@ class StringJsonPath(StringSampler):
         else:
             try:
                 output_value = extract_json(self.json_path, input_value)
-            except ValueError:
+            except NoSuchJsonPathError:
                 input_value_json_str = to_json_str(input_value)
-                if env.next_field_name is not None:
-                    cause = (
-                        f"The JSONPath '{self.json_path}' specified for the field '{env.next_field_name}' "
-                        f"could not be found in the input '{input_value_json_str}'"
+                cause = (
+                    f"The JSONPath '{self.json_path}' specified for the field '{env.next_field_name}' "
+                    f"could not be found in the input '{input_value_json_str}'"
+                )
+                raise FailureEventException(
+                    failure_event=FailureEvent(
+                        env=env,
+                        error_name=StatesErrorName(typ=StatesErrorNameType.StatesRuntime),
+                        event_type=HistoryEventType.TaskFailed,
+                        event_details=EventDetails(
+                            taskFailedEventDetails=TaskFailedEventDetails(
+                                error=StatesErrorNameType.StatesRuntime.to_name(), cause=cause
+                            )
+                        ),
                     )
-                    raise FailureEventException(
-                        failure_event=FailureEvent(
-                            env=env,
-                            error_name=StatesErrorName(typ=StatesErrorNameType.StatesRuntime),
-                            event_type=HistoryEventType.TaskFailed,
-                            event_details=EventDetails(
-                                taskFailedEventDetails=TaskFailedEventDetails(
-                                    error=StatesErrorNameType.StatesRuntime.to_name(), cause=cause
-                                )
-                            ),
-                        )
-                    )
-                raise NoSuchJsonPathError(self.json_path, input_value_json_str)
+                )
         # TODO: introduce copy on write approach
         env.stack.append(copy.deepcopy(output_value))
 
@@ -125,9 +112,24 @@ class StringContextPath(StringJsonPath):
         else:
             try:
                 output_value = extract_json(self.json_path, input_value)
-            except ValueError:
+            except NoSuchJsonPathError:
                 input_value_json_str = to_json_str(input_value)
-                raise NoSuchJsonPathError(self.context_object_path, input_value_json_str)
+                cause = (
+                    f"The JSONPath '${self.json_path}' specified for the field '{env.next_field_name}' "
+                    f"could not be found in the input '{input_value_json_str}'"
+                )
+                raise FailureEventException(
+                    failure_event=FailureEvent(
+                        env=env,
+                        error_name=StatesErrorName(typ=StatesErrorNameType.StatesRuntime),
+                        event_type=HistoryEventType.TaskFailed,
+                        event_details=EventDetails(
+                            taskFailedEventDetails=TaskFailedEventDetails(
+                                error=StatesErrorNameType.StatesRuntime.to_name(), cause=cause
+                            )
+                        ),
+                    )
+                )
         # TODO: introduce copy on write approach
         env.stack.append(copy.deepcopy(output_value))
 

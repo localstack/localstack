@@ -40,7 +40,6 @@ from localstack.services.stepfunctions.asl.component.common.query_language impor
 )
 from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
     JSONPATH_ROOT_PATH,
-    NoSuchJsonPathError,
     StringJsonPath,
 )
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
@@ -209,11 +208,8 @@ class CommonStateField(EvalComponent, ABC):
             env.stack.append(env.states.get_input())
 
         # Exec the state's logic.
-        try:
-            self._eval_state(env)
-        except NoSuchJsonPathError:
-            pass
-        #
+        self._eval_state(env)
+
         if not isinstance(env.program_state(), ProgramRunning):
             return
 
