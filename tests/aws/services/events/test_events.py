@@ -14,6 +14,7 @@ from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
+from localstack.aws.api.lambda_ import Runtime
 from localstack.services.events.v1.provider import _get_events_tmp_dir
 from localstack.testing.aws.eventbus_utils import allow_event_rule_to_sqs_queue
 from localstack.testing.aws.util import is_aws_cloud
@@ -21,11 +22,15 @@ from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
 from localstack.utils.strings import long_uid, short_uid
 from localstack.utils.sync import retry
+from localstack.utils.testutil import check_expected_lambda_log_events_length
 from tests.aws.services.events.helper_functions import (
     assert_valid_event,
     is_old_provider,
     is_v2_provider,
     sqs_collect_messages,
+)
+from tests.aws.services.lambda_.test_lambda import (
+    TEST_LAMBDA_PYTHON_ECHO,
 )
 
 EVENT_DETAIL = {"command": "update-account", "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"}}
@@ -1401,7 +1406,7 @@ class TestEventRule:
         snapshot.match("list-targets-after-update", response)
 
     @markers.aws.validated
-    def test_process_to_multiple_matching_rules(
+    def test_process_to_multiple_matching_rules_different_targets(
         self,
         events_create_event_bus,
         sqs_create_queue,
@@ -1480,6 +1485,79 @@ class TestEventRule:
         sqs_collect_messages(
             aws_client, targets["sqs_target_3"]["queue_url"], expected_events_count=1
         )
+
+    @markers.aws.validated
+    def test_process_to_multiple_matching_rules_single_target(
+        self,
+        create_lambda_function,
+        events_create_event_bus,
+        events_put_rule,
+        aws_client,
+        snapshot,
+    ):
+        """two rules with both the same lambda target, the lambda target should be invoked twice.
+        This will only work for certain targets, since e.g. sqs has message deduplication"""
+
+        bus_name = f"test-bus-{short_uid()}"
+        events_create_event_bus(Name=bus_name)
+
+        # create lambda target
+        function_name = f"lambda-func-{short_uid()}"
+        create_lambda_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+        )
+        lambda_function_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
+
+        # create rules
+        for i in range(2):
+            rule_name = f"test-rule-{i}-{short_uid()}"
+            rule = events_put_rule(
+                Name=rule_name,
+                EventBusName=bus_name,
+                EventPattern=json.dumps(TEST_EVENT_PATTERN_NO_DETAIL),
+                State="ENABLED",
+            )
+            rule_arn = rule["RuleArn"]
+
+            aws_client.lambda_.add_permission(
+                FunctionName=function_name,
+                StatementId=f"{rule_name}-Event",
+                Action="lambda:InvokeFunction",
+                Principal="events.amazonaws.com",
+                SourceArn=rule_arn,
+            )
+
+            target_id = f"test-target-{i}-{short_uid()}"
+            aws_client.events.put_targets(
+                Rule=rule_name,
+                EventBusName=bus_name,
+                Targets=[{"Id": target_id, "Arn": lambda_function_arn}],
+            )
+
+        # put event
+        aws_client.events.put_events(
+            Entries=[
+                {
+                    "EventBusName": bus_name,
+                    "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                    "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
+                }
+            ],
+        )
+
+        # check lambda invocation
+        events = retry(
+            check_expected_lambda_log_events_length,
+            retries=3,
+            sleep=1,
+            function_name=function_name,
+            expected_length=2,
+            logs_client=aws_client.logs,
+        )
+        snapshot.match("events", events)
 
 
 class TestEventPattern:

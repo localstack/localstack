@@ -1983,8 +1983,49 @@
       }
     }
   },
-  "tests/aws/services/events/test_events.py::TestEventRule::test_process_to_multiple_matching_rules": {
+  "tests/aws/services/events/test_events.py::TestEventRule::test_process_to_multiple_matching_rules_different_targets": {
     "recorded-date": "27-12-2024, 19:02:05",
     "recorded-content": {}
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_process_to_multiple_matching_rules_single_target": {
+    "recorded-date": "02-01-2025, 11:37:47",
+    "recorded-content": {
+      "events": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        }
+      ]
+    }
   }
 }
