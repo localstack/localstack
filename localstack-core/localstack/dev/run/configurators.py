@@ -160,9 +160,10 @@ class SourceVolumeMountConfigurator:
                 )
 
         # mount local code checkouts if possible
-        for name, path_extractor in HOST_PATH_MAPPINGS.items():
-            if name in self.chosen_packages:
-                self.try_mount_to_site_packages(cfg, path_extractor(self.host_paths))
+        for package_name in self.chosen_packages:
+            # Unconditional lookup because the CLI rejects incorect items
+            extractor = HOST_PATH_MAPPINGS[package_name]
+            self.try_mount_to_site_packages(cfg, extractor(self.host_paths))
 
         # docker entrypoint
         if self.pro:
