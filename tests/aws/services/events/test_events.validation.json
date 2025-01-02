@@ -1,7 +1,8 @@
 {
-  "tests/aws/services/events/test_events.py::TestEventRule::test_process_to_multiple_matching_rules_single_target": {
-    "last_validated_date": "2025-01-02T11:37:47+00:00"
+  "tests/aws/services/events/test_events.py::TestEventRule::test_process_to_single_matching_rules_single_target": {
+    "last_validated_date": "2025-01-02T12:09:21+00:00"
   }
+}
 }
 
 
