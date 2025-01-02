@@ -29,6 +29,7 @@ from localstack.services.lambda_.event_source_mapping.pollers.poller import (
 )
 from localstack.services.lambda_.event_source_mapping.pollers.sqs_poller import get_queue_url
 from localstack.utils.aws.arns import parse_arn, s3_bucket_name
+from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -316,7 +317,8 @@ class StreamPoller(Poller):
     def send_events_to_dlq(self, shard_id, events, context) -> None:
         dlq_arn = self.stream_parameters.get("DeadLetterConfig", {}).get("Arn")
         if dlq_arn:
-            dlq_event = self.create_dlq_event(shard_id, events, context)
+            failure_timstamp = get_current_time()
+            dlq_event = self.create_dlq_event(shard_id, events, context, failure_timstamp)
             # Send DLQ event to DLQ target
             parsed_arn = parse_arn(dlq_arn)
             service = parsed_arn["service"]
@@ -336,13 +338,15 @@ class StreamPoller(Poller):
                 dlq_event_with_payload = self.add_payload_to_dlq_event(dlq_event, events)
                 s3_client.put_object(
                     Bucket=s3_bucket_name(dlq_arn),
-                    Key=self.get_failure_s3_object_key(shard_id),
+                    Key=self.get_failure_s3_object_key(shard_id, failure_timstamp),
                     Body=json.dumps(dlq_event_with_payload),
                 )  # TODO include payload and check other specifics for S3
             else:
                 LOG.warning("Unsupported DLQ service %s", service)
 
-    def create_dlq_event(self, shard_id: str, events: list[dict], context: dict) -> dict:
+    def create_dlq_event(
+        self, shard_id: str, events: list[dict], context: dict, failure_timestamp: datetime
+    ) -> dict:
         first_record = events[0]
         first_record_arrival = get_datetime_from_timestamp(
             self.get_approximate_arrival_time(first_record)
@@ -363,9 +367,9 @@ class StreamPoller(Poller):
                 "startSequenceNumber": self.get_sequence_number(first_record),
                 "streamArn": self.source_arn,
             },
-            "timestamp": get_current_time()
-            .isoformat(timespec="milliseconds")
-            .replace("+00:00", "Z"),
+            "timestamp": failure_timestamp.isoformat(timespec="milliseconds").replace(
+                "+00:00", "Z"
+            ),
             "version": "1.0",
         }
 
@@ -393,13 +397,18 @@ class StreamPoller(Poller):
 
         return events, []
 
-    def get_failure_s3_object_key(self, shard_id):
-        return (
-            f'aws/lambda/{self.esm_config["UUID"]}/{shard_id}/TODO'  # TODO finish according to spec
-        )
+    def get_failure_s3_object_key(self, shard_id: str, failure_datetime: datetime) -> str:
+        """
+        From https://docs.aws.amazon.com/lambda/latest/dg/kinesis-on-failure-destination.html:
 
-        # TODO:
-        # from https://docs.aws.amazon.com/lambda/latest/dg/kinesis-on-failure-destination.html:
-        #
-        # The S3 object containing the invocation record uses the following naming convention:
-        # aws/lambda/<ESM-UUID>/<shardID>/YYYY/MM/DD/YYYY-MM-DDTHH.MM.SS-<Random UUID>
+        The S3 object containing the invocation record uses the following naming convention:
+        aws/lambda/<ESM-UUID>/<shardID>/YYYY/MM/DD/YYYY-MM-DDTHH.MM.SS-<Random UUID>
+
+        :return: Key for s3 object that invocation failure record will be put to
+        """
+        datetime_string_key = failure_datetime.strftime(
+            "%Y-%m-%dT%H:%M:%S"
+        )  # .isoformat() doesn't remove timezone info
+        esm_uuid = self.esm_config["UUID"]
+        random_uuid = long_uid()
+        return f"aws/lambda/{esm_uuid}/{shard_id}/{datetime_string_key}-{random_uuid}"  # TODO finish according to spec
