@@ -180,6 +180,7 @@ class EsmWorkerFactory:
                 ),
             )
             poller = DynamoDBPoller(
+                esm_config=self.esm_config,
                 source_arn=source_arn,
                 source_parameters=source_parameters,
                 source_client=source_client,

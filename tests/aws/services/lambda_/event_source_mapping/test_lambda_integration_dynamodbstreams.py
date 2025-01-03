@@ -548,6 +548,12 @@ class TestDynamoDBEventSourceMapping:
         messages = retry(verify_failure_received, retries=15, sleep=sleep, sleep_before=5)
         snapshot.match("destination_queue_messages", messages)
 
+    # FIXME UpdateTable is not returning a WarmThroughput property
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..TableDescription.WarmThroughput",
+        ],
+    )
     @markers.aws.validated
     def test_dynamodb_event_source_mapping_with_s3_on_failure_destination(
         self,

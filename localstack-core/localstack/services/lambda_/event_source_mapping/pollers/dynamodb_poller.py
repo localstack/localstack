@@ -4,6 +4,7 @@ from datetime import datetime
 from botocore.client import BaseClient
 
 from localstack.aws.api.dynamodbstreams import StreamStatus
+from localstack.aws.api.lambda_ import EventSourceMappingConfiguration
 from localstack.services.lambda_.event_source_mapping.event_processor import (
     EventProcessor,
 )
@@ -20,12 +21,14 @@ class DynamoDBPoller(StreamPoller):
         source_client: BaseClient | None = None,
         processor: EventProcessor | None = None,
         partner_resource_arn: str | None = None,
+        esm_config: EventSourceMappingConfiguration | None = None,
     ):
         super().__init__(
             source_arn,
             source_parameters,
             source_client,
             processor,
+            esm_config=esm_config,
             partner_resource_arn=partner_resource_arn,
         )
 
