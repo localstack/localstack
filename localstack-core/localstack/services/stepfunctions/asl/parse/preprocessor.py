@@ -8,7 +8,11 @@ from antlr4.tree.Tree import ParseTree, TerminalNodeImpl
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLLexer import ASLLexer
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLParser import ASLParser
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLParserVisitor import ASLParserVisitor
-from localstack.services.stepfunctions.asl.antlt4utils.antlr4utils import Antlr4Utils
+from localstack.services.stepfunctions.asl.antlt4utils.antlr4utils import (
+    from_string_literal,
+    is_production,
+    is_terminal,
+)
 from localstack.services.stepfunctions.asl.component.common.assign.assign_decl import AssignDecl
 from localstack.services.stepfunctions.asl.component.common.assign.assign_decl_binding import (
     AssignDeclBinding,
@@ -320,19 +324,19 @@ class Preprocessor(ASLParserVisitor):
         return self._query_language_per_scope[-1]
 
     def _open_query_language_scope(self, parse_tree: ParseTree) -> None:
-        production = Antlr4Utils.is_production(parse_tree)
+        production = is_production(parse_tree)
         if production is None:
             raise RuntimeError(f"Cannot expect QueryLanguage definition at depth: {parse_tree}")
 
         # Extract the QueryLanguage declaration at this ParseTree level, if any.
         query_language = None
         for child in production.children:
-            sub_production = Antlr4Utils.is_production(
-                child, ASLParser.RULE_top_layer_stmt
-            ) or Antlr4Utils.is_production(child, ASLParser.RULE_state_stmt)
+            sub_production = is_production(child, ASLParser.RULE_top_layer_stmt) or is_production(
+                child, ASLParser.RULE_state_stmt
+            )
             if sub_production is not None:
                 child = sub_production.children[0]
-            sub_production = Antlr4Utils.is_production(child, ASLParser.RULE_query_language_decl)
+            sub_production = is_production(child, ASLParser.RULE_query_language_decl)
             if sub_production is not None:
                 query_language = self.visit(sub_production)
                 break
@@ -372,18 +376,17 @@ class Preprocessor(ASLParserVisitor):
             )
 
     @staticmethod
-    def _inner_string_of(parse_tree: ParseTree) -> Optional[str]:
-        if Antlr4Utils.is_terminal(parse_tree, ASLLexer.NULL):
+    def _inner_string_of(parser_rule_context: ParserRuleContext) -> Optional[str]:
+        if is_terminal(parser_rule_context, ASLLexer.NULL):
             return None
-        pt = Antlr4Utils.is_production(parse_tree) or Antlr4Utils.is_terminal(parse_tree)
-        inner_str = pt.getText()
+        inner_str = parser_rule_context.getText()
         if inner_str.startswith('"') and inner_str.endswith('"'):
             inner_str = inner_str[1:-1]
         return inner_str
 
     def _inner_jsonata_expr(self, ctx: ParserRuleContext) -> str:
         self._raise_if_query_language_is_not(query_language_mode=QueryLanguageMode.JSONata, ctx=ctx)
-        inner_string_value = self._inner_string_of(parse_tree=ctx)
+        inner_string_value = from_string_literal(parser_rule_context=ctx)
         # Strip the start and end jsonata symbols {%<body>%}
         expression_body = inner_string_value[2:-2]
         # Often leading and trailing spaces are used around the body: remove.
@@ -391,15 +394,15 @@ class Preprocessor(ASLParserVisitor):
         return expression
 
     def visitComment_decl(self, ctx: ASLParser.Comment_declContext) -> Comment:
-        inner_str = self._inner_string_of(parse_tree=ctx.string_literal())
+        inner_str = self._inner_string_of(parser_rule_context=ctx.string_literal())
         return Comment(comment=inner_str)
 
     def visitVersion_decl(self, ctx: ASLParser.Version_declContext) -> Version:
-        version_str = self._inner_string_of(parse_tree=ctx.string_literal())
+        version_str = self._inner_string_of(parser_rule_context=ctx.string_literal())
         return Version(version=version_str)
 
     def visitStartat_decl(self, ctx: ASLParser.Startat_declContext) -> StartAt:
-        inner_str = self._inner_string_of(parse_tree=ctx.string_literal())
+        inner_str = self._inner_string_of(parser_rule_context=ctx.string_literal())
         return StartAt(start_at_name=inner_str)
 
     def visitStates_decl(self, ctx: ASLParser.States_declContext) -> States:
@@ -421,12 +424,12 @@ class Preprocessor(ASLParserVisitor):
         return StateType(state_type)
 
     def visitResource_decl(self, ctx: ASLParser.Resource_declContext) -> Resource:
-        inner_str = self._inner_string_of(parse_tree=ctx.string_literal())
+        inner_str = self._inner_string_of(parser_rule_context=ctx.string_literal())
         return Resource.from_resource_arn(inner_str)
 
     def visitEnd_decl(self, ctx: ASLParser.End_declContext) -> End:
         bool_child: ParseTree = ctx.children[-1]
-        bool_term: Optional[TerminalNodeImpl] = Antlr4Utils.is_terminal(bool_child)
+        bool_term: Optional[TerminalNodeImpl] = is_terminal(bool_child)
         if bool_term is None:
             raise ValueError(f"Could not derive End from declaration context '{ctx.getText()}'")
         bool_term_rule: int = bool_term.getSymbol().type
@@ -434,19 +437,19 @@ class Preprocessor(ASLParserVisitor):
         return End(is_end=is_end)
 
     def visitNext_decl(self, ctx: ASLParser.Next_declContext) -> Next:
-        inner_str = self._inner_string_of(parse_tree=ctx.string_literal())
+        inner_str = self._inner_string_of(parser_rule_context=ctx.string_literal())
         return Next(name=inner_str)
 
     def visitResult_path_decl(self, ctx: ASLParser.Result_path_declContext) -> ResultPath:
         self._raise_if_query_language_is_not(
             query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
         )
-        inner_str = self._inner_string_of(parse_tree=ctx.children[-1])
+        inner_str = self._inner_string_of(parser_rule_context=ctx.children[-1])
         return ResultPath(result_path_src=inner_str)
 
     def visitInput_path_decl(self, ctx: ASLParser.Input_path_declContext) -> InputPath:
         string_sampler: Optional[StringSampler] = None
-        if not Antlr4Utils.is_terminal(pt=ctx.children[-1], token_type=ASLLexer.NULL):
+        if not is_terminal(pt=ctx.children[-1], token_type=ASLLexer.NULL):
             string_sampler: StringSampler = self.visitString_sampler(ctx.string_sampler())
         return InputPath(string_sampler=string_sampler)
 
@@ -455,7 +458,7 @@ class Preprocessor(ASLParserVisitor):
             query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
         )
         string_sampler: Optional[StringSampler] = None
-        if Antlr4Utils.is_production(ctx.children[-1], ASLParser.RULE_string_sampler):
+        if is_production(ctx.children[-1], ASLParser.RULE_string_sampler):
             string_sampler: StringSampler = self.visitString_sampler(ctx.children[-1])
         return OutputPath(string_sampler=string_sampler)
 
@@ -541,7 +544,7 @@ class Preprocessor(ASLParserVisitor):
         return state_props
 
     def visitState_decl(self, ctx: ASLParser.State_declContext) -> CommonStateField:
-        state_name = self._inner_string_of(parse_tree=ctx.string_literal())
+        state_name = self._inner_string_of(parser_rule_context=ctx.string_literal())
         state_props: StateProps = self.visit(ctx.state_decl_body())
         state_props.name = state_name
         common_state_field = self._common_state_field_of(state_props=state_props)
@@ -580,7 +583,7 @@ class Preprocessor(ASLParserVisitor):
     def visitCondition_lit(self, ctx: ASLParser.Condition_litContext) -> ConditionJSONataLit:
         self._raise_if_query_language_is_not(query_language_mode=QueryLanguageMode.JSONata, ctx=ctx)
         bool_child: ParseTree = ctx.children[-1]
-        bool_term: Optional[TerminalNodeImpl] = Antlr4Utils.is_terminal(bool_child)
+        bool_term: Optional[TerminalNodeImpl] = is_terminal(bool_child)
         if bool_term is None:
             raise ValueError(
                 f"Could not derive boolean literal from declaration context '{ctx.getText()}'."
@@ -639,7 +642,7 @@ class Preprocessor(ASLParserVisitor):
         )
 
     def visitDefault_decl(self, ctx: ASLParser.Default_declContext) -> DefaultDecl:
-        state_name = self._inner_string_of(parse_tree=ctx.string_literal())
+        state_name = self._inner_string_of(parser_rule_context=ctx.string_literal())
         return DefaultDecl(state_name=state_name)
 
     def visitChoice_operator(
@@ -648,7 +651,7 @@ class Preprocessor(ASLParserVisitor):
         self._raise_if_query_language_is_not(
             query_language_mode=QueryLanguageMode.JSONPath, ctx=ctx
         )
-        pt: Optional[TerminalNodeImpl] = Antlr4Utils.is_terminal(ctx.children[0])
+        pt: Optional[TerminalNodeImpl] = is_terminal(ctx.children[0])
         if not pt:
             raise ValueError(f"Could not derive ChoiceOperator in block '{ctx.getText()}'.")
         return ComparisonComposite.ChoiceOp(pt.symbol.type)
@@ -960,9 +963,7 @@ class Preprocessor(ASLParserVisitor):
     def visitCsv_headers_decl(self, ctx: ASLParser.Csv_headers_declContext) -> CSVHeaders:
         csv_headers: list[str] = list()
         for child in ctx.children[3:-1]:
-            maybe_str = Antlr4Utils.is_production(
-                pt=child, rule_index=ASLParser.RULE_string_literal
-            )
+            maybe_str = is_production(pt=child, rule_index=ASLParser.RULE_string_literal)
             if maybe_str is not None:
                 csv_headers.append(self._inner_string_of(maybe_str))
         # TODO: check for empty headers behaviour.
@@ -1046,7 +1047,7 @@ class Preprocessor(ASLParserVisitor):
         return ToleratedFailurePercentagePath(string_sampler=string_sampler)
 
     def visitLabel_decl(self, ctx: ASLParser.Label_declContext) -> Label:
-        label = self._inner_string_of(parse_tree=ctx.string_literal())
+        label = self._inner_string_of(parser_rule_context=ctx.string_literal())
         return Label(label=label)
 
     def visitResult_writer_decl(self, ctx: ASLParser.Result_writer_declContext) -> ResultWriter:
@@ -1097,18 +1098,18 @@ class Preprocessor(ASLParserVisitor):
         pt = ctx.children[0]
 
         # Case: StatesErrorName.
-        prc: Optional[ParserRuleContext] = Antlr4Utils.is_production(
+        prc: Optional[ParserRuleContext] = is_production(
             pt=pt, rule_index=ASLParser.RULE_states_error_name
         )
         if prc:
             return self.visit(prc)
 
         # Case CustomErrorName.
-        error_name = self._inner_string_of(parse_tree=ctx.string_literal())
+        error_name = self._inner_string_of(parser_rule_context=ctx.string_literal())
         return CustomErrorName(error_name=error_name)
 
     def visitStates_error_name(self, ctx: ASLParser.States_error_nameContext) -> StatesErrorName:
-        pt: Optional[TerminalNodeImpl] = Antlr4Utils.is_terminal(ctx.children[0])
+        pt: Optional[TerminalNodeImpl] = is_terminal(ctx.children[0])
         if not pt:
             raise ValueError(f"Could not derive ErrorName in block '{ctx.getText()}'.")
         states_error_name_type = StatesErrorNameType(pt.symbol.type)
@@ -1134,7 +1135,7 @@ class Preprocessor(ASLParserVisitor):
         self, ctx: ASLParser.Jitter_strategy_declContext
     ) -> JitterStrategyDecl:
         last_child: ParseTree = ctx.children[-1]
-        strategy_child: Optional[TerminalNodeImpl] = Antlr4Utils.is_terminal(last_child)
+        strategy_child: Optional[TerminalNodeImpl] = is_terminal(last_child)
         strategy_value = strategy_child.getSymbol().type
         jitter_strategy = JitterStrategy(strategy_value)
         return JitterStrategyDecl(jitter_strategy=jitter_strategy)
@@ -1166,7 +1167,7 @@ class Preprocessor(ASLParserVisitor):
 
     def visitPayload_value_bool(self, ctx: ASLParser.Payload_value_boolContext) -> PayloadValueBool:
         bool_child: ParseTree = ctx.children[0]
-        bool_term: Optional[TerminalNodeImpl] = Antlr4Utils.is_terminal(bool_child)
+        bool_term: Optional[TerminalNodeImpl] = is_terminal(bool_child)
         if bool_term is None:
             raise ValueError(
                 f"Could not derive PayloadValueBool from declaration context '{ctx.getText()}'."
@@ -1179,13 +1180,13 @@ class Preprocessor(ASLParserVisitor):
         return PayloadValueNull()
 
     def visitPayload_value_str(self, ctx: ASLParser.Payload_value_strContext) -> PayloadValueStr:
-        str_val = self._inner_string_of(parse_tree=ctx.string_literal())
+        str_val = self._inner_string_of(parser_rule_context=ctx.string_literal())
         return PayloadValueStr(val=str_val)
 
     def visitPayload_binding_sample(
         self, ctx: ASLParser.Payload_binding_sampleContext
     ) -> PayloadBindingStringExpressionSimple:
-        string_dollar: str = self._inner_string_of(parse_tree=ctx.STRINGDOLLAR())
+        string_dollar: str = self._inner_string_of(parser_rule_context=ctx.STRINGDOLLAR())
         field = string_dollar[:-2]
         string_expression_simple: StringExpressionSimple = self.visitString_expression_simple(
             ctx.string_expression_simple()
@@ -1197,7 +1198,7 @@ class Preprocessor(ASLParserVisitor):
     def visitPayload_binding_value(
         self, ctx: ASLParser.Payload_binding_valueContext
     ) -> PayloadBindingValue:
-        field: str = self._inner_string_of(parse_tree=ctx.string_literal())
+        field: str = self._inner_string_of(parser_rule_context=ctx.string_literal())
         payload_value: PayloadValue = self.visit(ctx.payload_value_decl())
         return PayloadBindingValue(field=field, payload_value=payload_value)
 
@@ -1291,7 +1292,7 @@ class Preprocessor(ASLParserVisitor):
             string_jsonata: StringJSONata = self.visitString_jsonata(ctx.string_jsonata())
             return AssignTemplateValueTerminalStringJSONata(string_jsonata=string_jsonata)
         else:
-            inner_string_value = self._inner_string_of(parse_tree=ctx.string_jsonata())
+            inner_string_value = self._inner_string_of(parser_rule_context=ctx.string_jsonata())
             return AssignTemplateValueTerminalLit(value=inner_string_value)
 
     def visitAssign_template_value_terminal_string_literal(
@@ -1466,17 +1467,17 @@ class Preprocessor(ASLParserVisitor):
         return self.visit(ctx.children[0])
 
     def visitString_literal(self, ctx: ASLParser.String_literalContext) -> StringLiteral:
-        literal_value: str = self._inner_string_of(parse_tree=ctx)
+        literal_value: str = self._inner_string_of(parser_rule_context=ctx)
         return StringLiteral(literal_value=literal_value)
 
     def visitString_jsonpath(self, ctx: ASLParser.String_jsonpathContext) -> StringJsonPath:
-        json_path: str = self._inner_string_of(parse_tree=ctx)
+        json_path: str = self._inner_string_of(parser_rule_context=ctx)
         return StringJsonPath(json_path=json_path)
 
     def visitString_context_path(
         self, ctx: ASLParser.String_context_pathContext
     ) -> StringContextPath:
-        context_object_path: str = self._inner_string_of(parse_tree=ctx)
+        context_object_path: str = self._inner_string_of(parser_rule_context=ctx)
         return StringContextPath(context_object_path=context_object_path)
 
     def visitString_variable_sample(
@@ -1485,7 +1486,7 @@ class Preprocessor(ASLParserVisitor):
         query_language_mode: QueryLanguageMode = (
             self._get_current_query_language().query_language_mode
         )
-        expression: str = self._inner_string_of(parse_tree=ctx)
+        expression: str = self._inner_string_of(parser_rule_context=ctx)
         return StringVariableSample(query_language_mode=query_language_mode, expression=expression)
 
     def visitString_jsonata(self, ctx: ASLParser.String_jsonataContext) -> StringJSONata:
@@ -1497,8 +1498,9 @@ class Preprocessor(ASLParserVisitor):
         self, ctx: ASLParser.String_intrinsic_functionContext
     ) -> StringIntrinsicFunction:
         intrinsic_function_derivation: str = self._inner_string_of(
-            parse_tree=ctx.STRINGINTRINSICFUNC()
+            parser_rule_context=ctx.STRINGINTRINSICFUNC()
         )
+        intrinsic_function_derivation = ctx.STRINGINTRINSICFUNC().getText()[1:-1]
         function, _ = IntrinsicParser.parse(intrinsic_function_derivation)
         return StringIntrinsicFunction(
             intrinsic_function_derivation=intrinsic_function_derivation, function=function

@@ -15,10 +15,13 @@
     "last_validated_date": "2024-11-18T12:19:26+00:00"
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_choice_singleton_composite[CHOICE_STATE_SINGLETON_COMPOSITE]": {
-    "last_validated_date": "2024-11-18T11:19:46+00:00"
+    "last_validated_date": "2024-12-24T16:59:57+00:00"
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_choice_singleton_composite[CHOICE_STATE_SINGLETON_COMPOSITE_JSONATA]": {
-    "last_validated_date": "2024-11-18T11:20:02+00:00"
+    "last_validated_date": "2024-12-24T17:00:12+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_choice_singleton_composite[CHOICE_STATE_SINGLETON_COMPOSITE_LITERAL_JSONATA]": {
+    "last_validated_date": "2024-12-24T17:00:22+00:00"
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_choice_unsorted_parameters_negative[CHOICE_STATE_UNSORTED_CHOICE_PARAMETERS]": {
     "last_validated_date": "2024-11-18T11:32:08+00:00"
