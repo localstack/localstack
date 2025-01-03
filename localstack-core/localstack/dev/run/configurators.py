@@ -6,7 +6,6 @@ import gzip
 import os
 from pathlib import Path, PurePosixPath
 from tempfile import gettempdir
-from typing import Callable
 
 from localstack import config, constants
 from localstack.utils.bootstrap import ContainerConfigurators
@@ -21,21 +20,13 @@ from localstack.utils.files import get_user_cache_dir
 from localstack.utils.run import run
 from localstack.utils.strings import md5
 
-from .paths import CommunityContainerPaths, ContainerPaths, HostPaths, ProContainerPaths
-
-# Type representing how to extract a specific path from a common root path, typically a lambda function
-PathMappingExtractor = Callable[[HostPaths], Path]
-
-# Declaration of which local packages can be mounted into the container, and their locations on the host
-HOST_PATH_MAPPINGS: dict[
-    str,
-    PathMappingExtractor,
-] = {
-    "moto": lambda paths: paths.moto_project_dir / "moto",
-    "postgresql_proxy": lambda paths: paths.postgresql_proxy / "postgresql_proxy",
-    "rolo": lambda paths: paths.rolo_dir / "rolo",
-    "plux": lambda paths: paths.workspace_dir / "plux" / "plugin",
-}
+from .paths import (
+    HOST_PATH_MAPPINGS,
+    CommunityContainerPaths,
+    ContainerPaths,
+    HostPaths,
+    ProContainerPaths,
+)
 
 
 class ConfigEnvironmentConfigurator:

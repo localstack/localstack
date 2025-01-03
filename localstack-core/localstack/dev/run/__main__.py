@@ -20,7 +20,6 @@ from localstack.utils.run import run_interactive
 from localstack.utils.strings import short_uid
 
 from .configurators import (
-    HOST_PATH_MAPPINGS,
     ConfigEnvironmentConfigurator,
     DependencyMountConfigurator,
     EntryPointMountConfigurator,
@@ -28,7 +27,7 @@ from .configurators import (
     PortConfigurator,
     SourceVolumeMountConfigurator,
 )
-from .paths import HostPaths
+from .paths import HOST_PATH_MAPPINGS, HostPaths
 
 
 @click.command("run")
