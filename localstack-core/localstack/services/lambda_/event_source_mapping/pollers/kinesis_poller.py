@@ -31,20 +31,20 @@ class KinesisPoller(StreamPoller):
     def __init__(
         self,
         source_arn: str,
-        esm_config: EventSourceMappingConfiguration,
         source_parameters: dict | None = None,
         source_client: BaseClient | None = None,
         processor: EventProcessor | None = None,
         partner_resource_arn: str | None = None,
         invoke_identity_arn: str | None = None,
         kinesis_namespace: bool = False,
+        esm_config: EventSourceMappingConfiguration | None = None,
     ):
         super().__init__(
             source_arn,
-            esm_config,
             source_parameters,
             source_client,
             processor,
+            esm_config=esm_config,
             partner_resource_arn=partner_resource_arn,
         )
         self.invoke_identity_arn = invoke_identity_arn

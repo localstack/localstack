@@ -51,15 +51,15 @@ class StreamPoller(Poller):
     def __init__(
         self,
         source_arn: str,
-        esm_config: EventSourceMappingConfiguration,
         source_parameters: dict | None = None,
         source_client: BaseClient | None = None,
         processor: EventProcessor | None = None,
         partner_resource_arn: str | None = None,
+        esm_config: EventSourceMappingConfiguration | None = None,
     ):
         super().__init__(source_arn, source_parameters, source_client, processor)
-        self.esm_config = esm_config
         self.partner_resource_arn = partner_resource_arn
+        self.esm_config = esm_config
         self.shards = {}
         self.iterator_over_shards = None
 
