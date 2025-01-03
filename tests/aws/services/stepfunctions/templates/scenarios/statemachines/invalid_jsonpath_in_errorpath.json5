@@ -1,0 +1,16 @@
+{
+  "StartAt": "pass",
+  "States": {
+    "pass": {
+      "Type": "Pass",
+      "Next": "fail",
+      "Parameters": {
+        "Error": "error-value",
+      }
+    },
+    "fail": {
+      "Type": "Fail",
+      "ErrorPath": "$.ErrorX",
+    }
+  }
+}

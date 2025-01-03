@@ -1,0 +1,12 @@
+{
+  "StartAt": "task",
+  "States": {
+    "task": {
+      "Type": "Task",
+      "TimeoutSecondsPath": "$.NoSuchTimeoutSecondsPath",
+      "Resource": "arn:aws:states:::aws-sdk:s3:listBuckets",
+      "Parameters": {},
+      "End": true
+    }
+  }
+}

@@ -65,6 +65,9 @@ class EvalComponent(Component, abc.ABC):
         if env.is_running():
             self._log_evaluation_step("Computing")
             try:
+                field_name = self._field_name()
+                if field_name is not None:
+                    env.next_field_name = field_name
                 self._eval_body(env)
             except FailureEventException as failure_event_exception:
                 self._log_failure_event_exception(failure_event_exception=failure_event_exception)
@@ -78,3 +81,6 @@ class EvalComponent(Component, abc.ABC):
     @abc.abstractmethod
     def _eval_body(self, env: Environment) -> None:
         raise NotImplementedError()
+
+    def _field_name(self) -> Optional[str]:
+        return self.__class__.__name__

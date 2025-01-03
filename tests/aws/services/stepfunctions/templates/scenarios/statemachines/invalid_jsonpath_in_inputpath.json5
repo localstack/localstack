@@ -1,0 +1,10 @@
+{
+  "StartAt": "pass",
+  "States": {
+    "pass": {
+      "Type": "Pass",
+      "InputPath": "$.NoSuchInputPath",
+      "End": true
+    }
+  }
+}

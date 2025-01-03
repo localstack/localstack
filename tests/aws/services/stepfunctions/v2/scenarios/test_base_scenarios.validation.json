@@ -38,6 +38,30 @@
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_fail_error_jsonata": {
     "last_validated_date": "2024-11-13T16:35:39+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_invalid_jsonpath[INVALID_JSONPATH_IN_ERRORPATH]": {
+    "last_validated_date": "2025-01-02T13:44:29+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_invalid_jsonpath[INVALID_JSONPATH_IN_STRING_EXPR_CONTEXTPATH]": {
+    "last_validated_date": "2025-01-02T13:45:01+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_invalid_jsonpath[INVALID_JSONPATH_IN_STRING_EXPR_JSONPATH]": {
+    "last_validated_date": "2025-01-02T13:44:45+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_invalid_jsonpath[ST.INVALID_JSONPATH_IN_CAUSEPATH]": {
+    "last_validated_date": "2025-01-02T14:21:03+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_invalid_jsonpath[ST.INVALID_JSONPATH_IN_HEARTBEATSECONDSPATH]": {
+    "last_validated_date": "2025-01-02T14:26:48+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_invalid_jsonpath[ST.INVALID_JSONPATH_IN_INPUTPATH]": {
+    "last_validated_date": "2025-01-02T14:21:19+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_invalid_jsonpath[ST.INVALID_JSONPATH_IN_OUTPUTPATH]": {
+    "last_validated_date": "2025-01-02T14:21:35+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_invalid_jsonpath[ST.INVALID_JSONPATH_IN_TIMEOUTSECONDSPATH]": {
+    "last_validated_date": "2025-01-02T14:26:32+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_lambda_empty_retry": {
     "last_validated_date": "2023-11-23T17:08:38+00:00"
   },

@@ -25,7 +25,7 @@ from localstack.aws.api.stepfunctions import (
 )
 from localstack.services.stepfunctions.asl.eval.event.logging import is_logging_enabled_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
-from localstack.services.stepfunctions.asl.utils.json_path import extract_json
+from localstack.services.stepfunctions.asl.utils.json_path import NoSuchJsonPathError, extract_json
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 
@@ -395,7 +395,7 @@ def launch_and_record_execution(
             map_run_arns = [map_run_arns]
         for i, map_run_arn in enumerate(list(set(map_run_arns))):
             sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_map_run_arn(map_run_arn, i))
-    except RuntimeError:
+    except NoSuchJsonPathError:
         # No mapRunArns
         pass
 
