@@ -1995,10 +1995,6 @@
       }
     }
   },
-  "tests/aws/services/events/test_events.py::TestEventRule::test_process_to_multiple_matching_rules_different_targets": {
-    "recorded-date": "27-12-2024, 19:02:05",
-    "recorded-content": {}
-  },
   "tests/aws/services/events/test_events.py::TestEventRule::test_process_to_multiple_matching_rules_single_target": {
     "recorded-date": "02-01-2025, 11:37:47",
     "recorded-content": {
@@ -2199,15 +2195,25 @@
       }
     }
   },
-  "tests/aws/services/events/test_events.py::TestEventTarget::test_put_multiple_targets_with_same_id_across_different_rules": {
-    "recorded-date": "03-01-2025, 12:30:57",
+  "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[True-regions0]": {
+    "recorded-date": "03-01-2025, 15:50:54",
     "recorded-content": {
-      "list-targets-rule-one": {
-        "Targets": [
+      "create-custom-event-bus-us-east-1": {
+        "Description": "test bus",
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-create-us-east-1": {
+        "EventBuses": [
           {
-            "Arn": "target-arn",
-            "Id": "target-id",
-            "InputPath": "$.detail"
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+            "CreationTime": "datetime",
+            "Description": "test bus",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name>"
           }
         ],
         "ResponseMetadata": {
@@ -2215,14 +2221,25 @@
           "HTTPStatusCode": 200
         }
       },
-      "list-targets-rule-two": {
-        "Targets": [
-          {
-            "Arn": "target-arn",
-            "Id": "target-id",
-            "InputPath": "$.notexisting"
-          }
-        ],
+      "describe-custom-event-bus-us-east-1": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "Description": "test bus",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-us-east-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-us-east-1": {
+        "EventBuses": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2230,38 +2247,25 @@
       }
     }
   },
-  "tests/aws/services/events/test_events.py::TestEventTarget::test_put_multiple_targets_with_same_arn_single_rule": {
-    "recorded-date": "03-01-2025, 12:32:45",
+  "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[True-regions1]": {
+    "recorded-date": "03-01-2025, 15:50:56",
     "recorded-content": {
-      "list-targets": {
-        "Targets": [
-          {
-            "Arn": "target-arn",
-            "Id": "target-id-one",
-            "InputPath": "$.detail"
-          },
-          {
-            "Arn": "target-arn",
-            "Id": "target-id-two",
-            "InputPath": "$.doesnotexist"
-          }
-        ],
+      "create-custom-event-bus-us-east-1": {
+        "Description": "test bus",
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventTarget::test_put_multiple_targets_with_same_arn_across_different_rules": {
-    "recorded-date": "03-01-2025, 12:33:23",
-    "recorded-content": {
-      "list-targets-rule-one": {
-        "Targets": [
+      },
+      "list-event-buses-after-create-us-east-1": {
+        "EventBuses": [
           {
-            "Arn": "target-arn",
-            "Id": "target-id",
-            "InputPath": "$.detail"
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+            "CreationTime": "datetime",
+            "Description": "test bus",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name>"
           }
         ],
         "ResponseMetadata": {
@@ -2269,14 +2273,305 @@
           "HTTPStatusCode": 200
         }
       },
-      "list-targets-rule-two": {
-        "Targets": [
+      "describe-custom-event-bus-us-east-1": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "Description": "test bus",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-custom-event-bus-us-west-1": {
+        "Description": "test bus",
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-create-us-west-1": {
+        "EventBuses": [
           {
-            "Arn": "target-arn",
-            "Id": "target-id",
-            "InputPath": "$.doesnotexist"
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+            "CreationTime": "datetime",
+            "Description": "test bus",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name>"
           }
         ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-custom-event-bus-us-west-1": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "Description": "test bus",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-custom-event-bus-eu-central-1": {
+        "Description": "test bus",
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-create-eu-central-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+            "CreationTime": "datetime",
+            "Description": "test bus",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-custom-event-bus-eu-central-1": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "Description": "test bus",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-us-east-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-us-east-1": {
+        "EventBuses": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-us-west-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-us-west-1": {
+        "EventBuses": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-eu-central-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-eu-central-1": {
+        "EventBuses": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[False-regions0]": {
+    "recorded-date": "03-01-2025, 15:50:57",
+    "recorded-content": {
+      "create-custom-event-bus-us-east-1": {
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-create-us-east-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+            "CreationTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-custom-event-bus-us-east-1": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-us-east-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-us-east-1": {
+        "EventBuses": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[False-regions1]": {
+    "recorded-date": "03-01-2025, 15:50:59",
+    "recorded-content": {
+      "create-custom-event-bus-us-east-1": {
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-create-us-east-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+            "CreationTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-custom-event-bus-us-east-1": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-custom-event-bus-us-west-1": {
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-create-us-west-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+            "CreationTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-custom-event-bus-us-west-1": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-custom-event-bus-eu-central-1": {
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-create-eu-central-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+            "CreationTime": "datetime",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-custom-event-bus-eu-central-1": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-us-east-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-us-east-1": {
+        "EventBuses": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-us-west-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-us-west-1": {
+        "EventBuses": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-eu-central-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-eu-central-1": {
+        "EventBuses": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
