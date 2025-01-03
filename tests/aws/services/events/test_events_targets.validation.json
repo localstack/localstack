@@ -53,6 +53,9 @@
   "tests/aws/services/events/test_events_targets.py::TestEventsTargetStepFunctions::test_put_events_with_target_statefunction_machine": {
     "last_validated_date": "2024-08-29T18:06:56+00:00"
   },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetStepFunctions::test_put_events_with_target_statefunction_machine_and_input_transformer": {
+    "last_validated_date": "2025-01-03T15:19:29+00:00"
+  },
   "tests/aws/services/events/test_events_targets.py::test_put_events_with_target_lambda_list_entries_partial_match": {
     "last_validated_date": "2024-04-08T17:36:24+00:00"
   },
