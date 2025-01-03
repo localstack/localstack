@@ -2047,3 +2047,67 @@ class TestEventTarget:
 
         response = aws_client.events.list_targets_by_rule(Rule=rule_two_name)
         snapshot.match("list-targets-rule-two", response)
+
+    @markers.aws.validated
+    def test_put_multiple_targets_with_same_arn_single_rule(
+        self, sqs_create_queue, sqs_get_queue_arn, events_put_rule, snapshot, aws_client
+    ):
+        """Targets attached to a rule can have the same ARN, but different IDs"""
+        rule_name = f"rule-{short_uid()}"
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        events_put_rule(
+            Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
+        )
+
+        target_id_one = f"test-With_valid.Characters-{short_uid()}"
+        target_id_two = f"test-With_valid.Characters-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {"Id": target_id_one, "Arn": queue_arn, "InputPath": "$.detail"},
+                {"Id": target_id_two, "Arn": queue_arn, "InputPath": "$.doesnotexist"},
+            ],
+        )
+
+        response = aws_client.events.list_targets_by_rule(Rule=rule_name)
+        snapshot.match("list-targets", response)
+
+    @markers.aws.validated
+    def test_put_multiple_targets_with_same_arn_across_different_rules(
+        self, sqs_create_queue, sqs_get_queue_arn, events_put_rule, snapshot, aws_client
+    ):
+        """Targets attached to different rules can have the same ARN"""
+        rule_one_name = f"test-rule-one-{short_uid()}"
+        rule_two_name = f"test-rule-two-{short_uid()}"
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        events_put_rule(
+            Name=rule_one_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
+        )
+        events_put_rule(
+            Name=rule_two_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
+        )
+
+        target_id = f"test-With_valid.Characters-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_one_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
+            ],
+        )
+
+        aws_client.events.put_targets(
+            Rule=rule_two_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn, "InputPath": "$.doesnotexist"},
+            ],
+        )
+
+        response = aws_client.events.list_targets_by_rule(Rule=rule_one_name)
+        snapshot.match("list-targets-rule-one", response)
+
+        response = aws_client.events.list_targets_by_rule(Rule=rule_two_name)
+        snapshot.match("list-targets-rule-two", response)

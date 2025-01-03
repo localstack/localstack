@@ -2217,5 +2217,59 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_put_multiple_targets_with_same_arn_single_rule": {
+    "recorded-date": "03-01-2025, 12:09:50",
+    "recorded-content": {
+      "list-targets": {
+        "Targets": [
+          {
+            "Arn": "arn:<partition>:sqs:<region>:111111111111:test-queue-77ae0162",
+            "Id": "test-With_valid.Characters-195a2962",
+            "InputPath": "$.detail"
+          },
+          {
+            "Arn": "arn:<partition>:sqs:<region>:111111111111:test-queue-77ae0162",
+            "Id": "test-With_valid.Characters-7e963a3c",
+            "InputPath": "$.doesnotexist"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_put_multiple_targets_with_same_arn_across_different_rules": {
+    "recorded-date": "03-01-2025, 12:10:07",
+    "recorded-content": {
+      "list-targets-rule-one": {
+        "Targets": [
+          {
+            "Arn": "arn:<partition>:sqs:<region>:111111111111:test-queue-7ff20252",
+            "Id": "test-With_valid.Characters-21b5dd7f",
+            "InputPath": "$.detail"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-targets-rule-two": {
+        "Targets": [
+          {
+            "Arn": "arn:<partition>:sqs:<region>:111111111111:test-queue-7ff20252",
+            "Id": "test-With_valid.Characters-21b5dd7f",
+            "InputPath": "$.doesnotexist"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

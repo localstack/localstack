@@ -1,9 +1,9 @@
 {
-  "tests/aws/services/events/test_events.py::TestEventTarget::test_put_multiple_targets_with_same_id_across_different_rules": {
-    "last_validated_date": "2025-01-03T12:04:32+00:00"
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_put_multiple_targets_with_same_arn_across_different_rules": {
+    "last_validated_date": "2025-01-03T12:10:07+00:00"
   }
 }
-}
+
 "
   }
 }
