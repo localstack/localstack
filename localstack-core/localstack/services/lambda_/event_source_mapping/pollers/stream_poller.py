@@ -376,8 +376,12 @@ class StreamPoller(Poller):
         }
 
     def add_payload_to_dlq_event(self, dlq_event: dict, events) -> dict:
-        # TODO add payload from the original event
-        return dlq_event
+        return {
+            **dlq_event,
+            "payload": {
+                "Records": events,
+            },
+        }
 
     def max_retries_exceeded(self, attempts: int) -> bool:
         maximum_retry_attempts = self.stream_parameters.get("MaximumRetryAttempts", -1)
