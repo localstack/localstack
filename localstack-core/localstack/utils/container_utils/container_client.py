@@ -450,7 +450,7 @@ class ContainerConfiguration:
     volumes: VolumeMappings = dataclasses.field(default_factory=VolumeMappings)
     ports: PortMappings = dataclasses.field(default_factory=PortMappings)
     exposed_ports: List[str] = dataclasses.field(default_factory=list)
-    entrypoint: Optional[str] = None
+    entrypoint: Optional[Union[List[str], str]] = None
     additional_flags: Optional[str] = None
     command: Optional[List[str]] = None
     env_vars: Dict[str, str] = dataclasses.field(default_factory=dict)
@@ -861,7 +861,7 @@ class ContainerClient(metaclass=ABCMeta):
         image_name: str,
         *,
         name: Optional[str] = None,
-        entrypoint: Optional[str] = None,
+        entrypoint: Optional[Union[List[str], str]] = None,
         remove: bool = False,
         interactive: bool = False,
         tty: bool = False,

@@ -714,7 +714,7 @@ class CmdDockerClient(ContainerClient):
         image_name: str,
         *,
         name: Optional[str] = None,
-        entrypoint: Optional[str] = None,
+        entrypoint: Optional[Union[List[str], str]] = None,
         remove: bool = False,
         interactive: bool = False,
         tty: bool = False,
@@ -746,7 +746,10 @@ class CmdDockerClient(ContainerClient):
         if name:
             cmd += ["--name", name]
         if entrypoint is not None:  # empty string entrypoint can be intentional
-            cmd += ["--entrypoint", entrypoint]
+            if isinstance(entrypoint, str):
+                cmd += ["--entrypoint", entrypoint]
+            else:
+                cmd += ["--entrypoint", shlex.join(entrypoint)]
         if privileged:
             cmd += ["--privileged"]
         if volumes:
