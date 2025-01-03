@@ -288,7 +288,7 @@ class CloudformationProvider(CloudformationApi):
         stack.set_resolved_stack_conditions(resolved_stack_conditions)
 
         stack.set_resolved_parameters(resolved_parameters)
-        stack.template_body = json.dumps(template)
+        stack.template_body = template_body
         state.stacks[stack.stack_id] = stack
         LOG.debug(
             'Creating stack "%s" with %s resources ...',

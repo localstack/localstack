@@ -26,162 +26,6 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template[yaml]": {
-    "recorded-date": "11-08-2022, 10:55:10",
-    "recorded-content": {
-      "describe_stacks": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
-        "Stacks": [
-          {
-            "Capabilities": [
-              "CAPABILITY_AUTO_EXPAND",
-              "CAPABILITY_IAM",
-              "CAPABILITY_NAMED_IAM"
-            ],
-            "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
-            "CreationTime": "datetime",
-            "DisableRollback": false,
-            "DriftInformation": {
-              "StackDriftStatus": "NOT_CHECKED"
-            },
-            "EnableTerminationProtection": false,
-            "LastUpdatedTime": "datetime",
-            "NotificationARNs": [],
-            "Outputs": [
-              {
-                "OutputKey": "TopicName",
-                "OutputValue": "<topic-name>"
-              }
-            ],
-            "RollbackConfiguration": {},
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "StackStatus": "CREATE_COMPLETE",
-            "Tags": []
-          }
-        ]
-      },
-      "template_original": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
-        "StagesAvailable": [
-          "Original",
-          "Processed"
-        ],
-        "TemplateBody": "Resources:\n  topic69831491:\n    Type: AWS::SNS::Topic\nOutputs:\n  TopicName:\n    Value:\n      Fn::GetAtt:\n        - topic69831491\n        - TopicName\n"
-      },
-      "template_processed": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
-        "StagesAvailable": [
-          "Original",
-          "Processed"
-        ],
-        "TemplateBody": "Resources:\n  topic69831491:\n    Type: AWS::SNS::Topic\nOutputs:\n  TopicName:\n    Value:\n      Fn::GetAtt:\n        - topic69831491\n        - TopicName\n"
-      }
-    }
-  },
-  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template[json]": {
-    "recorded-date": "11-08-2022, 10:55:35",
-    "recorded-content": {
-      "describe_stacks": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
-        "Stacks": [
-          {
-            "Capabilities": [
-              "CAPABILITY_AUTO_EXPAND",
-              "CAPABILITY_IAM",
-              "CAPABILITY_NAMED_IAM"
-            ],
-            "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
-            "CreationTime": "datetime",
-            "DisableRollback": false,
-            "DriftInformation": {
-              "StackDriftStatus": "NOT_CHECKED"
-            },
-            "EnableTerminationProtection": false,
-            "LastUpdatedTime": "datetime",
-            "NotificationARNs": [],
-            "Outputs": [
-              {
-                "OutputKey": "TopicName",
-                "OutputValue": "<topic-name>"
-              }
-            ],
-            "RollbackConfiguration": {},
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "StackStatus": "CREATE_COMPLETE",
-            "Tags": []
-          }
-        ]
-      },
-      "template_original": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
-        "StagesAvailable": [
-          "Original",
-          "Processed"
-        ],
-        "TemplateBody": {
-          "Outputs": {
-            "TopicName": {
-              "Value": {
-                "Fn::GetAtt": [
-                  "topic69831491",
-                  "TopicName"
-                ]
-              }
-            }
-          },
-          "Resources": {
-            "topic69831491": {
-              "Type": "AWS::SNS::Topic"
-            }
-          }
-        }
-      },
-      "template_processed": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
-        "StagesAvailable": [
-          "Original",
-          "Processed"
-        ],
-        "TemplateBody": {
-          "Outputs": {
-            "TopicName": {
-              "Value": {
-                "Fn::GetAtt": [
-                  "topic69831491",
-                  "TopicName"
-                ]
-              }
-            }
-          },
-          "Resources": {
-            "topic69831491": {
-              "Type": "AWS::SNS::Topic"
-            }
-          }
-        }
-      }
-    }
-  },
   "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_stack_update_resources": {
     "recorded-date": "30-08-2022, 00:13:26",
     "recorded-content": {
@@ -2248,6 +2092,178 @@
             "Tags": []
           }
         ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template_using_changesets[yaml]": {
+    "recorded-date": "02-01-2025, 19:08:41",
+    "recorded-content": {
+      "template_original": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": "Resources:\n  topic69831491:\n    Type: AWS::SNS::Topic\nOutputs:\n  TopicName:\n    Value:\n      Fn::GetAtt:\n        - topic69831491\n        - TopicName\n",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "template_processed": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": "Resources:\n  topic69831491:\n    Type: AWS::SNS::Topic\nOutputs:\n  TopicName:\n    Value:\n      Fn::GetAtt:\n        - topic69831491\n        - TopicName\n",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template_using_changesets[json]": {
+    "recorded-date": "02-01-2025, 19:09:40",
+    "recorded-content": {
+      "template_original": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Outputs": {
+            "TopicName": {
+              "Value": {
+                "Fn::GetAtt": [
+                  "topic69831491",
+                  "TopicName"
+                ]
+              }
+            }
+          },
+          "Resources": {
+            "topic69831491": {
+              "Type": "AWS::SNS::Topic"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "template_processed": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Outputs": {
+            "TopicName": {
+              "Value": {
+                "Fn::GetAtt": [
+                  "topic69831491",
+                  "TopicName"
+                ]
+              }
+            }
+          },
+          "Resources": {
+            "topic69831491": {
+              "Type": "AWS::SNS::Topic"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template_using_create_stack[yaml]": {
+    "recorded-date": "02-01-2025, 19:11:14",
+    "recorded-content": {
+      "template_original": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": "Resources:\n  topic69831491:\n    Type: AWS::SNS::Topic\nOutputs:\n  TopicName:\n    Value:\n      Fn::GetAtt:\n        - topic69831491\n        - TopicName\n",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "template_processed": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": "Resources:\n  topic69831491:\n    Type: AWS::SNS::Topic\nOutputs:\n  TopicName:\n    Value:\n      Fn::GetAtt:\n        - topic69831491\n        - TopicName\n",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template_using_create_stack[json]": {
+    "recorded-date": "02-01-2025, 19:11:20",
+    "recorded-content": {
+      "template_original": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Outputs": {
+            "TopicName": {
+              "Value": {
+                "Fn::GetAtt": [
+                  "topic69831491",
+                  "TopicName"
+                ]
+              }
+            }
+          },
+          "Resources": {
+            "topic69831491": {
+              "Type": "AWS::SNS::Topic"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "template_processed": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Outputs": {
+            "TopicName": {
+              "Value": {
+                "Fn::GetAtt": [
+                  "topic69831491",
+                  "TopicName"
+                ]
+              }
+            }
+          },
+          "Resources": {
+            "topic69831491": {
+              "Type": "AWS::SNS::Topic"
+            }
+          }
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
