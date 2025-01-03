@@ -9,6 +9,7 @@ from localstack.services.lambda_.api_utils import (
     unqualified_lambda_arn,
 )
 from localstack.services.lambda_.invocation.models import lambda_stores
+from localstack.utils.id_generator import ExistingIds, ResourceIdentifier, Tags, localstack_id
 
 if TYPE_CHECKING:
     from localstack.services.lambda_.invocation.lambda_models import (
@@ -66,3 +67,26 @@ def get_function_version(
         )
     # TODO what if version is missing?
     return version
+
+
+class LambdaLayerVersionIdentifier(ResourceIdentifier):
+    service = "lambda"
+    resource = "layer-version"
+
+    def __init__(self, account_id: str, region: str, layer_name: str):
+        super(LambdaLayerVersionIdentifier, self).__init__(account_id, region, layer_name)
+
+    def generate(
+        self, existing_ids: ExistingIds = None, tags: Tags = None, next_version: int = None
+    ) -> int:
+        return int(generate_layer_version(self, next_version=next_version))
+
+
+@localstack_id
+def generate_layer_version(
+    resource_identifier: ResourceIdentifier,
+    existing_ids: ExistingIds = None,
+    tags: Tags = None,
+    next_version: int = 0,
+):
+    return next_version
