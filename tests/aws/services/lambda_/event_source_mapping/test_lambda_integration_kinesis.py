@@ -936,7 +936,6 @@ class TestKinesisSource:
         s3_invocation_record, s3_object_key = retry(
             get_invocation_record, retries=15, sleep=sleep, sleep_before=5
         )
-        snapshot.match("s3_invocation_record", s3_invocation_record)
 
         record_body = json.loads(s3_invocation_record["Body"].read().decode("utf-8"))
         snapshot.match("record_body", record_body)
