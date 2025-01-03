@@ -152,7 +152,7 @@ class EsmWorkerFactory:
                 ),
             )
             poller = KinesisPoller(
-                esm_config=self.esm_config,
+                esm_uuid=self.esm_config["UUID"],
                 source_arn=source_arn,
                 source_parameters=source_parameters,
                 source_client=source_client,
@@ -180,7 +180,7 @@ class EsmWorkerFactory:
                 ),
             )
             poller = DynamoDBPoller(
-                esm_config=self.esm_config,
+                esm_uuid=self.esm_config["UUID"],
                 source_arn=source_arn,
                 source_parameters=source_parameters,
                 source_client=source_client,
