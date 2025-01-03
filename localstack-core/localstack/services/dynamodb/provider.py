@@ -1313,7 +1313,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # We found out that 'Parameters' can be an empty list when the request comes from the AWS JS client.
         if execute_statement_input.get("Parameters", None) == []:  # noqa
             raise ValidationException(
-                "Value '[]' at 'parameters' failed to satisfy constraint: Member must have length greater than or equal to 1"
+                "1 validation error detected: Value '[]' at 'parameters' failed to satisfy constraint: Member must have length greater than or equal to 1"
             )
         table_name = extract_table_name_from_partiql_update(statement)
         existing_items = None

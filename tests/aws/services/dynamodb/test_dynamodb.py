@@ -9,6 +9,7 @@ import botocore.exceptions
 import pytest
 import requests
 from boto3.dynamodb.types import STRING
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
@@ -748,8 +749,9 @@ class TestDynamoDB:
 
     @markers.aws.validated
     def test_dynamodb_execute_statement_empy_parameter(
-        self, dynamodb_create_table_with_parameters, snapshot, aws_client
+        self, dynamodb_create_table_with_parameters, snapshot, aws_client_factory
     ):
+        ddb_client = aws_client_factory(config=Config(parameter_validation=False)).dynamodb
         table_name = f"test_table_{short_uid()}"
         dynamodb_create_table_with_parameters(
             TableName=table_name,
@@ -764,15 +766,15 @@ class TestDynamoDB:
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
 
-        aws_client.dynamodb.put_item(
+        ddb_client.put_item(
             TableName=table_name,
             Item={"Artist": {"S": "The Queen"}, "SongTitle": {"S": "Bohemian Rhapsody"}},
         )
 
         statement = f"SELECT * FROM {table_name}"
-        with pytest.raises(Exception) as e:
-            aws_client.dynamodb.execute_statement(Statement=statement, Parameters=[])
-        snapshot.match("invalid-param-error", e.value)
+        with pytest.raises(ClientError) as e:
+            ddb_client.execute_statement(Statement=statement, Parameters=[])
+        snapshot.match("invalid-param-error", e.value.response)
 
     @markers.aws.validated
     def test_dynamodb_partiql_missing(
