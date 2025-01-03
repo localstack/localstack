@@ -20,6 +20,9 @@
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_async_invocation": {
     "last_validated_date": "2024-12-13T14:04:46+00:00"
   },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_s3_on_failure_destination": {
+    "last_validated_date": "2025-01-03T14:50:23+00:00"
+  },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_sns_on_failure_destination_config": {
     "last_validated_date": "2024-12-13T14:35:43+00:00"
   },

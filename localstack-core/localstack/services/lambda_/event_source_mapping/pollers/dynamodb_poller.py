@@ -20,12 +20,14 @@ class DynamoDBPoller(StreamPoller):
         source_client: BaseClient | None = None,
         processor: EventProcessor | None = None,
         partner_resource_arn: str | None = None,
+        esm_uuid: str | None = None,
     ):
         super().__init__(
             source_arn,
             source_parameters,
             source_client,
             processor,
+            esm_uuid=esm_uuid,
             partner_resource_arn=partner_resource_arn,
         )
 

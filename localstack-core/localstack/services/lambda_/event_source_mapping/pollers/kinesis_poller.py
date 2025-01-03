@@ -36,12 +36,14 @@ class KinesisPoller(StreamPoller):
         partner_resource_arn: str | None = None,
         invoke_identity_arn: str | None = None,
         kinesis_namespace: bool = False,
+        esm_uuid: str | None = None,
     ):
         super().__init__(
             source_arn,
             source_parameters,
             source_client,
             processor,
+            esm_uuid=esm_uuid,
             partner_resource_arn=partner_resource_arn,
         )
         self.invoke_identity_arn = invoke_identity_arn
