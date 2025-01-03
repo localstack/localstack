@@ -338,7 +338,9 @@ class StreamPoller(Poller):
                 dlq_event_with_payload = self.add_payload_to_dlq_event(dlq_event, events)
                 s3_client.put_object(
                     Bucket=s3_bucket_name(dlq_arn),
-                    Key=self.get_failure_s3_object_key(shard_id, failure_timstamp),
+                    Key=get_failure_s3_object_key(
+                        self.esm_config["UUID"], shard_id, failure_timstamp
+                    ),
                     Body=json.dumps(dlq_event_with_payload),
                 )  # TODO include payload and check other specifics for S3
             else:
@@ -397,18 +399,17 @@ class StreamPoller(Poller):
 
         return events, []
 
-    def get_failure_s3_object_key(self, shard_id: str, failure_datetime: datetime) -> str:
-        """
-        From https://docs.aws.amazon.com/lambda/latest/dg/kinesis-on-failure-destination.html:
 
-        The S3 object containing the invocation record uses the following naming convention:
-        aws/lambda/<ESM-UUID>/<shardID>/YYYY/MM/DD/YYYY-MM-DDTHH.MM.SS-<Random UUID>
+def get_failure_s3_object_key(esm_uuid: str, shard_id: str, failure_datetime: datetime) -> str:
+    """
+    From https://docs.aws.amazon.com/lambda/latest/dg/kinesis-on-failure-destination.html:
 
-        :return: Key for s3 object that invocation failure record will be put to
-        """
-        datetime_string_key = failure_datetime.strftime(
-            "%Y-%m-%dT%H:%M:%S"
-        )  # .isoformat() doesn't remove timezone info
-        esm_uuid = self.esm_config["UUID"]
-        random_uuid = long_uid()
-        return f"aws/lambda/{esm_uuid}/{shard_id}/{datetime_string_key}-{random_uuid}"  # TODO finish according to spec
+    The S3 object containing the invocation record uses the following naming convention:
+    aws/lambda/<ESM-UUID>/<shardID>/YYYY/MM/DD/YYYY-MM-DDTHH.MM.SS-<Random UUID>
+
+    :return: Key for s3 object that invocation failure record will be put to
+    """
+    timestamp = failure_datetime.strftime("%Y-%m-%dT%H.%M.%S")
+    year_month_day = failure_datetime.strftime("%Y/%m/%d")
+    random_uuid = long_uid()
+    return f"aws/lambda/{esm_uuid}/{shard_id}/{year_month_day}/{timestamp}-{random_uuid}"  # TODO finish according to spec
