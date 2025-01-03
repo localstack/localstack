@@ -1,5 +1,5 @@
 import threading
-from typing import Optional
+from typing import Dict, List, Optional
 
 from moto.iam.models import (
     AccessKey,
@@ -12,6 +12,7 @@ from moto.iam.models import Role as MotoRole
 from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS
 
 from localstack import config
+from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.utils.patch import patch
 
 ADDITIONAL_MANAGED_POLICIES = {
@@ -95,7 +96,37 @@ def apply_iam_patches():
         fn(self, name, account_id, region, default_version_id, description, document, **kwargs)
         self.document = document
 
-    # patch unapply_policy
+    @patch(IAMBackend.create_role)
+    def iam_backend_create_role(
+        fn,
+        self,
+        role_name: str,
+        assume_role_policy_document: str,
+        path: str,
+        permissions_boundary: Optional[str],
+        description: str,
+        tags: List[Dict[str, str]],
+        max_session_duration: Optional[str],
+        linked_service: Optional[str] = None,
+    ):
+        role = fn(
+            self,
+            role_name,
+            assume_role_policy_document,
+            path,
+            permissions_boundary,
+            description,
+            tags,
+            max_session_duration,
+            linked_service,
+        )
+        new_id_tag = [tag for tag in (tags or []) if tag["Key"] == TAG_KEY_CUSTOM_ID]
+        if new_id_tag:
+            new_id = new_id_tag[0]["Value"]
+            old_id = role.id
+            role.id = new_id
+            self.roles[new_id] = self.roles.pop(old_id)
+        return role
 
     @patch(InlinePolicy.unapply_policy)
     def inline_policy_unapply_policy(fn, self, backend):
