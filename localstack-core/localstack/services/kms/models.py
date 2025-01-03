@@ -12,7 +12,7 @@ from collections import namedtuple
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
-from cryptography.exceptions import InvalidSignature
+from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.primitives import serialization as crypto_serialization
@@ -22,6 +22,7 @@ from cryptography.hazmat.primitives.asymmetric.padding import PSS, PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.asymmetric.utils import Prehashed
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack.aws.api.kms import (
     CreateAliasRequest,
@@ -379,13 +380,20 @@ class KmsKey:
                     f"{self.metadata['Arn']} key usage is {self.metadata['KeyUsage']} which is not valid for DeriveSharedSecret."
                 )
 
+        # Deserialize public key from DER encoded data to EllipticCurvePublicKey.
+        try:
+            pub_key = load_der_public_key(public_key)
+        except (UnsupportedAlgorithm, ValueError):
+            raise ValidationException("")
+        shared_secret = self.crypto_key.key.exchange(ec.ECDH(), pub_key)
+        # Perform shared secret derivation.
         return HKDF(
             algorithm=algorithm,
             salt=None,
             info=b"",
             length=algorithm.digest_size,
             backend=default_backend(),
-        ).derive(public_key)
+        ).derive(shared_secret)
 
     # This method gets called when a key is replicated to another region. It's meant to populate the required metadata
     # fields in a new replica key.

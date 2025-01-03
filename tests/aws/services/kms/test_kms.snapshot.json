@@ -1728,7 +1728,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_derive_shared_secret": {
-    "recorded-date": "11-10-2024, 07:07:06",
+    "recorded-date": "25-12-2024, 14:45:02",
     "recorded-content": {
       "response": {
         "KeyAgreementAlgorithm": "ECDH",
@@ -1777,6 +1777,16 @@
           "Message": "<key-arn> key usage is ENCRYPT_DECRYPT which is not valid for DeriveSharedSecret."
         },
         "message": "<key-arn> key usage is ENCRYPT_DECRYPT which is not valid for DeriveSharedSecret.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "response-invalid-public-key": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": ""
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
