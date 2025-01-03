@@ -816,6 +816,7 @@ class TestEventsTargetFirehose:
 
 class TestEventsTargetKinesis:
     @pytest.mark.parametrize("with_input_transformer", [True, False])
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     @markers.aws.validated
     def test_put_events_with_target_kinesis(
         self,
