@@ -1,14 +1,7 @@
 {
   "tests/aws/services/events/test_events.py::TestEventTarget::test_put_multiple_targets_with_same_arn_across_different_rules": {
     "last_validated_date": "2025-01-03T12:33:23+00:00"
-  }
-}
-
-"
-  }
-}
- }
-}
+  },
  "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions1]": {
     "last_validated_date": "2024-12-06T16:56:17+00:00"
   },

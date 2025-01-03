@@ -356,9 +356,10 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions0]": {
-    "recorded-date": "09-12-2024, 10:38:53",
+    "recorded-date": "03-01-2025, 15:35:23",
     "recorded-content": {
       "create-custom-event-bus-us-east-1": {
+        "Description": "test bus",
         "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -370,6 +371,7 @@
           {
             "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
             "CreationTime": "datetime",
+            "Description": "test bus",
             "LastModifiedTime": "datetime",
             "Name": "<bus-name>"
           }
@@ -382,6 +384,7 @@
       "describe-custom-event-bus-us-east-1": {
         "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
         "CreationTime": "datetime",
+        "Description": "test bus",
         "LastModifiedTime": "datetime",
         "Name": "<bus-name>",
         "ResponseMetadata": {
@@ -405,9 +408,10 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions1]": {
-    "recorded-date": "09-12-2024, 10:38:55",
+    "recorded-date": "03-01-2025, 15:35:26",
     "recorded-content": {
       "create-custom-event-bus-us-east-1": {
+        "Description": "test bus",
         "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -419,6 +423,7 @@
           {
             "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
             "CreationTime": "datetime",
+            "Description": "test bus",
             "LastModifiedTime": "datetime",
             "Name": "<bus-name>"
           }
@@ -431,6 +436,7 @@
       "describe-custom-event-bus-us-east-1": {
         "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
         "CreationTime": "datetime",
+        "Description": "test bus",
         "LastModifiedTime": "datetime",
         "Name": "<bus-name>",
         "ResponseMetadata": {
@@ -439,6 +445,7 @@
         }
       },
       "create-custom-event-bus-us-west-1": {
+        "Description": "test bus",
         "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -450,6 +457,7 @@
           {
             "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
             "CreationTime": "datetime",
+            "Description": "test bus",
             "LastModifiedTime": "datetime",
             "Name": "<bus-name>"
           }
@@ -462,6 +470,7 @@
       "describe-custom-event-bus-us-west-1": {
         "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
         "CreationTime": "datetime",
+        "Description": "test bus",
         "LastModifiedTime": "datetime",
         "Name": "<bus-name>",
         "ResponseMetadata": {
@@ -470,6 +479,7 @@
         }
       },
       "create-custom-event-bus-eu-central-1": {
+        "Description": "test bus",
         "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -481,6 +491,7 @@
           {
             "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
             "CreationTime": "datetime",
+            "Description": "test bus",
             "LastModifiedTime": "datetime",
             "Name": "<bus-name>"
           }
@@ -493,6 +504,7 @@
       "describe-custom-event-bus-eu-central-1": {
         "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
         "CreationTime": "datetime",
+        "Description": "test bus",
         "LastModifiedTime": "datetime",
         "Name": "<bus-name>",
         "ResponseMetadata": {

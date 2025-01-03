@@ -529,7 +529,7 @@ class TestEventBus:
             snapshot.add_transformer(snapshot.transform.regex(region, "<region>"))
             events = aws_client_factory(region_name=region).events
 
-            response = events.create_event_bus(Name=bus_name)
+            response = events.create_event_bus(Name=bus_name, Description="test bus")
             snapshot.match(f"create-custom-event-bus-{region}", response)
 
             response = events.list_event_buses(NamePrefix=bus_name)
