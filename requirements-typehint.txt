@@ -27,7 +27,7 @@ attrs==24.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.216
+aws-cdk-asset-awscli-v1==2.2.217
     # via aws-cdk-lib
 aws-cdk-asset-kubectl-v20==2.1.3
     # via aws-cdk-lib
@@ -35,7 +35,7 @@ aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==38.0.1
     # via aws-cdk-lib
-aws-cdk-lib==2.173.2
+aws-cdk-lib==2.173.4
     # via localstack-core
 aws-sam-translator==1.94.0
     # via
@@ -53,7 +53,7 @@ boto3==1.35.86
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.35.87
+boto3-stubs==1.35.90
     # via localstack-core (pyproject.toml)
 botocore==1.35.86
     # via
@@ -64,7 +64,7 @@ botocore==1.35.86
     #   localstack-snapshot
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.35.87
+botocore-stubs==1.35.90
     # via boto3-stubs
 build==1.2.2.post1
     # via
@@ -89,9 +89,9 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.22.2
+cfn-lint==1.22.3
     # via moto-ext
-charset-normalizer==3.4.0
+charset-normalizer==3.4.1
     # via requests
 click==8.1.8
     # via
@@ -103,7 +103,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.4.2
     # via aws-cdk-lib
-coverage==7.6.9
+coverage==7.6.10
     # via
     #   coveralls
     #   localstack-core
@@ -177,7 +177,7 @@ hyperframe==6.0.1
     # via h2
 hyperlink==21.0.0
     # via localstack-twisted
-identify==2.6.3
+identify==2.6.4
     # via pre-commit
 idna==3.10
     # via
@@ -320,7 +320,7 @@ mypy-boto3-dynamodbstreams==1.35.0
     # via boto3-stubs
 mypy-boto3-ec2==1.35.82
     # via boto3-stubs
-mypy-boto3-ecr==1.35.87
+mypy-boto3-ecr==1.35.90
     # via boto3-stubs
 mypy-boto3-ecs==1.35.83
     # via boto3-stubs
@@ -404,7 +404,7 @@ mypy-boto3-qldb==1.35.0
     # via boto3-stubs
 mypy-boto3-qldb-session==1.35.0
     # via boto3-stubs
-mypy-boto3-rds==1.35.82
+mypy-boto3-rds==1.35.89
     # via boto3-stubs
 mypy-boto3-rds-data==1.35.64
     # via boto3-stubs
