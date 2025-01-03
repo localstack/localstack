@@ -3081,7 +3081,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_s3_on_failure_destination": {
-    "recorded-date": "27-12-2024, 17:21:48",
+    "recorded-date": "03-01-2025, 14:50:27",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -3109,20 +3109,6 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 202
-        }
-      },
-      "s3_invocation_record": {
-        "AcceptRanges": "bytes",
-        "Body": "",
-        "ContentLength": 1508,
-        "ContentType": "application/octet-stream",
-        "ETag": "<e-tag:1>",
-        "LastModified": "<datetime>",
-        "Metadata": {},
-        "ServerSideEncryption": "AES256",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
         }
       },
       "record_body": {
