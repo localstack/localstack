@@ -7,7 +7,6 @@ from typing import Iterator
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
 
-from localstack.aws.api.lambda_ import EventSourceMappingConfiguration
 from localstack.aws.api.pipes import (
     OnPartialBatchItemFailureStreams,
 )
@@ -43,7 +42,7 @@ class StreamPoller(Poller):
     # This is a workaround for not handling shards in parallel.
     iterator_over_shards: Iterator[tuple[str, str]] | None
     # data from ESM configuration is needed in failure processing
-    esm_config: EventSourceMappingConfiguration
+    esm_uuid: str | None
 
     # The ARN of the processor (e.g., Pipe ARN)
     partner_resource_arn: str | None
