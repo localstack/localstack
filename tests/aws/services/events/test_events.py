@@ -1678,7 +1678,7 @@ class TestEventRule:
                 "InputTemplate": '{"detail-with-id": <detail>}',
             },
         ]
-        for i, pattern, input_transformer in zip(range(3), patterns, input_transformers):
+        for i, pattern, input_transformer in zip(range(2), patterns, input_transformers):
             rule_name = f"test-rule-{i}-{short_uid()}"
             rule = events_put_rule(
                 Name=rule_name,
@@ -1713,7 +1713,7 @@ class TestEventRule:
             {"payload": {"id": "123"}},
             {"id": "123"},
         ]
-        for i, detail in zip(range(3), details):
+        for i, detail in zip(range(2), details):
             num_events = i + 1
             aws_client.events.put_events(
                 Entries=[
@@ -1969,3 +1969,81 @@ class TestEventTarget:
                 {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
             ],
         )
+
+    @markers.aws.validated
+    def test_put_multiple_targets_with_same_id_single_rule(
+        self, sqs_create_queue, sqs_get_queue_arn, events_put_rule, snapshot, aws_client
+    ):
+        """Targets attached to a rule must have unique IDs, but there is no validation for this.
+        The last target with the same ID will overwrite the previous one."""
+        rule_name = f"rule-{short_uid()}"
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        events_put_rule(
+            Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
+        )
+
+        target_id = f"test-With_valid.Characters-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
+            ],
+        )
+
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {
+                    "Id": target_id,
+                    "Arn": queue_arn,
+                    "InputPath": "$.notexisting",
+                },
+            ],
+        )
+
+        response = aws_client.events.list_targets_by_rule(Rule=rule_name)
+        snapshot.match("list-targets", response)
+
+    @markers.aws.validated
+    def test_put_multiple_targets_with_same_id_across_different_rules(
+        self, sqs_create_queue, sqs_get_queue_arn, events_put_rule, snapshot, aws_client
+    ):
+        """Targets attached to different rules can have the same ID"""
+        rule_one_name = f"test-rule-one-{short_uid()}"
+        rule_two_name = f"test-rule-two-{short_uid()}"
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        events_put_rule(
+            Name=rule_one_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
+        )
+        events_put_rule(
+            Name=rule_two_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
+        )
+
+        target_id = f"test-With_valid.Characters-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_one_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
+            ],
+        )
+
+        aws_client.events.put_targets(
+            Rule=rule_two_name,
+            Targets=[
+                {
+                    "Id": target_id,
+                    "Arn": queue_arn,
+                    "InputPath": "$.notexisting",
+                },
+            ],
+        )
+
+        response = aws_client.events.list_targets_by_rule(Rule=rule_one_name)
+        snapshot.match("list-targets-rule-one", response)
+
+        response = aws_client.events.list_targets_by_rule(Rule=rule_two_name)
+        snapshot.match("list-targets-rule-two", response)

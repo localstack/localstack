@@ -1,9 +1,8 @@
 {
-  "tests/aws/services/events/test_events.py::TestEventRule::test_process_pattern_to_single_matching_rules_single_target": {
-    "last_validated_date": "2025-01-02T12:47:30+00:00"
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_put_multiple_targets_with_same_id_across_different_rules": {
+    "last_validated_date": "2025-01-03T12:04:32+00:00"
   }
 }
-  }
 }
 "
   }
