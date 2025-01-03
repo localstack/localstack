@@ -932,5 +932,32 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetStepFunctions::test_put_events_with_target_statefunction_machine_and_input_transformer": {
+    "recorded-date": "03-01-2025, 15:19:29",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "message": {
+              "version": "0",
+              "id": "<uuid:2>",
+              "detail-type": "myDetailType",
+              "source": "com.sample.resource",
+              "account": "111111111111",
+              "time": "date",
+              "region": "<region>",
+              "resources": [],
+              "detail": {
+                "Key1": "Value"
+              }
+            }
+          }
+        }
+      ]
+    }
   }
 }
