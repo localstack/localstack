@@ -2003,6 +2003,12 @@ class TestEventTarget:
             ],
         )
 
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(target_id, "target-id"),
+                snapshot.transform.regex(queue_arn, "target-arn"),
+            ]
+        )
         response = aws_client.events.list_targets_by_rule(Rule=rule_name)
         snapshot.match("list-targets", response)
 
@@ -2042,6 +2048,13 @@ class TestEventTarget:
             ],
         )
 
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(target_id, "target-id"),
+                snapshot.transform.regex(queue_arn, "target-arn"),
+            ]
+        )
+
         response = aws_client.events.list_targets_by_rule(Rule=rule_one_name)
         snapshot.match("list-targets-rule-one", response)
 
@@ -2069,6 +2082,14 @@ class TestEventTarget:
                 {"Id": target_id_one, "Arn": queue_arn, "InputPath": "$.detail"},
                 {"Id": target_id_two, "Arn": queue_arn, "InputPath": "$.doesnotexist"},
             ],
+        )
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(target_id_one, "target-id-one"),
+                snapshot.transform.regex(target_id_two, "target-id-two"),
+                snapshot.transform.regex(queue_arn, "target-arn"),
+            ]
         )
 
         response = aws_client.events.list_targets_by_rule(Rule=rule_name)
@@ -2104,6 +2125,13 @@ class TestEventTarget:
             Targets=[
                 {"Id": target_id, "Arn": queue_arn, "InputPath": "$.doesnotexist"},
             ],
+        )
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(target_id, "target-id"),
+                snapshot.transform.regex(queue_arn, "target-arn"),
+            ]
         )
 
         response = aws_client.events.list_targets_by_rule(Rule=rule_one_name)

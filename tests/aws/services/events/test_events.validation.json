@@ -1,6 +1,6 @@
 {
   "tests/aws/services/events/test_events.py::TestEventTarget::test_put_multiple_targets_with_same_arn_across_different_rules": {
-    "last_validated_date": "2025-01-03T12:10:07+00:00"
+    "last_validated_date": "2025-01-03T12:33:23+00:00"
   }
 }
 

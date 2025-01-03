@@ -2170,13 +2170,13 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_put_multiple_targets_with_same_id_single_rule": {
-    "recorded-date": "03-01-2025, 12:04:01",
+    "recorded-date": "03-01-2025, 12:29:52",
     "recorded-content": {
       "list-targets": {
         "Targets": [
           {
-            "Arn": "arn:<partition>:sqs:<region>:111111111111:test-queue-4930c31e",
-            "Id": "test-With_valid.Characters-316ebb69",
+            "Arn": "target-arn",
+            "Id": "target-id",
             "InputPath": "$.notexisting"
           }
         ],
@@ -2188,13 +2188,13 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_put_multiple_targets_with_same_id_across_different_rules": {
-    "recorded-date": "03-01-2025, 12:04:32",
+    "recorded-date": "03-01-2025, 12:30:57",
     "recorded-content": {
       "list-targets-rule-one": {
         "Targets": [
           {
-            "Arn": "arn:<partition>:sqs:<region>:111111111111:test-queue-82897537",
-            "Id": "test-With_valid.Characters-bc4021a0",
+            "Arn": "target-arn",
+            "Id": "target-id",
             "InputPath": "$.detail"
           }
         ],
@@ -2206,8 +2206,8 @@
       "list-targets-rule-two": {
         "Targets": [
           {
-            "Arn": "arn:<partition>:sqs:<region>:111111111111:test-queue-82897537",
-            "Id": "test-With_valid.Characters-bc4021a0",
+            "Arn": "target-arn",
+            "Id": "target-id",
             "InputPath": "$.notexisting"
           }
         ],
@@ -2219,18 +2219,18 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_put_multiple_targets_with_same_arn_single_rule": {
-    "recorded-date": "03-01-2025, 12:09:50",
+    "recorded-date": "03-01-2025, 12:32:45",
     "recorded-content": {
       "list-targets": {
         "Targets": [
           {
-            "Arn": "arn:<partition>:sqs:<region>:111111111111:test-queue-77ae0162",
-            "Id": "test-With_valid.Characters-195a2962",
+            "Arn": "target-arn",
+            "Id": "target-id-one",
             "InputPath": "$.detail"
           },
           {
-            "Arn": "arn:<partition>:sqs:<region>:111111111111:test-queue-77ae0162",
-            "Id": "test-With_valid.Characters-7e963a3c",
+            "Arn": "target-arn",
+            "Id": "target-id-two",
             "InputPath": "$.doesnotexist"
           }
         ],
@@ -2242,13 +2242,13 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_put_multiple_targets_with_same_arn_across_different_rules": {
-    "recorded-date": "03-01-2025, 12:10:07",
+    "recorded-date": "03-01-2025, 12:33:23",
     "recorded-content": {
       "list-targets-rule-one": {
         "Targets": [
           {
-            "Arn": "arn:<partition>:sqs:<region>:111111111111:test-queue-7ff20252",
-            "Id": "test-With_valid.Characters-21b5dd7f",
+            "Arn": "target-arn",
+            "Id": "target-id",
             "InputPath": "$.detail"
           }
         ],
@@ -2260,8 +2260,8 @@
       "list-targets-rule-two": {
         "Targets": [
           {
-            "Arn": "arn:<partition>:sqs:<region>:111111111111:test-queue-7ff20252",
-            "Id": "test-With_valid.Characters-21b5dd7f",
+            "Arn": "target-arn",
+            "Id": "target-id",
             "InputPath": "$.doesnotexist"
           }
         ],
