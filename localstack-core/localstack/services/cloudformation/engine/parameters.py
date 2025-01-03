@@ -89,8 +89,9 @@ def resolve_parameters(
             # since no value has been specified for the deployment, we need to be able to resolve the default or fail
             default_value = pm["DefaultValue"]
             if default_value is None:
+                LOG.error("New parameter without a default value: %s", pm_key)
                 raise Exception(
-                    "Invalid. Needs to have either param specified or Default. (TODO)"
+                    f"Invalid. Needs to have either param specified or Default for key={pm_key}. (TODO)"
                 )  # TODO: test and verify
 
             resolved_param["ParameterValue"] = default_value
