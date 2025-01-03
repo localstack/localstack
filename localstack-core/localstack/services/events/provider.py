@@ -1772,7 +1772,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         target_sender = TargetSenderFactory(
             target, rule_arn, rule_name, region, account_id
         ).get_target_sender()
-        self._target_sender_store[target_sender.arn] = target_sender
+        self._target_sender_store[target_sender.unique_id] = target_sender
         return target_sender
 
     def create_archive_service(
@@ -1835,11 +1835,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def _delete_target_sender(self, ids: TargetIdList, rule) -> None:
         for target_id in ids:
             if target := rule.targets.get(target_id):
-                target_arn = target["Arn"]
+                target_unique_id = f"{rule.arn}-{target_id}"
                 try:
-                    del self._target_sender_store[target_arn]
+                    del self._target_sender_store[target_unique_id]
                 except KeyError:
-                    LOG.error("Error deleting target service %s.", target_arn)
+                    LOG.error("Error deleting target service %s.", target["Arn"])
 
     def _get_limited_dict_and_next_token(
         self, input_dict: dict, next_token: NextToken | None, limit: LimitMax100 | None
@@ -1889,8 +1889,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                         "resources": [rule.arn],
                         "detail": {},
                     }
-
-                target_sender = self._target_sender_store[target["Arn"]]
+                target_unique_id = f"{rule.arn}-{target['Id']}"
+                target_sender = self._target_sender_store[target_unique_id]
                 try:
                     target_sender.process_event(event.copy())
                 except Exception as e:
@@ -2178,16 +2178,17 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 return
 
             for target in rule.targets.values():
-                target_arn = target["Arn"]
-                if is_archive_arn(target_arn):
+                target_id = target["Id"]
+                if is_archive_arn(target["Arn"]):
                     self._put_to_archive(
                         region,
                         account_id,
-                        archive_target_id=target["Id"],
+                        archive_target_id=target_id,
                         event=event_formatted,
                     )
                 else:
-                    target_sender = self._target_sender_store[target_arn]
+                    target_unique_id = f"{rule.arn}-{target_id}"
+                    target_sender = self._target_sender_store[target_unique_id]
                     try:
                         target_sender.process_event(event_formatted.copy())
                         rule_invocation.record(target_sender.service)
@@ -2198,7 +2199,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                             json.dumps(
                                 {
                                     "ErrorCode": "TargetDeliveryFailure",
-                                    "ErrorMessage": f"Failed to deliver to target {target['Id']}: {str(error)}",
+                                    "ErrorMessage": f"Failed to deliver to target {target_id}: {str(error)}",
                                 }
                             )
                         )
