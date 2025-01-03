@@ -899,5 +899,38 @@
         }
       ]
     }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetKinesis::test_put_events_with_target_kinesis[True]": {
+    "recorded-date": "03-01-2025, 15:02:29",
+    "recorded-content": {
+      "response": {
+        "payload": {
+          "acc_id": "0a787ecb-4015",
+          "sf_id": "baz"
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetKinesis::test_put_events_with_target_kinesis[False]": {
+    "recorded-date": "03-01-2025, 15:03:08",
+    "recorded-content": {
+      "response": {
+        "version": "0",
+        "id": "<uuid:1>",
+        "detail-type": "core.update-account-command",
+        "source": "core.update-account-command",
+        "account": "111111111111",
+        "time": "date",
+        "region": "<region>",
+        "resources": [],
+        "detail": {
+          "command": "update-account",
+          "payload": {
+            "acc_id": "0a787ecb-4015",
+            "sf_id": "baz"
+          }
+        }
+      }
+    }
   }
 }
