@@ -41,7 +41,7 @@ class StreamPoller(Poller):
     # Iterator for round-robin polling from different shards because a batch cannot contain events from different shards
     # This is a workaround for not handling shards in parallel.
     iterator_over_shards: Iterator[tuple[str, str]] | None
-    # data from ESM configuration is needed in failure processing
+    # ESM UUID is needed in failure processing to form s3 failure destination object key
     esm_uuid: str | None
 
     # The ARN of the processor (e.g., Pipe ARN)
