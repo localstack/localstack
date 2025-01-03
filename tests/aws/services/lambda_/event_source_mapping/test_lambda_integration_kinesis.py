@@ -1,6 +1,7 @@
 import json
 import math
 import time
+from datetime import datetime
 
 import pytest
 from botocore.exceptions import ClientError
@@ -929,14 +930,23 @@ class TestKinesisSource:
                 Bucket=bucket_name,
                 Key=object_key,
             )
-            return invocation_record
+            return invocation_record, object_key
 
         sleep = 15 if is_aws_cloud() else 5
-        s3_invocation_record = retry(get_invocation_record, retries=15, sleep=sleep, sleep_before=5)
+        s3_invocation_record, s3_object_key = retry(
+            get_invocation_record, retries=15, sleep=sleep, sleep_before=5
+        )
         snapshot.match("s3_invocation_record", s3_invocation_record)
 
         record_body = json.loads(s3_invocation_record["Body"].read().decode("utf-8"))
         snapshot.match("record_body", record_body)
+
+        failure_datetime = datetime.fromisoformat(record_body["timestamp"])
+        timestamp = failure_datetime.strftime("%Y-%m-%dT%H.%M.%S")
+        year_month_day = failure_datetime.strftime("%Y/%m/%d")
+        assert s3_object_key.startswith(
+            f'aws/lambda/{event_source_mapping_uuid}/{record_body["KinesisBatchInfo"]["shardId"]}/{year_month_day}/{timestamp}'
+        )  # there is a random UUID at the end of object key, checking that the key starts with deterministic values
 
     @markers.aws.validated
     @pytest.mark.parametrize(
