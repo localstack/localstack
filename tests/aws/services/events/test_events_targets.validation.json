@@ -20,6 +20,12 @@
   "tests/aws/services/events/test_events_targets.py::TestEventsTargetKinesis::test_put_events_with_target_kinesis": {
     "last_validated_date": "2024-07-11T09:04:25+00:00"
   },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetKinesis::test_put_events_with_target_kinesis[False]": {
+    "last_validated_date": "2025-01-03T15:03:08+00:00"
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetKinesis::test_put_events_with_target_kinesis[True]": {
+    "last_validated_date": "2025-01-03T15:02:29+00:00"
+  },
   "tests/aws/services/events/test_events_targets.py::TestEventsTargetLambda::test_put_events_with_target_lambda": {
     "last_validated_date": "2024-07-11T09:04:48+00:00"
   },

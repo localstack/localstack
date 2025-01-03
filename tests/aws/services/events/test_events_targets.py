@@ -815,9 +815,11 @@ class TestEventsTargetFirehose:
 
 
 class TestEventsTargetKinesis:
+    @pytest.mark.parametrize("with_input_transformer", [True, False])
     @markers.aws.validated
     def test_put_events_with_target_kinesis(
         self,
+        with_input_transformer,
         kinesis_create_stream,
         wait_for_stream_ready,
         create_iam_role_with_policy,
@@ -872,6 +874,11 @@ class TestEventsTargetKinesis:
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
 
+        input_transformer = {
+            "InputPathsMap": {"payload": "$.detail.payload"},
+            "InputTemplate": '{"payload": <payload>}',
+        }
+        kwargs = {"InputTransformer": input_transformer} if with_input_transformer else {}
         target_id = f"target-{short_uid()}"
         aws_client.events.put_targets(
             Rule=rule_name,
@@ -882,6 +889,7 @@ class TestEventsTargetKinesis:
                     "Arn": stream_arn,
                     "RoleArn": event_bridge_bus_to_kinesis_role_arn,
                     "KinesisParameters": {"PartitionKeyPath": "$.detail-type"},
+                    **kwargs,
                 }
             ],
         )
