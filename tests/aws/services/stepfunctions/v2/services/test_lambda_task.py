@@ -3,6 +3,7 @@ import json
 import pytest
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import (
     create_and_record_execution,
@@ -28,7 +29,7 @@ class TestTaskLambda:
         create_1_res = create_lambda_function(
             func_name=function_1_name,
             handler_file=ST.LAMBDA_RETURN_BYTES_STR,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_1_name, "<lambda_function_1_name>"))
 
@@ -61,7 +62,7 @@ class TestTaskLambda:
         create_1_res = create_lambda_function(
             func_name=function_1_name,
             handler_file=ST.LAMBDA_ID_FUNCTION,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_1_name, "<lambda_function_1_name>"))
 
@@ -107,7 +108,7 @@ class TestTaskLambda:
         create_1_res = create_lambda_function(
             func_name=function_1_name,
             handler_file=ST.LAMBDA_ID_FUNCTION,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_1_name, "<lambda_function_1_name>"))
 
@@ -140,7 +141,7 @@ class TestTaskLambda:
         create_1_res = create_lambda_function(
             func_name=function_1_name,
             handler_file=lambda_functions.ECHO_FUNCTION,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_1_name, "<lambda_function_1_name>"))
 
@@ -148,7 +149,7 @@ class TestTaskLambda:
         create_2_res = create_lambda_function(
             func_name=function_2_name,
             handler_file=lambda_functions.ECHO_FUNCTION,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_2_name, "<lambda_function_2_name>"))
 
@@ -184,7 +185,7 @@ class TestTaskLambda:
         create_res = create_lambda_function(
             func_name=function_name,
             handler_file=ST.LAMBDA_ID_FUNCTION,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "lambda_function_name"))
         function_arn = create_res["CreateFunctionResponse"]["FunctionArn"]

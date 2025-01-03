@@ -1,7 +1,7 @@
 from typing import Any
 
-from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_list import (
-    FunctionArgumentList,
+from localstack.services.stepfunctions.asl.component.intrinsic.argument.argument import (
+    ArgumentList,
 )
 from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.states_function import (
     StatesFunction,
@@ -16,16 +16,16 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class StatesFunctionArray(StatesFunction):
-    def __init__(self, arg_list: FunctionArgumentList):
+    def __init__(self, argument_list: ArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.Array),
-            arg_list=arg_list,
+            argument_list=argument_list,
         )
 
     def _eval_body(self, env: Environment) -> None:
-        self.arg_list.eval(env=env)
+        self.argument_list.eval(env=env)
         values: list[Any] = list()
-        for _ in range(self.arg_list.size):
+        for _ in range(self.argument_list.size):
             values.append(env.stack.pop())
         values.reverse()
         env.stack.append(values)

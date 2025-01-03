@@ -1,8 +1,8 @@
 import random
 from typing import Any
 
-from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_list import (
-    FunctionArgumentList,
+from localstack.services.stepfunctions.asl.component.intrinsic.argument.argument import (
+    ArgumentList,
 )
 from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.states_function import (
     StatesFunction,
@@ -32,14 +32,14 @@ class MathRandom(StatesFunction):
     # Returns
     # {"random": 456 }
 
-    def __init__(self, arg_list: FunctionArgumentList):
+    def __init__(self, argument_list: ArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.MathRandom),
-            arg_list=arg_list,
+            argument_list=argument_list,
         )
-        if arg_list.size < 2 or arg_list.size > 3:
+        if argument_list.size < 2 or argument_list.size > 3:
             raise ValueError(
-                f"Expected 2-3 arguments for function type '{type(self)}', but got: '{arg_list}'."
+                f"Expected 2-3 arguments for function type '{type(self)}', but got: '{argument_list}'."
             )
 
     @staticmethod
@@ -51,11 +51,11 @@ class MathRandom(StatesFunction):
         return int(value)
 
     def _eval_body(self, env: Environment) -> None:
-        self.arg_list.eval(env=env)
+        self.argument_list.eval(env=env)
         args = env.stack.pop()
 
         seed = None
-        if self.arg_list.size == 3:
+        if self.argument_list.size == 3:
             seed = args.pop()
             self._validate_integer_value(seed, "seed")
 
