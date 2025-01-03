@@ -953,7 +953,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if name in store.event_buses:
             raise ResourceAlreadyExistsException(f"Event bus {name} already exists.")
         event_bus_service = self.create_event_bus_service(
-            name, region, account_id, event_source_name, tags
+            name, region, account_id, event_source_name, description, tags
         )
         store.event_buses[event_bus_service.event_bus.name] = event_bus_service.event_bus
 
@@ -963,6 +963,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         response = CreateEventBusResponse(
             EventBusArn=event_bus_service.arn,
         )
+        if description := event_bus_service.event_bus.description:
+            response["Description"] = description
         return response
 
     @handler("DeleteEventBus")
@@ -1675,7 +1677,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         default_event_bus_name = "default"
         if default_event_bus_name not in store.event_buses:
             event_bus_service = self.create_event_bus_service(
-                default_event_bus_name, region, account_id, None, None
+                default_event_bus_name, region, account_id, None, None, None
             )
             store.event_buses[event_bus_service.event_bus.name] = event_bus_service.event_bus
         return store
@@ -1724,6 +1726,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         region: str,
         account_id: str,
         event_source_name: Optional[EventSourceName],
+        description: Optional[EventBusDescription],
         tags: Optional[TagList],
     ) -> EventBusService:
         event_bus_service = EventBusService.create_event_bus_service(
@@ -1731,6 +1734,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             region,
             account_id,
             event_source_name,
+            description,
             tags,
         )
         self._event_bus_services_store[event_bus_service.arn] = event_bus_service
@@ -1945,6 +1949,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             "Name": event_bus.name,
             "Arn": event_bus.arn,
         }
+        if event_bus.description:
+            event_bus_api_type["Description"] = event_bus.description
         if event_bus.creation_time:
             event_bus_api_type["CreationTime"] = event_bus.creation_time
         if event_bus.last_modified_time:

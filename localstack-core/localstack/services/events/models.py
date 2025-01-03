@@ -205,6 +205,7 @@ class EventBus:
     region: str
     account_id: str
     event_source_name: Optional[str] = None
+    description: Optional[str] = None
     tags: TagList = field(default_factory=list)
     policy: Optional[ResourcePolicy] = None
     rules: RuleDict = field(default_factory=dict)
