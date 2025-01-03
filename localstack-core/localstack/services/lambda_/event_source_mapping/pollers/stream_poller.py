@@ -55,11 +55,11 @@ class StreamPoller(Poller):
         source_client: BaseClient | None = None,
         processor: EventProcessor | None = None,
         partner_resource_arn: str | None = None,
-        esm_config: EventSourceMappingConfiguration | None = None,
+        esm_uuid: str | None = None,
     ):
         super().__init__(source_arn, source_parameters, source_client, processor)
         self.partner_resource_arn = partner_resource_arn
-        self.esm_config = esm_config
+        self.esm_uuid = esm_uuid
         self.shards = {}
         self.iterator_over_shards = None
 
@@ -338,9 +338,7 @@ class StreamPoller(Poller):
                 dlq_event_with_payload = self.add_payload_to_dlq_event(dlq_event, events)
                 s3_client.put_object(
                     Bucket=s3_bucket_name(dlq_arn),
-                    Key=get_failure_s3_object_key(
-                        self.esm_config["UUID"], shard_id, failure_timstamp
-                    ),
+                    Key=get_failure_s3_object_key(self.esm_uuid, shard_id, failure_timstamp),
                     Body=json.dumps(dlq_event_with_payload),
                 )
             else:
