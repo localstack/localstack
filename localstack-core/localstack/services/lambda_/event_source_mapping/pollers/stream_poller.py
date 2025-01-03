@@ -342,7 +342,7 @@ class StreamPoller(Poller):
                         self.esm_config["UUID"], shard_id, failure_timstamp
                     ),
                     Body=json.dumps(dlq_event_with_payload),
-                )  # TODO include payload and check other specifics for S3
+                )
             else:
                 LOG.warning("Unsupported DLQ service %s", service)
 
@@ -416,4 +416,4 @@ def get_failure_s3_object_key(esm_uuid: str, shard_id: str, failure_datetime: da
     timestamp = failure_datetime.strftime("%Y-%m-%dT%H.%M.%S")
     year_month_day = failure_datetime.strftime("%Y/%m/%d")
     random_uuid = long_uid()
-    return f"aws/lambda/{esm_uuid}/{shard_id}/{year_month_day}/{timestamp}-{random_uuid}"  # TODO finish according to spec
+    return f"aws/lambda/{esm_uuid}/{shard_id}/{year_month_day}/{timestamp}-{random_uuid}"
