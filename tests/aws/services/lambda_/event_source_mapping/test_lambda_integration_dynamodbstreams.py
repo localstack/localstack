@@ -347,7 +347,7 @@ class TestDynamoDBEventSourceMapping:
         list_esm = aws_client.lambda_.list_event_source_mappings(EventSourceArn=latest_stream_arn)
         snapshot.match("list_event_source_mapping_result", list_esm)
 
-    # FIXME UpdateTable is not returning a TableID
+    # TODO re-record snapshot, now TableId is returned but new WarmThroughput property is not
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..TableDescription.TableId",
@@ -462,7 +462,7 @@ class TestDynamoDBEventSourceMapping:
 
         snapshot.match("failure_sns_message", failure_sns_message)
 
-    # FIXME UpdateTable is not returning a TableID
+    # TODO re-record snapshot, now TableId is returned but new WarmThroughput property is not
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..TableDescription.TableId",
