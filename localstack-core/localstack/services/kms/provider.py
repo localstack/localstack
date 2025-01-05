@@ -32,6 +32,7 @@ from localstack.aws.api.kms import (
     DisableKeyRequest,
     DisableKeyRotationRequest,
     EnableKeyRequest,
+    EnableKeyRotationRequest,
     EncryptionAlgorithmSpec,
     EncryptionContextType,
     EncryptResponse,
@@ -1267,7 +1268,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
     @handler("EnableKeyRotation", expand=False)
     def enable_key_rotation(
-        self, context: RequestContext, request: DisableKeyRotationRequest
+        self, context: RequestContext, request: EnableKeyRotationRequest
     ) -> None:
         # https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html
         # "If the KMS key has imported key material or is in a custom key store: UnsupportedOperationException."
