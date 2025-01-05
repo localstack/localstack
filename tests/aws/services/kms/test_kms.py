@@ -916,8 +916,12 @@ class TestKMS:
         assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is False
         aws_client.kms.enable_key_rotation(KeyId=key_id)
         assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is True
+        assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["RotationPeriodInDays"] == 365
         aws_client.kms.disable_key_rotation(KeyId=key_id)
         assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is False
+        aws_client.kms.enable_key_rotation(KeyId=key_id, RotationPeriodInDays=120)
+        assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is True
+        assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["RotationPeriodInDays"] == 120
 
     @markers.aws.validated
     def test_create_list_delete_alias(self, kms_create_alias, aws_client):

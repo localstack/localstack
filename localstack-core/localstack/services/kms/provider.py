@@ -1280,7 +1280,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # We do not model that here, though.
         key = self._get_kms_key(context.account_id, context.region, request.get("KeyId"))
         key.is_key_rotation_enabled = True
-        key.rotation_period_in_days = request.get("RotationPeriodInDays")
+        if request.get("RotationPeriodInDays"):
+            key.rotation_period_in_days = request.get("RotationPeriodInDays")
         key.schedule_key_rotation()
 
     @handler("ListKeyPolicies", expand=False)
