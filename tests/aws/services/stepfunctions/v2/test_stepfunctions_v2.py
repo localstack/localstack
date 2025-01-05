@@ -672,7 +672,9 @@ def test_default_logging_configuration(create_state_machine, aws_client):
         definition = json.dumps(definition)
 
         sm_name = f"sts-logging-{short_uid()}"
-        result = create_state_machine(name=sm_name, definition=definition, roleArn=role_arn)
+        result = create_state_machine(
+            aws_client, name=sm_name, definition=definition, roleArn=role_arn
+        )
 
         assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
         result = aws_client.stepfunctions.describe_state_machine(

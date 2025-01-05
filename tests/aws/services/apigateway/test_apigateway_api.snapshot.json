@@ -3556,5 +3556,53 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_put_integration_request_parameter_bool_type": {
+    "recorded-date": "12-12-2024, 10:46:41",
+    "recorded-content": {
+      "bool-method": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "requestParameters": {
+          "method.request.path.testPath": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-method-request-param-wrong-type": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid mapping expression specified: Validation Result: warnings : [], errors : [Invalid mapping expression specified: true]"
+        },
+        "message": "Invalid mapping expression specified: Validation Result: warnings : [], errors : [Invalid mapping expression specified: true]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-integration-request-param-wrong-type": {
+        "Error": {
+          "Code": "SerializationException",
+          "Message": "class java.lang.Boolean can not be converted to an String"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-integration-request-param-bool-value": {
+        "Error": {
+          "Code": "SerializationException",
+          "Message": "class java.lang.Boolean can not be converted to an String"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

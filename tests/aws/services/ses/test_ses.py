@@ -260,6 +260,9 @@ class TestSES:
         self, create_template, aws_client, snapshot, setup_email_addresses
     ):
         # Ensure all email send operations correctly update the `sent` email counter
+        snapshot.add_transformer(
+            snapshot.transform.key_value("SentLast24Hours", reference_replacement=False),
+        )
 
         def _assert_sent_quota(expected_counter: int) -> dict:
             _send_quota = aws_client.ses.get_send_quota()
@@ -872,6 +875,7 @@ class TestSES:
         assert exc.match("MessageRejected")
 
 
+@pytest.mark.usefixtures("openapi_validate")
 class TestSESRetrospection:
     @markers.aws.only_localstack
     def test_send_email_can_retrospect(self, aws_client):

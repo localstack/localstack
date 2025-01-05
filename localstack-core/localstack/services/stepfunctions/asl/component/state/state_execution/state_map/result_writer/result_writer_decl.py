@@ -2,7 +2,7 @@ import copy
 import logging
 from typing import Final
 
-from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
+from localstack.services.stepfunctions.asl.component.common.parargs import Parargs
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.result_writer.resource_eval.resource_eval import (
     ResourceEval,
@@ -20,15 +20,15 @@ LOG = logging.getLogger(__name__)
 
 class ResultWriter(EvalComponent):
     resource_eval: Final[ResourceEval]
-    parameters: Final[Parameters]
+    parargs: Final[Parargs]
 
     def __init__(
         self,
         resource: Resource,
-        parameters: Parameters,
+        parargs: Parargs,
     ):
         self.resource_eval = resource_eval_for(resource=resource)
-        self.parameters = parameters
+        self.parargs = parargs
 
     @property
     def resource(self):
@@ -41,5 +41,5 @@ class ResultWriter(EvalComponent):
         return f"({self.__class__.__name__}| {class_dict})"
 
     def _eval_body(self, env: Environment) -> None:
-        self.parameters.eval(env=env)
+        self.parargs.eval(env=env)
         self.resource_eval.eval_resource(env=env)

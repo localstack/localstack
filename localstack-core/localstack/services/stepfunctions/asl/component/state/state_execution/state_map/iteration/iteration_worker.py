@@ -14,7 +14,6 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     Job,
     JobPool,
 )
-from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import Item, Map
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.eval.program_state import (
@@ -22,6 +21,7 @@ from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramState,
     ProgramStopped,
 )
+from localstack.services.stepfunctions.asl.eval.states import ItemData, MapData
 
 LOG = logging.getLogger(__name__)
 
@@ -67,11 +67,11 @@ class IterationWorker(abc.ABC):
             f"Unexpected Runtime Error in ItemProcessor worker for input '{job.job_index}'."
         )
         try:
-            env.context_object_manager.context_object["Map"] = Map(
-                Item=Item(Index=job.job_index, Value=job.job_input)
+            env.states.context_object.context_object_data["Map"] = MapData(
+                Item=ItemData(Index=job.job_index, Value=job.job_input)
             )
 
-            env.inp = job.job_input
+            env.states.reset(input_value=job.job_input)
             self._eval_input(env_frame=env)
 
             job.job_program.eval(env)
@@ -120,7 +120,7 @@ class IterationWorker(abc.ABC):
                 update_source_event_id=False,
             )
             # Extract the output otherwise.
-            job_output = env.inp
+            job_output = env.states.get_input()
 
         except FailureEventException as failure_event_ex:
             # Extract the output to be this exception: this will trigger a failure workflow in the jobs pool.
@@ -177,7 +177,7 @@ class IterationWorker(abc.ABC):
             return
 
         # Evaluate the job.
-        job_frame = worker_frame.open_frame()
+        job_frame = worker_frame.open_inner_frame()
         self._eval_job(env=job_frame, job=job)
         worker_frame.close_frame(job_frame)
 

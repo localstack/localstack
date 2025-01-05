@@ -130,7 +130,13 @@ class SNSTopicProvider(ResourceProvider[SNSTopicProperties]):
           - sns:ListSubscriptionsByTopic
           - sns:GetDataProtectionPolicy
         """
-        raise NotImplementedError
+        model = request.desired_state
+        topic_arn = model["TopicArn"]
+
+        describe_res = request.aws_client_factory.sns.get_topic_attributes(TopicArn=topic_arn)[
+            "Attributes"
+        ]
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=describe_res)
 
     def delete(
         self,
@@ -167,3 +173,15 @@ class SNSTopicProvider(ResourceProvider[SNSTopicProperties]):
           - sns:PutDataProtectionPolicy
         """
         raise NotImplementedError
+
+    def list(
+        self,
+        request: ResourceRequest[SNSTopicProperties],
+    ) -> ProgressEvent[SNSTopicProperties]:
+        resources = request.aws_client_factory.sns.list_topics()
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[
+                SNSTopicProperties(TopicArn=topic["TopicArn"]) for topic in resources["Topics"]
+            ],
+        )

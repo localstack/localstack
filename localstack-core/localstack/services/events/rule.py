@@ -42,8 +42,16 @@ class RuleService:
     managed_by: ManagedBy
     rule: Rule
 
-    def __init__(
-        self,
+    def __init__(self, rule: Rule):
+        self.rule = rule
+        if rule.schedule_expression:
+            self.schedule_cron = self._get_schedule_cron(rule.schedule_expression)
+        else:
+            self.schedule_cron = None
+
+    @classmethod
+    def create_rule_service(
+        cls,
         name: RuleName,
         region: Optional[str] = None,
         account_id: Optional[str] = None,
@@ -57,25 +65,23 @@ class RuleService:
         targets: Optional[TargetDict] = None,
         managed_by: Optional[ManagedBy] = None,
     ):
-        self._validate_input(event_pattern, schedule_expression, event_bus_name)
-        if schedule_expression:
-            self.schedule_cron = self._get_schedule_cron(schedule_expression)
-        else:
-            self.schedule_cron = None
+        cls._validate_input(event_pattern, schedule_expression, event_bus_name)
         # required to keep data and functionality separate for persistence
-        self.rule = Rule(
-            name,
-            region,
-            account_id,
-            schedule_expression,
-            event_pattern,
-            state,
-            description,
-            role_arn,
-            tags,
-            event_bus_name,
-            targets,
-            managed_by,
+        return cls(
+            Rule(
+                name,
+                region,
+                account_id,
+                schedule_expression,
+                event_pattern,
+                state,
+                description,
+                role_arn,
+                tags,
+                event_bus_name,
+                targets,
+                managed_by,
+            )
         )
 
     @property
@@ -178,8 +184,9 @@ class RuleService:
 
         return validation_errors
 
+    @classmethod
     def _validate_input(
-        self,
+        cls,
         event_pattern: Optional[EventPattern],
         schedule_expression: Optional[ScheduleExpression],
         event_bus_name: Optional[EventBusName] = "default",

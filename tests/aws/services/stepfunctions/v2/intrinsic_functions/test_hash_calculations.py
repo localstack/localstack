@@ -7,10 +7,11 @@ from tests.aws.services.stepfunctions.v2.intrinsic_functions.utils import create
 # TODO: test for validation errors, and boundary testing.
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestHashCalculations:
     @markers.aws.validated
-    def test_hash(self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client):
+    def test_hash(
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+    ):
         hash_bindings = [
             ("input data", "MD5"),
             ("input data", "SHA-1"),
@@ -20,8 +21,8 @@ class TestHashCalculations:
         ]
         input_values = [{"fst": inp, "snd": algo} for inp, algo in hash_bindings]
         create_and_test_on_inputs(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             IFT.HASH,

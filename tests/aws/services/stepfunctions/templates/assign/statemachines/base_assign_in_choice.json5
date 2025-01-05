@@ -1,0 +1,39 @@
+{
+  "Comment": "BASE_ASSIGN_IN_CHOICE",
+  "StartAt": "CheckInputState",
+  "States": {
+    "CheckInputState": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.input_value",
+          "IsPresent": false,
+          "Assign": {
+            "status": "UNKNOWN"
+          },
+          "Next": "FinalState"
+        },
+        {
+          "Variable": "$.input_value",
+          "NumericEquals": 42,
+          "Assign": {
+            "status": "CORRECT"
+          },
+          "Next": "FinalState"
+        }
+      ],
+      "Assign": {
+        "status": "INCORRECT",
+        "guess.$": "$.input_value"
+      },
+      "Default": "FinalState"
+    },
+    "FinalState": {
+      "Type": "Pass",
+      "Parameters": {
+        "result.$": "$status"
+      },
+      "End": true
+    }
+  }
+}

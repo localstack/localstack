@@ -1,5 +1,8 @@
 from typing import Final
 
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
+    StringJSONata,
+)
 from localstack.services.stepfunctions.asl.component.state.state_wait.wait_function.wait_function import (
     WaitFunction,
 )
@@ -16,3 +19,17 @@ class Seconds(WaitFunction):
 
     def _get_wait_seconds(self, env: Environment) -> int:
         return self.seconds
+
+
+class SecondsJSONata(WaitFunction):
+    string_jsonata: Final[StringJSONata]
+
+    def __init__(self, string_jsonata: StringJSONata):
+        super().__init__()
+        self.string_jsonata = string_jsonata
+
+    def _get_wait_seconds(self, env: Environment) -> int:
+        # TODO: add snapshot tests to verify AWS's behaviour about non integer values.
+        self.string_jsonata.eval(env=env)
+        max_items: int = int(env.stack.pop())
+        return max_items

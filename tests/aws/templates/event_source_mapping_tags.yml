@@ -1,0 +1,120 @@
+Parameters:
+  OutputKey:
+    Type: String
+
+Resources:
+  Queue:
+    Type: AWS::SQS::Queue
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+
+  FunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: '2012-10-17'
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ''
+            - - 'arn:'
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Tags:
+        - Key: my
+          Value: tag
+
+  FunctionRolePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - sqs:ChangeMessageVisibility
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+              - sqs:GetQueueUrl
+              - sqs:ReceiveMessage
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - Queue
+                - Arn
+          - Action:
+              - s3:PutObject
+            Effect: Allow
+            Resource:
+              Fn::Sub:
+                - "${bucketArn}/${key}"
+                - bucketArn: !GetAtt OutputBucket.Arn
+                  key: !Ref OutputKey
+        Version: '2012-10-17'
+      PolicyName: FunctionRolePolicy
+      Roles:
+        - Ref: FunctionRole
+
+  OutputBucket:
+    Type: AWS::S3::Bucket
+
+  Function:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          import os
+          import boto3
+          
+          BUCKET = os.environ["BUCKET"]
+          KEY = os.environ["KEY"]
+          
+          def handler(event, context):
+              client = boto3.client("s3")
+              client.put_object(Bucket=BUCKET, Key=KEY, Body=b"ok")
+              return "ok"
+      Handler: index.handler
+      Environment:
+        Variables:
+          BUCKET: !Ref OutputBucket
+          KEY: !Ref OutputKey
+
+      Role:
+        Fn::GetAtt:
+          - FunctionRole
+          - Arn
+      Runtime: python3.11
+      Tags:
+        - Key: my
+          Value: tag
+    DependsOn:
+      - FunctionRolePolicy
+      - FunctionRole
+
+  EventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn:
+        Fn::GetAtt:
+          - Queue
+          - Arn
+      FunctionName:
+        Ref: Function
+      Tags:
+        - Key: my
+          Value: tag
+
+Outputs:
+  QueueUrl:
+    Value: !Ref Queue
+
+  EventSourceMappingArn:
+    Value: !GetAtt EventSourceMapping.EventSourceMappingArn
+
+  FunctionName:
+    Value: !Ref Function
+
+  OutputBucketName:
+    Value: !Ref OutputBucket

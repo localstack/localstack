@@ -12,11 +12,14 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
 )
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
+    StringJSONata,
+    StringSampler,
+)
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
-from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 TOLERATED_FAILURE_COUNT_MIN: Final[int] = 0
 TOLERATED_FAILURE_COUNT_DEFAULT: Final[int] = 0
@@ -34,7 +37,7 @@ class ToleratedFailureCountDecl(EvalComponent, abc.ABC):
         env.stack.append(tolerated_failure_count)
 
 
-class ToleratedFailureCount(ToleratedFailureCountDecl):
+class ToleratedFailureCountInt(ToleratedFailureCountDecl):
     tolerated_failure_count: Final[int]
 
     def __init__(self, tolerated_failure_count: int = TOLERATED_FAILURE_COUNT_DEFAULT):
@@ -44,15 +47,36 @@ class ToleratedFailureCount(ToleratedFailureCountDecl):
         return self.tolerated_failure_count
 
 
-class ToleratedFailureCountPath(ToleratedFailureCountDecl):
-    tolerated_failure_count_path: Final[str]
+class ToleratedFailureCountStringJSONata(ToleratedFailureCountDecl):
+    string_jsonata: Final[StringJSONata]
 
-    def __init__(self, tolerated_failure_count_path: str):
-        self.tolerated_failure_count_path = tolerated_failure_count_path
+    def __init__(self, string_jsonata: StringJSONata):
+        super().__init__()
+        self.string_jsonata = string_jsonata
 
     def _eval_tolerated_failure_count(self, env: Environment) -> int:
-        inp = env.stack[-1]
-        tolerated_failure_count = extract_json(self.tolerated_failure_count_path, inp)
+        # TODO: add snapshot tests to verify AWS's behaviour about non integer values.
+        self.string_jsonata.eval(env=env)
+        failure_count: int = int(env.stack.pop())
+        return failure_count
+
+
+class ToleratedFailureCountPath(ToleratedFailureCountDecl):
+    string_sampler: Final[StringSampler]
+
+    def __init__(self, string_sampler: StringSampler):
+        self.string_sampler = string_sampler
+
+    def _eval_tolerated_failure_count(self, env: Environment) -> int:
+        self.string_sampler.eval(env=env)
+        tolerated_failure_count = env.stack.pop()
+
+        if isinstance(tolerated_failure_count, str):
+            try:
+                tolerated_failure_count = int(tolerated_failure_count)
+            except Exception:
+                # Pass the invalid type forward for validation error
+                pass
 
         error_cause = None
         if not isinstance(tolerated_failure_count, int):
@@ -63,7 +87,7 @@ class ToleratedFailureCountPath(ToleratedFailureCountDecl):
             )
             error_cause = (
                 f'The ToleratedFailureCountPath field refers to value "{value_str}" '
-                f"which is not a valid integer: {self.tolerated_failure_count_path}"
+                f"which is not a valid integer: {self.string_sampler.literal_value}"
             )
 
         elif tolerated_failure_count < TOLERATED_FAILURE_COUNT_MIN:
@@ -105,15 +129,36 @@ class ToleratedFailurePercentage(ToleratedFailurePercentageDecl):
         return self.tolerated_failure_percentage
 
 
-class ToleratedFailurePercentagePath(ToleratedFailurePercentageDecl):
-    tolerate_failure_percentage_path: Final[str]
+class ToleratedFailurePercentageStringJSONata(ToleratedFailurePercentageDecl):
+    string_jsonata: Final[StringJSONata]
 
-    def __init__(self, tolerate_failure_percentage_path: str):
-        self.tolerate_failure_percentage_path = tolerate_failure_percentage_path
+    def __init__(self, string_jsonata: StringJSONata):
+        super().__init__()
+        self.string_jsonata = string_jsonata
 
     def _eval_tolerated_failure_percentage(self, env: Environment) -> float:
-        inp = env.stack[-1]
-        tolerated_failure_percentage = extract_json(self.tolerate_failure_percentage_path, inp)
+        # TODO: add snapshot tests to verify AWS's behaviour about non floating values.
+        self.string_jsonata.eval(env=env)
+        failure_percentage: int = int(env.stack.pop())
+        return failure_percentage
+
+
+class ToleratedFailurePercentagePath(ToleratedFailurePercentageDecl):
+    string_sampler: Final[StringSampler]
+
+    def __init__(self, string_sampler: StringSampler):
+        self.string_sampler = string_sampler
+
+    def _eval_tolerated_failure_percentage(self, env: Environment) -> float:
+        self.string_sampler.eval(env=env)
+        tolerated_failure_percentage = env.stack.pop()
+
+        if isinstance(tolerated_failure_percentage, str):
+            try:
+                tolerated_failure_percentage = int(tolerated_failure_percentage)
+            except Exception:
+                # Pass the invalid type forward for validation error
+                pass
 
         if isinstance(tolerated_failure_percentage, int):
             tolerated_failure_percentage = float(tolerated_failure_percentage)
@@ -127,7 +172,7 @@ class ToleratedFailurePercentagePath(ToleratedFailurePercentageDecl):
             )
             error_cause = (
                 f'The ToleratedFailurePercentagePath field refers to value "{value_str}" '
-                f"which is not a valid float: {self.tolerate_failure_percentage_path}"
+                f"which is not a valid float: {self.string_sampler.literal_value}"
             )
         elif (
             not TOLERATED_FAILURE_PERCENTAGE_MIN

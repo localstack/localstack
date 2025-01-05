@@ -1,0 +1,40 @@
+{
+  "Comment": "JSONPATH_TO_JSONATA_DATAFLOW",
+  "StartAt": "StateJsonPath",
+  "States": {
+    "StateJsonPath": {
+      "QueryLanguage": "JSONPath",
+      "Type": "Pass",
+      "Result": {
+        "riddle": "What is the answer to life, the universe, and everything?"
+      },
+      "Assign": {
+        "answer": 42,
+        "inputData.$": "$"
+      },
+      "OutputPath": "$",
+      "ResultPath": "$.enigma.mystery",
+      "Next": "StateJsonata"
+    },
+    "StateJsonata": {
+      "QueryLanguage": "JSONata",
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "{% $states.input.functionName %}",
+        "Payload": {
+          "theQuestion": "{% $states.input.enigma.mystery.riddle %}",
+          "theAnswer": "{% $answer %}"
+        }
+      },
+      "Assign": {
+        "answer": "<omitted>",
+        "message": "{% $states.result %}"
+      },
+      "Output": {
+        "result": "{% $states.result.Payload %}"
+      },
+      "End": true
+    }
+  }
+}

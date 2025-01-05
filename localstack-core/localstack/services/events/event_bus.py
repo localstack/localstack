@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Self
 
 from localstack.aws.api.events import (
     Action,
@@ -23,11 +23,14 @@ class EventBusService:
     event_source_name: str | None
     tags: TagList | None
     policy: str | None
-    rules: RuleDict | None
     event_bus: EventBus
 
-    def __init__(
-        self,
+    def __init__(self, event_bus: EventBus):
+        self.event_bus = event_bus
+
+    @classmethod
+    def create_event_bus_service(
+        cls,
         name: EventBusName,
         region: str,
         account_id: str,
@@ -35,15 +38,17 @@ class EventBusService:
         tags: Optional[TagList] = None,
         policy: Optional[str] = None,
         rules: Optional[RuleDict] = None,
-    ):
-        self.event_bus = EventBus(
-            name,
-            region,
-            account_id,
-            event_source_name,
-            tags,
-            policy,
-            rules,
+    ) -> Self:
+        return cls(
+            EventBus(
+                name,
+                region,
+                account_id,
+                event_source_name,
+                tags,
+                policy,
+                rules,
+            )
         )
 
     @property
@@ -58,8 +63,9 @@ class EventBusService:
         condition: Condition,
         policy: str,
     ):
-        if policy and any([action, principal, statement_id, condition]):
-            raise ValueError("Combination of policy with other arguments is not allowed")
+        # TODO: cover via test
+        # if policy and any([action, principal, statement_id, condition]):
+        #     raise ValueError("Combination of policy with other arguments is not allowed")
         self.event_bus.last_modified_time = datetime.now(timezone.utc)
         if policy:  # policy document replaces all existing permissions
             policy = json.loads(policy)
@@ -104,8 +110,9 @@ class EventBusService:
         resource_arn: Arn,
         condition: Condition,
     ) -> Statement:
-        if condition and principal != "*":
-            raise ValueError("Condition can only be set when principal is '*'")
+        # TODO: cover via test
+        # if condition and principal != "*":
+        #     raise ValueError("Condition can only be set when principal is '*'")
         if principal != "*":
             principal = {"AWS": f"arn:{get_partition(self.event_bus.region)}:iam::{principal}:root"}
         statement = Statement(

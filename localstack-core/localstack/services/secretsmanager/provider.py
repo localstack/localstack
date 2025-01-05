@@ -173,9 +173,20 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         self, context: RequestContext, request: CreateSecretRequest
     ) -> CreateSecretResponse:
         self._raise_if_missing_client_req_token(request)
-        self._raise_if_invalid_secret_id(request["Name"])
+        # Some providers need to create keys which are not usually creatable by users
+        if not any(
+            tag_entry["Key"] == "BYPASS_SECRET_ID_VALIDATION"
+            for tag_entry in request.get("Tags", [])
+        ):
+            self._raise_if_invalid_secret_id(request["Name"])
+        else:
+            request["Tags"] = [
+                tag_entry
+                for tag_entry in request.get("Tags", [])
+                if tag_entry["Key"] != "BYPASS_SECRET_ID_VALIDATION"
+            ]
 
-        return call_moto(context)
+        return call_moto(context, request)
 
     @handler("DeleteResourcePolicy", expand=False)
     def delete_resource_policy(
@@ -488,7 +499,7 @@ def moto_smb_create_secret(fn, self, name, *args, **kwargs):
     if secret is not None and secret.deleted_date is not None:
         raise InvalidRequestException(AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION)
 
-    if name in self.secrets.keys():
+    if name in self.secrets:
         raise ResourceExistsException(
             f"The operation failed because the secret {name} already exists."
         )

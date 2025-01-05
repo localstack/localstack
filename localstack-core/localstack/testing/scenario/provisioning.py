@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, ContextManager, Optional
 
 import aws_cdk as cdk
-from botocore.exceptions import WaiterError
+from botocore.exceptions import ClientError, WaiterError
 
 from localstack.config import is_env_true
 from localstack.testing.aws.util import is_aws_cloud
@@ -28,7 +28,8 @@ WAITER_CONFIG_AWS = {
     "Delay": 6,
     "MaxAttempts": 600,
 }  # total timeout ~1 hour (6 * 600 = 3_600 seconds)
-WAITER_CONFIG_LS = {"Delay": 1, "MaxAttempts": 600}  # total timeout ~10 minutes
+# total timeout ~10 minutes
+WAITER_CONFIG_LS = {"Delay": 1, "MaxAttempts": 600}
 CFN_MAX_TEMPLATE_SIZE = 51_200
 
 
@@ -244,8 +245,8 @@ class InfraProvisioner:
 
                 for s3_bucket in s3_buckets:
                     self.custom_cleanup_steps.append(
-                        lambda: cleanup_s3_bucket(
-                            self.aws_client.s3, s3_bucket, delete_bucket=False
+                        lambda bucket=s3_bucket: cleanup_s3_bucket(
+                            self.aws_client.s3, bucket, delete_bucket=False
                         )
                     )
 
@@ -320,7 +321,8 @@ class InfraProvisioner:
                 with open(template_path, "wt") as fd:
                     template_json = cdk.assertions.Template.from_stack(cdk_stack).to_json()
                     json.dump(template_json, fd, indent=2)
-                    fd.write("\n")  # add trailing newline for linter and Git compliance
+                    # add trailing newline for linter and Git compliance
+                    fd.write("\n")
 
             self.cloudformation_stacks[cdk_stack.stack_name] = {
                 "StackName": cdk_stack.stack_name,
@@ -402,7 +404,12 @@ class InfraProvisioner:
         return f"localstack-testing-assets-{account_id}-{region}"
 
     def _create_bucket_if_not_exists(self, template_bucket_name: str):
-        create_s3_bucket(template_bucket_name, s3_client=self.aws_client.s3)
+        try:
+            self.aws_client.s3.head_bucket(Bucket=template_bucket_name)
+        except ClientError as exc:
+            if exc.response["Error"]["Code"] != "404":
+                raise
+            create_s3_bucket(template_bucket_name, s3_client=self.aws_client.s3)
 
     def _synth(self):
         # TODO: this doesn't actually synth a CloudAssembly yet

@@ -1,0 +1,38 @@
+{
+  "Event": {
+    "id": "1",
+    "source": "order",
+    "detail-type": "Test",
+    "account": "123456789012",
+    "region": "us-east-2",
+    "time": "2022-07-13T13:48:01Z",
+    "dynamodb": {
+      "ApproximateCreationDateTime": 1733418659.0,
+      "Keys": {
+        "id": {
+          "S": "id_value_1"
+        }
+      },
+      "NewImage": {
+        "id": {
+          "S": "id_value_1"
+        },
+        "numericFilter": {
+          "N": "42"
+        }
+      },
+      "SequenceNumber": "49658361752382621885697088319781165717078428243510427650",
+      "SizeBytes": 52,
+      "StreamViewType": "NEW_AND_OLD_IMAGES"
+    }
+  },
+  "EventPattern": {
+    "dynamodb": {
+      "NewImage": {
+        "numericFilter": {
+          "N": [{"numeric": [">", 100]}, {"anything-but": "101"}]
+        }
+      }
+    }
+  }
+}

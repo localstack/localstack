@@ -10,6 +10,7 @@ from botocore.exceptions import WaiterError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.aws.api.cloudformation import Capability
+from localstack.services.cloudformation.engine.entities import StackIdentifier
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -399,6 +400,33 @@ class TestStacksApi:
             if resource["ResourceStatus"] in ["CREATE_COMPLETE", "UPDATE_COMPLETE"]
         ]
         assert len(updated_resources) == length_expected
+
+    @markers.aws.only_localstack
+    def test_create_stack_with_custom_id(
+        self, aws_client, cleanups, account_id, region_name, set_resource_custom_id
+    ):
+        stack_name = f"stack-{short_uid()}"
+        custom_id = short_uid()
+
+        set_resource_custom_id(
+            StackIdentifier(account_id, region_name, stack_name), custom_id=custom_id
+        )
+        template = open(
+            os.path.join(os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"),
+            "r",
+        ).read()
+
+        stack = aws_client.cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=template,
+        )
+        cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
+
+        assert stack["StackId"].split("/")[-1] == custom_id
+
+        # We need to wait until the stack is created otherwise we can end up in a scenario
+        # where we try to delete the stack before creating its resources, failing the test
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_name)
 
 
 def stack_process_is_finished(cfn_client, stack_name):
@@ -869,3 +897,134 @@ def test_stack_deploy_order(deploy_cfn_template, aws_client, snapshot, deploy_or
     filtered_events.sort(key=lambda e: e["Timestamp"])
 
     snapshot.match("events", filtered_events)
+
+
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        # TODO: this property is present in the response from LocalStack when
+        # there is an active changeset, however it is not present on AWS
+        # because the change set has not been executed.
+        "$..Stacks..ChangeSetId",
+        # FIXME: tackle this when fixing API parity of CloudFormation
+        "$..Capabilities",
+        "$..IncludeNestedStacks",
+        "$..LastUpdatedTime",
+        "$..NotificationARNs",
+        "$..ResourceChange",
+        "$..StackResourceDetail.Metadata",
+    ]
+)
+@markers.aws.validated
+def test_no_echo_parameter(snapshot, aws_client, deploy_cfn_template):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(SortingTransformer("Parameters", lambda x: x.get("ParameterKey", "")))
+
+    template_path = os.path.join(os.path.dirname(__file__), "../../../templates/cfn_no_echo.yml")
+    template = open(template_path, "r").read()
+
+    deployment = deploy_cfn_template(
+        template=template,
+        parameters={"SecretParameter": "SecretValue"},
+    )
+    stack_id = deployment.stack_id
+    stack_name = deployment.stack_name
+
+    describe_stacks = aws_client.cloudformation.describe_stacks(StackName=stack_id)
+    snapshot.match("describe_stacks", describe_stacks)
+
+    # Check Resource Metadata.
+    describe_stack_resources = aws_client.cloudformation.describe_stack_resources(
+        StackName=stack_id
+    )
+    for resource in describe_stack_resources["StackResources"]:
+        resource_logical_id = resource["LogicalResourceId"]
+
+        # Get detailed information about the resource
+        describe_stack_resource_details = aws_client.cloudformation.describe_stack_resource(
+            StackName=stack_name, LogicalResourceId=resource_logical_id
+        )
+        snapshot.match(
+            f"describe_stack_resource_details_{resource_logical_id}",
+            describe_stack_resource_details,
+        )
+
+    # Update stack via update_stack (and change the value of SecretParameter)
+    aws_client.cloudformation.update_stack(
+        StackName=stack_name,
+        TemplateBody=template,
+        Parameters=[
+            {"ParameterKey": "SecretParameter", "ParameterValue": "NewSecretValue1"},
+        ],
+    )
+    aws_client.cloudformation.get_waiter("stack_update_complete").wait(StackName=stack_name)
+    update_stacks = aws_client.cloudformation.describe_stacks(StackName=stack_id)
+    snapshot.match("describe_updated_stacks", update_stacks)
+
+    # Update stack via create_change_set (and change the value of SecretParameter)
+    change_set_name = f"UpdateSecretParameterValue-{short_uid()}"
+    aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        TemplateBody=template,
+        ChangeSetName=change_set_name,
+        Parameters=[
+            {"ParameterKey": "SecretParameter", "ParameterValue": "NewSecretValue2"},
+        ],
+    )
+    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+    )
+    change_sets = aws_client.cloudformation.describe_change_set(
+        StackName=stack_id,
+        ChangeSetName=change_set_name,
+    )
+    snapshot.match("describe_updated_change_set", change_sets)
+    describe_stacks = aws_client.cloudformation.describe_stacks(StackName=stack_id)
+    snapshot.match("describe_updated_stacks_change_set", describe_stacks)
+
+    # Change `NoEcho` of a parameter from true to false and update stack via create_change_set.
+    change_set_name = f"UpdateSecretParameterNoEchoToFalse-{short_uid()}"
+    template_dict = parse_yaml(load_file(template_path))
+    template_dict["Parameters"]["SecretParameter"]["NoEcho"] = False
+    template_no_echo_false = yaml.dump(template_dict)
+    aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        TemplateBody=template_no_echo_false,
+        ChangeSetName=change_set_name,
+        Parameters=[
+            {"ParameterKey": "SecretParameter", "ParameterValue": "NewSecretValue2"},
+        ],
+    )
+    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+    )
+    change_sets = aws_client.cloudformation.describe_change_set(
+        StackName=stack_id,
+        ChangeSetName=change_set_name,
+    )
+    snapshot.match("describe_updated_change_set_no_echo_true", change_sets)
+    describe_stacks = aws_client.cloudformation.describe_stacks(StackName=stack_id)
+    snapshot.match("describe_updated_stacks_no_echo_true", describe_stacks)
+
+    # Change `NoEcho` of a parameter back from false to true and update stack via create_change_set.
+    change_set_name = f"UpdateSecretParameterNoEchoToTrue-{short_uid()}"
+    aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        TemplateBody=template,
+        ChangeSetName=change_set_name,
+        Parameters=[
+            {"ParameterKey": "SecretParameter", "ParameterValue": "NewSecretValue2"},
+        ],
+    )
+    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+    )
+    change_sets = aws_client.cloudformation.describe_change_set(
+        StackName=stack_id,
+        ChangeSetName=change_set_name,
+    )
+    snapshot.match("describe_updated_change_set_no_echo_false", change_sets)
+    describe_stacks = aws_client.cloudformation.describe_stacks(StackName=stack_id)
+    snapshot.match("describe_updated_stacks_no_echo_false", describe_stacks)

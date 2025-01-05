@@ -32,6 +32,7 @@ OPENAPI_SPEC_TF_JSON = os.path.join(PARENT_DIR, "../../files/openapi.spec.tf.jso
 SWAGGER_MOCK_CORS_JSON = os.path.join(PARENT_DIR, "../../files/swagger-mock-cors.json")
 PETSTORE_SWAGGER_JSON = os.path.join(PARENT_DIR, "../../files/petstore-authorizer.swagger.json")
 TEST_SWAGGER_FILE_JSON = os.path.join(PARENT_DIR, "../../files/swagger.json")
+TEST_OPENAPI_COGNITO_AUTH = os.path.join(PARENT_DIR, "../../files/openapi.cognito-auth.json")
 TEST_OAS30_BASE_PATH_SERVER_VAR_FILE_YAML = os.path.join(
     PARENT_DIR, "../../files/openapi-basepath-server-variable.yaml"
 )
@@ -479,7 +480,6 @@ class TestApiGatewayImportRestApi:
         apigw_create_rest_api,
         aws_client,
         snapshot,
-        apigateway_placeholder_authorizer_lambda_invocation_arn,
         apigw_snapshot_imported_resources,
         apigw_deploy_rest_api,
     ):
@@ -831,6 +831,62 @@ class TestApiGatewayImportRestApi:
         )
         import_resp, root_id = import_apigw(body=spec_file, failOnWarnings=True)
         rest_api_id = import_resp["id"]
+
+        response = aws_client.apigateway.get_resources(restApiId=rest_api_id)
+        response["items"] = sorted(response["items"], key=itemgetter("path"))
+        snapshot.match("resources", response)
+
+        # this fixture will iterate over every resource and match its method, methodResponse, integration and
+        # integrationResponse
+        apigw_snapshot_imported_resources(rest_api_id=rest_api_id, resources=response)
+
+    @pytest.mark.no_apigw_snap_transformers
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$.resources.items..resourceMethods.GET",  # AWS does not show them after import
+        ]
+    )
+    @markers.aws.validated
+    def test_import_with_cognito_auth_identity_source(
+        self,
+        region_name,
+        account_id,
+        import_apigw,
+        snapshot,
+        aws_client,
+        apigw_snapshot_imported_resources,
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.jsonpath("$.import-swagger.id", value_replacement="rest-id"),
+                snapshot.transform.jsonpath(
+                    "$.resources.items..id", value_replacement="resource-id"
+                ),
+                snapshot.transform.jsonpath(
+                    "$.get-authorizers..id", value_replacement="authorizer-id"
+                ),
+            ]
+        )
+        snapshot.add_transformer(
+            snapshot.transform.regex(
+                regex="petstore.execute-api.us-west-1",
+                replacement="<external-aws-endpoint>",
+            ),
+            priority=-10,
+        )
+        spec_file = load_file(TEST_OPENAPI_COGNITO_AUTH)
+        # the authorizer does not need to exist in AWS
+        spec_file = spec_file.replace(
+            "${cognito_pool_arn}",
+            f"arn:aws:cognito-idp:{region_name}:{account_id}:userpool/{region_name}_ABC123",
+        )
+        response, root_id = import_apigw(body=spec_file, failOnWarnings=True)
+        snapshot.match("import-swagger", response)
+
+        rest_api_id = response["id"]
+
+        authorizers = aws_client.apigateway.get_authorizers(restApiId=rest_api_id)
+        snapshot.match("get-authorizers", sorted(authorizers["items"], key=lambda x: x["name"]))
 
         response = aws_client.apigateway.get_resources(restApiId=rest_api_id)
         response["items"] = sorted(response["items"], key=itemgetter("path"))

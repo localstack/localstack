@@ -1726,5 +1726,62 @@
         "Origin": "AWS_KMS"
       }
     }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_derive_shared_secret": {
+    "recorded-date": "11-10-2024, 07:07:06",
+    "recorded-content": {
+      "response": {
+        "KeyAgreementAlgorithm": "ECDH",
+        "KeyId": "<key-id:1>",
+        "KeyOrigin": "AWS_KMS",
+        "SharedSecret": "shared-secret",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "response-invalid-key-usage": {
+        "Error": {
+          "Code": "InvalidKeyUsageException",
+          "Message": "<key-arn> key usage is SIGN_VERIFY which is not valid for DeriveSharedSecret."
+        },
+        "message": "<key-arn> key usage is SIGN_VERIFY which is not valid for DeriveSharedSecret.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "response-invalid-key-spec": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "KeyUsage KEY_AGREEMENT is not compatible with KeySpec RSA_2048"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "response-invalid-key-agreement-algo": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'INVALID' at 'keyAgreementAlgorithm' failed to satisfy constraint: Member must satisfy enum value set: [ECDH]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "response-invalid-key": {
+        "Error": {
+          "Code": "InvalidKeyUsageException",
+          "Message": "<key-arn> key usage is ENCRYPT_DECRYPT which is not valid for DeriveSharedSecret."
+        },
+        "message": "<key-arn> key usage is ENCRYPT_DECRYPT which is not valid for DeriveSharedSecret.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

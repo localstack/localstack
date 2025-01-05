@@ -23,6 +23,9 @@ from localstack.services.stepfunctions.asl.component.common.error_name.custom_er
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
+    StateCredentials,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceCondition,
     ResourceRuntimePart,
@@ -174,6 +177,11 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
                 for forbidden_prefix in StateTaskServiceApiGateway._FORBIDDEN_HTTP_HEADERS_PREFIX:
                     if key.startswith(forbidden_prefix):
                         raise ValueError(f"The 'Headers' field contains unsupported values: {key}")
+
+                value = headers.get(key)
+                if isinstance(value, list):
+                    headers[key] = f"[{','.join(value)}]"
+
             if "RequestBody" in parameters:
                 headers[HEADER_CONTENT_TYPE] = APPLICATION_JSON
         headers["Accept"] = APPLICATION_JSON
@@ -286,7 +294,10 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        state_credentials: StateCredentials,
     ):
+        # TODO: add support for task credentials
+
         task_parameters: TaskParameters = select_from_typed_dict(
             typed_dict=TaskParameters, obj=normalised_parameters
         )

@@ -264,6 +264,8 @@ class ServicePrincipal(str):
     """
 
     apigateway = "apigateway"
+    cloudformation = "cloudformation"
+    dms = "dms"
     events = "events"
     firehose = "firehose"
     lambda_ = "lambda"
@@ -272,3 +274,4 @@ class ServicePrincipal(str):
     s3 = "s3"
     sns = "sns"
     sqs = "sqs"
+    states = "states"

@@ -1,0 +1,24 @@
+{
+  "Comment": "TASK_LAMBDA_LEGACY_RESOURCE_JSONPATH_TO_JSONATA",
+  "StartAt": "JsonPathState",
+  "States": {
+    "JsonPathState": {
+      "QueryLanguage": "JSONPath",
+      "Type": "Task",
+      "Resource": "%LAMBDA_FUNCTION_ARN_LITERAL_PLACEHOLDER%",
+      "Parameters": {
+        "Payload": {"foo": "foo-1"}
+      },
+      "Assign": {
+        "resultsVar.$": "$"
+      },
+      "OutputPath": "$",
+      "Next": "JsonataState"
+    },
+      "JsonataState": {
+      "QueryLanguage": "JSONata",
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

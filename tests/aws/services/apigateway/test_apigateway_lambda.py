@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 
@@ -33,6 +34,8 @@ RESPONSE_TEMPLATE_VM = os.path.join(THIS_FOLDER, "../../files/response-template.
 CLOUDFRONT_SKIP_HEADERS = [
     "$..Via",
     "$..X-Amz-Cf-Id",
+    "$..X-Amz-Cf-Pop",
+    "$..X-Cache",
     "$..CloudFront-Forwarded-Proto",
     "$..CloudFront-Is-Desktop-Viewer",
     "$..CloudFront-Is-Mobile-Viewer",
@@ -41,6 +44,16 @@ CLOUDFRONT_SKIP_HEADERS = [
     "$..CloudFront-Viewer-ASN",
     "$..CloudFront-Viewer-Country",
 ]
+
+LAMBDA_RESPONSE_FROM_BODY = """
+import json
+import base64
+def handler(event, context, *args):
+    body = event["body"]
+    if event.get("isBase64Encoded"):
+        body = base64.b64decode(body)
+    return json.loads(body)
+"""
 
 
 @markers.aws.validated
@@ -869,6 +882,208 @@ def test_lambda_aws_proxy_response_format(
         elif lambda_format_type == "wrong-format":
             assert response.status_code == 502
             assert response.json() == {"message": "Internal server error"}
+
+
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        *CLOUDFRONT_SKIP_HEADERS,
+        # returned by LocalStack by default
+        "$..headers.Server",
+    ]
+)
+@markers.aws.validated
+def test_aws_proxy_response_payload_format_validation(
+    create_rest_apigw,
+    create_lambda_function,
+    create_role_with_policy,
+    aws_client,
+    region_name,
+    snapshot,
+):
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("Via"),
+            snapshot.transform.key_value("X-Cache"),
+            snapshot.transform.key_value("x-amz-apigw-id"),
+            snapshot.transform.key_value("X-Amz-Cf-Pop"),
+            snapshot.transform.key_value("X-Amz-Cf-Id"),
+            snapshot.transform.key_value("X-Amzn-Trace-Id"),
+            snapshot.transform.key_value(
+                "Date", reference_replacement=False, value_replacement="<date>"
+            ),
+        ]
+    )
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.jsonpath("$..headers.Host", value_replacement="host"),
+            snapshot.transform.jsonpath("$..multiValueHeaders.Host[0]", value_replacement="host"),
+            snapshot.transform.key_value(
+                "X-Forwarded-For",
+                value_replacement="<X-Forwarded-For>",
+                reference_replacement=False,
+            ),
+            snapshot.transform.key_value(
+                "X-Forwarded-Port",
+                value_replacement="<X-Forwarded-Port>",
+                reference_replacement=False,
+            ),
+            snapshot.transform.key_value(
+                "X-Forwarded-Proto",
+                value_replacement="<X-Forwarded-Proto>",
+                reference_replacement=False,
+            ),
+        ],
+        priority=-1,
+    )
+
+    stage_name = "test"
+    _, role_arn = create_role_with_policy(
+        "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
+    )
+
+    function_name = f"response-format-apigw-{short_uid()}"
+    create_function_response = create_lambda_function(
+        handler_file=LAMBDA_RESPONSE_FROM_BODY,
+        func_name=function_name,
+        runtime=Runtime.python3_12,
+    )
+    # create invocation role
+    lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
+
+    # create rest api
+    api_id, _, root = create_rest_apigw(
+        name=f"test-api-{short_uid()}",
+        description="Integration test API",
+    )
+
+    resource_id = aws_client.apigateway.create_resource(
+        restApiId=api_id, parentId=root, pathPart="{proxy+}"
+    )["id"]
+
+    aws_client.apigateway.put_method(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="ANY",
+        authorizationType="NONE",
+    )
+
+    # Lambda AWS_PROXY integration
+    aws_client.apigateway.put_integration(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="ANY",
+        type="AWS_PROXY",
+        integrationHttpMethod="POST",
+        uri=f"arn:aws:apigateway:{region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
+        credentials=role_arn,
+    )
+
+    aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+    endpoint = api_invoke_url(api_id=api_id, path="/test", stage=stage_name)
+
+    def _invoke(
+        body: dict | str, expected_status_code: int = 200, return_headers: bool = False
+    ) -> dict:
+        kwargs = {}
+        if body:
+            kwargs["json"] = body
+
+        _response = requests.post(
+            url=endpoint,
+            headers={"User-Agent": "python/test"},
+            verify=False,
+            **kwargs,
+        )
+
+        assert _response.status_code == expected_status_code
+
+        try:
+            content = _response.json()
+        except json.JSONDecodeError:
+            content = _response.content.decode()
+
+        dict_resp = {"content": content}
+        if return_headers:
+            dict_resp["headers"] = dict(_response.headers)
+
+        return dict_resp
+
+    response = retry(_invoke, sleep=1, retries=10, body={"statusCode": 200})
+    snapshot.match("invoke-api-no-body", response)
+
+    response = _invoke(
+        body={"statusCode": 200, "headers": {"test-header": "value", "header-bool": True}},
+        return_headers=True,
+    )
+    snapshot.match("invoke-api-with-headers", response)
+
+    response = _invoke(
+        body={"statusCode": 200, "headers": None},
+        return_headers=True,
+    )
+    snapshot.match("invoke-api-with-headers-null", response)
+
+    response = _invoke(body={"statusCode": 200, "wrongValue": "value"}, expected_status_code=502)
+    snapshot.match("invoke-api-wrong-format", response)
+
+    response = _invoke(body={}, expected_status_code=502)
+    snapshot.match("invoke-api-empty-response", response)
+
+    response = _invoke(
+        body={
+            "statusCode": 200,
+            "body": base64.b64encode(b"test-data").decode(),
+            "isBase64Encoded": True,
+        }
+    )
+    snapshot.match("invoke-api-b64-encoded-true", response)
+
+    response = _invoke(body={"statusCode": 200, "body": base64.b64encode(b"test-data").decode()})
+    snapshot.match("invoke-api-b64-encoded-false", response)
+
+    response = _invoke(
+        body={"statusCode": 200, "multiValueHeaders": {"test-multi": ["value1", "value2"]}},
+        return_headers=True,
+    )
+    snapshot.match("invoke-api-multi-headers-valid", response)
+
+    response = _invoke(
+        body={
+            "statusCode": 200,
+            "multiValueHeaders": {"test-multi": ["value-multi"]},
+            "headers": {"test-multi": "value-solo"},
+        },
+        return_headers=True,
+    )
+    snapshot.match("invoke-api-multi-headers-overwrite", response)
+
+    response = _invoke(
+        body={
+            "statusCode": 200,
+            "multiValueHeaders": {"tesT-Multi": ["value-multi"]},
+            "headers": {"test-multi": "value-solo"},
+        },
+        return_headers=True,
+    )
+    snapshot.match("invoke-api-multi-headers-overwrite-casing", response)
+
+    response = _invoke(
+        body={"statusCode": 200, "multiValueHeaders": {"test-multi-invalid": "value1"}},
+        expected_status_code=502,
+    )
+    snapshot.match("invoke-api-multi-headers-invalid", response)
+
+    response = _invoke(body={"statusCode": "test"}, expected_status_code=502)
+    snapshot.match("invoke-api-invalid-status-code", response)
+
+    response = _invoke(body={"statusCode": "201"}, expected_status_code=201)
+    snapshot.match("invoke-api-status-code-str", response)
+
+    response = _invoke(body="justAString", expected_status_code=502)
+    snapshot.match("invoke-api-just-string", response)
+
+    response = _invoke(body={"headers": {"test-header": "value"}}, expected_status_code=200)
+    snapshot.match("invoke-api-only-headers", response)
 
 
 # Testing the integration with Rust to prevent future regression with strongly typed language integration

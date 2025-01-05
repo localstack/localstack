@@ -86,8 +86,8 @@ class StateTaskActivity(StateTask):
         )
 
     def _eval_parameters(self, env: Environment) -> dict:
-        if self.parameters:
-            self.parameters.eval(env=env)
+        if self.parargs:
+            self.parargs.eval(env=env)
         activity_input = env.stack.pop()
         return activity_input
 
@@ -110,7 +110,7 @@ class StateTaskActivity(StateTask):
             heartbeat_seconds = env.stack.pop()
 
         # Publish the activity task on the callback manager.
-        task_token = env.context_object_manager.update_task_token()
+        task_token = env.states.context_object.update_task_token()
         try:
             callback_endpoint = env.callback_pool_manager.add_activity_task(
                 callback_id=task_token,

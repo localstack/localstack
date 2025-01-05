@@ -41,3 +41,8 @@ class NoSuchObjectLockConfiguration(CommonServiceException):
 class MalformedPolicy(CommonServiceException):
     def __init__(self, message=None):
         super().__init__("MalformedPolicy", status_code=400, message=message)
+
+
+class InvalidBucketOwnerAWSAccountID(CommonServiceException):
+    def __init__(self, message=None) -> None:
+        super().__init__("InvalidBucketOwnerAWSAccountID", status_code=400, message=message)

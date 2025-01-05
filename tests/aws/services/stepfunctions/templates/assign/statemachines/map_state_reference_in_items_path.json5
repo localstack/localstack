@@ -1,0 +1,46 @@
+{
+  "Comment": "MAP_STATE_REFERENCE_IN_ITEMS_PATH",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Pass",
+      "Assign": {
+        "Question": "Who's that Pokemon?",
+        "PokemonList": [
+          "Charizard",
+          "Pikachu",
+          "Squirtle"
+        ]
+      },
+      "Result": {
+        "AnswerTemplate": "It's {}!"
+      },
+      "Next": "MapIterateState"
+    },
+    "MapIterateState": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "ItemsPath": "$PokemonList",
+      "ItemSelector": {
+        "AnnouncePokemon.$": "States.Format($.AnswerTemplate, $$.Map.Item.Value)"
+      },
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "Pass",
+        "States": {
+          "Pass": {
+            "Type": "Pass",
+            "Parameters": {
+                "Question.$": "$Question",
+                "Answer.$": "$.AnnouncePokemon"
+            },
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

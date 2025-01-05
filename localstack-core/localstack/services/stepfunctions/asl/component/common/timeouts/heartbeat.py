@@ -1,9 +1,12 @@
 import abc
 from typing import Final
 
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
+    StringJSONata,
+    StringSampler,
+)
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 
 class Heartbeat(EvalComponent, abc.ABC):
@@ -27,17 +30,29 @@ class HeartbeatSeconds(Heartbeat):
         return self.heartbeat_seconds
 
 
-class HeartbeatSecondsPath(Heartbeat):
-    def __init__(self, path: str):
-        self.path: Final[str] = path
+class HeartbeatSecondsJSONata(Heartbeat):
+    string_jsonata: Final[StringJSONata]
 
-    @classmethod
-    def from_raw(cls, path: str):
-        return cls(path=path)
+    def __init__(self, string_jsonata: StringJSONata):
+        super().__init__()
+        self.string_jsonata = string_jsonata
 
     def _eval_seconds(self, env: Environment) -> int:
-        inp = env.stack[-1]
-        seconds = extract_json(self.path, inp)
+        self.string_jsonata.eval(env=env)
+        # TODO: add snapshot tests to verify AWS's behaviour about non integer values.
+        seconds = int(env.stack.pop())
+        return seconds
+
+
+class HeartbeatSecondsPath(Heartbeat):
+    string_sampler: Final[StringSampler]
+
+    def __init__(self, string_sampler: StringSampler):
+        self.string_sampler = string_sampler
+
+    def _eval_seconds(self, env: Environment) -> int:
+        self.string_sampler.eval(env=env)
+        seconds = env.stack.pop()
         if not isinstance(seconds, int) and seconds <= 0:
             raise ValueError(
                 f"Expected non-negative integer for HeartbeatSecondsPath, got '{seconds}' instead."

@@ -1,0 +1,62 @@
+{
+  "Comment": "MAP_CATCH_ERROR_OUTPUT",
+  "QueryLanguage": "JSONata",
+  "StartAt": "ProcessItems",
+  "States": {
+    "ProcessItems": {
+      "Type": "Map",
+      "Items": "{% $states.input.items %}",
+      "MaxConcurrency": 1,
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "ProcessItem",
+        "States": {
+          "ProcessItem": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Arguments": {
+              "FunctionName": "%LAMBDA_FUNCTION_ARN_LITERAL_PLACEHOLDER%",
+              "Payload": {
+                "foo": "foobar"
+              }
+            },
+            "Catch": [
+              {
+                "ErrorEquals": [
+                  "States.ALL"
+                ],
+                "Output": {
+                  "stateInput": "{% $states.input %}",
+                  "stateError": "{% $states.errorOutput %}"
+                },
+                "Next": "Fallback"
+              }
+            ],
+            "Output": {
+              "stateInput": "{% $states.input %}",
+              "stateResult": "{% $states.result %}"
+            },
+            "Next": "Finish"
+          },
+          "Fallback": {
+            "Type": "Pass",
+            "Output": {
+              "result": "{% $states.input %}"
+            },
+            "End": true
+          },
+          "Finish": {
+            "Type": "Pass",
+            "Output": {
+              "result": "{% $states.input %}"
+            },
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

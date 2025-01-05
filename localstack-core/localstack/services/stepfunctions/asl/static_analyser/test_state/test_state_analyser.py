@@ -34,7 +34,7 @@ class TestStateStaticAnalyser(StaticAnalyser):
             raise ValueError(f"Unsupported state type for TestState runs '{state_type}'.")
 
     def visitResource_decl(self, ctx: ASLParser.Resource_declContext) -> None:
-        resource_str: str = ctx.keyword_or_string().getText()[1:-1]
+        resource_str: str = ctx.string_literal().getText()[1:-1]
         resource = Resource.from_resource_arn(resource_str)
 
         if isinstance(resource, ActivityResource):

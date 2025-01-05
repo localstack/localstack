@@ -24,13 +24,12 @@ TYPE_COMPARISONS_VARS: Final[list[Any]] = [
 ]
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestNumerics:
     @markers.aws.validated
     def test_numeric_equals(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -42,8 +41,8 @@ class TestNumerics:
             type_equals.append((var, 1.0))
 
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "NumericEquals",
@@ -54,7 +53,7 @@ class TestNumerics:
     def test_numeric_equals_path(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -66,8 +65,8 @@ class TestNumerics:
             type_equals.append((var, 1.0))
 
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "NumericEqualsPath",
@@ -79,13 +78,13 @@ class TestNumerics:
     def test_numeric_greater_than(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "NumericGreaterThan",
@@ -96,13 +95,13 @@ class TestNumerics:
     def test_numeric_greater_than_path(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "NumericGreaterThanPath",
@@ -114,13 +113,13 @@ class TestNumerics:
     def test_numeric_greater_than_equals(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "NumericGreaterThanEquals",
@@ -131,13 +130,13 @@ class TestNumerics:
     def test_numeric_greater_than_equals_path(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "NumericGreaterThanEqualsPath",
@@ -149,13 +148,13 @@ class TestNumerics:
     def test_numeric_less_than(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "NumericLessThan",
@@ -166,13 +165,13 @@ class TestNumerics:
     def test_numeric_less_than_path(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "NumericLessThanPath",
@@ -184,13 +183,13 @@ class TestNumerics:
     def test_numeric_less_than_equals(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "NumericLessThanEquals",
@@ -201,13 +200,13 @@ class TestNumerics:
     def test_numeric_less_than_equals_path(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             "NumericLessThanEqualsPath",

@@ -8,26 +8,32 @@
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyAttributes::test_filter_policy": {
     "last_validated_date": "2024-05-14T16:49:28+00:00"
   },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_empty_array_payload": {
+    "last_validated_date": "2024-12-04T10:22:14+00:00"
+  },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_for_batch": {
-    "last_validated_date": "2024-05-14T16:50:24+00:00"
+    "last_validated_date": "2024-12-03T15:02:26+00:00"
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_ip_address_condition": {
+    "last_validated_date": "2024-12-04T10:36:45+00:00"
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body[False]": {
-    "last_validated_date": "2024-05-14T16:50:08+00:00"
+    "last_validated_date": "2024-12-03T15:02:09+00:00"
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body[True]": {
-    "last_validated_date": "2024-05-14T16:49:56+00:00"
+    "last_validated_date": "2024-12-03T15:01:57+00:00"
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body_array_attributes": {
-    "last_validated_date": "2024-05-14T16:50:54+00:00"
+    "last_validated_date": "2024-12-03T15:02:55+00:00"
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body_array_of_object_attributes": {
-    "last_validated_date": "2024-05-14T16:50:58+00:00"
+    "last_validated_date": "2024-12-03T15:02:58+00:00"
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body_dot_attribute": {
-    "last_validated_date": "2024-05-14T16:50:49+00:00"
+    "last_validated_date": "2024-12-03T15:02:50+00:00"
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body_or_attribute": {
-    "last_validated_date": "2024-05-14T16:51:01+00:00"
+    "last_validated_date": "2024-12-03T15:05:45+00:00"
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_policy_complexity": {
     "last_validated_date": "2024-05-14T16:51:07+00:00"
@@ -48,7 +54,7 @@
     "last_validated_date": "2024-05-14T16:51:06+00:00"
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy_string_operators": {
-    "last_validated_date": "2024-05-15T14:39:23+00:00"
+    "last_validated_date": "2024-12-03T22:11:13+00:00"
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyCrud::test_set_subscription_filter_policy_scope": {
     "last_validated_date": "2024-05-14T16:49:11+00:00"

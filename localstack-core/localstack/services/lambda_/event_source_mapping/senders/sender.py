@@ -7,7 +7,7 @@ from localstack.services.lambda_.event_source_mapping.pipe_utils import get_inte
 
 class SenderError(Exception):
     def __init__(self, message=None, error=None) -> None:
-        self.message = message or "Error during during sending events"
+        self.message = message or "Error during sending events"
         self.error = error
 
 
@@ -41,4 +41,10 @@ class Sender:
         """Send the given `events` to the target.
         Returns an optional payload with a list of "batchItemFailures" if only part of the batch succeeds.
         """
+        pass
+
+    @abstractmethod
+    def event_target(self) -> str:
+        """Return the event target metadata (e.g., aws:sqs)
+        Format analogous to event_source of pollers"""
         pass

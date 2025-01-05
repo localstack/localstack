@@ -16,6 +16,9 @@ from localstack.services.stepfunctions.asl.component.common.error_name.custom_er
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
+    StateCredentials,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceCondition,
     ResourceRuntimePart,
@@ -63,6 +66,7 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        state_credentials: StateCredentials,
     ) -> Callable[[], Optional[Any]]:
         raise RuntimeError(
             f"Unsupported .sync callback procedure in resource {self.resource.resource_arn}"
@@ -73,6 +77,7 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        state_credentials: StateCredentials,
     ) -> Callable[[], Optional[Any]]:
         raise RuntimeError(
             f"Unsupported .sync2 callback procedure in resource {self.resource.resource_arn}"
@@ -99,14 +104,15 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
     def _eval_sync(
         self,
         env: Environment,
-        timeout_seconds: int,
-        callback_endpoint: CallbackEndpoint,
-        heartbeat_endpoint: Optional[HeartbeatEndpoint],
         sync_resolver: Callable[[], Optional[Any]],
+        timeout_seconds: Optional[int],
+        callback_endpoint: Optional[CallbackEndpoint],
+        heartbeat_endpoint: Optional[HeartbeatEndpoint],
     ) -> CallbackOutcome | Any:
         callback_output: Optional[CallbackOutcome] = None
 
-        if ResourceCondition.WaitForTaskToken in self._supported_integration_patterns:
+        # Listen for WaitForTaskToken signals if an endpoint is provided.
+        if callback_endpoint is not None:
 
             def _local_update_wait_for_task_token():
                 nonlocal callback_output
@@ -120,6 +126,7 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
             thread_wait_for_task_token = threading.Thread(
                 target=_local_update_wait_for_task_token,
                 name=f"WaitForTaskToken_SyncTask_{self.resource.resource_arn}",
+                daemon=True,
             )
             TMP_THREADS.append(thread_wait_for_task_token)
             thread_wait_for_task_token.start()
@@ -127,27 +134,30 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
             #       an exception in this thread will invalidate env, and therefore the worker thread.
             #       hence why here there are no explicit stopping logic for thread_wait_for_task_token.
 
-            sync_result: Optional[Any] = None
-            while env.is_running():
-                sync_result = sync_resolver()
-                if callback_output or sync_result:
-                    break
-                else:
-                    time.sleep(_DELAY_SECONDS_SYNC_CONDITION_CHECK)
+        sync_result: Optional[Any] = None
+        while env.is_running():
+            sync_result = sync_resolver()
+            if callback_output or sync_result:
+                break
+            else:
+                time.sleep(_DELAY_SECONDS_SYNC_CONDITION_CHECK)
 
-            return callback_output or sync_result
+        return callback_output or sync_result
 
     def _eval_integration_pattern(
         self,
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        state_credentials: StateCredentials,
     ) -> None:
         task_output = env.stack.pop()
 
-        # Initialise the Callback endpoint for this task.
-        callback_id = env.context_object_manager.context_object["Task"]["Token"]
-        callback_endpoint = env.callback_pool_manager.get(callback_id)
+        # Initialise the waitForTaskToken Callback endpoint for this task if supported.
+        callback_endpoint: Optional[CallbackEndpoint] = None
+        if ResourceCondition.WaitForTaskToken in self._supported_integration_patterns:
+            callback_id = env.states.context_object.context_object_data["Task"]["Token"]
+            callback_endpoint = env.callback_pool_manager.get(callback_id)
 
         # Setup resources for timeout control.
         self.timeout.eval(env=env)
@@ -180,6 +190,7 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
                         env=env,
                         resource_runtime_part=resource_runtime_part,
                         normalised_parameters=normalised_parameters,
+                        state_credentials=state_credentials,
                     )
                 else:
                     # The condition checks about the resource's condition is exhaustive leaving
@@ -188,6 +199,7 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
                         env=env,
                         resource_runtime_part=resource_runtime_part,
                         normalised_parameters=normalised_parameters,
+                        state_credentials=state_credentials,
                     )
 
                 outcome = self._eval_sync(
@@ -301,19 +313,20 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
             and ResourceCondition.WaitForTaskToken in self._supported_integration_patterns
         ):
             self._assert_integration_pattern_is_supported()
-            task_token = env.context_object_manager.update_task_token()
+            task_token = env.states.context_object.update_task_token()
             env.callback_pool_manager.add(task_token)
 
         super()._eval_body(env=env)
 
         # Ensure the TaskToken field is reset, as this is only available during waitForTaskToken task evaluations.
-        env.context_object_manager.context_object.pop("Task", None)
+        env.states.context_object.context_object_data.pop("Task", None)
 
     def _after_eval_execution(
         self,
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        state_credentials: StateCredentials,
     ) -> None:
         if self._is_integration_pattern():
             output = env.stack[-1]
@@ -333,10 +346,12 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
                 env=env,
                 resource_runtime_part=resource_runtime_part,
                 normalised_parameters=normalised_parameters,
+                state_credentials=state_credentials,
             )
 
         super()._after_eval_execution(
             env=env,
             resource_runtime_part=resource_runtime_part,
             normalised_parameters=normalised_parameters,
+            state_credentials=state_credentials,
         )

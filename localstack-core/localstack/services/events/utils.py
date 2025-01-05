@@ -39,6 +39,8 @@ ARCHIVE_NAME_ARN_PATTERN = re.compile(
     rf"{ARN_PARTITION_REGEX}:events:[a-z0-9-]+:\d{{12}}:archive/(?P<name>.+)$"
 )
 
+TARGET_ID_PATTERN = re.compile(r"[\.\-_A-Za-z0-9]+")
+
 
 class EventJSONEncoder(json.JSONEncoder):
     """This json encoder is used to serialize datetime object
@@ -179,6 +181,9 @@ def format_event(
     message_id = message.get("original_id", str(long_uid()))
     region = message.get("original_region", region)
     account_id = message.get("original_account", account_id)
+    # Format the datetime to ISO-8601 string
+    event_time = get_event_time(event)
+    formatted_time = event_time_to_time_string(event_time)
 
     formatted_event = {
         "version": "0",
@@ -186,7 +191,7 @@ def format_event(
         "detail-type": event.get("DetailType"),
         "source": event.get("Source"),
         "account": account_id,
-        "time": get_event_time(event),
+        "time": formatted_time,
         "region": region,
         "resources": event.get("Resources", []),
         "detail": json.loads(event.get("Detail", "{}")),
@@ -243,3 +248,32 @@ def get_trace_header_encoded_region_account(
             return json.dumps({"original_id": original_id, "original_account": source_account_id})
         else:
             return json.dumps({"original_account": source_account_id})
+
+
+def is_nested_in_string(template: str, match: re.Match[str]) -> bool:
+    """
+    Determines if a match (string) is within quotes in the given template.
+
+    Examples:
+    True for "users-service/users/<userId>"  # nested within larger string
+    True for "<userId>"                      # simple quoted placeholder
+    True for "Hello <name>"                  # nested within larger string
+    False for {"id": <userId>}               # not in quotes at all
+    """
+    start = match.start()
+    end = match.end()
+
+    left_quote = template.rfind('"', 0, start)
+    right_quote = template.find('"', end)
+    next_comma = template.find(",", end)
+    next_brace = template.find("}", end)
+
+    # If no right quote, or if comma/brace comes before right quote, not nested
+    if (
+        right_quote == -1
+        or (next_comma != -1 and next_comma < right_quote)
+        or (next_brace != -1 and next_brace < right_quote)
+    ):
+        return False
+
+    return left_quote != -1

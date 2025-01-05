@@ -6,6 +6,7 @@ import pytest
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 
+from localstack import config
 from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
 from localstack.testing.aws.lambda_utils import (
     _await_dynamodb_table_active,
@@ -19,10 +20,17 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
-from tests.aws.services.lambda_.event_source_mapping.utils import is_old_esm, is_v2_esm
+from tests.aws.services.lambda_.event_source_mapping.utils import (
+    create_lambda_with_response,
+)
+from tests.aws.services.lambda_.functions import FUNCTIONS_PATH
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
+)
+
+TEST_LAMBDA_DYNAMODB_BATCH_ITEM_FAILURE = (
+    FUNCTIONS_PATH / "lambda_report_batch_item_failures_dynamodb.py"
 )
 
 
@@ -56,7 +64,6 @@ def get_lambda_logs_event(aws_client):
 
 
 @markers.snapshot.skip_snapshot_verify(
-    condition=is_v2_esm,
     paths=[
         # Lifecycle updates not yet implemented in ESM v2
         "$..LastProcessingResult",
@@ -73,6 +80,14 @@ def get_lambda_logs_event(aws_client):
         "$..TableDescription.TableStatus",
         "$..Records..dynamodb.SizeBytes",
         "$..Records..eventVersion",
+    ],
+)
+@markers.snapshot.skip_snapshot_verify(
+    # DynamoDB-Local returns an UUID for the event ID even though AWS returns something
+    # like 'ab0ed3713569f4655f353e5ef61a88c4'
+    condition=lambda: config.DDB_STREAMS_PROVIDER_V2,
+    paths=[
+        "$..eventID",
     ],
 )
 class TestDynamoDBEventSourceMapping:
@@ -336,15 +351,6 @@ class TestDynamoDBEventSourceMapping:
             "$..TableDescription.TableId",
         ],
     )
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_esm,
-        paths=[
-            "$..Message.DDBStreamBatchInfo.approximateArrivalOfFirstRecord",  # Incorrect timestamp formatting
-            "$..Message.DDBStreamBatchInfo.approximateArrivalOfLastRecord",
-            "$..Message.requestContext.approximateInvokeCount",
-            "$..Message.responseContext.statusCode",
-        ],
-    )
     @markers.aws.validated
     def test_dynamodb_event_source_mapping_with_sns_on_failure_destination_config(
         self,
@@ -458,15 +464,6 @@ class TestDynamoDBEventSourceMapping:
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..TableDescription.TableId",
-        ],
-    )
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_esm,
-        paths=[
-            "$..Messages..Body.DDBStreamBatchInfo.approximateArrivalOfFirstRecord",  # Incorrect timestamp formatting
-            "$..Messages..Body.DDBStreamBatchInfo.approximateArrivalOfLastRecord",
-            "$..Messages..Body.requestContext.approximateInvokeCount",
-            "$..Messages..Body.responseContext.statusCode",
         ],
     )
     @markers.aws.validated
@@ -583,6 +580,7 @@ class TestDynamoDBEventSourceMapping:
                 {"eventName": ["INSERT"], "eventSource": ["aws:dynamodb"]},
                 1,
                 id="content_multiple_filters",
+                marks=pytest.mark.skip(reason="Broken, needs investigation"),
             ),
             # Test content filter using the DynamoDB data type "S"
             pytest.param(
@@ -602,36 +600,34 @@ class TestDynamoDBEventSourceMapping:
                 1,
                 id="exists_filter_type",
             ),
-            # TODO: Fix native LocalStack implementation for exists
-            # pytest.param(
-            #     {"id": {"S": "id_value_1"}},
-            #     {"id": {"S": "id_value_2"}, "presentKey": {"S": "presentValue"}},
-            #     {"dynamodb": {"NewImage": {"presentKey": [{"exists": False}]}}},
-            #     2,
-            #     id="exists_false_filter",
-            # ),
+            pytest.param(
+                {"id": {"S": "id_value_1"}},
+                {"id": {"S": "id_value_2"}, "presentKey": {"S": "presentValue"}},
+                {"dynamodb": {"NewImage": {"presentKey": [{"exists": False}]}}},
+                2,
+                id="exists_false_filter",
+            ),
             # numeric filter
             # NOTE: numeric filters do not work with DynamoDB because all values are represented as string
             # and not converted to numbers for filtering.
             # The following AWS tutorial has a note about numeric filtering, which does not apply to DynamoDB strings:
             # https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.Lambda.Tutorial2.html
-            # TODO: Fix native LocalStack implementation for anything-but
-            # pytest.param(
-            #     {"id": {"S": "id_value_1"}, "numericFilter": {"N": "42"}},
-            #     {"id": {"S": "id_value_2"}, "numericFilter": {"N": "101"}},
-            #     {
-            #         "dynamodb": {
-            #             "NewImage": {
-            #                 "numericFilter": {
-            #                     # Filtering passes if at least one of the filter conditions matches
-            #                     "N": [{"numeric": [">", 100]}, {"anything-but": "101"}]
-            #                 }
-            #             }
-            #         }
-            #     },
-            #     1,
-            #     id="numeric_filter",
-            # ),
+            pytest.param(
+                {"id": {"S": "id_value_1"}, "numericFilter": {"N": "42"}},
+                {"id": {"S": "id_value_2"}, "numericFilter": {"N": "101"}},
+                {
+                    "dynamodb": {
+                        "NewImage": {
+                            "numericFilter": {
+                                # Filtering passes if at least one of the filter conditions matches
+                                "N": [{"numeric": [">", 100]}, {"anything-but": "101"}]
+                            }
+                        }
+                    }
+                },
+                1,
+                id="numeric_filter",
+            ),
             # Prefix
             pytest.param(
                 {"id": {"S": "id_value_1"}, "prefix": {"S": "us-1-other-suffix"}},
@@ -675,8 +671,6 @@ class TestDynamoDBEventSourceMapping:
         Test assumption: The first item MUST always match the filter and the second item CAN match the filter.
         => This enables two-step testing (i.e., snapshots between inserts) but is unreliable and should be revised.
         """
-        if is_v2_esm() and filter == {"eventName": ["INSERT"], "eventSource": ["aws:dynamodb"]}:
-            pytest.skip(reason="content_multiple_filters failing for ESM v2 (needs investigation)")
         function_name = f"lambda_func-{short_uid()}"
         table_name = f"test-table-{short_uid()}"
         max_retries = 50
@@ -759,9 +753,6 @@ class TestDynamoDBEventSourceMapping:
         snapshot.match("lambda-multiple-log-events", events)
 
     @markers.aws.validated
-    @pytest.mark.skipif(
-        is_v2_esm(), reason="Invalid filter detection not yet implemented in ESM v2"
-    )
     @pytest.mark.parametrize(
         "filter",
         [
@@ -813,3 +804,294 @@ class TestDynamoDBEventSourceMapping:
             aws_client.lambda_.create_event_source_mapping(**event_source_mapping_kwargs)
         snapshot.match("exception_event_source_creation", expected.value.response)
         expected.match(InvalidParameterValueException.code)
+
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..TableDescription.TableId",
+            "$..Records",  # TODO Figure out why there is an extra log record
+        ],
+    )
+    @markers.aws.validated
+    def test_dynamodb_report_batch_item_failures(
+        self,
+        create_lambda_function,
+        create_event_source_mapping,
+        sqs_get_queue_arn,
+        sqs_create_queue,
+        create_iam_role_with_policy,
+        dynamodb_create_table,
+        snapshot,
+        aws_client,
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
+        snapshot.add_transformer(snapshot.transform.key_value("ReceiptHandle"))
+        snapshot.add_transformer(snapshot.transform.key_value("startSequenceNumber"))
+
+        function_name = f"lambda_func-{short_uid()}"
+        role = f"test-lambda-role-{short_uid()}"
+        policy_name = f"test-lambda-policy-{short_uid()}"
+        table_name = f"test-table-{short_uid()}"
+        partition_key = "my_partition_key"
+
+        # Used in ESM config and assertions
+        expected_successes = 5
+        expected_failures = 1
+
+        role_arn = create_iam_role_with_policy(
+            RoleName=role,
+            PolicyName=policy_name,
+            RoleDefinition=lambda_role,
+            PolicyDefinition=s3_lambda_permission,
+        )
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_DYNAMODB_BATCH_ITEM_FAILURE,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=role_arn,
+        )
+        create_table_response = dynamodb_create_table(
+            table_name=table_name, partition_key=partition_key
+        )
+        _await_dynamodb_table_active(aws_client.dynamodb, table_name)
+        snapshot.match("create_table_response", create_table_response)
+
+        update_table_response = aws_client.dynamodb.update_table(
+            TableName=table_name,
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
+        )
+        snapshot.match("update_table_response", update_table_response)
+        stream_arn = update_table_response["TableDescription"]["LatestStreamArn"]
+
+        destination_queue = sqs_create_queue()
+        queue_failure_event_source_mapping_arn = sqs_get_queue_arn(destination_queue)
+        destination_config = {"OnFailure": {"Destination": queue_failure_event_source_mapping_arn}}
+
+        create_event_source_mapping_response = create_event_source_mapping(
+            FunctionName=function_name,
+            BatchSize=3,
+            StartingPosition="TRIM_HORIZON",
+            EventSourceArn=stream_arn,
+            MaximumBatchingWindowInSeconds=1,
+            MaximumRetryAttempts=3,
+            DestinationConfig=destination_config,
+            FunctionResponseTypes=["ReportBatchItemFailures"],
+        )
+
+        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
+        event_source_uuid = create_event_source_mapping_response["UUID"]
+        _await_event_source_mapping_enabled(aws_client.lambda_, event_source_uuid)
+
+        dynamodb_items = [
+            {partition_key: {"S": f"testId{i}"}, "should_fail": {"BOOL": i == 5}}
+            for i in range(expected_successes + expected_failures)
+        ]
+
+        # TODO Batching behaviour is flakey since DynamoDB streams are unordered. Look into some patterns for ordering.
+        for db_item in dynamodb_items:
+            aws_client.dynamodb.put_item(TableName=table_name, Item=db_item)
+            time.sleep(0.1)
+
+        def verify_failure_received():
+            res = aws_client.sqs.receive_message(QueueUrl=destination_queue)
+            assert res.get("Messages")
+            return res
+
+        # It can take ~3 min against AWS until the message is received
+        sleep = 15 if is_aws_cloud() else 5
+        messages = retry(verify_failure_received, retries=15, sleep=sleep, sleep_before=5)
+        snapshot.match("destination_queue_messages", messages)
+
+        batched_records = get_lambda_log_events(function_name, logs_client=aws_client.logs)
+        flattened_records = [
+            record for batch in batched_records for record in batch.get("Records", [])
+        ]
+
+        # Although DynamoDB streams doesn't guarantee such ordering, this test is more concerned with whether
+        # the failed items were repeated.
+        sorted_records = sorted(
+            flattened_records, key=lambda item: item["dynamodb"]["Keys"][partition_key]["S"]
+        )
+
+        snapshot.match("dynamodb_records", {"Records": sorted_records})
+
+    @pytest.mark.parametrize(
+        "set_lambda_response",
+        [
+            # Failures
+            {"batchItemFailures": [{"itemIdentifier": 123}]},
+            {"batchItemFailures": [{"itemIdentifier": ""}]},
+            {"batchItemFailures": [{"itemIdentifier": None}]},
+            {"batchItemFailures": [{"foo": 123}]},
+            {"batchItemFailures": [{"foo": None}]},
+            # Unhandled Exceptions
+            "(lambda: 1 / 0)()",  # This will (lazily) evaluate, raise an exception, and re-trigger the whole batch
+        ],
+        ids=[
+            # Failures
+            "item_identifier_not_present_failure",
+            "empty_string_item_identifier_failure",
+            "null_item_identifier_failure",
+            "invalid_key_foo_failure",
+            "invalid_key_foo_null_value_failure",
+            # Unhandled Exceptions
+            "unhandled_exception_in_function",
+        ],
+    )
+    @markers.aws.validated
+    def test_dynamodb_report_batch_item_failure_scenarios(
+        self,
+        create_lambda_function,
+        dynamodb_create_table,
+        create_event_source_mapping,
+        wait_for_dynamodb_stream_ready,
+        sqs_get_queue_arn,
+        sqs_create_queue,
+        snapshot,
+        aws_client,
+        set_lambda_response,
+        lambda_su_role,
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
+        snapshot.add_transformer(snapshot.transform.key_value("ReceiptHandle"))
+
+        function_name = f"lambda_func-{short_uid()}"
+        table_name = f"test-table-{short_uid()}"
+        partition_key = "my_partition_key"
+        db_item = {partition_key: {"S": "hello world"}, "binary_key": {"B": b"foobar"}}
+
+        create_lambda_function(
+            handler_file=create_lambda_with_response(set_lambda_response),
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
+
+        create_table_result = dynamodb_create_table(
+            table_name=table_name, partition_key=partition_key
+        )
+        # snapshot create table to get the table name registered as resource
+        snapshot.match("create-table-result", create_table_result)
+        _await_dynamodb_table_active(aws_client.dynamodb, table_name)
+        stream_arn = aws_client.dynamodb.update_table(
+            TableName=table_name,
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
+        )["TableDescription"]["LatestStreamArn"]
+        assert wait_for_dynamodb_stream_ready(stream_arn)
+
+        destination_queue = sqs_create_queue()
+        queue_failure_event_source_mapping_arn = sqs_get_queue_arn(destination_queue)
+        destination_config = {"OnFailure": {"Destination": queue_failure_event_source_mapping_arn}}
+
+        create_event_source_mapping_response = create_event_source_mapping(
+            FunctionName=function_name,
+            BatchSize=3,
+            StartingPosition="TRIM_HORIZON",
+            EventSourceArn=stream_arn,
+            MaximumBatchingWindowInSeconds=1,
+            MaximumRetryAttempts=3,
+            DestinationConfig=destination_config,
+            FunctionResponseTypes=["ReportBatchItemFailures"],
+        )
+
+        event_source_uuid = create_event_source_mapping_response["UUID"]
+        _await_event_source_mapping_enabled(aws_client.lambda_, event_source_uuid)
+        aws_client.dynamodb.put_item(TableName=table_name, Item=db_item)
+
+        def verify_failure_received():
+            res = aws_client.sqs.receive_message(QueueUrl=destination_queue)
+            assert res.get("Messages")
+            return res
+
+        # It can take ~3 min against AWS until the message is received
+        sleep = 15 if is_aws_cloud() else 5
+        messages = retry(verify_failure_received, retries=15, sleep=sleep, sleep_before=5)
+        snapshot.match("destination_queue_messages", messages)
+
+        events = get_lambda_log_events(function_name, logs_client=aws_client.logs)
+
+        # This will filter out exception messages being added to the log stream
+        invocation_events = [event for event in events if "Records" in event]
+        snapshot.match("dynamodb_events", invocation_events)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "set_lambda_response",
+        [
+            # Successes
+            [],
+            None,
+            {},
+            {"batchItemFailures": []},
+            {"batchItemFailures": None},
+        ],
+        ids=[
+            # Successes
+            "empty_list_success",
+            "null_success",
+            "empty_dict_success",
+            "empty_batch_item_failure_success",
+            "null_batch_item_failure_success",
+        ],
+    )
+    def test_dynamodb_report_batch_item_success_scenarios(
+        self,
+        create_lambda_function,
+        create_event_source_mapping,
+        dynamodb_create_table,
+        wait_for_dynamodb_stream_ready,
+        snapshot,
+        aws_client,
+        set_lambda_response,
+        lambda_su_role,
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        table_name = f"test-table-{short_uid()}"
+        partition_key = "my_partition_key"
+        db_item = {partition_key: {"S": "hello world"}, "binary_key": {"B": b"foobar"}}
+
+        create_lambda_function(
+            handler_file=create_lambda_with_response(set_lambda_response),
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
+
+        create_table_result = dynamodb_create_table(
+            table_name=table_name, partition_key=partition_key
+        )
+        # snapshot create table to get the table name registered as resource
+        snapshot.match("create-table-result", create_table_result)
+        _await_dynamodb_table_active(aws_client.dynamodb, table_name)
+        stream_arn = aws_client.dynamodb.update_table(
+            TableName=table_name,
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
+        )["TableDescription"]["LatestStreamArn"]
+        assert wait_for_dynamodb_stream_ready(stream_arn)
+
+        retry_attempts = 2
+        create_event_source_mapping_response = create_event_source_mapping(
+            EventSourceArn=stream_arn,
+            FunctionName=function_name,
+            StartingPosition="TRIM_HORIZON",
+            BatchSize=1,
+            MaximumBatchingWindowInSeconds=0,
+            FunctionResponseTypes=["ReportBatchItemFailures"],
+            MaximumRetryAttempts=retry_attempts,
+        )
+
+        event_source_uuid = create_event_source_mapping_response["UUID"]
+        _await_event_source_mapping_enabled(aws_client.lambda_, event_source_uuid)
+        aws_client.dynamodb.put_item(TableName=table_name, Item=db_item)
+
+        def _verify_messages_received():
+            events = get_lambda_log_events(function_name, logs_client=aws_client.logs)
+
+            # This will filter out exception messages being added to the log stream
+            record_events = [event for event in events if "Records" in event]
+
+            assert len(record_events) >= 1
+            return record_events
+
+        invocation_events = retry(_verify_messages_received, retries=30, sleep=5)
+        snapshot.match("dynamodb_events", invocation_events)

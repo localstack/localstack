@@ -36,7 +36,7 @@ class TestStateProgram(EvalComponent):
 
     def eval(self, env: TestStateEnvironment) -> None:
         env.next_state_name = self.test_state.name
-        worker_thread = threading.Thread(target=super().eval, args=(env,))
+        worker_thread = threading.Thread(target=super().eval, args=(env,), daemon=True)
         TMP_THREADS.append(worker_thread)
         worker_thread.start()
         worker_thread.join(timeout=TEST_CASE_EXECUTION_TIMEOUT_SECONDS)
@@ -46,7 +46,7 @@ class TestStateProgram(EvalComponent):
 
     def _eval_body(self, env: TestStateEnvironment) -> None:
         try:
-            env.inspection_data["input"] = to_json_str(env.inp)
+            env.inspection_data["input"] = to_json_str(env.states.get_input())
             self.test_state.eval(env=env)
         except FailureEventException as ex:
             env.set_error(error=ex.get_execution_failed_event_details())

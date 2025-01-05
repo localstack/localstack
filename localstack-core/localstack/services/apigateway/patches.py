@@ -145,6 +145,7 @@ def apply_patches():
 
         return result
 
+    # TODO remove this patch when the behavior is implemented in moto
     @patch(apigateway_models.APIGatewayBackend.create_rest_api)
     def create_rest_api(fn, self, *args, tags=None, **kwargs):
         """

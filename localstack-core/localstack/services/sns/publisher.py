@@ -237,7 +237,7 @@ class LambdaTopicPublisher(TopicPublisher):
         :param subscriber: the SNS subscription
         :return: an SNS message body formatted as a lambda Event in a JSON string
         """
-        external_url = external_service_url().rstrip("/")
+        external_url = get_cert_base_url()
         unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
         message_attributes = prepare_message_attributes(message_context.message_attributes)
 
@@ -489,8 +489,11 @@ class HttpTopicPublisher(TopicPublisher):
                 # When raw message delivery is enabled, x-amz-sns-rawdelivery needs to be set to 'true'
                 # indicating that the message has been published without JSON formatting.
                 # https://docs.aws.amazon.com/sns/latest/dg/sns-large-payload-raw-message-delivery.html
-                if message_context.type == "Notification" and is_raw_message_delivery(subscriber):
-                    message_headers["x-amz-sns-rawdelivery"] = "true"
+                if message_context.type == "Notification":
+                    if is_raw_message_delivery(subscriber):
+                        message_headers["x-amz-sns-rawdelivery"] = "true"
+                    if content_type := self._get_content_type(subscriber, context.topic_attributes):
+                        message_headers["Content-Type"] = content_type
 
             response = requests.post(
                 subscriber["Endpoint"],
@@ -526,6 +529,30 @@ class HttpTopicPublisher(TopicPublisher):
             if message_context.type != "UnsubscribeConfirmation":
                 sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
 
+    @staticmethod
+    def _get_content_type(subscriber: SnsSubscription, topic_attributes: dict) -> str | None:
+        # TODO: we need to load the DeliveryPolicy every time if there's one, we should probably save the loaded
+        #  policy on the subscription and dumps it when requested instead
+        # to be much faster, once the logic is implemented in moto, we would only need to fetch EffectiveDeliveryPolicy,
+        # which would already have the value from the topic
+        if json_sub_delivery_policy := subscriber.get("DeliveryPolicy"):
+            sub_delivery_policy = json.loads(json_sub_delivery_policy)
+            if sub_content_type := sub_delivery_policy.get("requestPolicy", {}).get(
+                "headerContentType"
+            ):
+                return sub_content_type
+
+        if json_topic_delivery_policy := topic_attributes.get("delivery_policy"):
+            topic_delivery_policy = json.loads(json_topic_delivery_policy)
+            if not (
+                topic_content_type := topic_delivery_policy.get(subscriber["Protocol"].lower())
+            ):
+                return
+            if content_type := topic_content_type.get("defaultRequestPolicy", {}).get(
+                "headerContentType"
+            ):
+                return content_type
+
 
 class EmailJsonTopicPublisher(TopicPublisher):
     """
@@ -542,13 +569,16 @@ class EmailJsonTopicPublisher(TopicPublisher):
         region = extract_region_from_arn(subscriber["Endpoint"])
         ses_client = connect_to(aws_access_key_id=account_id, region_name=region).ses
         if endpoint := subscriber.get("Endpoint"):
+            # TODO: legacy value, replace by a more sane value in the future
+            #  no-reply@sns-localstack.cloud or similar
+            sender = config.SNS_SES_SENDER_ADDRESS or "admin@localstack.com"
             ses_client.verify_email_address(EmailAddress=endpoint)
-            ses_client.verify_email_address(EmailAddress="admin@localstack.com")
+            ses_client.verify_email_address(EmailAddress=sender)
             message_body = self.prepare_message(
                 context.message, subscriber, topic_attributes=context.topic_attributes
             )
             ses_client.send_email(
-                Source="admin@localstack.com",
+                Source=sender,
                 Message={
                     "Body": {"Text": {"Data": message_body}},
                     "Subject": {"Data": "SNS-Subscriber-Endpoint"},
@@ -928,7 +958,7 @@ def create_sns_message_body(
     if message_type == "Notification" and is_raw_message_delivery(subscriber):
         return message_content
 
-    external_url = external_service_url().rstrip("/")
+    external_url = get_cert_base_url()
 
     data = {
         "Type": message_type,
@@ -1099,6 +1129,13 @@ def store_delivery_log(
     )
 
 
+def get_cert_base_url() -> str:
+    if config.SNS_CERT_URL_HOST:
+        return f"https://{config.SNS_CERT_URL_HOST}"
+
+    return external_service_url().rstrip("/")
+
+
 def create_subscribe_url(external_url, topic_arn, subscription_token):
     return f"{external_url}/?Action=ConfirmSubscription&TopicArn={topic_arn}&Token={subscription_token}"
 
@@ -1183,7 +1220,7 @@ class PublishDispatcher:
                     subscriber["Protocol"],
                     subscriber["SubscriptionArn"],
                 )
-                self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
+                self._submit_notification(notifier, ctx, subscriber)
 
     def publish_batch_to_topic(self, ctx: SnsBatchPublishContext, topic_arn: str) -> None:
         subscriptions = ctx.store.get_topic_subscriptions(topic_arn)
@@ -1230,9 +1267,7 @@ class PublishDispatcher:
                     subscriber["Protocol"],
                     subscriber["SubscriptionArn"],
                 )
-                self.executor.submit(
-                    notifier.publish, context=subscriber_ctx, subscriber=subscriber
-                )
+                self._submit_notification(notifier, subscriber_ctx, subscriber)
             else:
                 # if no batch support, fall back to sending them sequentially
                 notifier = self.topic_notifiers[subscriber["Protocol"]]
@@ -1251,9 +1286,10 @@ class PublishDispatcher:
                             subscriber["Protocol"],
                             subscriber["SubscriptionArn"],
                         )
-                        self.executor.submit(
-                            notifier.publish, context=individual_ctx, subscriber=subscriber
-                        )
+                        self._submit_notification(notifier, individual_ctx, subscriber)
+
+    def _submit_notification(self, notifier, ctx: SnsPublishContext, subscriber: SnsSubscription):
+        self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
 
     def publish_to_phone_number(self, ctx: SnsPublishContext, phone_number: str) -> None:
         LOG.debug(

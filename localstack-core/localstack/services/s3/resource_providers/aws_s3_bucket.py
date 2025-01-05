@@ -721,3 +721,13 @@ class S3BucketProvider(ResourceProvider[S3BucketProperties]):
           - iam:PassRole
         """
         raise NotImplementedError
+
+    def list(
+        self,
+        request: ResourceRequest[S3BucketProperties],
+    ) -> ProgressEvent[S3BucketProperties]:
+        buckets = request.aws_client_factory.s3.list_buckets()
+        final_buckets = []
+        for bucket in buckets["Buckets"]:
+            final_buckets.append(S3BucketProperties(BucketName=bucket["Name"]))
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_models=final_buckets)

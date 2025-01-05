@@ -6,6 +6,8 @@ from localstack.aws.api import RequestContext, ServiceException, ServiceRequest,
 
 ARN = str
 AWSAccount = str
+AppConfigValue = str
+ApplicationName = str
 AvailabilityZone = str
 BackendRole = str
 Boolean = bool
@@ -22,6 +24,9 @@ DataSourceName = str
 DeploymentType = str
 DescribePackagesFilterValue = str
 Description = str
+DirectQueryDataSourceDescription = str
+DirectQueryDataSourceName = str
+DirectQueryDataSourceRoleArn = str
 DomainArn = str
 DomainId = str
 DomainName = str
@@ -34,7 +39,11 @@ ErrorMessage = str
 ErrorType = str
 GUID = str
 HostedZoneId = str
+Id = str
+IdentityCenterApplicationARN = str
+IdentityCenterInstanceARN = str
 IdentityPoolId = str
+IdentityStoreId = str
 InstanceCount = int
 InstanceRole = str
 InstanceTypeString = str
@@ -42,6 +51,7 @@ Integer = int
 IntegerClass = int
 Issue = str
 KmsKeyId = str
+LicenseFilepath = str
 LimitName = str
 LimitValue = str
 MaintenanceStatusMessage = str
@@ -59,6 +69,8 @@ OwnerId = str
 PackageDescription = str
 PackageID = str
 PackageName = str
+PackageOwner = str
+PackageUser = str
 PackageVersion = str
 Password = str
 PluginClassName = str
@@ -94,6 +106,10 @@ VolumeSize = str
 VpcEndpointId = str
 
 
+class AWSServicePrincipal(StrEnum):
+    application_opensearchservice_amazonaws_com = "application.opensearchservice.amazonaws.com"
+
+
 class ActionSeverity(StrEnum):
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
@@ -113,6 +129,19 @@ class ActionType(StrEnum):
     SERVICE_SOFTWARE_UPDATE = "SERVICE_SOFTWARE_UPDATE"
     JVM_HEAP_SIZE_TUNING = "JVM_HEAP_SIZE_TUNING"
     JVM_YOUNG_GEN_TUNING = "JVM_YOUNG_GEN_TUNING"
+
+
+class AppConfigType(StrEnum):
+    opensearchDashboards_dashboardAdmin_users = "opensearchDashboards.dashboardAdmin.users"
+    opensearchDashboards_dashboardAdmin_groups = "opensearchDashboards.dashboardAdmin.groups"
+
+
+class ApplicationStatus(StrEnum):
+    CREATING = "CREATING"
+    UPDATING = "UPDATING"
+    DELETING = "DELETING"
+    ACTIVE = "ACTIVE"
+    FAILED = "FAILED"
 
 
 class AutoTuneDesiredState(StrEnum):
@@ -171,6 +200,7 @@ class DescribePackagesFilterName(StrEnum):
     PackageStatus = "PackageStatus"
     PackageType = "PackageType"
     EngineVersion = "EngineVersion"
+    PackageOwner = "PackageOwner"
 
 
 class DomainHealth(StrEnum):
@@ -274,6 +304,10 @@ class NaturalLanguageQueryGenerationCurrentState(StrEnum):
 class NaturalLanguageQueryGenerationDesiredState(StrEnum):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
+
+
+class NodeOptionsNodeType(StrEnum):
+    coordinator = "coordinator"
 
 
 class NodeStatus(StrEnum):
@@ -426,6 +460,12 @@ class OverallChangeStatus(StrEnum):
     FAILED = "FAILED"
 
 
+class PackageScopeOperationEnum(StrEnum):
+    ADD = "ADD"
+    OVERRIDE = "OVERRIDE"
+    REMOVE = "REMOVE"
+
+
 class PackageStatus(StrEnum):
     COPYING = "COPYING"
     COPY_FAILED = "COPY_FAILED"
@@ -440,6 +480,8 @@ class PackageStatus(StrEnum):
 class PackageType(StrEnum):
     TXT_DICTIONARY = "TXT-DICTIONARY"
     ZIP_PLUGIN = "ZIP-PLUGIN"
+    PACKAGE_LICENSE = "PACKAGE-LICENSE"
+    PACKAGE_CONFIG = "PACKAGE-CONFIG"
 
 
 class PrincipalType(StrEnum):
@@ -452,10 +494,21 @@ class PropertyValueType(StrEnum):
     STRINGIFIED_JSON = "STRINGIFIED_JSON"
 
 
+class RequirementLevel(StrEnum):
+    REQUIRED = "REQUIRED"
+    OPTIONAL = "OPTIONAL"
+    NONE = "NONE"
+
+
 class ReservedInstancePaymentOption(StrEnum):
     ALL_UPFRONT = "ALL_UPFRONT"
     PARTIAL_UPFRONT = "PARTIAL_UPFRONT"
     NO_UPFRONT = "NO_UPFRONT"
+
+
+class RolesKeyIdCOption(StrEnum):
+    GroupName = "GroupName"
+    GroupId = "GroupId"
 
 
 class RollbackOnDisable(StrEnum):
@@ -488,6 +541,12 @@ class ScheduledBy(StrEnum):
 class SkipUnavailableStatus(StrEnum):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
+
+
+class SubjectKeyIdCOption(StrEnum):
+    UserName = "UserName"
+    UserId = "UserId"
+    Email = "Email"
 
 
 class TLSSecurityPolicy(StrEnum):
@@ -718,6 +777,32 @@ class Tag(TypedDict, total=False):
 
 
 TagList = List[Tag]
+DirectQueryOpenSearchARNList = List[ARN]
+
+
+class SecurityLakeDirectQueryDataSource(TypedDict, total=False):
+    RoleArn: DirectQueryDataSourceRoleArn
+
+
+class CloudWatchDirectQueryDataSource(TypedDict, total=False):
+    RoleArn: DirectQueryDataSourceRoleArn
+
+
+class DirectQueryDataSourceType(TypedDict, total=False):
+    CloudWatchLog: Optional[CloudWatchDirectQueryDataSource]
+    SecurityLake: Optional[SecurityLakeDirectQueryDataSource]
+
+
+class AddDirectQueryDataSourceRequest(ServiceRequest):
+    DataSourceName: DirectQueryDataSourceName
+    DataSourceType: DirectQueryDataSourceType
+    Description: Optional[DirectQueryDataSourceDescription]
+    OpenSearchArns: DirectQueryOpenSearchARNList
+    TagList: Optional[TagList]
+
+
+class AddDirectQueryDataSourceResponse(TypedDict, total=False):
+    DataSourceArn: Optional[String]
 
 
 class AddTagsRequest(ServiceRequest):
@@ -811,9 +896,46 @@ class AdvancedSecurityOptionsStatus(TypedDict, total=False):
     Status: OptionStatus
 
 
+class AppConfig(TypedDict, total=False):
+    key: Optional[AppConfigType]
+    value: Optional[AppConfigValue]
+
+
+AppConfigs = List[AppConfig]
+ApplicationStatuses = List[ApplicationStatus]
+Timestamp = datetime
+
+
+class ApplicationSummary(TypedDict, total=False):
+    id: Optional[Id]
+    arn: Optional[ARN]
+    name: Optional[ApplicationName]
+    endpoint: Optional[String]
+    status: Optional[ApplicationStatus]
+    createdAt: Optional[Timestamp]
+    lastUpdatedAt: Optional[Timestamp]
+
+
+ApplicationSummaries = List[ApplicationSummary]
+
+
+class KeyStoreAccessOption(TypedDict, total=False):
+    KeyAccessRoleArn: Optional[RoleArn]
+    KeyStoreAccessEnabled: Boolean
+
+
+class PackageAssociationConfiguration(TypedDict, total=False):
+    KeyStoreAccessOption: Optional[KeyStoreAccessOption]
+
+
+PackageIDList = List[PackageID]
+
+
 class AssociatePackageRequest(ServiceRequest):
     PackageID: PackageID
     DomainName: DomainName
+    PrerequisitePackageIDList: Optional[PackageIDList]
+    AssociationConfiguration: Optional[PackageAssociationConfiguration]
 
 
 class ErrorDetails(TypedDict, total=False):
@@ -832,17 +954,41 @@ class DomainPackageDetails(TypedDict, total=False):
     DomainName: Optional[DomainName]
     DomainPackageStatus: Optional[DomainPackageStatus]
     PackageVersion: Optional[PackageVersion]
+    PrerequisitePackageIDList: Optional[PackageIDList]
     ReferencePath: Optional[ReferencePath]
     ErrorDetails: Optional[ErrorDetails]
+    AssociationConfiguration: Optional[PackageAssociationConfiguration]
 
 
 class AssociatePackageResponse(TypedDict, total=False):
     DomainPackageDetails: Optional[DomainPackageDetails]
 
 
+class PackageDetailsForAssociation(TypedDict, total=False):
+    PackageID: PackageID
+    PrerequisitePackageIDList: Optional[PackageIDList]
+    AssociationConfiguration: Optional[PackageAssociationConfiguration]
+
+
+PackageDetailsForAssociationList = List[PackageDetailsForAssociation]
+
+
+class AssociatePackagesRequest(ServiceRequest):
+    PackageList: PackageDetailsForAssociationList
+    DomainName: DomainName
+
+
+DomainPackageDetailsList = List[DomainPackageDetails]
+
+
+class AssociatePackagesResponse(TypedDict, total=False):
+    DomainPackageDetailsList: Optional[DomainPackageDetailsList]
+
+
 class AuthorizeVpcEndpointAccessRequest(ServiceRequest):
     DomainName: DomainName
-    Account: AWSAccount
+    Account: Optional[AWSAccount]
+    Service: Optional[AWSServicePrincipal]
 
 
 class AuthorizedPrincipal(TypedDict, total=False):
@@ -1017,6 +1163,20 @@ class ChangeProgressStatusDetails(TypedDict, total=False):
     InitiatedBy: Optional[InitiatedBy]
 
 
+class NodeConfig(TypedDict, total=False):
+    Enabled: Optional[Boolean]
+    Type: Optional[OpenSearchPartitionInstanceType]
+    Count: Optional[IntegerClass]
+
+
+class NodeOption(TypedDict, total=False):
+    NodeType: Optional[NodeOptionsNodeType]
+    NodeConfig: Optional[NodeConfig]
+
+
+NodeOptionsList = List[NodeOption]
+
+
 class ColdStorageOptions(TypedDict, total=False):
     Enabled: Boolean
 
@@ -1038,6 +1198,7 @@ class ClusterConfig(TypedDict, total=False):
     WarmCount: Optional[IntegerClass]
     ColdStorageOptions: Optional[ColdStorageOptions]
     MultiAZWithStandbyEnabled: Optional[Boolean]
+    NodeOptions: Optional[NodeOptionsList]
 
 
 class ClusterConfigStatus(TypedDict, total=False):
@@ -1077,6 +1238,47 @@ class ConnectionProperties(TypedDict, total=False):
     CrossClusterSearch: Optional[CrossClusterSearchConnectionProperties]
 
 
+class IamIdentityCenterOptionsInput(TypedDict, total=False):
+    enabled: Optional[Boolean]
+    iamIdentityCenterInstanceArn: Optional[ARN]
+    iamRoleForIdentityCenterApplicationArn: Optional[RoleArn]
+
+
+class DataSource(TypedDict, total=False):
+    dataSourceArn: Optional[ARN]
+    dataSourceDescription: Optional[DataSourceDescription]
+
+
+DataSources = List[DataSource]
+
+
+class CreateApplicationRequest(ServiceRequest):
+    clientToken: Optional[ClientToken]
+    name: ApplicationName
+    dataSources: Optional[DataSources]
+    iamIdentityCenterOptions: Optional[IamIdentityCenterOptionsInput]
+    appConfigs: Optional[AppConfigs]
+    tagList: Optional[TagList]
+
+
+class IamIdentityCenterOptions(TypedDict, total=False):
+    enabled: Optional[Boolean]
+    iamIdentityCenterInstanceArn: Optional[ARN]
+    iamRoleForIdentityCenterApplicationArn: Optional[RoleArn]
+    iamIdentityCenterApplicationArn: Optional[ARN]
+
+
+class CreateApplicationResponse(TypedDict, total=False):
+    id: Optional[Id]
+    name: Optional[ApplicationName]
+    arn: Optional[ARN]
+    dataSources: Optional[DataSources]
+    iamIdentityCenterOptions: Optional[IamIdentityCenterOptions]
+    appConfigs: Optional[AppConfigs]
+    tagList: Optional[TagList]
+    createdAt: Optional[Timestamp]
+
+
 class SoftwareUpdateOptions(TypedDict, total=False):
     AutoSoftwareUpdateEnabled: Optional[Boolean]
 
@@ -1097,6 +1299,13 @@ class OffPeakWindow(TypedDict, total=False):
 class OffPeakWindowOptions(TypedDict, total=False):
     Enabled: Optional[Boolean]
     OffPeakWindow: Optional[OffPeakWindow]
+
+
+class IdentityCenterOptionsInput(TypedDict, total=False):
+    EnabledAPIAccess: Optional[Boolean]
+    IdentityCenterInstanceARN: Optional[IdentityCenterInstanceARN]
+    SubjectKey: Optional[SubjectKeyIdCOption]
+    RolesKey: Optional[RolesKeyIdCOption]
 
 
 class DomainEndpointOptions(TypedDict, total=False):
@@ -1157,6 +1366,7 @@ class CreateDomainRequest(ServiceRequest):
     LogPublishingOptions: Optional[LogPublishingOptions]
     DomainEndpointOptions: Optional[DomainEndpointOptions]
     AdvancedSecurityOptions: Optional[AdvancedSecurityOptionsInput]
+    IdentityCenterOptions: Optional[IdentityCenterOptionsInput]
     TagList: Optional[TagList]
     AutoTuneOptions: Optional[AutoTuneOptionsInput]
     OffPeakWindowOptions: Optional[OffPeakWindowOptions]
@@ -1172,6 +1382,15 @@ class ModifyingProperties(TypedDict, total=False):
 
 
 ModifyingPropertiesList = List[ModifyingProperties]
+
+
+class IdentityCenterOptions(TypedDict, total=False):
+    EnabledAPIAccess: Optional[Boolean]
+    IdentityCenterInstanceARN: Optional[IdentityCenterInstanceARN]
+    SubjectKey: Optional[SubjectKeyIdCOption]
+    RolesKey: Optional[RolesKeyIdCOption]
+    IdentityCenterApplicationARN: Optional[IdentityCenterApplicationARN]
+    IdentityStoreId: Optional[IdentityStoreId]
 
 
 class VPCDerivedInfo(TypedDict, total=False):
@@ -1211,6 +1430,7 @@ class DomainStatus(TypedDict, total=False):
     ServiceSoftwareOptions: Optional[ServiceSoftwareOptions]
     DomainEndpointOptions: Optional[DomainEndpointOptions]
     AdvancedSecurityOptions: Optional[AdvancedSecurityOptions]
+    IdentityCenterOptions: Optional[IdentityCenterOptions]
     AutoTuneOptions: Optional[AutoTuneOptionsOutput]
     ChangeProgressDetails: Optional[ChangeProgressDetails]
     OffPeakWindowOptions: Optional[OffPeakWindowOptions]
@@ -1247,6 +1467,22 @@ class CreateOutboundConnectionResponse(TypedDict, total=False):
     ConnectionProperties: Optional[ConnectionProperties]
 
 
+class PackageEncryptionOptions(TypedDict, total=False):
+    KmsKeyIdentifier: Optional[KmsKeyId]
+    EncryptionEnabled: Boolean
+
+
+class PackageVendingOptions(TypedDict, total=False):
+    VendingEnabled: Boolean
+
+
+class PackageConfiguration(TypedDict, total=False):
+    LicenseRequirement: RequirementLevel
+    LicenseFilepath: Optional[LicenseFilepath]
+    ConfigurationRequirement: RequirementLevel
+    RequiresRestartForConfigurationUpdate: Optional[Boolean]
+
+
 class PackageSource(TypedDict, total=False):
     S3BucketName: Optional[S3BucketName]
     S3Key: Optional[S3Key]
@@ -1257,8 +1493,13 @@ class CreatePackageRequest(ServiceRequest):
     PackageType: PackageType
     PackageDescription: Optional[PackageDescription]
     PackageSource: PackageSource
+    PackageConfiguration: Optional[PackageConfiguration]
+    EngineVersion: Optional[EngineVersion]
+    PackageVendingOptions: Optional[PackageVendingOptions]
+    PackageEncryptionOptions: Optional[PackageEncryptionOptions]
 
 
+PackageUserList = List[PackageUser]
 UncompressedPluginSizeInBytes = int
 
 
@@ -1285,6 +1526,11 @@ class PackageDetails(TypedDict, total=False):
     ErrorDetails: Optional[ErrorDetails]
     EngineVersion: Optional[EngineVersion]
     AvailablePluginProperties: Optional[PluginProperties]
+    AvailablePackageConfiguration: Optional[PackageConfiguration]
+    AllowListedUserList: Optional[PackageUserList]
+    PackageOwner: Optional[PackageOwner]
+    PackageVendingOptions: Optional[PackageVendingOptions]
+    PackageEncryptionOptions: Optional[PackageEncryptionOptions]
 
 
 class CreatePackageResponse(TypedDict, total=False):
@@ -1320,6 +1566,14 @@ class DataSourceDetails(TypedDict, total=False):
 DataSourceList = List[DataSourceDetails]
 
 
+class DeleteApplicationRequest(ServiceRequest):
+    id: Id
+
+
+class DeleteApplicationResponse(TypedDict, total=False):
+    pass
+
+
 class DeleteDataSourceRequest(ServiceRequest):
     DomainName: DomainName
     Name: DataSourceName
@@ -1327,6 +1581,10 @@ class DeleteDataSourceRequest(ServiceRequest):
 
 class DeleteDataSourceResponse(TypedDict, total=False):
     Message: Optional[String]
+
+
+class DeleteDirectQueryDataSourceRequest(ServiceRequest):
+    DataSourceName: DirectQueryDataSourceName
 
 
 class DeleteDomainRequest(ServiceRequest):
@@ -1420,6 +1678,11 @@ class OffPeakWindowOptionsStatus(TypedDict, total=False):
     Status: Optional[OptionStatus]
 
 
+class IdentityCenterOptionsStatus(TypedDict, total=False):
+    Options: IdentityCenterOptions
+    Status: OptionStatus
+
+
 class DomainEndpointOptionsStatus(TypedDict, total=False):
     Options: DomainEndpointOptions
     Status: OptionStatus
@@ -1480,6 +1743,7 @@ class DomainConfig(TypedDict, total=False):
     LogPublishingOptions: Optional[LogPublishingOptionsStatus]
     DomainEndpointOptions: Optional[DomainEndpointOptionsStatus]
     AdvancedSecurityOptions: Optional[AdvancedSecurityOptionsStatus]
+    IdentityCenterOptions: Optional[IdentityCenterOptionsStatus]
     AutoTuneOptions: Optional[AutoTuneOptionsStatus]
     ChangeProgressDetails: Optional[ChangeProgressDetails]
     OffPeakWindowOptions: Optional[OffPeakWindowOptionsStatus]
@@ -1791,6 +2055,18 @@ class DescribeVpcEndpointsResponse(TypedDict, total=False):
     VpcEndpointErrors: VpcEndpointErrorList
 
 
+class DirectQueryDataSource(TypedDict, total=False):
+    DataSourceName: Optional[DirectQueryDataSourceName]
+    DataSourceType: Optional[DirectQueryDataSourceType]
+    Description: Optional[DirectQueryDataSourceDescription]
+    OpenSearchArns: Optional[DirectQueryOpenSearchARNList]
+    DataSourceArn: Optional[String]
+    TagList: Optional[TagList]
+
+
+DirectQueryDataSourceList = List[DirectQueryDataSource]
+
+
 class DissociatePackageRequest(ServiceRequest):
     PackageID: PackageID
     DomainName: DomainName
@@ -1798,6 +2074,15 @@ class DissociatePackageRequest(ServiceRequest):
 
 class DissociatePackageResponse(TypedDict, total=False):
     DomainPackageDetails: Optional[DomainPackageDetails]
+
+
+class DissociatePackagesRequest(ServiceRequest):
+    PackageList: PackageIDList
+    DomainName: DomainName
+
+
+class DissociatePackagesResponse(TypedDict, total=False):
+    DomainPackageDetailsList: Optional[DomainPackageDetailsList]
 
 
 class DomainInfo(TypedDict, total=False):
@@ -1820,7 +2105,23 @@ class DomainMaintenanceDetails(TypedDict, total=False):
 
 
 DomainMaintenanceList = List[DomainMaintenanceDetails]
-DomainPackageDetailsList = List[DomainPackageDetails]
+
+
+class GetApplicationRequest(ServiceRequest):
+    id: Id
+
+
+class GetApplicationResponse(TypedDict, total=False):
+    id: Optional[Id]
+    arn: Optional[ARN]
+    name: Optional[ApplicationName]
+    endpoint: Optional[String]
+    status: Optional[ApplicationStatus]
+    iamIdentityCenterOptions: Optional[IamIdentityCenterOptions]
+    dataSources: Optional[DataSources]
+    appConfigs: Optional[AppConfigs]
+    createdAt: Optional[Timestamp]
+    lastUpdatedAt: Optional[Timestamp]
 
 
 class GetCompatibleVersionsRequest(ServiceRequest):
@@ -1841,6 +2142,18 @@ class GetDataSourceResponse(TypedDict, total=False):
     Name: Optional[DataSourceName]
     Description: Optional[DataSourceDescription]
     Status: Optional[DataSourceStatus]
+
+
+class GetDirectQueryDataSourceRequest(ServiceRequest):
+    DataSourceName: DirectQueryDataSourceName
+
+
+class GetDirectQueryDataSourceResponse(TypedDict, total=False):
+    DataSourceName: Optional[DirectQueryDataSourceName]
+    DataSourceType: Optional[DirectQueryDataSourceType]
+    Description: Optional[DirectQueryDataSourceDescription]
+    OpenSearchArns: Optional[DirectQueryOpenSearchARNList]
+    DataSourceArn: Optional[String]
 
 
 class GetDomainMaintenanceStatusRequest(ServiceRequest):
@@ -1868,6 +2181,7 @@ class PackageVersionHistory(TypedDict, total=False):
     CommitMessage: Optional[CommitMessage]
     CreatedAt: Optional[CreatedAt]
     PluginProperties: Optional[PluginProperties]
+    PackageConfiguration: Optional[PackageConfiguration]
 
 
 PackageVersionHistoryList = List[PackageVersionHistory]
@@ -1941,12 +2255,32 @@ class InstanceTypeDetails(TypedDict, total=False):
 InstanceTypeDetailsList = List[InstanceTypeDetails]
 
 
+class ListApplicationsRequest(ServiceRequest):
+    nextToken: Optional[NextToken]
+    statuses: Optional[ApplicationStatuses]
+    maxResults: Optional[MaxResults]
+
+
+class ListApplicationsResponse(TypedDict, total=False):
+    ApplicationSummaries: Optional[ApplicationSummaries]
+    nextToken: Optional[NextToken]
+
+
 class ListDataSourcesRequest(ServiceRequest):
     DomainName: DomainName
 
 
 class ListDataSourcesResponse(TypedDict, total=False):
     DataSources: Optional[DataSourceList]
+
+
+class ListDirectQueryDataSourcesRequest(ServiceRequest):
+    NextToken: Optional[NextToken]
+
+
+class ListDirectQueryDataSourcesResponse(TypedDict, total=False):
+    NextToken: Optional[NextToken]
+    DirectQueryDataSources: Optional[DirectQueryDataSourceList]
 
 
 class ListDomainMaintenancesRequest(ServiceRequest):
@@ -2108,7 +2442,8 @@ class RemoveTagsRequest(ServiceRequest):
 
 class RevokeVpcEndpointAccessRequest(ServiceRequest):
     DomainName: DomainName
-    Account: AWSAccount
+    Account: Optional[AWSAccount]
+    Service: Optional[AWSServicePrincipal]
 
 
 class RevokeVpcEndpointAccessResponse(TypedDict, total=False):
@@ -2135,6 +2470,23 @@ class StartServiceSoftwareUpdateResponse(TypedDict, total=False):
     ServiceSoftwareOptions: Optional[ServiceSoftwareOptions]
 
 
+class UpdateApplicationRequest(ServiceRequest):
+    id: Id
+    dataSources: Optional[DataSources]
+    appConfigs: Optional[AppConfigs]
+
+
+class UpdateApplicationResponse(TypedDict, total=False):
+    id: Optional[Id]
+    name: Optional[ApplicationName]
+    arn: Optional[ARN]
+    dataSources: Optional[DataSources]
+    iamIdentityCenterOptions: Optional[IamIdentityCenterOptions]
+    appConfigs: Optional[AppConfigs]
+    createdAt: Optional[Timestamp]
+    lastUpdatedAt: Optional[Timestamp]
+
+
 class UpdateDataSourceRequest(ServiceRequest):
     DomainName: DomainName
     Name: DataSourceName
@@ -2145,6 +2497,17 @@ class UpdateDataSourceRequest(ServiceRequest):
 
 class UpdateDataSourceResponse(TypedDict, total=False):
     Message: Optional[String]
+
+
+class UpdateDirectQueryDataSourceRequest(ServiceRequest):
+    DataSourceName: DirectQueryDataSourceName
+    DataSourceType: DirectQueryDataSourceType
+    Description: Optional[DirectQueryDataSourceDescription]
+    OpenSearchArns: DirectQueryOpenSearchARNList
+
+
+class UpdateDirectQueryDataSourceResponse(TypedDict, total=False):
+    DataSourceArn: Optional[String]
 
 
 class UpdateDomainConfigRequest(ServiceRequest):
@@ -2162,6 +2525,7 @@ class UpdateDomainConfigRequest(ServiceRequest):
     DomainEndpointOptions: Optional[DomainEndpointOptions]
     NodeToNodeEncryptionOptions: Optional[NodeToNodeEncryptionOptions]
     AdvancedSecurityOptions: Optional[AdvancedSecurityOptionsInput]
+    IdentityCenterOptions: Optional[IdentityCenterOptionsInput]
     AutoTuneOptions: Optional[AutoTuneOptions]
     DryRun: Optional[DryRun]
     DryRunMode: Optional[DryRunMode]
@@ -2181,10 +2545,24 @@ class UpdatePackageRequest(ServiceRequest):
     PackageSource: PackageSource
     PackageDescription: Optional[PackageDescription]
     CommitMessage: Optional[CommitMessage]
+    PackageConfiguration: Optional[PackageConfiguration]
+    PackageEncryptionOptions: Optional[PackageEncryptionOptions]
 
 
 class UpdatePackageResponse(TypedDict, total=False):
     PackageDetails: Optional[PackageDetails]
+
+
+class UpdatePackageScopeRequest(ServiceRequest):
+    PackageID: PackageID
+    Operation: PackageScopeOperationEnum
+    PackageUserList: PackageUserList
+
+
+class UpdatePackageScopeResponse(TypedDict, total=False):
+    PackageID: Optional[PackageID]
+    Operation: Optional[PackageScopeOperationEnum]
+    PackageUserList: Optional[PackageUserList]
 
 
 class UpdateScheduledActionRequest(ServiceRequest):
@@ -2246,19 +2624,53 @@ class OpensearchApi:
     ) -> AddDataSourceResponse:
         raise NotImplementedError
 
+    @handler("AddDirectQueryDataSource")
+    def add_direct_query_data_source(
+        self,
+        context: RequestContext,
+        data_source_name: DirectQueryDataSourceName,
+        data_source_type: DirectQueryDataSourceType,
+        open_search_arns: DirectQueryOpenSearchARNList,
+        description: DirectQueryDataSourceDescription = None,
+        tag_list: TagList = None,
+        **kwargs,
+    ) -> AddDirectQueryDataSourceResponse:
+        raise NotImplementedError
+
     @handler("AddTags")
     def add_tags(self, context: RequestContext, arn: ARN, tag_list: TagList, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("AssociatePackage")
     def associate_package(
-        self, context: RequestContext, package_id: PackageID, domain_name: DomainName, **kwargs
+        self,
+        context: RequestContext,
+        package_id: PackageID,
+        domain_name: DomainName,
+        prerequisite_package_id_list: PackageIDList = None,
+        association_configuration: PackageAssociationConfiguration = None,
+        **kwargs,
     ) -> AssociatePackageResponse:
+        raise NotImplementedError
+
+    @handler("AssociatePackages")
+    def associate_packages(
+        self,
+        context: RequestContext,
+        package_list: PackageDetailsForAssociationList,
+        domain_name: DomainName,
+        **kwargs,
+    ) -> AssociatePackagesResponse:
         raise NotImplementedError
 
     @handler("AuthorizeVpcEndpointAccess")
     def authorize_vpc_endpoint_access(
-        self, context: RequestContext, domain_name: DomainName, account: AWSAccount, **kwargs
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        account: AWSAccount = None,
+        service: AWSServicePrincipal = None,
+        **kwargs,
     ) -> AuthorizeVpcEndpointAccessResponse:
         raise NotImplementedError
 
@@ -2272,6 +2684,20 @@ class OpensearchApi:
     def cancel_service_software_update(
         self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> CancelServiceSoftwareUpdateResponse:
+        raise NotImplementedError
+
+    @handler("CreateApplication")
+    def create_application(
+        self,
+        context: RequestContext,
+        name: ApplicationName,
+        client_token: ClientToken = None,
+        data_sources: DataSources = None,
+        iam_identity_center_options: IamIdentityCenterOptionsInput = None,
+        app_configs: AppConfigs = None,
+        tag_list: TagList = None,
+        **kwargs,
+    ) -> CreateApplicationResponse:
         raise NotImplementedError
 
     @handler("CreateDomain")
@@ -2293,6 +2719,7 @@ class OpensearchApi:
         log_publishing_options: LogPublishingOptions = None,
         domain_endpoint_options: DomainEndpointOptions = None,
         advanced_security_options: AdvancedSecurityOptionsInput = None,
+        identity_center_options: IdentityCenterOptionsInput = None,
         tag_list: TagList = None,
         auto_tune_options: AutoTuneOptionsInput = None,
         off_peak_window_options: OffPeakWindowOptions = None,
@@ -2323,6 +2750,10 @@ class OpensearchApi:
         package_type: PackageType,
         package_source: PackageSource,
         package_description: PackageDescription = None,
+        package_configuration: PackageConfiguration = None,
+        engine_version: EngineVersion = None,
+        package_vending_options: PackageVendingOptions = None,
+        package_encryption_options: PackageEncryptionOptions = None,
         **kwargs,
     ) -> CreatePackageResponse:
         raise NotImplementedError
@@ -2338,10 +2769,22 @@ class OpensearchApi:
     ) -> CreateVpcEndpointResponse:
         raise NotImplementedError
 
+    @handler("DeleteApplication")
+    def delete_application(
+        self, context: RequestContext, id: Id, **kwargs
+    ) -> DeleteApplicationResponse:
+        raise NotImplementedError
+
     @handler("DeleteDataSource")
     def delete_data_source(
         self, context: RequestContext, domain_name: DomainName, name: DataSourceName, **kwargs
     ) -> DeleteDataSourceResponse:
+        raise NotImplementedError
+
+    @handler("DeleteDirectQueryDataSource")
+    def delete_direct_query_data_source(
+        self, context: RequestContext, data_source_name: DirectQueryDataSourceName, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeleteDomain")
@@ -2510,6 +2953,20 @@ class OpensearchApi:
     ) -> DissociatePackageResponse:
         raise NotImplementedError
 
+    @handler("DissociatePackages")
+    def dissociate_packages(
+        self,
+        context: RequestContext,
+        package_list: PackageIDList,
+        domain_name: DomainName,
+        **kwargs,
+    ) -> DissociatePackagesResponse:
+        raise NotImplementedError
+
+    @handler("GetApplication")
+    def get_application(self, context: RequestContext, id: Id, **kwargs) -> GetApplicationResponse:
+        raise NotImplementedError
+
     @handler("GetCompatibleVersions")
     def get_compatible_versions(
         self, context: RequestContext, domain_name: DomainName = None, **kwargs
@@ -2520,6 +2977,12 @@ class OpensearchApi:
     def get_data_source(
         self, context: RequestContext, domain_name: DomainName, name: DataSourceName, **kwargs
     ) -> GetDataSourceResponse:
+        raise NotImplementedError
+
+    @handler("GetDirectQueryDataSource")
+    def get_direct_query_data_source(
+        self, context: RequestContext, data_source_name: DirectQueryDataSourceName, **kwargs
+    ) -> GetDirectQueryDataSourceResponse:
         raise NotImplementedError
 
     @handler("GetDomainMaintenanceStatus")
@@ -2556,10 +3019,27 @@ class OpensearchApi:
     ) -> GetUpgradeStatusResponse:
         raise NotImplementedError
 
+    @handler("ListApplications")
+    def list_applications(
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        statuses: ApplicationStatuses = None,
+        max_results: MaxResults = None,
+        **kwargs,
+    ) -> ListApplicationsResponse:
+        raise NotImplementedError
+
     @handler("ListDataSources")
     def list_data_sources(
         self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> ListDataSourcesResponse:
+        raise NotImplementedError
+
+    @handler("ListDirectQueryDataSources")
+    def list_direct_query_data_sources(
+        self, context: RequestContext, next_token: NextToken = None, **kwargs
+    ) -> ListDirectQueryDataSourcesResponse:
         raise NotImplementedError
 
     @handler("ListDomainMaintenances")
@@ -2693,7 +3173,12 @@ class OpensearchApi:
 
     @handler("RevokeVpcEndpointAccess")
     def revoke_vpc_endpoint_access(
-        self, context: RequestContext, domain_name: DomainName, account: AWSAccount, **kwargs
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        account: AWSAccount = None,
+        service: AWSServicePrincipal = None,
+        **kwargs,
     ) -> RevokeVpcEndpointAccessResponse:
         raise NotImplementedError
 
@@ -2719,6 +3204,17 @@ class OpensearchApi:
     ) -> StartServiceSoftwareUpdateResponse:
         raise NotImplementedError
 
+    @handler("UpdateApplication")
+    def update_application(
+        self,
+        context: RequestContext,
+        id: Id,
+        data_sources: DataSources = None,
+        app_configs: AppConfigs = None,
+        **kwargs,
+    ) -> UpdateApplicationResponse:
+        raise NotImplementedError
+
     @handler("UpdateDataSource")
     def update_data_source(
         self,
@@ -2730,6 +3226,18 @@ class OpensearchApi:
         status: DataSourceStatus = None,
         **kwargs,
     ) -> UpdateDataSourceResponse:
+        raise NotImplementedError
+
+    @handler("UpdateDirectQueryDataSource")
+    def update_direct_query_data_source(
+        self,
+        context: RequestContext,
+        data_source_name: DirectQueryDataSourceName,
+        data_source_type: DirectQueryDataSourceType,
+        open_search_arns: DirectQueryOpenSearchARNList,
+        description: DirectQueryDataSourceDescription = None,
+        **kwargs,
+    ) -> UpdateDirectQueryDataSourceResponse:
         raise NotImplementedError
 
     @handler("UpdateDomainConfig")
@@ -2750,6 +3258,7 @@ class OpensearchApi:
         domain_endpoint_options: DomainEndpointOptions = None,
         node_to_node_encryption_options: NodeToNodeEncryptionOptions = None,
         advanced_security_options: AdvancedSecurityOptionsInput = None,
+        identity_center_options: IdentityCenterOptionsInput = None,
         auto_tune_options: AutoTuneOptions = None,
         dry_run: DryRun = None,
         dry_run_mode: DryRunMode = None,
@@ -2768,8 +3277,21 @@ class OpensearchApi:
         package_source: PackageSource,
         package_description: PackageDescription = None,
         commit_message: CommitMessage = None,
+        package_configuration: PackageConfiguration = None,
+        package_encryption_options: PackageEncryptionOptions = None,
         **kwargs,
     ) -> UpdatePackageResponse:
+        raise NotImplementedError
+
+    @handler("UpdatePackageScope")
+    def update_package_scope(
+        self,
+        context: RequestContext,
+        package_id: PackageID,
+        operation: PackageScopeOperationEnum,
+        package_user_list: PackageUserList,
+        **kwargs,
+    ) -> UpdatePackageScopeResponse:
         raise NotImplementedError
 
     @handler("UpdateScheduledAction")

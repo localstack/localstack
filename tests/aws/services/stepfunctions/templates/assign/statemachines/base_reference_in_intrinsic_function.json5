@@ -1,0 +1,90 @@
+{
+  "Comment": "BASE_REFERENCE_IN_INTRINSIC_FUNCTION",
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "Assign": {
+        "inputArray": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "duplicateArray": [
+          1,
+          2,
+          2,
+          3,
+          3,
+          4
+        ],
+        "rawString": "Hello World",
+        "encodedString": "SGVsbG8gV29ybGQ=",
+        "inputString": "Hash this string",
+        "json1": {
+          "a": 1,
+          "b": 2
+        },
+        "json2": {
+          "c": 3,
+          "d": 4
+        },
+        "jsonString": "{\"key\":\"value\"}",
+        "jsonObject": {
+          "test": "object"
+        },
+        "value1": 5,
+        "value2": 3,
+        "csvString": "a,b,c,d,e",
+        "name": "John",
+        "place": "LocalStack",
+        "additionalInfo": {
+          "age": 30,
+          "role": "developer"
+        }
+      },
+      "Next": "State1"
+    },
+    "State1": {
+      "Type": "Pass",
+      "Parameters": {
+//        "arrayOps": {
+//          "partitionedArray.$": "States.ArrayPartition(States.Array($inputArray), 2)",
+//          "containsElement.$": "States.ArrayContains(States.Array($inputArray), 5)",
+//          "thirdElement.$": "States.ArrayGetItem(States.Array($inputArray), 2)",
+//          "arraySize.$": "States.ArrayLength(States.Array($inputArray))",
+//          "uniqueValues.$": "States.ArrayUnique(States.Array($duplicateArray))"
+//        },
+        "encodingOps": {
+          "encoded.$": "States.Base64Encode($rawString)",
+          "decoded.$": "States.Base64Decode($encodedString)"
+        },
+        "hashOps": {
+          "hashValue.$": "States.Hash($inputString, 'SHA-256')"
+        },
+        "jsonOps": {
+          "mergedJson.$": "States.JsonMerge($json1, $json2, false)",
+          "parsedJson.$": "States.StringToJson($jsonString)",
+          "stringifiedJson.$": "States.JsonToString($jsonObject)"
+        },
+        "mathOps": {
+          "sum.$": "States.MathAdd($value1, $value2)"
+        },
+        "stringOps": {
+          "splitString.$": "States.StringSplit($csvString, ',')",
+          "formattedString.$": "States.Format('Hello {}, welcome to {}!', $name, $place)"
+        },
+        "uuidOp": {
+          "uniqueId.$": "States.UUID()"
+        }
+      },
+      "End": true
+    }
+  }
+}

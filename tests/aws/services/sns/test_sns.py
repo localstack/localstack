@@ -12,6 +12,7 @@ import pytest
 import requests
 import xmltodict
 from botocore.auth import SigV4Auth
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
@@ -21,6 +22,7 @@ from werkzeug import Response
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
+from localstack.config import external_service_url
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
 )
@@ -228,6 +230,82 @@ class TestSNSTopicCrud:
 
         topic1 = sns_create_topic(Name=topic_name, Tags=[{"Key": "Name", "Value": "abc"}])
         snapshot.match("topic-1", topic1)
+
+    @markers.aws.validated
+    @pytest.mark.skip(reason="Not properly implemented in Moto, only mocked")
+    def test_topic_delivery_policy_crud(self, sns_create_topic, snapshot, aws_client):
+        # https://docs.aws.amazon.com/sns/latest/dg/sns-message-delivery-retries.html
+        create_topic = sns_create_topic(
+            Name="topictest.fifo",
+            Attributes={
+                "DisplayName": "TestTopic",
+                "SignatureVersion": "2",
+                "FifoTopic": "true",
+                "DeliveryPolicy": json.dumps(
+                    {
+                        "http": {
+                            "defaultRequestPolicy": {"headerContentType": "application/json"},
+                        }
+                    }
+                ),
+            },
+        )
+        topic_arn = create_topic["TopicArn"]
+
+        get_attrs = aws_client.sns.get_topic_attributes(
+            TopicArn=topic_arn,
+        )
+        snapshot.match("get-topic-attrs", get_attrs)
+
+        set_attrs = aws_client.sns.set_topic_attributes(
+            TopicArn=topic_arn,
+            AttributeName="DeliveryPolicy",
+            AttributeValue=json.dumps(
+                {
+                    "http": {
+                        "defaultHealthyRetryPolicy": {
+                            "minDelayTarget": 5,
+                            "maxDelayTarget": 6,
+                            "numRetries": 1,
+                        }
+                    }
+                }
+            ),
+        )
+        snapshot.match("set-topic-attrs", set_attrs)
+
+        get_attrs_updated = aws_client.sns.get_topic_attributes(
+            TopicArn=topic_arn,
+        )
+        snapshot.match("get-topic-attrs-after-update", get_attrs_updated)
+
+        set_attrs_none = aws_client.sns.set_topic_attributes(
+            TopicArn=topic_arn,
+            AttributeName="DeliveryPolicy",
+            AttributeValue=json.dumps(
+                {
+                    "http": {"defaultHealthyRetryPolicy": None},
+                }
+            ),
+        )
+        snapshot.match("set-topic-attrs-none", set_attrs_none)
+
+        get_attrs_updated = aws_client.sns.get_topic_attributes(
+            TopicArn=topic_arn,
+        )
+        snapshot.match("get-topic-attrs-after-none", get_attrs_updated)
+
+        set_attrs_none_full = aws_client.sns.set_topic_attributes(
+            TopicArn=topic_arn,
+            AttributeName="DeliveryPolicy",
+            AttributeValue="",
+        )
+        snapshot.match("set-topic-attrs-full-none", set_attrs_none_full)
+
+        get_attrs_updated = aws_client.sns.get_topic_attributes(
+            TopicArn=topic_arn,
+        )
+        snapshot.match("get-topic-attrs-after-delete", get_attrs_updated)
 
 
 class TestSNSPublishCrud:
@@ -2004,15 +2082,27 @@ class TestSNSSubscriptionSQS:
 
     @markers.aws.validated
     def test_empty_or_wrong_message_attributes(
-        self, sns_create_sqs_subscription, sns_create_topic, sqs_create_queue, snapshot, aws_client
+        self,
+        sns_create_sqs_subscription,
+        sns_create_topic,
+        sqs_create_queue,
+        snapshot,
+        aws_client_factory,
+        region_name,
     ):
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
 
         sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
 
+        client_no_validation = aws_client_factory(
+            region_name=region_name, config=Config(parameter_validation=False)
+        ).sns
+
         wrong_message_attributes = {
             "missing_string_attr": {"attr1": {"DataType": "String", "StringValue": ""}},
+            "fully_missing_string_attr": {"attr1": {"DataType": "String"}},
+            "fully_missing_data_type": {"attr1": {"StringValue": "value"}},
             "missing_binary_attr": {"attr1": {"DataType": "Binary", "BinaryValue": b""}},
             "str_attr_binary_value": {"attr1": {"DataType": "String", "BinaryValue": b"123"}},
             "int_attr_binary_value": {"attr1": {"DataType": "Number", "BinaryValue": b"123"}},
@@ -2029,7 +2119,7 @@ class TestSNSSubscriptionSQS:
 
         for error_type, msg_attrs in wrong_message_attributes.items():
             with pytest.raises(ClientError) as e:
-                aws_client.sns.publish(
+                client_no_validation.publish(
                     TopicArn=topic_arn,
                     Message="test message",
                     MessageAttributes=msg_attrs,
@@ -2037,27 +2127,22 @@ class TestSNSSubscriptionSQS:
 
             snapshot.match(error_type, e.value.response)
 
-        with pytest.raises(ClientError) as e:
-            aws_client.sns.publish_batch(
-                TopicArn=topic_arn,
-                PublishBatchRequestEntries=[
-                    {
-                        "Id": "1",
-                        "Message": "test-batch",
-                        "MessageAttributes": wrong_message_attributes["missing_string_attr"],
-                    },
-                    {
-                        "Id": "2",
-                        "Message": "test-batch",
-                        "MessageAttributes": wrong_message_attributes["str_attr_binary_value"],
-                    },
-                    {
-                        "Id": "3",
-                        "Message": "valid-batch",
-                    },
-                ],
-            )
-        snapshot.match("batch-exception", e.value.response)
+            with pytest.raises(ClientError) as e:
+                client_no_validation.publish_batch(
+                    TopicArn=topic_arn,
+                    PublishBatchRequestEntries=[
+                        {
+                            "Id": "1",
+                            "Message": "test-batch",
+                            "MessageAttributes": msg_attrs,
+                        },
+                        {
+                            "Id": "3",
+                            "Message": "valid-batch",
+                        },
+                    ],
+                )
+            snapshot.match(f"batch-{error_type}", e.value.response)
 
     @markers.aws.validated
     def test_message_attributes_prefixes(
@@ -2919,6 +3004,49 @@ class TestSNSSubscriptionSES:
 
         retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
+    @markers.aws.only_localstack
+    def test_email_sender(
+        self,
+        sns_create_topic,
+        sns_subscription,
+        aws_client,
+        monkeypatch,
+    ):
+        # make sure to reset all received emails in SES
+        requests.delete("http://localhost:4566/_aws/ses")
+
+        topic_arn = sns_create_topic()["TopicArn"]
+        sns_subscription(
+            TopicArn=topic_arn,
+            Protocol="email",
+            Endpoint="localstack@yopmail.com",
+        )
+
+        aws_client.sns.publish(
+            Message="Test message",
+            TopicArn=topic_arn,
+        )
+
+        def _get_messages(amount: int) -> list[dict]:
+            response = requests.get("http://localhost:4566/_aws/ses").json()
+            assert len(response["messages"]) == amount
+            return response["messages"]
+
+        messages = retry(lambda: _get_messages(1), retries=PUBLICATION_RETRIES, sleep=1)
+        # legacy default value, should be replaced at some point
+        assert messages[0]["Source"] == "admin@localstack.com"
+        requests.delete("http://localhost:4566/_aws/ses")
+
+        sender_address = "no-reply@sns.localstack.cloud"
+        monkeypatch.setattr(config, "SNS_SES_SENDER_ADDRESS", sender_address)
+
+        aws_client.sns.publish(
+            Message="Test message",
+            TopicArn=topic_arn,
+        )
+        messages = retry(lambda: _get_messages(1), retries=PUBLICATION_RETRIES, sleep=1)
+        assert messages[0]["Source"] == sender_address
+
 
 class TestSNSPlatformEndpoint:
     @markers.aws.only_localstack
@@ -3656,6 +3784,116 @@ class TestSNSSubscriptionHttp:
         # AWS doesn't send to the DLQ if the UnsubscribeConfirmation fails to be delivered
         assert "Messages" not in response or response["Messages"] == []
 
+    @markers.aws.manual_setup_required
+    @pytest.mark.parametrize("raw_message_delivery", [True, False])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$.http-message-headers.Accept",  # requests adds the header but not SNS, not very important
+            "$.http-message-headers-raw.Accept",
+            "$.http-confirm-sub-headers.Accept",
+            # TODO: we need to fix this parity in Moto, in order to make the retrieval logic of those values easier
+            "$.sub-attrs.Attributes.ConfirmationWasAuthenticated",
+            "$.sub-attrs.Attributes.DeliveryPolicy",
+            "$.sub-attrs.Attributes.EffectiveDeliveryPolicy",
+            "$.topic-attrs.Attributes.DeliveryPolicy",
+            "$.topic-attrs.Attributes.EffectiveDeliveryPolicy",
+            "$.topic-attrs.Attributes.Policy.Statement..Action",
+        ]
+    )
+    def test_subscribe_external_http_endpoint_content_type(
+        self,
+        sns_create_http_endpoint,
+        raw_message_delivery,
+        aws_client,
+        snapshot,
+    ):
+        def _clean_headers(response_headers: dict):
+            return {key: val for key, val in response_headers.items() if "Forwarded" not in key}
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("RequestId"),
+                snapshot.transform.key_value("Token"),
+                snapshot.transform.key_value("Host"),
+                snapshot.transform.key_value(
+                    "Content-Length", reference_replacement=False
+                ),  # might change depending on compression
+                snapshot.transform.key_value(
+                    "Connection", reference_replacement=False
+                ),  # casing might change
+                snapshot.transform.regex(
+                    r"(?i)(?<=SubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=ConfirmSubscription)",
+                    replacement="<subscribe-domain>",
+                ),
+            ]
+        )
+
+        # Necessitate manual set up to allow external access to endpoint, only in local testing
+        topic_arn, subscription_arn, endpoint_url, server = sns_create_http_endpoint(
+            raw_message_delivery
+        )
+
+        # try both setting the Topic attribute or Subscription attribute
+        # https://docs.aws.amazon.com/sns/latest/dg/sns-message-delivery-retries.html#creating-delivery-policy
+        if raw_message_delivery:
+            aws_client.sns.set_subscription_attributes(
+                SubscriptionArn=subscription_arn,
+                AttributeName="DeliveryPolicy",
+                AttributeValue=json.dumps(
+                    {
+                        "requestPolicy": {"headerContentType": "text/csv"},
+                    }
+                ),
+            )
+        else:
+            aws_client.sns.set_topic_attributes(
+                TopicArn=topic_arn,
+                AttributeName="DeliveryPolicy",
+                AttributeValue=json.dumps(
+                    {
+                        "http": {
+                            "defaultRequestPolicy": {"headerContentType": "application/json"},
+                        }
+                    }
+                ),
+            )
+
+        topic_attrs = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+        snapshot.match("topic-attrs", topic_attrs)
+
+        sub_attrs = aws_client.sns.get_subscription_attributes(SubscriptionArn=subscription_arn)
+        snapshot.match("sub-attrs", sub_attrs)
+
+        assert poll_condition(
+            lambda: len(server.log) >= 1,
+            timeout=5,
+        )
+        sub_request, _ = server.log[0]
+        payload = sub_request.get_json(force=True)
+        snapshot.match("subscription-confirmation", payload)
+        snapshot.match("http-confirm-sub-headers", _clean_headers(sub_request.headers))
+
+        token = payload["Token"]
+        aws_client.sns.confirm_subscription(TopicArn=topic_arn, Token=token)
+
+        message = "test_external_http_endpoint"
+        aws_client.sns.publish(TopicArn=topic_arn, Message=message)
+
+        assert poll_condition(
+            lambda: len(server.log) >= 2,
+            timeout=5,
+        )
+        notification_request, _ = server.log[1]
+        assert notification_request.headers["x-amz-sns-message-type"] == "Notification"
+        if raw_message_delivery:
+            payload = notification_request.data.decode()
+            assert payload == message
+            snapshot.match("http-message-headers-raw", _clean_headers(notification_request.headers))
+        else:
+            payload = notification_request.get_json(force=True)
+            snapshot.match("http-message", payload)
+            snapshot.match("http-message-headers", _clean_headers(notification_request.headers))
+
 
 class TestSNSSubscriptionFirehose:
     @markers.aws.validated
@@ -4115,6 +4353,52 @@ class TestSNSPublishDelivery:
         snapshot.match("delivery-events", events)
 
 
+class TestSNSCertEndpoint:
+    @markers.aws.only_localstack
+    @pytest.mark.parametrize("cert_host", ["", "sns.us-east-1.amazonaws.com"])
+    def test_cert_endpoint_host(
+        self,
+        aws_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sns_create_sqs_subscription,
+        monkeypatch,
+        cert_host,
+    ):
+        """
+        Some SDK will validate the Cert URL matches a certain regex pattern. We validate the user can set the value
+        to arbitrary host, but those will obviously not resolve / return a valid certificate.
+        """
+        monkeypatch.setattr(config, "SNS_CERT_URL_HOST", cert_host)
+        topic_arn = sns_create_topic(
+            Attributes={
+                "DisplayName": "TestTopicSignature",
+                "SignatureVersion": "1",
+            },
+        )["TopicArn"]
+
+        queue_url = sqs_create_queue()
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+
+        aws_client.sns.publish(
+            TopicArn=topic_arn,
+            Message="test cert host",
+        )
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url,
+            WaitTimeSeconds=10,
+        )
+        message = json.loads(response["Messages"][0]["Body"])
+
+        cert_url = message["SigningCertURL"]
+        if not cert_host:
+            assert external_service_url() in cert_url
+        else:
+            assert cert_host in cert_url
+            assert external_service_url() not in cert_url
+
+
+@pytest.mark.usefixtures("openapi_validate")
 class TestSNSRetrospectionEndpoints:
     @markers.aws.only_localstack
     def test_publish_to_platform_endpoint_can_retrospect(

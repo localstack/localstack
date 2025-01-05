@@ -70,7 +70,7 @@ env:
   # report to tinybird if executed on master
   TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
 
-permissions: 
+permissions:
   contents: read # checkout the repository
 
 jobs:
@@ -79,7 +79,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ "3.8", "3.9", "3.10", "3.11", "3.12" ]
+        python-version: [ "3.9", "3.10", "3.11", "3.12", "3.13" ]
     timeout-minutes: 10
     env:
       # Set job-specific environment variables for pytest-tinybird
@@ -109,7 +109,7 @@ jobs:
     if: always() && github.ref == 'refs/heads/master' && github.repository == 'localstack/localstack'
     runs-on: ubuntu-latest
     needs: cli-tests
-    permissions: 
+    permissions:
       actions: read
     steps:
       - name: Push to Tinybird

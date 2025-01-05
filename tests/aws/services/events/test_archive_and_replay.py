@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from localstack import config
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -362,6 +363,10 @@ class TestArchive:
 class TestReplay:
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
+    @pytest.mark.skipif(
+        condition=config.EVENT_RULE_ENGINE == "python",
+        reason="Not supported with Python-based rule engine",
+    )
     @pytest.mark.parametrize("event_bus_type", ["default", "custom"])
     @pytest.mark.skip_snapshot_verify(paths=["$..State"])
     def test_start_list_describe_canceled_replay(
@@ -369,7 +374,7 @@ class TestReplay:
         event_bus_type,
         events_create_default_or_custom_event_bus,
         events_put_rule,
-        create_sqs_events_target,
+        sqs_as_events_target,
         put_event_to_archive,
         aws_client,
         snapshot,
@@ -390,7 +395,7 @@ class TestReplay:
         rule_arn = response["RuleArn"]
 
         # setup sqs target
-        queue_url, queue_arn = create_sqs_events_target()
+        queue_url, queue_arn = sqs_as_events_target()
         target_id = f"target-{short_uid()}"
         aws_client.events.put_targets(
             Rule=rule_name,

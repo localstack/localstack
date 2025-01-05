@@ -41,8 +41,20 @@
     }
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy_string_operators": {
-    "recorded-date": "15-05-2024, 14:39:23",
+    "recorded-date": "03-12-2024, 22:11:13",
     "recorded-content": {
+      "error-condition-empty-array": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Empty arrays are not allowed\n at [Source: (String)\"{\"key\":[]}\"; line: 1, column: 10]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Empty arrays are not allowed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "error-condition-is-numeric": {
         "Error": {
           "Code": "InvalidParameter",
@@ -121,6 +133,78 @@
           "Message": "Invalid parameter: Attributes Reason: FilterPolicy: \"not-an-operator\" must be an object or an array\n at [Source: (String)\"{\"key\":{\"not-an-operator\":\"value\"}}\"; line: 1, column: 28]",
           "Type": "Sender",
           "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: \"not-an-operator\" must be an object or an array"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-bad-type": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: prefix match pattern must be a string\n at [Source: (String)\"{\"key\":[{\"cidr\":[\"bad-filter\"]}]}\"; line: 1, column: 18]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: prefix match pattern must be a string"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-bad-cidr-str": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Malformed CIDR, one '/' required",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Malformed CIDR, one '/' required"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-bad-cidr-str-slash": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Nonstandard IP address: bad-filter",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Nonstandard IP address: bad-filter"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-bad-cidr-str-slash-2": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Malformed CIDR, mask bits must be an integer",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Malformed CIDR, mask bits must be an integer"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-bad-cidr-v4": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Nonstandard IP address: xx.11.xx",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Nonstandard IP address: xx.11.xx"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-bad-cidr-v6": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Nonstandard IP address: xxxx:db8:1234:1a00::",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Nonstandard IP address: xxxx:db8:1234:1a00::"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -965,7 +1049,7 @@
     }
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body[True]": {
-    "recorded-date": "14-05-2024, 16:49:57",
+    "recorded-date": "03-12-2024, 15:01:58",
     "recorded-content": {
       "recv-init": {
         "ResponseMetadata": {
@@ -1012,7 +1096,7 @@
     }
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body[False]": {
-    "recorded-date": "14-05-2024, 16:50:08",
+    "recorded-date": "03-12-2024, 15:02:10",
     "recorded-content": {
       "recv-init": {
         "ResponseMetadata": {
@@ -1071,7 +1155,7 @@
     }
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_for_batch": {
-    "recorded-date": "14-05-2024, 16:50:25",
+    "recorded-date": "03-12-2024, 15:02:27",
     "recorded-content": {
       "subscription-attributes-with-filter": {
         "Attributes": {
@@ -1231,7 +1315,7 @@
     }
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body_dot_attribute": {
-    "recorded-date": "14-05-2024, 16:50:50",
+    "recorded-date": "03-12-2024, 15:02:51",
     "recorded-content": {
       "recv-init": {
         "ResponseMetadata": {
@@ -1386,7 +1470,7 @@
     }
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body_array_attributes": {
-    "recorded-date": "14-05-2024, 16:50:55",
+    "recorded-date": "03-12-2024, 15:02:56",
     "recorded-content": {
       "messages-queue-0": {
         "Messages": [
@@ -1473,7 +1557,7 @@
     }
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body_array_of_object_attributes": {
-    "recorded-date": "14-05-2024, 16:50:58",
+    "recorded-date": "03-12-2024, 15:02:59",
     "recorded-content": {
       "messages": {
         "Messages": [
@@ -1551,8 +1635,103 @@
     }
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body_or_attribute": {
-    "recorded-date": "14-05-2024, 16:51:02",
-    "recorded-content": {}
+    "recorded-date": "03-12-2024, 15:05:46",
+    "recorded-content": {
+      "messages-queue": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "metricName": "CPUUtilization",
+              "detail": {
+                "scope": "Service",
+                "source": "aws.cloudwatch"
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "metricName": "CPUUtilization",
+              "detail": {
+                "scope": "Service",
+                "type": "CloudWatch Alarm State Change"
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "metricName": "ReadLatency",
+              "detail": {
+                "scope": "Service",
+                "source": "aws.cloudwatch"
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "namespace": "AWS/EC2",
+              "detail": {
+                "scope": "Service",
+                "source": "aws.cloudwatch"
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:4>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "namespace": "AWS/ES",
+              "detail": {
+                "scope": "Service",
+                "source": "aws.cloudwatch"
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:5>",
+            "ReceiptHandle": "<receipt-handle:5>"
+          }
+        ]
+      }
+    }
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy_nested_anything_but_operator": {
     "recorded-date": "15-05-2024, 14:39:32",
@@ -1604,6 +1783,93 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
         }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_empty_array_payload": {
+    "recorded-date": "04-12-2024, 10:22:15",
+    "recorded-content": {
+      "messages-queue": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "version": "0",
+              "id": "<uuid:1>",
+              "detail-type": "EC2 Instance Launch Successful",
+              "source": "aws.autoscaling",
+              "account": "123456789012",
+              "time": "date",
+              "region": "my-region",
+              "resources": [],
+              "detail": {
+                "eventVersion": "",
+                "responseElements": null
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_ip_address_condition": {
+    "recorded-date": "04-12-2024, 10:36:46",
+    "recorded-content": {
+      "messages-queue": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "id": "1",
+              "source": "test-source",
+              "detail-type": "test-detail-type",
+              "account": "123456789012",
+              "region": "my-region",
+              "time": "date",
+              "detail": {
+                "sourceIPAddress": "10.0.0.255"
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "id": "3",
+              "source": "test-source",
+              "detail-type": "test-detail-type",
+              "account": "123456789012",
+              "region": "my-region",
+              "time": "date",
+              "detail": {
+                "sourceIPAddressV6": "2001:0db8:1234:1a00:0000:0000:0000:0000"
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ]
       }
     }
   }

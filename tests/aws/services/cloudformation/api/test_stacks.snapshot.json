@@ -1727,5 +1727,532 @@
         }
       ]
     }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_no_echo_parameter": {
+    "recorded-date": "19-12-2024, 11:35:19",
+    "recorded-content": {
+      "describe_stacks": {
+        "Stacks": [
+          {
+            "Capabilities": [
+              "CAPABILITY_AUTO_EXPAND",
+              "CAPABILITY_IAM",
+              "CAPABILITY_NAMED_IAM"
+            ],
+            "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+            "CreationTime": "datetime",
+            "DisableRollback": false,
+            "DriftInformation": {
+              "StackDriftStatus": "NOT_CHECKED"
+            },
+            "EnableTerminationProtection": false,
+            "LastUpdatedTime": "datetime",
+            "NotificationARNs": [],
+            "Outputs": [
+              {
+                "Description": "Secret value from parameter",
+                "OutputKey": "SecretValue",
+                "OutputValue": "SecretValue"
+              }
+            ],
+            "Parameters": [
+              {
+                "ParameterKey": "NormalParameter",
+                "ParameterValue": "Some default value here"
+              },
+              {
+                "ParameterKey": "SecretParameter",
+                "ParameterValue": "****"
+              },
+              {
+                "ParameterKey": "SecretParameterWithDefault",
+                "ParameterValue": "****"
+              }
+            ],
+            "RollbackConfiguration": {},
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "StackStatus": "CREATE_COMPLETE",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_stack_resource_details_LocalBucket": {
+        "StackResourceDetail": {
+          "DriftInformation": {
+            "StackResourceDriftStatus": "NOT_CHECKED"
+          },
+          "LastUpdatedTimestamp": "timestamp",
+          "LogicalResourceId": "LocalBucket",
+          "Metadata": {
+            "SensitiveData": "SecretValue"
+          },
+          "PhysicalResourceId": "cfn-noecho-bucket",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceType": "AWS::S3::Bucket",
+          "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+          "StackName": "<stack-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_updated_stacks": {
+        "Stacks": [
+          {
+            "Capabilities": [
+              "CAPABILITY_AUTO_EXPAND",
+              "CAPABILITY_IAM",
+              "CAPABILITY_NAMED_IAM"
+            ],
+            "CreationTime": "datetime",
+            "DisableRollback": false,
+            "DriftInformation": {
+              "StackDriftStatus": "NOT_CHECKED"
+            },
+            "EnableTerminationProtection": false,
+            "LastUpdatedTime": "datetime",
+            "NotificationARNs": [],
+            "Outputs": [
+              {
+                "Description": "Secret value from parameter",
+                "OutputKey": "SecretValue",
+                "OutputValue": "NewSecretValue1"
+              }
+            ],
+            "Parameters": [
+              {
+                "ParameterKey": "NormalParameter",
+                "ParameterValue": "Some default value here"
+              },
+              {
+                "ParameterKey": "SecretParameter",
+                "ParameterValue": "****"
+              },
+              {
+                "ParameterKey": "SecretParameterWithDefault",
+                "ParameterValue": "****"
+              }
+            ],
+            "RollbackConfiguration": {},
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "StackStatus": "UPDATE_COMPLETE",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_updated_change_set": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ChangeSetName": "<change-set-name:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Modify",
+              "Details": [
+                {
+                  "CausingEntity": "SecretParameter",
+                  "ChangeSource": "ParameterReference",
+                  "Evaluation": "Static",
+                  "Target": {
+                    "Attribute": "Metadata",
+                    "RequiresRecreation": "Never"
+                  }
+                },
+                {
+                  "CausingEntity": "SecretParameter",
+                  "ChangeSource": "ParameterReference",
+                  "Evaluation": "Static",
+                  "Target": {
+                    "Attribute": "Properties",
+                    "Name": "Tags",
+                    "RequiresRecreation": "Never"
+                  }
+                },
+                {
+                  "ChangeSource": "DirectModification",
+                  "Evaluation": "Dynamic",
+                  "Target": {
+                    "Attribute": "Metadata",
+                    "RequiresRecreation": "Never"
+                  }
+                },
+                {
+                  "ChangeSource": "DirectModification",
+                  "Evaluation": "Dynamic",
+                  "Target": {
+                    "Attribute": "Properties",
+                    "Name": "Tags",
+                    "RequiresRecreation": "Never"
+                  }
+                }
+              ],
+              "LogicalResourceId": "LocalBucket",
+              "PhysicalResourceId": "cfn-noecho-bucket",
+              "Replacement": "False",
+              "ResourceType": "AWS::S3::Bucket",
+              "Scope": [
+                "Metadata",
+                "Properties"
+              ]
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "Parameters": [
+          {
+            "ParameterKey": "NormalParameter",
+            "ParameterValue": "Some default value here"
+          },
+          {
+            "ParameterKey": "SecretParameter",
+            "ParameterValue": "****"
+          },
+          {
+            "ParameterKey": "SecretParameterWithDefault",
+            "ParameterValue": "****"
+          }
+        ],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_updated_stacks_change_set": {
+        "Stacks": [
+          {
+            "Capabilities": [
+              "CAPABILITY_AUTO_EXPAND",
+              "CAPABILITY_IAM",
+              "CAPABILITY_NAMED_IAM"
+            ],
+            "CreationTime": "datetime",
+            "DisableRollback": false,
+            "DriftInformation": {
+              "StackDriftStatus": "NOT_CHECKED"
+            },
+            "EnableTerminationProtection": false,
+            "LastUpdatedTime": "datetime",
+            "NotificationARNs": [],
+            "Outputs": [
+              {
+                "Description": "Secret value from parameter",
+                "OutputKey": "SecretValue",
+                "OutputValue": "NewSecretValue1"
+              }
+            ],
+            "Parameters": [
+              {
+                "ParameterKey": "NormalParameter",
+                "ParameterValue": "Some default value here"
+              },
+              {
+                "ParameterKey": "SecretParameter",
+                "ParameterValue": "****"
+              },
+              {
+                "ParameterKey": "SecretParameterWithDefault",
+                "ParameterValue": "****"
+              }
+            ],
+            "RollbackConfiguration": {},
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "StackStatus": "UPDATE_COMPLETE",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_updated_change_set_no_echo_true": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:4>",
+        "ChangeSetName": "<change-set-name:2>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Modify",
+              "Details": [
+                {
+                  "CausingEntity": "SecretParameter",
+                  "ChangeSource": "ParameterReference",
+                  "Evaluation": "Static",
+                  "Target": {
+                    "Attribute": "Metadata",
+                    "RequiresRecreation": "Never"
+                  }
+                },
+                {
+                  "CausingEntity": "SecretParameter",
+                  "ChangeSource": "ParameterReference",
+                  "Evaluation": "Static",
+                  "Target": {
+                    "Attribute": "Properties",
+                    "Name": "Tags",
+                    "RequiresRecreation": "Never"
+                  }
+                },
+                {
+                  "ChangeSource": "DirectModification",
+                  "Evaluation": "Dynamic",
+                  "Target": {
+                    "Attribute": "Metadata",
+                    "RequiresRecreation": "Never"
+                  }
+                },
+                {
+                  "ChangeSource": "DirectModification",
+                  "Evaluation": "Dynamic",
+                  "Target": {
+                    "Attribute": "Properties",
+                    "Name": "Tags",
+                    "RequiresRecreation": "Never"
+                  }
+                }
+              ],
+              "LogicalResourceId": "LocalBucket",
+              "PhysicalResourceId": "cfn-noecho-bucket",
+              "Replacement": "False",
+              "ResourceType": "AWS::S3::Bucket",
+              "Scope": [
+                "Metadata",
+                "Properties"
+              ]
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "Parameters": [
+          {
+            "ParameterKey": "NormalParameter",
+            "ParameterValue": "Some default value here"
+          },
+          {
+            "ParameterKey": "SecretParameter",
+            "ParameterValue": "NewSecretValue2"
+          },
+          {
+            "ParameterKey": "SecretParameterWithDefault",
+            "ParameterValue": "****"
+          }
+        ],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_updated_stacks_no_echo_true": {
+        "Stacks": [
+          {
+            "Capabilities": [
+              "CAPABILITY_AUTO_EXPAND",
+              "CAPABILITY_IAM",
+              "CAPABILITY_NAMED_IAM"
+            ],
+            "CreationTime": "datetime",
+            "DisableRollback": false,
+            "DriftInformation": {
+              "StackDriftStatus": "NOT_CHECKED"
+            },
+            "EnableTerminationProtection": false,
+            "LastUpdatedTime": "datetime",
+            "NotificationARNs": [],
+            "Outputs": [
+              {
+                "Description": "Secret value from parameter",
+                "OutputKey": "SecretValue",
+                "OutputValue": "NewSecretValue1"
+              }
+            ],
+            "Parameters": [
+              {
+                "ParameterKey": "NormalParameter",
+                "ParameterValue": "Some default value here"
+              },
+              {
+                "ParameterKey": "SecretParameter",
+                "ParameterValue": "****"
+              },
+              {
+                "ParameterKey": "SecretParameterWithDefault",
+                "ParameterValue": "****"
+              }
+            ],
+            "RollbackConfiguration": {},
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "StackStatus": "UPDATE_COMPLETE",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_updated_change_set_no_echo_false": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:5>",
+        "ChangeSetName": "<change-set-name:3>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Modify",
+              "Details": [
+                {
+                  "CausingEntity": "SecretParameter",
+                  "ChangeSource": "ParameterReference",
+                  "Evaluation": "Static",
+                  "Target": {
+                    "Attribute": "Metadata",
+                    "RequiresRecreation": "Never"
+                  }
+                },
+                {
+                  "CausingEntity": "SecretParameter",
+                  "ChangeSource": "ParameterReference",
+                  "Evaluation": "Static",
+                  "Target": {
+                    "Attribute": "Properties",
+                    "Name": "Tags",
+                    "RequiresRecreation": "Never"
+                  }
+                },
+                {
+                  "ChangeSource": "DirectModification",
+                  "Evaluation": "Dynamic",
+                  "Target": {
+                    "Attribute": "Metadata",
+                    "RequiresRecreation": "Never"
+                  }
+                },
+                {
+                  "ChangeSource": "DirectModification",
+                  "Evaluation": "Dynamic",
+                  "Target": {
+                    "Attribute": "Properties",
+                    "Name": "Tags",
+                    "RequiresRecreation": "Never"
+                  }
+                }
+              ],
+              "LogicalResourceId": "LocalBucket",
+              "PhysicalResourceId": "cfn-noecho-bucket",
+              "Replacement": "False",
+              "ResourceType": "AWS::S3::Bucket",
+              "Scope": [
+                "Metadata",
+                "Properties"
+              ]
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "Parameters": [
+          {
+            "ParameterKey": "NormalParameter",
+            "ParameterValue": "Some default value here"
+          },
+          {
+            "ParameterKey": "SecretParameter",
+            "ParameterValue": "****"
+          },
+          {
+            "ParameterKey": "SecretParameterWithDefault",
+            "ParameterValue": "****"
+          }
+        ],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_updated_stacks_no_echo_false": {
+        "Stacks": [
+          {
+            "Capabilities": [
+              "CAPABILITY_AUTO_EXPAND",
+              "CAPABILITY_IAM",
+              "CAPABILITY_NAMED_IAM"
+            ],
+            "CreationTime": "datetime",
+            "DisableRollback": false,
+            "DriftInformation": {
+              "StackDriftStatus": "NOT_CHECKED"
+            },
+            "EnableTerminationProtection": false,
+            "LastUpdatedTime": "datetime",
+            "NotificationARNs": [],
+            "Outputs": [
+              {
+                "Description": "Secret value from parameter",
+                "OutputKey": "SecretValue",
+                "OutputValue": "NewSecretValue1"
+              }
+            ],
+            "Parameters": [
+              {
+                "ParameterKey": "NormalParameter",
+                "ParameterValue": "Some default value here"
+              },
+              {
+                "ParameterKey": "SecretParameter",
+                "ParameterValue": "****"
+              },
+              {
+                "ParameterKey": "SecretParameterWithDefault",
+                "ParameterValue": "****"
+              }
+            ],
+            "RollbackConfiguration": {},
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "StackStatus": "UPDATE_COMPLETE",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

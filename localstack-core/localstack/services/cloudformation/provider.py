@@ -54,12 +54,15 @@ from localstack.aws.api.cloudformation import (
     ListStackSetsInput,
     ListStackSetsOutput,
     ListStacksOutput,
+    ListTypesInput,
+    ListTypesOutput,
     LogicalResourceId,
     NextToken,
     Parameter,
     PhysicalResourceId,
     RegisterTypeInput,
     RegisterTypeOutput,
+    RegistryType,
     RetainExceptOnCreate,
     RetainResources,
     RoleARN,
@@ -70,6 +73,7 @@ from localstack.aws.api.cloudformation import (
     StackStatusFilter,
     TemplateParameter,
     TemplateStage,
+    TypeSummary,
     UpdateStackInput,
     UpdateStackOutput,
     UpdateStackSetInput,
@@ -88,7 +92,7 @@ from localstack.services.cloudformation.engine.entities import (
     StackInstance,
     StackSet,
 )
-from localstack.services.cloudformation.engine.parameters import strip_parameter_type
+from localstack.services.cloudformation.engine.parameters import mask_no_echo, strip_parameter_type
 from localstack.services.cloudformation.engine.resource_ordering import (
     NoResourceInStack,
     order_resources,
@@ -103,6 +107,10 @@ from localstack.services.cloudformation.engine.transformers import (
 from localstack.services.cloudformation.engine.validations import (
     DEFAULT_TEMPLATE_VALIDATIONS,
     ValidationError,
+)
+from localstack.services.cloudformation.resource_provider import (
+    PRO_RESOURCE_PROVIDERS,
+    ResourceProvider,
 )
 from localstack.services.cloudformation.stores import (
     cloudformation_stores,
@@ -659,7 +667,8 @@ class CloudformationProvider(CloudformationApi):
             case ChangeSetType.UPDATE:
                 # add changeset to existing stack
                 old_parameters = {
-                    k: strip_parameter_type(v) for k, v in stack.resolved_parameters.items()
+                    k: mask_no_echo(strip_parameter_type(v))
+                    for k, v in stack.resolved_parameters.items()
                 }
             case ChangeSetType.IMPORT:
                 raise NotImplementedError()  # TODO: implement importing resources
@@ -804,7 +813,9 @@ class CloudformationProvider(CloudformationApi):
         ]
         result = remove_attributes(deepcopy(change_set.metadata), attrs)
         # TODO: replace this patch with a better solution
-        result["Parameters"] = [strip_parameter_type(p) for p in result.get("Parameters", [])]
+        result["Parameters"] = [
+            mask_no_echo(strip_parameter_type(p)) for p in result.get("Parameters", [])
+        ]
         return result
 
     @handler("DeleteChangeSet")
@@ -850,7 +861,11 @@ class CloudformationProvider(CloudformationApi):
         **kwargs,
     ) -> ExecuteChangeSetOutput:
         change_set = find_change_set(
-            context.account_id, context.region, change_set_name, stack_name=stack_name
+            context.account_id,
+            context.region,
+            change_set_name,
+            stack_name=stack_name,
+            active_only=True,
         )
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
@@ -1004,7 +1019,7 @@ class CloudformationProvider(CloudformationApi):
                 TemplateParameter(
                     ParameterKey=k,
                     DefaultValue=v.get("Default", ""),
-                    NoEcho=False,
+                    NoEcho=v.get("NoEcho", False),
                     Description=v.get("Description", ""),
                 )
                 for k, v in valid_template.get("Parameters", {}).items()
@@ -1270,3 +1285,42 @@ class CloudformationProvider(CloudformationApi):
         request: RegisterTypeInput,
     ) -> RegisterTypeOutput:
         return RegisterTypeOutput()
+
+    def list_types(
+        self, context: RequestContext, request: ListTypesInput, **kwargs
+    ) -> ListTypesOutput:
+        def is_list_overridden(child_class, parent_class):
+            if hasattr(child_class, "list"):
+                import inspect
+
+                child_method = child_class.list
+                parent_method = parent_class.list
+                return inspect.unwrap(child_method) is not inspect.unwrap(parent_method)
+            return False
+
+        def get_listable_types_summaries(plugin_manager):
+            plugins = plugin_manager.list_names()
+            type_summaries = []
+            for plugin in plugins:
+                type_summary = TypeSummary(
+                    Type=RegistryType.RESOURCE,
+                    TypeName=plugin,
+                )
+                provider = plugin_manager.load(plugin)
+                if is_list_overridden(provider.factory, ResourceProvider):
+                    type_summaries.append(type_summary)
+            return type_summaries
+
+        from localstack.services.cloudformation.resource_provider import (
+            plugin_manager,
+        )
+
+        type_summaries = get_listable_types_summaries(plugin_manager)
+        if PRO_RESOURCE_PROVIDERS:
+            from localstack.services.cloudformation.resource_provider import (
+                pro_plugin_manager,
+            )
+
+            type_summaries.extend(get_listable_types_summaries(pro_plugin_manager))
+
+        return ListTypesOutput(TypeSummaries=type_summaries)

@@ -6,10 +6,13 @@ import pytest
 
 from localstack.testing.testselection.matching import (
     MATCHING_RULES,
+    SENTINEL_ALL_TESTS,
+    Matchers,
     check_rule_has_matches,
     generic_service_test_matching_rule,
     resolve_dependencies,
 )
+from localstack.testing.testselection.testselection import get_affected_tests_from_changes
 
 
 def test_service_dependency_resolving_no_deps():
@@ -104,3 +107,34 @@ def test_rules_are_matching_at_least_one_file():
     files = [os.path.relpath(f, root_dir) for f in files]
     for rule_id, rule in enumerate(MATCHING_RULES):
         assert check_rule_has_matches(rule, files), f"no match for rule {rule_id}"
+
+
+def test_directory_rules_with_paths():
+    feature_path = "localstack/my_feature"
+    test_path = "test/my_feature"
+    matcher = Matchers.glob(f"{feature_path}/**").directory(paths=[test_path])
+    selected_tests = get_affected_tests_from_changes([f"{feature_path}/__init__.py"], [matcher])
+
+    assert selected_tests == [test_path]
+
+
+def test_directory_rules_no_paths():
+    conftest_path = "**/conftest.py"
+    matcher = Matchers.glob(conftest_path).directory()
+
+    selected_tests = get_affected_tests_from_changes(
+        ["tests/aws/service/sns/conftest.py"], [matcher]
+    )
+
+    assert selected_tests == ["tests/aws/service/sns/"]
+
+
+def test_directory_rules_no_match():
+    feature_path = "localstack/my_feature"
+    test_path = "test/my_feature"
+    matcher = Matchers.glob(f"{feature_path}/**").directory(paths=[test_path])
+    selected_tests = get_affected_tests_from_changes(
+        ["localstack/not_my_feature/__init__.py"], [matcher]
+    )
+
+    assert selected_tests == [SENTINEL_ALL_TESTS]

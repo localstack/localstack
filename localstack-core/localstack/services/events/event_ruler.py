@@ -2,8 +2,9 @@ import logging
 import os
 from functools import cache
 from pathlib import Path
+from typing import Tuple
 
-from localstack.services.events.models import InvalidEventPatternException
+from localstack.aws.api.events import InvalidEventPatternException
 from localstack.services.events.packages import event_ruler_package
 from localstack.utils.objects import singleton_factory
 
@@ -25,16 +26,24 @@ def start_jvm() -> None:
     jpype_config.destroy_jvm = False
 
     if not jpype.isJVMStarted():
-        event_ruler_libs_path = get_event_ruler_libs_path()
-        event_ruler_libs_pattern = event_ruler_libs_path.joinpath("*")
-        jpype.startJVM(classpath=[event_ruler_libs_pattern])
+        jvm_lib, event_ruler_libs_path = get_jpype_lib_paths()
+        event_ruler_libs_pattern = Path(event_ruler_libs_path).joinpath("*")
+
+        jpype.startJVM(jvm_lib, classpath=[event_ruler_libs_pattern], interrupt=False)
 
 
 @cache
-def get_event_ruler_libs_path() -> Path:
+def get_jpype_lib_paths() -> Tuple[str, str]:
+    """
+    Downloads Event Ruler, its dependencies and returns a tuple of:
+    - Path to libjvm.so/libjli.dylib to be used by JPype as jvmpath. JPype requires this to start the JVM.
+        See https://jpype.readthedocs.io/en/latest/userguide.html#path-to-the-jvm
+    - Path to Event Ruler libraries to be used by JPype as classpath
+    """
     installer = event_ruler_package.get_installer()
     installer.install()
-    return Path(installer.get_installed_dir())
+
+    return installer.get_java_lib_path(), installer.get_installed_dir()
 
 
 def matches_rule(event: str, rule: str) -> bool:
@@ -57,4 +66,6 @@ def matches_rule(event: str, rule: str) -> bool:
         return Ruler.matchesRule(event, rule)
     except java.lang.Exception as e:
         reason = e.args[0]
-        raise InvalidEventPatternException(reason=reason) from e
+        raise InvalidEventPatternException(
+            message=f"Event pattern is not valid. Reason: {reason}"
+        ) from e

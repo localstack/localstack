@@ -61,6 +61,9 @@ class ScenariosTemplate(TemplateLoader):
     MAP_STATE_CONFIG_DISTRIBUTED_ITEM_SELECTOR: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_config_distributed_item_selector.json5"
     )
+    MAP_STATE_CONFIG_DISTRIBUTED_ITEM_SELECTOR_PARAMETERS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_config_distributed_item_selector_parameters.json5"
+    )
     MAP_STATE_LEGACY_REENTRANT: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_legacy_reentrant.json5"
     )
@@ -78,6 +81,9 @@ class ScenariosTemplate(TemplateLoader):
     )
     MAP_STATE_NESTED: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_nested.json5"
+    )
+    MAP_STATE_NESTED_CONFIG_DISTRIBUTED: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_nested_config_distributed.json5"
     )
     MAP_STATE_NO_PROCESSOR_CONFIG: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_no_processor_config.json5"
@@ -103,8 +109,24 @@ class ScenariosTemplate(TemplateLoader):
     MAP_ITEM_READER_BASE_JSON_MAX_ITEMS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_item_reader_base_json_max_items.json5"
     )
+    MAP_ITEM_READER_BASE_JSON_MAX_ITEMS_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_item_reader_base_json_max_items_jsonata.json5"
+    )
+    MAP_ITEM_BATCHER_BASE_JSON_MAX_PER_BATCH_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_item_batcher_base_max_per_batch_jsonata.json5"
+    )
     MAP_STATE_ITEM_SELECTOR: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_item_selector.json5"
+    )
+    MAP_STATE_ITEM_SELECTOR_PARAMETERS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_item_selector_parameters.json5"
+    )
+    MAP_STATE_ITEMS: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/map_state_items.json5")
+    MAP_STATE_ITEMS_VARIABLE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_items_variable.json5"
+    )
+    MAP_STATE_ITEMS_LITERAL: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_items_literal.json5"
     )
     MAP_STATE_PARAMETERS_LEGACY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_parameters_legacy.json5"
@@ -166,11 +188,23 @@ class ScenariosTemplate(TemplateLoader):
     CHOICE_STATE_UNSORTED_CHOICE_PARAMETERS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/choice_state_unsorted_choice_parameters.json5"
     )
+    CHOICE_CONDITION_CONSTANT_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/choice_state_condition_constant_jsonata.json5"
+    )
+    CHOICE_STATE_UNSORTED_CHOICE_PARAMETERS_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/choice_state_unsorted_choice_parameters_jsonata.json5"
+    )
     CHOICE_STATE_SINGLETON_COMPOSITE: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/choice_state_singleton_composite.json5"
     )
+    CHOICE_STATE_SINGLETON_COMPOSITE_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/choice_state_singleton_composite_jsonata.json5"
+    )
     CHOICE_STATE_AWS_SCENARIO: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/choice_state_aws_scenario.json5"
+    )
+    CHOICE_STATE_AWS_SCENARIO_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/choice_state_aws_scenario_jsonata.json5"
     )
     LAMBDA_EMPTY_RETRY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/lambda_empty_retry.json5"
@@ -197,6 +231,19 @@ class ScenariosTemplate(TemplateLoader):
     WAIT_TIMESTAMP_PATH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/wait_timestamp_path.json5"
     )
+    WAIT_TIMESTAMP_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/wait_timestamp_jsonata.json5"
+    )
+    WAIT_SECONDS_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/wait_seconds_jsonata.json5"
+    )
     DIRECT_ACCESS_CONTEXT_OBJECT_CHILD_FIELD: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/direct_access_context_object_child_field.json5"
+    )
+
+    RAISE_FAILURE_ERROR_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/fail_error_jsonata.json5"
+    )
+    RAISE_FAILURE_CAUSE_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/fail_cause_jsonata.json5"
     )

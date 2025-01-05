@@ -9,6 +9,7 @@ The supervisor behaves as follows:
 
 The methods ``waitpid_reap_other_children`` and ``stop_child_process`` were adapted from baseimage-docker
 licensed under MIT: https://github.com/phusion/baseimage-docker/blob/rel-0.9.16/image/bin/my_init"""
+
 import errno
 import os
 import signal
@@ -16,9 +17,6 @@ import subprocess
 import sys
 import threading
 from typing import Optional
-
-LOCALSTACK_COMMAND = [sys.executable, "-m", "localstack.runtime.main"]
-"""This command is used to run the localstack process"""
 
 DEBUG = os.getenv("DEBUG", "").strip().lower() in ["1", "true"]
 
@@ -30,6 +28,19 @@ class AlarmException(Exception):
     """Special exception raise if SIGALRM is received."""
 
     pass
+
+
+def get_localstack_command() -> list[str]:
+    """
+    Allow modification of the command to start LocalStack
+    :return: Command to start LocalStack
+    """
+    import shlex
+
+    command = os.environ.get("LOCALSTACK_SUPERVISOR_COMMAND")
+    if not command:
+        return [sys.executable, "-m", "localstack.runtime.main"]
+    return shlex.split(command)
 
 
 def log(message: str):
@@ -159,7 +170,7 @@ def main():
 
             # start a new localstack process
             process = subprocess.Popen(
-                LOCALSTACK_COMMAND,
+                get_localstack_command(),
                 stdout=sys.stdout,
                 stderr=subprocess.STDOUT,
             )

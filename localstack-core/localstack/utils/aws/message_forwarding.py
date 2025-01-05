@@ -8,7 +8,7 @@ from typing import Dict, Optional
 from moto.events.models import events_backends
 
 from localstack.aws.connect import connect_to
-from localstack.services.apigateway.helpers import extract_query_string_params
+from localstack.services.apigateway.legacy.helpers import extract_query_string_params
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
     extract_account_id_from_arn,
@@ -28,6 +28,7 @@ AUTH_API_KEY = "API_KEY"
 AUTH_OAUTH = "OAUTH_CLIENT_CREDENTIALS"
 
 
+# TODO: refactor/split this. too much here is service specific
 def send_event_to_target(
     target_arn: str,
     event: Dict,
@@ -37,6 +38,8 @@ def send_event_to_target(
     role: str = None,
     source_arn: str = None,
     source_service: str = None,
+    events_source: str = None,  # optional data for publishing to EventBridge
+    events_detail_type: str = None,  # optional data for publishing to EventBridge
 ):
     region = extract_region_from_arn(target_arn)
     account_id = extract_account_id_from_arn(source_arn)
@@ -109,8 +112,8 @@ def send_event_to_target(
                 Entries=[
                     {
                         "EventBusName": eventbus_name,
-                        "Source": event.get("source", source_service) or "",
-                        "DetailType": event.get("detail-type", ""),
+                        "Source": events_source or event.get("source", source_service) or "",
+                        "DetailType": events_detail_type or event.get("detail-type", ""),
                         "Detail": json.dumps(detail),
                         "Resources": resources,
                     }
@@ -298,7 +301,7 @@ def add_target_http_parameters(http_parameters: Dict, endpoint: str, headers: Di
     endpoint = add_query_params_to_url(endpoint, query_params)
 
     target_headers = http_parameters.get("HeaderParameters", {})
-    for target_header in target_headers.keys():
+    for target_header in target_headers:
         if target_header not in headers:
             headers.update({target_header: target_headers.get(target_header)})
 

@@ -1,0 +1,22 @@
+{
+  "Comment": "BASE_UNDEFINED_MULTIPLE_STATES",
+  "StartAt": "State0",
+  "QueryLanguage": "JSONata",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "Next": "State1"
+    },
+    "State1": {
+      "Type": "Pass",
+      "Next": "State2"
+    },
+    "State2": {
+      "Type": "Pass",
+      "Output": {
+        "result": "{% $doesNotExist %}"
+      },
+      "End": true
+    }
+  }
+}

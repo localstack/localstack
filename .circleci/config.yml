@@ -431,66 +431,6 @@ jobs:
   ######################
   ## Custom Test Jobs ##
   ######################
-  itest-sfn-legacy-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    environment:
-      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
-    steps:
-      - prepare-acceptance-tests
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-testselection
-      - prepare-pytest-tinybird
-      - prepare-account-region-randomization
-      - run:
-          name: Test SFN Legacy provider
-          environment:
-            PROVIDER_OVERRIDE_STEPFUNCTIONS: "legacy"
-            TEST_PATH: "tests/aws/services/stepfunctions/legacy/"
-            COVERAGE_ARGS: "-p"
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.sfnlegacy.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_legacy.xml -o junit_suite_name='sfn_legacy'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
-  itest-s3-v2-legacy-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    environment:
-      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
-    steps:
-      - prepare-acceptance-tests
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-testselection
-      - prepare-pytest-tinybird
-      - prepare-account-region-randomization
-      - run:
-          name: Test S3 v2 legacy provider
-          environment:
-            PROVIDER_OVERRIDE_S3: "legacy_v2"
-            TEST_PATH: "tests/aws/services/s3/"
-            COVERAGE_ARGS: "-p"
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.s3legacy.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_legacy.xml -o junit_suite_name='s3_legacy'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
   itest-cloudwatch-v1-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -521,7 +461,8 @@ jobs:
       - store_test_results:
           path: target/reports/
 
-  itest-events-v2-provider:
+  # TODO: remove legacy v1 provider in future 4.x release
+  itest-events-v1-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     environment:
@@ -534,14 +475,14 @@ jobs:
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
       - run:
-          name: Test EventBridge v2 provider
+          name: Test EventBridge v1 provider
           environment:
-            PROVIDER_OVERRIDE_EVENTS: "v2"
+            PROVIDER_OVERRIDE_EVENTS: "v1"
             TEST_PATH: "tests/aws/services/events/"
             COVERAGE_ARGS: "-p"
           command: |
-            COVERAGE_FILE="target/coverage/.coverage.eventsV2.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/events_v2.xml -o junit_suite_name='events_v2'" \
+            COVERAGE_FILE="target/coverage/.coverage.eventsV1.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/events_v1.xml -o junit_suite_name='events_v1'" \
             make test-coverage
       - persist_to_workspace:
           root:
@@ -551,7 +492,7 @@ jobs:
       - store_test_results:
           path: target/reports/
 
-  itest-apigw-ng-provider:
+  itest-ddb-v2-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     environment:
@@ -564,14 +505,14 @@ jobs:
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
       - run:
-          name: Test ApiGateway Next Gen provider
+          name: Test DynamoDB(Streams) v2 provider
           environment:
-            PROVIDER_OVERRIDE_APIGATEWAY: "next_gen"
-            TEST_PATH: "tests/aws/services/apigateway/"
+            PROVIDER_OVERRIDE_DYNAMODB: "v2"
+            TEST_PATH: "tests/aws/services/dynamodb/ tests/aws/services/dynamodbstreams/ tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py"
             COVERAGE_ARGS: "-p"
           command: |
-            COVERAGE_FILE="target/coverage/.coverage.apigwNG.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/apigw_ng.xml -o junit_suite_name='apigw_ng'" \
+            COVERAGE_FILE="target/coverage/.coverage.dynamodb_v2.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/dynamodb_v2.xml -o junit_suite_name='dynamodb_v2'" \
             make test-coverage
       - persist_to_workspace:
           root:
@@ -580,37 +521,6 @@ jobs:
             - repo/target/coverage/
       - store_test_results:
           path: target/reports/
-
-  itest-lambda-event-source-mapping-v2-feature:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    environment:
-      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
-    steps:
-      - prepare-acceptance-tests
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-testselection
-      - prepare-pytest-tinybird
-      - prepare-account-region-randomization
-      - run:
-          name: Test Lambda Event Source Mapping v2 feature
-          environment:
-            LAMBDA_EVENT_SOURCE_MAPPING: "v2"
-            TEST_PATH: "tests/aws/services/lambda_/event_source_mapping"
-            COVERAGE_ARGS: "-p"
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.lambda_event_source_mappingV2.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/lambda_event_source_mapping_v2.xml -o junit_suite_name='lambda_event_source_mapping_v2'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
 
   #########################
   ## Parity Metrics Jobs ##
@@ -968,27 +878,15 @@ workflows:
       - test-selection:
           requires:
             - install
-      - itest-sfn-legacy-provider:
-          requires:
-            - preflight
-            - test-selection
-      - itest-s3-v2-legacy-provider:
-          requires:
-            - preflight
-            - test-selection
       - itest-cloudwatch-v1-provider:
           requires:
             - preflight
             - test-selection
-      - itest-events-v2-provider:
+      - itest-events-v1-provider:
           requires:
             - preflight
             - test-selection
-      - itest-apigw-ng-provider:
-          requires:
-            - preflight
-            - test-selection
-      - itest-lambda-event-source-mapping-v2-feature:
+      - itest-ddb-v2-provider:
           requires:
             - preflight
             - test-selection
@@ -1050,12 +948,9 @@ workflows:
             - docker-build-amd64
       - report:
           requires:
-            - itest-sfn-legacy-provider
-            - itest-s3-v2-legacy-provider
             - itest-cloudwatch-v1-provider
-            - itest-events-v2-provider
-            - itest-apigw-ng-provider
-            - itest-lambda-event-source-mapping-v2-feature
+            - itest-events-v1-provider
+            - itest-ddb-v2-provider
             - acceptance-tests-amd64
             - acceptance-tests-arm64
             - integration-tests-amd64
@@ -1067,12 +962,9 @@ workflows:
             branches:
               only: master
           requires:
-            - itest-sfn-legacy-provider
-            - itest-s3-v2-legacy-provider
             - itest-cloudwatch-v1-provider
-            - itest-events-v2-provider
-            - itest-apigw-ng-provider
-            - itest-lambda-event-source-mapping-v2-feature
+            - itest-events-v1-provider
+            - itest-ddb-v2-provider
             - acceptance-tests-amd64
             - acceptance-tests-arm64
             - integration-tests-amd64

@@ -1,62 +1,4 @@
 {
-  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity": {
-    "recorded-date": "03-03-2024, 06:03:28",
-    "recorded-content": {
-      "create_activity_response": {
-        "activityArn": "activity_arn",
-        "creationDate": "creation-date",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "create_activity_response_duplicate": {
-        "activityArn": "activity_arn",
-        "creationDate": "creation-date",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe_activity_response": {
-        "activityArn": "activity_arn",
-        "creationDate": "creation-date",
-        "name": "activity_name",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "delete_activity_response": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "delete_activity_response_2": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name": {
-    "recorded-date": "04-03-2024, 14:18:50",
-    "recorded-content": {
-      "invalid_name": {
-        "Error": {
-          "Code": "InvalidName",
-          "Message": "Invalid Name: 'TestActivity InvalidName$'"
-        },
-        "message": "Invalid Name: 'TestActivity InvalidName$'",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_describe_deleted_activity": {
     "recorded-date": "17-03-2024, 10:33:44",
     "recorded-content": {
@@ -131,6 +73,827 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity[Activity1]": {
+    "recorded-date": "25-11-2024, 19:02:40",
+    "recorded-content": {
+      "create_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_activity_response_duplicate": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "name": "activity_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response_2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity[activity-name_123]": {
+    "recorded-date": "25-11-2024, 19:02:40",
+    "recorded-content": {
+      "create_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_activity_response_duplicate": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "name": "activity_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response_2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity[ACTIVITY_NAME_ABC]": {
+    "recorded-date": "25-11-2024, 19:02:41",
+    "recorded-content": {
+      "create_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_activity_response_duplicate": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "name": "activity_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response_2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity[activity.name]": {
+    "recorded-date": "25-11-2024, 19:02:42",
+    "recorded-content": {
+      "create_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_activity_response_duplicate": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "name": "activity_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response_2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity[activity.name.v2]": {
+    "recorded-date": "25-11-2024, 19:02:42",
+    "recorded-content": {
+      "create_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_activity_response_duplicate": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "name": "activity_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response_2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity[activityName.with.dots]": {
+    "recorded-date": "25-11-2024, 19:02:42",
+    "recorded-content": {
+      "create_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_activity_response_duplicate": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "name": "activity_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response_2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity[activity-name.1]": {
+    "recorded-date": "25-11-2024, 19:02:43",
+    "recorded-content": {
+      "create_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_activity_response_duplicate": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "name": "activity_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response_2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity[activity_123.name]": {
+    "recorded-date": "25-11-2024, 19:02:43",
+    "recorded-content": {
+      "create_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_activity_response_duplicate": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "name": "activity_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response_2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity[aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]": {
+    "recorded-date": "25-11-2024, 19:02:44",
+    "recorded-content": {
+      "create_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_activity_response_duplicate": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "name": "activity_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response_2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity name]": {
+    "recorded-date": "25-11-2024, 19:07:31",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity name'"
+        },
+        "message": "Invalid Name: 'activity name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity<name]": {
+    "recorded-date": "25-11-2024, 19:07:31",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity<name'"
+        },
+        "message": "Invalid Name: 'activity<name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity>name]": {
+    "recorded-date": "25-11-2024, 19:07:31",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity>name'"
+        },
+        "message": "Invalid Name: 'activity>name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity{name]": {
+    "recorded-date": "25-11-2024, 19:07:31",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity{name'"
+        },
+        "message": "Invalid Name: 'activity{name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity}name]": {
+    "recorded-date": "25-11-2024, 19:07:32",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity}name'"
+        },
+        "message": "Invalid Name: 'activity}name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity[name]": {
+    "recorded-date": "25-11-2024, 19:07:32",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity[name'"
+        },
+        "message": "Invalid Name: 'activity[name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity]name]": {
+    "recorded-date": "25-11-2024, 19:07:32",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity]name'"
+        },
+        "message": "Invalid Name: 'activity]name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity?name]": {
+    "recorded-date": "25-11-2024, 19:07:32",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity?name'"
+        },
+        "message": "Invalid Name: 'activity?name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity*name]": {
+    "recorded-date": "25-11-2024, 19:07:32",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity*name'"
+        },
+        "message": "Invalid Name: 'activity*name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity\"name]": {
+    "recorded-date": "25-11-2024, 19:07:32",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity\"name'"
+        },
+        "message": "Invalid Name: 'activity\"name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity#name]": {
+    "recorded-date": "25-11-2024, 19:07:32",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity#name'"
+        },
+        "message": "Invalid Name: 'activity#name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity%name]": {
+    "recorded-date": "25-11-2024, 19:07:32",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity%name'"
+        },
+        "message": "Invalid Name: 'activity%name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity\\\\name]": {
+    "recorded-date": "25-11-2024, 19:07:33",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity\\name'"
+        },
+        "message": "Invalid Name: 'activity\\name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity^name]": {
+    "recorded-date": "25-11-2024, 19:07:33",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity^name'"
+        },
+        "message": "Invalid Name: 'activity^name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity|name]": {
+    "recorded-date": "25-11-2024, 19:07:33",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity|name'"
+        },
+        "message": "Invalid Name: 'activity|name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity~name]": {
+    "recorded-date": "25-11-2024, 19:07:33",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity~name'"
+        },
+        "message": "Invalid Name: 'activity~name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity`name]": {
+    "recorded-date": "25-11-2024, 19:07:33",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity`name'"
+        },
+        "message": "Invalid Name: 'activity`name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity$name]": {
+    "recorded-date": "25-11-2024, 19:07:33",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity$name'"
+        },
+        "message": "Invalid Name: 'activity$name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity&name]": {
+    "recorded-date": "25-11-2024, 19:07:33",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity&name'"
+        },
+        "message": "Invalid Name: 'activity&name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity,name]": {
+    "recorded-date": "25-11-2024, 19:07:33",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity,name'"
+        },
+        "message": "Invalid Name: 'activity,name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity;name]": {
+    "recorded-date": "25-11-2024, 19:07:33",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity;name'"
+        },
+        "message": "Invalid Name: 'activity;name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity:name]": {
+    "recorded-date": "25-11-2024, 19:07:34",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity:name'"
+        },
+        "message": "Invalid Name: 'activity:name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity/name]": {
+    "recorded-date": "25-11-2024, 19:07:34",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity/name'"
+        },
+        "message": "Invalid Name: 'activity/name'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[\\x00activity]": {
+    "recorded-date": "25-11-2024, 19:07:34",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: '\u0000activity'"
+        },
+        "message": "Invalid Name: '\u0000activity'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity\\x1f]": {
+    "recorded-date": "25-11-2024, 19:07:34",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity\u001f'"
+        },
+        "message": "Invalid Name: 'activity\u001f'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name[activity\\x7f]": {
+    "recorded-date": "25-11-2024, 19:07:34",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'activity\u007f'"
+        },
+        "message": "Invalid Name: 'activity\u007f'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }

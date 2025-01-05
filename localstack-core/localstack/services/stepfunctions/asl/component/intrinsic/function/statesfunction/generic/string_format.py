@@ -1,11 +1,17 @@
 import json
 from typing import Any, Final
 
+from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_json_path import (
+    FunctionArgumentJsonPath,
+)
 from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_list import (
     FunctionArgumentList,
 )
 from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_string import (
     FunctionArgumentString,
+)
+from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_var import (
+    FunctionArgumentVar,
 )
 from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.states_function import (
     StatesFunction,
@@ -49,7 +55,10 @@ class StringFormat(StatesFunction):
             raise ValueError(
                 f"Expected at least 1 argument for function type '{type(self)}', but got: '{arg_list}'."
             )
-        if not isinstance(arg_list.arg_list[0], FunctionArgumentString):
+        if not isinstance(
+            arg_list.arg_list[0],
+            (FunctionArgumentString, FunctionArgumentVar, FunctionArgumentJsonPath),
+        ):
             raise ValueError(
                 f"Expected the first argument for function type '{type(self)}' to be a string, but got: '{arg_list.arg_list[0]}'."
             )

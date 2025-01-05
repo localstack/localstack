@@ -162,6 +162,18 @@ class StepFunctionsStateMachineProvider(ResourceProvider[StepFunctionsStateMachi
         """
         raise NotImplementedError
 
+    def list(
+        self, request: ResourceRequest[StepFunctionsStateMachineProperties]
+    ) -> ProgressEvent[StepFunctionsStateMachineProperties]:
+        resources = request.aws_client_factory.stepfunctions.list_state_machines()["stateMachines"]
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_models=[
+                StepFunctionsStateMachineProperties(Arn=resource["stateMachineArn"])
+                for resource in resources
+            ],
+        )
+
     def delete(
         self,
         request: ResourceRequest[StepFunctionsStateMachineProperties],
@@ -204,9 +216,10 @@ class StepFunctionsStateMachineProvider(ResourceProvider[StepFunctionsStateMachi
         if not model.get("Arn"):
             model["Arn"] = request.previous_state["Arn"]
 
+        definition_str = self._get_definition(model, request.aws_client_factory.s3)
         params = {
             "stateMachineArn": model["Arn"],
-            "definition": model["DefinitionString"],
+            "definition": definition_str,
         }
 
         step_function.update_state_machine(**params)
@@ -224,7 +237,7 @@ def _apply_substitutions(definition: str, substitutions: dict[str, str]) -> str:
     result = definition
     for token in tokens:
         raw_token = token[2:-1]  # strip ${ and }
-        if raw_token not in substitutions.keys():
+        if raw_token not in substitutions:
             raise
         result = result.replace(token, substitutions[raw_token])
 

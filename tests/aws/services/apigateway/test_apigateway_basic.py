@@ -18,11 +18,13 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
 from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.services.apigateway.helpers import (
-    get_resource_for_path,
-    get_rest_api_paths,
     host_based_url,
     localstack_path_based_url,
     path_based_url,
+)
+from localstack.services.apigateway.legacy.helpers import (
+    get_resource_for_path,
+    get_rest_api_paths,
 )
 from localstack.testing.aws.util import in_default_partition
 from localstack.testing.config import (
@@ -92,25 +94,6 @@ ApiGatewayLambdaProxyIntegrationTestResult = namedtuple(
         "path_with_replace",
     ],
 )
-# template used to transform incoming requests at the API Gateway (stream name to be filled in later)
-APIGATEWAY_DATA_INBOUND_TEMPLATE = """{
-    "StreamName": "%s",
-    "Records": [
-        #set( $numRecords = $input.path('$.records').size() )
-        #if($numRecords > 0)
-        #set( $maxIndex = $numRecords - 1 )
-        #foreach( $idx in [0..$maxIndex] )
-        #set( $elem = $input.path("$.records[${idx}]") )
-        #set( $elemJsonB64 = $util.base64Encode($elem.data) )
-        {
-            "Data": "$elemJsonB64",
-            "PartitionKey": #if( $elem.partitionKey != '')"$elem.partitionKey"
-                            #else"$elemJsonB64.length()"#end
-        }#if($foreach.hasNext),#end
-        #end
-        #end
-    ]
-}"""
 
 API_PATH_LAMBDA_PROXY_BACKEND = "/lambda/foo1"
 API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM = "/lambda/{test_param1}"
@@ -946,7 +929,7 @@ class TestAPIGateway:
 
     @markers.aws.needs_fixing
     # Doesn't use a fixture that cleans up after itself, and most likely missing roles. Should be moved to common
-    def test_multiple_api_keys_validate(self, aws_client, create_iam_role_with_policy):
+    def test_multiple_api_keys_validate(self, aws_client, create_iam_role_with_policy, cleanups):
         request_templates = {
             "application/json": json.dumps(
                 {
@@ -1002,6 +985,7 @@ class TestAPIGateway:
             }
             aws_client.apigateway.create_usage_plan_key(**payload)
             api_keys.append(api_key["value"])
+            cleanups.append(lambda: aws_client.apigateway.delete_api_key(apiKey=api_key["id"]))
 
         response = requests.put(
             url,
@@ -1780,57 +1764,6 @@ class TestIntegrations:
         expected = custom_result if int_type == "custom" else data
         assert expected == content["data"]
         assert ctype == headers["content-type"]
-
-    # ==================
-    # Helper methods
-    # TODO: replace with fixtures, to allow passing aws_client and enable snapshot testing
-    # ==================
-
-    def connect_api_gateway_to_kinesis(
-        self,
-        client,
-        gateway_name: str,
-        kinesis_stream: str,
-        region_name: str,
-        role_arn: str,
-    ):
-        template = APIGATEWAY_DATA_INBOUND_TEMPLATE % kinesis_stream
-        resources = {
-            "data": [
-                {
-                    "httpMethod": "POST",
-                    "authorizationType": "NONE",
-                    "requestModels": {"application/json": "Empty"},
-                    "integrations": [
-                        {
-                            "type": "AWS",
-                            "uri": f"arn:aws:apigateway:{region_name}:kinesis:action/PutRecords",
-                            "requestTemplates": {"application/json": template},
-                            "credentials": role_arn,
-                        }
-                    ],
-                },
-                {
-                    "httpMethod": "GET",
-                    "authorizationType": "NONE",
-                    "requestModels": {"application/json": "Empty"},
-                    "integrations": [
-                        {
-                            "type": "AWS",
-                            "uri": f"arn:aws:apigateway:{region_name}:kinesis:action/ListStreams",
-                            "requestTemplates": {"application/json": "{}"},
-                            "credentials": role_arn,
-                        }
-                    ],
-                },
-            ]
-        }
-        return resource_util.create_api_gateway(
-            name=gateway_name,
-            resources=resources,
-            stage_name=TEST_STAGE_NAME,
-            client=client,
-        )
 
     def connect_api_gateway_to_http(
         self, int_type, gateway_name, target_url, methods=None, path=None

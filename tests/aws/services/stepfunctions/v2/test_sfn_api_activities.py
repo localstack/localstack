@@ -6,16 +6,31 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..encryptionConfiguration"])
 class TestSnfApiActivities:
     @markers.aws.validated
+    @pytest.mark.parametrize(
+        "activity_base_name",
+        [
+            "Activity1",
+            "activity-name_123",
+            "ACTIVITY_NAME_ABC",
+            "activity.name",
+            "activity.name.v2",
+            "activityName.with.dots",
+            "activity-name.1",
+            "activity_123.name",
+            "a" * 71,  # this plus the uuid postfix is a name of length 80
+        ],
+    )
     def test_create_describe_delete_activity(
         self,
         create_activity,
         sfn_snapshot,
         aws_client,
+        activity_base_name,
     ):
-        activity_name = f"TestActivity-{short_uid()}"
+        activity_name = f"{activity_base_name}-{short_uid()}"
         create_activity_response = aws_client.stepfunctions.create_activity(name=activity_name)
         activity_arn = create_activity_response["activityArn"]
         sfn_snapshot.add_transformer(RegexTransformer(activity_arn, "activity_arn"))
@@ -48,13 +63,40 @@ class TestSnfApiActivities:
         sfn_snapshot.match("delete_activity_response_2", delete_activity_response_2)
 
     @markers.aws.validated
+    @pytest.mark.parametrize(
+        "activity_name",
+        [
+            "activity name",
+            "activity<name",
+            "activity>name",
+            "activity{name",
+            "activity}name",
+            "activity[name",
+            "activity]name",
+            "activity?name",
+            "activity*name",
+            'activity"name',
+            "activity#name",
+            "activity%name",
+            "activity\\name",
+            "activity^name",
+            "activity|name",
+            "activity~name",
+            "activity`name",
+            "activity$name",
+            "activity&name",
+            "activity,name",
+            "activity;name",
+            "activity:name",
+            "activity/name",
+            chr(0) + "activity",
+            "activity" + chr(31),
+            "activity" + chr(127),
+        ],
+    )
     def test_create_activity_invalid_name(
-        self,
-        create_activity,
-        sfn_snapshot,
-        aws_client,
+        self, create_activity, sfn_snapshot, aws_client, activity_name
     ):
-        activity_name = "TestActivity InvalidName$"
         with pytest.raises(ClientError) as e:
             aws_client.stepfunctions.create_activity(name=activity_name)
         sfn_snapshot.match("invalid_name", e.value.response)

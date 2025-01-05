@@ -1,0 +1,47 @@
+{
+  "Comment": "MAP_STATE_REFERENCE_IN_MAX_PER_BATCH_PATH",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Pass",
+      "Assign": {
+        "maxItemsPerBatch": "2",
+        "maxBytesPerBatch": "15000"
+      },
+      "Next": "BatchMapState"
+    },
+    "BatchMapState": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "ItemReader": {
+        "ReaderConfig": {
+          "InputType": "JSON",
+          "MaxItems": 4
+        },
+        "Resource": "arn:aws:states:::s3:getObject",
+        "Parameters": {
+          "Bucket.$": "$.Bucket",
+          "Key.$": "$.Key"
+        }
+      },
+      "ItemBatcher": {
+        "MaxItemsPerBatchPath": "$maxItemsPerBatch",
+        "MaxInputBytesPerBatchPath": "$maxBytesPerBatch"
+      },
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "ProcessBatch",
+        "States": {
+          "ProcessBatch": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

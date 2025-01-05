@@ -50,6 +50,7 @@ FULL_FN_ARN_PATTERN = re.compile(
 )
 
 # Pattern for a full (both with and without qualifier) lambda layer ARN
+# TODO: It looks like they added `|(arn:[a-zA-Z0-9-]+:lambda:::awslayer:[a-zA-Z0-9-_]+` in 2024-11
 LAYER_VERSION_ARN_PATTERN = re.compile(
     rf"{ARN_PARTITION_REGEX}:lambda:(?P<region_name>[^:]+):(?P<account_id>\d{{12}}):layer:(?P<layer_name>[^:]+)(:(?P<layer_version>\d+))?$"
 )
@@ -107,6 +108,9 @@ ARCHITECTURES = [Architecture.arm64, Architecture.x86_64]
 # Some excpetions from AWS return a '\.' in the function name regex
 # pattern therefore we can sub this value in when appropriate.
 ARN_NAME_PATTERN_VALIDATION_TEMPLATE = "(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{{2}}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{{1}}:)?(\\d{{12}}:)?(function:)?([a-zA-Z0-9-_{0}]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+
+# AWS response when invalid ARNs are used in Tag operations.
+TAGGABLE_RESOURCE_ARN_PATTERN = "arn:(aws[a-zA-Z-]*):lambda:[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:\\d{12}:(function:[a-zA-Z0-9-_]+(:(\\$LATEST|[a-zA-Z0-9-_]+))?|layer:([a-zA-Z0-9-_]+)|code-signing-config:csc-[a-z0-9]{17}|event-source-mapping:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
 
 
 def validate_function_name(function_name_or_arn: str, operation_type: str):
@@ -637,7 +641,7 @@ def validate_and_set_batch_size(service: str, batch_size: Optional[int] = None) 
     BATCH_SIZE_RANGES = {
         "kafka": (100, 10_000),
         "kinesis": (100, 10_000),
-        "dynamodb": (100, 1_000),
+        "dynamodb": (100, 10_000),
         "sqs-fifo": (10, 10),
         "sqs": (10, 10_000),
         "mq": (100, 10_000),

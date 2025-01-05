@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 from typing import Callable, Final, Optional
 
 from botocore.exceptions import ClientError
@@ -27,7 +26,6 @@ from localstack.aws.api.stepfunctions import (
 from localstack.services.stepfunctions.asl.eval.event.logging import is_logging_enabled_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.asl.utils.json_path import extract_json
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 
@@ -37,14 +35,6 @@ LOG = logging.getLogger(__name__)
 # For EXPRESS state machines, the deletion will happen eventually (usually less than a minute).
 # Running executions may emit logs after DeleteStateMachine API is called.
 _DELETION_TIMEOUT_SECS: Final[int] = 120
-
-
-def is_legacy_provider():
-    return not is_aws_cloud() and os.environ.get("PROVIDER_OVERRIDE_STEPFUNCTIONS") == "legacy"
-
-
-def is_not_legacy_provider():
-    return not is_legacy_provider()
 
 
 def await_no_state_machines_listed(stepfunctions_client):
@@ -284,8 +274,8 @@ def is_execution_logs_list_complete(
     return _validation_function
 
 
-def _await_on_execution_log_stream_created(aws_client, log_group_name: str) -> str:
-    logs_client = aws_client.logs
+def _await_on_execution_log_stream_created(target_aws_client, log_group_name: str) -> str:
+    logs_client = target_aws_client.logs
     log_stream_name = str()
 
     def _run_check():
@@ -313,13 +303,13 @@ def _await_on_execution_log_stream_created(aws_client, log_group_name: str) -> s
 
 
 def await_on_execution_logs(
-    aws_client,
+    target_aws_client,
     log_group_name: str,
     validation_function: Callable[[HistoryEventList], bool] = None,
 ) -> HistoryEventList:
-    log_stream_name = _await_on_execution_log_stream_created(aws_client, log_group_name)
+    log_stream_name = _await_on_execution_log_stream_created(target_aws_client, log_group_name)
 
-    logs_client = aws_client.logs
+    logs_client = target_aws_client.logs
     events: HistoryEventList = list()
 
     def _run_check():
@@ -340,14 +330,15 @@ def await_on_execution_logs(
     return events
 
 
-def create(
-    create_iam_role_for_sfn,
+def create_state_machine_with_iam_role(
+    target_aws_client,
+    create_state_machine_iam_role,
     create_state_machine,
     snapshot,
     definition: Definition,
     logging_configuration: Optional[LoggingConfiguration] = None,
 ):
-    snf_role_arn = create_iam_role_for_sfn()
+    snf_role_arn = create_state_machine_iam_role(target_aws_client=target_aws_client)
     snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
     snapshot.add_transformer(
         RegexTransformer(
@@ -367,19 +358,20 @@ def create(
     }
     if logging_configuration is not None:
         create_arguments["loggingConfiguration"] = logging_configuration
-    creation_resp = create_state_machine(**create_arguments)
+    creation_resp = create_state_machine(target_aws_client, **create_arguments)
     snapshot.add_transformer(snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
     state_machine_arn = creation_resp["stateMachineArn"]
     return state_machine_arn
 
 
 def launch_and_record_execution(
-    stepfunctions_client,
+    target_aws_client,
     sfn_snapshot,
     state_machine_arn,
     execution_input,
     verify_execution_description=False,
 ) -> LongArn:
+    stepfunctions_client = target_aws_client.stepfunctions
     exec_resp = stepfunctions_client.start_execution(
         stateMachineArn=state_machine_arn, input=execution_input
     )
@@ -413,7 +405,7 @@ def launch_and_record_execution(
 
 
 def launch_and_record_logs(
-    aws_client,
+    target_aws_client,
     state_machine_arn,
     execution_input,
     log_level,
@@ -421,13 +413,13 @@ def launch_and_record_logs(
     sfn_snapshot,
 ):
     execution_arn = launch_and_record_execution(
-        aws_client.stepfunctions,
+        target_aws_client,
         sfn_snapshot,
         state_machine_arn,
         execution_input,
     )
     expected_events = get_expected_execution_logs(
-        aws_client.stepfunctions, log_level, execution_arn
+        target_aws_client.stepfunctions, log_level, execution_arn
     )
 
     if log_level == LogLevel.OFF or not expected_events:
@@ -436,7 +428,7 @@ def launch_and_record_logs(
 
     logs_validation_function = is_execution_logs_list_complete(expected_events)
     logged_execution_events = await_on_execution_logs(
-        aws_client, log_group_name, logs_validation_function
+        target_aws_client, log_group_name, logs_validation_function
     )
 
     sfn_snapshot.add_transformer(
@@ -451,19 +443,23 @@ def launch_and_record_logs(
 
 # TODO: make this return the execution ARN for manual assertions
 def create_and_record_execution(
-    stepfunctions_client,
-    create_iam_role_for_sfn,
+    target_aws_client,
+    create_state_machine_iam_role,
     create_state_machine,
     sfn_snapshot,
     definition,
     execution_input,
     verify_execution_description=False,
 ):
-    state_machine_arn = create(
-        create_iam_role_for_sfn, create_state_machine, sfn_snapshot, definition
+    state_machine_arn = create_state_machine_with_iam_role(
+        target_aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        definition,
     )
     launch_and_record_execution(
-        stepfunctions_client,
+        target_aws_client,
         sfn_snapshot,
         state_machine_arn,
         execution_input,
@@ -472,8 +468,8 @@ def create_and_record_execution(
 
 
 def create_and_record_logs(
-    aws_client,
-    create_iam_role_for_sfn,
+    target_aws_client,
+    create_state_machine_iam_role,
     create_state_machine,
     sfn_create_log_group,
     sfn_snapshot,
@@ -482,12 +478,16 @@ def create_and_record_logs(
     log_level: LogLevel,
     include_execution_data: bool,
 ):
-    state_machine_arn = create(
-        create_iam_role_for_sfn, create_state_machine, sfn_snapshot, definition
+    state_machine_arn = create_state_machine_with_iam_role(
+        target_aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        definition,
     )
 
     log_group_name = sfn_create_log_group()
-    log_group_arn = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_name)[
+    log_group_arn = target_aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_name)[
         "logGroups"
     ][0]["arn"]
     logging_configuration = LoggingConfiguration(
@@ -499,22 +499,27 @@ def create_and_record_logs(
             ),
         ],
     )
-    aws_client.stepfunctions.update_state_machine(
+    target_aws_client.stepfunctions.update_state_machine(
         stateMachineArn=state_machine_arn, loggingConfiguration=logging_configuration
     )
 
     launch_and_record_logs(
-        aws_client, state_machine_arn, execution_input, log_level, log_group_name, sfn_snapshot
+        target_aws_client,
+        state_machine_arn,
+        execution_input,
+        log_level,
+        log_group_name,
+        sfn_snapshot,
     )
 
 
 def launch_and_record_sync_execution(
-    stepfunctions_client,
+    target_aws_client,
     sfn_snapshot,
     state_machine_arn,
     execution_input,
 ):
-    exec_resp = stepfunctions_client.start_sync_execution(
+    exec_resp = target_aws_client.stepfunctions.start_sync_execution(
         stateMachineArn=state_machine_arn,
         input=execution_input,
     )
@@ -523,17 +528,18 @@ def launch_and_record_sync_execution(
 
 
 def create_and_record_express_sync_execution(
-    stepfunctions_client,
-    create_iam_role_for_sfn,
+    target_aws_client,
+    create_state_machine_iam_role,
     create_state_machine,
     sfn_snapshot,
     definition,
     execution_input,
 ):
-    snf_role_arn = create_iam_role_for_sfn()
+    snf_role_arn = create_state_machine_iam_role(target_aws_client=target_aws_client)
     sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "sfn_role_arn"))
 
     creation_response = create_state_machine(
+        target_aws_client,
         name=f"express_statemachine_{short_uid()}",
         definition=definition,
         roleArn=snf_role_arn,
@@ -544,7 +550,7 @@ def create_and_record_express_sync_execution(
     sfn_snapshot.match("creation_response", creation_response)
 
     launch_and_record_sync_execution(
-        stepfunctions_client,
+        target_aws_client,
         sfn_snapshot,
         state_machine_arn,
         execution_input,
@@ -552,20 +558,20 @@ def create_and_record_express_sync_execution(
 
 
 def launch_and_record_express_async_execution(
-    aws_client,
+    target_aws_client,
     sfn_snapshot,
     state_machine_arn,
     log_group_name,
     execution_input,
 ):
-    start_execution = aws_client.stepfunctions.start_execution(
+    start_execution = target_aws_client.stepfunctions.start_execution(
         stateMachineArn=state_machine_arn, input=execution_input
     )
     sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_express_exec_arn(start_execution, 0))
     execution_arn = start_execution["executionArn"]
 
     event_list = await_on_execution_logs(
-        aws_client, log_group_name, validation_function=_is_last_history_event_terminal
+        target_aws_client, log_group_name, validation_function=_is_last_history_event_terminal
     )
     # Snapshot only the end event, as AWS StepFunctions implements a flaky approach to logging previous events.
     end_event = event_list[-1]
@@ -575,8 +581,8 @@ def launch_and_record_express_async_execution(
 
 
 def create_and_record_express_async_execution(
-    aws_client,
-    create_iam_role_for_sfn,
+    target_aws_client,
+    create_state_machine_iam_role,
     create_state_machine,
     sfn_create_log_group,
     sfn_snapshot,
@@ -584,11 +590,11 @@ def create_and_record_express_async_execution(
     execution_input,
     include_execution_data: bool = True,
 ) -> tuple[LongArn, LongArn]:
-    snf_role_arn = create_iam_role_for_sfn()
+    snf_role_arn = create_state_machine_iam_role(target_aws_client)
     sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "sfn_role_arn"))
 
     log_group_name = sfn_create_log_group()
-    log_group_arn = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_name)[
+    log_group_arn = target_aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_name)[
         "logGroups"
     ][0]["arn"]
     logging_configuration = LoggingConfiguration(
@@ -602,6 +608,7 @@ def create_and_record_express_async_execution(
     )
 
     creation_response = create_state_machine(
+        target_aws_client,
         name=f"express_statemachine_{short_uid()}",
         definition=definition,
         roleArn=snf_role_arn,
@@ -613,7 +620,7 @@ def create_and_record_express_async_execution(
     sfn_snapshot.match("creation_response", creation_response)
 
     execution_arn = launch_and_record_express_async_execution(
-        aws_client,
+        target_aws_client,
         sfn_snapshot,
         state_machine_arn,
         log_group_name,
@@ -623,10 +630,10 @@ def create_and_record_express_async_execution(
 
 
 def create_and_record_events(
-    create_iam_role_for_sfn,
+    create_state_machine_iam_role,
     create_state_machine,
     sfn_events_to_sqs_queue,
-    aws_client,
+    target_aws_client,
     sfn_snapshot,
     definition,
     execution_input,
@@ -652,8 +659,9 @@ def create_and_record_events(
         ]
     )
 
-    snf_role_arn = create_iam_role_for_sfn()
+    snf_role_arn = create_state_machine_iam_role(target_aws_client)
     create_output: CreateStateMachineOutput = create_state_machine(
+        target_aws_client,
         name=f"test_event_bridge_events-{short_uid()}",
         definition=definition,
         roleArn=snf_role_arn,
@@ -662,18 +670,18 @@ def create_and_record_events(
 
     queue_url = sfn_events_to_sqs_queue(state_machine_arn=state_machine_arn)
 
-    start_execution = aws_client.stepfunctions.start_execution(
+    start_execution = target_aws_client.stepfunctions.start_execution(
         stateMachineArn=state_machine_arn, input=execution_input
     )
     execution_arn = start_execution["executionArn"]
     await_execution_terminated(
-        stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
+        stepfunctions_client=target_aws_client.stepfunctions, execution_arn=execution_arn
     )
 
     stepfunctions_events = list()
 
     def _get_events():
-        received = aws_client.sqs.receive_message(QueueUrl=queue_url)
+        received = target_aws_client.sqs.receive_message(QueueUrl=queue_url)
         for message in received.get("Messages", []):
             body = json.loads(message["Body"])
             stepfunctions_events.append(body)
@@ -685,11 +693,11 @@ def create_and_record_events(
     sfn_snapshot.match("stepfunctions_events", stepfunctions_events)
 
 
-def record_sqs_events(aws_client, queue_url, sfn_snapshot, num_events):
+def record_sqs_events(target_aws_client, queue_url, sfn_snapshot, num_events):
     stepfunctions_events = list()
 
     def _get_events():
-        received = aws_client.sqs.receive_message(QueueUrl=queue_url)
+        received = target_aws_client.sqs.receive_message(QueueUrl=queue_url)
         for message in received.get("Messages", []):
             body = json.loads(message["Body"])
             stepfunctions_events.append(body)

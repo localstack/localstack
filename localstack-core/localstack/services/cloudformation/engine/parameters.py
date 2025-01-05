@@ -42,8 +42,8 @@ def extract_stack_parameter_declarations(template: dict) -> dict[str, ParameterD
             ParameterKey=param_key,
             DefaultValue=param.get("Default"),
             ParameterType=param.get("Type"),
+            NoEcho=param.get("NoEcho", False),
             # TODO: test & implement rest here
-            # NoEcho=?,
             # ParameterConstraints=?,
             # Description=?
         )
@@ -89,6 +89,7 @@ def resolve_parameters(
             # since no value has been specified for the deployment, we need to be able to resolve the default or fail
             default_value = pm["DefaultValue"]
             if default_value is None:
+                LOG.error("New parameter without a default value: %s", pm_key)
                 raise Exception(
                     f"Invalid. Parameter '{pm_key}' needs to have either param specified or Default."
                 )  # TODO: test and verify
@@ -113,6 +114,7 @@ def resolve_parameters(
             else:
                 resolved_param["ParameterValue"] = new_parameter["ParameterValue"]
 
+        resolved_param["NoEcho"] = pm.get("NoEcho", False)
         resolved_parameters[pm_key] = resolved_param
 
         # Note that SSM parameters always need to be resolved anew here
@@ -149,6 +151,14 @@ def resolve_ssm_parameter(account_id: str, region_name: str, stack_parameter_val
 def strip_parameter_type(in_param: StackParameter) -> Parameter:
     result = in_param.copy()
     result.pop("ParameterType", None)
+    return result
+
+
+def mask_no_echo(in_param: StackParameter) -> Parameter:
+    result = in_param.copy()
+    no_echo = result.pop("NoEcho", False)
+    if no_echo:
+        result["ParameterValue"] = "****"
     return result
 
 

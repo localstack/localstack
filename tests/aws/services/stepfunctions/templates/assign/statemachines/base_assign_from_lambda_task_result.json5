@@ -1,0 +1,40 @@
+{
+  "Comment" : "BASE_ASSIGN_FROM_LAMBDA_TASK_RESULT",
+  "StartAt": "Pass",
+  "States": {
+    "Pass": {
+      "Type": "Pass",
+      "Assign": {
+        "functionName.$": "$.FunctionName",
+        "inputData": {
+          "foo" : "oof",
+          "bar": "rab"
+        },
+        "timeout": 300
+      },
+      "Next": "Task"
+    },
+    "Task": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "TimeoutSecondsPath": "$timeout",
+      "Parameters": {
+        "Payload.$": "$inputData",
+        "FunctionName.$": "$functionName"
+       },
+      "Assign": {
+        "result.$": "$.Payload"
+      },
+      "OutputPath": "$.Payload",
+      "Next": "End"
+    },
+    "End": {
+      "Type": "Pass",
+      "Assign": {
+        "previousResult.$": "$result",
+        "timeout": 150
+      },
+      "End": true
+    }
+  }
+}

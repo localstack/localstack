@@ -1,0 +1,39 @@
+{
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "Assign": {
+        "x": 42,
+        "items": [1,2,3]
+      },
+      "Next": "State1"
+    },
+    "State1": {
+      "Type": "Map",
+      "ItemsPath": "$items",
+      "MaxConcurrency": 1,
+      "ItemProcessor": {
+        "ProcessorConfig": { "Mode": "INLINE" },
+        "StartAt": "Inner",
+        "States": {
+          "Inner": {
+            "Type": "Pass",
+            "Assign": {
+              "innerX.$": "$x",
+            },
+            "End": true,
+          },
+        },
+      },
+      "Next": "State2"
+    },
+    "State2": {
+      "Type": "Pass",
+      "Assign": {
+        "final.$": "$x"
+      },
+      "End": true
+    }
+  }
+}

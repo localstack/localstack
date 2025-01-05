@@ -46,12 +46,12 @@ class TestMyThing:
 
 ### Fixtures
 
-We use the pytest fixture concept, and provide several fixtures you can use when writing AWS tests. For example, to inject a Boto client for SQS, you can specify the `sqs_client` in your test method:
+We use the pytest fixture concept, and provide several fixtures you can use when writing AWS tests. For example, to inject a boto client factory for all services, you can specify the `aws_client` fixture in your test method and access a client from it:
 
 ```python
 class TestMyThing:
-  def test_something(self, sqs_client):
-    assert len(sqs_client.list_queues()["QueueUrls"]) == 0
+  def test_something(self, aws_client):
+    assert len(aws_client.sqs.list_queues()["QueueUrls"]) == 0
 ```
 
 We also provide fixtures for certain disposable resources, like buckets:
@@ -166,3 +166,17 @@ Once you verified that your test is running against AWS, you can record snapshot
 Snapshot tests helps to increase the parity with AWS and to raise the confidence in the service implementations. Therefore, snapshot tests are preferred over normal integrations tests.
 
 Please check our subsequent guide on [Parity Testing](../parity-testing/README.md) for a detailed explanation on how to write AWS validated snapshot tests.
+
+#### Force the start of a local instance
+
+When running test with `TEST_TARGET=AWS_CLOUD`, by default, no localstack instance will be created. This can be bypassed by also setting `TEST_FORCE_LOCALSTACK_START=1`.
+
+Note that the `aws_client` fixture will keep pointing at the aws instance and you will need to create your own client factory using the `aws_client_factory`.
+
+```python
+local_client = aws_client_factory(
+    endpoint_url=f"http://{localstack_host()}",
+    aws_access_key_id="test",
+    aws_secret_access_key="test",
+)
+```

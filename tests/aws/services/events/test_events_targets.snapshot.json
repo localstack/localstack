@@ -669,5 +669,235 @@
         }
       ]
     }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetApiGateway::test_put_events_with_target_api_gateway": {
+    "recorded-date": "03-10-2024, 20:10:40",
+    "recorded-content": {
+      "create_lambda_response": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "lambda_aws_proxy_format.handler",
+          "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.12",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "deployment_response": {
+        "createdDate": "datetime",
+        "id": "<id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "event_bus_response": {
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<resource:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "rule_response": {
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<resource:3>/<resource:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_targets_response": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_events_response": {
+        "Entries": [
+          {
+            "EventId": "event-id"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "lambda_logs": [
+        {
+          "resource": "/test",
+          "path": "/test/",
+          "httpMethod": "POST",
+          "headers": {
+            "amz-sdk-invocation-id": "amz-sdk-invocation-id",
+            "amz-sdk-request": "<amz-sdk-request:1>",
+            "amz-sdk-retry": "<amz-sdk-retry:1>",
+            "CloudFront-Forwarded-Proto": "https",
+            "CloudFront-Is-Desktop-Viewer": "true",
+            "CloudFront-Is-Mobile-Viewer": "false",
+            "CloudFront-Is-SmartTV-Viewer": "false",
+            "CloudFront-Is-Tablet-Viewer": "false",
+            "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
+            "CloudFront-Viewer-Country": "<cloudfront-country:1>",
+            "Content-Type": "application/json",
+            "Host": "<domain-name:1>",
+            "User-Agent": "<user--agent:1>",
+            "Via": "<via:1>",
+            "X-Amz-Cf-Id": "<cf-id:1>",
+            "x-amz-date": "<x-amz-date:1>",
+            "X-Amz-Security-Token": "x--amz--security--token",
+            "X-Amz-Source-Account": "111111111111",
+            "X-Amz-Source-Arn": "arn:<partition>:events:<region>:111111111111:rule/<resource:3>/<resource:4>",
+            "X-Amzn-Trace-Id": "<trace-id:1>",
+            "X-Forwarded-For": "x--forwarded--for",
+            "X-Forwarded-Port": "x--forwarded--port",
+            "X-Forwarded-Proto": "x--forwarded--proto"
+          },
+          "multiValueHeaders": "<multiValueHeaders>",
+          "queryStringParameters": null,
+          "multiValueQueryStringParameters": null,
+          "pathParameters": null,
+          "stageVariables": null,
+          "requestContext": {
+            "resourceId": "<resource-id:1>",
+            "resourcePath": "/test",
+            "httpMethod": "POST",
+            "extendedRequestId": "<extended-request-id:1>",
+            "requestTime": "<request-time>",
+            "path": "/test/test/",
+            "accountId": "111111111111",
+            "protocol": "HTTP/1.1",
+            "stage": "test",
+            "domainPrefix": "<api-id:1>",
+            "requestTimeEpoch": "<request-time-epoch>",
+            "requestId": "<uuid:2>",
+            "identity": {
+              "cognitoIdentityPoolId": null,
+              "accountId": null,
+              "cognitoIdentityId": null,
+              "caller": null,
+              "sourceIp": "<source-ip:1>",
+              "principalOrgId": null,
+              "accessKey": null,
+              "cognitoAuthenticationType": null,
+              "cognitoAuthenticationProvider": null,
+              "userArn": null,
+              "userAgent": "<user--agent:1>",
+              "user": null
+            },
+            "domainName": "<domain-name:1>",
+            "deploymentId": "<id:1>",
+            "apiId": "<api-id:1>"
+          },
+          "body": {
+            "message": "Hello from EventBridge"
+          },
+          "isBase64Encoded": false
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetCloudWatchLogs::test_put_events_with_target_cloudwatch_logs": {
+    "recorded-date": "07-11-2024, 14:26:16",
+    "recorded-content": {
+      "event_bus_response": {
+        "EventBusArn": "<event-bus-arn:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "rule_response": {
+        "RuleArn": "<rule-arn:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_targets_response": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_events_response": {
+        "Entries": [
+          {
+            "EventId": "<event-id:1>"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "log_events": [
+        {
+          "timestamp": "timestamp",
+          "message": {
+            "version": "0",
+            "id": "<event-id:1>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          },
+          "ingestionTime": "timestamp"
+        }
+      ]
+    }
   }
 }

@@ -9,6 +9,9 @@ _THIS_FOLDER: Final[str] = os.path.dirname(os.path.realpath(__file__))
 class ContextObjectTemplates(TemplateLoader):
     CONTEXT_OBJECT_LITERAL_PLACEHOLDER = "%CONTEXT_OBJECT_LITERAL_PLACEHOLDER%"
 
+    CONTEXT_OBJECT_ERROR_CAUSE_PATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/context_object_error_cause_path.json5"
+    )
     CONTEXT_OBJECT_INPUT_PATH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/context_object_input_path.json5"
     )

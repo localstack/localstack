@@ -1,0 +1,3121 @@
+{
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_task_catch_error_output[TASK_CATCH_ERROR_OUTPUT]": {
+    "recorded-date": "12-11-2024, 12:38:02",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Task"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Task",
+              "output": {
+                "stateInput": {
+                  "inputData": "dummy"
+                },
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "stateInput": {
+                  "inputData": "dummy"
+                },
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Fallback"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "Fallback",
+              "output": {
+                "error": {
+                  "stateInput": {
+                    "inputData": "dummy"
+                  },
+                  "stateError": {
+                    "Error": "Exception",
+                    "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "error": {
+                  "stateInput": {
+                    "inputData": "dummy"
+                  },
+                  "stateError": {
+                    "Error": "Exception",
+                    "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_task_catch_error_output[TASK_CATCH_ERROR_OUTPUT_TO_JSONPATH]": {
+    "recorded-date": "12-11-2024, 12:38:18",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Task"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Task",
+              "output": {
+                "stateInput": {
+                  "inputData": "dummy"
+                },
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "stateInput": {
+                  "inputData": "dummy"
+                },
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Fallback"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "Fallback",
+              "output": {
+                "stateInput": {
+                  "inputData": "dummy"
+                },
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "stateInput": {
+                  "inputData": "dummy"
+                },
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_catch_error_variable_sampling[TASK_CATCH_ERROR_VARIABLE_SAMPLING]": {
+    "recorded-date": "12-11-2024, 12:38:39",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Task"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "errorVar": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                },
+                "inputVar": {
+                  "inputData": "dummy"
+                }
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Task",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Fallback"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "Fallback",
+              "output": {
+                "error": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "error": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_catch_error_variable_sampling[TASK_CATCH_ERROR_VARIABLE_SAMPLING_TO_JSONPATH]": {
+    "recorded-date": "12-11-2024, 12:39:01",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Task"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "errorVar": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                },
+                "inputVar": {
+                  "inputData": "dummy"
+                }
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Task",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Fallback"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "Fallback",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_task_catch_error_with_retry[TASK_CATCH_ERROR_OUTPUT_WITH_RETRY]": {
+    "recorded-date": "12-11-2024, 12:39:19",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Task"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:2>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateExitedEventDetails": {
+              "name": "Task",
+              "output": {
+                "stateInput": {
+                  "inputData": "dummy"
+                },
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "stateEnteredEventDetails": {
+              "input": {
+                "stateInput": {
+                  "inputData": "dummy"
+                },
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Fallback"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateExitedEventDetails": {
+              "name": "Fallback",
+              "output": {
+                "error": {
+                  "stateInput": {
+                    "inputData": "dummy"
+                  },
+                  "stateError": {
+                    "Error": "Exception",
+                    "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "error": {
+                  "stateInput": {
+                    "inputData": "dummy"
+                  },
+                  "stateError": {
+                    "Error": "Exception",
+                    "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 12,
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_task_catch_error_with_retry[TASK_CATCH_ERROR_OUTPUT_WITH_RETRY_TO_JSONPATH]": {
+    "recorded-date": "12-11-2024, 12:39:43",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Task"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:2>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateExitedEventDetails": {
+              "name": "Task",
+              "output": {
+                "stateInput": {
+                  "inputData": "dummy"
+                },
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "stateEnteredEventDetails": {
+              "input": {
+                "stateInput": {
+                  "inputData": "dummy"
+                },
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Fallback"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateExitedEventDetails": {
+              "name": "Fallback",
+              "output": {
+                "stateInput": {
+                  "inputData": "dummy"
+                },
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "stateInput": {
+                  "inputData": "dummy"
+                },
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 12,
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_map_catch_error[MAP_CATCH_ERROR_OUTPUT]": {
+    "recorded-date": "12-11-2024, 13:03:14",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "items": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "items": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ProcessItems"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 3
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "ProcessItems"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateEnteredEventDetails": {
+              "input": "1",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ProcessItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateExitedEventDetails": {
+              "name": "ProcessItem",
+              "output": {
+                "stateInput": 1,
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "stateEnteredEventDetails": {
+              "input": {
+                "stateInput": 1,
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Fallback"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateExitedEventDetails": {
+              "name": "Fallback",
+              "output": {
+                "result": {
+                  "stateInput": 1,
+                  "stateError": {
+                    "Error": "Exception",
+                    "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 12,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "ProcessItems"
+            },
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 13,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "ProcessItems"
+            },
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 14,
+            "previousEventId": 13,
+            "stateEnteredEventDetails": {
+              "input": "2",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ProcessItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 16,
+            "previousEventId": 15,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 17,
+            "previousEventId": 16,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:2>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 18,
+            "previousEventId": 17,
+            "stateExitedEventDetails": {
+              "name": "ProcessItem",
+              "output": {
+                "stateInput": 2,
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 19,
+            "previousEventId": 18,
+            "stateEnteredEventDetails": {
+              "input": {
+                "stateInput": 2,
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Fallback"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 20,
+            "previousEventId": 19,
+            "stateExitedEventDetails": {
+              "name": "Fallback",
+              "output": {
+                "result": {
+                  "stateInput": 2,
+                  "stateError": {
+                    "Error": "Exception",
+                    "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 21,
+            "mapIterationSucceededEventDetails": {
+              "index": 1,
+              "name": "ProcessItems"
+            },
+            "previousEventId": 20,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 22,
+            "mapIterationStartedEventDetails": {
+              "index": 2,
+              "name": "ProcessItems"
+            },
+            "previousEventId": 20,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 23,
+            "previousEventId": 22,
+            "stateEnteredEventDetails": {
+              "input": "3",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ProcessItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 24,
+            "previousEventId": 23,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 25,
+            "previousEventId": 24,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 26,
+            "previousEventId": 25,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:3>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 27,
+            "previousEventId": 26,
+            "stateExitedEventDetails": {
+              "name": "ProcessItem",
+              "output": {
+                "stateInput": 3,
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:3>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 28,
+            "previousEventId": 27,
+            "stateEnteredEventDetails": {
+              "input": {
+                "stateInput": 3,
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:3>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Fallback"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 29,
+            "previousEventId": 28,
+            "stateExitedEventDetails": {
+              "name": "Fallback",
+              "output": {
+                "result": {
+                  "stateInput": 3,
+                  "stateError": {
+                    "Error": "Exception",
+                    "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:3>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 30,
+            "mapIterationSucceededEventDetails": {
+              "index": 2,
+              "name": "ProcessItems"
+            },
+            "previousEventId": 29,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 31,
+            "previousEventId": 30,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 32,
+            "previousEventId": 30,
+            "stateExitedEventDetails": {
+              "name": "ProcessItems",
+              "output": "[{\"result\":{\"stateInput\":1,\"stateError\":{\"Error\":\"Exception\",\"Cause\":\"{\\\"errorMessage\\\":\\\"Some exception was raised.\\\",\\\"errorType\\\":\\\"Exception\\\",\\\"requestId\\\":\\\"<uuid:1>\\\",\\\"stackTrace\\\":[\\\"  File \\\\\\\"/var/task/handler.py\\\\\\\", line 2, in handler\\\\n    raise Exception(\\\\\\\"Some exception was raised.\\\\\\\")\\\\n\\\"]}\"}}},{\"result\":{\"stateInput\":2,\"stateError\":{\"Error\":\"Exception\",\"Cause\":\"{\\\"errorMessage\\\":\\\"Some exception was raised.\\\",\\\"errorType\\\":\\\"Exception\\\",\\\"requestId\\\":\\\"<uuid:2>\\\",\\\"stackTrace\\\":[\\\"  File \\\\\\\"/var/task/handler.py\\\\\\\", line 2, in handler\\\\n    raise Exception(\\\\\\\"Some exception was raised.\\\\\\\")\\\\n\\\"]}\"}}},{\"result\":{\"stateInput\":3,\"stateError\":{\"Error\":\"Exception\",\"Cause\":\"{\\\"errorMessage\\\":\\\"Some exception was raised.\\\",\\\"errorType\\\":\\\"Exception\\\",\\\"requestId\\\":\\\"<uuid:3>\\\",\\\"stackTrace\\\":[\\\"  File \\\\\\\"/var/task/handler.py\\\\\\\", line 2, in handler\\\\n    raise Exception(\\\\\\\"Some exception was raised.\\\\\\\")\\\\n\\\"]}\"}}}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"result\":{\"stateInput\":1,\"stateError\":{\"Error\":\"Exception\",\"Cause\":\"{\\\"errorMessage\\\":\\\"Some exception was raised.\\\",\\\"errorType\\\":\\\"Exception\\\",\\\"requestId\\\":\\\"<uuid:1>\\\",\\\"stackTrace\\\":[\\\"  File \\\\\\\"/var/task/handler.py\\\\\\\", line 2, in handler\\\\n    raise Exception(\\\\\\\"Some exception was raised.\\\\\\\")\\\\n\\\"]}\"}}},{\"result\":{\"stateInput\":2,\"stateError\":{\"Error\":\"Exception\",\"Cause\":\"{\\\"errorMessage\\\":\\\"Some exception was raised.\\\",\\\"errorType\\\":\\\"Exception\\\",\\\"requestId\\\":\\\"<uuid:2>\\\",\\\"stackTrace\\\":[\\\"  File \\\\\\\"/var/task/handler.py\\\\\\\", line 2, in handler\\\\n    raise Exception(\\\\\\\"Some exception was raised.\\\\\\\")\\\\n\\\"]}\"}}},{\"result\":{\"stateInput\":3,\"stateError\":{\"Error\":\"Exception\",\"Cause\":\"{\\\"errorMessage\\\":\\\"Some exception was raised.\\\",\\\"errorType\\\":\\\"Exception\\\",\\\"requestId\\\":\\\"<uuid:3>\\\",\\\"stackTrace\\\":[\\\"  File \\\\\\\"/var/task/handler.py\\\\\\\", line 2, in handler\\\\n    raise Exception(\\\\\\\"Some exception was raised.\\\\\\\")\\\\n\\\"]}\"}}}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 33,
+            "previousEventId": 32,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_map_catch_error[MAP_CATCH_ERROR_OUTPUT_WITH_RETRY]": {
+    "recorded-date": "12-11-2024, 13:00:32",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "items": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "items": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ProcessItems"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 3
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "ProcessItems"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateEnteredEventDetails": {
+              "input": "1",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ProcessItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:2>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "stateExitedEventDetails": {
+              "name": "ProcessItem",
+              "output": {
+                "stateInput": 1,
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 13,
+            "previousEventId": 12,
+            "stateEnteredEventDetails": {
+              "input": {
+                "stateInput": 1,
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Fallback"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "evaluationFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'Fallback' (entered at the event id #13). The JSONata expression '$stateError' specified for the field 'Output/error' returned nothing (undefined).",
+              "error": "States.QueryEvaluationError",
+              "location": "Output/error",
+              "state": "Fallback"
+            },
+            "id": 14,
+            "previousEventId": 12,
+            "timestamp": "timestamp",
+            "type": "EvaluationFailed"
+          },
+          {
+            "id": 15,
+            "mapIterationFailedEventDetails": {
+              "index": 0,
+              "name": "ProcessItems"
+            },
+            "previousEventId": 14,
+            "timestamp": "timestamp",
+            "type": "MapIterationFailed"
+          },
+          {
+            "id": 16,
+            "previousEventId": 14,
+            "timestamp": "timestamp",
+            "type": "MapStateFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'Fallback' (entered at the event id #13). The JSONata expression '$stateError' specified for the field 'Output/error' returned nothing (undefined).",
+              "error": "States.QueryEvaluationError"
+            },
+            "id": 17,
+            "previousEventId": 16,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_map_catch_error[MAP_CATCH_ERROR_VARIABLE_SAMPLING]": {
+    "recorded-date": "12-11-2024, 13:01:00",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "items": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "items": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ProcessItems"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 3
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "ProcessItems"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateEnteredEventDetails": {
+              "input": "1",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ProcessItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "errorVar": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                },
+                "inputVar": "1"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "ProcessItem",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Fallback"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "error": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Fallback",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 12,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "ProcessItems"
+            },
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 13,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "ProcessItems"
+            },
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 14,
+            "previousEventId": 13,
+            "stateEnteredEventDetails": {
+              "input": "2",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ProcessItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 16,
+            "previousEventId": 15,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 17,
+            "previousEventId": 16,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:2>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 18,
+            "previousEventId": 17,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "errorVar": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                },
+                "inputVar": "2"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "ProcessItem",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 19,
+            "previousEventId": 18,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Fallback"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 20,
+            "previousEventId": 19,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "error": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Fallback",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 21,
+            "mapIterationSucceededEventDetails": {
+              "index": 1,
+              "name": "ProcessItems"
+            },
+            "previousEventId": 20,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 22,
+            "mapIterationStartedEventDetails": {
+              "index": 2,
+              "name": "ProcessItems"
+            },
+            "previousEventId": 20,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 23,
+            "previousEventId": 22,
+            "stateEnteredEventDetails": {
+              "input": "3",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ProcessItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 24,
+            "previousEventId": 23,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 25,
+            "previousEventId": 24,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 26,
+            "previousEventId": 25,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:3>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 27,
+            "previousEventId": 26,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "errorVar": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:3>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                },
+                "inputVar": "3"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "ProcessItem",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:3>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 28,
+            "previousEventId": 27,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:3>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Fallback"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 29,
+            "previousEventId": 28,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "error": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:3>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Fallback",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:3>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 30,
+            "mapIterationSucceededEventDetails": {
+              "index": 2,
+              "name": "ProcessItems"
+            },
+            "previousEventId": 29,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 31,
+            "previousEventId": 30,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 32,
+            "previousEventId": 30,
+            "stateExitedEventDetails": {
+              "name": "ProcessItems",
+              "output": "[{\"Error\":\"Exception\",\"Cause\":\"{\\\"errorMessage\\\":\\\"Some exception was raised.\\\",\\\"errorType\\\":\\\"Exception\\\",\\\"requestId\\\":\\\"<uuid:1>\\\",\\\"stackTrace\\\":[\\\"  File \\\\\\\"/var/task/handler.py\\\\\\\", line 2, in handler\\\\n    raise Exception(\\\\\\\"Some exception was raised.\\\\\\\")\\\\n\\\"]}\"},{\"Error\":\"Exception\",\"Cause\":\"{\\\"errorMessage\\\":\\\"Some exception was raised.\\\",\\\"errorType\\\":\\\"Exception\\\",\\\"requestId\\\":\\\"<uuid:2>\\\",\\\"stackTrace\\\":[\\\"  File \\\\\\\"/var/task/handler.py\\\\\\\", line 2, in handler\\\\n    raise Exception(\\\\\\\"Some exception was raised.\\\\\\\")\\\\n\\\"]}\"},{\"Error\":\"Exception\",\"Cause\":\"{\\\"errorMessage\\\":\\\"Some exception was raised.\\\",\\\"errorType\\\":\\\"Exception\\\",\\\"requestId\\\":\\\"<uuid:3>\\\",\\\"stackTrace\\\":[\\\"  File \\\\\\\"/var/task/handler.py\\\\\\\", line 2, in handler\\\\n    raise Exception(\\\\\\\"Some exception was raised.\\\\\\\")\\\\n\\\"]}\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"Error\":\"Exception\",\"Cause\":\"{\\\"errorMessage\\\":\\\"Some exception was raised.\\\",\\\"errorType\\\":\\\"Exception\\\",\\\"requestId\\\":\\\"<uuid:1>\\\",\\\"stackTrace\\\":[\\\"  File \\\\\\\"/var/task/handler.py\\\\\\\", line 2, in handler\\\\n    raise Exception(\\\\\\\"Some exception was raised.\\\\\\\")\\\\n\\\"]}\"},{\"Error\":\"Exception\",\"Cause\":\"{\\\"errorMessage\\\":\\\"Some exception was raised.\\\",\\\"errorType\\\":\\\"Exception\\\",\\\"requestId\\\":\\\"<uuid:2>\\\",\\\"stackTrace\\\":[\\\"  File \\\\\\\"/var/task/handler.py\\\\\\\", line 2, in handler\\\\n    raise Exception(\\\\\\\"Some exception was raised.\\\\\\\")\\\\n\\\"]}\"},{\"Error\":\"Exception\",\"Cause\":\"{\\\"errorMessage\\\":\\\"Some exception was raised.\\\",\\\"errorType\\\":\\\"Exception\\\",\\\"requestId\\\":\\\"<uuid:3>\\\",\\\"stackTrace\\\":[\\\"  File \\\\\\\"/var/task/handler.py\\\\\\\", line 2, in handler\\\\n    raise Exception(\\\\\\\"Some exception was raised.\\\\\\\")\\\\n\\\"]}\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 33,
+            "previousEventId": 32,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_parallel_catch_error[PARALLEL_CATCH_ERROR_OUTPUT]": {
+    "recorded-date": "13-11-2024, 09:47:56",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ParallelState"
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ParallelStateStarted"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ExecuteLambdaTask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "TaskStateAborted"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "stateExitedEventDetails": {
+              "name": "ParallelState",
+              "output": {
+                "stateInput": {
+                  "inputData": "dummy"
+                },
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateExited"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateEnteredEventDetails": {
+              "input": {
+                "stateInput": {
+                  "inputData": "dummy"
+                },
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Fallback"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "stateExitedEventDetails": {
+              "name": "Fallback",
+              "output": {
+                "result": {
+                  "stateInput": {
+                    "inputData": "dummy"
+                  },
+                  "stateError": {
+                    "Error": "Exception",
+                    "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "result": {
+                  "stateInput": {
+                    "inputData": "dummy"
+                  },
+                  "stateError": {
+                    "Error": "Exception",
+                    "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 13,
+            "previousEventId": 12,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_parallel_catch_error[PARALLEL_CATCH_ERROR_VARIABLE_SAMPLING]": {
+    "recorded-date": "13-11-2024, 09:48:19",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ParallelState"
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ParallelStateStarted"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ExecuteLambdaTask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "TaskStateAborted"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "errorVar": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                },
+                "inputVar": {
+                  "inputData": "dummy"
+                }
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "ParallelState",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateExited"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Fallback"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "stateExitedEventDetails": {
+              "name": "Fallback",
+              "output": {
+                "error": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "error": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:1>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 13,
+            "previousEventId": 12,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/states_variables/test_error_output.py::TestStateVariablesTemplate::test_parallel_catch_error[PARALLEL_CATCH_ERROR_OUTPUT_WITH_RETRY]": {
+    "recorded-date": "13-11-2024, 09:48:43",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ParallelState"
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ParallelStateStarted"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ExecuteLambdaTask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "TaskStateAborted"
+          },
+          {
+            "id": 9,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ParallelStateStarted"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "inputData": "dummy"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ExecuteLambdaTask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:2>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "arn:<partition>:lambda:<region>:111111111111:function:<lambda-function-name>",
+                "Payload": {
+                  "foo": "foobar"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "TaskStateAborted"
+          },
+          {
+            "id": 16,
+            "previousEventId": 15,
+            "stateExitedEventDetails": {
+              "name": "ParallelState",
+              "output": {
+                "stateInput": {
+                  "inputData": "dummy"
+                },
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateExited"
+          },
+          {
+            "id": 17,
+            "previousEventId": 16,
+            "stateEnteredEventDetails": {
+              "input": {
+                "stateInput": {
+                  "inputData": "dummy"
+                },
+                "stateError": {
+                  "Error": "Exception",
+                  "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Fallback"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 18,
+            "previousEventId": 17,
+            "stateExitedEventDetails": {
+              "name": "Fallback",
+              "output": {
+                "result": {
+                  "stateInput": {
+                    "inputData": "dummy"
+                  },
+                  "stateError": {
+                    "Error": "Exception",
+                    "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "result": {
+                  "stateInput": {
+                    "inputData": "dummy"
+                  },
+                  "stateError": {
+                    "Error": "Exception",
+                    "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:2>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 19,
+            "previousEventId": 18,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

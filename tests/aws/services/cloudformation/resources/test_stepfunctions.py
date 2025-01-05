@@ -3,6 +3,7 @@ import os
 import urllib.parse
 
 import pytest
+from localstack_snapshot.snapshots.transformer import JsonpathTransformer
 
 from localstack import config
 from localstack.testing.pytest import markers
@@ -281,3 +282,73 @@ def test_cfn_statemachine_with_dependencies(deploy_cfn_template, aws_client):
     statemachines = [sm for sm in rs["stateMachines"] if sm_name in sm["name"]]
 
     assert not statemachines
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..encryptionConfiguration", "$..tracingConfiguration"]
+)
+def test_cfn_statemachine_default_s3_location(
+    s3_create_bucket, deploy_cfn_template, aws_client, sfn_snapshot
+):
+    sfn_snapshot.add_transformers_list(
+        [
+            JsonpathTransformer("$..roleArn", "role-arn"),
+            JsonpathTransformer("$..stateMachineArn", "state-machine-arn"),
+            JsonpathTransformer("$..name", "state-machine-name"),
+        ]
+    )
+    cfn_template_path = os.path.join(
+        os.path.dirname(__file__),
+        "../../../templates/statemachine_machine_default_s3_location.yml",
+    )
+
+    stack_name = f"test-cfn-statemachine-default-s3-location-{short_uid()}"
+
+    file_key = f"file-key-{short_uid()}.json"
+    bucket_name = s3_create_bucket()
+    state_machine_template = {
+        "Comment": "step: on create",
+        "StartAt": "S0",
+        "States": {"S0": {"Type": "Succeed"}},
+    }
+
+    aws_client.s3.put_object(
+        Bucket=bucket_name, Key=file_key, Body=json.dumps(state_machine_template)
+    )
+
+    stack = deploy_cfn_template(
+        stack_name=stack_name,
+        template_path=cfn_template_path,
+        max_wait=150,
+        parameters={"BucketName": bucket_name, "ObjectKey": file_key},
+    )
+
+    stack_outputs = stack.outputs
+    statemachine_arn = stack_outputs["StateMachineArnOutput"]
+
+    describe_state_machine_output_on_create = aws_client.stepfunctions.describe_state_machine(
+        stateMachineArn=statemachine_arn
+    )
+    sfn_snapshot.match(
+        "describe_state_machine_output_on_create", describe_state_machine_output_on_create
+    )
+
+    file_key = f"2-{file_key}"
+    state_machine_template["Comment"] = "step: on update"
+    aws_client.s3.put_object(
+        Bucket=bucket_name, Key=file_key, Body=json.dumps(state_machine_template)
+    )
+    deploy_cfn_template(
+        stack_name=stack_name,
+        template_path=cfn_template_path,
+        is_update=True,
+        parameters={"BucketName": bucket_name, "ObjectKey": file_key},
+    )
+
+    describe_state_machine_output_on_update = aws_client.stepfunctions.describe_state_machine(
+        stateMachineArn=statemachine_arn
+    )
+    sfn_snapshot.match(
+        "describe_state_machine_output_on_update", describe_state_machine_output_on_update
+    )

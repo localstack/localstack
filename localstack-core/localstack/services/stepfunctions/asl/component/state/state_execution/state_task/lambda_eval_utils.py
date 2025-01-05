@@ -3,6 +3,9 @@ from json import JSONDecodeError
 from typing import IO, Any, Final, Optional, Union
 
 from localstack.aws.api.lambda_ import InvocationResponse
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
+    StateCredentials,
+)
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
@@ -35,8 +38,12 @@ def _from_payload(payload_streaming_body: IO[bytes]) -> Union[json, str]:
         return decoded_data
 
 
-def exec_lambda_function(env: Environment, parameters: dict, region: str, account: str) -> None:
-    lambda_client = boto_client_for(region=region, account=account, service="lambda")
+def exec_lambda_function(
+    env: Environment, parameters: dict, region: str, state_credentials: StateCredentials
+) -> None:
+    lambda_client = boto_client_for(
+        service="lambda", region=region, state_credentials=state_credentials
+    )
 
     invocation_resp: InvocationResponse = lambda_client.invoke(**parameters)
 

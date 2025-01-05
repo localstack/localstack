@@ -17,10 +17,16 @@ class IntrinsicFunctionTemplate(TemplateLoader):
     ARRAY_PARTITION: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/array/array_partition.json5"
     )
+    ARRAY_PARTITION_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/array/array_partition_jsonata.json5"
+    )
     ARRAY_CONTAINS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/array/array_contains.json5"
     )
     ARRAY_RANGE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/array/array_range.json5")
+    ARRAY_RANGE_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/array/array_range_jsonata.json5"
+    )
     ARRAY_GET_ITEM: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/array/array_get_item.json5"
     )
@@ -39,6 +45,9 @@ class IntrinsicFunctionTemplate(TemplateLoader):
     )
     JSON_MERGE_ESCAPED_ARGUMENT: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/json_manipulation/json_merge_escaped_argument.json5"
+    )
+    PARSE_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/json_manipulation/parse_jsonata.json5"
     )
 
     # String Operations.
@@ -66,6 +75,9 @@ class IntrinsicFunctionTemplate(TemplateLoader):
     )
     MATH_RANDOM_SEEDED: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/math_operations/math_random_seeded.json5"
+    )
+    MATH_RANDOM_SEEDED_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/math_operations/math_random_seeded_jsonata.json5"
     )
     MATH_ADD: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/math_operations/math_add.json5"

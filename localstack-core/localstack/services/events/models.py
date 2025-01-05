@@ -5,11 +5,15 @@ from typing import Literal, Optional, TypeAlias, TypedDict
 
 from localstack.aws.api.core import ServiceException
 from localstack.aws.api.events import (
+    ApiDestinationName,
     ArchiveDescription,
     ArchiveName,
     ArchiveState,
     Arn,
+    ConnectionName,
     CreatedBy,
+    DescribeApiDestinationResponse,
+    DescribeConnectionResponse,
     EventBusName,
     EventPattern,
     EventResourceList,
@@ -223,6 +227,10 @@ class EventBus:
 EventBusDict = dict[EventBusName, EventBus]
 
 
+ConnectionDict = dict[ConnectionName, DescribeConnectionResponse]
+ApiDestinationDict = dict[ApiDestinationName, DescribeApiDestinationResponse]
+
+
 class EventsStore(BaseStore):
     # Map of eventbus names to eventbus objects. The name MUST be unique per account and region (works with AccountRegionBundle)
     event_buses: EventBusDict = LocalAttribute(default=dict)
@@ -233,8 +241,14 @@ class EventsStore(BaseStore):
     # Map of replay names to replay objects. The name MUST be unique per account and region (works with AccountRegionBundle)
     replays: ReplayDict = LocalAttribute(default=dict)
 
+    # Map of connection names to connection objects.
+    connections: ConnectionDict = LocalAttribute(default=dict)
+
+    # Map of api destination names to api destination objects
+    api_destinations: ApiDestinationDict = LocalAttribute(default=dict)
+
     # Maps resource ARN to tags
     TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
 
 
-events_store = AccountRegionBundle("events", EventsStore)
+events_stores = AccountRegionBundle("events", EventsStore)

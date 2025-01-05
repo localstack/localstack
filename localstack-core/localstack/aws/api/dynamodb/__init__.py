@@ -245,6 +245,11 @@ class KeyType(StrEnum):
     RANGE = "RANGE"
 
 
+class MultiRegionConsistency(StrEnum):
+    EVENTUAL = "EVENTUAL"
+    STRONG = "STRONG"
+
+
 class PointInTimeRecoveryStatus(StrEnum):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
@@ -507,6 +512,12 @@ class ReplicaAlreadyExistsException(ServiceException):
 
 class ReplicaNotFoundException(ServiceException):
     code: str = "ReplicaNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class ReplicatedWriteConflictException(ServiceException):
+    code: str = "ReplicatedWriteConflictException"
     sender_fault: bool = False
     status_code: int = 400
 
@@ -972,12 +983,18 @@ class CreateBackupOutput(TypedDict, total=False):
     BackupDetails: Optional[BackupDetails]
 
 
+class WarmThroughput(TypedDict, total=False):
+    ReadUnitsPerSecond: Optional[LongObject]
+    WriteUnitsPerSecond: Optional[LongObject]
+
+
 class CreateGlobalSecondaryIndexAction(TypedDict, total=False):
     IndexName: IndexName
     KeySchema: KeySchema
     Projection: Projection
     ProvisionedThroughput: Optional[ProvisionedThroughput]
     OnDemandThroughput: Optional[OnDemandThroughput]
+    WarmThroughput: Optional[WarmThroughput]
 
 
 class Replica(TypedDict, total=False):
@@ -997,6 +1014,12 @@ class TableClassSummary(TypedDict, total=False):
     LastUpdateDateTime: Optional[Date]
 
 
+class GlobalSecondaryIndexWarmThroughputDescription(TypedDict, total=False):
+    ReadUnitsPerSecond: Optional[PositiveLongObject]
+    WriteUnitsPerSecond: Optional[PositiveLongObject]
+    Status: Optional[IndexStatus]
+
+
 class OnDemandThroughputOverride(TypedDict, total=False):
     MaxReadRequestUnits: Optional[LongObject]
 
@@ -1009,9 +1032,16 @@ class ReplicaGlobalSecondaryIndexDescription(TypedDict, total=False):
     IndexName: Optional[IndexName]
     ProvisionedThroughputOverride: Optional[ProvisionedThroughputOverride]
     OnDemandThroughputOverride: Optional[OnDemandThroughputOverride]
+    WarmThroughput: Optional[GlobalSecondaryIndexWarmThroughputDescription]
 
 
 ReplicaGlobalSecondaryIndexDescriptionList = List[ReplicaGlobalSecondaryIndexDescription]
+
+
+class TableWarmThroughputDescription(TypedDict, total=False):
+    ReadUnitsPerSecond: Optional[PositiveLongObject]
+    WriteUnitsPerSecond: Optional[PositiveLongObject]
+    Status: Optional[TableStatus]
 
 
 class ReplicaDescription(TypedDict, total=False):
@@ -1022,6 +1052,7 @@ class ReplicaDescription(TypedDict, total=False):
     KMSMasterKeyId: Optional[KMSMasterKeyId]
     ProvisionedThroughputOverride: Optional[ProvisionedThroughputOverride]
     OnDemandThroughputOverride: Optional[OnDemandThroughputOverride]
+    WarmThroughput: Optional[TableWarmThroughputDescription]
     GlobalSecondaryIndexes: Optional[ReplicaGlobalSecondaryIndexDescriptionList]
     ReplicaInaccessibleDateTime: Optional[Date]
     ReplicaTableClassSummary: Optional[TableClassSummary]
@@ -1084,6 +1115,7 @@ class GlobalSecondaryIndex(TypedDict, total=False):
     Projection: Projection
     ProvisionedThroughput: Optional[ProvisionedThroughput]
     OnDemandThroughput: Optional[OnDemandThroughput]
+    WarmThroughput: Optional[WarmThroughput]
 
 
 GlobalSecondaryIndexList = List[GlobalSecondaryIndex]
@@ -1111,6 +1143,7 @@ class CreateTableInput(ServiceRequest):
     Tags: Optional[TagList]
     TableClass: Optional[TableClass]
     DeletionProtectionEnabled: Optional[DeletionProtectionEnabled]
+    WarmThroughput: Optional[WarmThroughput]
     ResourcePolicy: Optional[ResourcePolicy]
     OnDemandThroughput: Optional[OnDemandThroughput]
 
@@ -1144,6 +1177,7 @@ class GlobalSecondaryIndexDescription(TypedDict, total=False):
     ItemCount: Optional[LongObject]
     IndexArn: Optional[String]
     OnDemandThroughput: Optional[OnDemandThroughput]
+    WarmThroughput: Optional[GlobalSecondaryIndexWarmThroughputDescription]
 
 
 GlobalSecondaryIndexDescriptionList = List[GlobalSecondaryIndexDescription]
@@ -1186,6 +1220,8 @@ class TableDescription(TypedDict, total=False):
     TableClassSummary: Optional[TableClassSummary]
     DeletionProtectionEnabled: Optional[DeletionProtectionEnabled]
     OnDemandThroughput: Optional[OnDemandThroughput]
+    WarmThroughput: Optional[TableWarmThroughputDescription]
+    MultiRegionConsistency: Optional[MultiRegionConsistency]
 
 
 class CreateTableOutput(TypedDict, total=False):
@@ -1692,6 +1728,7 @@ class UpdateGlobalSecondaryIndexAction(TypedDict, total=False):
     IndexName: IndexName
     ProvisionedThroughput: Optional[ProvisionedThroughput]
     OnDemandThroughput: Optional[OnDemandThroughput]
+    WarmThroughput: Optional[WarmThroughput]
 
 
 class GlobalSecondaryIndexUpdate(TypedDict, total=False):
@@ -2212,7 +2249,9 @@ class UpdateTableInput(ServiceRequest):
     ReplicaUpdates: Optional[ReplicationGroupUpdateList]
     TableClass: Optional[TableClass]
     DeletionProtectionEnabled: Optional[DeletionProtectionEnabled]
+    MultiRegionConsistency: Optional[MultiRegionConsistency]
     OnDemandThroughput: Optional[OnDemandThroughput]
+    WarmThroughput: Optional[WarmThroughput]
 
 
 class UpdateTableOutput(TypedDict, total=False):
@@ -2306,6 +2345,7 @@ class DynamodbApi:
         tags: TagList = None,
         table_class: TableClass = None,
         deletion_protection_enabled: DeletionProtectionEnabled = None,
+        warm_throughput: WarmThroughput = None,
         resource_policy: ResourcePolicy = None,
         on_demand_throughput: OnDemandThroughput = None,
         **kwargs,
@@ -2851,7 +2891,9 @@ class DynamodbApi:
         replica_updates: ReplicationGroupUpdateList = None,
         table_class: TableClass = None,
         deletion_protection_enabled: DeletionProtectionEnabled = None,
+        multi_region_consistency: MultiRegionConsistency = None,
         on_demand_throughput: OnDemandThroughput = None,
+        warm_throughput: WarmThroughput = None,
         **kwargs,
     ) -> UpdateTableOutput:
         raise NotImplementedError

@@ -1,5 +1,6 @@
 import json
 import time
+from operator import itemgetter
 
 import pytest
 import requests
@@ -334,6 +335,249 @@ class TestApiGatewayCommon:
         assert response_get.ok
 
     @markers.aws.validated
+    def test_api_gateway_request_validator_with_ref_models(
+        self, create_rest_apigw, apigw_redeploy_api, snapshot, aws_client
+    ):
+        api_id, _, root = create_rest_apigw(name="test ref models")
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("id"),
+                snapshot.transform.regex(api_id, "<api-id>"),
+            ]
+        )
+
+        resource_id = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=root, pathPart="path"
+        )["id"]
+
+        validator_id = aws_client.apigateway.create_request_validator(
+            restApiId=api_id,
+            name="test-validator",
+            validateRequestParameters=True,
+            validateRequestBody=True,
+        )["id"]
+
+        # create nested Model schema to validate body
+        aws_client.apigateway.create_model(
+            restApiId=api_id,
+            name="testSchema",
+            contentType="application/json",
+            schema=json.dumps(
+                {
+                    "$schema": "http://json-schema.org/draft-04/schema#",
+                    "title": "testSchema",
+                    "type": "object",
+                    "properties": {
+                        "a": {"type": "number"},
+                        "b": {"type": "number"},
+                    },
+                    "required": ["a", "b"],
+                }
+            ),
+        )
+
+        aws_client.apigateway.create_model(
+            restApiId=api_id,
+            name="testSchemaList",
+            contentType="application/json",
+            schema=json.dumps(
+                {
+                    "type": "array",
+                    "items": {
+                        # hardcoded URL to AWS
+                        "$ref": f"https://apigateway.amazonaws.com/restapis/{api_id}/models/testSchema"
+                    },
+                }
+            ),
+        )
+
+        get_models = aws_client.apigateway.get_models(restApiId=api_id)
+        get_models["items"] = sorted(get_models["items"], key=itemgetter("name"))
+        snapshot.match("get-models-with-ref", get_models)
+
+        aws_client.apigateway.put_method(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            authorizationType="NONE",
+            requestValidatorId=validator_id,
+            requestModels={"application/json": "testSchemaList"},
+        )
+
+        aws_client.apigateway.put_method_response(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            statusCode="200",
+        )
+
+        aws_client.apigateway.put_integration(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        aws_client.apigateway.put_integration_response(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            statusCode="200",
+            selectionPattern="",
+            responseTemplates={"application/json": json.dumps({"data": "ok"})},
+        )
+
+        stage_name = "local"
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+        url = api_invoke_url(api_id, stage=stage_name, path="/path")
+
+        def invoke_api(_data: dict) -> dict:
+            _response = requests.post(url, verify=False, json=_data)
+            assert _response.ok
+            content = _response.json()
+            return content
+
+        # test that with every request parameters and a valid body, it passes
+        response = retry(
+            invoke_api, retries=10 if is_aws_cloud() else 3, sleep=1, _data=[{"a": 1, "b": 2}]
+        )
+        snapshot.match("successful", response)
+
+        response_post_no_body = requests.post(url)
+        assert response_post_no_body.status_code == 400
+        snapshot.match("failed-validation", response_post_no_body.json())
+
+    @markers.aws.validated
+    def test_api_gateway_request_validator_with_ref_one_ofmodels(
+        self, create_rest_apigw, apigw_redeploy_api, snapshot, aws_client
+    ):
+        api_id, _, root = create_rest_apigw(name="test oneOf ref models")
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("id"),
+                snapshot.transform.regex(api_id, "<api-id>"),
+            ]
+        )
+
+        resource_id = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=root, pathPart="path"
+        )["id"]
+
+        validator_id = aws_client.apigateway.create_request_validator(
+            restApiId=api_id,
+            name="test-validator",
+            validateRequestParameters=True,
+            validateRequestBody=True,
+        )["id"]
+
+        aws_client.apigateway.create_model(
+            restApiId=api_id,
+            name="StatusModel",
+            contentType="application/json",
+            schema=json.dumps(
+                {
+                    "type": "object",
+                    "properties": {"Status": {"type": "string"}, "Order": {"type": "integer"}},
+                    "required": [
+                        "Status",
+                        "Order",
+                    ],
+                }
+            ),
+        )
+
+        aws_client.apigateway.create_model(
+            restApiId=api_id,
+            name="TestModel",
+            contentType="application/json",
+            schema=json.dumps(
+                {
+                    "type": "object",
+                    "properties": {
+                        "status": {
+                            "oneOf": [
+                                {"type": "null"},
+                                {
+                                    "$ref": f"https://apigateway.amazonaws.com/restapis/{api_id}/models/StatusModel"
+                                },
+                            ]
+                        },
+                    },
+                    "required": ["status"],
+                }
+            ),
+        )
+
+        get_models = aws_client.apigateway.get_models(restApiId=api_id)
+        get_models["items"] = sorted(get_models["items"], key=itemgetter("name"))
+        snapshot.match("get-models-with-ref", get_models)
+
+        aws_client.apigateway.put_method(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            authorizationType="NONE",
+            requestValidatorId=validator_id,
+            requestModels={"application/json": "TestModel"},
+        )
+
+        aws_client.apigateway.put_method_response(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            statusCode="200",
+        )
+
+        aws_client.apigateway.put_integration(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        aws_client.apigateway.put_integration_response(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            statusCode="200",
+            selectionPattern="",
+            responseTemplates={"application/json": json.dumps({"data": "ok"})},
+        )
+
+        stage_name = "local"
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+        url = api_invoke_url(api_id, stage=stage_name, path="/path")
+
+        def invoke_api(_data: dict) -> dict:
+            _response = requests.post(url, verify=False, json=_data)
+            assert _response.ok
+            content = _response.json()
+            return content
+
+        # test that with every request parameters and a valid body, it passes
+        response = retry(
+            invoke_api, retries=10 if is_aws_cloud() else 3, sleep=1, _data={"status": None}
+        )
+        snapshot.match("successful", response)
+
+        response = invoke_api({"status": {"Status": "works", "Order": 1}})
+        snapshot.match("successful-with-data", response)
+
+        response_post_no_body = requests.post(url)
+        assert response_post_no_body.status_code == 400
+        snapshot.match("failed-validation-no-data", response_post_no_body.json())
+
+        response_post_bad_body = requests.post(url, json={"badFormat": "bla"})
+        assert response_post_bad_body.status_code == 400
+        snapshot.match("failed-validation-bad-data", response_post_bad_body.json())
+
+    @markers.aws.validated
     def test_integration_request_parameters_mapping(
         self, create_rest_apigw, aws_client, echo_http_server_post
     ):
@@ -553,6 +797,7 @@ class TestUsagePlans:
         snapshot,
         create_rest_apigw,
         apigw_redeploy_api,
+        cleanups,
     ):
         snapshot.add_transformer(snapshot.transform.apigateway_api())
         snapshot.add_transformers_list(
@@ -625,6 +870,7 @@ class TestUsagePlans:
         )
         snapshot.match("create-api-key", api_key_response)
         api_key_id = api_key_response["id"]
+        cleanups.append(lambda: aws_client.apigateway.delete_api_key(apiKey=api_key_id))
 
         create_usage_plan_key_resp = aws_client.apigateway.create_usage_plan_key(
             usagePlanId=usage_plan_id,

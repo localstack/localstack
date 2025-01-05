@@ -9,7 +9,6 @@ from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestSnfApiTagging:
     @markers.aws.validated
     @pytest.mark.parametrize(
@@ -23,9 +22,14 @@ class TestSnfApiTagging:
         ],
     )
     def test_tag_state_machine(
-        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client, tag_list
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+        tag_list,
     ):
-        snf_role_arn = create_iam_role_for_sfn()
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -33,7 +37,7 @@ class TestSnfApiTagging:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
-            name=sm_name, definition=definition_str, roleArn=snf_role_arn
+            aws_client, name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
         state_machine_arn = creation_resp_1["stateMachineArn"]
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
@@ -60,9 +64,14 @@ class TestSnfApiTagging:
         ],
     )
     def test_tag_invalid_state_machine(
-        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client, tag_list
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+        tag_list,
     ):
-        snf_role_arn = create_iam_role_for_sfn()
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -70,7 +79,7 @@ class TestSnfApiTagging:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
-            name=sm_name, definition=definition_str, roleArn=snf_role_arn
+            aws_client, name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
         state_machine_arn = creation_resp_1["stateMachineArn"]
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
@@ -83,12 +92,12 @@ class TestSnfApiTagging:
     @markers.aws.validated
     def test_tag_state_machine_version(
         self,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         aws_client,
     ):
-        snf_role_arn = create_iam_role_for_sfn()
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -96,7 +105,7 @@ class TestSnfApiTagging:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
-            name=sm_name, definition=definition_str, roleArn=snf_role_arn
+            aws_client, name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
         state_machine_arn = creation_resp_1["stateMachineArn"]
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
@@ -125,9 +134,14 @@ class TestSnfApiTagging:
         ],
     )
     def test_untag_state_machine(
-        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client, tag_keys
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+        tag_keys,
     ):
-        snf_role_arn = create_iam_role_for_sfn()
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -135,7 +149,7 @@ class TestSnfApiTagging:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
-            name=sm_name, definition=definition_str, roleArn=snf_role_arn
+            aws_client, name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
         state_machine_arn = creation_resp_1["stateMachineArn"]
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
@@ -158,9 +172,9 @@ class TestSnfApiTagging:
 
     @markers.aws.validated
     def test_create_state_machine(
-        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
-        snf_role_arn = create_iam_role_for_sfn()
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -168,6 +182,7 @@ class TestSnfApiTagging:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
+            aws_client,
             name=sm_name,
             definition=definition_str,
             roleArn=snf_role_arn,

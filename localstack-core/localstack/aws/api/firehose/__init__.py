@@ -25,6 +25,11 @@ CopyOptions = str
 CustomTimeZone = str
 DataTableColumns = str
 DataTableName = str
+DatabaseColumnName = str
+DatabaseEndpoint = str
+DatabaseName = str
+DatabasePort = int
+DatabaseTableName = str
 DeliveryStreamARN = str
 DeliveryStreamName = str
 DeliveryStreamVersionId = str
@@ -93,10 +98,13 @@ SnowflakeUser = str
 SplunkBufferingIntervalInSeconds = int
 SplunkBufferingSizeInMBs = int
 SplunkRetryDurationInSeconds = int
+StringWithLettersDigitsUnderscoresDots = str
 TagKey = str
 TagValue = str
 TopicName = str
 Username = str
+VpcEndpointServiceName = str
+WarehouseLocation = str
 
 
 class AmazonOpenSearchServerlessS3BackupMode(StrEnum):
@@ -135,6 +143,11 @@ class ContentEncoding(StrEnum):
     GZIP = "GZIP"
 
 
+class DatabaseType(StrEnum):
+    MySQL = "MySQL"
+    PostgreSQL = "PostgreSQL"
+
+
 class DefaultDocumentIdFormat(StrEnum):
     FIREHOSE_DEFAULT = "FIREHOSE_DEFAULT"
     NO_DOCUMENT_ID = "NO_DOCUMENT_ID"
@@ -150,6 +163,8 @@ class DeliveryStreamEncryptionStatus(StrEnum):
 
 
 class DeliveryStreamFailureType(StrEnum):
+    VPC_ENDPOINT_SERVICE_NAME_NOT_FOUND = "VPC_ENDPOINT_SERVICE_NAME_NOT_FOUND"
+    VPC_INTERFACE_ENDPOINT_SERVICE_ACCESS_DENIED = "VPC_INTERFACE_ENDPOINT_SERVICE_ACCESS_DENIED"
     RETIRE_KMS_GRANT_FAILED = "RETIRE_KMS_GRANT_FAILED"
     CREATE_KMS_GRANT_FAILED = "CREATE_KMS_GRANT_FAILED"
     KMS_ACCESS_DENIED = "KMS_ACCESS_DENIED"
@@ -179,6 +194,7 @@ class DeliveryStreamType(StrEnum):
     DirectPut = "DirectPut"
     KinesisStreamAsSource = "KinesisStreamAsSource"
     MSKAsSource = "MSKAsSource"
+    DatabaseAsSource = "DatabaseAsSource"
 
 
 class ElasticsearchIndexRotationPeriod(StrEnum):
@@ -271,6 +287,22 @@ class RedshiftS3BackupMode(StrEnum):
 class S3BackupMode(StrEnum):
     Disabled = "Disabled"
     Enabled = "Enabled"
+
+
+class SSLMode(StrEnum):
+    Disabled = "Disabled"
+    Enabled = "Enabled"
+
+
+class SnapshotRequestedBy(StrEnum):
+    USER = "USER"
+    FIREHOSE = "FIREHOSE"
+
+
+class SnapshotStatus(StrEnum):
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETE = "COMPLETE"
+    SUSPENDED = "SUSPENDED"
 
 
 class SnowflakeDataLoadingOption(StrEnum):
@@ -543,6 +575,7 @@ class AuthenticationConfiguration(TypedDict, total=False):
 
 class CatalogConfiguration(TypedDict, total=False):
     CatalogARN: Optional[GlueDataCatalogARN]
+    WarehouseLocation: Optional[WarehouseLocation]
 
 
 ColumnToJsonKeyMappings = Dict[NonEmptyStringWithoutWhitespace, NonEmptyString]
@@ -554,17 +587,90 @@ class CopyCommand(TypedDict, total=False):
     CopyOptions: Optional[CopyOptions]
 
 
+class DatabaseSourceVPCConfiguration(TypedDict, total=False):
+    VpcEndpointServiceName: VpcEndpointServiceName
+
+
+class SecretsManagerConfiguration(TypedDict, total=False):
+    SecretARN: Optional[SecretARN]
+    RoleARN: Optional[RoleARN]
+    Enabled: BooleanObject
+
+
+class DatabaseSourceAuthenticationConfiguration(TypedDict, total=False):
+    SecretsManagerConfiguration: SecretsManagerConfiguration
+
+
+DatabaseSurrogateKeyList = List[NonEmptyStringWithoutWhitespace]
+DatabaseColumnIncludeOrExcludeList = List[DatabaseColumnName]
+
+
+class DatabaseColumnList(TypedDict, total=False):
+    Include: Optional[DatabaseColumnIncludeOrExcludeList]
+    Exclude: Optional[DatabaseColumnIncludeOrExcludeList]
+
+
+DatabaseTableIncludeOrExcludeList = List[DatabaseTableName]
+
+
+class DatabaseTableList(TypedDict, total=False):
+    Include: Optional[DatabaseTableIncludeOrExcludeList]
+    Exclude: Optional[DatabaseTableIncludeOrExcludeList]
+
+
+DatabaseIncludeOrExcludeList = List[DatabaseName]
+
+
+class DatabaseList(TypedDict, total=False):
+    Include: Optional[DatabaseIncludeOrExcludeList]
+    Exclude: Optional[DatabaseIncludeOrExcludeList]
+
+
+class DatabaseSourceConfiguration(TypedDict, total=False):
+    Type: DatabaseType
+    Endpoint: DatabaseEndpoint
+    Port: DatabasePort
+    SSLMode: Optional[SSLMode]
+    Databases: DatabaseList
+    Tables: DatabaseTableList
+    Columns: Optional[DatabaseColumnList]
+    SurrogateKeys: Optional[DatabaseSurrogateKeyList]
+    SnapshotWatermarkTable: DatabaseTableName
+    DatabaseSourceAuthenticationConfiguration: DatabaseSourceAuthenticationConfiguration
+    DatabaseSourceVPCConfiguration: DatabaseSourceVPCConfiguration
+
+
 class RetryOptions(TypedDict, total=False):
     DurationInSeconds: Optional[RetryDurationInSeconds]
+
+
+class TableCreationConfiguration(TypedDict, total=False):
+    Enabled: BooleanObject
+
+
+class SchemaEvolutionConfiguration(TypedDict, total=False):
+    Enabled: BooleanObject
+
+
+class PartitionField(TypedDict, total=False):
+    SourceName: NonEmptyStringWithoutWhitespace
+
+
+PartitionFields = List[PartitionField]
+
+
+class PartitionSpec(TypedDict, total=False):
+    Identity: Optional[PartitionFields]
 
 
 ListOfNonEmptyStringsWithoutWhitespace = List[NonEmptyStringWithoutWhitespace]
 
 
 class DestinationTableConfiguration(TypedDict, total=False):
-    DestinationTableName: NonEmptyStringWithoutWhitespace
-    DestinationDatabaseName: NonEmptyStringWithoutWhitespace
+    DestinationTableName: StringWithLettersDigitsUnderscoresDots
+    DestinationDatabaseName: StringWithLettersDigitsUnderscoresDots
     UniqueKeys: Optional[ListOfNonEmptyStringsWithoutWhitespace]
+    PartitionSpec: Optional[PartitionSpec]
     S3ErrorOutputPrefix: Optional[ErrorOutputPrefix]
 
 
@@ -573,6 +679,8 @@ DestinationTableConfigurationList = List[DestinationTableConfiguration]
 
 class IcebergDestinationConfiguration(TypedDict, total=False):
     DestinationTableConfigurationList: Optional[DestinationTableConfigurationList]
+    SchemaEvolutionConfiguration: Optional[SchemaEvolutionConfiguration]
+    TableCreationConfiguration: Optional[TableCreationConfiguration]
     BufferingHints: Optional[BufferingHints]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
     ProcessingConfiguration: Optional[ProcessingConfiguration]
@@ -586,12 +694,6 @@ class IcebergDestinationConfiguration(TypedDict, total=False):
 class SnowflakeBufferingHints(TypedDict, total=False):
     SizeInMBs: Optional[SnowflakeBufferingSizeInMBs]
     IntervalInSeconds: Optional[SnowflakeBufferingIntervalInSeconds]
-
-
-class SecretsManagerConfiguration(TypedDict, total=False):
-    SecretARN: Optional[SecretARN]
-    RoleARN: Optional[RoleARN]
-    Enabled: BooleanObject
 
 
 class SnowflakeRetryOptions(TypedDict, total=False):
@@ -880,6 +982,7 @@ class CreateDeliveryStreamInput(ServiceRequest):
     MSKSourceConfiguration: Optional[MSKSourceConfiguration]
     SnowflakeDestinationConfiguration: Optional[SnowflakeDestinationConfiguration]
     IcebergDestinationConfiguration: Optional[IcebergDestinationConfiguration]
+    DatabaseSourceConfiguration: Optional[DatabaseSourceConfiguration]
 
 
 class CreateDeliveryStreamOutput(TypedDict, total=False):
@@ -887,6 +990,41 @@ class CreateDeliveryStreamOutput(TypedDict, total=False):
 
 
 Data = bytes
+
+
+class FailureDescription(TypedDict, total=False):
+    Type: DeliveryStreamFailureType
+    Details: NonEmptyString
+
+
+Timestamp = datetime
+
+
+class DatabaseSnapshotInfo(TypedDict, total=False):
+    Id: NonEmptyStringWithoutWhitespace
+    Table: DatabaseTableName
+    RequestTimestamp: Timestamp
+    RequestedBy: SnapshotRequestedBy
+    Status: SnapshotStatus
+    FailureDescription: Optional[FailureDescription]
+
+
+DatabaseSnapshotInfoList = List[DatabaseSnapshotInfo]
+
+
+class DatabaseSourceDescription(TypedDict, total=False):
+    Type: Optional[DatabaseType]
+    Endpoint: Optional[DatabaseEndpoint]
+    Port: Optional[DatabasePort]
+    SSLMode: Optional[SSLMode]
+    Databases: Optional[DatabaseList]
+    Tables: Optional[DatabaseTableList]
+    Columns: Optional[DatabaseColumnList]
+    SurrogateKeys: Optional[DatabaseColumnIncludeOrExcludeList]
+    SnapshotWatermarkTable: Optional[DatabaseTableName]
+    SnapshotInfo: Optional[DatabaseSnapshotInfoList]
+    DatabaseSourceAuthenticationConfiguration: Optional[DatabaseSourceAuthenticationConfiguration]
+    DatabaseSourceVPCConfiguration: Optional[DatabaseSourceVPCConfiguration]
 
 
 class DeleteDeliveryStreamInput(ServiceRequest):
@@ -903,6 +1041,8 @@ DeliveryStartTimestamp = datetime
 
 class IcebergDestinationDescription(TypedDict, total=False):
     DestinationTableConfigurationList: Optional[DestinationTableConfigurationList]
+    SchemaEvolutionConfiguration: Optional[SchemaEvolutionConfiguration]
+    TableCreationConfiguration: Optional[TableCreationConfiguration]
     BufferingHints: Optional[BufferingHints]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
     ProcessingConfiguration: Optional[ProcessingConfiguration]
@@ -1053,14 +1193,7 @@ class KinesisStreamSourceDescription(TypedDict, total=False):
 class SourceDescription(TypedDict, total=False):
     KinesisStreamSourceDescription: Optional[KinesisStreamSourceDescription]
     MSKSourceDescription: Optional[MSKSourceDescription]
-
-
-Timestamp = datetime
-
-
-class FailureDescription(TypedDict, total=False):
-    Type: DeliveryStreamFailureType
-    Details: NonEmptyString
+    DatabaseSourceDescription: Optional[DatabaseSourceDescription]
 
 
 class DeliveryStreamEncryptionConfiguration(TypedDict, total=False):
@@ -1146,6 +1279,8 @@ class HttpEndpointDestinationUpdate(TypedDict, total=False):
 
 class IcebergDestinationUpdate(TypedDict, total=False):
     DestinationTableConfigurationList: Optional[DestinationTableConfigurationList]
+    SchemaEvolutionConfiguration: Optional[SchemaEvolutionConfiguration]
+    TableCreationConfiguration: Optional[TableCreationConfiguration]
     BufferingHints: Optional[BufferingHints]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
     ProcessingConfiguration: Optional[ProcessingConfiguration]
@@ -1353,6 +1488,7 @@ class FirehoseApi:
         msk_source_configuration: MSKSourceConfiguration = None,
         snowflake_destination_configuration: SnowflakeDestinationConfiguration = None,
         iceberg_destination_configuration: IcebergDestinationConfiguration = None,
+        database_source_configuration: DatabaseSourceConfiguration = None,
         **kwargs,
     ) -> CreateDeliveryStreamOutput:
         raise NotImplementedError

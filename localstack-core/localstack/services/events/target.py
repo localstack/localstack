@@ -4,16 +4,21 @@ import logging
 import re
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Set
+from typing import Any, Dict, Set, Type
+from urllib.parse import urlencode
 
+import requests
 from botocore.client import BaseClient
 
+from localstack import config
 from localstack.aws.api.events import Arn, InputTransformer, RuleName, Target, TargetInputPath
 from localstack.aws.connect import connect_to
 from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
+from localstack.services.events.target_helper import send_event_to_api_destination
 from localstack.services.events.utils import (
     event_time_to_time_string,
     get_trace_header_encoded_region_account,
+    is_nested_in_string,
     to_json_str,
 )
 from localstack.utils import collections
@@ -22,6 +27,7 @@ from localstack.utils.aws.arns import (
     extract_region_from_arn,
     extract_service_from_arn,
     firehose_name,
+    parse_arn,
     sqs_queue_url_for_arn,
 )
 from localstack.utils.aws.client_types import ServicePrincipal
@@ -70,23 +76,50 @@ def get_template_replacements(
 
 
 def replace_template_placeholders(
-    template: str, replacements: dict[str, Any], is_json: bool
+    template: str, replacements: dict[str, Any], is_json_template: bool
 ) -> TransformedEvent:
     """Replace placeholders defined by <key> in the template with the values from the replacements dict.
     Can handle single template string or template dict."""
 
     def replace_placeholder(match):
         key = match.group(1)
-        value = replacements.get(key, match.group(0))  # handle non defined placeholders
-        if is_json:
-            return to_json_str(value)
+        value = replacements.get(key, "")  # handle non defined placeholders
         if isinstance(value, datetime.datetime):
             return event_time_to_time_string(value)
+        if isinstance(value, dict):
+            json_str = to_json_str(value).replace('\\"', '"')
+            if is_json_template:
+                return json_str
+            return json_str.replace('"', "")
+        if isinstance(value, list):
+            if is_json_template:
+                return json.dumps(value)
+            return f"[{','.join(value)}]"
+        if is_nested_in_string(template, match):
+            return value
+        if is_json_template:
+            return json.dumps(value)
         return value
 
-    formatted_template = TRANSFORMER_PLACEHOLDER_PATTERN.sub(replace_placeholder, template)
+    formatted_template = TRANSFORMER_PLACEHOLDER_PATTERN.sub(replace_placeholder, template).replace(
+        "\\n", "\n"
+    )
 
-    return json.loads(formatted_template) if is_json else formatted_template[1:-1]
+    if is_json_template:
+        try:
+            loaded_json_template = json.loads(formatted_template)
+            return loaded_json_template
+        except json.JSONDecodeError:
+            LOG.info(
+                json.dumps(
+                    {
+                        "InfoCode": "InternalInfoEvents at transform_event",
+                        "InfoMessage": f"Replaced template is not valid json: {formatted_template}",
+                    }
+                )
+            )
+    else:
+        return formatted_template[1:-1]
 
 
 class TargetSender(ABC):
@@ -140,13 +173,19 @@ class TargetSender(ABC):
 
     def process_event(self, event: FormattedEvent):
         """Processes the event and send it to the target."""
+        if input_ := self.target.get("Input"):
+            event = json.loads(input_)
         if isinstance(event, dict):
             event.pop("event-bus-name", None)
-        if input_path := self.target.get("InputPath"):
-            event = transform_event_with_target_input_path(input_path, event)
-        if input_transformer := self.target.get("InputTransformer"):
-            event = self.transform_event_with_target_input_transformer(input_transformer, event)
-        self.send_event(event)
+        if not input_:
+            if input_path := self.target.get("InputPath"):
+                event = transform_event_with_target_input_path(input_path, event)
+            if input_transformer := self.target.get("InputTransformer"):
+                event = self.transform_event_with_target_input_transformer(input_transformer, event)
+        if event:
+            self.send_event(event)
+        else:
+            LOG.info("No event to send to target %s", self.target.get("Id"))
 
     def transform_event_with_target_input_transformer(
         self, input_transformer: InputTransformer, event: FormattedEvent
@@ -156,9 +195,9 @@ class TargetSender(ABC):
         predefined_template_replacements = self._get_predefined_template_replacements(event)
         template_replacements.update(predefined_template_replacements)
 
-        is_json_format = input_template.strip().startswith(("{"))
+        is_json_template = input_template.strip().startswith(("{"))
         populated_template = replace_template_placeholders(
-            input_template, template_replacements, is_json_format
+            input_template, template_replacements, is_json_template
         )
 
         return populated_template
@@ -196,8 +235,9 @@ class TargetSender(ABC):
         return client
 
     def _validate_input_transformer(self, input_transformer: InputTransformer):
-        if "InputTemplate" not in input_transformer:
-            raise ValueError("InputTemplate is required for InputTransformer")
+        # TODO: cover via test
+        # if "InputTemplate" not in input_transformer:
+        #     raise ValueError("InputTemplate is required for InputTransformer")
         input_template = input_transformer["InputTemplate"]
         input_paths_map = input_transformer.get("InputPathsMap", {})
         placeholders = TRANSFORMER_PLACEHOLDER_PATTERN.findall(input_template)
@@ -229,13 +269,124 @@ TargetSenderDict = dict[Arn, TargetSender]
 
 
 class ApiGatewayTargetSender(TargetSender):
+    """
+    ApiGatewayTargetSender is a TargetSender that sends events to an API Gateway target.
+    """
+
+    PROHIBITED_HEADERS = [
+        "authorization",
+        "connection",
+        "content-encoding",
+        "content-length",
+        "host",
+        "max-forwards",
+        "te",
+        "transfer-encoding",
+        "trailer",
+        "upgrade",
+        "via",
+        "www-authenticate",
+        "x-forwarded-for",
+    ]  # https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-gateway-target.html
+
+    ALLOWED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
+
     def send_event(self, event):
-        raise NotImplementedError("ApiGateway target is not yet implemented")
+        # Parse the ARN to extract api_id, stage_name, http_method, and resource path
+        # Example ARN: arn:{partition}:execute-api:{region}:{account_id}:{api_id}/{stage_name}/{method}/{resource_path}
+        arn_parts = parse_arn(self.target["Arn"])
+        api_gateway_info = arn_parts["resource"]  # e.g., 'myapi/dev/POST/pets/*/*'
+        api_gateway_info_parts = api_gateway_info.split("/")
+
+        api_id = api_gateway_info_parts[0]
+        stage_name = api_gateway_info_parts[1]
+        http_method = api_gateway_info_parts[2].upper()
+        resource_path_parts = api_gateway_info_parts[3:]  # may contain wildcards
+
+        if http_method not in self.ALLOWED_HTTP_METHODS:
+            LOG.error("Unsupported HTTP method: %s", http_method)
+            return
+
+        # Replace wildcards in resource path with PathParameterValues
+        path_params_values = self.target.get("HttpParameters", {}).get("PathParameterValues", [])
+        resource_path_segments = []
+        path_param_index = 0
+        for part in resource_path_parts:
+            if part == "*":
+                if path_param_index < len(path_params_values):
+                    resource_path_segments.append(path_params_values[path_param_index])
+                    path_param_index += 1
+                else:
+                    # Use empty string if no path parameter is provided
+                    resource_path_segments.append("")
+            else:
+                resource_path_segments.append(part)
+        resource_path = "/".join(resource_path_segments)
+
+        # Ensure resource path starts and ends with '/'
+        resource_path = f"/{resource_path.strip('/')}/"
+
+        # Construct query string parameters
+        query_params = self.target.get("HttpParameters", {}).get("QueryStringParameters", {})
+        query_string = urlencode(query_params) if query_params else ""
+
+        # Construct headers
+        headers = self.target.get("HttpParameters", {}).get("HeaderParameters", {})
+        headers = {k: v for k, v in headers.items() if k.lower() not in self.PROHIBITED_HEADERS}
+        # Add Host header to ensure proper routing in LocalStack
+
+        host = f"{api_id}.execute-api.localhost.localstack.cloud"
+        headers["Host"] = host
+
+        # Ensure Content-Type is set
+        headers.setdefault("Content-Type", "application/json")
+
+        # Construct the full URL
+        resource_path = f"/{resource_path.strip('/')}/"
+
+        # Construct the full URL using urljoin
+        from urllib.parse import urljoin
+
+        base_url = config.internal_service_url()
+        base_path = f"/{stage_name}"
+        full_path = urljoin(base_path + "/", resource_path.lstrip("/"))
+        url = urljoin(base_url + "/", full_path.lstrip("/"))
+
+        if query_string:
+            url += f"?{query_string}"
+
+        # Serialize the event, converting datetime objects to strings
+        event_json = json.dumps(event, default=str)
+
+        # Send the HTTP request
+        response = requests.request(
+            method=http_method, url=url, headers=headers, data=event_json, timeout=5
+        )
+        if not response.ok:
+            LOG.warning(
+                "API Gateway target invocation failed with status code %s, response: %s",
+                response.status_code,
+                response.text,
+            )
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
-        if not collections.get_safe(target, "$.RoleArn"):
-            raise ValueError("RoleArn is required for ApiGateway target")
+        # TODO: cover via test
+        # if not collections.get_safe(target, "$.RoleArn"):
+        #     raise ValueError("RoleArn is required for ApiGateway target")
+
+    def _get_predefined_template_replacements(self, event: Dict[str, Any]) -> Dict[str, Any]:
+        """Extracts predefined values from the event."""
+        predefined_template_replacements = {}
+        predefined_template_replacements["aws.events.rule-arn"] = self.rule_arn
+        predefined_template_replacements["aws.events.rule-name"] = self.rule_name
+        predefined_template_replacements["aws.events.event.ingestion-time"] = event.get("time", "")
+        predefined_template_replacements["aws.events.event"] = {
+            "detailType" if k == "detail-type" else k: v for k, v in event.items() if k != "detail"
+        }
+        predefined_template_replacements["aws.events.event.json"] = event
+
+        return predefined_template_replacements
 
 
 class AppSyncTargetSender(TargetSender):
@@ -248,26 +399,33 @@ class BatchTargetSender(TargetSender):
         raise NotImplementedError("Batch target is not yet implemented")
 
     def _validate_input(self, target: Target):
-        if not collections.get_safe(target, "$.BatchParameters.JobDefinition"):
-            raise ValueError("BatchParameters.JobDefinition is required for Batch target")
-        if not collections.get_safe(target, "$.BatchParameters.JobName"):
-            raise ValueError("BatchParameters.JobName is required for Batch target")
+        # TODO: cover via test and fix (only required if we have BatchParameters)
+        # if not collections.get_safe(target, "$.BatchParameters.JobDefinition"):
+        #     raise ValueError("BatchParameters.JobDefinition is required for Batch target")
+        # if not collections.get_safe(target, "$.BatchParameters.JobName"):
+        #     raise ValueError("BatchParameters.JobName is required for Batch target")
+        pass
 
 
-class ContainerTargetSender(TargetSender):
+class ECSTargetSender(TargetSender):
     def send_event(self, event):
-        raise NotImplementedError("ECS target is not yet implemented")
+        raise NotImplementedError("ECS target is a pro feature, please use LocalStack Pro")
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
-        if not collections.get_safe(target, "$.EcsParameters.TaskDefinitionArn"):
-            raise ValueError("EcsParameters.TaskDefinitionArn is required for ECS target")
+        # TODO: cover via test
+        # if not collections.get_safe(target, "$.EcsParameters.TaskDefinitionArn"):
+        #     raise ValueError("EcsParameters.TaskDefinitionArn is required for ECS target")
 
 
 class EventsTargetSender(TargetSender):
     def send_event(self, event):
         # TODO add validation and tests for eventbridge to eventbridge requires Detail, DetailType, and Source
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/events/client/put_events.html
+        target_arn = self.target["Arn"]
+        if ":api-destination/" in target_arn or ":destination/" in target_arn:
+            send_event_to_api_destination(target_arn, event, self.target.get("HttpParameters"))
+            return
         source = self._get_source(event)
         detail_type = self._get_detail_type(event)
         detail = event.get("detail", event)
@@ -317,9 +475,13 @@ class FirehoseTargetSender(TargetSender):
 
 class KinesisTargetSender(TargetSender):
     def send_event(self, event):
-        partition_key_path = self.target["KinesisParameters"]["PartitionKeyPath"]
+        partition_key_path = collections.get_safe(
+            self.target,
+            "$.KinesisParameters.PartitionKeyPath",
+            default_value="$.id",
+        )
         stream_name = self.target["Arn"].split("/")[-1]
-        partition_key = event.get(partition_key_path, event["id"])
+        partition_key = collections.get_safe(event, partition_key_path, event["id"])
         self.client.put_record(
             StreamName=stream_name,
             Data=to_bytes(to_json_str(event)),
@@ -328,19 +490,19 @@ class KinesisTargetSender(TargetSender):
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
-        if not collections.get_safe(target, "$.RoleArn"):
-            raise ValueError("RoleArn is required for Kinesis target")
-        if not collections.get_safe(target, "$.KinesisParameters.PartitionKeyPath"):
-            raise ValueError("KinesisParameters.PartitionKeyPath is required for Kinesis target")
+        # TODO: cover via tests
+        # if not collections.get_safe(target, "$.RoleArn"):
+        #     raise ValueError("RoleArn is required for Kinesis target")
+        # if not collections.get_safe(target, "$.KinesisParameters.PartitionKeyPath"):
+        #     raise ValueError("KinesisParameters.PartitionKeyPath is required for Kinesis target")
 
 
 class LambdaTargetSender(TargetSender):
     def send_event(self, event):
-        asynchronous = True  # TODO clarify default behavior of AWS
         self.client.invoke(
             FunctionName=self.target["Arn"],
             Payload=to_bytes(to_json_str(event)),
-            InvocationType="Event" if asynchronous else "RequestResponse",
+            InvocationType="Event",
         )
 
 
@@ -367,8 +529,9 @@ class RedshiftTargetSender(TargetSender):
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
-        if not collections.get_safe(target, "$.RedshiftDataParameters.Database"):
-            raise ValueError("RedshiftDataParameters.Database is required for Redshift target")
+        # TODO: cover via test
+        # if not collections.get_safe(target, "$.RedshiftDataParameters.Database"):
+        #     raise ValueError("RedshiftDataParameters.Database is required for Redshift target")
 
 
 class SagemakerTargetSender(TargetSender):
@@ -404,8 +567,9 @@ class StatesTargetSender(TargetSender):
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
-        if not collections.get_safe(target, "$.RoleArn"):
-            raise ValueError("RoleArn is required for StepFunctions target")
+        # TODO: cover via test
+        # if not collections.get_safe(target, "$.RoleArn"):
+        #     raise ValueError("RoleArn is required for StepFunctions target")
 
 
 class SystemsManagerSender(TargetSender):
@@ -416,14 +580,15 @@ class SystemsManagerSender(TargetSender):
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
-        if not collections.get_safe(target, "$.RoleArn"):
-            raise ValueError(
-                "RoleArn is required for SystemManager target to invoke a EC2 run command"
-            )
-        if not collections.get_safe(target, "$.RunCommandParameters.RunCommandTargets"):
-            raise ValueError(
-                "RunCommandParameters.RunCommandTargets is required for Systems Manager target"
-            )
+        # TODO: cover via test
+        # if not collections.get_safe(target, "$.RoleArn"):
+        #     raise ValueError(
+        #         "RoleArn is required for SystemManager target to invoke a EC2 run command"
+        #     )
+        # if not collections.get_safe(target, "$.RunCommandParameters.RunCommandTargets"):
+        #     raise ValueError(
+        #         "RunCommandParameters.RunCommandTargets is required for Systems Manager target"
+        #     )
 
 
 class TargetSenderFactory:
@@ -438,7 +603,7 @@ class TargetSenderFactory:
         "apigateway": ApiGatewayTargetSender,
         "appsync": AppSyncTargetSender,
         "batch": BatchTargetSender,
-        "ecs": ContainerTargetSender,
+        "ecs": ECSTargetSender,
         "events": EventsTargetSender,
         "firehose": FirehoseTargetSender,
         "kinesis": KinesisTargetSender,
@@ -450,6 +615,7 @@ class TargetSenderFactory:
         "sagemaker": SagemakerTargetSender,
         "ssm": SystemsManagerSender,
         "states": StatesTargetSender,
+        "execute-api": ApiGatewayTargetSender,
         # TODO custom endpoints via http target
     }
 
@@ -461,6 +627,10 @@ class TargetSenderFactory:
         self.rule_name = rule_name
         self.region = region
         self.account_id = account_id
+
+    @classmethod
+    def register_target_sender(cls, service_name: str, sender_class: Type[TargetSender]):
+        cls.target_map[service_name] = sender_class
 
     def get_target_sender(self) -> TargetSender:
         service = extract_service_from_arn(self.target["Arn"])

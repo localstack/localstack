@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import sys
 from glob import glob
 
 from amazon_kclpy import kcl
@@ -93,16 +94,18 @@ def create_config_file(
     **kwargs,
 ):
     if not credentialsProvider:
-        credentialsProvider = "DefaultAWSCredentialsProviderChain"
+        credentialsProvider = "DefaultCredentialsProvider"
+    # TODO properly migrate to v3 of KCL and remove the clientVersionConfig
     content = f"""
         executableName = {executableName}
         streamName = {streamName}
         applicationName = {applicationName}
         AWSCredentialsProvider = {credentialsProvider}
+        clientVersionConfig = CLIENT_VERSION_CONFIG_COMPATIBLE_WITH_2x
         kinesisCredentialsProvider = {credentialsProvider}
         dynamoDBCredentialsProvider = {credentialsProvider}
         cloudWatchCredentialsProvider = {credentialsProvider}
-        processingLanguage = python/3.10
+        processingLanguage = python/{sys.version_info.major}.{sys.version_info.minor}
         shardSyncIntervalMillis = 2000
         parentShardPollIntervalMillis = 2000
         idleTimeBetweenReadsInMillis = 1000

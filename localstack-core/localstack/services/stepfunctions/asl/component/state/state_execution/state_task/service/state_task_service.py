@@ -11,6 +11,7 @@ from botocore.response import StreamingBody
 from localstack.aws.api.stepfunctions import (
     HistoryEventExecutionDataDetails,
     HistoryEventType,
+    TaskCredentials,
     TaskFailedEventDetails,
     TaskScheduledEventDetails,
     TaskStartedEventDetails,
@@ -27,6 +28,9 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
+    StateCredentials,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceRuntimePart,
@@ -101,8 +105,7 @@ class StateTaskService(StateTask, abc.ABC):
         elif isinstance(value_shape, StringShape) and not isinstance(request_value, str):
             boto_request_value = to_json_str(request_value)
         elif value_shape.type_name == "blob" and not isinstance(boto_request_value, bytes):
-            if not isinstance(boto_request_value, str):
-                boto_request_value = to_json_str(request_value, separators=(":", ","))
+            boto_request_value = to_json_str(request_value, separators=(",", ":"))
             boto_request_value = to_bytes(boto_request_value)
         return boto_request_value
 
@@ -231,10 +234,15 @@ class StateTaskService(StateTask, abc.ABC):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        state_credentials: StateCredentials,
     ): ...
 
     def _before_eval_execution(
-        self, env: Environment, resource_runtime_part: ResourceRuntimePart, raw_parameters: dict
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        raw_parameters: dict,
+        state_credentials: StateCredentials,
     ) -> None:
         parameters_str = to_json_str(raw_parameters)
 
@@ -252,6 +260,10 @@ class StateTaskService(StateTask, abc.ABC):
             self.heartbeat.eval(env=env)
             heartbeat_seconds = env.stack.pop()
             scheduled_event_details["heartbeatInSeconds"] = heartbeat_seconds
+        if self.credentials:
+            scheduled_event_details["taskCredentials"] = TaskCredentials(
+                roleArn=state_credentials.role_arn
+            )
         env.event_manager.add_event(
             context=env.event_history_context,
             event_type=HistoryEventType.TaskScheduled,
@@ -273,6 +285,7 @@ class StateTaskService(StateTask, abc.ABC):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
+        state_credentials: StateCredentials,
     ) -> None:
         output = env.stack[-1]
         self._verify_size_quota(env=env, value=output)
@@ -294,9 +307,13 @@ class StateTaskService(StateTask, abc.ABC):
         resource_runtime_part: ResourceRuntimePart = env.stack.pop()
 
         raw_parameters = self._eval_parameters(env=env)
+        state_credentials = self._eval_state_credentials(env=env)
 
         self._before_eval_execution(
-            env=env, resource_runtime_part=resource_runtime_part, raw_parameters=raw_parameters
+            env=env,
+            resource_runtime_part=resource_runtime_part,
+            raw_parameters=raw_parameters,
+            state_credentials=state_credentials,
         )
 
         normalised_parameters = copy.deepcopy(raw_parameters)
@@ -306,6 +323,7 @@ class StateTaskService(StateTask, abc.ABC):
             env=env,
             resource_runtime_part=resource_runtime_part,
             normalised_parameters=normalised_parameters,
+            state_credentials=state_credentials,
         )
 
         output_value = env.stack[-1]
@@ -315,4 +333,5 @@ class StateTaskService(StateTask, abc.ABC):
             env=env,
             resource_runtime_part=resource_runtime_part,
             normalised_parameters=normalised_parameters,
+            state_credentials=state_credentials,
         )

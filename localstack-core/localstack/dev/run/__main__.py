@@ -27,7 +27,7 @@ from .configurators import (
     PortConfigurator,
     SourceVolumeMountConfigurator,
 )
-from .paths import HostPaths
+from .paths import HOST_PATH_MAPPINGS, HostPaths
 
 
 @click.command("run")
@@ -114,6 +114,14 @@ from .paths import HostPaths
     required=False,
     help="Docker network to start the container in",
 )
+@click.option(
+    "--local-packages",
+    "-l",
+    multiple=True,
+    required=False,
+    type=click.Choice(HOST_PATH_MAPPINGS.keys(), case_sensitive=False),
+    help="Mount specified packages into the container",
+)
 @click.argument("command", nargs=-1, required=False)
 def run(
     image: str = None,
@@ -130,6 +138,7 @@ def run(
     publish: Tuple = (),
     entrypoint: str = None,
     network: str = None,
+    local_packages: list[str] | None = None,
     command: str = None,
 ):
     """
@@ -139,7 +148,7 @@ def run(
 
     \b
         python -m localstack.dev.run
-        python -m localstack.dev.run -e DEBUG=1 -e LOCALSTACK_API_KEY=test
+        python -m localstack.dev.run -e DEBUG=1 -e LOCALSTACK_AUTH_TOKEN=test
         python -m localstack.dev.run -- bash -c 'echo "hello"'
 
     Explanations and more examples:
@@ -151,7 +160,7 @@ def run(
 
     If you start localstack-pro, you might also want to add the API KEY as environment variable::
 
-        python -m localstack.dev.run -e DEBUG=1 -e LOCALSTACK_API_KEY=test
+        python -m localstack.dev.run -e DEBUG=1 -e LOCALSTACK_AUTH_TOKEN=test
 
     If your local changes are making modifications to plux plugins (e.g., adding new providers or hooks),
     then you also want to mount the newly generated entry_point.txt files into the container::
@@ -214,6 +223,16 @@ def run(
         │   ├── tests
         │   └── ...
 
+    You can choose which local source repositories are mounted in. For example, if `moto` and `rolo` are
+    both present, only mount `rolo` into the container.
+
+    \b
+        python -m localstack.dev.run --local-packages rolo
+
+    If both `rolo` and `moto` are available and both should be mounted, use the flag twice.
+
+    \b
+        python -m localstack.dev.run --local-packages rolo --local-packages moto
     """
     with console.status("Configuring") as status:
         env_vars = parse_env_vars(env)
@@ -288,6 +307,7 @@ def run(
                 SourceVolumeMountConfigurator(
                     host_paths=host_paths,
                     pro=pro,
+                    chosen_packages=local_packages,
                 )
             )
         if mount_entrypoints:

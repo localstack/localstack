@@ -1,0 +1,25 @@
+name: Update OpenAPI Spec
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '**/*openapi.yaml'
+      - '**/*openapi.yml'
+  workflow_dispatch:
+
+jobs:
+  update-openapi-spec:
+    runs-on: ubuntu-latest
+
+    steps:
+      # This step dispatches a workflow in the OpenAPI repo, updating the spec and opening a PR.
+      - name: Dispatch update spec workflow
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.PRO_ACCESS_TOKEN }}
+          repository: localstack/openapi
+          event-type: openapi-update
+          # A git reference is needed when we want to dispatch the worflow from another branch.
+          client-payload: '{"ref": "${{ github.ref }}", "repo": "${{ github.repository }}"}'

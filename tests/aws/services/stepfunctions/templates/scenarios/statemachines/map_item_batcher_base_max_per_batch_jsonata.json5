@@ -1,0 +1,42 @@
+{
+  "Comment": "MAP_ITEM_BATCHER_BASE_JSON_MAX_PER_BATCH_JSONATA",
+  "StartAt": "BatchMapState",
+  "QueryLanguage": "JSONata",
+  "States": {
+    "BatchMapState": {
+      "Type": "Map",
+      "ItemReader": {
+        "ReaderConfig": {
+          "InputType": "JSON",
+          "MaxItems": 2
+        },
+        "Resource": "arn:aws:states:::s3:getObject",
+        "Arguments": {
+          "Bucket": "{% $states.input.Bucket %}",
+          "Key":"{% $states.input.Key %}"
+        }
+      },
+      "ItemBatcher": {
+        "MaxItemsPerBatch": "{% $states.input.MaxItemsPerBatch %}",
+        "MaxInputBytesPerBatch": "{% $states.input.MaxInputBytesPerBatch %}",
+        "BatchInput": {
+          "BatchTimestamp": "{% $states.context.State.EnteredTime %}"
+        }
+      },
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "ProcessBatch",
+        "States": {
+          "ProcessBatch": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

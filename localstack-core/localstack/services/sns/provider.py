@@ -1,4 +1,5 @@
 import base64
+import functools
 import json
 import logging
 from typing import Dict, List
@@ -60,6 +61,7 @@ from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sns import constants as sns_constants
+from localstack.services.sns import usage
 from localstack.services.sns.certificate import SNS_SERVER_CERT
 from localstack.services.sns.filter import FilterPolicyValidator
 from localstack.services.sns.models import SnsMessage, SnsStore, SnsSubscription, sns_stores
@@ -157,14 +159,16 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         # TODO: very hacky way to get the attributes we need instead of a moto patch
         # see the attributes we need: https://docs.aws.amazon.com/sns/latest/dg/sns-topic-attributes.html
         # would need more work to have the proper format out of moto, maybe extract the model to our store
+        attributes = moto_response["Attributes"]
         for attr in vars(moto_topic_model):
             if "_feedback" in attr:
                 key = camelcase_to_pascal(underscores_to_camelcase(attr))
-                moto_response["Attributes"][key] = getattr(moto_topic_model, attr)
+                attributes[key] = getattr(moto_topic_model, attr)
             elif attr == "signature_version":
-                moto_response["Attributes"]["SignatureVersion"] = moto_topic_model.signature_version
+                attributes["SignatureVersion"] = moto_topic_model.signature_version
             elif attr == "archive_policy":
-                moto_response["Attributes"]["ArchivePolicy"] = moto_topic_model.archive_policy
+                attributes["ArchivePolicy"] = moto_topic_model.archive_policy
+
         return moto_response
 
     def publish_batch(
@@ -197,14 +201,15 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         total_batch_size = 0
         message_contexts = []
-        for entry in publish_batch_request_entries:
+        for entry_index, entry in enumerate(publish_batch_request_entries, start=1):
             message_payload = entry.get("Message")
             message_attributes = entry.get("MessageAttributes", {})
-            total_batch_size += get_total_publish_size(message_payload, message_attributes)
             if message_attributes:
                 # if a message contains non-valid message attributes
                 # will fail for the first non-valid message encountered, and raise ParameterValueInvalid
-                validate_message_attributes(message_attributes)
+                validate_message_attributes(message_attributes, position=entry_index)
+
+            total_batch_size += get_total_publish_size(message_payload, message_attributes)
 
             # TODO: WRITE AWS VALIDATED
             if entry.get("MessageStructure") == "json":
@@ -530,6 +535,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 f"Invalid parameter: PhoneNumber Reason: {phone_number} is not valid to publish to"
             )
 
+        if message_attributes:
+            validate_message_attributes(message_attributes)
+
         if get_total_publish_size(message, message_attributes) > MAXIMUM_MESSAGE_LENGTH:
             raise InvalidParameterException("Invalid parameter: Message too long")
 
@@ -576,9 +584,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 raise InvalidParameterException(
                     "Invalid parameter: Message Structure - JSON message body failed to parse"
                 )
-
-        if message_attributes:
-            validate_message_attributes(message_attributes)
 
         if not phone_number:
             # use the account to get the store from the TopicArn (you can only publish in the same region as the topic)
@@ -916,12 +921,15 @@ def validate_subscription_attribute(
                 )
 
 
-def validate_message_attributes(message_attributes: MessageAttributeMap) -> None:
+def validate_message_attributes(
+    message_attributes: MessageAttributeMap, position: int | None = None
+) -> None:
     """
     Validate the message attributes, and raises an exception if those do not follow AWS validation
     See: https://docs.aws.amazon.com/sns/latest/dg/sns-message-attributes.html
     Regex from: https://stackoverflow.com/questions/40718851/regex-that-does-not-allow-consecutive-dots
     :param message_attributes: the message attributes map for the message
+    :param position: given to give the Batch Entry position if coming from `publishBatch`
     :raises: InvalidParameterValueException
     :return: None
     """
@@ -932,7 +940,18 @@ def validate_message_attributes(message_attributes: MessageAttributeMap) -> None
             )
         validate_message_attribute_name(attr_name)
         # `DataType` is a required field for MessageAttributeValue
-        data_type = attr["DataType"]
+        if (data_type := attr.get("DataType")) is None:
+            if position:
+                at = f"publishBatchRequestEntries.{position}.member.messageAttributes.{attr_name}.member.dataType"
+            else:
+                at = f"messageAttributes.{attr_name}.member.dataType"
+
+            raise CommonServiceException(
+                code="ValidationError",
+                message=f"1 validation error detected: Value null at '{at}' failed to satisfy constraint: Member must not be null",
+                sender_fault=True,
+            )
+
         if data_type not in (
             "String",
             "Number",
@@ -941,6 +960,11 @@ def validate_message_attributes(message_attributes: MessageAttributeMap) -> None
             raise InvalidParameterValueException(
                 f"The message attribute '{attr_name}' has an invalid message attribute type, the set of supported type prefixes is Binary, Number, and String."
             )
+        if not any(attr_value.endswith("Value") for attr_value in attr):
+            raise InvalidParameterValueException(
+                f"The message attribute '{attr_name}' must contain non-empty message attribute value for message attribute type '{data_type}'."
+            )
+
         value_key_data_type = "Binary" if data_type.startswith("Binary") else "String"
         value_key = f"{value_key_data_type}Value"
         if value_key not in attr:
@@ -1094,7 +1118,25 @@ def _format_messages(sent_messages: List[Dict[str, str]], validated_keys: List[s
     return formatted_messages
 
 
-class SNSServicePlatformEndpointMessagesApiResource:
+class SNSInternalResource:
+    resource_type: str
+    """Base class with helper to properly track usage of internal endpoints"""
+
+    def count_usage(self):
+        usage.internalapi.record(f"{self.resource_type}")
+
+
+def count_usage(f):
+    @functools.wraps(f)
+    def _wrapper(self, *args, **kwargs):
+        self.count_usage()
+        return f(self, *args, **kwargs)
+
+    return _wrapper
+
+
+class SNSServicePlatformEndpointMessagesApiResource(SNSInternalResource):
+    resource_type = "platform-endpoint-message"
     """Provides a REST API for retrospective access to platform endpoint messages sent via SNS.
 
     This is registered as a LocalStack internal HTTP resource.
@@ -1119,6 +1161,7 @@ class SNSServicePlatformEndpointMessagesApiResource:
     ]
 
     @route(sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["GET"])
+    @count_usage
     def on_get(self, request: Request):
         filter_endpoint_arn = request.args.get("endpointArn")
         account_id = (
@@ -1150,6 +1193,7 @@ class SNSServicePlatformEndpointMessagesApiResource:
         }
 
     @route(sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["DELETE"])
+    @count_usage
     def on_delete(self, request: Request) -> Response:
         filter_endpoint_arn = request.args.get("endpointArn")
         account_id = (
@@ -1171,7 +1215,8 @@ class SNSServicePlatformEndpointMessagesApiResource:
         return Response("", status=204)
 
 
-class SNSServiceSMSMessagesApiResource:
+class SNSServiceSMSMessagesApiResource(SNSInternalResource):
+    resource_type = "sms-message"
     """Provides a REST API for retrospective access to SMS messages sent via SNS.
 
     This is registered as a LocalStack internal HTTP resource.
@@ -1194,6 +1239,7 @@ class SNSServiceSMSMessagesApiResource:
     ]
 
     @route(sns_constants.SMS_MSGS_ENDPOINT, methods=["GET"])
+    @count_usage
     def on_get(self, request: Request):
         account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
         region = request.args.get("region", AWS_REGION_US_EAST_1)
@@ -1220,6 +1266,7 @@ class SNSServiceSMSMessagesApiResource:
         }
 
     @route(sns_constants.SMS_MSGS_ENDPOINT, methods=["DELETE"])
+    @count_usage
     def on_delete(self, request: Request) -> Response:
         account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
         region = request.args.get("region", AWS_REGION_US_EAST_1)
@@ -1235,7 +1282,8 @@ class SNSServiceSMSMessagesApiResource:
         return Response("", status=204)
 
 
-class SNSServiceSubscriptionTokenApiResource:
+class SNSServiceSubscriptionTokenApiResource(SNSInternalResource):
+    resource_type = "subscription-token"
     """Provides a REST API for retrospective access to Subscription Confirmation Tokens to confirm subscriptions.
     Those are not sent for email, and sometimes inaccessible when working with external HTTPS endpoint which won't be
     able to reach your local host.
@@ -1247,6 +1295,7 @@ class SNSServiceSubscriptionTokenApiResource:
     """
 
     @route(f"{sns_constants.SUBSCRIPTION_TOKENS_ENDPOINT}/<path:subscription_arn>", methods=["GET"])
+    @count_usage
     def on_get(self, _request: Request, subscription_arn: str):
         try:
             parsed_arn = parse_arn(subscription_arn)

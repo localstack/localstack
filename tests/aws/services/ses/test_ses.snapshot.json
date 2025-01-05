@@ -903,12 +903,12 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_sent_message_counter": {
-    "recorded-date": "25-08-2023, 23:40:26",
+    "recorded-date": "27-11-2024, 13:03:32",
     "recorded-content": {
       "get-quota-0": {
         "Max24HourSend": 200.0,
         "MaxSendRate": 1.0,
-        "SentLast24Hours": 0.0,
+        "SentLast24Hours": "sent-last24-hours",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

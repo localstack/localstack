@@ -16,8 +16,10 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
     FailureEventException,
 )
 from localstack.services.stepfunctions.asl.component.common.flow.start_at import StartAt
-from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
+from localstack.services.stepfunctions.asl.component.common.parargs import Parameters
+from localstack.services.stepfunctions.asl.component.common.query_language import QueryLanguage
 from localstack.services.stepfunctions.asl.component.program.program import Program
+from localstack.services.stepfunctions.asl.component.program.states import States
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.item_reader_decl import (
     ItemReader,
 )
@@ -44,7 +46,6 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
     DEFAULT_MAX_CONCURRENCY_VALUE,
 )
-from localstack.services.stepfunctions.asl.component.states import States
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.eval.event.event_manager import (
@@ -88,10 +89,19 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
     _workers: list[IterationWorker]
 
     def __init__(
-        self, start_at: StartAt, states: States, comment: Comment, processor_config: ProcessorConfig
+        self,
+        query_language: QueryLanguage,
+        start_at: StartAt,
+        states: States,
+        comment: Comment,
+        processor_config: ProcessorConfig,
     ):
         super().__init__(
-            start_at=start_at, states=states, comment=comment, processor_config=processor_config
+            query_language=query_language,
+            start_at=start_at,
+            states=states,
+            comment=comment,
+            processor_config=processor_config,
         )
         self._mutex = threading.Lock()
         self._map_run_record = None
@@ -119,15 +129,10 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
                     self._workers.remove(worker)
 
     def _map_run(self, env: Environment) -> None:
-        input_items: list[json] = env.stack[-1]
+        input_items: list[json] = env.stack.pop()
 
-        input_item_prog: Final[Program] = Program(
-            start_at=self._start_at,
-            states=self._states,
-            timeout_seconds=None,
-            comment=self._comment,
-        )
-        self._job_pool = JobPool(job_program=input_item_prog, job_inputs=input_items)
+        input_item_program: Final[Program] = self._get_iteration_program()
+        self._job_pool = JobPool(job_program=input_item_program, job_inputs=input_items)
 
         # TODO: add watch on map_run_record update event and adjust the number of running workers accordingly.
         max_concurrency = self._map_run_record.max_concurrency
@@ -153,8 +158,8 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
         self._eval_input = env.stack.pop()
 
         self._map_run_record = MapRunRecord(
-            state_machine_arn=env.context_object_manager.context_object["StateMachine"]["Id"],
-            execution_arn=env.context_object_manager.context_object["Execution"]["Id"],
+            state_machine_arn=env.states.context_object.context_object_data["StateMachine"]["Id"],
+            execution_arn=env.states.context_object.context_object_data["Execution"]["Id"],
             max_concurrency=self._eval_input.max_concurrency,
             tolerated_failure_count=self._eval_input.tolerated_failure_count,
             tolerated_failure_percentage=self._eval_input.tolerated_failure_percentage,

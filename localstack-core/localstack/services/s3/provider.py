@@ -3,6 +3,7 @@ import copy
 import datetime
 import json
 import logging
+import re
 from collections import defaultdict
 from io import BytesIO
 from operator import itemgetter
@@ -20,6 +21,7 @@ from localstack.aws.api.s3 import (
     AccountId,
     AnalyticsConfiguration,
     AnalyticsId,
+    BadDigest,
     Body,
     Bucket,
     BucketAlreadyExists,
@@ -29,6 +31,7 @@ from localstack.aws.api.s3 import (
     BucketLoggingStatus,
     BucketName,
     BucketNotEmpty,
+    BucketRegion,
     BucketVersioningStatus,
     BypassGovernanceRetention,
     ChecksumAlgorithm,
@@ -96,6 +99,10 @@ from localstack.aws.api.s3 import (
     HeadBucketOutput,
     HeadObjectOutput,
     HeadObjectRequest,
+    IfMatch,
+    IfMatchInitiatedTime,
+    IfMatchLastModifiedTime,
+    IfMatchSize,
     IfNoneMatch,
     IntelligentTieringConfiguration,
     IntelligentTieringId,
@@ -167,6 +174,7 @@ from localstack.aws.api.s3 import (
     Prefix,
     PublicAccessBlockConfiguration,
     PutBucketAclRequest,
+    PutBucketLifecycleConfigurationOutput,
     PutObjectAclOutput,
     PutObjectAclRequest,
     PutObjectLegalHoldOutput,
@@ -192,6 +200,7 @@ from localstack.aws.api.s3 import (
     StorageClass,
     Tagging,
     Token,
+    TransitionDefaultMinimumObjectSize,
     UploadIdMarker,
     UploadPartCopyOutput,
     UploadPartCopyRequest,
@@ -219,6 +228,7 @@ from localstack.services.s3.constants import (
 )
 from localstack.services.s3.cors import S3CorsHandler, s3_cors_request_handler
 from localstack.services.s3.exceptions import (
+    InvalidBucketOwnerAWSAccountID,
     InvalidBucketState,
     InvalidRequest,
     MalformedPolicy,
@@ -247,6 +257,7 @@ from localstack.services.s3.storage.ephemeral import EphemeralS3ObjectStore
 from localstack.services.s3.utils import (
     ObjectRange,
     add_expiration_days_to_datetime,
+    base_64_content_md5_to_etag,
     create_redirect_for_post_request,
     create_s3_kms_managed_key_for_region,
     etag_to_base_64_content_md5,
@@ -407,8 +418,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             return expiration_header
 
     def _get_cross_account_bucket(
-        self, context: RequestContext, bucket_name: BucketName
+        self,
+        context: RequestContext,
+        bucket_name: BucketName,
+        *,
+        expected_bucket_owner: AccountId = None,
     ) -> tuple[S3Store, S3Bucket]:
+        if expected_bucket_owner and not re.fullmatch(r"\w{12}", expected_bucket_owner):
+            raise InvalidBucketOwnerAWSAccountID(
+                f"The value of the expected bucket owner parameter must be an AWS Account ID... [{expected_bucket_owner}]",
+            )
+
         store = self.get_store(context.account_id, context.region)
         if not (s3_bucket := store.buckets.get(bucket_name)):
             if not (account_id := store.global_bucket_map.get(bucket_name)):
@@ -417,6 +437,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             store = self.get_store(account_id, context.region)
             if not (s3_bucket := store.buckets.get(bucket_name)):
                 raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket_name)
+
+        if expected_bucket_owner and s3_bucket.bucket_account_id != expected_bucket_owner:
+            raise AccessDenied("Access Denied")
 
         return store, s3_bucket
 
@@ -547,9 +570,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         max_buckets: MaxBuckets = None,
         continuation_token: Token = None,
+        prefix: Prefix = None,
+        bucket_region: BucketRegion = None,
         **kwargs,
     ) -> ListBucketsOutput:
-        # TODO add support for max_buckets and continuation_token
+        # TODO add support for max_buckets, continuation_token, prefix, and bucket_region
         owner = get_owner_for_account_id(context.account_id)
         store = self.get_store(context.account_id, context.region)
         buckets = [
@@ -635,11 +660,20 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         validate_object_key(key)
 
-        if (if_none_match := request.get("IfNoneMatch")) and if_none_match != "*":
+        if_match = request.get("IfMatch")
+        if (if_none_match := request.get("IfNoneMatch")) and if_match:
             raise NotImplementedException(
                 "A header you provided implies functionality that is not implemented",
-                Header="If-None-Match",
-                additionalMessage="We don't accept the provided value of If-None-Match header for this API",
+                Header="If-Match,If-None-Match",
+                additionalMessage="Multiple conditional request headers present in the request",
+            )
+
+        elif (if_none_match and if_none_match != "*") or (if_match and if_match == "*"):
+            header_name = "If-None-Match" if if_none_match else "If-Match"
+            raise NotImplementedException(
+                "A header you provided implies functionality that is not implemented",
+                Header=header_name,
+                additionalMessage=f"We don't accept the provided value of {header_name} header for this API",
             )
 
         system_metadata = get_system_metadata_from_request(request)
@@ -647,6 +681,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             system_metadata["ContentType"] = "binary/octet-stream"
 
         version_id = generate_version_id(s3_bucket.versioning_status)
+
+        etag_content_md5 = ""
+        if content_md5 := request.get("ContentMD5"):
+            # assert that the received ContentMD5 is a properly b64 encoded value that fits a MD5 hash length
+            etag_content_md5 = base_64_content_md5_to_etag(content_md5)
+            if not etag_content_md5:
+                raise InvalidDigest(
+                    "The Content-MD5 you specified was invalid.",
+                    Content_MD5=content_md5,
+                )
 
         checksum_algorithm = get_s3_checksum_algorithm_from_request(request)
         checksum_value = (
@@ -723,6 +767,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     Condition="If-None-Match",
                 )
 
+            elif if_match:
+                verify_object_equality_precondition_write(s3_bucket, key, if_match)
+
             s3_stored_object.write(body)
 
             if (
@@ -736,13 +783,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
             # TODO: handle ContentMD5 and ChecksumAlgorithm in a handler for all requests except requests with a
             #  streaming body. We can use the specs to verify which operations needs to have the checksum validated
-            if content_md5 := request.get("ContentMD5"):
+            if content_md5:
                 calculated_md5 = etag_to_base_64_content_md5(s3_stored_object.etag)
                 if calculated_md5 != content_md5:
                     self._storage_backend.remove(bucket_name, s3_object)
-                    raise InvalidDigest(
-                        "The Content-MD5 you specified was invalid.",
-                        Content_MD5=content_md5,
+                    raise BadDigest(
+                        "The Content-MD5 you specified did not match what we received.",
+                        ExpectedDigest=etag_content_md5,
+                        CalculatedDigest=calculated_md5,
                     )
 
             s3_bucket.objects.set(key, s3_object)
@@ -858,9 +906,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # Be careful into adding validation between this call and `return` of `S3Provider.get_object`
         s3_stored_object = self._storage_backend.open(bucket_name, s3_object, mode="r")
 
-        # TODO: remove this with 3.3, this is for persistence reason
-        if not hasattr(s3_object, "internal_last_modified"):
-            s3_object.internal_last_modified = s3_stored_object.last_modified
         # this is a hacky way to verify the object hasn't been modified between `s3_object = s3_bucket.get_object`
         # and the storage backend call. If it has been modified, now that we're in the read lock, we can safely fetch
         # the object again
@@ -964,15 +1009,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         validate_failed_precondition(request, s3_object.last_modified, s3_object.etag)
 
         sse_c_key_md5 = request.get("SSECustomerKeyMD5")
-        # we're using getattr access because when restoring, the field might not exist
-        # TODO: cleanup at next major release
-        if sse_key_hash := getattr(s3_object, "sse_key_hash", None):
-            if sse_key_hash and not sse_c_key_md5:
+        if s3_object.sse_key_hash:
+            if not sse_c_key_md5:
                 raise InvalidRequest(
                     "The object was stored using a form of Server Side Encryption. "
                     "The correct parameters must be provided to retrieve the object."
                 )
-            elif sse_key_hash != sse_c_key_md5:
+            elif s3_object.sse_key_hash != sse_c_key_md5:
                 raise AccessDenied("Access Denied")
 
         validate_sse_c(
@@ -1063,6 +1106,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request_payer: RequestPayer = None,
         bypass_governance_retention: BypassGovernanceRetention = None,
         expected_bucket_owner: AccountId = None,
+        if_match: IfMatch = None,
+        if_match_last_modified_time: IfMatchLastModifiedTime = None,
+        if_match_size: IfMatchSize = None,
         **kwargs,
     ) -> DeleteObjectOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
@@ -1311,15 +1357,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         source_sse_c_key_md5 = request.get("CopySourceSSECustomerKeyMD5")
-        # we're using getattr access because when restoring, the field might not exist
-        # TODO: cleanup at next major release
-        if sse_key_hash_src := getattr(src_s3_object, "sse_key_hash", None):
-            if sse_key_hash_src and not source_sse_c_key_md5:
+        if src_s3_object.sse_key_hash:
+            if not source_sse_c_key_md5:
                 raise InvalidRequest(
                     "The object was stored using a form of Server Side Encryption. "
                     "The correct parameters must be provided to retrieve the object."
                 )
-            elif sse_key_hash_src != source_sse_c_key_md5:
+            elif src_s3_object.sse_key_hash != source_sse_c_key_md5:
                 raise AccessDenied("Access Denied")
 
         validate_sse_c(
@@ -1880,15 +1924,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         )
 
         sse_c_key_md5 = request.get("SSECustomerKeyMD5")
-        # we're using getattr access because when restoring, the field might not exist
-        # TODO: cleanup at next major release
-        if sse_key_hash := getattr(s3_object, "sse_key_hash", None):
-            if sse_key_hash and not sse_c_key_md5:
+        if s3_object.sse_key_hash:
+            if not sse_c_key_md5:
                 raise InvalidRequest(
                     "The object was stored using a form of Server Side Encryption. "
                     "The correct parameters must be provided to retrieve the object."
                 )
-            elif sse_key_hash != sse_c_key_md5:
+            elif s3_object.sse_key_hash != sse_c_key_md5:
                 raise AccessDenied("Access Denied")
 
         validate_sse_c(
@@ -2109,6 +2151,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 ArgumentValue=part_number,
             )
 
+        if content_md5 := request.get("ContentMD5"):
+            # assert that the received ContentMD5 is a properly b64 encoded value that fits a MD5 hash length
+            if not base_64_content_md5_to_etag(content_md5):
+                raise InvalidDigest(
+                    "The Content-MD5 you specified was invalid.",
+                    Content_MD5=content_md5,
+                )
+
         checksum_algorithm = get_s3_checksum_algorithm_from_request(request)
         checksum_value = (
             request.get(f"Checksum{checksum_algorithm.upper()}") if checksum_algorithm else None
@@ -2184,6 +2234,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 raise InvalidRequest(
                     f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
                 )
+
+            if content_md5:
+                calculated_md5 = etag_to_base_64_content_md5(s3_part.etag)
+                if calculated_md5 != content_md5:
+                    stored_multipart.remove_part(s3_part)
+                    raise BadDigest(
+                        "The Content-MD5 you specified did not match what we received.",
+                        ExpectedDigest=content_md5,
+                        CalculatedDigest=calculated_md5,
+                    )
 
             s3_multipart.parts[part_number] = s3_part
 
@@ -2310,6 +2370,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         checksum_sha256: ChecksumSHA256 = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        if_match: IfMatch = None,
         if_none_match: IfNoneMatch = None,
         sse_customer_algorithm: SSECustomerAlgorithm = None,
         sse_customer_key: SSECustomerKey = None,
@@ -2328,26 +2389,42 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 UploadId=upload_id,
             )
 
-        if if_none_match:
+        if if_none_match and if_match:
+            raise NotImplementedException(
+                "A header you provided implies functionality that is not implemented",
+                Header="If-Match,If-None-Match",
+                additionalMessage="Multiple conditional request headers present in the request",
+            )
+
+        elif if_none_match:
             if if_none_match != "*":
                 raise NotImplementedException(
                     "A header you provided implies functionality that is not implemented",
                     Header="If-None-Match",
                     additionalMessage="We don't accept the provided value of If-None-Match header for this API",
                 )
-            # for persistence, field might not always be there in restored version.
-            # TODO: remove for next major version
             if object_exists_for_precondition_write(s3_bucket, key):
                 raise PreconditionFailed(
                     "At least one of the pre-conditions you specified did not hold",
                     Condition="If-None-Match",
                 )
-            elif getattr(s3_multipart, "precondition", None):
+            elif s3_multipart.precondition:
                 raise ConditionalRequestConflict(
                     "The conditional request cannot succeed due to a conflicting operation against this resource.",
                     Condition="If-None-Match",
                     Key=key,
                 )
+
+        elif if_match:
+            if if_match == "*":
+                raise NotImplementedException(
+                    "A header you provided implies functionality that is not implemented",
+                    Header="If-None-Match",
+                    additionalMessage="We don't accept the provided value of If-None-Match header for this API",
+                )
+            verify_object_equality_precondition_write(
+                s3_bucket, key, if_match, initiated=s3_multipart.initiated
+            )
 
         parts = multipart_upload.get("Parts", [])
         if not parts:
@@ -2425,6 +2502,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         upload_id: MultipartUploadId,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        if_match_initiated_time: IfMatchInitiatedTime = None,
         **kwargs,
     ) -> AbortMultipartUploadOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
@@ -2675,13 +2753,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 message="The Versioning element must be specified",
             )
 
-        if s3_bucket.object_lock_enabled:
+        if versioning_status not in ("Enabled", "Suspended"):
+            raise MalformedXML()
+
+        if s3_bucket.object_lock_enabled and versioning_status == "Suspended":
             raise InvalidBucketState(
                 "An Object Lock configuration is present on this bucket, so the versioning state cannot be changed."
             )
-
-        if versioning_status not in ("Enabled", "Suspended"):
-            raise MalformedXML()
 
         if not s3_bucket.versioning_status:
             s3_bucket.objects = VersionedKeyStore.from_key_store(s3_bucket.objects)
@@ -2896,9 +2974,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         try:
             s3_object = s3_bucket.get_object(key=key, version_id=version_id)
         except NoSuchKey as e:
-            # TODO: remove the hack under and update the S3Bucket model before the next major version, as it might break
-            #  persistence: we need to remove the `raise_for_delete_marker` parameter and replace it with the error type
-            #  to raise (MethodNotAllowed or NoSuchKey)
+            # it seems GetObjectTagging does not work like all other operations, so we need to raise a different
+            # exception. As we already need to catch it because of the format of the Key, it is not worth to modify the
+            # `S3Bucket.get_object` signature for one operation.
             if s3_bucket.versioning_status and (
                 s3_object_version := s3_bucket.objects.get(key, version_id)
             ):
@@ -3015,8 +3093,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         checksum_algorithm: ChecksumAlgorithm = None,
         lifecycle_configuration: BucketLifecycleConfiguration = None,
         expected_bucket_owner: AccountId = None,
+        transition_default_minimum_object_size: TransitionDefaultMinimumObjectSize = None,
         **kwargs,
-    ) -> None:
+    ) -> PutBucketLifecycleConfigurationOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         validate_lifecycle_configuration(lifecycle_configuration)
@@ -3025,6 +3104,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # for now, we keep a cache and get it everytime we fetch an object
         s3_bucket.lifecycle_rules = lifecycle_configuration["Rules"]
         self._expiration_cache[bucket].clear()
+        return PutBucketLifecycleConfigurationOutput(
+            TransitionDefaultMinimumObjectSize=transition_default_minimum_object_size
+        )
 
     def delete_bucket_lifecycle(
         self,
@@ -3617,7 +3699,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         expected_bucket_owner: AccountId = None,
         **kwargs,
     ) -> GetBucketPolicyOutput:
-        store, s3_bucket = self._get_cross_account_bucket(context, bucket)
+        store, s3_bucket = self._get_cross_account_bucket(
+            context, bucket, expected_bucket_owner=expected_bucket_owner
+        )
         if not s3_bucket.policy:
             raise NoSuchBucketPolicy(
                 "The bucket policy does not exist",
@@ -3636,7 +3720,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         expected_bucket_owner: AccountId = None,
         **kwargs,
     ) -> None:
-        store, s3_bucket = self._get_cross_account_bucket(context, bucket)
+        store, s3_bucket = self._get_cross_account_bucket(
+            context, bucket, expected_bucket_owner=expected_bucket_owner
+        )
 
         if not policy or policy[0] != "{":
             raise MalformedPolicy("Policies must be valid JSON and the first byte must be '{'")
@@ -3657,7 +3743,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         expected_bucket_owner: AccountId = None,
         **kwargs,
     ) -> None:
-        store, s3_bucket = self._get_cross_account_bucket(context, bucket)
+        store, s3_bucket = self._get_cross_account_bucket(
+            context, bucket, expected_bucket_owner=expected_bucket_owner
+        )
 
         s3_bucket.policy = None
 
@@ -4337,3 +4425,27 @@ def get_access_control_policy_for_new_resource_request(
 
 def object_exists_for_precondition_write(s3_bucket: S3Bucket, key: ObjectKey) -> bool:
     return (existing := s3_bucket.objects.get(key)) and not isinstance(existing, S3DeleteMarker)
+
+
+def verify_object_equality_precondition_write(
+    s3_bucket: S3Bucket,
+    key: ObjectKey,
+    etag: str,
+    initiated: datetime.datetime | None = None,
+) -> None:
+    existing = s3_bucket.objects.get(key)
+    if not existing or isinstance(existing, S3DeleteMarker):
+        raise NoSuchKey("The specified key does not exist.", Key=key)
+
+    if not existing.etag == etag.strip('"'):
+        raise PreconditionFailed(
+            "At least one of the pre-conditions you specified did not hold",
+            Condition="If-Match",
+        )
+
+    if initiated and initiated < existing.last_modified:
+        raise ConditionalRequestConflict(
+            "The conditional request cannot succeed due to a conflicting operation against this resource.",
+            Condition="If-Match",
+            Key=key,
+        )

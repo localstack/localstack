@@ -116,6 +116,7 @@ def test_default_localstack_container_configurator(
     from localstack import config
 
     monkeypatch.setenv("DEBUG", "1")
+    monkeypatch.setenv("LOCALSTACK_AUTH_TOKEN", "")
     monkeypatch.setenv("LOCALSTACK_API_KEY", "")
     monkeypatch.setenv("ACTIVATE_PRO", "0")
     monkeypatch.setattr(config, "DEBUG", True)
@@ -162,3 +163,71 @@ def test_default_localstack_container_configurator(
     ports = diagnose["docker-inspect"]["NetworkSettings"]["Ports"]
     for port in external_service_ports:
         assert ports[f"{port}/tcp"] == [{"HostIp": "127.0.0.1", "HostPort": f"{port}"}]
+
+
+def test_container_configurator_deprecation_warning(container_factory, monkeypatch, caplog):
+    # set non-prefixed well-known environment variable on the mocked OS env
+    monkeypatch.setenv("SERVICES", "1")
+
+    # config the container
+    container: Container = container_factory()
+    configure_container(container)
+
+    # assert the deprecation warning
+    assert "Non-prefixed environment variable" in caplog.text
+    assert "SERVICES" in container.config.env_vars
+
+
+def test_container_configurator_no_deprecation_warning_on_prefix(
+    container_factory, monkeypatch, caplog
+):
+    # set non-prefixed well-known environment variable on the mocked OS env
+    monkeypatch.setenv("LOCALSTACK_SERVICES", "1")
+
+    container: Container = container_factory()
+    configure_container(container)
+
+    assert "Non-prefixed environment variable" not in caplog.text
+    assert "LOCALSTACK_SERVICES" in container.config.env_vars
+
+
+def test_container_configurator_no_deprecation_warning_for_ci_env_var(
+    container_factory, monkeypatch, caplog
+):
+    # set the "CI" env var indicating that we are running in a CI environment
+    monkeypatch.setenv("CI", "1")
+
+    container: Container = container_factory()
+    configure_container(container)
+
+    assert "Non-prefixed environment variable" not in caplog.text
+    assert "CI" in container.config.env_vars
+
+
+def test_container_configurator_no_deprecation_warning_on_profile(
+    container_factory, monkeypatch, caplog, tmp_path
+):
+    from localstack import config
+
+    # create a test profile
+    tmp_config_dir = tmp_path
+    test_profile = tmp_config_dir / "testprofile.env"
+    test_profile.write_text(
+        textwrap.dedent(
+            """
+            SERVICES=1
+            """
+        ).strip()
+    )
+
+    # patch the profile config / env
+    monkeypatch.setattr(config, "CONFIG_DIR", tmp_config_dir)
+    monkeypatch.setattr(config, "LOADED_PROFILES", ["testprofile"])
+    monkeypatch.setenv("SERVICES", "1")
+
+    container: Container = container_factory()
+    configure_container(container)
+
+    # assert that profile env vars do not raise a deprecation warning
+    assert "Non-prefixed environment variable SERVICES" not in caplog.text
+    assert "SERVICES" in container.config.env_vars

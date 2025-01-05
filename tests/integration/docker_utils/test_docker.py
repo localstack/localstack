@@ -367,7 +367,7 @@ class TestDockerClient:
         finally:
             docker_client.remove_container(container_name)
 
-    # TODO: currently failing under Podman in CI (works locally under MacOS)
+    # TODO: currently failing under Podman in CI (works locally under macOS)
     @pytest.mark.skipif(
         condition=_is_podman_test(),
         reason="Podman get_networks(..) does not return list of networks in CI",
@@ -443,7 +443,7 @@ class TestDockerClient:
                 container_name_or_id=dummy_container.container_id, container_network=network_name
             )
 
-    # TODO: currently failing under Podman in CI (works locally under MacOS)
+    # TODO: currently failing under Podman in CI (works locally under macOS)
     @pytest.mark.skipif(
         condition=_is_podman_test(),
         reason="Podman get_networks(..) does not return list of networks in CI",
@@ -471,7 +471,7 @@ class TestDockerClient:
                 container_name_or_id=dummy_container.container_id, container_network=network_name
             )
 
-    # TODO: currently failing under Podman in CI (works locally under MacOS)
+    # TODO: currently failing under Podman in CI (works locally under macOS)
     @pytest.mark.skipif(
         condition=_is_podman_test(),
         reason="Podman get_networks(..) does not return list of networks in CI",

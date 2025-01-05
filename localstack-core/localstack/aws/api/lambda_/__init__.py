@@ -56,11 +56,13 @@ MaxProvisionedConcurrencyConfigListItems = int
 MaximumBatchingWindowInSeconds = int
 MaximumConcurrency = int
 MaximumEventAgeInSeconds = int
+MaximumNumberOfPollers = int
 MaximumRecordAgeInSeconds = int
 MaximumRetryAttempts = int
 MaximumRetryAttemptsEventSourceMapping = int
 MemorySize = int
 Method = str
+MinimumNumberOfPollers = int
 NameSpacedFunctionArn = str
 NamespacedFunctionName = str
 NamespacedStatementId = str
@@ -92,6 +94,8 @@ SubnetId = str
 TagKey = str
 TagValue = str
 TaggableResource = str
+TagsErrorCode = str
+TagsErrorMessage = str
 Timeout = int
 Timestamp = str
 Topic = str
@@ -126,6 +130,10 @@ class CodeSigningPolicy(StrEnum):
 
 class EndPointType(StrEnum):
     KAFKA_BOOTSTRAP_SERVERS = "KAFKA_BOOTSTRAP_SERVERS"
+
+
+class EventSourceMappingMetric(StrEnum):
+    EventCount = "EventCount"
 
 
 class EventSourcePosition(StrEnum):
@@ -263,6 +271,8 @@ class Runtime(StrEnum):
     provided_al2023 = "provided.al2023"
     python3_12 = "python3.12"
     java21 = "java21"
+    python3_13 = "python3.13"
+    nodejs22_x = "nodejs22.x"
 
 
 class SnapStartApplyOn(StrEnum):
@@ -760,6 +770,18 @@ class CreateCodeSigningConfigResponse(TypedDict, total=False):
     CodeSigningConfig: CodeSigningConfig
 
 
+class ProvisionedPollerConfig(TypedDict, total=False):
+    MinimumPollers: Optional[MinimumNumberOfPollers]
+    MaximumPollers: Optional[MaximumNumberOfPollers]
+
+
+EventSourceMappingMetricList = List[EventSourceMappingMetric]
+
+
+class EventSourceMappingMetricsConfig(TypedDict, total=False):
+    Metrics: Optional[EventSourceMappingMetricList]
+
+
 class DocumentDBEventSourceConfig(TypedDict, total=False):
     DatabaseName: Optional[DatabaseName]
     CollectionName: Optional[CollectionName]
@@ -846,6 +868,8 @@ class CreateEventSourceMappingRequest(ServiceRequest):
     ScalingConfig: Optional[ScalingConfig]
     DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
     KMSKeyArn: Optional[KMSKeyArn]
+    MetricsConfig: Optional[EventSourceMappingMetricsConfig]
+    ProvisionedPollerConfig: Optional[ProvisionedPollerConfig]
 
 
 class LoggingConfig(TypedDict, total=False):
@@ -912,6 +936,7 @@ class FunctionCode(TypedDict, total=False):
     S3Key: Optional[S3Key]
     S3ObjectVersion: Optional[S3ObjectVersion]
     ImageUri: Optional[String]
+    SourceKMSKeyArn: Optional[KMSKeyArn]
 
 
 class CreateFunctionRequest(ServiceRequest):
@@ -1054,6 +1079,8 @@ class EventSourceMappingConfiguration(TypedDict, total=False):
     KMSKeyArn: Optional[KMSKeyArn]
     FilterCriteriaError: Optional[FilterCriteriaError]
     EventSourceMappingArn: Optional[EventSourceMappingArn]
+    MetricsConfig: Optional[EventSourceMappingMetricsConfig]
+    ProvisionedPollerConfig: Optional[ProvisionedPollerConfig]
 
 
 EventSourceMappingsList = List[EventSourceMappingConfiguration]
@@ -1065,6 +1092,7 @@ class FunctionCodeLocation(TypedDict, total=False):
     Location: Optional[String]
     ImageUri: Optional[String]
     ResolvedImageUri: Optional[String]
+    SourceKMSKeyArn: Optional[String]
 
 
 class RuntimeVersionError(TypedDict, total=False):
@@ -1243,10 +1271,16 @@ class GetFunctionRequest(ServiceRequest):
     Qualifier: Optional[Qualifier]
 
 
+class TagsError(TypedDict, total=False):
+    ErrorCode: TagsErrorCode
+    Message: TagsErrorMessage
+
+
 class GetFunctionResponse(TypedDict, total=False):
     Configuration: Optional[FunctionConfiguration]
     Code: Optional[FunctionCodeLocation]
     Tags: Optional[Tags]
+    TagsError: Optional[TagsError]
     Concurrency: Optional[Concurrency]
 
 
@@ -1725,6 +1759,8 @@ class UpdateEventSourceMappingRequest(ServiceRequest):
     ScalingConfig: Optional[ScalingConfig]
     DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
     KMSKeyArn: Optional[KMSKeyArn]
+    MetricsConfig: Optional[EventSourceMappingMetricsConfig]
+    ProvisionedPollerConfig: Optional[ProvisionedPollerConfig]
 
 
 class UpdateFunctionCodeRequest(ServiceRequest):
@@ -1738,6 +1774,7 @@ class UpdateFunctionCodeRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     RevisionId: Optional[String]
     Architectures: Optional[ArchitecturesList]
+    SourceKMSKeyArn: Optional[KMSKeyArn]
 
 
 class UpdateFunctionConfigurationRequest(ServiceRequest):
@@ -1880,6 +1917,8 @@ class LambdaApi:
         scaling_config: ScalingConfig = None,
         document_db_event_source_config: DocumentDBEventSourceConfig = None,
         kms_key_arn: KMSKeyArn = None,
+        metrics_config: EventSourceMappingMetricsConfig = None,
+        provisioned_poller_config: ProvisionedPollerConfig = None,
         **kwargs,
     ) -> EventSourceMappingConfiguration:
         raise NotImplementedError
@@ -2482,6 +2521,8 @@ class LambdaApi:
         scaling_config: ScalingConfig = None,
         document_db_event_source_config: DocumentDBEventSourceConfig = None,
         kms_key_arn: KMSKeyArn = None,
+        metrics_config: EventSourceMappingMetricsConfig = None,
+        provisioned_poller_config: ProvisionedPollerConfig = None,
         **kwargs,
     ) -> EventSourceMappingConfiguration:
         raise NotImplementedError
@@ -2500,6 +2541,7 @@ class LambdaApi:
         dry_run: Boolean = None,
         revision_id: String = None,
         architectures: ArchitecturesList = None,
+        source_kms_key_arn: KMSKeyArn = None,
         **kwargs,
     ) -> FunctionConfiguration:
         raise NotImplementedError

@@ -1,18 +1,33 @@
 import copy
 from typing import Optional
 
-from localstack.aws.api.stepfunctions import HistoryEventType, MapStateStartedEventDetails
+from localstack.aws.api.stepfunctions import (
+    EvaluationFailedEventDetails,
+    HistoryEventType,
+    MapStateStartedEventDetails,
+)
 from localstack.services.stepfunctions.asl.component.common.catch.catch_decl import CatchDecl
 from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import CatchOutcome
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
+    FailureEventException,
 )
-from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
+    StatesErrorName,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
+    StatesErrorNameType,
+)
+from localstack.services.stepfunctions.asl.component.common.parargs import Parameters, Parargs
 from localstack.services.stepfunctions.asl.component.common.path.items_path import ItemsPath
 from localstack.services.stepfunctions.asl.component.common.path.result_path import ResultPath
 from localstack.services.stepfunctions.asl.component.common.result_selector import ResultSelector
 from localstack.services.stepfunctions.asl.component.common.retry.retry_decl import RetryDecl
 from localstack.services.stepfunctions.asl.component.common.retry.retry_outcome import RetryOutcome
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
+    JSONPATH_ROOT_PATH,
+    StringJsonPath,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.execute_state import (
     ExecutionState,
 )
@@ -21,6 +36,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
     ItemSelector,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.items.items import (
+    Items,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.distributed_item_processor import (
     DistributedItemProcessor,
@@ -64,8 +82,8 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     ResultWriter,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.tolerated_failure import (
-    ToleratedFailureCount,
     ToleratedFailureCountDecl,
+    ToleratedFailureCountInt,
     ToleratedFailurePercentage,
     ToleratedFailurePercentageDecl,
 )
@@ -75,7 +93,8 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 
 
 class StateMap(ExecutionState):
-    items_path: ItemsPath
+    items: Optional[Items]
+    items_path: Optional[ItemsPath]
     iteration_component: IterationComponent
     item_reader: Optional[ItemReader]
     item_selector: Optional[ItemSelector]
@@ -98,13 +117,21 @@ class StateMap(ExecutionState):
 
     def from_state_props(self, state_props: StateProps) -> None:
         super(StateMap, self).from_state_props(state_props)
-        self.items_path = state_props.get(ItemsPath) or ItemsPath()
+        if self._is_language_query_jsonpath():
+            self.items = None
+            self.items_path = state_props.get(ItemsPath) or ItemsPath(
+                string_sampler=StringJsonPath(JSONPATH_ROOT_PATH)
+            )
+        else:
+            # TODO: add snapshot test to assert what missing definitions of items means for a states map
+            self.items_path = None
+            self.items = state_props.get(Items)
         self.item_reader = state_props.get(ItemReader)
         self.item_selector = state_props.get(ItemSelector)
-        self.parameters = state_props.get(Parameters)
+        self.parameters = state_props.get(Parargs)
         self.max_concurrency_decl = state_props.get(MaxConcurrencyDecl) or MaxConcurrency()
         self.tolerated_failure_count_decl = (
-            state_props.get(ToleratedFailureCountDecl) or ToleratedFailureCount()
+            state_props.get(ToleratedFailureCountDecl) or ToleratedFailureCountInt()
         )
         self.tolerated_failure_percentage_decl = (
             state_props.get(ToleratedFailurePercentageDecl) or ToleratedFailurePercentage()
@@ -145,11 +172,16 @@ class StateMap(ExecutionState):
         # event but is logged with event IDs coherent with state level fields. To adhere to this quirk, an evaluation
         # frame from this point is created for the evaluation of Tolerance fields following the state start event.
         frame: Environment = env.open_frame()
-        frame.inp = copy.deepcopy(env.inp)
+        frame.states.reset(input_value=env.states.get_input())
         frame.stack = copy.deepcopy(env.stack)
 
         try:
-            self.items_path.eval(env)
+            if self.items_path:
+                self.items_path.eval(env=env)
+
+            if self.items:
+                self.items.eval(env=env)
+
             if self.item_reader:
                 env.event_manager.add_event(
                     context=env.event_history_context,
@@ -161,6 +193,21 @@ class StateMap(ExecutionState):
                 input_items = None
             else:
                 input_items = env.stack.pop()
+                # TODO: This should probably be raised within an Items EvalComponent
+                if not isinstance(input_items, list):
+                    error_name = StatesErrorName(typ=StatesErrorNameType.StatesQueryEvaluationError)
+                    failure_event = FailureEvent(
+                        env=env,
+                        error_name=error_name,
+                        event_type=HistoryEventType.EvaluationFailed,
+                        event_details=EventDetails(
+                            evaluationFailedEventDetails=EvaluationFailedEventDetails(
+                                cause=f"Map state input must be an array but was: {type(input_items)}",
+                                error=error_name.error_name,
+                            )
+                        ),
+                    )
+                    raise FailureEventException(failure_event=failure_event)
                 env.event_manager.add_event(
                     context=env.event_history_context,
                     event_type=HistoryEventType.MapStateStarted,
@@ -237,15 +284,18 @@ class StateMap(ExecutionState):
 
     def _eval_state(self, env: Environment) -> None:
         # Initialise the retry counter for execution states.
-        env.context_object_manager.context_object["State"]["RetryCount"] = 0
+        env.states.context_object.context_object_data["State"]["RetryCount"] = 0
 
         # Attempt to evaluate the state's logic through until it's successful, caught, or retries have run out.
-        while True:
+        while env.is_running():
             try:
                 self._evaluate_with_timeout(env)
                 break
             except Exception as ex:
                 failure_event: FailureEvent = self._from_error(env=env, ex=ex)
+                error_output = self._construct_error_output_value(failure_event=failure_event)
+                env.states.set_error_output(error_output)
+                env.states.set_result(error_output)
 
                 if self.retry:
                     retry_outcome: RetryOutcome = self._handle_retry(
@@ -255,15 +305,25 @@ class StateMap(ExecutionState):
                         continue
 
                 if failure_event.event_type != HistoryEventType.ExecutionFailed:
+                    if (
+                        isinstance(ex, FailureEventException)
+                        and failure_event.event_type == HistoryEventType.EvaluationFailed
+                    ):
+                        env.event_manager.add_event(
+                            context=env.event_history_context,
+                            event_type=HistoryEventType.EvaluationFailed,
+                            event_details=EventDetails(
+                                evaluationFailedEventDetails=ex.get_evaluation_failed_event_details(),
+                            ),
+                        )
                     env.event_manager.add_event(
                         context=env.event_history_context,
                         event_type=HistoryEventType.MapStateFailed,
                     )
 
                 if self.catch:
-                    catch_outcome: CatchOutcome = self._handle_catch(
-                        env=env, failure_event=failure_event
-                    )
+                    self._handle_catch(env=env, failure_event=failure_event)
+                    catch_outcome: CatchOutcome = env.stack[-1]
                     if catch_outcome == CatchOutcome.Caught:
                         break
 

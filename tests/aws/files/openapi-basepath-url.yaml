@@ -27,6 +27,8 @@ paths:
               method.response.header.Access-Control-Allow-Origin: "'*'"
         requestParameters:
           integration.request.header.X-Amz-Invocation-Type: "'Event'"
+          integration.request.header.double-single: "'True'"
+          integration.request.header.nothing: true
         requestTemplates:
           application/json: '{"statusCode": 200}'
         passthroughBehavior: when_no_match

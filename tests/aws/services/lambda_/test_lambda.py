@@ -21,7 +21,7 @@ from botocore.response import StreamingBody
 from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 
 from localstack import config
-from localstack.aws.api.lambda_ import Architecture, InvokeMode, Runtime
+from localstack.aws.api.lambda_ import Architecture, InvocationType, InvokeMode, Runtime
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.services.lambda_.provider import TAG_KEY_CUSTOM_URL
 from localstack.services.lambda_.runtimes import RUNTIMES_AGGREGATED
@@ -73,6 +73,7 @@ TEST_LAMBDA_PYTHON_RUNTIME_EXIT_SEGFAULT = os.path.join(
 )
 TEST_LAMBDA_PYTHON_HANDLER_ERROR = os.path.join(THIS_FOLDER, "functions/lambda_handler_error.py")
 TEST_LAMBDA_PYTHON_HANDLER_EXIT = os.path.join(THIS_FOLDER, "functions/lambda_handler_exit.py")
+TEST_LAMBDA_PYTHON_NONE = os.path.join(THIS_FOLDER, "functions/lambda_none.py")
 TEST_LAMBDA_AWS_PROXY = os.path.join(THIS_FOLDER, "functions/lambda_aws_proxy.py")
 TEST_LAMBDA_AWS_PROXY_FORMAT = os.path.join(THIS_FOLDER, "functions/lambda_aws_proxy_format.py")
 TEST_LAMBDA_PYTHON_S3_INTEGRATION = os.path.join(THIS_FOLDER, "functions/lambda_s3_integration.py")
@@ -81,6 +82,7 @@ TEST_LAMBDA_PYTHON_S3_INTEGRATION_FUNCTION_VERSION = os.path.join(
 )
 TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_integration.js")
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_handler.js")
+TEST_LAMBDA_NODEJS_NONE = os.path.join(THIS_FOLDER, "functions/lambda_none.js")
 TEST_LAMBDA_NODEJS_ES6 = os.path.join(THIS_FOLDER, "functions/lambda_handler_es6.mjs")
 TEST_LAMBDA_NODEJS_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.js")
 TEST_LAMBDA_NODEJS_APIGW_INTEGRATION = os.path.join(THIS_FOLDER, "functions/apigw_integration.js")
@@ -99,6 +101,9 @@ TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS = os.path.join(
 )
 TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, "functions/lambda_environment.py")
 
+TEST_LAMBDA_EVENT_SOURCE_MAPPING_SEND_MESSAGE = os.path.join(
+    THIS_FOLDER, "functions/lambda_event_source_mapping_send_message.py"
+)
 TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(THIS_FOLDER, "functions/lambda_send_message.py")
 TEST_LAMBDA_PUT_ITEM_FILE = os.path.join(THIS_FOLDER, "functions/lambda_put_item.py")
 TEST_LAMBDA_START_EXECUTION_FILE = os.path.join(THIS_FOLDER, "functions/lambda_start_execution.py")
@@ -1524,6 +1529,53 @@ class TestLambdaFeatures:
         snapshot.match("invoke-result", result)
 
         assert 202 == result["StatusCode"]
+
+        # Assert that the function gets invoked by checking the logs.
+        # This also ensures that we wait until the invocation is done before deleting the function.
+        expected = [".*{}"]
+
+        def check_logs():
+            check_lambda_logs(function_name, expected_lines=expected)
+
+        retry(check_logs, retries=15)
+
+    @pytest.mark.parametrize(
+        "invocation_type", [InvocationType.RequestResponse, InvocationType.Event]
+    )
+    @pytest.mark.parametrize(
+        ["lambda_fn", "lambda_runtime"],
+        [
+            (TEST_LAMBDA_PYTHON_NONE, Runtime.python3_12),
+            (TEST_LAMBDA_NODEJS_NONE, Runtime.nodejs18_x),
+        ],
+        ids=[
+            "python",
+            "nodejs",
+        ],
+    )
+    @markers.aws.validated
+    def test_invocation_type_no_return_payload(
+        self,
+        snapshot,
+        create_lambda_function,
+        invocation_type,
+        aws_client,
+        check_lambda_logs,
+        lambda_fn,
+        lambda_runtime,
+    ):
+        """Check invocation response when Lambda does not return a payload"""
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=lambda_fn,
+            runtime=lambda_runtime,
+        )
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name, Payload=b"{}", InvocationType=invocation_type
+        )
+        result = read_streams(result)
+        snapshot.match("invoke-result", result)
 
         # Assert that the function gets invoked by checking the logs.
         # This also ensures that we wait until the invocation is done before deleting the function.

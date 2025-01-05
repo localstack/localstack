@@ -13,7 +13,13 @@ from functools import wraps
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Union
 
 from localstack import config, constants
-from localstack.config import HostAndPort, default_ip, is_env_not_false, is_env_true
+from localstack.config import (
+    HostAndPort,
+    default_ip,
+    is_env_not_false,
+    is_env_true,
+    load_environment,
+)
 from localstack.constants import VERSION
 from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
@@ -455,7 +461,7 @@ def get_docker_image_to_start():
     image_name = os.environ.get("IMAGE_NAME")
     if not image_name:
         image_name = constants.DOCKER_IMAGE_NAME
-        if is_api_key_configured():
+        if is_auth_token_configured():
             image_name = constants.DOCKER_IMAGE_NAME_PRO
     return image_name
 
@@ -502,10 +508,42 @@ class ContainerConfigurators:
     @staticmethod
     def config_env_vars(cfg: ContainerConfiguration):
         """Sets all env vars from config.CONFIG_ENV_VARS."""
+
+        profile_env = {}
+        if config.LOADED_PROFILES:
+            load_environment(profiles=",".join(config.LOADED_PROFILES), env=profile_env)
+
+        non_prefixed_env_vars = []
         for env_var in config.CONFIG_ENV_VARS:
             value = os.environ.get(env_var, None)
             if value is not None:
+                if (
+                    env_var != "CI"
+                    and not env_var.startswith("LOCALSTACK_")
+                    and env_var not in profile_env
+                ):
+                    # Collect all env vars that are directly forwarded from the system env
+                    # to the container which has not been prefixed with LOCALSTACK_ here.
+                    # Suppress the "CI" env var.
+                    # Suppress if the env var was set from the profile.
+                    non_prefixed_env_vars.append(env_var)
                 cfg.env_vars[env_var] = value
+
+        # collectively log deprecation warnings for non-prefixed sys env vars
+        if non_prefixed_env_vars:
+            from localstack.utils.analytics import log
+
+            for non_prefixed_env_var in non_prefixed_env_vars:
+                # Show a deprecation warning for each individual env var collected above
+                LOG.warning(
+                    "Non-prefixed environment variable %(env_var)s is forwarded to the LocalStack container! "
+                    "Please use `LOCALSTACK_%(env_var)s` instead of %(env_var)s to explicitly mark this environment variable to be forwarded form the CLI to the LocalStack Runtime.",
+                    {"env_var": non_prefixed_env_var},
+                )
+
+            log.event(
+                event="non_prefixed_cli_env_vars", payload={"env_vars": non_prefixed_env_vars}
+            )
 
     @staticmethod
     def random_gateway_port(cfg: ContainerConfiguration):
@@ -1229,7 +1267,7 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
     # Set up signal handler, to enable clean shutdown across different operating systems.
     #  There are subtle differences across operating systems and terminal emulators when it
     #  comes to handling of CTRL-C - in particular, Linux sends SIGINT to the parent process,
-    #  whereas MacOS sends SIGINT to the process group, which can result in multiple SIGINT signals
+    #  whereas macOS sends SIGINT to the process group, which can result in multiple SIGINT signals
     #  being received (e.g., when running the localstack CLI as part of a "npm run .." script).
     #  Hence, using a shutdown handler and synchronization event here, to avoid inconsistencies.
     def shutdown_handler(*args):
@@ -1358,10 +1396,11 @@ def in_ci():
     return False
 
 
-def is_api_key_configured() -> bool:
+def is_auth_token_configured() -> bool:
     """Whether an API key is set in the environment."""
     return (
         True
-        if os.environ.get("LOCALSTACK_API_KEY") and os.environ.get("LOCALSTACK_API_KEY").strip()
+        if os.environ.get("LOCALSTACK_AUTH_TOKEN", "").strip()
+        or os.environ.get("LOCALSTACK_API_KEY", "").strip()
         else False
     )

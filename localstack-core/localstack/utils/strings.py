@@ -203,3 +203,19 @@ def prepend_with_slash(input: str) -> str:
     if not input.startswith("/"):
         return f"/{input}"
     return input
+
+
+def key_value_pairs_to_dict(pairs: str, delimiter: str = ",", separator: str = "=") -> dict:
+    """
+    Converts a string of key-value pairs to a dictionary.
+
+    Args:
+        pairs (str): A string containing key-value pairs separated by a delimiter.
+        delimiter (str): The delimiter used to separate key-value pairs (default is comma ',').
+        separator (str): The separator between keys and values (default is '=').
+
+    Returns:
+        dict: A dictionary containing the parsed key-value pairs.
+    """
+    splits = [split_pair.partition(separator) for split_pair in pairs.split(delimiter)]
+    return {key.strip(): value.strip() for key, _, value in splits}

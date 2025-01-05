@@ -60,11 +60,12 @@ class VersionState:
 class Invocation:
     payload: bytes
     invoked_arn: str
-    client_context: Optional[str]
+    client_context: str | None
     invocation_type: InvocationType
     invoke_time: datetime
     # = invocation_id
     request_id: str
+    trace_context: dict
 
 
 InitializationType = Literal["on-demand", "provisioned-concurrency"]
@@ -595,7 +596,6 @@ class Function:
     provisioned_concurrency_configs: dict[str, ProvisionedConcurrencyConfiguration] = (
         dataclasses.field(default_factory=dict)
     )
-    tags: dict[str, str] | None = None
 
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
     next_version: int = 1

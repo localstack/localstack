@@ -2,9 +2,10 @@ import enum
 from typing import Final
 
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLParser import ASLParser
-from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
+from localstack.services.stepfunctions.asl.component.common.parargs import Parameters
 from localstack.services.stepfunctions.asl.component.common.path.input_path import InputPath
 from localstack.services.stepfunctions.asl.component.common.path.result_path import ResultPath
+from localstack.services.stepfunctions.asl.component.common.query_language import QueryLanguage
 from localstack.services.stepfunctions.asl.component.common.result_selector import ResultSelector
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
 from localstack.services.stepfunctions.asl.component.state.state_choice.state_choice import (
@@ -69,13 +70,17 @@ class TestStatePreprocessor(Preprocessor):
     STATE_NAME: Final[str] = "TestState"
 
     def visitState_decl_body(self, ctx: ASLParser.State_decl_bodyContext) -> TestStateProgram:
+        self._open_query_language_scope(ctx)
         state_props = TestStateStateProps()
         state_props.name = self.STATE_NAME
         for child in ctx.children:
             cmp = self.visit(child)
             state_props.add(cmp)
         state_field = self._common_state_field_of(state_props=state_props)
+        if state_props.get(QueryLanguage) is None:
+            state_props.add(self._get_current_query_language())
         _decorate_state_field(state_field)
+        self._close_query_language_scope()
         return TestStateProgram(state_field)
 
     def visitInput_path_decl(self, ctx: ASLParser.Input_path_declContext) -> InputPath:

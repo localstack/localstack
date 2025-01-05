@@ -1,0 +1,40 @@
+{
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "QueryLanguage": "JSONata",
+      "Type": "Pass",
+      "Output": {
+        "constant_null": null,
+        "constant_int": 0,
+        "constant_float": 0.1,
+        "constant_bool": true,
+        "constant_str": "constant string",
+        "constant_not_jsonata": " {% states.input %} ",
+        "constant_varpath_states": "$states.input",
+        "constant_varpath": "$no.such.var.path",
+        "constant_jp_input": "$",
+        "constant_jp_input.$": "$",
+        "constant_jp_input_path": "$.input_value",
+        "constant_jp_context": "$$",
+        "constant_if": "States.Format('Format:{}', 101)",
+        "constant_lst_empty": [],
+        "constant_lst": [null, 0, 0.1, true, [], {"constant": 0}, " {% states.input %} ", "$states.input", "$no.such.var.path"],
+        "constant_obj_empty": {},
+        "constant_obj": {
+          "in_obj_constant_null": null,
+          "in_obj_constant_int": 0,
+          "in_obj_constant_float": 0.1,
+          "in_obj_constant_bool": true,
+          "in_obj_constant_str": "constant string",
+          "in_obj_constant_not_jsonata": " {% states.input %} ",
+          "in_obj_constant_lst_empty": [],
+          "in_obj_constant_lst": [null, 0, 0.1, true, [], {"constant": 0}, " {% states.input %} ", "$states.input", "$no.such.var.path"],
+          "in_obj_constant_obj_empty": {},
+          "in_obj_constant_obj": { "constant": 0 }
+        }
+      },
+      "End": true
+    }
+  }
+}

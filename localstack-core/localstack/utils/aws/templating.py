@@ -7,13 +7,21 @@ import airspeed
 from localstack.utils.objects import recurse_object
 from localstack.utils.patch import patch
 
+SOURCE_NAMESPACE_VARIABLE = "__LOCALSTACK_SERVICE_SOURCE__"
+APIGW_SOURCE = "APIGW"
+APPSYNC_SOURCE = "APPSYNC"
 
-# remove this patch fails test_api_gateway_kinesis_integration
-# we need to validate against AWS behavior before removing this patch
+
 @patch(airspeed.operators.VariableExpression.calculate)
-def calculate(fn, self, *args, **kwarg):
-    result = fn(self, *args, **kwarg)
-    result = "" if result is None else result
+def calculate(fn, self, namespace, loader, global_namespace=None):
+    result = fn(self, namespace, loader, global_namespace)
+
+    if global_namespace is None:
+        global_namespace = namespace
+    if (source := global_namespace.top().get(SOURCE_NAMESPACE_VARIABLE)) and source == APIGW_SOURCE:
+        # Apigateway does not return None but returns an empty string instead
+        result = "" if result is None else result
+
     return result
 
 
@@ -117,11 +125,12 @@ class VtlTemplate:
             rendered_template = json.loads(rendered_template)
         return rendered_template
 
-    def prepare_namespace(self, variables: Dict[str, Any]) -> Dict:
+    def prepare_namespace(self, variables: Dict[str, Any], source: str = "") -> Dict:
         namespace = dict(variables or {})
         namespace.setdefault("context", {})
         if not namespace.get("util"):
             namespace["util"] = VelocityUtil()
+        namespace[SOURCE_NAMESPACE_VARIABLE] = source
         return namespace
 
 

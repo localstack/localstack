@@ -1,0 +1,18 @@
+{
+  "StartAt": "Init",
+  "States": {
+    "Init": {
+      "Type": "Pass",
+      "Assign": {
+        "var_constant_1": 1
+      },
+      "Next": "State0"
+    },
+    "State0": {
+      "QueryLanguage": "JSONata",
+      "Type": "Pass",
+      "Output": "{% $sum($states.input.input_values) + $var_constant_1 %}",
+      "End": true
+    }
+  }
+}

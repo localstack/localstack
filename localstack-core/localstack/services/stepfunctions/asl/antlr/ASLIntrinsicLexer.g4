@@ -8,6 +8,9 @@ CONTEXT_PATH_STRING: DOLLAR DOLLAR JSON_PATH_BODY;
 
 JSON_PATH_STRING: DOLLAR JSON_PATH_BODY;
 
+STRING_VARIABLE: DOLLAR IDENTIFIER JSON_PATH_BODY;
+
+// TODO: JSONPath body composition may need strenghening to support features such as filtering conditions.
 fragment JSON_PATH_BODY: JSON_PATH_BRACK? (DOT IDENTIFIER? JSON_PATH_BRACK?)*;
 
 fragment JSON_PATH_BRACK: '[' (JSON_PATH_BRACK | ~[\]])* ']';

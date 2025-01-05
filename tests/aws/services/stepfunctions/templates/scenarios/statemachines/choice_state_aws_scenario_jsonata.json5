@@ -1,0 +1,40 @@
+{
+  "StartAt": "ChoiceStateX",
+  "States": {
+    "ChoiceStateX": {
+      "Type": "Choice",
+      "QueryLanguage": "JSONata",
+      "Choices": [
+        {
+          "Condition": "{% $not($states.input.type = 'Private') %}",
+          "Next": "Public"
+        },
+        {
+          "Condition": "{% $states.input.value = 0 %}",
+          "Next": "ValueIsZero"
+        },
+        {
+          "Condition": "{% $states.input.value >= 20 and $states.input.value < 30 %}",
+          "Next": "ValueInTwenties"
+        }
+      ],
+      "Default": "DefaultState"
+    },
+    "Public": {
+      "Type": "Pass",
+      "End": true
+    },
+    "ValueIsZero": {
+      "Type": "Pass",
+      "End": true
+    },
+    "ValueInTwenties": {
+      "Type": "Pass",
+      "End": true
+    },
+    "DefaultState": {
+      "Type": "Fail",
+      "Cause": "No Matches!"
+    }
+  }
+}

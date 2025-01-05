@@ -22,12 +22,11 @@ from localstack.services.lambda_.event_source_mapping.pipe_utils import (
     get_datetime_from_timestamp,
     get_internal_client,
 )
-from localstack.services.lambda_.event_source_mapping.pollers.poller import Poller
-from localstack.services.lambda_.event_source_mapping.pollers.sqs_poller import get_queue_url
-from localstack.services.lambda_.event_source_mapping.senders.sender import (
-    PartialFailureSenderError,
-    SenderError,
+from localstack.services.lambda_.event_source_mapping.pollers.poller import (
+    Poller,
+    get_batch_item_failures,
 )
+from localstack.services.lambda_.event_source_mapping.pollers.sqs_poller import get_queue_url
 from localstack.utils.aws.arns import parse_arn
 
 LOG = logging.getLogger(__name__)
@@ -126,17 +125,17 @@ class StreamPoller(Poller):
             self.iterator_over_shards = iter(self.shards.items())
 
         current_shard_tuple = next(self.iterator_over_shards, None)
-        if current_shard_tuple:
-            try:
-                self.poll_events_from_shard(*current_shard_tuple)
-            # TODO: implement exponential back-off for errors in general
-            except PipeInternalError:
-                # TODO: standardize logging
-                # Ignore and wait for the next polling interval, which will do retry
-                pass
-        else:
-            # Set current shard iterator to None to re-start round-robin at the first shard
-            self.iterator_over_shards = None
+        if not current_shard_tuple:
+            self.iterator_over_shards = iter(self.shards.items())
+            current_shard_tuple = next(self.iterator_over_shards, None)
+
+        try:
+            self.poll_events_from_shard(*current_shard_tuple)
+        # TODO: implement exponential back-off for errors in general
+        except PipeInternalError:
+            # TODO: standardize logging
+            # Ignore and wait for the next polling interval, which will do retry
+            pass
 
     def poll_events_from_shard(self, shard_id: str, shard_iterator: str):
         abort_condition = None
@@ -192,7 +191,7 @@ class StreamPoller(Poller):
             except PartialBatchFailureError as ex:
                 # TODO: add tests for partial batch failure scenarios
                 if (
-                    self.stream_parameters["OnPartialBatchItemFailure"]
+                    self.stream_parameters.get("OnPartialBatchItemFailure")
                     == OnPartialBatchItemFailureStreams.AUTOMATIC_BISECT
                 ):
                     # TODO: implement and test splitting batches in half until batch size 1
@@ -200,10 +199,34 @@ class StreamPoller(Poller):
                     LOG.warning(
                         "AUTOMATIC_BISECT upon partial batch item failure is not yet implemented. Retrying the entire batch."
                     )
-                error_payload = ex.partial_failure_payload
-                # let entire batch fail (ideally raise BatchFailureError)
-            except (SenderError, PartialFailureSenderError, BatchFailureError, Exception) as ex:
-                if isinstance(ex, (SenderError, PartialFailureSenderError, BatchFailureError)):
+                error_payload = ex.error
+
+                # Extract all sequence numbers from events in batch. This allows us to fail the whole batch if
+                # an unknown itemidentifier is returned.
+                batch_sequence_numbers = {
+                    self.get_sequence_number(event) for event in matching_events
+                }
+
+                # If the batchItemFailures array contains multiple items, Lambda uses the record with the lowest sequence number as the checkpoint.
+                # Lambda then retries all records starting from that checkpoint.
+                failed_sequence_ids: list[int] | None = get_batch_item_failures(
+                    ex.partial_failure_payload, batch_sequence_numbers
+                )
+
+                # If None is returned, consider the entire batch a failure.
+                if failed_sequence_ids is None:
+                    continue
+
+                # This shouldn't be possible since a PartialBatchFailureError was raised
+                if len(failed_sequence_ids) == 0:
+                    assert failed_sequence_ids, "Invalid state encountered: PartialBatchFailureError raised but no batch item failures found."
+
+                lowest_sequence_id: str = min(failed_sequence_ids, key=int)
+
+                # Discard all successful events and re-process from sequence number of failed event
+                _, events = self.bisect_events(lowest_sequence_id, events)
+            except (BatchFailureError, Exception) as ex:
+                if isinstance(ex, BatchFailureError):
                     error_payload = ex.error
 
                 # FIXME partner_resource_arn is not defined in ESM
@@ -213,11 +236,9 @@ class StreamPoller(Poller):
                     self.partner_resource_arn or self.source_arn,
                     events,
                 )
-                attempts += 1
+            finally:
                 # Retry polling until the record expires at the source
-                if self.stream_parameters.get("MaximumRetryAttempts", -1) == -1:
-                    # TODO: handle iterator expired scenario
-                    return
+                attempts += 1
 
         # Send failed events to potential DLQ
         abort_condition = abort_condition or "RetryAttemptsExhausted"
@@ -262,12 +283,27 @@ class StreamPoller(Poller):
                 )
                 raise CustomerInvocationError from e
             elif "ResourceNotFoundException" in str(e):
-                LOG.warning(
-                    "Source stream %s does not exist: %s",
+                # FIXME: The 'Invalid ShardId in ShardIterator' error is returned by DynamoDB-local. Unsure when/why this is returned.
+                if "Invalid ShardId in ShardIterator" in str(e):
+                    LOG.warning(
+                        "Invalid ShardId in ShardIterator for %s. Re-initializing shards.",
+                        self.source_arn,
+                    )
+                    self.initialize_shards()
+                else:
+                    LOG.warning(
+                        "Source stream %s does not exist: %s",
+                        self.source_arn,
+                        e,
+                    )
+                    raise CustomerInvocationError from e
+            elif "TrimmedDataAccessException" in str(e):
+                LOG.debug(
+                    "Attempted to iterate over trimmed record or expired shard iterator %s for stream %s, re-initializing shards",
+                    shard_iterator,
                     self.source_arn,
-                    e,
                 )
-                raise CustomerInvocationError from e
+                self.initialize_shards()
             else:
                 LOG.debug("ClientError during get_records for stream %s: %s", self.source_arn, e)
                 raise PipeInternalError from e
@@ -326,3 +362,16 @@ class StreamPoller(Poller):
         if maximum_retry_attempts == -1:
             return False
         return attempts > maximum_retry_attempts
+
+    def bisect_events(
+        self, sequence_number: str, events: list[dict]
+    ) -> tuple[list[dict], list[dict]]:
+        """Splits list of events in two, where a sequence number equals a passed parameter `sequence_number`.
+        This is used for:
+          - `ReportBatchItemFailures`: Discarding events in a batch following a failure when is set.
+          - `BisectBatchOnFunctionError`: Used to split a failed batch in two when doing a retry (not implemented)."""
+        for i, event in enumerate(events):
+            if self.get_sequence_number(event) == sequence_number:
+                return events[:i], events[i:]
+
+        return events, []

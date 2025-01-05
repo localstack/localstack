@@ -4,7 +4,7 @@ from typing import Final, Optional
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEventException,
 )
-from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
+from localstack.services.stepfunctions.asl.component.common.parargs import Parameters
 from localstack.services.stepfunctions.asl.component.common.timeouts.timeout import EvalTimeoutError
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.item_reader_decl import (
     ItemReader,
@@ -22,13 +22,13 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     Job,
     JobPool,
 )
-from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import Item, Map
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramError,
     ProgramState,
     ProgramStopped,
 )
+from localstack.services.stepfunctions.asl.eval.states import ItemData, MapData
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 LOG = logging.getLogger(__name__)
@@ -67,12 +67,12 @@ class DistributedItemProcessorWorker(InlineItemProcessorWorker):
 
         job_output = None
         try:
-            env.context_object_manager.context_object["Map"] = Map(
-                Item=Item(Index=job.job_index, Value=job.job_input)
+            env.states.context_object.context_object_data["Map"] = MapData(
+                Item=ItemData(Index=job.job_index, Value=job.job_input)
             )
 
-            env.inp = job.job_input
-            env.stack.append(env.inp)
+            env.states.reset(job.job_input)
+            env.stack.append(env.states.get_input())
             self._eval_input(env_frame=env)
 
             job.job_program.eval(env)
@@ -94,7 +94,7 @@ class DistributedItemProcessorWorker(InlineItemProcessorWorker):
                 self._map_run_record.execution_counter.results_written.count()
                 self._map_run_record.execution_counter.running.offset(-1)
 
-                job_output = env.inp
+                job_output = env.states.get_input()
 
         except EvalTimeoutError as timeout_error:
             LOG.debug(
@@ -130,7 +130,7 @@ class DistributedItemProcessorWorker(InlineItemProcessorWorker):
             return
 
         # Evaluate the job.
-        job_frame = worker_frame.open_frame()
+        job_frame = worker_frame.open_inner_frame()
         self._eval_job(env=job_frame, job=job)
         worker_frame.delete_frame(job_frame)
 

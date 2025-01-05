@@ -1,5 +1,5 @@
 <p align="center">
-:zap: We are thrilled to announce the release of <a href="https://blog.localstack.cloud/2024-08-29-localstack-release-v-3-7-0/">LocalStack 3.7</a> :zap:
+:zap: We are thrilled to announce the release of <a href="https://blog.localstack.cloud/announcing-localstack-40-general-availability/">LocalStack 4.0</a> :zap:
 </p>
 
 <p align="center">
@@ -60,15 +60,15 @@ Install the LocalStack CLI through our [official LocalStack Brew Tap](https://gi
 brew install localstack/tap/localstack-cli
 ```
 
-### Binary download (MacOS, Linux, Windows)
+### Binary download (macOS, Linux, Windows)
 
 If Brew is not installed on your machine, you can download the pre-built LocalStack CLI binary directly:
 
 - Visit [localstack/localstack-cli](https://github.com/localstack/localstack-cli/releases/latest) and download the latest release for your platform.
 - Extract the downloaded archive to a directory included in your `PATH` variable:
-    -   For MacOS/Linux, use the command: `sudo tar xvzf ~/Downloads/localstack-cli-*-darwin-*-onefile.tar.gz -C /usr/local/bin`
+    -   For macOS/Linux, use the command: `sudo tar xvzf ~/Downloads/localstack-cli-*-darwin-*-onefile.tar.gz -C /usr/local/bin`
 
-### PyPI (MacOS, Linux, Windows)
+### PyPI (macOS, Linux, Windows)
 
 LocalStack is developed using Python. To install the LocalStack CLI using `pip`, run the following command:
 
@@ -93,7 +93,7 @@ Start LocalStack inside a Docker container by running:
   / /___/ /_/ / /__/ /_/ / /___/ / /_/ /_/ / /__/ ,<
  /_____/\____/\___/\__,_/_//____/\__/\__,_/\___/_/|_|
 
- 💻 LocalStack CLI 3.7.0
+ 💻 LocalStack CLI 4.0.0
  👤 Profile: default
 
 [12:47:13] starting LocalStack in Docker mode 🐳                       localstack.py:494

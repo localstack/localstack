@@ -14,12 +14,12 @@ def acm():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
-@aws_provider(api="apigateway")
+@aws_provider()
 def apigateway():
-    from localstack.services.apigateway.provider import ApigatewayProvider
+    from localstack.services.apigateway.next_gen.provider import ApigatewayNextGenProvider
     from localstack.services.moto import MotoFallbackDispatcher
 
-    provider = ApigatewayProvider()
+    provider = ApigatewayNextGenProvider()
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
@@ -29,6 +29,15 @@ def apigateway_next_gen():
     from localstack.services.moto import MotoFallbackDispatcher
 
     provider = ApigatewayNextGenProvider()
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
+@aws_provider(api="apigateway", name="legacy")
+def apigateway_legacy():
+    from localstack.services.apigateway.legacy.provider import ApigatewayProvider
+    from localstack.services.moto import MotoFallbackDispatcher
+
+    provider = ApigatewayProvider()
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
@@ -77,6 +86,27 @@ def cloudwatch_v2():
 @aws_provider()
 def dynamodb():
     from localstack.services.dynamodb.provider import DynamoDBProvider
+
+    provider = DynamoDBProvider()
+    return Service.for_provider(
+        provider,
+        dispatch_table_factory=lambda _provider: HttpFallbackDispatcher(
+            _provider, _provider.get_forward_url
+        ),
+    )
+
+
+@aws_provider(api="dynamodbstreams", name="v2")
+def dynamodbstreams_v2():
+    from localstack.services.dynamodbstreams.v2.provider import DynamoDBStreamsProvider
+
+    provider = DynamoDBStreamsProvider()
+    return Service.for_provider(provider)
+
+
+@aws_provider(api="dynamodb", name="v2")
+def dynamodb_v2():
+    from localstack.services.dynamodb.v2.provider import DynamoDBProvider
 
     provider = DynamoDBProvider()
     return Service.for_provider(
@@ -227,51 +257,8 @@ def route53resolver():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
-@aws_provider(api="s3", name="asf")
-def s3_asf():
-    from localstack.services.moto import MotoFallbackDispatcher
-    from localstack.services.s3.legacy.provider import S3Provider
-
-    provider = S3Provider()
-    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
-
-
-@aws_provider(api="s3", name="v2")
-def s3_v2():
-    from localstack.services.moto import MotoFallbackDispatcher
-    from localstack.services.s3.legacy.provider import S3Provider
-
-    provider = S3Provider()
-    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
-
-
-@aws_provider(api="s3", name="legacy_v2")
-def s3_legacy_v2():
-    from localstack.services.moto import MotoFallbackDispatcher
-    from localstack.services.s3.legacy.provider import S3Provider
-
-    provider = S3Provider()
-    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
-
-
-@aws_provider(api="s3", name="default")
+@aws_provider()
 def s3():
-    from localstack.services.s3.provider import S3Provider
-
-    provider = S3Provider()
-    return Service.for_provider(provider)
-
-
-@aws_provider(api="s3", name="stream")
-def s3_stream():
-    from localstack.services.s3.provider import S3Provider
-
-    provider = S3Provider()
-    return Service.for_provider(provider)
-
-
-@aws_provider(api="s3", name="v3")
-def s3_v3():
     from localstack.services.s3.provider import S3Provider
 
     provider = S3Provider()
@@ -346,11 +333,18 @@ def ssm():
 
 @aws_provider(api="events", name="default")
 def events():
-    from localstack.services.events.v1.provider import EventsProvider
-    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.events.provider import EventsProvider
 
     provider = EventsProvider()
-    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+    return Service.for_provider(provider)
+
+
+@aws_provider(api="events", name="v2")
+def events_v2():
+    from localstack.services.events.provider import EventsProvider
+
+    provider = EventsProvider()
+    return Service.for_provider(provider)
 
 
 @aws_provider(api="events", name="v1")
@@ -362,12 +356,13 @@ def events_v1():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
-@aws_provider(api="events", name="v2")
-def events_v2():
-    from localstack.services.events.provider import EventsProvider
+@aws_provider(api="events", name="legacy")
+def events_legacy():
+    from localstack.services.events.v1.provider import EventsProvider
+    from localstack.services.moto import MotoFallbackDispatcher
 
     provider = EventsProvider()
-    return Service.for_provider(provider)
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider()
@@ -378,38 +373,14 @@ def stepfunctions():
     return Service.for_provider(provider)
 
 
+# TODO: remove with 4.1.0 to allow smooth deprecation path for users that have v2 set manually
 @aws_provider(api="stepfunctions", name="v2")
 def stepfunctions_v2():
+    # provider for people still manually using `v2`
     from localstack.services.stepfunctions.provider import StepFunctionsProvider
 
     provider = StepFunctionsProvider()
     return Service.for_provider(provider)
-
-
-@aws_provider(api="stepfunctions", name="v1")
-def stepfunctions_legacy():
-    from localstack.services.stepfunctions.legacy.provider_legacy import StepFunctionsProvider
-
-    provider = StepFunctionsProvider()
-    return Service.for_provider(
-        provider,
-        dispatch_table_factory=lambda _provider: HttpFallbackDispatcher(
-            _provider, _provider.get_forward_url
-        ),
-    )
-
-
-@aws_provider(api="stepfunctions", name="legacy")
-def stepfunctions_v1():
-    from localstack.services.stepfunctions.legacy.provider_legacy import StepFunctionsProvider
-
-    provider = StepFunctionsProvider()
-    return Service.for_provider(
-        provider,
-        dispatch_table_factory=lambda _provider: HttpFallbackDispatcher(
-            _provider, _provider.get_forward_url
-        ),
-    )
 
 
 @aws_provider()

@@ -81,5 +81,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/dynamodbstreams/test_dynamodb_streams.py::TestDynamoDBStreams::test_non_existent_stream": {
+    "recorded-date": "20-11-2024, 11:02:24",
+    "recorded-content": {
+      "non-existent-stream": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Requested resource not found: Stream: arn:<partition>:dynamodb:<region>:111111111111:table/<table-name>/stream/2024-11-18T14:36:44.149 not found"
+        },
+        "message": "Requested resource not found: Stream: arn:<partition>:dynamodb:<region>:111111111111:table/<table-name>/stream/2024-11-18T14:36:44.149 not found",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

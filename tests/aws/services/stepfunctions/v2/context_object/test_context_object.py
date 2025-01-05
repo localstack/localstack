@@ -18,7 +18,6 @@ from tests.aws.services.stepfunctions.templates.services.services_templates impo
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..tracingConfiguration",
         "$..RedriveCount",
         "$..RedriveStatus",
         "$..SdkHttpMetadata",
@@ -31,7 +30,7 @@ class TestSnfBase:
     def test_input_path(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         context_object_literal,
@@ -45,8 +44,8 @@ class TestSnfBase:
         )
         exec_input = json.dumps({"input-value": 0})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -58,7 +57,7 @@ class TestSnfBase:
     def test_output_path(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         context_object_literal,
@@ -72,8 +71,8 @@ class TestSnfBase:
         )
         exec_input = json.dumps({"input-value": 0})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -84,7 +83,7 @@ class TestSnfBase:
     def test_result_selector(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         sfn_snapshot,
@@ -107,8 +106,8 @@ class TestSnfBase:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": {"input-value": 0}})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -119,7 +118,7 @@ class TestSnfBase:
     def test_variable(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -133,8 +132,8 @@ class TestSnfBase:
         )
         exec_input = json.dumps({"input-value": 0})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -142,25 +141,21 @@ class TestSnfBase:
         )
 
     @markers.aws.validated
-    def test_items_path(
+    def test_error_cause_path(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         template = ContextObjectTemplates.load_sfn_template(
-            ContextObjectTemplates.CONTEXT_OBJECT_ITEMS_PATH
+            ContextObjectTemplates.CONTEXT_OBJECT_ERROR_CAUSE_PATH
         )
         definition = json.dumps(template)
-        definition = definition.replace(
-            ContextObjectTemplates.CONTEXT_OBJECT_LITERAL_PLACEHOLDER,
-            "$$.Execution.Input.input-values",
-        )
-        exec_input = json.dumps({"input-values": ["item-0"]})
+        exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,

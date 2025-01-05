@@ -1,0 +1,45 @@
+{
+  "Comment": "MAP_STATE_CONFIG_DISTRIBUTED_ITEM_SELECTOR_PARAMETERS",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Pass",
+      "Parameters": {
+        "bucket": "test-bucket",
+        "values": [
+          "1",
+          "2",
+          "3"
+        ]
+      },
+      "ResultPath": "$.content",
+      "Next": "MapState"
+    },
+    "MapState": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "ItemsPath": "$.content.values",
+      "ItemSelector": {
+        "bucketName.$": "$.content.bucket",
+        "value.$": "$$.Map.Item.Value"
+      },
+      "ItemProcessor": {
+        "StartAt": "IteratorInner",
+        "States": {
+          "IteratorInner": {
+            "Type": "Pass",
+            "End": true
+          }
+        },
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        }
+      },
+      "Next": "Finish",
+    },
+    "Finish": {
+      "Type": "Succeed"
+    }
+  }
+}

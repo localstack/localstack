@@ -1,86 +1,9 @@
 {
   "Resources": {
-    "MortgageQuotesEventBus988D4B69": {
+    "CustomEventBusEC0C3CB8": {
       "Type": "AWS::Events::EventBus",
       "Properties": {
-        "Name": "MortgageQuotesEventBus"
-      }
-    },
-    "TestQueue6F0069AA": {
-      "Type": "AWS::SQS::Queue",
-      "Properties": {
-        "MessageRetentionPeriod": 300
-      },
-      "UpdateReplacePolicy": "Delete",
-      "DeletionPolicy": "Delete"
-    },
-    "TestQueuePolicyA65327BC": {
-      "Type": "AWS::SQS::QueuePolicy",
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "sqs:SendMessage",
-                "sqs:GetQueueAttributes",
-                "sqs:GetQueueUrl"
-              ],
-              "Condition": {
-                "ArnEquals": {
-                  "aws:SourceArn": {
-                    "Fn::GetAtt": [
-                      "EmptyFilterRule6627F20C",
-                      "Arn"
-                    ]
-                  }
-                }
-              },
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "events.amazonaws.com"
-              },
-              "Resource": {
-                "Fn::GetAtt": [
-                  "TestQueue6F0069AA",
-                  "Arn"
-                ]
-              }
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "Queues": [
-          {
-            "Ref": "TestQueue6F0069AA"
-          }
-        ]
-      }
-    },
-    "EmptyFilterRule6627F20C": {
-      "Type": "AWS::Events::Rule",
-      "Properties": {
-        "EventBusName": {
-          "Ref": "MortgageQuotesEventBus988D4B69"
-        },
-        "EventPattern": {
-          "version": [
-            "0"
-          ]
-        },
-        "Name": "CustomRule",
-        "State": "ENABLED",
-        "Targets": [
-          {
-            "Arn": {
-              "Fn::GetAtt": [
-                "TestQueue6F0069AA",
-                "Arn"
-              ]
-            },
-            "Id": "Target0",
-            "InputPath": "$.detail.responsePayload"
-          }
-        ]
+        "Name": "EventbridgeStackCustomEventBus7DA4065F"
       }
     },
     "InputLambdaServiceRole4E05AD7C": {
@@ -124,7 +47,7 @@
               "Effect": "Allow",
               "Resource": {
                 "Fn::GetAtt": [
-                  "MortgageQuotesEventBus988D4B69",
+                  "CustomEventBusEC0C3CB8",
                   "Arn"
                 ]
               }
@@ -144,9 +67,8 @@
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
-          "ZipFile": "\ndef handler(event, context):\n    return {\n            \"hello\": \"world\",\n            \"test\": \"abc\",\n            \"val\": 5,\n            \"success\": True\n        }\n"
+          "ZipFile": "\ndef handler(event, context):\n    if event.get(\"mode\") == \"failure\":\n        raise Exception(\"intentional failure!\")\n    else:\n        return {\n            \"hello\": \"world\",\n            \"test\": \"abc\",\n            \"val\": 5,\n            \"success\": True\n        }\n"
         },
-        "FunctionName": "input-fn-20c5ef1d",
         "Handler": "index.handler",
         "Role": {
           "Fn::GetAtt": [
@@ -154,7 +76,7 @@
             "Arn"
           ]
         },
-        "Runtime": "python3.10"
+        "Runtime": "python3.12"
       },
       "DependsOn": [
         "InputLambdaServiceRoleDefaultPolicy9708E6F3",
@@ -165,10 +87,18 @@
       "Type": "AWS::Lambda::EventInvokeConfig",
       "Properties": {
         "DestinationConfig": {
+          "OnFailure": {
+            "Destination": {
+              "Fn::GetAtt": [
+                "CustomEventBusEC0C3CB8",
+                "Arn"
+              ]
+            }
+          },
           "OnSuccess": {
             "Destination": {
               "Fn::GetAtt": [
-                "MortgageQuotesEventBus988D4B69",
+                "CustomEventBusEC0C3CB8",
                 "Arn"
               ]
             }
@@ -177,6 +107,7 @@
         "FunctionName": {
           "Ref": "InputLambda695C9911"
         },
+        "MaximumRetryAttempts": 0,
         "Qualifier": "$LATEST"
       }
     },
@@ -211,45 +142,12 @@
         ]
       }
     },
-    "TriggeredLambdaServiceRoleDefaultPolicy85263E12": {
-      "Type": "AWS::IAM::Policy",
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "sqs:ReceiveMessage",
-                "sqs:ChangeMessageVisibility",
-                "sqs:GetQueueUrl",
-                "sqs:DeleteMessage",
-                "sqs:GetQueueAttributes"
-              ],
-              "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "TestQueue6F0069AA",
-                  "Arn"
-                ]
-              }
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "PolicyName": "TriggeredLambdaServiceRoleDefaultPolicy85263E12",
-        "Roles": [
-          {
-            "Ref": "TriggeredLambdaServiceRoleBB080110"
-          }
-        ]
-      }
-    },
     "TriggeredLambdaBE2D8BDA": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
           "ZipFile": "\nimport json\n\ndef handler(event, context):\n    print(json.dumps(event))\n    return {\"invocation\": True}\n"
         },
-        "FunctionName": "triggered-fn-aa3e69ac",
         "Handler": "index.handler",
         "Role": {
           "Fn::GetAtt": [
@@ -257,25 +155,54 @@
             "Arn"
           ]
         },
-        "Runtime": "python3.10"
+        "Runtime": "python3.12"
       },
       "DependsOn": [
-        "TriggeredLambdaServiceRoleDefaultPolicy85263E12",
         "TriggeredLambdaServiceRoleBB080110"
       ]
     },
-    "TriggeredLambdaSqsEventSourceEventbridgeStackTestQueue1FCC00804CE4CDF0": {
-      "Type": "AWS::Lambda::EventSourceMapping",
+    "EmptyFilterRule6627F20C": {
+      "Type": "AWS::Events::Rule",
       "Properties": {
-        "BatchSize": 10,
-        "EventSourceArn": {
+        "EventBusName": {
+          "Ref": "CustomEventBusEC0C3CB8"
+        },
+        "EventPattern": {
+          "version": [
+            "0"
+          ]
+        },
+        "Name": "CustomRule",
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "TriggeredLambdaBE2D8BDA",
+                "Arn"
+              ]
+            },
+            "Id": "Target0"
+          }
+        ]
+      }
+    },
+    "EmptyFilterRuleAllowEventRuleEventbridgeStackTriggeredLambda3DD76C6517715217": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
           "Fn::GetAtt": [
-            "TestQueue6F0069AA",
+            "TriggeredLambdaBE2D8BDA",
             "Arn"
           ]
         },
-        "FunctionName": {
-          "Ref": "TriggeredLambdaBE2D8BDA"
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "EmptyFilterRule6627F20C",
+            "Arn"
+          ]
         }
       }
     }
@@ -291,12 +218,9 @@
         "Ref": "TriggeredLambdaBE2D8BDA"
       }
     },
-    "TestQueueName": {
+    "EventBusName": {
       "Value": {
-        "Fn::GetAtt": [
-          "TestQueue6F0069AA",
-          "QueueName"
-        ]
+        "Ref": "CustomEventBusEC0C3CB8"
       }
     }
   }

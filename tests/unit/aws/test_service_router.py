@@ -23,10 +23,10 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
             # FIXME try to support more and more services, get these exclusions down!
             # Exclude all operations for the following, currently _not_ supported services
             if service.service_name in [
-                "bedrock",
                 "bedrock-agent",
                 "bedrock-agent-runtime",
-                "bedrock-runtime",
+                "bedrock-data-automation",
+                "bedrock-data-automation-runtime",
                 "chime",
                 "chime-sdk-identity",
                 "chime-sdk-media-pipelines",
@@ -36,6 +36,8 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
                 "codecatalyst",
                 "connect",
                 "connect-contact-lens",
+                "connectcampaigns",
+                "connectcampaignsv2",
                 "greengrassv2",
                 "iot1click",
                 "iot1click-devices",
@@ -55,6 +57,7 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
                 "mailmanager",
                 "marketplace-catalog",
                 "marketplace-deployment",
+                "marketplace-reporting",
                 "personalize",
                 "personalize-events",
                 "personalize-runtime",

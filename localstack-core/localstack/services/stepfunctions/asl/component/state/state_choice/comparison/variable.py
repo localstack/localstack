@@ -1,8 +1,10 @@
 from typing import Final
 
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
+    StringSampler,
+)
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 
 class NoSuchVariable:
@@ -11,26 +13,15 @@ class NoSuchVariable:
 
 
 class Variable(EvalComponent):
-    def __init__(self, value: str):
-        self.value: Final[str] = value
+    string_sampler: Final[StringSampler]
+
+    def __init__(self, string_sampler: StringSampler):
+        self.string_sampler = string_sampler
 
     def _eval_body(self, env: Environment) -> None:
         try:
-            inp = env.stack[-1]
-            value = extract_json(self.value, inp)
+            self.string_sampler.eval(env=env)
+            value = env.stack.pop()
         except Exception as ex:
-            value = NoSuchVariable(f"{self.value}, {ex}")
-        env.stack.append(value)
-
-
-class VariableContextObject(Variable):
-    def __init__(self, value: str):
-        value_tail = value[1:]
-        super().__init__(value=value_tail)
-
-    def _eval_body(self, env: Environment) -> None:
-        try:
-            value = extract_json(self.value, env.context_object_manager.context_object)
-        except Exception as ex:
-            value = NoSuchVariable(f"{self.value}, {ex}")
+            value = NoSuchVariable(f"{self.string_sampler.literal_value}, {ex}")
         env.stack.append(value)

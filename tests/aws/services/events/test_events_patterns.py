@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 from datetime import datetime
@@ -6,11 +7,12 @@ from typing import List, Tuple
 
 import json5
 import pytest
+from botocore.exceptions import ClientError
 
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 from tests.aws.services.events.helper_functions import (
+    is_old_provider,
     sqs_collect_messages,
 )
 
@@ -20,40 +22,6 @@ COMPLEX_MULTI_KEY_EVENT_PATTERN = os.path.join(
     REQUEST_TEMPLATE_DIR, "complex_multi_key_event_pattern.json"
 )
 COMPLEX_MULTI_KEY_EVENT = os.path.join(REQUEST_TEMPLATE_DIR, "complex_multi_key_event.json")
-
-SKIP_LABELS = [
-    # Failing exception tests:
-    "arrays_empty_EXC",
-    "content_numeric_EXC",
-    "content_numeric_operatorcasing_EXC",
-    "content_numeric_syntax_EXC",
-    "content_wildcard_complex_EXC",
-    "int_nolist_EXC",
-    "operator_case_sensitive_EXC",
-    "string_nolist_EXC",
-    # Failing tests:
-    "complex_or",
-    "content_anything_but_ignorecase",
-    "content_anything_but_ignorecase_list",
-    "content_anything_suffix",
-    "content_exists_false",
-    "content_ignorecase",
-    "content_ignorecase_NEG",
-    "content_ip_address",
-    "content_numeric_and",
-    "content_prefix_ignorecase",
-    "content_suffix",
-    "content_suffix_ignorecase",
-    "content_wildcard_nonrepeating",
-    "content_wildcard_repeating",
-    "content_wildcard_simplified",
-    "dot_joining_event",
-    "dot_joining_pattern",
-    "exists_dynamodb_NEG",
-    "nested_json_NEG",
-    "or-exists",
-    "or-exists-parent",
-]
 
 
 def load_request_templates(directory_path: str) -> List[Tuple[dict, str]]:
@@ -91,27 +59,38 @@ class TestEventPattern:
         ids=[t[1] for t in request_template_tuples],
     )
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..MessageRaw"],  # AWS returns Java validation parts, we skip those
+    )
     def test_event_pattern(self, aws_client, snapshot, request_template, label):
         """This parametrized test handles three outcomes:
         a) MATCH (default): The EventPattern matches the Event yielding true as result.
         b) NO MATCH (_NEG suffix): The EventPattern does NOT match the Event yielding false as result.
         c) EXCEPTION (_EXC suffix): The EventPattern is invalid and raises an exception.
         """
-        if label in SKIP_LABELS and not is_aws_cloud():
-            pytest.skip("Not yet implemented")
+
+        def _transform_raw_exc_message(
+            boto_error: dict[str, dict[str, str]],
+        ) -> dict[str, dict[str, str]]:
+            if message := boto_error.get("Error", {}).get("Message"):
+                boto_error = copy.deepcopy(boto_error)
+                boto_error["Error"]["MessageRaw"] = message
+                boto_error["Error"]["Message"] = message.split("\n")[0]
+
+            return boto_error
 
         event = request_template["Event"]
         event_pattern = request_template["EventPattern"]
 
         if label.endswith("_EXC"):
-            with pytest.raises(Exception) as e:
+            with pytest.raises(ClientError) as e:
                 aws_client.events.test_event_pattern(
                     Event=json.dumps(event),
                     EventPattern=json.dumps(event_pattern),
                 )
             exception_info = {
                 "exception_type": type(e.value),
-                "exception_message": e.value.response,
+                "exception_message": _transform_raw_exc_message(e.value.response),
             }
             snapshot.match(label, exception_info)
         else:
@@ -120,7 +99,8 @@ class TestEventPattern:
                 EventPattern=json.dumps(event_pattern),
             )
 
-            # Validate the test intention: The _NEG suffix indicates negative tests (i.e., a pattern not matching the event)
+            # Validate the test intention: The _NEG suffix indicates negative tests
+            # (i.e., a pattern not matching the event)
             if label.endswith("_NEG"):
                 assert not response["Result"]
             else:
@@ -134,9 +114,10 @@ class TestEventPattern:
         https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-content-based-filtering.html#eb-filtering-complex-example
         """
 
-        with open(COMPLEX_MULTI_KEY_EVENT, "r") as event_file, open(
-            COMPLEX_MULTI_KEY_EVENT_PATTERN, "r"
-        ) as event_pattern_file:
+        with (
+            open(COMPLEX_MULTI_KEY_EVENT, "r") as event_file,
+            open(COMPLEX_MULTI_KEY_EVENT_PATTERN, "r") as event_pattern_file,
+        ):
             event = event_file.read()
             event_pattern = event_pattern_file.read()
 
@@ -207,6 +188,79 @@ class TestEventPattern:
             ),
         )
         snapshot.match("eventbridge-test-event-pattern-response-no-match", response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "pattern",
+        [
+            "this is valid json but not a dict",
+            "{'bad': 'quotation'}",
+            '{"not": closed mark"',
+            '["not", "a", "dict", "but valid json"]',
+        ],
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        # we cannot really validate the message, it is strongly coupled to AWS parsing engine
+        paths=["$..Error.Message"],
+    )
+    def test_invalid_json_event_pattern(self, aws_client, pattern, snapshot):
+        event = '{"id": "1", "source": "test-source", "detail-type": "test-detail-type", "account": "123456789012", "region": "us-east-2", "time": "2022-07-13T13:48:01Z", "detail": {"test": "test"}}'
+
+        with pytest.raises(ClientError) as e:
+            aws_client.events.test_event_pattern(
+                Event=event,
+                EventPattern=pattern,
+            )
+        snapshot.match("invalid-pattern", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not properly validate",
+    )
+    def test_plain_string_payload(self, aws_client, snapshot):
+        event = "plain string"
+        pattern = {"body": {"test2": [{"numeric": [">", 100]}]}}
+
+        with pytest.raises(ClientError) as e:
+            aws_client.events.test_event_pattern(
+                Event=event,
+                EventPattern=json.dumps(pattern),
+            )
+        snapshot.match("plain-string-payload-exc", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not properly validate",
+    )
+    def test_array_event_payload(self, aws_client, snapshot):
+        event = ["plain string"]
+        pattern = {"body": {"test2": [{"numeric": [">", 100]}]}}
+
+        with pytest.raises(ClientError) as e:
+            aws_client.events.test_event_pattern(
+                Event=json.dumps(event),
+                EventPattern=json.dumps(pattern),
+            )
+        snapshot.match("array-event-payload-exc", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not properly validate",
+    )
+    def test_invalid_event_payload(self, aws_client, snapshot):
+        # following fields are mandatory: `id`, `account`, `source`, `time`, `region`, `detail-type`
+        event = {"testEvent": "value"}
+        pattern = {"body": {"test2": [{"numeric": [">", 100]}]}}
+
+        with pytest.raises(ClientError) as e:
+            aws_client.events.test_event_pattern(
+                Event=json.dumps(event),
+                EventPattern=json.dumps(pattern),
+            )
+        snapshot.match("plain-string-payload-exc", e.value.response)
 
 
 class TestRuleWithPattern:
@@ -363,13 +417,13 @@ class TestRuleWithPattern:
     @markers.aws.validated
     def test_put_event_with_content_base_rule_in_pattern(
         self,
-        create_sqs_events_target,
+        sqs_as_events_target,
         events_create_event_bus,
         events_put_rule,
         snapshot,
         aws_client,
     ):
-        queue_url, queue_arn = create_sqs_events_target()
+        queue_url, queue_arn = sqs_as_events_target()
 
         # Create event bus
         event_bus_name = f"event-bus-{short_uid()}"

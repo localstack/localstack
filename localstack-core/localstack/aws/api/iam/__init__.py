@@ -15,6 +15,7 @@ DeletionTaskIdType = str
 EvalDecisionSourceType = str
 LineNumber = int
 OpenIDConnectProviderUrlType = str
+OrganizationIdType = str
 PolicyIdentifierType = str
 ReasonType = str
 RegionNameType = str
@@ -145,6 +146,11 @@ class EntityType(StrEnum):
     AWSManagedPolicy = "AWSManagedPolicy"
 
 
+class FeatureType(StrEnum):
+    RootCredentialsManagement = "RootCredentialsManagement"
+    RootSessions = "RootSessions"
+
+
 class PermissionsBoundaryAttachmentType(StrEnum):
     PermissionsBoundaryPolicy = "PermissionsBoundaryPolicy"
 
@@ -247,6 +253,7 @@ class summaryKeyType(StrEnum):
     MFADevicesInUse = "MFADevicesInUse"
     AccountMFAEnabled = "AccountMFAEnabled"
     AccountAccessKeysPresent = "AccountAccessKeysPresent"
+    AccountPasswordPresent = "AccountPasswordPresent"
     AccountSigningCertificatesPresent = "AccountSigningCertificatesPresent"
     AttachedPoliciesPerGroupQuota = "AttachedPoliciesPerGroupQuota"
     AttachedPoliciesPerRoleQuota = "AttachedPoliciesPerRoleQuota"
@@ -258,6 +265,18 @@ class summaryKeyType(StrEnum):
     PolicyVersionsInUseQuota = "PolicyVersionsInUseQuota"
     VersionsPerPolicyQuota = "VersionsPerPolicyQuota"
     GlobalEndpointTokenVersion = "GlobalEndpointTokenVersion"
+
+
+class AccountNotManagementOrDelegatedAdministratorException(ServiceException):
+    code: str = "AccountNotManagementOrDelegatedAdministratorException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class CallerIsNotManagementAccountException(ServiceException):
+    code: str = "CallerIsNotManagementAccountException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ConcurrentModificationException(ServiceException):
@@ -380,6 +399,18 @@ class OpenIdIdpCommunicationErrorException(ServiceException):
     status_code: int = 400
 
 
+class OrganizationNotFoundException(ServiceException):
+    code: str = "OrganizationNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class OrganizationNotInAllFeaturesModeException(ServiceException):
+    code: str = "OrganizationNotInAllFeaturesModeException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class PasswordPolicyViolationException(ServiceException):
     code: str = "PasswordPolicyViolation"
     sender_fault: bool = True
@@ -402,6 +433,12 @@ class ReportGenerationLimitExceededException(ServiceException):
     code: str = "ReportGenerationLimitExceeded"
     sender_fault: bool = True
     status_code: int = 409
+
+
+class ServiceAccessNotEnabledException(ServiceException):
+    code: str = "ServiceAccessNotEnabledException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ServiceFailureException(ServiceException):
@@ -612,8 +649,8 @@ class CreateInstanceProfileResponse(TypedDict, total=False):
 
 
 class CreateLoginProfileRequest(ServiceRequest):
-    UserName: userNameType
-    Password: passwordType
+    UserName: Optional[userNameType]
+    Password: Optional[passwordType]
     PasswordResetRequired: Optional[booleanType]
 
 
@@ -783,7 +820,7 @@ class CreateVirtualMFADeviceResponse(TypedDict, total=False):
 
 
 class DeactivateMFADeviceRequest(ServiceRequest):
-    UserName: existingUserNameType
+    UserName: Optional[existingUserNameType]
     SerialNumber: serialNumberType
 
 
@@ -810,7 +847,7 @@ class DeleteInstanceProfileRequest(ServiceRequest):
 
 
 class DeleteLoginProfileRequest(ServiceRequest):
-    UserName: userNameType
+    UserName: Optional[userNameType]
 
 
 class DeleteOpenIDConnectProviderRequest(ServiceRequest):
@@ -915,11 +952,50 @@ class DetachUserPolicyRequest(ServiceRequest):
     PolicyArn: arnType
 
 
+class DisableOrganizationsRootCredentialsManagementRequest(ServiceRequest):
+    pass
+
+
+FeaturesListType = List[FeatureType]
+
+
+class DisableOrganizationsRootCredentialsManagementResponse(TypedDict, total=False):
+    OrganizationId: Optional[OrganizationIdType]
+    EnabledFeatures: Optional[FeaturesListType]
+
+
+class DisableOrganizationsRootSessionsRequest(ServiceRequest):
+    pass
+
+
+class DisableOrganizationsRootSessionsResponse(TypedDict, total=False):
+    OrganizationId: Optional[OrganizationIdType]
+    EnabledFeatures: Optional[FeaturesListType]
+
+
 class EnableMFADeviceRequest(ServiceRequest):
     UserName: existingUserNameType
     SerialNumber: serialNumberType
     AuthenticationCode1: authenticationCodeType
     AuthenticationCode2: authenticationCodeType
+
+
+class EnableOrganizationsRootCredentialsManagementRequest(ServiceRequest):
+    pass
+
+
+class EnableOrganizationsRootCredentialsManagementResponse(TypedDict, total=False):
+    OrganizationId: Optional[OrganizationIdType]
+    EnabledFeatures: Optional[FeaturesListType]
+
+
+class EnableOrganizationsRootSessionsRequest(ServiceRequest):
+    pass
+
+
+class EnableOrganizationsRootSessionsResponse(TypedDict, total=False):
+    OrganizationId: Optional[OrganizationIdType]
+    EnabledFeatures: Optional[FeaturesListType]
 
 
 class EntityInfo(TypedDict, total=False):
@@ -1207,7 +1283,7 @@ class GetInstanceProfileResponse(TypedDict, total=False):
 
 
 class GetLoginProfileRequest(ServiceRequest):
-    UserName: userNameType
+    UserName: Optional[userNameType]
 
 
 class GetLoginProfileResponse(TypedDict, total=False):
@@ -1680,6 +1756,15 @@ OpenIDConnectProviderListType = List[OpenIDConnectProviderListEntry]
 
 class ListOpenIDConnectProvidersResponse(TypedDict, total=False):
     OpenIDConnectProviderList: Optional[OpenIDConnectProviderListType]
+
+
+class ListOrganizationsFeaturesRequest(ServiceRequest):
+    pass
+
+
+class ListOrganizationsFeaturesResponse(TypedDict, total=False):
+    OrganizationId: Optional[OrganizationIdType]
+    EnabledFeatures: Optional[FeaturesListType]
 
 
 class PolicyGrantingServiceAccess(TypedDict, total=False):
@@ -2381,8 +2466,8 @@ class IamApi:
     def create_login_profile(
         self,
         context: RequestContext,
-        user_name: userNameType,
-        password: passwordType,
+        user_name: userNameType = None,
+        password: passwordType = None,
         password_reset_required: booleanType = None,
         **kwargs,
     ) -> CreateLoginProfileResponse:
@@ -2494,8 +2579,8 @@ class IamApi:
     def deactivate_mfa_device(
         self,
         context: RequestContext,
-        user_name: existingUserNameType,
         serial_number: serialNumberType,
+        user_name: existingUserNameType = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -2542,7 +2627,7 @@ class IamApi:
 
     @handler("DeleteLoginProfile")
     def delete_login_profile(
-        self, context: RequestContext, user_name: userNameType, **kwargs
+        self, context: RequestContext, user_name: userNameType = None, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -2680,6 +2765,18 @@ class IamApi:
     ) -> None:
         raise NotImplementedError
 
+    @handler("DisableOrganizationsRootCredentialsManagement")
+    def disable_organizations_root_credentials_management(
+        self, context: RequestContext, **kwargs
+    ) -> DisableOrganizationsRootCredentialsManagementResponse:
+        raise NotImplementedError
+
+    @handler("DisableOrganizationsRootSessions")
+    def disable_organizations_root_sessions(
+        self, context: RequestContext, **kwargs
+    ) -> DisableOrganizationsRootSessionsResponse:
+        raise NotImplementedError
+
     @handler("EnableMFADevice")
     def enable_mfa_device(
         self,
@@ -2690,6 +2787,18 @@ class IamApi:
         authentication_code2: authenticationCodeType,
         **kwargs,
     ) -> None:
+        raise NotImplementedError
+
+    @handler("EnableOrganizationsRootCredentialsManagement")
+    def enable_organizations_root_credentials_management(
+        self, context: RequestContext, **kwargs
+    ) -> EnableOrganizationsRootCredentialsManagementResponse:
+        raise NotImplementedError
+
+    @handler("EnableOrganizationsRootSessions")
+    def enable_organizations_root_sessions(
+        self, context: RequestContext, **kwargs
+    ) -> EnableOrganizationsRootSessionsResponse:
         raise NotImplementedError
 
     @handler("GenerateCredentialReport")
@@ -2796,7 +2905,7 @@ class IamApi:
 
     @handler("GetLoginProfile")
     def get_login_profile(
-        self, context: RequestContext, user_name: userNameType, **kwargs
+        self, context: RequestContext, user_name: userNameType = None, **kwargs
     ) -> GetLoginProfileResponse:
         raise NotImplementedError
 
@@ -3102,6 +3211,12 @@ class IamApi:
     def list_open_id_connect_providers(
         self, context: RequestContext, **kwargs
     ) -> ListOpenIDConnectProvidersResponse:
+        raise NotImplementedError
+
+    @handler("ListOrganizationsFeatures")
+    def list_organizations_features(
+        self, context: RequestContext, **kwargs
+    ) -> ListOrganizationsFeaturesResponse:
         raise NotImplementedError
 
     @handler("ListPolicies")

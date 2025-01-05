@@ -15,6 +15,7 @@ from localstack.services.lambda_.event_source_mapping.senders.sender import (
     Sender,
     SenderError,
 )
+from localstack.services.lambda_.usage import esm_error, esm_invocation
 
 LOG = logging.getLogger(__name__)
 
@@ -27,7 +28,17 @@ class EsmEventProcessor(EventProcessor):
         self.sender = sender
         self.logger = logger
 
-    def process_events_batch(self, input_events: list[dict]) -> None:
+    def process_events_batch(self, input_events: list[dict] | dict) -> None:
+        # analytics
+        if isinstance(input_events, list) and input_events:
+            first_event = input_events[0]
+        elif input_events:
+            first_event = input_events
+        else:
+            first_event = {}
+        event_source = first_event.get("eventSource")
+        esm_invocation.record(event_source)
+
         execution_id = uuid.uuid4()
         # Create a copy of the original input events
         events = input_events.copy()
@@ -58,7 +69,9 @@ class EsmEventProcessor(EventProcessor):
             # TODO: check whether partial batch item failures is enabled by default or need to be explicitly enabled
             #  using --function-response-types "ReportBatchItemFailures"
             #  https://docs.aws.amazon.com/lambda/latest/dg/services-sqs-errorhandling.html
-            raise PartialBatchFailureError from e
+            raise PartialBatchFailureError(
+                partial_failure_payload=e.partial_failure_payload, error=e.error
+            ) from e
         except SenderError as e:
             self.logger.log(
                 messageType="ExecutionFailed",
@@ -67,6 +80,7 @@ class EsmEventProcessor(EventProcessor):
             )
             raise BatchFailureError(error=e.error) from e
         except Exception as e:
+            esm_error.record(event_source)
             LOG.error(
                 "Unhandled exception while processing Lambda event source mapping (ESM) events %s for ESM with execution id %s",
                 events,

@@ -36,7 +36,6 @@ from localstack.services.lambda_.provider import TAG_KEY_CUSTOM_URL
 from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
     DEPRECATED_RUNTIMES,
-    SNAP_START_SUPPORTED_RUNTIMES,
 )
 from localstack.testing.aws.lambda_utils import (
     _await_dynamodb_table_active,
@@ -47,7 +46,11 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns
-from localstack.utils.aws.arns import get_partition
+from localstack.utils.aws.arns import (
+    get_partition,
+    lambda_event_source_mapping_arn,
+    lambda_function_arn,
+)
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
@@ -55,7 +58,6 @@ from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, wait_until
 from localstack.utils.testutil import create_lambda_archive
 from tests.aws.services.lambda_.test_lambda import (
-    TEST_LAMBDA_JAVA_WITH_LIB,
     TEST_LAMBDA_NODEJS,
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_ECHO_ZIP,
@@ -2133,6 +2135,66 @@ class TestLambdaAlias:
         snapshot.match("list_aliases_for_fnname_afterdelete", list_aliases_for_fnname_afterdelete)
 
     @markers.aws.validated
+    def test_non_existent_alias_deletion(
+        self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
+    ):
+        """
+        This test checks the behaviour when deleting a non-existent alias.
+        No error is raised.
+        """
+        function_name = f"alias-fn-{short_uid()}"
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={
+                "ZipFile": create_lambda_archive(
+                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+                )
+            },
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_12,
+            Environment={"Variables": {"testenv": "staging"}},
+        )
+        snapshot.match("create_response", create_response)
+
+        delete_alias_response = aws_client.lambda_.delete_alias(
+            FunctionName=function_name, Name="non-existent"
+        )
+        snapshot.match("delete_alias_response", delete_alias_response)
+
+    @markers.aws.validated
+    def test_non_existent_alias_update(
+        self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
+    ):
+        """
+        This test checks the behaviour when updating a non-existent alias.
+        An error (ResourceNotFoundException) is raised.
+        """
+        function_name = f"alias-fn-{short_uid()}"
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={
+                "ZipFile": create_lambda_archive(
+                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+                )
+            },
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_12,
+            Environment={"Variables": {"testenv": "staging"}},
+        )
+        snapshot.match("create_response", create_response)
+
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
+            aws_client.lambda_.update_alias(
+                FunctionName=function_name,
+                Name="non-existent",
+            )
+        snapshot.match("update_alias_response", e.value.response)
+
+    @markers.aws.validated
     def test_notfound_and_invalid_routingconfigs(
         self, aws_client_factory, create_lambda_function_aws, snapshot, lambda_su_role, aws_client
     ):
@@ -2586,7 +2648,7 @@ class TestLambdaRevisions:
 class TestLambdaTag:
     @pytest.fixture(scope="function")
     def fn_arn(self, create_lambda_function, aws_client):
-        """simple reusable setup to test tagging operations against"""
+        """simple reusable setup to test tagging operations against Lambda function resources"""
         function_name = f"fn-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -2597,6 +2659,22 @@ class TestLambdaTag:
         yield aws_client.lambda_.get_function(FunctionName=function_name)["Configuration"][
             "FunctionArn"
         ]
+
+    @pytest.fixture(scope="function")
+    def esm_arn(self, fn_arn, create_event_source_mapping, sqs_create_queue, sqs_get_queue_arn):
+        """simple reusable setup to test tagging operations against ESM resources"""
+
+        # Create an SQS queue and pass it as an event source for the mapping
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        create_response = create_event_source_mapping(
+            EventSourceArn=queue_arn,
+            FunctionName=fn_arn,
+            BatchSize=1,
+        )
+
+        yield create_response["EventSourceMappingArn"]
 
     @markers.aws.validated
     def test_create_tag_on_fn_create(self, create_lambda_function, snapshot, aws_client):
@@ -2617,68 +2695,162 @@ class TestLambdaTag:
         snapshot.match("list_tags_result", list_tags_result)
 
     @markers.aws.validated
-    def test_tag_lifecycle(self, create_lambda_function, snapshot, fn_arn, aws_client):
+    def test_create_tag_on_esm_create(
+        self,
+        create_lambda_function,
+        create_event_source_mapping,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        snapshot,
+        aws_client,
+    ):
+        function_name = f"fn-{short_uid()}"
+        custom_tag = f"tag-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(custom_tag, "<custom-tag>"))
+
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+        )
+
+        create_response = create_event_source_mapping(
+            EventSourceArn=queue_arn,
+            FunctionName=function_name,
+            BatchSize=1,
+            Tags={"testtag": custom_tag},
+        )
+
+        uuid = create_response["UUID"]
+
+        # the stream might not be active immediately(!)
+        def check_esm_active():
+            return aws_client.lambda_.get_event_source_mapping(UUID=uuid)["State"] != "Creating"
+
+        get_response = wait_until(check_esm_active)
+        snapshot.match("get_event_source_mapping_with_tag", get_response)
+
+        esm_arn = create_response["EventSourceMappingArn"]
+        list_tags_result = aws_client.lambda_.list_tags(Resource=esm_arn)
+        snapshot.match("list_tags_result", list_tags_result)
+
+    @pytest.mark.parametrize(
+        "resource_arn_fixture",
+        ["fn_arn", "esm_arn"],
+        ids=["lambda_function", "event_source_mapping"],
+    )
+    @markers.aws.validated
+    def test_tag_lifecycle(self, snapshot, aws_client, resource_arn_fixture, request):
+        # Lazily get
+        resource_arn = request.getfixturevalue(resource_arn_fixture)
         # 1. add tag
-        tag_single_response = aws_client.lambda_.tag_resource(Resource=fn_arn, Tags={"A": "tag-a"})
+        tag_single_response = aws_client.lambda_.tag_resource(
+            Resource=resource_arn, Tags={"A": "tag-a"}
+        )
         snapshot.match("tag_single_response", tag_single_response)
         snapshot.match(
-            "tag_single_response_listtags", aws_client.lambda_.list_tags(Resource=fn_arn)
+            "tag_single_response_listtags", aws_client.lambda_.list_tags(Resource=resource_arn)
         )
 
         # 2. add multiple tags
         tag_multiple_response = aws_client.lambda_.tag_resource(
-            Resource=fn_arn, Tags={"B": "tag-b", "C": "tag-c"}
+            Resource=resource_arn, Tags={"B": "tag-b", "C": "tag-c"}
         )
         snapshot.match("tag_multiple_response", tag_multiple_response)
         snapshot.match(
-            "tag_multiple_response_listtags", aws_client.lambda_.list_tags(Resource=fn_arn)
+            "tag_multiple_response_listtags", aws_client.lambda_.list_tags(Resource=resource_arn)
         )
 
         # 3. add overlapping tags
         tag_overlap_response = aws_client.lambda_.tag_resource(
-            Resource=fn_arn, Tags={"C": "tag-c-newsuffix", "D": "tag-d"}
+            Resource=resource_arn, Tags={"C": "tag-c-newsuffix", "D": "tag-d"}
         )
         snapshot.match("tag_overlap_response", tag_overlap_response)
         snapshot.match(
-            "tag_overlap_response_listtags", aws_client.lambda_.list_tags(Resource=fn_arn)
+            "tag_overlap_response_listtags", aws_client.lambda_.list_tags(Resource=resource_arn)
         )
 
         # 3. remove tag
-        untag_single_response = aws_client.lambda_.untag_resource(Resource=fn_arn, TagKeys=["A"])
+        untag_single_response = aws_client.lambda_.untag_resource(
+            Resource=resource_arn, TagKeys=["A"]
+        )
         snapshot.match("untag_single_response", untag_single_response)
         snapshot.match(
-            "untag_single_response_listtags", aws_client.lambda_.list_tags(Resource=fn_arn)
+            "untag_single_response_listtags", aws_client.lambda_.list_tags(Resource=resource_arn)
         )
 
         # 4. remove multiple tags
         untag_multiple_response = aws_client.lambda_.untag_resource(
-            Resource=fn_arn, TagKeys=["B", "C"]
+            Resource=resource_arn, TagKeys=["B", "C"]
         )
         snapshot.match("untag_multiple_response", untag_multiple_response)
         snapshot.match(
-            "untag_multiple_response_listtags", aws_client.lambda_.list_tags(Resource=fn_arn)
+            "untag_multiple_response_listtags", aws_client.lambda_.list_tags(Resource=resource_arn)
         )
 
         # 5. try to remove only tags that don't exist
         untag_nonexisting_response = aws_client.lambda_.untag_resource(
-            Resource=fn_arn, TagKeys=["F"]
+            Resource=resource_arn, TagKeys=["F"]
         )
         snapshot.match("untag_nonexisting_response", untag_nonexisting_response)
         snapshot.match(
-            "untag_nonexisting_response_listtags", aws_client.lambda_.list_tags(Resource=fn_arn)
+            "untag_nonexisting_response_listtags",
+            aws_client.lambda_.list_tags(Resource=resource_arn),
         )
 
         # 6. remove a mix of tags that exist & don't exist
         untag_existing_and_nonexisting_response = aws_client.lambda_.untag_resource(
-            Resource=fn_arn, TagKeys=["D", "F"]
+            Resource=resource_arn, TagKeys=["D", "F"]
         )
         snapshot.match(
             "untag_existing_and_nonexisting_response", untag_existing_and_nonexisting_response
         )
         snapshot.match(
             "untag_existing_and_nonexisting_response_listtags",
-            aws_client.lambda_.list_tags(Resource=fn_arn),
+            aws_client.lambda_.list_tags(Resource=resource_arn),
         )
+
+    @pytest.mark.parametrize(
+        "create_resource_arn",
+        [lambda_function_arn, lambda_event_source_mapping_arn],
+        ids=["lambda_function", "event_source_mapping"],
+    )
+    @markers.aws.validated
+    def test_tag_exceptions(
+        self, snapshot, aws_client, create_resource_arn, region_name, account_id
+    ):
+        resource_name = long_uid()
+        snapshot.add_transformer(snapshot.transform.regex(resource_name, "<resource-name>"))
+
+        resource_arn = create_resource_arn(resource_name, account_id, region_name)
+
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
+            aws_client.lambda_.tag_resource(Resource=resource_arn, Tags={"A": "B"})
+        snapshot.match("not_found_exception_tag", e.value.response)
+
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
+            aws_client.lambda_.untag_resource(Resource=resource_arn, TagKeys=["A"])
+        snapshot.match("not_found_exception_untag", e.value.response)
+
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
+            aws_client.lambda_.list_tags(Resource=resource_arn)
+        snapshot.match("not_found_exception_list", e.value.response)
+
+        with pytest.raises(aws_client.lambda_.exceptions.ClientError) as e:
+            aws_client.lambda_.list_tags(Resource=f"{resource_arn}:alias")
+        snapshot.match("aliased_arn_exception", e.value.response)
+
+        # change the resource name to an invalid one
+        parts = resource_arn.rsplit(":", 2)
+        parts[1] = "foobar"
+        invalid_resource_arn = ":".join(parts)
+
+        with pytest.raises(aws_client.lambda_.exceptions.ClientError) as e:
+            aws_client.lambda_.list_tags(Resource=f"{invalid_resource_arn}")
+        snapshot.match("invalid_arn_exception", e.value.response)
 
     @markers.aws.validated
     def test_tag_nonexisting_resource(self, snapshot, fn_arn, aws_client):
@@ -4354,6 +4526,82 @@ class TestLambdaUrl:
             aws_client.lambda_.get_function_url_config(FunctionName=function_name)
         snapshot.match("failed_getter", ex.value.response)
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..InvokeMode"])
+    @markers.aws.validated
+    def test_url_config_deletion_without_qualifier(
+        self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
+    ):
+        """
+        This test checks that delete_function_url_config doesn't delete the function url configs of all aliases,
+        when not specifying the Qualifier.
+        """
+        snapshot.add_transformer(
+            snapshot.transform.key_value("FunctionUrl", "lambda-url", reference_replacement=False)
+        )
+
+        function_name = f"alias-fn-{short_uid()}"
+        create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={
+                "ZipFile": create_lambda_archive(
+                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+                )
+            },
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_12,
+            Environment={"Variables": {"testenv": "staging"}},
+        )
+        aws_client.lambda_.publish_version(FunctionName=function_name)
+
+        alias_name = "test-alias"
+        aws_client.lambda_.create_alias(
+            FunctionName=function_name,
+            Name=alias_name,
+            FunctionVersion="1",
+            Description="custom-alias",
+        )
+
+        url_config_created = aws_client.lambda_.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+        )
+        snapshot.match("url_creation", url_config_created)
+
+        url_config_with_alias_created = aws_client.lambda_.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+            Qualifier=alias_name,
+        )
+        snapshot.match("url_with_alias_creation", url_config_with_alias_created)
+
+        url_config_obtained = aws_client.lambda_.get_function_url_config(FunctionName=function_name)
+        snapshot.match("get_url_config", url_config_obtained)
+
+        url_config_obtained_with_alias = aws_client.lambda_.get_function_url_config(
+            FunctionName=function_name, Qualifier=alias_name
+        )
+        snapshot.match("get_url_config_with_alias", url_config_obtained_with_alias)
+
+        # delete function url config by only specifying function name (no qualifier)
+        delete_function_url_config_response = aws_client.lambda_.delete_function_url_config(
+            FunctionName=function_name
+        )
+        snapshot.match("delete_function_url_config", delete_function_url_config_response)
+
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
+            aws_client.lambda_.get_function_url_config(FunctionName=function_name)
+        snapshot.match("get_url_config_after_deletion", e.value.response)
+
+        # only specifying the function name, doesn't delete the url config from all related aliases
+        get_url_config_with_alias_after_deletion = aws_client.lambda_.get_function_url_config(
+            FunctionName=function_name, Qualifier=alias_name
+        )
+        snapshot.match(
+            "get_url_config_with_alias_after_deletion", get_url_config_with_alias_after_deletion
+        )
+
     @markers.aws.only_localstack
     def test_create_url_config_custom_id_tag(self, create_lambda_function, aws_client):
         custom_id_value = "my-custom-subdomain"
@@ -5087,6 +5335,19 @@ class TestLambdaEventSourceMappings:
                 EventSourceArn="arn:aws:sqs:us-east-1:111111111111:somequeue",
             )
         snapshot.match("create_unknown_params", e.value.response)
+
+        with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
+            aws_client.lambda_.create_event_source_mapping(
+                FunctionName="doesnotexist",
+                EventSourceArn="arn:aws:sqs:us-east-1:111111111111:somequeue",
+                DestinationConfig={
+                    "OnSuccess": {
+                        "Destination": "arn:aws:sqs:us-east-1:111111111111:someotherqueue"
+                    }
+                },
+            )
+        snapshot.match("destination_config_failure", e.value.response)
+
         # TODO: add test for event source arn == failure destination
         # TODO: add test for adding success destination
         # TODO: add test_multiple_esm_conflict: create an event source mapping for a combination of function + target ARN that already exists
@@ -5175,6 +5436,88 @@ class TestLambdaEventSourceMappings:
         #
         # lambda_client.delete_event_source_mapping(UUID=uuid)
 
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # all dynamodb service issues not related to lambda
+            "$..TableDescription.DeletionProtectionEnabled",
+            "$..TableDescription.ProvisionedThroughput.LastDecreaseDateTime",
+            "$..TableDescription.ProvisionedThroughput.LastIncreaseDateTime",
+            "$..TableDescription.TableStatus",
+            "$..TableDescription.TableId",
+            "$..UUID",
+        ]
+    )
+    @markers.aws.validated
+    def test_event_source_mapping_lifecycle_delete_function(
+        self,
+        create_lambda_function,
+        snapshot,
+        sqs_create_queue,
+        cleanups,
+        lambda_su_role,
+        dynamodb_create_table,
+        aws_client,
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        table_name = f"teststreamtable-{short_uid()}"
+
+        destination_queue_url = sqs_create_queue()
+        destination_queue_arn = aws_client.sqs.get_queue_attributes(
+            QueueUrl=destination_queue_url, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+
+        dynamodb_create_table(table_name=table_name, partition_key="id")
+        _await_dynamodb_table_active(aws_client.dynamodb, table_name)
+        update_table_response = aws_client.dynamodb.update_table(
+            TableName=table_name,
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
+        )
+        snapshot.match("update_table_response", update_table_response)
+        stream_arn = update_table_response["TableDescription"]["LatestStreamArn"]
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
+        # "minimal"
+        create_response = aws_client.lambda_.create_event_source_mapping(
+            FunctionName=function_name,
+            EventSourceArn=stream_arn,
+            DestinationConfig={"OnFailure": {"Destination": destination_queue_arn}},
+            BatchSize=1,
+            StartingPosition="TRIM_HORIZON",
+            MaximumBatchingWindowInSeconds=1,
+            MaximumRetryAttempts=1,
+        )
+
+        uuid = create_response["UUID"]
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
+        snapshot.match("create_response", create_response)
+
+        # the stream might not be active immediately(!)
+        _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
+
+        get_response = aws_client.lambda_.get_event_source_mapping(UUID=uuid)
+        snapshot.match("get_response", get_response)
+
+        delete_function_response = aws_client.lambda_.delete_function(FunctionName=function_name)
+        snapshot.match("delete_function_response", delete_function_response)
+
+        def _assert_function_deleted():
+            with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
+                aws_client.lambda_.get_function(FunctionName=function_name)
+            return True
+
+        wait_until(_assert_function_deleted)
+
+        get_response_post_delete = aws_client.lambda_.get_event_source_mapping(UUID=uuid)
+        snapshot.match("get_response_post_delete", get_response_post_delete)
+        #
+        delete_response = aws_client.lambda_.delete_event_source_mapping(UUID=uuid)
+        snapshot.match("delete_response", delete_response)
+
     @markers.aws.validated
     def test_function_name_variations(
         self,
@@ -5218,6 +5561,14 @@ class TestLambdaEventSourceMappings:
             _await_event_source_mapping_enabled(aws_client.lambda_, result["UUID"])
             aws_client.lambda_.delete_event_source_mapping(UUID=result["UUID"])
 
+            def _assert_esm_deleted():
+                with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
+                    aws_client.lambda_.get_event_source_mapping(UUID=result["UUID"])
+
+                return True
+
+            wait_until(_assert_esm_deleted)
+
         _create_esm("name_only", function_name)
         _create_esm("partial_arn_latest", f"{function_name}:$LATEST")
         _create_esm("partial_arn_version", f"{function_name}:{v1['Version']}")
@@ -5257,6 +5608,68 @@ class TestLambdaEventSourceMappings:
         snapshot.match("error", response)
 
     @markers.aws.validated
+    def test_create_event_filter_criteria_validation(
+        self,
+        create_lambda_function,
+        lambda_su_role,
+        dynamodb_create_table,
+        snapshot,
+        aws_client,
+    ):
+        function_name = f"function-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
+
+        table_name = f"table-{short_uid()}"
+        # FIXME: Why is this not being automatically transformed?
+        snapshot.add_transformer(snapshot.transform.regex(table_name, "<table-name>"))
+
+        dynamodb_create_table(table_name=table_name, partition_key="id")
+        _await_dynamodb_table_active(aws_client.dynamodb, table_name)
+        update_table_response = aws_client.dynamodb.update_table(
+            TableName=table_name,
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
+        )
+        stream_arn = update_table_response["TableDescription"]["LatestStreamArn"]
+
+        response = aws_client.lambda_.create_event_source_mapping(
+            FunctionName=function_name,
+            EventSourceArn=stream_arn,
+            StartingPosition="LATEST",
+            FilterCriteria={"Filters": []},
+        )
+        snapshot.match("response-with-empty-filters", response)
+
+        with pytest.raises(ParamValidationError):
+            aws_client.lambda_.create_event_source_mapping(
+                FunctionName=function_name,
+                EventSourceArn=stream_arn,
+                StartingPosition="LATEST",
+                FilterCriteria={"Filters": [{"Pattern": []}]},
+            )
+
+        with pytest.raises(ParamValidationError):
+            aws_client.lambda_.create_event_source_mapping(
+                FunctionName=function_name,
+                EventSourceArn=stream_arn,
+                StartingPosition="LATEST",
+                FilterCriteria={"wrong": []},
+            )
+
+        with pytest.raises(ParamValidationError):
+            aws_client.lambda_.create_event_source_mapping(
+                FunctionName=function_name,
+                EventSourceArn=stream_arn,
+                StartingPosition="LATEST",
+                FilterCriteria=None,
+            )
+
+    @markers.aws.validated
+    @pytest.mark.skip(reason="ESM v2 validation for Kafka poller only works with ext")
     def test_create_event_source_self_managed(
         self,
         create_lambda_function,
@@ -5400,7 +5813,7 @@ class TestLambdaTags:
         assert "b_key" in aws_client.lambda_.list_tags(Resource=function_arn)["Tags"]
 
     @markers.aws.validated
-    def test_tag_limits(self, create_lambda_function, snapshot, aws_client):
+    def test_tag_limits(self, create_lambda_function, snapshot, aws_client, lambda_su_role):
         """test the limit of 50 tags per resource"""
         function_name = f"fn-tag-{short_uid()}"
         create_lambda_function(
@@ -5435,6 +5848,21 @@ class TestLambdaTags:
         with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
             aws_client.lambda_.tag_resource(Resource=function_arn, Tags={"a_key": "a_value"})
         snapshot.match("tag_lambda_too_many_tags_additional", e.value.response)
+
+        # add too many tags on a CreateFunction
+        function_name = f"fn-tag-{short_uid()}"
+        zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName=function_name,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+                Tags={f"{k}_key": f"{k}_value" for k in range(51)},
+            )
+        snapshot.match("create_function_invalid_tags", e.value.response)
 
     @markers.aws.validated
     def test_tag_versions(self, create_lambda_function, snapshot, aws_client):
@@ -6196,22 +6624,17 @@ class TestLambdaLayer:
 
 class TestLambdaSnapStart:
     @markers.aws.validated
-    @pytest.mark.parametrize("runtime", SNAP_START_SUPPORTED_RUNTIMES)
-    def test_snapstart_lifecycle(self, create_lambda_function, snapshot, aws_client, runtime):
+    @markers.lambda_runtime_update
+    @markers.multiruntime(scenario="echo")
+    def test_snapstart_lifecycle(self, multiruntime_lambda, snapshot, aws_client):
         """Test the API of the SnapStart feature. The optimization behavior is not supported in LocalStack.
         Slow (~1-2min) against AWS.
         """
-        function_name = f"fn-{short_uid()}"
-        java_jar_with_lib = load_file(TEST_LAMBDA_JAVA_WITH_LIB, mode="rb")
-        create_response = create_lambda_function(
-            func_name=function_name,
-            zip_file=java_jar_with_lib,
-            runtime=runtime,
-            handler="cloud.localstack.sample.LambdaHandlerWithLib",
-            SnapStart={"ApplyOn": "PublishedVersions"},
+        create_function_response = multiruntime_lambda.create_function(
+            MemorySize=1024, Timeout=5, SnapStart={"ApplyOn": "PublishedVersions"}
         )
-        snapshot.match("create_function_response", create_response)
-        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        function_name = create_function_response["FunctionName"]
+        snapshot.match("create_function_response", create_function_response)
 
         publish_response = aws_client.lambda_.publish_version(
             FunctionName=function_name, Description="version1"
@@ -6230,20 +6653,15 @@ class TestLambdaSnapStart:
         snapshot.match("get_function_response_version_1", get_function_response)
 
     @markers.aws.validated
-    @pytest.mark.parametrize("runtime", [Runtime.java21, Runtime.java17])
+    @markers.lambda_runtime_update
+    @markers.multiruntime(scenario="echo")
     def test_snapstart_update_function_configuration(
-        self, create_lambda_function, snapshot, aws_client, runtime
+        self, multiruntime_lambda, snapshot, aws_client
     ):
         """Test enabling SnapStart when updating a function."""
-        function_name = f"fn-{short_uid()}"
-        java_jar_with_lib = load_file(TEST_LAMBDA_JAVA_WITH_LIB, mode="rb")
-        create_response = create_lambda_function(
-            func_name=function_name,
-            zip_file=java_jar_with_lib,
-            runtime=runtime,
-            handler="cloud.localstack.sample.LambdaHandlerWithLib",
-        )
-        snapshot.match("create_function_response", create_response)
+        create_function_response = multiruntime_lambda.create_function(MemorySize=1024, Timeout=5)
+        function_name = create_function_response["FunctionName"]
+        snapshot.match("create_function_response", create_function_response)
         aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
 
         update_function_response = aws_client.lambda_.update_function_configuration(
@@ -6256,19 +6674,6 @@ class TestLambdaSnapStart:
     def test_snapstart_exceptions(self, lambda_su_role, snapshot, aws_client):
         function_name = f"invalid-function-{short_uid()}"
         zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
-        # Test unsupported runtime
-        # Only supports java11 (2023-02-15): https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html
-        with pytest.raises(ClientError) as e:
-            aws_client.lambda_.create_function(
-                FunctionName=function_name,
-                Handler="index.handler",
-                Code={"ZipFile": zip_file_bytes},
-                PackageType="Zip",
-                Role=lambda_su_role,
-                Runtime=Runtime.python3_12,
-                SnapStart={"ApplyOn": "PublishedVersions"},
-            )
-        snapshot.match("create_function_unsupported_snapstart_runtime", e.value.response)
 
         with pytest.raises(ClientError) as e:
             aws_client.lambda_.create_function(
