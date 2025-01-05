@@ -280,6 +280,7 @@ class KmsKey:
             # remove the _custom_key_material_ tag from the tags to not readily expose the custom key material
             del self.tags[TAG_KEY_CUSTOM_KEY_MATERIAL]
         self.crypto_key = KmsCryptoKey(self.metadata.get("KeySpec"), custom_key_material)
+        self.rotation_period_in_days = 0
         self.next_rotation_date = None
 
     def calculate_and_set_arn(self, account_id, region):
