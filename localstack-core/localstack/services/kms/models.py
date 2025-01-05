@@ -575,7 +575,9 @@ class KmsKey:
 
     def schedule_key_rotation(self) -> None:
         if not self.next_rotation_date or self.next_rotation_date < datetime.datetime.now():
-            self.next_rotation_date = datetime.datetime.now() + datetime.timedelta(days=self.rotation_period_in_days)
+            self.next_rotation_date = datetime.datetime.now() + datetime.timedelta(
+                days=self.rotation_period_in_days
+            )
 
     # An example of how the whole policy should look like:
     # https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-overview.html

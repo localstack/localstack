@@ -1254,9 +1254,12 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # We do not model that here, though.
         account_id, region_name, key_id = self._parse_key_id(request["KeyId"], context)
         key = self._get_kms_key(account_id, region_name, key_id, any_key_state_allowed=True)
-        return GetKeyRotationStatusResponse(KeyId=key.metadata["KeyId"], KeyRotationEnabled=key.is_key_rotation_enabled,
-                                            NextRotationDate=key.next_rotation_date,
-                                            RotationPeriodInDays=key.rotation_period_in_days)
+        return GetKeyRotationStatusResponse(
+            KeyId=key.metadata["KeyId"],
+            KeyRotationEnabled=key.is_key_rotation_enabled,
+            NextRotationDate=key.next_rotation_date,
+            RotationPeriodInDays=key.rotation_period_in_days,
+        )
 
     @handler("DisableKeyRotation", expand=False)
     def disable_key_rotation(
