@@ -245,6 +245,8 @@ class KmsKey:
     tags: Dict[str, str]
     policy: str
     is_key_rotation_enabled: bool
+    rotation_period_in_days: int
+    next_rotation_date: datetime.datetime
 
     def __init__(
         self,
@@ -278,6 +280,7 @@ class KmsKey:
             # remove the _custom_key_material_ tag from the tags to not readily expose the custom key material
             del self.tags[TAG_KEY_CUSTOM_KEY_MATERIAL]
         self.crypto_key = KmsCryptoKey(self.metadata.get("KeySpec"), custom_key_material)
+        self.next_rotation_date = None
 
     def calculate_and_set_arn(self, account_id, region):
         self.metadata["Arn"] = kms_key_arn(self.metadata.get("KeyId"), account_id, region)
@@ -569,6 +572,10 @@ class KmsKey:
         self.metadata["DeletionDate"] = datetime.datetime.now() + datetime.timedelta(
             days=pending_window_in_days
         )
+
+    def schedule_key_rotation(self) -> None:
+        if not self.next_rotation_date or self.next_rotation_date < datetime.datetime.now():
+            self.next_rotation_date = datetime.datetime.now() + datetime.timedelta(days=self.rotation_period_in_days)
 
     # An example of how the whole policy should look like:
     # https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-overview.html
