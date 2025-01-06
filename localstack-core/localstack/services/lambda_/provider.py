@@ -3528,7 +3528,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             next_version = LambdaLayerVersionIdentifier(
                 account_id=account, region=region, layer_name=layer_name
             ).generate(next_version=layer.next_version)
-            layer.next_version = max(next_version, layer.next_version) + 1
+            # When creating a layer with user defined layer version, it is possible that we
+            # create layer versions out of order.
+            # ie. a user could replicate layer v2 then layer v1. It is important to always keep the maximum possible
+            # value for next layer to avoid overwriting existing versions
+            if layer.next_version <= next_version:
+                # We don't need to update layer.next_version if the created version is lower than the "next in line"
+                layer.next_version = max(next_version, layer.next_version) + 1
 
         # creating a new layer
         if content.get("ZipFile"):

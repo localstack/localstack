@@ -6627,6 +6627,10 @@ class TestLambdaLayer:
     def test_layer_deterministic_version(
         self, dummylayer, cleanups, aws_client, account_id, region_name, set_resource_custom_id
     ):
+        """
+        Test deterministic layer version generation.
+        Ensuring we can control the version of the layer created through the LocalstackIdManager
+        """
         layer_name = f"testlayer-{short_uid()}"
         layer_version = randint(1, 10)
 
