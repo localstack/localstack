@@ -1,4 +1,34 @@
 {
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_create_schedule_group[False-False]": {
+    "last_validated_date": "2025-01-07T13:06:55+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_create_schedule_group[False-True]": {
+    "last_validated_date": "2025-01-07T13:06:42+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_create_schedule_group[True-False]": {
+    "last_validated_date": "2025-01-07T13:06:29+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_create_schedule_group[True-True]": {
+    "last_validated_date": "2025-01-07T13:06:15+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_get_schedule_group[False]": {
+    "last_validated_date": "2025-01-07T13:07:22+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_get_schedule_group[True]": {
+    "last_validated_date": "2025-01-07T13:07:09+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_get_schedule_group_not_found": {
+    "last_validated_date": "2025-01-07T13:07:35+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_list_schedule_groups[False]": {
+    "last_validated_date": "2025-01-07T13:08:02+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_list_schedule_groups[True]": {
+    "last_validated_date": "2025-01-07T13:07:36+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_list_schedule_groups_not_found": {
+    "last_validated_date": "2025-01-07T13:08:28+00:00"
+  },
   "tests/aws/services/scheduler/test_scheduler.py::test_list_schedules": {
     "last_validated_date": "2024-06-11T22:50:50+00:00"
   },
