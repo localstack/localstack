@@ -12,8 +12,8 @@ from tests.aws.services.events.helper_functions import (
     sqs_collect_messages,
 )
 from tests.aws.services.events.test_events import (
-    EVENT_DETAIL,
     SPECIAL_EVENT_DETAIL,
+    TEST_EVENT_DETAIL,
     TEST_EVENT_PATTERN,
 )
 
@@ -82,7 +82,7 @@ class TestInputPath:
             {
                 "Source": TEST_EVENT_PATTERN["source"][0],
                 "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
             }
         ]
         entries_asserts = [(entries1, True)]
@@ -101,7 +101,7 @@ class TestInputPath:
         snapshot.match("message", messages)
 
     @markers.aws.validated
-    @pytest.mark.parametrize("event_detail", [EVENT_DETAIL, EVENT_DETAIL_DUPLICATED_KEY])
+    @pytest.mark.parametrize("event_detail", [TEST_EVENT_DETAIL, EVENT_DETAIL_DUPLICATED_KEY])
     def test_put_events_with_input_path_nested(
         self, event_detail, put_events_with_filter_to_sqs, snapshot
     ):
@@ -135,7 +135,7 @@ class TestInputPath:
             {
                 "Source": TEST_EVENT_PATTERN["source"][0],
                 "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
             }
         ]
         entries_asserts = [(entries1, True)]
@@ -193,7 +193,7 @@ class TestInputPath:
                     "EventBusName": bus_name,
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
                 }
             ]
         )
@@ -235,7 +235,7 @@ class TestInputTransformer:
             {
                 "Source": TEST_EVENT_PATTERN["source"][0],
                 "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
             }
         ]
         entries_asserts = [(entries, True)]
@@ -294,7 +294,7 @@ class TestInputTransformer:
             {
                 "Source": TEST_EVENT_PATTERN["source"][0],
                 "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
             }
         ]
         entries_asserts = [(entries, True)]
@@ -455,7 +455,7 @@ class TestInputTransformer:
                     "EventBusName": bus_name,
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
                 }
             ]
         )

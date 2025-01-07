@@ -161,6 +161,18 @@ class TargetSender(ABC):
         return self.target["Arn"]
 
     @property
+    def target_id(self):
+        return self.target["Id"]
+
+    @property
+    def unique_id(self):
+        """Necessary to distinguish between targets with the same ARN but for different rules.
+        The unique_id is a combination of the rule ARN and the Target Id.
+        This is necessary since input path and input transformer can be different for the same target ARN,
+        attached to different rules."""
+        return f"{self.rule_arn}-{self.target_id}"
+
+    @property
     def client(self):
         """Lazy initialization of internal botoclient factory."""
         if self._client is None:
@@ -263,7 +275,7 @@ class TargetSender(ABC):
         return predefined_template_replacements
 
 
-TargetSenderDict = dict[Arn, TargetSender]
+TargetSenderDict = dict[str, TargetSender]  # rule_arn-target_id as global unique id
 
 # Target Senders are ordered alphabetically by service name
 
