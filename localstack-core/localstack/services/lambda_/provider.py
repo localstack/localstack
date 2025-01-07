@@ -201,6 +201,7 @@ from localstack.services.lambda_.invocation.runtime_executor import get_runtime_
 from localstack.services.lambda_.lambda_utils import HINT_LOG
 from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
 from localstack.services.lambda_.provider_utils import (
+    LambdaLayerVersionIdentifier,
     get_function_version,
     get_function_version_from_arn,
 )
@@ -3524,8 +3525,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         layer = state.layers[layer_name]
         with layer.next_version_lock:
-            next_version = layer.next_version
-            layer.next_version += 1
+            next_version = LambdaLayerVersionIdentifier(
+                account_id=account, region=region, layer_name=layer_name
+            ).generate(next_version=layer.next_version)
+            # When creating a layer with user defined layer version, it is possible that we
+            # create layer versions out of order.
+            # ie. a user could replicate layer v2 then layer v1. It is important to always keep the maximum possible
+            # value for next layer to avoid overwriting existing versions
+            if layer.next_version <= next_version:
+                # We don't need to update layer.next_version if the created version is lower than the "next in line"
+                layer.next_version = max(next_version, layer.next_version) + 1
 
         # creating a new layer
         if content.get("ZipFile"):
@@ -3606,7 +3615,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         store = lambda_stores[account_id][region_name]
-        layer_version = store.layers.get(layer_name, {}).layer_versions.get(layer_version)
+        if not (layers := store.layers.get(layer_name)):
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )
+
+        layer_version = layers.layer_versions.get(layer_version)
 
         if not layer_version:
             raise ResourceNotFoundException(

@@ -269,6 +269,9 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents_with_updated_maximum_message_size[sqs_query]": {
     "last_validated_date": "2024-04-30T13:33:10+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_to_standard_queue_with_empty_message_group_id": {
+    "last_validated_date": "2024-11-08T12:08:17+00:00"
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_binary_attributes[sqs]": {
     "last_validated_date": "2024-04-30T13:33:48+00:00"
   },

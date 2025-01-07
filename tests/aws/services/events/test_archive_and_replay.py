@@ -13,7 +13,7 @@ from tests.aws.services.events.helper_functions import (
     wait_for_replay_in_state,
 )
 from tests.aws.services.events.test_events import (
-    EVENT_DETAIL,
+    TEST_EVENT_DETAIL,
     TEST_EVENT_PATTERN,
     TEST_EVENT_PATTERN_NO_DETAIL,
 )
@@ -219,7 +219,7 @@ class TestArchive:
             entry = {
                 "Source": TEST_EVENT_PATTERN["source"][0],
                 "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
             }
             entries.append(entry)
 
@@ -412,7 +412,7 @@ class TestReplay:
             entry = {
                 "Source": TEST_EVENT_PATTERN["source"][0],
                 "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
                 "EventBusName": event_bus_name,
             }
             entries.append(entry)

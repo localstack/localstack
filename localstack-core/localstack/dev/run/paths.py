@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from typing import Optional, Union
+from typing import Callable, Optional, Union
 
 
 class HostPaths:
@@ -47,6 +47,21 @@ class HostPaths:
         return (
             self.localstack_pro_project_dir / "localstack-pro-core" / "localstack" / "pro" / "core"
         )
+
+
+# Type representing how to extract a specific path from a common root path, typically a lambda function
+PathMappingExtractor = Callable[[HostPaths], Path]
+
+# Declaration of which local packages can be mounted into the container, and their locations on the host
+HOST_PATH_MAPPINGS: dict[
+    str,
+    PathMappingExtractor,
+] = {
+    "moto": lambda paths: paths.moto_project_dir / "moto",
+    "postgresql_proxy": lambda paths: paths.postgresql_proxy / "postgresql_proxy",
+    "rolo": lambda paths: paths.rolo_dir / "rolo",
+    "plux": lambda paths: paths.workspace_dir / "plux" / "plugin",
+}
 
 
 class ContainerPaths:

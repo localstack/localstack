@@ -146,6 +146,7 @@
 /localstack-core/localstack/aws/api/events/ @maxhoheiser @joe4dev
 /localstack-core/localstack/services/events/ @maxhoheiser @joe4dev
 /tests/aws/services/events/ @maxhoheiser @joe4dev
+/tests/unit/services/events/ @maxhoheiser @joe4dev
 
 # firehose
 /localstack-core/localstack/aws/api/firehose/ @pinzon

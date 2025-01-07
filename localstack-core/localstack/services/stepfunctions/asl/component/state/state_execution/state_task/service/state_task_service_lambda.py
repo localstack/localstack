@@ -15,7 +15,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     lambda_eval_utils,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
-    ComputedCredentials,
+    StateCredentials,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceCondition,
@@ -122,12 +122,11 @@ class StateTaskServiceLambda(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-        task_credentials: ComputedCredentials,
+        state_credentials: StateCredentials,
     ):
         lambda_eval_utils.exec_lambda_function(
             env=env,
             parameters=normalised_parameters,
             region=resource_runtime_part.region,
-            account=resource_runtime_part.account,
-            credentials=task_credentials,
+            state_credentials=state_credentials,
         )

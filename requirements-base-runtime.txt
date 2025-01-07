@@ -9,11 +9,11 @@ attrs==24.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.23.5
+awscrt==0.23.6
     # via localstack-core (pyproject.toml)
-boto3==1.35.81
+boto3==1.35.86
     # via localstack-core (pyproject.toml)
-botocore==1.35.81
+botocore==1.35.86
     # via
     #   boto3
     #   localstack-core (pyproject.toml)
@@ -28,9 +28,9 @@ certifi==2024.12.14
     # via requests
 cffi==1.17.1
     # via cryptography
-charset-normalizer==3.4.0
+charset-normalizer==3.4.1
     # via requests
-click==8.1.7
+click==8.1.8
     # via localstack-core (pyproject.toml)
 constantly==23.10.4
     # via localstack-twisted
@@ -124,11 +124,11 @@ priority==1.3.0
     # via
     #   hypercorn
     #   localstack-twisted
-psutil==6.1.0
+psutil==6.1.1
     # via localstack-core (pyproject.toml)
 pycparser==2.22
     # via cffi
-pygments==2.18.0
+pygments==2.19.1
     # via rich
 pyopenssl==24.3.0
     # via
@@ -184,7 +184,7 @@ typing-extensions==4.12.2
     # via
     #   localstack-twisted
     #   readerwriterlock
-urllib3==2.2.3
+urllib3==2.3.0
     # via
     #   botocore
     #   docker
