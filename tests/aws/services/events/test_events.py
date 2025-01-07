@@ -1414,7 +1414,7 @@ class TestEventRule:
         events_put_rule,
         aws_client,
     ):
-        """two rules with each two sqs targets, all 4 ques should receive the event"""
+        """two rules with each two sqs targets, all 4 queues should receive the event"""
 
         custom_bus_name = f"test-bus-{short_uid()}"
         events_create_event_bus(Name=custom_bus_name)
