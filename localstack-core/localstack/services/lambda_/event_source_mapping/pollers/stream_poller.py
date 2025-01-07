@@ -334,7 +334,12 @@ class StreamPoller(Poller):
                 sns_client.publish(TopicArn=dlq_arn, Message=json.dumps(dlq_event))
             elif service == "s3":
                 s3_client = get_internal_client(dlq_arn)
-                dlq_event_with_payload = self.add_payload_to_dlq_event(dlq_event, events)
+                dlq_event_with_payload = {
+                    **dlq_event,
+                    "payload": {
+                        "Records": events,
+                    },
+                }
                 s3_client.put_object(
                     Bucket=s3_bucket_name(dlq_arn),
                     Key=get_failure_s3_object_key(self.esm_uuid, shard_id, failure_timstamp),
@@ -370,14 +375,6 @@ class StreamPoller(Poller):
                 "+00:00", "Z"
             ),
             "version": "1.0",
-        }
-
-    def add_payload_to_dlq_event(self, dlq_event: dict, events) -> dict:
-        return {
-            **dlq_event,
-            "payload": {
-                "Records": events,
-            },
         }
 
     def max_retries_exceeded(self, attempts: int) -> bool:
