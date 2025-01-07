@@ -17,6 +17,7 @@ import re
 import threading
 from hashlib import sha256
 from io import BytesIO
+from random import randint
 from typing import Callable
 
 import pytest
@@ -33,6 +34,7 @@ from localstack.aws.api.lambda_ import (
 )
 from localstack.services.lambda_.api_utils import ARCHITECTURES
 from localstack.services.lambda_.provider import TAG_KEY_CUSTOM_URL
+from localstack.services.lambda_.provider_utils import LambdaLayerVersionIdentifier
 from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
     DEPRECATED_RUNTIMES,
@@ -6620,6 +6622,37 @@ class TestLambdaLayer:
         snapshot.match(
             "get_layer_version_policy_postdeletes2", get_layer_version_policy_postdeletes2
         )
+
+    @markers.aws.only_localstack(reason="Deterministic id generation is LS only")
+    def test_layer_deterministic_version(
+        self, dummylayer, cleanups, aws_client, account_id, region_name, set_resource_custom_id
+    ):
+        """
+        Test deterministic layer version generation.
+        Ensuring we can control the version of the layer created through the LocalstackIdManager
+        """
+        layer_name = f"testlayer-{short_uid()}"
+        layer_version = randint(1, 10)
+
+        layer_version_identifier = LambdaLayerVersionIdentifier(
+            account_id=account_id, region=region_name, layer_name=layer_name
+        )
+        set_resource_custom_id(layer_version_identifier, layer_version)
+        publish_result = aws_client.lambda_.publish_layer_version(
+            LayerName=layer_name,
+            CompatibleRuntimes=[Runtime.python3_12],
+            Content={"ZipFile": dummylayer},
+            CompatibleArchitectures=[Architecture.x86_64],
+        )
+        cleanups.append(
+            lambda: aws_client.lambda_.delete_layer_version(
+                LayerName=layer_name, VersionNumber=publish_result["Version"]
+            )
+        )
+        assert publish_result["Version"] == layer_version
+
+        # Try to get the layer version. it will raise an error if it can't be found
+        aws_client.lambda_.get_layer_version(LayerName=layer_name, VersionNumber=layer_version)
 
 
 class TestLambdaSnapStart:

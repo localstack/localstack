@@ -64,9 +64,9 @@ certifi==2024.12.14
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.22.2
+cfn-lint==1.22.3
     # via moto-ext
-charset-normalizer==3.4.0
+charset-normalizer==3.4.1
     # via requests
 click==8.1.8
     # via
@@ -243,7 +243,7 @@ pydantic==2.10.4
     # via aws-sam-translator
 pydantic-core==2.27.2
     # via pydantic
-pygments==2.18.0
+pygments==2.19.1
     # via rich
 pymongo==4.10.1
     # via localstack-core (pyproject.toml)
@@ -252,7 +252,7 @@ pyopenssl==24.3.0
     #   localstack-core
     #   localstack-core (pyproject.toml)
     #   localstack-twisted
-pyparsing==3.2.0
+pyparsing==3.2.1
     # via moto-ext
 pyproject-hooks==1.2.0
     # via build

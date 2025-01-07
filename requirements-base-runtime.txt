@@ -28,7 +28,7 @@ certifi==2024.12.14
     # via requests
 cffi==1.17.1
     # via cryptography
-charset-normalizer==3.4.0
+charset-normalizer==3.4.1
     # via requests
 click==8.1.8
     # via localstack-core (pyproject.toml)
@@ -128,7 +128,7 @@ psutil==6.1.1
     # via localstack-core (pyproject.toml)
 pycparser==2.22
     # via cffi
-pygments==2.18.0
+pygments==2.19.1
     # via rich
 pyopenssl==24.3.0
     # via
