@@ -167,8 +167,8 @@ class TargetSender(ABC):
     @property
     def unique_id(self):
         """Necessary to distinguish between targets with the same ARN but for different rules.
-        The unique_id is a combination of the ARN and the rule ARN.
-        This is necessary nice input path and input transformer can be different for the same target ARN,
+        The unique_id is a combination of the rule ARN and the Target Id.
+        This is necessary since input path and input transformer can be different for the same target ARN,
         attached to different rules."""
         return f"{self.rule_arn}-{self.target_id}"
 
