@@ -15,6 +15,9 @@ class JSONataPackage(Package):
     def _get_installer(self, version: str) -> PackageInstaller:
         return JSONataPackageInstaller(version)
 
+    def get_versions(self) -> list[str]:
+        return [JSONATA_DEFAULT_VERSION]
+
 
 class JSONataPackageInstaller(JavaInstallerMixin, MavenPackageInstaller):
     def __init__(self, version: str):
