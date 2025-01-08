@@ -20,7 +20,13 @@ from localstack.utils.files import get_user_cache_dir
 from localstack.utils.run import run
 from localstack.utils.strings import md5
 
-from .paths import CommunityContainerPaths, ContainerPaths, HostPaths, ProContainerPaths
+from .paths import (
+    HOST_PATH_MAPPINGS,
+    CommunityContainerPaths,
+    ContainerPaths,
+    HostPaths,
+    ProContainerPaths,
+)
 
 
 class ConfigEnvironmentConfigurator:
@@ -117,10 +123,12 @@ class SourceVolumeMountConfigurator:
         *,
         host_paths: HostPaths = None,
         pro: bool = False,
+        chosen_packages: list[str] | None = None,
     ):
         self.host_paths = host_paths or HostPaths()
         self.container_paths = ProContainerPaths() if pro else CommunityContainerPaths()
         self.pro = pro
+        self.chosen_packages = chosen_packages or []
 
     def __call__(self, cfg: ContainerConfiguration):
         # localstack source code if available
@@ -142,17 +150,11 @@ class SourceVolumeMountConfigurator:
                     )
                 )
 
-        # moto code if available
-        self.try_mount_to_site_packages(cfg, self.host_paths.moto_project_dir / "moto")
-
-        # postgresql-proxy code if available
-        self.try_mount_to_site_packages(cfg, self.host_paths.postgresql_proxy / "postgresql_proxy")
-
-        # rolo code if available
-        self.try_mount_to_site_packages(cfg, self.host_paths.rolo_dir / "rolo")
-
-        # plux
-        self.try_mount_to_site_packages(cfg, self.host_paths.workspace_dir / "plux" / "plugin")
+        # mount local code checkouts if possible
+        for package_name in self.chosen_packages:
+            # Unconditional lookup because the CLI rejects incorect items
+            extractor = HOST_PATH_MAPPINGS[package_name]
+            self.try_mount_to_site_packages(cfg, extractor(self.host_paths))
 
         # docker entrypoint
         if self.pro:

@@ -889,6 +889,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # TODO: this operation is still really slow with streams enabled
         #  find a way to make it better, same way as the other operations, by using returnvalues
         # see https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.update.html
+
+        # We found out that 'Parameters' can be an empty list when the request comes from the AWS JS client.
+        if execute_statement_input.get("Parameters", None) == []:  # noqa
+            raise ValidationException(
+                "1 validation error detected: Value '[]' at 'parameters' failed to satisfy constraint: Member must have length greater than or equal to 1"
+            )
         return self.forward_request(context)
 
     #

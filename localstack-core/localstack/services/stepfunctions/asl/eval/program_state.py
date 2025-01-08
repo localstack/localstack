@@ -20,9 +20,13 @@ class ProgramStopped(ProgramState):
 
 
 class ProgramRunning(ProgramState):
+    _next_state_name: Optional[str]
+    _next_field_name: Optional[str]
+
     def __init__(self):
         super().__init__()
-        self._next_state_name: Optional[str] = None
+        self._next_state_name = None
+        self._next_field_name = None
 
     @property
     def next_state_name(self) -> str:
@@ -33,14 +37,19 @@ class ProgramRunning(ProgramState):
 
     @next_state_name.setter
     def next_state_name(self, next_state_name) -> None:
-        if not self._validate_next_state_name(next_state_name):
-            raise ValueError(f"No such NextState '{next_state_name}'.")
         self._next_state_name = next_state_name
+        self._next_field_name = None
 
-    @staticmethod
-    def _validate_next_state_name(next_state_name: Optional[str]) -> bool:
-        # TODO.
-        return bool(next_state_name)
+    @property
+    def next_field_name(self) -> str:
+        return self._next_field_name
+
+    @next_field_name.setter
+    def next_field_name(self, next_field_name) -> None:
+        next_state_name = self._next_state_name
+        if next_state_name is None:
+            raise RuntimeError("Could not set NextField from uninitialised ProgramState.")
+        self._next_field_name = next_field_name
 
 
 class ProgramError(ProgramState):

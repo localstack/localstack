@@ -158,7 +158,7 @@ To use LocalStack with a graphical user interface, you can use the following UI 
 
 ## Releases
 
-Please refer to [GitHub releases](https://github.com/localstack/localstack/releases) to see the complete list of changes for each release. For extended release notes, please refer to the [LocalStack Discuss](https://discuss.localstack.cloud/c/announcement/5).
+Please refer to [GitHub releases](https://github.com/localstack/localstack/releases) to see the complete list of changes for each release. For extended release notes, please refer to the [changelog](https://docs.localstack.cloud/references/changelog/).
 
 ## Contributing
 
@@ -179,7 +179,6 @@ upvote 👍 [feature requests](https://github.com/localstack/localstack/issues?q
 or 🗣️ discuss local cloud development:
 
 - [LocalStack Slack Community](https://localstack.cloud/contact/)
-- [LocalStack Discussion Page](https://discuss.localstack.cloud/)
 - [LocalStack GitHub Issue tracker](https://github.com/localstack/localstack/issues)
 
 ### Contributors

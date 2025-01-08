@@ -69,7 +69,6 @@ class TestLogs:
         _TEST_BASE_CONFIGURATIONS,
         ids=_TEST_BASE_CONFIGURATIONS_IDS,
     )
-    @markers.snapshot.skip_snapshot_verify(paths=["$..cause"])
     def test_base(
         self,
         aws_client,
@@ -103,7 +102,6 @@ class TestLogs:
         _TEST_PARTIAL_LOG_LEVEL_CONFIGURATIONS,
         ids=_TEST_PARTIAL_LOG_LEVEL_CONFIGURATIONS_IDS,
     )
-    @markers.snapshot.skip_snapshot_verify(paths=["$..cause"])
     def test_partial_log_levels(
         self,
         aws_client,

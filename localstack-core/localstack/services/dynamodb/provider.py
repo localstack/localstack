@@ -1310,6 +1310,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         #  find a way to make it better, same way as the other operations, by using returnvalues
         # see https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.update.html
         statement = execute_statement_input["Statement"]
+        # We found out that 'Parameters' can be an empty list when the request comes from the AWS JS client.
+        if execute_statement_input.get("Parameters", None) == []:  # noqa
+            raise ValidationException(
+                "1 validation error detected: Value '[]' at 'parameters' failed to satisfy constraint: Member must have length greater than or equal to 1"
+            )
         table_name = extract_table_name_from_partiql_update(statement)
         existing_items = None
         stream_type = table_name and get_table_stream_type(

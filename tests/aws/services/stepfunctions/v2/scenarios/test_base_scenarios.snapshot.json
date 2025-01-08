@@ -26105,5 +26105,489 @@
         "exception_value": "An error occurred (InvalidDefinition) when calling the CreateStateMachine operation: Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: String does not match RFC3339 timestamp at /States/WaitUntil/Timestamp'"
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_invalid_jsonpath[INVALID_JSONPATH_IN_ERRORPATH]": {
+    "recorded-date": "02-01-2025, 13:44:29",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "pass",
+              "output": {
+                "Error": "error-value"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "error-value"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "fail"
+            },
+            "timestamp": "timestamp",
+            "type": "FailStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'fail' (entered at the event id #4). The JSONPath '$.ErrorX' specified for the field 'ErrorPath' could not be found in the input '<json-input:1>'",
+              "error": "States.Runtime"
+            },
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_invalid_jsonpath[INVALID_JSONPATH_IN_STRING_EXPR_JSONPATH]": {
+    "recorded-date": "02-01-2025, 13:44:45",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'pass' (entered at the event id #2). The JSONPath '$.no_such_jsonpath' specified for the field 'value.$' could not be found in the input '<json-input:1>'",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_invalid_jsonpath[INVALID_JSONPATH_IN_STRING_EXPR_CONTEXTPATH]": {
+    "recorded-date": "02-01-2025, 13:45:01",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'pass' (entered at the event id #2). The JSONPath '$$.Execution.Input.no_such_jsonpath' specified for the field 'value.$' could not be found in the input '<json-input:1>'",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_invalid_jsonpath[ST.INVALID_JSONPATH_IN_CAUSEPATH]": {
+    "recorded-date": "02-01-2025, 14:21:03",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "pass",
+              "output": {
+                "Error": "error-value"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "error-value"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "fail"
+            },
+            "timestamp": "timestamp",
+            "type": "FailStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'fail' (entered at the event id #4). The JSONPath '$.NoSuchCausePath' specified for the field 'CausePath' could not be found in the input '<json-input:1>'",
+              "error": "States.Runtime"
+            },
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_invalid_jsonpath[ST.INVALID_JSONPATH_IN_INPUTPATH]": {
+    "recorded-date": "02-01-2025, 14:21:19",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'pass' (entered at the event id #2). Invalid path '$.NoSuchInputPath' : No results for path: $['NoSuchInputPath']",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_invalid_jsonpath[ST.INVALID_JSONPATH_IN_OUTPUTPATH]": {
+    "recorded-date": "02-01-2025, 14:21:35",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'pass' (entered at the event id #2). Invalid path '$.NoSuchOutputPath' : No results for path: $['NoSuchOutputPath']",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_invalid_jsonpath[ST.INVALID_JSONPATH_IN_TIMEOUTSECONDSPATH]": {
+    "recorded-date": "02-01-2025, 14:26:32",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "task"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'task' (entered at the event id #2). Invalid path '$.NoSuchTimeoutSecondsPath' : No results for path: $['NoSuchTimeoutSecondsPath']",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_invalid_jsonpath[ST.INVALID_JSONPATH_IN_HEARTBEATSECONDSPATH]": {
+    "recorded-date": "02-01-2025, 14:26:48",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "int-literal": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "task"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'task' (entered at the event id #2). Invalid path '$.NoSuchTimeoutSecondsPath' : No results for path: $['NoSuchTimeoutSecondsPath']",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

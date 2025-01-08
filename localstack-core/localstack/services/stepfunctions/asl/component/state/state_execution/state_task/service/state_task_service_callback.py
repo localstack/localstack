@@ -17,7 +17,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
     FailureEvent,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
-    ComputedCredentials,
+    StateCredentials,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceCondition,
@@ -66,7 +66,7 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-        task_credentials: ComputedCredentials,
+        state_credentials: StateCredentials,
     ) -> Callable[[], Optional[Any]]:
         raise RuntimeError(
             f"Unsupported .sync callback procedure in resource {self.resource.resource_arn}"
@@ -77,7 +77,7 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-        task_credentials: ComputedCredentials,
+        state_credentials: StateCredentials,
     ) -> Callable[[], Optional[Any]]:
         raise RuntimeError(
             f"Unsupported .sync2 callback procedure in resource {self.resource.resource_arn}"
@@ -149,7 +149,7 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-        task_credentials: ComputedCredentials,
+        state_credentials: StateCredentials,
     ) -> None:
         task_output = env.stack.pop()
 
@@ -190,7 +190,7 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
                         env=env,
                         resource_runtime_part=resource_runtime_part,
                         normalised_parameters=normalised_parameters,
-                        task_credentials=task_credentials,
+                        state_credentials=state_credentials,
                     )
                 else:
                     # The condition checks about the resource's condition is exhaustive leaving
@@ -199,7 +199,7 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
                         env=env,
                         resource_runtime_part=resource_runtime_part,
                         normalised_parameters=normalised_parameters,
-                        task_credentials=task_credentials,
+                        state_credentials=state_credentials,
                     )
 
                 outcome = self._eval_sync(
@@ -326,7 +326,7 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-        task_credentials: ComputedCredentials,
+        state_credentials: StateCredentials,
     ) -> None:
         if self._is_integration_pattern():
             output = env.stack[-1]
@@ -346,12 +346,12 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
                 env=env,
                 resource_runtime_part=resource_runtime_part,
                 normalised_parameters=normalised_parameters,
-                task_credentials=task_credentials,
+                state_credentials=state_credentials,
             )
 
         super()._after_eval_execution(
             env=env,
             resource_runtime_part=resource_runtime_part,
             normalised_parameters=normalised_parameters,
-            task_credentials=task_credentials,
+            state_credentials=state_credentials,
         )
