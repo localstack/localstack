@@ -149,8 +149,9 @@ class Environment:
     @property
     def next_state_name(self) -> Optional[str]:
         next_state_name: Optional[str] = None
-        if isinstance(self._program_state, ProgramRunning):
-            next_state_name = self._program_state.next_state_name
+        program_state = self._program_state
+        if isinstance(program_state, ProgramRunning):
+            next_state_name = program_state.next_state_name
         return next_state_name
 
     @next_state_name.setter
@@ -163,6 +164,23 @@ class Environment:
         else:
             raise RuntimeError(
                 f"Could not set NextState value when in state '{type(self._program_state)}'."
+            )
+
+    @property
+    def next_field_name(self) -> Optional[str]:
+        next_field_name: Optional[str] = None
+        program_state = self._program_state
+        if isinstance(program_state, ProgramRunning):
+            next_field_name = program_state.next_field_name
+        return next_field_name
+
+    @next_field_name.setter
+    def next_field_name(self, next_field_name: str) -> None:
+        if isinstance(self._program_state, ProgramRunning):
+            self._program_state.next_field_name = next_field_name
+        else:
+            raise RuntimeError(
+                f"Could not set NextField value when in state '{type(self._program_state)}'."
             )
 
     def program_state(self) -> ProgramState:

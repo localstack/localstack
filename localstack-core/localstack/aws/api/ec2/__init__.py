@@ -3102,6 +3102,11 @@ class SnapshotBlockPublicAccessState(StrEnum):
     unblocked = "unblocked"
 
 
+class SnapshotLocationEnum(StrEnum):
+    regional = "regional"
+    local = "local"
+
+
 class SnapshotState(StrEnum):
     pending = "pending"
     completed = "completed"
@@ -8444,6 +8449,7 @@ class CreateSnapshotRequest(ServiceRequest):
     OutpostArn: Optional[String]
     VolumeId: VolumeId
     TagSpecifications: Optional[TagSpecificationList]
+    Location: Optional[SnapshotLocationEnum]
     DryRun: Optional[Boolean]
 
 
@@ -8463,6 +8469,7 @@ class CreateSnapshotsRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
     DryRun: Optional[Boolean]
     CopyTagsFromSource: Optional[CopyTagsFromSource]
+    Location: Optional[SnapshotLocationEnum]
 
 
 class SnapshotInfo(TypedDict, total=False):
@@ -8478,6 +8485,7 @@ class SnapshotInfo(TypedDict, total=False):
     SnapshotId: Optional[String]
     OutpostArn: Optional[String]
     SseType: Optional[SSEType]
+    AvailabilityZone: Optional[String]
 
 
 SnapshotSet = List[SnapshotInfo]
@@ -13905,6 +13913,7 @@ class Snapshot(TypedDict, total=False):
     StorageTier: Optional[StorageTier]
     RestoreExpiryTime: Optional[MillisecondDateTime]
     SseType: Optional[SSEType]
+    AvailabilityZone: Optional[String]
     TransferType: Optional[TransferType]
     CompletionDurationMinutes: Optional[SnapshotCompletionDurationMinutesResponse]
     CompletionTime: Optional[MillisecondDateTime]
@@ -21083,6 +21092,7 @@ class Ec2Api:
         description: String = None,
         outpost_arn: String = None,
         tag_specifications: TagSpecificationList = None,
+        location: SnapshotLocationEnum = None,
         dry_run: Boolean = None,
         **kwargs,
     ) -> Snapshot:
@@ -21098,6 +21108,7 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
         copy_tags_from_source: CopyTagsFromSource = None,
+        location: SnapshotLocationEnum = None,
         **kwargs,
     ) -> CreateSnapshotsResult:
         raise NotImplementedError

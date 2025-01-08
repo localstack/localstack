@@ -660,7 +660,14 @@ def resolve_dns_from_upstream(hostname: str) -> str:
     if len(response.answer) == 0:
         raise ValueError(f"No DNS response found for hostname '{hostname}'")
 
-    ip_addresses = list(response.answer[0].items.keys())
+    ip_addresses = []
+    for answer in response.answer:
+        if answer.match(dns.rdataclass.IN, dns.rdatatype.A, dns.rdatatype.NONE):
+            ip_addresses.extend(answer.items.keys())
+
+    if not ip_addresses:
+        raise ValueError(f"No DNS records of type 'A' found for hostname '{hostname}'")
+
     return choice(ip_addresses).address
 
 

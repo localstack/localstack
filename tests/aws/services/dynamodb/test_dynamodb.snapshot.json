@@ -1456,5 +1456,20 @@
         "Status": "ENABLED"
       }
     }
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_execute_statement_empy_parameter": {
+    "recorded-date": "03-01-2025, 09:24:27",
+    "recorded-content": {
+      "invalid-param-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '[]' at 'parameters' failed to satisfy constraint: Member must have length greater than or equal to 1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

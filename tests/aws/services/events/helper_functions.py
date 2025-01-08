@@ -73,7 +73,10 @@ def put_entries_assert_results_sqs(
     messages = retry(get_message, retries=5, queue_url=queue_url)
 
     if should_match:
-        actual_event = json.loads(messages[0]["Body"])
+        try:
+            actual_event = json.loads(messages[0]["Body"])
+        except json.JSONDecodeError:
+            actual_event = messages[0]["Body"]
         if isinstance(actual_event, dict) and "detail" in actual_event:
             assert_valid_event(actual_event)
         return messages
