@@ -14,7 +14,7 @@ antlr4-python3-runtime==4.13.2
     # via
     #   localstack-core
     #   moto-ext
-anyio==4.7.0
+anyio==4.8.0
     # via httpx
 apispec==6.8.0
     # via localstack-core
@@ -27,15 +27,15 @@ attrs==24.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.216
+aws-cdk-asset-awscli-v1==2.2.218
     # via aws-cdk-lib
 aws-cdk-asset-kubectl-v20==2.1.3
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==38.0.1
+aws-cdk-cloud-assembly-schema==39.1.38
     # via aws-cdk-lib
-aws-cdk-lib==2.173.2
+aws-cdk-lib==2.174.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.94.0
     # via
@@ -83,9 +83,9 @@ certifi==2024.12.14
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.22.2
+cfn-lint==1.22.3
     # via moto-ext
-charset-normalizer==3.4.0
+charset-normalizer==3.4.1
     # via requests
 click==8.1.8
     # via
@@ -97,7 +97,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.4.2
     # via aws-cdk-lib
-coverage==7.6.9
+coverage==7.6.10
     # via localstack-core (pyproject.toml)
 crontab==1.0.1
     # via localstack-core
@@ -166,7 +166,7 @@ idna==3.10
     #   hyperlink
     #   localstack-twisted
     #   requests
-importlib-resources==6.4.5
+importlib-resources==6.5.2
     # via jsii
 incremental==24.7.2
     # via localstack-twisted
@@ -194,8 +194,6 @@ jsii==1.106.0
     #   constructs
 json5==0.10.0
     # via localstack-core
-jsondiff==2.2.1
-    # via moto-ext
 jsonpatch==1.33
     # via
     #   cfn-lint
@@ -240,7 +238,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.5.0
     # via openapi-core
-moto-ext==5.0.22.post1
+moto-ext==5.0.26.post1
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -302,7 +300,7 @@ publication==0.0.3
     #   aws-cdk-lib
     #   constructs
     #   jsii
-py-partiql-parser==0.5.6
+py-partiql-parser==0.6.1
     # via moto-ext
 pyasn1==0.6.1
     # via rsa
@@ -312,7 +310,7 @@ pydantic==2.10.4
     # via aws-sam-translator
 pydantic-core==2.27.2
     # via pydantic
-pygments==2.18.0
+pygments==2.19.1
     # via rich
 pymongo==4.10.1
     # via localstack-core
@@ -320,7 +318,7 @@ pyopenssl==24.3.0
     # via
     #   localstack-core
     #   localstack-twisted
-pyparsing==3.2.0
+pyparsing==3.2.1
     # via moto-ext
 pyproject-hooks==1.2.0
     # via build
@@ -352,7 +350,6 @@ pyyaml==6.0.2
     # via
     #   awscli
     #   cfn-lint
-    #   jsondiff
     #   jsonschema-path
     #   localstack-core
     #   localstack-core (pyproject.toml)
