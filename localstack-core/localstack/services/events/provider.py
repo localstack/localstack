@@ -963,7 +963,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         response = CreateEventBusResponse(
             EventBusArn=event_bus_service.arn,
         )
-        if description := event_bus_service.event_bus.description:
+        if description := getattr(event_bus_service.event_bus, "description", None):
             response["Description"] = description
         return response
 
@@ -1949,7 +1949,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             "Name": event_bus.name,
             "Arn": event_bus.arn,
         }
-        if event_bus.description:
+        if getattr(event_bus, "description", None):
             event_bus_api_type["Description"] = event_bus.description
         if event_bus.creation_time:
             event_bus_api_type["CreationTime"] = event_bus.creation_time
