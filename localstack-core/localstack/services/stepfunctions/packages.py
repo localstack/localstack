@@ -12,6 +12,9 @@ class JSONataPackage(Package):
     def __init__(self):
         super().__init__("JSONataLibs", JSONATA_DEFAULT_VERSION)
 
+        # Match the dynamodb-local JRE version to reduce the LocalStack image size by sharing the same JRE version
+        self.java_version = "21"
+
     def get_versions(self) -> list[str]:
         return list(JSONATA_JACKSON_VERSION_STORE.keys())
 
