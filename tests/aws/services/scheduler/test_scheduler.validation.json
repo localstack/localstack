@@ -201,7 +201,7 @@
     "last_validated_date": "2025-01-08T10:18:19+00:00"
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_list_schedules": {
-    "last_validated_date": "2025-01-08T10:14:29+00:00"
+    "last_validated_date": "2025-01-08T14:39:00+00:00"
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_list_schedules_non": {
     "last_validated_date": "2025-01-08T10:18:02+00:00"

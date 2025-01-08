@@ -1821,27 +1821,27 @@
     }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_list_schedules": {
-    "recorded-date": "08-01-2025, 10:14:29",
+    "recorded-date": "08-01-2025, 14:39:00",
     "recorded-content": {
       "list-schedules": {
         "Schedules": [
           {
-            "Arn": "<schedule-one-arn>",
+            "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<schedule-one-name>",
             "CreationDate": "<datetime>",
             "GroupName": "default",
             "LastModificationDate": "<datetime>",
-            "Name": "test-schedule-one-ecbade8b",
+            "Name": "<schedule-one-name>",
             "State": "ENABLED",
             "Target": {
               "Arn": "<target-sqs-queue-arn>"
             }
           },
           {
-            "Arn": "<schedule-two-arn>",
+            "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<schedule-two-name>",
             "CreationDate": "<datetime>",
             "GroupName": "default",
             "LastModificationDate": "<datetime>",
-            "Name": "test-schedule-two-0bee01c7",
+            "Name": "<schedule-two-name>",
             "State": "ENABLED",
             "Target": {
               "Arn": "<target-sqs-queue-arn>"

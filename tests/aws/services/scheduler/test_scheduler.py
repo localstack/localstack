@@ -298,6 +298,8 @@ class TestSchedule:
 
         snapshot.add_transformers_list(
             [
+                snapshot.transform.regex(name_one, "<schedule-one-name>"),
+                snapshot.transform.regex(name_two, "<schedule-two-name>"),
                 snapshot.transform.regex(schedule_arn_one, "<schedule-one-arn>"),
                 snapshot.transform.regex(schedule_arn_two, "<schedule-two-arn>"),
                 snapshot.transform.regex(queue_arn, "<target-sqs-queue-arn>"),
