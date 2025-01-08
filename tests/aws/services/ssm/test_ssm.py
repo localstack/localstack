@@ -85,6 +85,23 @@ class TestSSM:
         with pytest.raises(Exception):
             aws_client.ssm.get_parameter(Name=secret_name, WithDecryption=True)
 
+    @pytest.mark.skip(reason="WIP")
+    @markers.aws.validated
+    def test_put_and_get_via_arn(self, aws_client, cleanups, snapshot):
+        parameter_name = f"/foo/bar-{short_uid()}"
+        parameter_value = "myvalue"
+        snapshot.add_transformer(snapshot.transform.regex(parameter_name, "<parameter-name>"))
+        snapshot.add_transformer(snapshot.transform.regex(parameter_value, "<parameter-value>"))
+
+        aws_client.ssm.put_parameter(Name=parameter_name, Value=parameter_value, Type="String")
+        cleanups.append(lambda: aws_client.ssm.delete_parameter(Name=parameter_name))
+
+        get_by_name = aws_client.ssm.get_parameter(Name=parameter_name)
+        snapshot.match("get-by-name", get_by_name["Parameter"])
+
+        get_by_arn = aws_client.ssm.get_parameter(Name=get_by_name["Parameter"]["ARN"])
+        snapshot.match("get-by-arn", get_by_arn["Parameter"])
+
     @markers.aws.validated
     def test_get_inexistent_secret(self, aws_client):
         invalid_name = "/aws/reference/secretsmanager/inexistent"

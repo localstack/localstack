@@ -12,5 +12,28 @@
         "Version": 1
       }
     }
+  },
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_put_and_get_via_arn": {
+    "recorded-date": "08-01-2025, 00:32:38",
+    "recorded-content": {
+      "get-by-name": {
+        "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter<parameter-name>",
+        "DataType": "text",
+        "LastModifiedDate": "<datetime>",
+        "Name": "<parameter-name>",
+        "Type": "String",
+        "Value": "<parameter-value>",
+        "Version": 1
+      },
+      "get-by-arn": {
+        "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter<parameter-name>",
+        "DataType": "text",
+        "LastModifiedDate": "<datetime>",
+        "Name": "<parameter-name>",
+        "Type": "String",
+        "Value": "<parameter-value>",
+        "Version": 1
+      }
+    }
   }
 }
