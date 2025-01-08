@@ -9,8 +9,8 @@ class JSONataPackage(Package):
     def __init__(self):
         super().__init__("JSONataLibs", JSONATA_DEFAULT_VERSION)
 
-        # Match the dynamodb-local JRE version to reduce the LocalStack image size by sharing the same JRE version
-        self.java_version = "21"
+        # Warning: The `java_version` should be unique in LocalStack because JPype can only start a single JVM instance!
+        # Hence, we should avoid any conflicts with other JVM usages.
 
     def _get_installer(self, version: str) -> PackageInstaller:
         return JSONataPackageInstaller(version)
