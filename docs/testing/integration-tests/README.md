@@ -94,7 +94,7 @@ python -m pytest --log-cli-level=INFO tests/integration
 You can further specify the file and test class you want to run in the test path:
 
 ```bash
-TEST_PATH="tests/integration/docker/test_docker.py::TestDockerClient" make test
+TEST_PATH="tests/integration/docker_utils/test_docker.py::TestDockerClient" make test
 ```
 
 ### Test against a running LocalStack instance
