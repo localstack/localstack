@@ -214,8 +214,6 @@ jsii==1.106.0
     #   constructs
 json5==0.10.0
     # via localstack-core
-jsondiff==2.2.1
-    # via moto-ext
 jsonpatch==1.33
     # via
     #   cfn-lint
@@ -260,7 +258,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.5.0
     # via openapi-core
-moto-ext==5.0.22.post1
+moto-ext==5.0.26.post1
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -530,7 +528,7 @@ publication==0.0.3
     #   aws-cdk-lib
     #   constructs
     #   jsii
-py-partiql-parser==0.5.6
+py-partiql-parser==0.6.1
     # via moto-ext
 pyasn1==0.6.1
     # via rsa
@@ -582,7 +580,6 @@ pyyaml==6.0.2
     # via
     #   awscli
     #   cfn-lint
-    #   jsondiff
     #   jsonschema-path
     #   localstack-core
     #   localstack-core (pyproject.toml)
