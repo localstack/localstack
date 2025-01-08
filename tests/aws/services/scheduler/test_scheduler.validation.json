@@ -303,16 +303,16 @@
     "last_validated_date": "2025-01-08T11:14:33+00:00"
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_create_schedule_group[False-False]": {
-    "last_validated_date": "2025-01-07T13:06:55+00:00"
+    "last_validated_date": "2025-01-08T14:58:19+00:00"
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_create_schedule_group[False-True]": {
-    "last_validated_date": "2025-01-07T13:06:42+00:00"
+    "last_validated_date": "2025-01-08T14:58:06+00:00"
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_create_schedule_group[True-False]": {
-    "last_validated_date": "2025-01-07T13:06:29+00:00"
+    "last_validated_date": "2025-01-08T14:57:52+00:00"
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_create_schedule_group[True-True]": {
-    "last_validated_date": "2025-01-07T13:06:15+00:00"
+    "last_validated_date": "2025-01-08T14:57:39+00:00"
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_get_schedule_group[False]": {
     "last_validated_date": "2025-01-07T13:07:22+00:00"
