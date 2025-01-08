@@ -3079,5 +3079,82 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_s3_on_failure_destination": {
+    "recorded-date": "03-01-2025, 14:50:27",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:<partition>:s3:::<resource:1>"
+          }
+        },
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "record_body": {
+        "KinesisBatchInfo": {
+          "approximateArrivalOfFirstRecord": "<timestamp:2022-07-13T13:48:01.000Z>",
+          "approximateArrivalOfLastRecord": "<timestamp:2022-07-13T13:48:01.000Z>",
+          "batchSize": 1,
+          "endSequenceNumber": "<sequence-number:1>",
+          "shardId": "<kinesis-shard-id>",
+          "startSequenceNumber": "<sequence-number:1>",
+          "streamArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>"
+        },
+        "payload": {
+          "Records": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "custom",
+                "sequenceNumber": "<sequence-number:1>",
+                "data": "eyJpbnB1dCI6ICJoZWxsbyIsICJ2YWx1ZSI6ICJ3b3JsZCIsICJyYWlzZV9lcnJvciI6IDF9",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "<kinesis-shard-id>:<sequence-number:1>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:4>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>"
+            }
+          ]
+        },
+        "requestContext": {
+          "approximateInvokeCount": 2,
+          "condition": "RetryAttemptsExhausted",
+          "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+          "requestId": "<uuid:2>"
+        },
+        "responseContext": {
+          "executedVersion": "$LATEST",
+          "functionError": "Unhandled",
+          "statusCode": 200
+        },
+        "timestamp": "<timestamp:2022-07-13T13:48:01.000Z>",
+        "version": "1.0"
+      }
+    }
   }
 }

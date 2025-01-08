@@ -15,7 +15,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
     StatesErrorNameType,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
-    ComputedCredentials,
+    StateCredentials,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceCondition,
@@ -128,15 +128,14 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-        task_credentials: ComputedCredentials,
+        state_credentials: StateCredentials,
     ):
         service_name = self._get_boto_service_name()
         api_action = self._get_boto_service_action()
         api_client = boto_client_for(
-            region=resource_runtime_part.region,
-            account=resource_runtime_part.account,
             service=service_name,
-            credentials=task_credentials,
+            region=resource_runtime_part.region,
+            state_credentials=state_credentials,
         )
         response = getattr(api_client, api_action)(**normalised_parameters) or dict()
         if response:

@@ -606,7 +606,7 @@ class SdkDockerClient(ContainerClient):
         image_name: str,
         *,
         name: Optional[str] = None,
-        entrypoint: Optional[str] = None,
+        entrypoint: Optional[Union[List[str], str]] = None,
         remove: bool = False,
         interactive: bool = False,
         tty: bool = False,

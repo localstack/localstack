@@ -11,6 +11,18 @@
   "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template[yaml]": {
     "last_validated_date": "2022-08-11T08:55:10+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template_using_changesets[json]": {
+    "last_validated_date": "2025-01-02T19:09:40+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template_using_changesets[yaml]": {
+    "last_validated_date": "2025-01-02T19:08:41+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template_using_create_stack[json]": {
+    "last_validated_date": "2025-01-02T19:11:20+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template_using_create_stack[yaml]": {
+    "last_validated_date": "2025-01-02T19:11:14+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_list_events_after_deployment": {
     "last_validated_date": "2022-10-05T11:33:55+00:00"
   },

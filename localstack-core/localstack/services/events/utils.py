@@ -248,3 +248,32 @@ def get_trace_header_encoded_region_account(
             return json.dumps({"original_id": original_id, "original_account": source_account_id})
         else:
             return json.dumps({"original_account": source_account_id})
+
+
+def is_nested_in_string(template: str, match: re.Match[str]) -> bool:
+    """
+    Determines if a match (string) is within quotes in the given template.
+
+    Examples:
+    True for "users-service/users/<userId>"  # nested within larger string
+    True for "<userId>"                      # simple quoted placeholder
+    True for "Hello <name>"                  # nested within larger string
+    False for {"id": <userId>}               # not in quotes at all
+    """
+    start = match.start()
+    end = match.end()
+
+    left_quote = template.rfind('"', 0, start)
+    right_quote = template.find('"', end)
+    next_comma = template.find(",", end)
+    next_brace = template.find("}", end)
+
+    # If no right quote, or if comma/brace comes before right quote, not nested
+    if (
+        right_quote == -1
+        or (next_comma != -1 and next_comma < right_quote)
+        or (next_brace != -1 and next_brace < right_quote)
+    ):
+        return False
+
+    return left_quote != -1

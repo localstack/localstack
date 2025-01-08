@@ -105,6 +105,7 @@ def evaluate_payload(jsonata_payload_object: AssignTemplateValueObject) -> dict:
         activity_store=dict(),
     )
     env._program_state = ProgramRunning()
+    env.next_state_name = "test-state"
     jsonata_payload_object.eval(env)
     return env.stack.pop()
 

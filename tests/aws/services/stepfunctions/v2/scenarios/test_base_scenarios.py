@@ -2502,3 +2502,58 @@ class TestBaseScenarios:
             definition,
             exec_input,
         )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "template",
+        [
+            ST.load_sfn_template(ST.INVALID_JSONPATH_IN_ERRORPATH),
+            ST.load_sfn_template(ST.INVALID_JSONPATH_IN_STRING_EXPR_JSONPATH),
+            ST.load_sfn_template(ST.INVALID_JSONPATH_IN_STRING_EXPR_CONTEXTPATH),
+            ST.load_sfn_template(ST.INVALID_JSONPATH_IN_CAUSEPATH),
+            ST.load_sfn_template(ST.INVALID_JSONPATH_IN_INPUTPATH),
+            ST.load_sfn_template(ST.INVALID_JSONPATH_IN_OUTPUTPATH),
+            pytest.param(
+                ST.load_sfn_template(ST.INVALID_JSONPATH_IN_TIMEOUTSECONDSPATH),
+                marks=pytest.mark.skipif(
+                    condition=not is_aws_cloud(),
+                    reason="timeout computation is run at the state's level",
+                ),
+            ),
+            pytest.param(
+                ST.load_sfn_template(ST.INVALID_JSONPATH_IN_HEARTBEATSECONDSPATH),
+                marks=pytest.mark.skipif(
+                    condition=not is_aws_cloud(),
+                    reason="heartbeat computation is run at the state's level",
+                ),
+            ),
+        ],
+        ids=[
+            "INVALID_JSONPATH_IN_ERRORPATH",
+            "INVALID_JSONPATH_IN_STRING_EXPR_JSONPATH",
+            "INVALID_JSONPATH_IN_STRING_EXPR_CONTEXTPATH",
+            "ST.INVALID_JSONPATH_IN_CAUSEPATH",
+            "ST.INVALID_JSONPATH_IN_INPUTPATH",
+            "ST.INVALID_JSONPATH_IN_OUTPUTPATH",
+            "ST.INVALID_JSONPATH_IN_TIMEOUTSECONDSPATH",
+            "ST.INVALID_JSONPATH_IN_HEARTBEATSECONDSPATH",
+        ],
+    )
+    def test_invalid_jsonpath(
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        template,
+    ):
+        definition = json.dumps(template)
+        exec_input = json.dumps({"int-literal": 0})
+        create_and_record_execution(
+            aws_client,
+            create_state_machine_iam_role,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
