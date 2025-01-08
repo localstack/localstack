@@ -13,6 +13,7 @@ from localstack.aws.api.stepfunctions import (
     HistoryEventType,
     StateEnteredEventDetails,
     StateExitedEventDetails,
+    TaskFailedEventDetails,
 )
 from localstack.services.stepfunctions.asl.component.common.assign.assign_decl import AssignDecl
 from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import CatchOutcome
@@ -55,6 +56,7 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 from localstack.services.stepfunctions.asl.eval.program_state import ProgramRunning
 from localstack.services.stepfunctions.asl.eval.states import StateData
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.services.stepfunctions.asl.utils.json_path import NoSuchJsonPathError
 from localstack.services.stepfunctions.quotas import is_within_size_quota
 
 LOG = logging.getLogger(__name__)
@@ -208,8 +210,27 @@ class CommonStateField(EvalComponent, ABC):
             env.stack.append(env.states.get_input())
 
         # Exec the state's logic.
-        self._eval_state(env)
-        #
+        try:
+            self._eval_state(env)
+        except NoSuchJsonPathError as no_such_json_path_error:
+            data_json_str = to_json_str(no_such_json_path_error.data)
+            cause = (
+                f"The JSONPath '{no_such_json_path_error.json_path}' specified for the field '{env.next_field_name}' "
+                f"could not be found in the input '{data_json_str}'"
+            )
+            raise FailureEventException(
+                failure_event=FailureEvent(
+                    env=env,
+                    error_name=StatesErrorName(typ=StatesErrorNameType.StatesRuntime),
+                    event_type=HistoryEventType.TaskFailed,
+                    event_details=EventDetails(
+                        taskFailedEventDetails=TaskFailedEventDetails(
+                            error=StatesErrorNameType.StatesRuntime.to_name(), cause=cause
+                        )
+                    ),
+                )
+            )
+
         if not isinstance(env.program_state(), ProgramRunning):
             return
 
