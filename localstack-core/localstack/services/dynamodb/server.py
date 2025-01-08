@@ -145,6 +145,7 @@ class DynamodbServer(Server):
     def _create_shell_command(self) -> list[str]:
         cmd = [
             "java",
+            "-XX:UseSVE=0",  # See https://bugs.openjdk.org/browse/JDK-8345296
             "-Xmx%s" % self.heap_size,
             f"-javaagent:{dynamodblocal_package.get_installer().get_ddb_agent_jar_path()}",
             f"-Djava.library.path={self.library_path}",
