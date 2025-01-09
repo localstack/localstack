@@ -36,7 +36,7 @@ from .paths import HOST_PATH_MAPPINGS, HostPaths
     type=str,
     required=False,
     help="Overwrite the container image to be used (defaults to localstack/localstack or "
-    "localstack/localstack-pro.",
+    "localstack/localstack-pro).",
 )
 @click.option(
     "--volume-dir",
@@ -66,7 +66,7 @@ from .paths import HOST_PATH_MAPPINGS, HostPaths
     "--mount-source/--no-mount-source",
     is_flag=True,
     default=True,
-    help="Mount source files from localstack, localstack-ext, and moto into the container.",
+    help="Mount source files from localstack and localstack-ext. Use --local-packages for optional dependencies such as moto.",
 )
 @click.option(
     "--mount-dependencies/--no-mount-dependencies",
