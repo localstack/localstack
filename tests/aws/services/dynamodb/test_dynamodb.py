@@ -2341,6 +2341,14 @@ class TestDynamoDB:
 
     @markers.aws.validated
     @pytest.mark.parametrize("billing_mode", ["PAY_PER_REQUEST", "PROVISIONED"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # LS returns those and not AWS, probably because no changes happened there yet
+            "$..ProvisionedThroughput.LastDecreaseDateTime",
+            "$..ProvisionedThroughput.LastIncreaseDateTime",
+            "$..TableDescription.BillingModeSummary.LastUpdateToPayPerRequestDateTime",
+        ]
+    )
     def test_gsi_with_billing_mode(
         self, aws_client, dynamodb_create_table_with_parameters, snapshot, billing_mode
     ):
