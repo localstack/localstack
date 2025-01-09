@@ -2057,6 +2057,74 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    @pytest.mark.parametrize(
+        "items_path",
+        [
+            "$.from_previous",
+            "$[0]",
+            "$.no_such_path_in_bucket_result",
+        ],
+        ids=[
+            "VALID_ITEMS_PATH_FROM_PREVIOUS",
+            "VALID_ITEMS_PATH_FROM_ITEM_READER",
+            "INVALID_ITEMS_PATH",
+        ],
+    )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..previousEventId"])
+    def test_map_item_reader_base_json_with_items_path(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        items_path,
+    ):
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+
+        key = "file.json"
+        json_file = json.dumps([["from-bucket-item-0"]])
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
+
+        template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_JSON_WITH_ITEMS_PATH)
+        template["States"]["MapState"]["ItemsPath"] = items_path
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(
+            {"Bucket": bucket_name, "Key": key, "from_input_items": ["input-item-0"]}
+        )
+        create_and_record_execution(
+            aws_client,
+            create_state_machine_iam_role,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..previousEventId"])
+    def test_map_state_config_distributed_items_path_from_previous(
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_CONFIG_DISTRIBUTED_ITEMS_PATH_FROM_PREVIOUS)
+        definition = json.dumps(template)
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client,
+            create_state_machine_iam_role,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
     def test_map_item_reader_json_no_json_list_object(
         self,
         aws_client,
