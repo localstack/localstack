@@ -694,6 +694,7 @@ class Preprocessor(ASLParserVisitor):
             next_stmt=composite_stmts.get(Next),
             comment=composite_stmts.get(Comment),
             assign=composite_stmts.get(AssignDecl),
+            output=composite_stmts.get(Output),
         )
 
     def visitChoice_rule_comparison_variable(
@@ -723,7 +724,8 @@ class Preprocessor(ASLParserVisitor):
                 comparison=comparison_variable,
                 next_stmt=comparison_stmts.get(Next),
                 comment=comparison_stmts.get(Comment),
-                assign=comparison_stmts.get(AssignDecl),
+                assign=None,
+                output=None,
             )
         else:
             condition: Comparison = comparison_stmts.get(
@@ -737,6 +739,7 @@ class Preprocessor(ASLParserVisitor):
                 next_stmt=comparison_stmts.get(Next),
                 comment=comparison_stmts.get(Comment),
                 assign=comparison_stmts.get(AssignDecl),
+                output=comparison_stmts.get(Output),
             )
 
     def visitChoices_decl(self, ctx: ASLParser.Choices_declContext) -> ChoicesDecl:

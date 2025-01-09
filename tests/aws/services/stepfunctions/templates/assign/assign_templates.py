@@ -128,3 +128,7 @@ class AssignTemplate(TemplateLoader):
     MAP_STATE_REFERENCE_IN_ITEM_SELECTOR = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_reference_in_item_selector.json5"
     )
+
+    CHOICE_CONDITION_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/choice_condition_jsonata.json5"
+    )

@@ -14,3 +14,6 @@ class OutputTemplates(TemplateLoader):
     BASE_LAMBDA = os.path.join(_THIS_FOLDER, "statemachines/base_lambda.json5")
     BASE_TASK_LAMBDA = os.path.join(_THIS_FOLDER, "statemachines/base_task_lambda.json5")
     BASE_OUTPUT_ANY = os.path.join(_THIS_FOLDER, "statemachines/base_output_any.json5")
+    CHOICE_CONDITION_JSONATA = os.path.join(
+        _THIS_FOLDER, "statemachines/choice_condition_jsonata.json5"
+    )
