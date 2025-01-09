@@ -12,5 +12,84 @@
         "Version": 1
       }
     }
+  },
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_parameters_with_path": {
+    "recorded-date": "08-01-2025, 17:04:53",
+    "recorded-content": {
+      "put-parameter-response": {
+        "Tier": "Standard",
+        "Version": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-parameter-response": {
+        "Parameter": {
+          "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter<name:1>",
+          "DataType": "text",
+          "LastModifiedDate": "<datetime>",
+          "Name": "<name:1>",
+          "Type": "String",
+          "Value": "123",
+          "Version": 1
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-parameter-by-arn-response": {
+        "Parameter": {
+          "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter<name:1>",
+          "DataType": "text",
+          "LastModifiedDate": "<datetime>",
+          "Name": "<name:1>",
+          "Type": "String",
+          "Value": "123",
+          "Version": 1
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-parameters-response": {
+        "InvalidParameters": [],
+        "Parameters": [
+          {
+            "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter<name:1>",
+            "DataType": "text",
+            "LastModifiedDate": "<datetime>",
+            "Name": "<name:1>",
+            "Type": "String",
+            "Value": "123",
+            "Version": 1
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-parameters-by-arn-response": {
+        "InvalidParameters": [],
+        "Parameters": [
+          {
+            "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter<name:1>",
+            "DataType": "text",
+            "LastModifiedDate": "<datetime>",
+            "Name": "<name:1>",
+            "Type": "String",
+            "Value": "123",
+            "Version": 1
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
