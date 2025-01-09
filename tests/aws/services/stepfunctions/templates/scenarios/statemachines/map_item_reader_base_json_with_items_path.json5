@@ -1,0 +1,43 @@
+{
+  "StartAt": "LoadState",
+  "States": {
+    "LoadState": {
+      "Type": "Pass",
+      "Parameters": {
+        "Bucket.$": "$.Bucket",
+        "Key.$": "$.Key",
+        "from_previous": ["from-previous-item-0"]
+      },
+      "Next": "MapState"
+    },
+    "MapState": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "ItemsPath": "$.from_previous",
+      "ItemReader": {
+        "Resource": "arn:aws:states:::s3:getObject",
+        "Parameters": {
+          "Bucket.$": "$.Bucket",
+          "Key.$": "$.Key"
+        },
+        "ReaderConfig": {
+          "InputType": "JSON"
+        }
+      },
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "PassState",
+        "States": {
+          "PassState": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}
