@@ -11,6 +11,8 @@ HEADER_LOCALSTACK_REQUEST_URL = "x-localstack-request-url"
 HEADER_LOCALSTACK_AUTHORIZATION = "x-localstack-authorization"
 HEADER_LOCALSTACK_TARGET = "x-localstack-target"
 HEADER_AMZN_ERROR_TYPE = "X-Amzn-Errortype"
+# HTTP headers used to override internal SQS ReceiveMessage
+HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT = "x-localstack-sqs-override-message-count"
 
 # backend service ports, for services that are behind a proxy (counting down from 4566)
 DEFAULT_PORT_EDGE = 4566

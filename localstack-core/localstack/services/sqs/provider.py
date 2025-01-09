@@ -73,6 +73,7 @@ from localstack.aws.protocol.parser import create_parser
 from localstack.aws.protocol.serializer import aws_response_serializer
 from localstack.aws.spec import load_service
 from localstack.config import SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT
+from localstack.constants import HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT
 from localstack.http import Request, route
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
@@ -1232,8 +1233,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         num = max_number_of_messages or 1
 
-        # backdoor to get all messages
-        if num == -1:
+        # override receieve count with value from custom header
+        if override := extract_message_count_from_headers(context):
+            num = override
+        elif num == -1:
+            # backdoor to get all messages
             num = queue.approx_number_of_messages
         elif (
             num < 1 or num > MAX_NUMBER_OF_MESSAGES
@@ -1318,7 +1322,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> DeleteMessageBatchResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
-        self._assert_batch(entries)
+        override = extract_message_count_from_headers(context)
+        self._assert_batch(entries, max_messages_override=override)
         self._assert_valid_message_ids(entries)
 
         successful = []
@@ -1663,12 +1668,15 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         *,
         require_fifo_queue_params: bool = False,
         require_message_deduplication_id: bool = False,
+        max_messages_override: int | None = None,
     ) -> None:
         if not batch:
             raise EmptyBatchRequest
-        if batch and (no_entries := len(batch)) > MAX_NUMBER_OF_MESSAGES:
+
+        max_messages_per_batch = max_messages_override or MAX_NUMBER_OF_MESSAGES
+        if batch and (no_entries := len(batch)) > max_messages_per_batch:
             raise TooManyEntriesInBatchRequest(
-                f"Maximum number of entries per request are {MAX_NUMBER_OF_MESSAGES}. You have sent {no_entries}."
+                f"Maximum number of entries per request are {max_messages_per_batch}. You have sent {no_entries}."
             )
         visited = set()
         for entry in batch:
@@ -1882,3 +1890,12 @@ def message_filter_message_attributes(message: Message, names: Optional[MessageA
         message["MessageAttributes"] = {k: attributes[k] for k in matched}
     else:
         message.pop("MessageAttributes")
+
+
+def extract_message_count_from_headers(context: RequestContext) -> int:
+    if override := context.request.headers.get(
+        HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT, default=None, type=int
+    ):
+        return override
+
+    return None
