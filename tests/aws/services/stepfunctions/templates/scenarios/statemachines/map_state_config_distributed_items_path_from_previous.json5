@@ -1,0 +1,29 @@
+{
+  "StartAt": "PreviousState",
+  "States": {
+    "PreviousState": {
+      "Type": "Pass",
+      "Result": { "result_value": ["item-value-from-previous"] },
+      "Next": "MapState"
+    },
+    "MapState": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "ItemsPath": "$.result_value",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "PassState",
+        "States": {
+          "PassState": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

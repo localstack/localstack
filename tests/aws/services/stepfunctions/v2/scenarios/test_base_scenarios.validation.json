@@ -92,6 +92,18 @@
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_json_max_items_jsonata": {
     "last_validated_date": "2024-11-18T09:39:15+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_json_with_items_path[INVALID_ITEMS_PATH]": {
+    "last_validated_date": "2025-01-09T10:28:03+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_json_with_items_path[VALID_ITEMS_PATH_FROM_INPUT]": {
+    "last_validated_date": "2025-01-09T10:21:58+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_json_with_items_path[VALID_ITEMS_PATH_FROM_ITEM_READER]": {
+    "last_validated_date": "2025-01-09T10:27:44+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_json_with_items_path[VALID_ITEMS_PATH_FROM_PREVIOUS]": {
+    "last_validated_date": "2025-01-09T10:27:24+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_list_objects_v2": {
     "last_validated_date": "2023-09-21T11:54:23+00:00"
   },
@@ -169,6 +181,9 @@
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_config_distributed_item_selector_parameters": {
     "last_validated_date": "2024-11-15T13:56:59+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_config_distributed_items_path_from_previous": {
+    "last_validated_date": "2025-01-09T14:02:06+00:00"
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_config_distributed_parameters": {
     "last_validated_date": "2024-02-08T21:44:45+00:00"

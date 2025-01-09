@@ -517,8 +517,9 @@ class TestEventBus:
         reason="V1 provider does not support this feature",
     )
     @pytest.mark.parametrize("regions", [["us-east-1"], ["us-east-1", "us-west-1", "eu-central-1"]])
+    @pytest.mark.parametrize("with_description", [True, False])
     def test_create_list_describe_delete_custom_event_buses(
-        self, aws_client_factory, regions, snapshot
+        self, with_description, aws_client_factory, regions, snapshot
     ):
         bus_name = f"test-bus-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
@@ -529,7 +530,8 @@ class TestEventBus:
             snapshot.add_transformer(snapshot.transform.regex(region, "<region>"))
             events = aws_client_factory(region_name=region).events
 
-            response = events.create_event_bus(Name=bus_name)
+            kwargs = {"Description": "test bus"} if with_description else {}
+            response = events.create_event_bus(Name=bus_name, **kwargs)
             snapshot.match(f"create-custom-event-bus-{region}", response)
 
             response = events.list_event_buses(NamePrefix=bus_name)
@@ -542,6 +544,7 @@ class TestEventBus:
         for region in regions:
             events = aws_client_factory(region_name=region).events
 
+            kwargs = {"Description": "test bus"} if with_description else {}
             response = events.delete_event_bus(Name=bus_name)
             snapshot.match(f"delete-custom-event-bus-{region}", response)
 
