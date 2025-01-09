@@ -1,7 +1,5 @@
 import json
 import logging
-import random
-import threading
 import time
 from collections import defaultdict
 from functools import cached_property
@@ -19,7 +17,10 @@ from localstack.services.lambda_.event_source_mapping.pollers.poller import (
     Poller,
     parse_batch_item_failures,
 )
-from localstack.services.lambda_.event_source_mapping.senders.sender_utils import batched
+from localstack.services.lambda_.event_source_mapping.senders.sender_utils import (
+    batched,
+    batched_by_size,
+)
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import first_char_to_lower
 
@@ -40,7 +41,6 @@ class SqsPoller(Poller):
     ):
         super().__init__(source_arn, source_parameters, source_client, processor)
         self.queue_url = get_queue_url(self.source_arn)
-        self._shutdown_event = threading.Event()
 
     @property
     def sqs_queue_parameters(self) -> PipeSourceSqsQueueParameters:
@@ -62,48 +62,36 @@ class SqsPoller(Poller):
     def event_source(self) -> str:
         return "aws:sqs"
 
-    def close(self) -> None:
-        self._shutdown_event.set()
-
     def collect_messages(self, max_batch_size=10, max_batch_window=0, **kwargs) -> list[dict]:
-        # The number of ReceiveMessage requests we expect to be made in order to fill up the max_batch_size.
-        _total_expected_requests = (
-            max_batch_size + DEFAULT_MAX_RECEIVE_COUNT - 1
-        ) // DEFAULT_MAX_RECEIVE_COUNT
-
-        # The maximum duration a ReceiveMessage call should take, given how many requests
-        # we are going to make to fill the batch and the maximum batching window.
-        _maximum_duration_per_request = max_batch_window / _total_expected_requests
-
-        # Number of messages we want to receive per ReceiveMessage operation.
+        # TODO: Set to max_batch_size when override message count changes are merged.
         messages_per_receive = min(DEFAULT_MAX_RECEIVE_COUNT, max_batch_size)
 
+        # Number of messages we want to receive per ReceiveMessage operation.
         def receive_message(num_messages: int = messages_per_receive):
-            start_request_t = time.monotonic()
             response = self.source_client.receive_message(
                 QueueUrl=self.queue_url,
                 MaxNumberOfMessages=num_messages,
                 MessageAttributeNames=["All"],
                 MessageSystemAttributeNames=[MessageSystemAttributeName.All],
             )
-            return response.get("Messages", []), time.monotonic() - start_request_t
+            return response.get("Messages", [])
 
         batch = []
         start_collection_t = time.monotonic()
-        while not self._shutdown_event.is_set():
+        while len(batch) < max_batch_size:
             # Adjust request size if we're close to max_batch_size
             if (remaining := max_batch_size - len(batch)) < messages_per_receive:
                 messages_per_receive = remaining
 
-            # Return the messages received and the request duration in seconds.
             try:
-                messages, request_duration = receive_message(messages_per_receive)
+                messages = receive_message(messages_per_receive)
             except Exception as e:
                 # If an exception is raised here, break the loop and return whatever
                 # has been collected early.
                 # TODO: Handle exceptions differently i.e QueueNotExist or ConnectionFailed should retry with backoff
                 LOG.warning(
-                    "Polling SQS queue failed: %s",
+                    "Polling SQS queue %s failed: %s",
+                    self.source_arn,
                     e,
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
@@ -116,13 +104,6 @@ class SqsPoller(Poller):
             if time_elapsed >= max_batch_window or len(batch) >= max_batch_size:
                 return batch
 
-            # Simple adaptive interval technique to randomly backoff between last request duration
-            # and max allowed time per request.
-            # Note: This approach assumes that a larger batching window means a user is content
-            # with waiting longer for a batch response.
-            adaptive_wait_time = random.uniform(request_duration, _maximum_duration_per_request)
-            self._shutdown_event.wait(adaptive_wait_time)
-
         return batch
 
     def poll_events(self) -> None:
@@ -131,19 +112,15 @@ class SqsPoller(Poller):
         # TODO: implement invocation payload size quota
         # TODO: consider long-polling vs. short-polling trade-off. AWS uses long-polling:
         #  https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-sqs.html#pipes-sqs-scaling
-        if self._shutdown_event.is_set():
-            self._shutdown_event.clear()
-
-        messages = self.collect_messages(
+        collected_messages = self.collect_messages(
             max_batch_size=self.sqs_queue_parameters["BatchSize"],
             max_batch_window=self.sqs_queue_parameters["MaximumBatchingWindowInSeconds"],
         )
 
-        # NOTE: If a batch is collected, this will send a single collected batch for each poll call.
-        # Increasing the poller frequency _should_ influence the rate of collection but this has not
-        # yet been investigated.
-        # messages = next(self.collector)
-        if messages:
+        # NOTE: If the collection of messages exceeds the 6MB size-limit imposed on payloads sent to a Lambda,
+        # split into chunks of up to 6MB each.
+        # See https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventsourcemapping.html#invocation-eventsourcemapping-batching
+        for messages in batched_by_size(collected_messages, 6e6):
             LOG.debug("Polled %d events from %s", len(messages), self.source_arn)
             try:
                 if self.is_fifo_queue:
