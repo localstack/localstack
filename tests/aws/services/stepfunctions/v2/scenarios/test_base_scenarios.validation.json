@@ -431,10 +431,76 @@
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp": {
     "last_validated_date": "2023-10-31T18:01:20+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp[NANOSECONDS]": {
+    "last_validated_date": "2024-12-27T10:04:44+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp[SECONDS]": {
+    "last_validated_date": "2024-12-27T10:04:29+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_invalid[INVALID_DATE]": {
+    "last_validated_date": "2024-12-27T10:13:01+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_invalid[INVALID_ISO]": {
+    "last_validated_date": "2024-12-27T10:13:29+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_invalid[INVALID_TIME]": {
+    "last_validated_date": "2024-12-27T10:13:15+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_invalid[JSONATA]": {
+    "last_validated_date": "2024-12-27T10:13:43+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_invalid[NO_T]": {
+    "last_validated_date": "2024-12-27T10:12:33+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_invalid[NO_Z]": {
+    "last_validated_date": "2024-12-27T10:12:47+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_jsonata": {
     "last_validated_date": "2024-11-13T16:19:56+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_jsonata[INVALID_DATE]": {
+    "last_validated_date": "2024-12-27T09:57:56+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_jsonata[INVALID_ISO]": {
+    "last_validated_date": "2024-12-27T09:58:26+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_jsonata[INVALID_TIME]": {
+    "last_validated_date": "2024-12-27T09:58:11+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_jsonata[NANOSECONDS]": {
+    "last_validated_date": "2024-12-27T09:57:10+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_jsonata[NO_T]": {
+    "last_validated_date": "2024-12-27T09:57:25+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_jsonata[NO_Z]": {
+    "last_validated_date": "2024-12-27T09:57:41+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_jsonata[SECONDS]": {
+    "last_validated_date": "2024-12-27T09:57:00+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_path": {
     "last_validated_date": "2023-10-31T17:57:26+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_path[INVALID_DATE]": {
+    "last_validated_date": "2024-12-27T10:03:33+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_path[INVALID_ISO]": {
+    "last_validated_date": "2024-12-27T10:04:03+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_path[INVALID_TIME]": {
+    "last_validated_date": "2024-12-27T10:03:48+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_path[NANOSECONDS]": {
+    "last_validated_date": "2024-12-27T10:02:43+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_path[NO_T]": {
+    "last_validated_date": "2024-12-27T10:02:58+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_path[NO_Z]": {
+    "last_validated_date": "2024-12-27T10:03:13+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_path[SECONDS]": {
+    "last_validated_date": "2024-12-27T10:02:23+00:00"
   }
 }
