@@ -1,3 +1,4 @@
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
@@ -5,20 +6,29 @@ from typing import Literal, Optional, TypeAlias, TypedDict
 
 from localstack.aws.api.core import ServiceException
 from localstack.aws.api.events import (
+    ApiDestinationDescription,
+    ApiDestinationHttpMethod,
+    ApiDestinationInvocationRateLimitPerSecond,
     ApiDestinationName,
+    ApiDestinationState,
     ArchiveDescription,
     ArchiveName,
     ArchiveState,
     Arn,
+    ConnectionArn,
+    ConnectionAuthorizationType,
+    ConnectionDescription,
     ConnectionName,
+    ConnectionState,
+    ConnectivityResourceParameters,
+    CreateConnectionAuthRequestParameters,
     CreatedBy,
-    DescribeApiDestinationResponse,
-    DescribeConnectionResponse,
     EventBusName,
     EventPattern,
     EventResourceList,
     EventSourceName,
     EventTime,
+    HttpsEndpoint,
     ManagedBy,
     ReplayDescription,
     ReplayDestination,
@@ -44,10 +54,13 @@ from localstack.services.stores import (
 )
 from localstack.utils.aws.arns import (
     event_bus_arn,
+    events_api_destination_arn,
     events_archive_arn,
+    events_connection_arn,
     events_replay_arn,
     events_rule_arn,
 )
+from localstack.utils.strings import short_uid
 from localstack.utils.tagging import TaggingService
 
 TargetDict = dict[TargetId, Target]
@@ -205,6 +218,7 @@ class EventBus:
     region: str
     account_id: str
     event_source_name: Optional[str] = None
+    description: Optional[str] = None
     tags: TagList = field(default_factory=list)
     policy: Optional[ResourcePolicy] = None
     rules: RuleDict = field(default_factory=dict)
@@ -227,8 +241,80 @@ class EventBus:
 EventBusDict = dict[EventBusName, EventBus]
 
 
-ConnectionDict = dict[ConnectionName, DescribeConnectionResponse]
-ApiDestinationDict = dict[ApiDestinationName, DescribeApiDestinationResponse]
+@dataclass
+class Connection:
+    name: ConnectionName
+    region: str
+    account_id: str
+    authorization_type: ConnectionAuthorizationType
+    auth_parameters: CreateConnectionAuthRequestParameters
+    state: ConnectionState
+    secret_arn: Arn
+    description: ConnectionDescription | None = None
+    invocation_connectivity_parameters: ConnectivityResourceParameters | None = None
+    creation_time: Timestamp = field(init=False)
+    last_modified_time: Timestamp = field(init=False)
+    last_authorized_time: Timestamp = field(init=False)
+    tags: TagList = field(default_factory=list)
+    id: str = str(uuid.uuid4())
+
+    def __post_init__(self):
+        timestamp_now = datetime.now(timezone.utc)
+        self.creation_time = timestamp_now
+        self.last_modified_time = timestamp_now
+        self.last_authorized_time = timestamp_now
+        if self.tags is None:
+            self.tags = []
+
+    @property
+    def arn(self) -> Arn:
+        return events_connection_arn(self.name, self.id, self.account_id, self.region)
+
+
+ConnectionDict = dict[ConnectionName, Connection]
+
+
+@dataclass
+class ApiDestination:
+    name: ApiDestinationName
+    region: str
+    account_id: str
+    connection_arn: ConnectionArn
+    invocation_endpoint: HttpsEndpoint
+    http_method: ApiDestinationHttpMethod
+    state: ApiDestinationState
+    _invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond | None = None
+    description: ApiDestinationDescription | None = None
+    creation_time: Timestamp = field(init=False)
+    last_modified_time: Timestamp = field(init=False)
+    last_authorized_time: Timestamp = field(init=False)
+    tags: TagList = field(default_factory=list)
+    id: str = str(short_uid())
+
+    def __post_init__(self):
+        timestamp_now = datetime.now(timezone.utc)
+        self.creation_time = timestamp_now
+        self.last_modified_time = timestamp_now
+        self.last_authorized_time = timestamp_now
+        if self.tags is None:
+            self.tags = []
+
+    @property
+    def arn(self) -> Arn:
+        return events_api_destination_arn(self.name, self.id, self.account_id, self.region)
+
+    @property
+    def invocation_rate_limit_per_second(self) -> int:
+        return self._invocation_rate_limit_per_second or 300  # Default value
+
+    @invocation_rate_limit_per_second.setter
+    def invocation_rate_limit_per_second(
+        self, value: ApiDestinationInvocationRateLimitPerSecond | None
+    ):
+        self._invocation_rate_limit_per_second = value
+
+
+ApiDestinationDict = dict[ApiDestinationName, ApiDestination]
 
 
 class EventsStore(BaseStore):
