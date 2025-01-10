@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from collections import defaultdict
 from functools import cached_property
 
@@ -15,6 +16,10 @@ from localstack.services.lambda_.event_source_mapping.event_processor import (
 from localstack.services.lambda_.event_source_mapping.pollers.poller import (
     Poller,
     parse_batch_item_failures,
+)
+from localstack.services.lambda_.event_source_mapping.senders.sender_utils import (
+    batched,
+    batched_by_size,
 )
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import first_char_to_lower
@@ -57,22 +62,65 @@ class SqsPoller(Poller):
     def event_source(self) -> str:
         return "aws:sqs"
 
+    def collect_messages(self, max_batch_size=10, max_batch_window=0, **kwargs) -> list[dict]:
+        # TODO: Set to max_batch_size when override message count changes are merged.
+        messages_per_receive = min(DEFAULT_MAX_RECEIVE_COUNT, max_batch_size)
+
+        # Number of messages we want to receive per ReceiveMessage operation.
+        def receive_message(num_messages: int = messages_per_receive):
+            response = self.source_client.receive_message(
+                QueueUrl=self.queue_url,
+                MaxNumberOfMessages=num_messages,
+                MessageAttributeNames=["All"],
+                MessageSystemAttributeNames=[MessageSystemAttributeName.All],
+            )
+            return response.get("Messages", [])
+
+        batch = []
+        start_collection_t = time.monotonic()
+        while len(batch) < max_batch_size:
+            # Adjust request size if we're close to max_batch_size
+            if (remaining := max_batch_size - len(batch)) < messages_per_receive:
+                messages_per_receive = remaining
+
+            try:
+                messages = receive_message(messages_per_receive)
+            except Exception as e:
+                # If an exception is raised here, break the loop and return whatever
+                # has been collected early.
+                # TODO: Handle exceptions differently i.e QueueNotExist or ConnectionFailed should retry with backoff
+                LOG.warning(
+                    "Polling SQS queue %s failed: %s",
+                    self.source_arn,
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
+                break
+
+            if messages:
+                batch.extend(messages)
+
+            time_elapsed = time.monotonic() - start_collection_t
+            if time_elapsed >= max_batch_window or len(batch) >= max_batch_size:
+                return batch
+
+        return batch
+
     def poll_events(self) -> None:
         # SQS pipe source: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-sqs.html
         # "The 9 Ways an SQS Message can be Deleted": https://lucvandonkersgoed.com/2022/01/20/the-9-ways-an-sqs-message-can-be-deleted/
-        # TODO: implement batch window expires based on MaximumBatchingWindowInSeconds
         # TODO: implement invocation payload size quota
         # TODO: consider long-polling vs. short-polling trade-off. AWS uses long-polling:
         #  https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-sqs.html#pipes-sqs-scaling
-        response = self.source_client.receive_message(
-            QueueUrl=self.queue_url,
-            MaxNumberOfMessages=min(
-                self.sqs_queue_parameters["BatchSize"], DEFAULT_MAX_RECEIVE_COUNT
-            ),  # BatchSize cannot exceed 10
-            MessageAttributeNames=["All"],
-            MessageSystemAttributeNames=[MessageSystemAttributeName.All],
+        collected_messages = self.collect_messages(
+            max_batch_size=self.sqs_queue_parameters["BatchSize"],
+            max_batch_window=self.sqs_queue_parameters["MaximumBatchingWindowInSeconds"],
         )
-        if messages := response.get("Messages"):
+
+        # NOTE: If the collection of messages exceeds the 6MB size-limit imposed on payloads sent to a Lambda,
+        # split into chunks of up to 6MB each.
+        # See https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventsourcemapping.html#invocation-eventsourcemapping-batching
+        for messages in batched_by_size(collected_messages, 6e6):
             LOG.debug("Polled %d events from %s", len(messages), self.source_arn)
             try:
                 if self.is_fifo_queue:
@@ -171,7 +219,10 @@ class SqsPoller(Poller):
                 for count, message in enumerate(messages)
                 if message["MessageId"] in message_ids_to_delete
             ]
-            self.source_client.delete_message_batch(QueueUrl=self.queue_url, Entries=entries)
+            for batched_entries in batched(entries, DEFAULT_MAX_RECEIVE_COUNT):
+                self.source_client.delete_message_batch(
+                    QueueUrl=self.queue_url, Entries=batched_entries
+                )
 
 
 def split_by_message_group_id(messages) -> defaultdict[str, list[dict]]:
