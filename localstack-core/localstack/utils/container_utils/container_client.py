@@ -17,7 +17,7 @@ import dotenv
 
 from localstack import config
 from localstack.utils.collections import HashableList, ensure_list
-from localstack.utils.files import TMP_FILES, rm_rf, save_file
+from localstack.utils.files import TMP_FILES, chmod_r, rm_rf, save_file
 from localstack.utils.no_exit_argument_parser import NoExitArgumentParser
 from localstack.utils.strings import short_uid
 
@@ -620,6 +620,27 @@ class ContainerClient(metaclass=ABCMeta):
     def is_container_running(self, container_name: str) -> bool:
         """Checks whether a container with a given name is currently running"""
         return container_name in self.get_running_container_names()
+
+    def create_file_in_container(
+        self,
+        container_name,
+        file_contents: bytes,
+        container_path: str,
+        chmod_mode: Optional[int] = None,
+    ) -> None:
+        """
+        Create a file in container with the provided content. Provide the 'chmod_mode' argument if you want the file to have specific permissions.
+        """
+        with tempfile.NamedTemporaryFile() as tmp:
+            tmp.write(file_contents)
+            tmp.flush()
+            if chmod_mode is not None:
+                chmod_r(tmp.name, chmod_mode)
+            self.copy_into_container(
+                container_name=container_name,
+                local_path=tmp.name,
+                container_path=container_path,
+            )
 
     @abstractmethod
     def copy_into_container(
