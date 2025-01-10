@@ -21,6 +21,10 @@ from localstack.utils.crypto import encrypt
 from localstack.utils.strings import short_uid, to_str
 
 
+def create_tags(*key_value_args):
+    return [{"TagKey": key, "TagValue": value} for key, value in key_value_args]
+
+
 @pytest.fixture(scope="class")
 def kms_client_for_region(aws_client_factory):
     def _kms_client(
@@ -102,6 +106,73 @@ class TestKMS:
         assert response["KeyId"] == key_id
         assert f":{region_name}:" in response["Arn"]
         assert f":{account_id}:" in response["Arn"]
+
+    @markers.aws.validated
+    def test_tag_existing_key_and_untag(
+        self, kms_client_for_region, kms_create_key, snapshot, region_name
+    ):
+        kms_client = kms_client_for_region(region_name)
+        key_id = kms_create_key(
+            region_name=region_name, Description="test key 123", KeyUsage="ENCRYPT_DECRYPT"
+        )["KeyId"]
+
+        tags = create_tags(("tag1", "value1"), ("tag2", "value2"))
+        kms_client.tag_resource(KeyId=key_id, Tags=tags)
+
+        response = kms_client.list_resource_tags(KeyId=key_id)["Tags"]
+        snapshot.match("list-resource-tags", response)
+
+        tag_keys = [tag["TagKey"] for tag in tags]
+        kms_client.untag_resource(KeyId=key_id, TagKeys=tag_keys)
+
+        response = kms_client.list_resource_tags(KeyId=key_id)["Tags"]
+        snapshot.match("list-resource-tags-after-all-untagged", response)
+
+    @markers.aws.validated
+    def test_create_key_with_tag_and_untag(
+        self, kms_client_for_region, kms_create_key, snapshot, region_name
+    ):
+        kms_client = kms_client_for_region(region_name)
+
+        tags = create_tags(("tag1", "value1"), ("tag2", "value2"))
+        key_id = kms_create_key(
+            region_name=region_name,
+            Description="test key 123",
+            KeyUsage="ENCRYPT_DECRYPT",
+            Tags=tags,
+        )["KeyId"]
+
+        response = kms_client.list_resource_tags(KeyId=key_id)["Tags"]
+        snapshot.match("list-resource-tags", response)
+
+        tag_keys = [tag["TagKey"] for tag in tags]
+        kms_client.untag_resource(KeyId=key_id, TagKeys=tag_keys)
+
+        response = kms_client.list_resource_tags(KeyId=key_id)["Tags"]
+        snapshot.match("list-resource-tags-after-all-untagged", response)
+
+    @markers.aws.validated
+    def test_untag_key_partially(
+        self, kms_client_for_region, kms_create_key, snapshot, region_name
+    ):
+        kms_client = kms_client_for_region(region_name)
+
+        tag_key_to_untag = "tag2"
+        tags = create_tags(("tag1", "value1"), (tag_key_to_untag, "value2"), ("tag3", "value3"))
+        key_id = kms_create_key(
+            region_name=region_name,
+            Description="test key 123",
+            KeyUsage="ENCRYPT_DECRYPT",
+            Tags=tags,
+        )["KeyId"]
+
+        response = kms_client.list_resource_tags(KeyId=key_id)["Tags"]
+        snapshot.match("list-resource-tags", response)
+
+        kms_client.untag_resource(KeyId=key_id, TagKeys=[tag_key_to_untag])
+
+        response = kms_client.list_resource_tags(KeyId=key_id)["Tags"]
+        snapshot.match("list-resource-tags-after-partially-untagged", response)
 
     @markers.aws.only_localstack
     def test_create_key_custom_id(self, kms_create_key, aws_client):
@@ -986,47 +1057,6 @@ class TestKMS:
 
         key_policy = aws_client.kms.get_key_policy(KeyId=key_id, PolicyName="default")["Policy"]
         assert json.dumps(json.loads(key_policy)) == policy_two
-
-    @markers.aws.validated
-    def test_tag_untag_list_tags(self, kms_create_key, aws_client):
-        def _create_tag(key):
-            return {"TagKey": key, "TagValue": short_uid()}
-
-        def _are_tags_there(tags, key_id):
-            if not tags:
-                return True
-            next_token = None
-            while True:
-                kwargs = {"nextToken": next_token} if next_token else {}
-                response = aws_client.kms.list_resource_tags(KeyId=key_id, **kwargs)
-                for response_tag in response["Tags"]:
-                    for i in range(len(tags)):
-                        if response_tag.get("TagKey") == tags[i].get("TagKey") and response_tag.get(
-                            "TagValue"
-                        ) == tags[i].get("TagValue"):
-                            del tags[i]
-                            if not tags:
-                                return True
-                            break
-                if "nextToken" not in response:
-                    break
-                next_token = response["nextToken"]
-            return False
-
-        old_tag_one = _create_tag("one")
-        new_tag_one = _create_tag("one")
-        tag_two = _create_tag("two")
-        tag_three = _create_tag("three")
-
-        key_id = kms_create_key(Tags=[old_tag_one, tag_two])["KeyId"]
-        assert _are_tags_there([old_tag_one, tag_two], key_id) is True
-        # Going to rewrite one of the tags and then add a new one.
-        aws_client.kms.tag_resource(KeyId=key_id, Tags=[new_tag_one, tag_three])
-        assert _are_tags_there([new_tag_one, tag_two, tag_three], key_id) is True
-        assert _are_tags_there([old_tag_one], key_id) is False
-        aws_client.kms.untag_resource(KeyId=key_id, TagKeys=[new_tag_one.get("TagKey")])
-        assert _are_tags_there([tag_two, tag_three], key_id) is True
-        assert _are_tags_there([new_tag_one], key_id) is False
 
     @markers.aws.validated
     def test_cant_use_disabled_or_deleted_keys(self, kms_create_key, aws_client):
