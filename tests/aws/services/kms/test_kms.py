@@ -21,8 +21,8 @@ from localstack.utils.crypto import encrypt
 from localstack.utils.strings import short_uid, to_str
 
 
-def create_tags(*key_value_args):
-    return [{"TagKey": key, "TagValue": value} for key, value in key_value_args]
+def create_tags(**kwargs):
+    return [{"TagKey": key, "TagValue": value} for key, value in kwargs.items()]
 
 
 @pytest.fixture(scope="class")
@@ -116,7 +116,7 @@ class TestKMS:
             region_name=region_name, Description="test key 123", KeyUsage="ENCRYPT_DECRYPT"
         )["KeyId"]
 
-        tags = create_tags(("tag1", "value1"), ("tag2", "value2"))
+        tags = create_tags(tag1="value1", tag2="value2")
         kms_client.tag_resource(KeyId=key_id, Tags=tags)
 
         response = kms_client.list_resource_tags(KeyId=key_id)["Tags"]
@@ -134,7 +134,7 @@ class TestKMS:
     ):
         kms_client = kms_client_for_region(region_name)
 
-        tags = create_tags(("tag1", "value1"), ("tag2", "value2"))
+        tags = create_tags(tag1="value1", tag2="value2")
         key_id = kms_create_key(
             region_name=region_name,
             Description="test key 123",
@@ -158,7 +158,7 @@ class TestKMS:
         kms_client = kms_client_for_region(region_name)
 
         tag_key_to_untag = "tag2"
-        tags = create_tags(("tag1", "value1"), (tag_key_to_untag, "value2"), ("tag3", "value3"))
+        tags = create_tags(**{"tag1": "value1", tag_key_to_untag: "value2", "tag3": "value3"})
         key_id = kms_create_key(
             region_name=region_name,
             Description="test key 123",
