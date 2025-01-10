@@ -4,6 +4,7 @@ import re
 import pytest
 
 from localstack.aws.api.route53resolver import (
+    Action,
     ListResolverEndpointsResponse,
     ListResolverQueryLogConfigsResponse,
     ListResolverRuleAssociationsResponse,
@@ -84,6 +85,57 @@ class TestRoute53Resolver:
         )
 
         yield vpc, subnet1, subnet2, security_group
+
+    @pytest.fixture(scope="function")
+    def route53resolver_create_firewall_rules(self, aws_client, cleanups):
+        """Set up the following resources:
+        - 1 firewall-rule-group
+        - 4 firewall-domain-lists
+        - 4 firewall-rules
+        """
+        firewall_rule_group_name = f"fw-rule-group-{short_uid()}"
+        rule_group_response = aws_client.route53resolver.create_firewall_rule_group(
+            Name=firewall_rule_group_name
+        )
+        cleanups.append(
+            lambda rule_group_id=rule_group_response["FirewallRuleGroup"][
+                "Id"
+            ]: aws_client.route53resolver.delete_firewall_rule_group(
+                FirewallRuleGroupId=rule_group_id
+            )
+        )
+        # Parameters for creating resources
+        priorities = [1, 2, 3, 4]
+        actions = [Action.ALLOW, Action.ALERT, Action.ALERT, Action.ALLOW]
+
+        for action, priority in zip(actions, priorities):
+            domain_list_response = aws_client.route53resolver.create_firewall_domain_list(
+                Name=f"fw-domain-list-{short_uid()}"
+            )
+            cleanups.append(
+                lambda domain_list_id=domain_list_response["FirewallDomainList"][
+                    "Id"
+                ]: aws_client.route53resolver.delete_firewall_domain_list(
+                    FirewallDomainListId=domain_list_id
+                )
+            )
+            _ = aws_client.route53resolver.create_firewall_rule(
+                FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"],
+                FirewallDomainListId=domain_list_response["FirewallDomainList"]["Id"],
+                Priority=priority,
+                Action=action,
+                Name=f"rule-name-{short_uid()}",
+            )
+            cleanups.append(
+                lambda rule_group_id=rule_group_response["FirewallRuleGroup"]["Id"],
+                domain_list_id=domain_list_response["FirewallDomainList"][
+                    "Id"
+                ]: aws_client.route53resolver.delete_firewall_rule(
+                    FirewallRuleGroupId=rule_group_id,
+                    FirewallDomainListId=domain_list_id,
+                )
+            )
+        return rule_group_response
 
     def _construct_ip_for_cidr_and_host(self, cidr_block: str, host_id: str) -> str:
         return re.sub(r"(.*)\.[0-9]+/.+", r"\1." + host_id, cidr_block)
@@ -721,3 +773,90 @@ class TestRoute53Resolver:
 
         tag_result = aws_client.route53resolver.list_tags_for_resource(ResourceArn=arn)
         snapshot.match("list-tags-for-resource", tag_result)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Message"])
+    def test_list_firewall_rules_for_missing_rule_group(self, snapshot, aws_client):
+        """Test listing firewall rules for a non-existing rule-group."""
+        with pytest.raises(
+            aws_client.route53resolver.exceptions.ResourceNotFoundException
+        ) as resource_not_found:
+            aws_client.route53resolver.list_firewall_rules(FirewallRuleGroupId="missing-id")
+
+        snapshot.add_transformer(
+            snapshot.transform.regex(r"\d{1}-[a-f0-9]{8}-[a-f0-9]{24}", "trace-id")
+        )
+        snapshot.match("missing-firewall-rule-group-id", resource_not_found.value.response)
+
+    @markers.aws.validated
+    def test_list_firewall_rules_for_empty_rule_group(self, cleanups, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+
+        rule_group_response = aws_client.route53resolver.create_firewall_rule_group(
+            Name=f"empty-{short_uid()}"
+        )
+        cleanups.append(
+            lambda: aws_client.route53resolver.delete_firewall_rule_group(
+                FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"]
+            )
+        )
+        snapshot.match("create-firewall-rule-group", rule_group_response)
+
+        response = aws_client.route53resolver.list_firewall_rules(
+            FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"]
+        )
+        snapshot.match("empty-firewall-rule-group", response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..FirewallDomainRedirectionAction"])
+    def test_list_firewall_rules(
+        self, cleanups, snapshot, aws_client, route53resolver_create_firewall_rules
+    ):
+        """Test listing firewall rules.
+
+        We test listing:
+        - all rules in the rule-group
+        - rules filtered by priority
+        - rules filtered by action
+        - rules filtered by priority and action
+        """
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Name"),
+                snapshot.transform.key_value("FirewallRuleGroupId"),
+                snapshot.transform.key_value("FirewallDomainListId"),
+            ]
+        )
+
+        rule_group_response = route53resolver_create_firewall_rules
+
+        # Check list filtering
+        list_all_response = aws_client.route53resolver.list_firewall_rules(
+            FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"]
+        )
+        snapshot.match("firewall-rules-list-all", list_all_response)
+
+        filter_by_priority_response = aws_client.route53resolver.list_firewall_rules(
+            FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"], Priority=1
+        )
+        snapshot.match("firewall-rules-list-by-priority", filter_by_priority_response)
+
+        filter_by_action_response = aws_client.route53resolver.list_firewall_rules(
+            FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"], Action=Action.ALLOW
+        )
+        snapshot.match("firewall-rules-list-by-action", filter_by_action_response)
+
+        action_and_priority_response = aws_client.route53resolver.list_firewall_rules(
+            FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"],
+            Action=Action.ALLOW,
+            Priority=4,
+        )
+        snapshot.match("firewall-rules-list-by-action-and-priority", action_and_priority_response)
+
+        filter_empty_response = aws_client.route53resolver.list_firewall_rules(
+            FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"],
+            Action=Action.ALLOW,
+            Priority=0,  # 0 catches cases when integers pose as booleans
+        )
+        snapshot.match("firewall-rules-list-no-match", filter_empty_response)
