@@ -7,6 +7,7 @@ from localstack.utils.collections import (
     HashableList,
     ImmutableDict,
     ImmutableList,
+    convert_in_place_at_jsonpath,
     convert_to_typed_dict,
     is_comma_delimited_list,
     select_from_typed_dict,
@@ -193,3 +194,21 @@ def test_is_comma_limited_list():
     assert not is_comma_delimited_list("foo, bar baz")
     assert not is_comma_delimited_list("foo,")
     assert not is_comma_delimited_list("")
+
+
+@pytest.mark.parametrize(
+    "input,jsonpath,fn,expected",
+    [
+        # examples taken from ECS
+        ({"desiredCount": "1"}, "desiredCount", int, {"desiredCount": 1}),
+        (
+            {"serviceConnectConfiguration": {"services": [{"clientAliases": [{"port": "80"}]}]}},
+            "serviceConnectConfiguration.services[*].clientAliases[*].port",
+            int,
+            {"serviceConnectConfiguration": {"services": [{"clientAliases": [{"port": 80}]}]}},
+        ),
+    ],
+)
+def test_convert_in_place_at_jsonpath(input, jsonpath, fn, expected):
+    convert_in_place_at_jsonpath(input, jsonpath, fn)
+    assert input == expected
