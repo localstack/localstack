@@ -708,7 +708,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     gsi_provisioned_throughput["ReadCapacityUnits"] = 0
                     gsi_provisioned_throughput["WriteCapacityUnits"] = 0
 
-            # table_definitions["GlobalSecondaryIndexes"] = gsis
             table_description["GlobalSecondaryIndexes"] = gsis
 
         if "ProvisionedThroughput" in table_description:
