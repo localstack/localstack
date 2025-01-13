@@ -779,6 +779,19 @@ class TestDockerClient:
         )
         assert "foo" in out.decode(config.DEFAULT_ENCODING)
 
+    def test_create_file_in_container(
+        self, tmpdir, docker_client: ContainerClient, create_container
+    ):
+        content = b"fancy content"
+        container_path = "/tmp/myfile.txt"
+
+        c = create_container("alpine", command=["cat", container_path])
+
+        docker_client.create_file_in_container(c.container_name, content, container_path)
+
+        output, _ = docker_client.start_container(c.container_id, attach=True)
+        assert output == content
+
     def test_get_network_non_existing_container(self, docker_client: ContainerClient):
         with pytest.raises(ContainerException):
             docker_client.get_networks("this_container_does_not_exist")
