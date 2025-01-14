@@ -173,6 +173,7 @@ def is_none_or_empty_value(value):
     return not value or value == PLACEHOLDER_AWS_NO_VALUE
 
 
+# TODO: almost the same logic is in provider_utils.generate_default_name
 def generate_default_name(stack_name: str, logical_resource_id: str):
     random_id_part = short_uid()
     resource_id_part = logical_resource_id[:24]
@@ -180,6 +181,7 @@ def generate_default_name(stack_name: str, logical_resource_id: str):
     return f"{stack_name_part}-{resource_id_part}-{random_id_part}"
 
 
+# TODO: almost the same logic is in provider_utils.generate_default_name_without_stack
 def generate_default_name_without_stack(logical_resource_id: str):
     random_id_part = short_uid()
     resource_id_part = logical_resource_id[: 63 - 1 - len(random_id_part)]

@@ -111,6 +111,7 @@ class TestKinesis:
             else config.internal_service_url()
         )
 
+    # TODO should not fail without the name
     @markers.aws.validated
     def test_create_stream_without_stream_name_raises(self, aws_client_factory):
         boto_config = BotoConfig(parameter_validation=False)
