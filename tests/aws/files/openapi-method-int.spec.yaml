@@ -19,7 +19,7 @@ paths:
       x-amazon-apigateway-integration:
         responses:
           default:
-            statusCode: '200'
+            statusCode: 200
             responseParameters:
               method.response.header.Access-Control-Allow-Origin: "'*'"
         requestParameters:

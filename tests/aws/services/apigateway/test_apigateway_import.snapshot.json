@@ -5192,7 +5192,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_integer_http_status_code": {
-    "recorded-date": "14-01-2025, 14:03:07",
+    "recorded-date": "14-01-2025, 14:09:57",
     "recorded-content": {
       "resources": {
         "items": [
