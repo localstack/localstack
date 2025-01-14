@@ -23,6 +23,7 @@ from localstack.aws.api.ses import (
     ConfigurationSetName,
     CreateConfigurationSetEventDestinationResponse,
     DeleteConfigurationSetEventDestinationResponse,
+    DeleteConfigurationSetResponse,
     DeleteTemplateResponse,
     Destination,
     EventDestination,
@@ -222,6 +223,22 @@ class SesProvider(SesApi, ServiceLifecycleHook):
 
         return result
 
+    @handler("DeleteConfigurationSet")
+    def delete_configuration_set(
+        self, context: RequestContext, configuration_set_name: ConfigurationSetName, **kwargs
+    ) -> DeleteConfigurationSetResponse:
+        # not implemented in moto
+        # TODO: contribute upstream?
+        backend = get_ses_backend(context)
+        try:
+            backend.config_set.pop(configuration_set_name)
+        except KeyError:
+            raise ConfigurationSetDoesNotExistException(
+                f"Configuration set <{configuration_set_name}> does not exist."
+            )
+
+        return DeleteConfigurationSetResponse()
+
     @handler("DeleteConfigurationSetEventDestination")
     def delete_configuration_set_event_destination(
         self,
@@ -235,7 +252,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         backend = get_ses_backend(context)
 
         # the configuration set must exist
-        if configuration_set_name not in backend.config_sets:
+        if configuration_set_name not in backend.config_set:
             raise ConfigurationSetDoesNotExistException(
                 f"Configuration set <{configuration_set_name}> does not exist."
             )
