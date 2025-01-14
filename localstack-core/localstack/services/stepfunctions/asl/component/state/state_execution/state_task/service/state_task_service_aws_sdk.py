@@ -115,7 +115,7 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
             ]
             if "HostId" in ex.response["ResponseMetadata"]:
                 cause_details.append(
-                    f'Extended Request ID: {ex.response["ResponseMetadata"]["HostId"]}'
+                    f"Extended Request ID: {ex.response['ResponseMetadata']['HostId']}"
                 )
 
             cause: str = f"{error_message} ({', '.join(cause_details)})"

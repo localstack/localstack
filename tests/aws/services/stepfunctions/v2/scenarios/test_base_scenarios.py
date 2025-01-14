@@ -1675,9 +1675,7 @@ class TestBaseScenarios:
         sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
 
         key = "file.csv"
-        csv_file = (
-            "Col1,Col2\n" "Value1,Value2\n" "Value3,Value4\n" "Value5,Value6\n" "Value7,Value8\n"
-        )
+        csv_file = "Col1,Col2\nValue1,Value2\nValue3,Value4\nValue5,Value6\nValue7,Value8\n"
         aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_MAX_ITEMS)
@@ -1717,9 +1715,7 @@ class TestBaseScenarios:
         sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
 
         key = "file.csv"
-        csv_file = (
-            "Col1,Col2\n" "Value1,Value2\n" "Value3,Value4\n" "Value5,Value6\n" "Value7,Value8\n"
-        )
+        csv_file = "Col1,Col2\nValue1,Value2\nValue3,Value4\nValue5,Value6\nValue7,Value8\n"
         aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_MAX_ITEMS_PATH)
@@ -1921,14 +1917,7 @@ class TestBaseScenarios:
         sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
 
         key = "file.csv"
-        csv_file = (
-            "0,True,{}\n"
-            "Value4,Value5,Value6\n"
-            ",,,\n"
-            "true,1,'HelloWorld'\n"
-            "Null,None,\n"
-            "   \n"
-        )
+        csv_file = "0,True,{}\nValue4,Value5,Value6\n,,,\ntrue,1,'HelloWorld'\nNull,None,\n   \n"
         aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_HEADERS_FIRST_LINE)
@@ -1995,9 +1984,7 @@ class TestBaseScenarios:
         sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
 
         key = "file.csv"
-        csv_file = (
-            "H1,\n" "Value4,Value5,Value6\n" ",,,\n" "true,1,'HelloWorld'\n" "Null,None,\n" "   \n"
-        )
+        csv_file = "H1,\nValue4,Value5,Value6\n,,,\ntrue,1,'HelloWorld'\nNull,None,\n   \n"
         aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_HEADERS_FIRST_LINE)

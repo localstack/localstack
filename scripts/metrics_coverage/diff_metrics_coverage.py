@@ -164,7 +164,7 @@ def create_readable_report(
                 coverage_details += f"    <td>{op_name}</td>\n"
                 coverage_details += f"""    <td style="text-align: center">{response_code}</td>\n"""
                 coverage_details += (
-                    f"""    <td style="text-align: center">{'✅' if covered else '❌'}</td>\n"""
+                    f"""    <td style="text-align: center">{"✅" if covered else "❌"}</td>\n"""
                 )
                 coverage_details += "    </tr>\n"
     if additional_tested_collection:

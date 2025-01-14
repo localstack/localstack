@@ -68,7 +68,7 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
             ]
             if "HostId" in ex.response["ResponseMetadata"]:
                 error_cause_details.append(
-                    f'Extended Request ID: {ex.response["ResponseMetadata"]["HostId"]}'
+                    f"Extended Request ID: {ex.response['ResponseMetadata']['HostId']}"
                 )
             error_cause: str = (
                 f"{ex.response['Error']['Message']} ({'; '.join(error_cause_details)})"

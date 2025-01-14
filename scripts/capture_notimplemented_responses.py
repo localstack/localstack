@@ -301,7 +301,7 @@ def run_script(services: list[str], path: None):
                     continue
                 counter += 1
                 c.print(
-                    f"{100 * counter/total_count:3.1f}% | Calling endpoint {counter:4.0f}/{total_count}: {service_name}.{op_name}"
+                    f"{100 * counter / total_count:3.1f}% | Calling endpoint {counter:4.0f}/{total_count}: {service_name}.{op_name}"
                 )
 
                 # here's the important part (the actual service call!)

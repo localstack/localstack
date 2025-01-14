@@ -5,7 +5,7 @@ from localstack.config import HostAndPort
 
 
 def path_from_url(url: str) -> str:
-    return f'/{url.partition("://")[2].partition("/")[2]}' if "://" in url else url
+    return f"/{url.partition('://')[2].partition('/')[2]}" if "://" in url else url
 
 
 def hostname_from_url(url: str) -> str:

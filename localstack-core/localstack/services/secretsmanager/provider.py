@@ -737,14 +737,14 @@ def backend_rotate_secret(
 
     if rotation_lambda_arn:
         if len(rotation_lambda_arn) > 2048:
-            msg = "RotationLambdaARN " "must <= 2048 characters long."
+            msg = "RotationLambdaARN must <= 2048 characters long."
             raise InvalidParameterException(msg)
 
     if rotation_rules:
         if rotation_days in rotation_rules:
             rotation_period = rotation_rules[rotation_days]
             if rotation_period < 1 or rotation_period > 1000:
-                msg = "RotationRules.AutomaticallyAfterDays " "must be within 1-1000."
+                msg = "RotationRules.AutomaticallyAfterDays must be within 1-1000."
                 raise InvalidParameterException(msg)
 
     try:
