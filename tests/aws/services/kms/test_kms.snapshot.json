@@ -1854,5 +1854,46 @@
         }
       ]
     }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_update_and_add_tags_on_tagged_key": {
+    "recorded-date": "17-01-2025, 12:25:39",
+    "recorded-content": {
+      "list-resource-tags": [
+        {
+          "TagKey": "tag1",
+          "TagValue": "value1"
+        },
+        {
+          "TagKey": "tag2",
+          "TagValue": "value2"
+        },
+        {
+          "TagKey": "tag3",
+          "TagValue": "value3"
+        }
+      ],
+      "list-resource-tags-after-tags-updated": [
+        {
+          "TagKey": "tag1",
+          "TagValue": "value1"
+        },
+        {
+          "TagKey": "tag2",
+          "TagValue": "updated_value2"
+        },
+        {
+          "TagKey": "tag3",
+          "TagValue": "value3"
+        },
+        {
+          "TagKey": "tag4",
+          "TagValue": "value4"
+        },
+        {
+          "TagKey": "tag5",
+          "TagValue": "value5"
+        }
+      ]
+    }
   }
 }

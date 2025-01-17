@@ -174,6 +174,32 @@ class TestKMS:
         response = kms_client.list_resource_tags(KeyId=key_id)["Tags"]
         snapshot.match("list-resource-tags-after-partially-untagged", response)
 
+    @markers.aws.validated
+    def test_update_and_add_tags_on_tagged_key(
+        self, kms_client_for_region, kms_create_key, snapshot, region_name
+    ):
+        kms_client = kms_client_for_region(region_name)
+
+        tag_key_to_modify = "tag2"
+        tags = create_tags(**{"tag1": "value1", tag_key_to_modify: "value2", "tag3": "value3"})
+        key_id = kms_create_key(
+            region_name=region_name,
+            Description="test key 123",
+            KeyUsage="ENCRYPT_DECRYPT",
+            Tags=tags,
+        )["KeyId"]
+
+        response = kms_client.list_resource_tags(KeyId=key_id)["Tags"]
+        snapshot.match("list-resource-tags", response)
+
+        new_tags = create_tags(
+            **{"tag4": "value4", tag_key_to_modify: "updated_value2", "tag5": "value5"}
+        )
+        kms_client.tag_resource(KeyId=key_id, Tags=new_tags)
+
+        response = kms_client.list_resource_tags(KeyId=key_id)["Tags"]
+        snapshot.match("list-resource-tags-after-tags-updated", response)
+
     @markers.aws.only_localstack
     def test_create_key_custom_id(self, kms_create_key, aws_client):
         custom_id = str(uuid.uuid4())
