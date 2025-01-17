@@ -1560,8 +1560,20 @@ class TestSQSEventSourceMapping:
             EventSourceArn=event_source_arn,
         )
 
-    @pytest.mark.skip(
-        reason="Flushing based on payload sizes not yet implemented so large payloads are causing issues."
+    @pytest.mark.parametrize(
+        "batch_size",
+        [
+            20,
+            100,
+            1_000,
+            pytest.param(
+                10_000,
+                marks=pytest.mark.skip(
+                    reason="Flushing based on payload sizes not yet implemented so large payloads are causing issues."
+                ),
+                id="10000",
+            ),
+        ],
     )
     @markers.aws.only_localstack
     def test_sqs_event_source_mapping_batch_size_override(
@@ -1572,9 +1584,10 @@ class TestSQSEventSourceMapping:
         lambda_su_role,
         cleanups,
         aws_client,
+        batch_size,
     ):
         function_name = f"lambda_func-{short_uid()}"
-        queue_name = f"queue-{short_uid()}-1"
+        queue_name = f"queue-{short_uid()}"
         mapping_uuid = None
 
         create_lambda_function(
@@ -1586,18 +1599,19 @@ class TestSQSEventSourceMapping:
         queue_url = sqs_create_queue(QueueName=queue_name)
         queue_arn = sqs_get_queue_arn(queue_url)
 
-        for _ in range(1_000):
+        # Send messages in batches of 10 i.e batch_size = 10_000 means 1_000 requests of 10 messages each.
+        for _ in range(batch_size // 10):
             entries = [{"Id": str(i), "MessageBody": json.dumps({"foo": "bar"})} for i in range(10)]
             aws_client.sqs.send_message_batch(QueueUrl=queue_url, Entries=entries)
 
         # Wait a few seconds to ensure all messages are loaded in queue
-        _await_queue_size(aws_client.sqs, queue_url, 10_000)
+        _await_queue_size(aws_client.sqs, queue_url, batch_size)
 
         create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
             EventSourceArn=queue_arn,
             FunctionName=function_name,
             MaximumBatchingWindowInSeconds=10,
-            BatchSize=10_000,
+            BatchSize=batch_size,
         )
         mapping_uuid = create_event_source_mapping_response["UUID"]
         cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
@@ -1612,7 +1626,8 @@ class TestSQSEventSourceMapping:
             logs_client=aws_client.logs,
         )
 
-        assert len(events) == 10_000
+        assert len(events) == 1
+        assert len(events[0].get("Records", [])) == batch_size
 
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url)
         assert rs.get("Messages", []) == []

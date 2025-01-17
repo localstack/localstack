@@ -60,7 +60,6 @@ class SqsPoller(Poller):
             # Allow overide parameter to be greater than default and less than maxiumum batch size.
             override = min(requested_count, self.sqs_queue_parameters["BatchSize"])
             context[HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = str(override)
-            params["MaxNumberOfMessages"] = min(requested_count, DEFAULT_MAX_RECEIVE_COUNT)
 
         def _handle_delete_batch_override(params, context, **kwargs):
             requested_count = len(params.get("Entries", []))
