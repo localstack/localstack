@@ -180,7 +180,7 @@ def _matching_event(events: EventList, event_name: str) -> bool:
     """
     if event_name in events:
         return True
-    wildcard_pattern = f"{event_name[0:event_name.rindex(':')]}:*"
+    wildcard_pattern = f"{event_name[0 : event_name.rindex(':')]}:*"
     return wildcard_pattern in events
 
 

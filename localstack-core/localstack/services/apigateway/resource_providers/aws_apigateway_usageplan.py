@@ -179,7 +179,7 @@ class ApiGatewayUsagePlanProvider(ResourceProvider[ApiGatewayUsagePlanProperties
                         {
                             "op": "replace",
                             "path": f"/{first_char_to_lower(parameter)}",
-                            "value": f'{stage["ApiId"]}:{stage["Stage"]}',
+                            "value": f"{stage['ApiId']}:{stage['Stage']}",
                         }
                     )
 
@@ -187,7 +187,7 @@ class ApiGatewayUsagePlanProvider(ResourceProvider[ApiGatewayUsagePlanProperties
                         patch_operations.append(
                             {
                                 "op": "replace",
-                                "path": f'/{first_char_to_lower(parameter)}/{stage["ApiId"]}:{stage["Stage"]}',
+                                "path": f"/{first_char_to_lower(parameter)}/{stage['ApiId']}:{stage['Stage']}",
                                 "value": json.dumps(stage["Throttle"]),
                             }
                         )
