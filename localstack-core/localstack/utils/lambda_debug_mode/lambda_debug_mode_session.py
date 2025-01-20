@@ -104,24 +104,22 @@ class LambdaDebugModeSession:
                 yaml_configuration_string = df.read()
         except FileNotFoundError:
             LOG.error(
-                "Error: The file lambda debug config " "file '%s' was not found.",
+                "Error: The file lambda debug config file '%s' was not found.",
                 self._configuration_file_path,
             )
         except IsADirectoryError:
             LOG.error(
-                "Error: Expected a lambda debug config file " "but found a directory at '%s'.",
+                "Error: Expected a lambda debug config file but found a directory at '%s'.",
                 self._configuration_file_path,
             )
         except PermissionError:
             LOG.error(
-                "Error: Permission denied while trying to read "
-                "the lambda debug config file '%s'.",
+                "Error: Permission denied while trying to read the lambda debug config file '%s'.",
                 self._configuration_file_path,
             )
         except Exception as ex:
             LOG.error(
-                "Error: An unexpected error occurred while reading "
-                "lambda debug config '%s': '%s'",
+                "Error: An unexpected error occurred while reading lambda debug config '%s': '%s'",
                 self._configuration_file_path,
                 ex,
             )

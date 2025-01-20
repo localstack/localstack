@@ -232,7 +232,7 @@ def _patch_cbor2():
                 value = value.replace(tzinfo=self._timezone)
             else:
                 raise CBOREncodeValueError(
-                    f"naive datetime {value!r} encountered and no default timezone " "has been set"
+                    f"naive datetime {value!r} encountered and no default timezone has been set"
                 )
 
         if self.datetime_as_timestamp:

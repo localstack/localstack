@@ -62,6 +62,12 @@
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_empty_and_binary_values": {
     "last_validated_date": "2023-08-23T14:32:29+00:00"
   },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_gsi_with_billing_mode[PAY_PER_REQUEST]": {
+    "last_validated_date": "2025-01-08T18:17:06+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_gsi_with_billing_mode[PROVISIONED]": {
+    "last_validated_date": "2025-01-08T18:17:21+00:00"
+  },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_return_values_in_put_item": {
     "last_validated_date": "2023-08-23T14:32:21+00:00"
   },

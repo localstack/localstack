@@ -710,10 +710,10 @@ class S3SigV4SignatureContext:
         # Recreating the Authorization header from the query string parameters of a pre-signed request
         authorization_keys = ["X-Amz-Credential", "X-Amz-SignedHeaders", "X-Amz-Signature"]
         values = [
-            f'{param.removeprefix("X-Amz-")}={parameters[param]}' for param in authorization_keys
+            f"{param.removeprefix('X-Amz-')}={parameters[param]}" for param in authorization_keys
         ]
 
-        authorization = f'{parameters["X-Amz-Algorithm"]}{",".join(values)}'
+        authorization = f"{parameters['X-Amz-Algorithm']}{','.join(values)}"
         return authorization
 
 

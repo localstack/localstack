@@ -268,7 +268,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             if query_result.get("messages"):
                 messages.extend(query_result.get("messages"))
 
-            label = query.get("Label") or f'{query["MetricStat"]["Metric"]["MetricName"]}'
+            label = query.get("Label") or f"{query['MetricStat']['Metric']['MetricName']}"
             # TODO: does this happen even if a label is set in the query?
             for label_addition in label_additions:
                 label = f"{label} {query['MetricStat'][label_addition]}"

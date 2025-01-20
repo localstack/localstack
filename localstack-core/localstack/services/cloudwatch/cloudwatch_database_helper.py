@@ -293,7 +293,7 @@ class CloudwatchDatabase:
                 cur.execute(
                     f"""
                             SELECT * FROM (
-                                {' UNION ALL '.join(['SELECT * FROM (' + sql_query + ')'] * len(batch))}
+                                {" UNION ALL ".join(["SELECT * FROM (" + sql_query + ")"] * len(batch))}
                             )
                         """,
                     sum(batch, ()),  # flatten the list of tuples in batch into a single tuple
@@ -407,7 +407,7 @@ class CloudwatchDatabase:
                 dimensions += f"{d['Name']}={d['Value']}\t"  # aws does not allow ascii control characters, we can use it a sa separator
         else:
             for d in dims:
-                dimensions += f"%{d.get('Name')}={d.get('Value','')}%"
+                dimensions += f"%{d.get('Name')}={d.get('Value', '')}%"
 
         return dimensions
 
