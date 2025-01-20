@@ -2425,16 +2425,25 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    @pytest.mark.parametrize(
+        "timestamp_value",
+        [
+            "2016-03-14T01:59:00Z",
+            "2016-03-05T21:29:29.243167252Z",
+        ],
+        ids=["SECONDS", "NANOSECONDS"],
+    )
     def test_wait_timestamp(
         self,
         aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
+        timestamp_value,
     ):
         template = ST.load_sfn_template(ST.WAIT_TIMESTAMP)
+        template["States"]["WaitUntil"]["Timestamp"] = timestamp_value
         definition = json.dumps(template)
-
         exec_input = json.dumps({})
         create_and_record_execution(
             aws_client,
@@ -2446,17 +2455,75 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..exception_value"])
+    @pytest.mark.parametrize(
+        "timestamp_value",
+        [
+            "2016-12-05 21:29:29Z",
+            "2016-12-05T21:29:29",
+            "2016-13-05T21:29:29Z",
+            "2016-12-05T25:29:29Z",
+            "05-12-2016T21:29:29Z",
+            "{% '2016-03-14T01:59:00Z' %}",
+        ],
+        ids=["NO_T", "NO_Z", "INVALID_DATE", "INVALID_TIME", "INVALID_ISO", "JSONATA"],
+    )
+    def test_wait_timestamp_invalid(
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        timestamp_value,
+    ):
+        template = ST.load_sfn_template(ST.WAIT_TIMESTAMP)
+        template["States"]["WaitUntil"]["Timestamp"] = timestamp_value
+        definition = json.dumps(template)
+        with pytest.raises(Exception) as ex:
+            create_state_machine_with_iam_role(
+                aws_client,
+                create_state_machine_iam_role,
+                create_state_machine,
+                sfn_snapshot,
+                definition,
+            )
+        sfn_snapshot.match(
+            "exception", {"exception_typename": ex.typename, "exception_value": ex.value}
+        )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "timestamp_value",
+        [
+            "2016-03-14T01:59:00Z",
+            "2016-03-05T21:29:29.243167252Z",
+            "2016-12-05 21:29:29Z",
+            "2016-12-05T21:29:29",
+            "2016-13-05T21:29:29Z",
+            "2016-12-05T25:29:29Z",
+            "05-12-2016T21:29:29Z",
+        ],
+        ids=[
+            "SECONDS",
+            "NANOSECONDS",
+            "NO_T",
+            "NO_Z",
+            "INVALID_DATE",
+            "INVALID_TIME",
+            "INVALID_ISO",
+        ],
+    )
     def test_wait_timestamp_path(
         self,
         aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
+        timestamp_value,
     ):
         template = ST.load_sfn_template(ST.WAIT_TIMESTAMP_PATH)
         definition = json.dumps(template)
-
-        exec_input = json.dumps({"TimestampValue": "2016-03-14T01:59:00Z"})
+        exec_input = json.dumps({"TimestampValue": timestamp_value})
         create_and_record_execution(
             aws_client,
             create_state_machine_iam_role,
@@ -2467,17 +2534,63 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    @pytest.mark.parametrize(
+        "timestamp_value",
+        [
+            "2016-03-14T01:59:00Z",
+            "2016-03-05T21:29:29.243167252Z",
+            pytest.param(
+                "2016-12-05 21:29:29Z",
+                marks=pytest.mark.skipif(
+                    condition=not is_aws_cloud(), reason="depends on JSONata outcome validation"
+                ),
+            ),
+            pytest.param(
+                "2016-12-05T21:29:29",
+                marks=pytest.mark.skipif(
+                    condition=not is_aws_cloud(), reason="depends on JSONata outcome validation"
+                ),
+            ),
+            pytest.param(
+                "2016-13-05T21:29:29Z",
+                marks=pytest.mark.skipif(
+                    condition=not is_aws_cloud(), reason="depends on JSONata outcome validation"
+                ),
+            ),
+            pytest.param(
+                "2016-12-05T25:29:29Z",
+                marks=pytest.mark.skipif(
+                    condition=not is_aws_cloud(), reason="depends on JSONata outcome validation"
+                ),
+            ),
+            pytest.param(
+                "05-12-2016T21:29:29Z",
+                marks=pytest.mark.skipif(
+                    condition=not is_aws_cloud(), reason="depends on JSONata outcome validation"
+                ),
+            ),
+        ],
+        ids=[
+            "SECONDS",
+            "NANOSECONDS",
+            "NO_T",
+            "NO_Z",
+            "INVALID_DATE",
+            "INVALID_TIME",
+            "INVALID_ISO",
+        ],
+    )
     def test_wait_timestamp_jsonata(
         self,
         aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
+        timestamp_value,
     ):
         template = ST.load_sfn_template(ST.WAIT_TIMESTAMP_JSONATA)
         definition = json.dumps(template)
-
-        exec_input = json.dumps({"TimestampValue": "2016-03-14T01:59:00Z"})
+        exec_input = json.dumps({"TimestampValue": timestamp_value})
         create_and_record_execution(
             aws_client,
             create_state_machine_iam_role,
