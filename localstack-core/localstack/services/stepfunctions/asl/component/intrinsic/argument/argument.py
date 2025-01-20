@@ -10,6 +10,19 @@ from localstack.services.stepfunctions.asl.utils.json_path import extract_json
 
 
 class Argument(EvalComponent, abc.ABC):
+    """
+    Represents an Intrinsic Function argument that can be evaluated and whose
+    result is pushed onto the stack.
+
+    Subclasses must override `_eval_argument()` to evaluate the specific value
+    of the argument they represent. This abstract class manages the type and
+    environment handling by appending the evaluated result to the environment's
+    stack in `_eval_body`.
+
+    The `_eval_body` method calls `_eval_argument()` and pushes the resulting
+    value to the stack.
+    """
+
     @abc.abstractmethod
     def _eval_argument(self, env: Environment) -> Any: ...
 
