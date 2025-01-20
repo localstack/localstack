@@ -590,9 +590,9 @@ class TestEc2Integrations:
                 }
             ],
         )
-        assert security_group["GroupId"] == custom_id, (
-            f"Security group ID does not match custom ID: {security_group}"
-        )
+        assert (
+            security_group["GroupId"] == custom_id
+        ), f"Security group ID does not match custom ID: {security_group}"
 
         # Check if the custom ID is present in the describe_security_groups response as well
         security_groups: dict = aws_client.ec2.describe_security_groups(

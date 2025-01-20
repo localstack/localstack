@@ -97,13 +97,13 @@ class TestTranscribe:
             install_async()
 
         start = int(time.time())
-        assert vosk_installed.wait(timeout=INSTALLATION_TIMEOUT), (
-            "gave up waiting for Vosk to install"
-        )
+        assert vosk_installed.wait(
+            timeout=INSTALLATION_TIMEOUT
+        ), "gave up waiting for Vosk to install"
         elapsed = int(time.time() - start)
-        assert ffmpeg_installed.wait(timeout=INSTALLATION_TIMEOUT - elapsed), (
-            "gave up waiting for ffmpeg to install"
-        )
+        assert ffmpeg_installed.wait(
+            timeout=INSTALLATION_TIMEOUT - elapsed
+        ), "gave up waiting for ffmpeg to install"
         LOG.info("Spent %s seconds downloading transcribe dependencies", int(time.time() - start))
 
         assert not installation_errored.is_set(), "installation of transcribe dependencies failed"
@@ -150,9 +150,9 @@ class TestTranscribe:
         # empirically it takes around
         # <5sec for a vosk transcription
         # ~100sec for an AWS transcription -> adjust timeout accordingly
-        assert poll_condition(is_transcription_done, timeout=100), (
-            f"could not finish transcription job: {job_name} in time"
-        )
+        assert poll_condition(
+            is_transcription_done, timeout=100
+        ), f"could not finish transcription job: {job_name} in time"
 
         job = aws_client.transcribe.get_transcription_job(TranscriptionJobName=job_name)
         snapshot.match("TranscriptionJob", job)

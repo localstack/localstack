@@ -2962,9 +2962,7 @@ def _sqs_messages_snapshot(expected_state, sqs_client, sqs_queue, snapshot, iden
             found_msg = message
             receipt_handle = msg["ReceiptHandle"]
             break
-    assert found_msg, (
-        f"no message found for {expected_state}. Got {len(result['Messages'])} messages.\n{json.dumps(result)}"
-    )
+    assert found_msg, f"no message found for {expected_state}. Got {len(result['Messages'])} messages.\n{json.dumps(result)}"
     sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=receipt_handle)
     snapshot.match(f"{identifier}-sqs-msg", found_msg)
 

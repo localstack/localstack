@@ -342,9 +342,9 @@ class TestOpensearchProvider:
         )
         snapshot.match("sql_query_response", response.json())
 
-        assert "I'm just a simple man" in response.text, (
-            f"query unsuccessful({response.status_code}): {response.text}"
-        )
+        assert (
+            "I'm just a simple man" in response.text
+        ), f"query unsuccessful({response.status_code}): {response.text}"
 
     @markers.aws.validated
     def test_create_domain_with_invalid_name(self, aws_client):
@@ -514,9 +514,9 @@ class TestOpensearchProvider:
     @markers.aws.needs_fixing
     def test_get_document(self, opensearch_document_path):
         response = requests.get(opensearch_document_path)
-        assert "I'm just a simple man" in response.text, (
-            f"document not found({response.status_code}): {response.text}"
-        )
+        assert (
+            "I'm just a simple man" in response.text
+        ), f"document not found({response.status_code}): {response.text}"
 
     @markers.aws.needs_fixing
     def test_search(self, opensearch_endpoint, opensearch_document_path):
@@ -528,9 +528,9 @@ class TestOpensearchProvider:
         search = {"query": {"match": {"last_name": "Fett"}}}
         response = requests.get(f"{index}/_search", data=json.dumps(search), headers=COMMON_HEADERS)
 
-        assert "I'm just a simple man" in response.text, (
-            f"search unsuccessful({response.status_code}): {response.text}"
-        )
+        assert (
+            "I'm just a simple man" in response.text
+        ), f"search unsuccessful({response.status_code}): {response.text}"
 
     @markers.aws.only_localstack
     def test_endpoint_strategy_path(self, monkeypatch, opensearch_create_domain, aws_client):
@@ -607,9 +607,9 @@ class TestEdgeProxiedOpensearchCluster:
         finally:
             cluster.shutdown()
 
-        assert poll_condition(lambda: not cluster.is_up(), timeout=240), (
-            "gave up waiting for cluster to shut down"
-        )
+        assert poll_condition(
+            lambda: not cluster.is_up(), timeout=240
+        ), "gave up waiting for cluster to shut down"
 
     @markers.aws.only_localstack
     def test_custom_endpoint(
@@ -712,9 +712,9 @@ class TestMultiClusterManager:
 
             response = requests.put(index_url_0)
             assert response.ok, f"failed to put index into cluster {cluster_0.url}: {response.text}"
-            assert poll_condition(lambda: requests.head(index_url_0).ok, timeout=10), (
-                "gave up waiting for index"
-            )
+            assert poll_condition(
+                lambda: requests.head(index_url_0).ok, timeout=10
+            ), "gave up waiting for index"
 
             assert not requests.head(index_url_1).ok, "index should not appear in second cluster"
 
@@ -760,9 +760,9 @@ class TestMultiplexingClusterManager:
 
             response = requests.put(index_url_0)
             assert response.ok, f"failed to put index into cluster {cluster_0.url}: {response.text}"
-            assert poll_condition(lambda: requests.head(index_url_0).ok, timeout=10), (
-                "gave up waiting for index"
-            )
+            assert poll_condition(
+                lambda: requests.head(index_url_0).ok, timeout=10
+            ), "gave up waiting for index"
 
             assert requests.head(index_url_1).ok, "index should appear in second cluster"
 

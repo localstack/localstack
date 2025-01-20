@@ -467,9 +467,9 @@ class TestS3PresignedUrl:
 
         for method, request_path, expected_result in request_paths:
             fake_context = self._create_fake_context_from_path(path=request_path, method=method)
-            assert presigned_url.is_presigned_url_request(fake_context) == expected_result, (
-                request_path
-            )
+            assert (
+                presigned_url.is_presigned_url_request(fake_context) == expected_result
+            ), request_path
 
     def test_is_valid_presigned_url_v2(self):
         # structure: method, path, is_sig_v2, will_raise

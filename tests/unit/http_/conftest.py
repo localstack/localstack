@@ -39,9 +39,9 @@ def serve_asgi_app():
 
     for server in _servers:
         server.shutdown()
-        assert poll_condition(lambda: not server.is_up(), timeout=10), (
-            "gave up waiting for server to shut down"
-        )
+        assert poll_condition(
+            lambda: not server.is_up(), timeout=10
+        ), "gave up waiting for server to shut down"
 
 
 @pytest.fixture()

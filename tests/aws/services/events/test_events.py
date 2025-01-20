@@ -331,9 +331,9 @@ class TestEvents:
             ],
         )
 
-        assert target_response["FailedEntryCount"] == 0, (
-            f"Failed to add targets: {target_response.get('FailedEntries', [])}"
-        )
+        assert (
+            target_response["FailedEntryCount"] == 0
+        ), f"Failed to add targets: {target_response.get('FailedEntries', [])}"
 
         # Use the test constants for the event
         test_event = {
@@ -354,20 +354,20 @@ class TestEvents:
             """Verify the message content matches what we sent."""
             body = json.loads(message["Body"])
 
-            assert body["source"] == TEST_EVENT_PATTERN_NO_DETAIL["source"][0], (
-                f"Unexpected source: {body['source']}"
-            )
-            assert body["detail-type"] == TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0], (
-                f"Unexpected detail-type: {body['detail-type']}"
-            )
+            assert (
+                body["source"] == TEST_EVENT_PATTERN_NO_DETAIL["source"][0]
+            ), f"Unexpected source: {body['source']}"
+            assert (
+                body["detail-type"] == TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0]
+            ), f"Unexpected detail-type: {body['detail-type']}"
 
             detail = body["detail"]  # detail is already parsed as dict
             assert isinstance(detail, dict), f"Detail should be a dict, got {type(detail)}"
             assert detail == TEST_EVENT_DETAIL, f"Unexpected detail content: {detail}"
 
-            assert body["id"] == original_event_id, (
-                f"Event ID mismatch. Expected {original_event_id}, got {body['id']}"
-            )
+            assert (
+                body["id"] == original_event_id
+            ), f"Event ID mismatch. Expected {original_event_id}, got {body['id']}"
 
             return body
 
@@ -494,20 +494,20 @@ class TestEvents:
 
         # Verify ISO8601 format: YYYY-MM-DDThh:mm:ssZ
         # Example: "2024-11-28T13:44:36Z"
-        assert re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$", time_str), (
-            f"Time field '{time_str}' does not match ISO8601 format (YYYY-MM-DDThh:mm:ssZ)"
-        )
+        assert re.match(
+            r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$", time_str
+        ), f"Time field '{time_str}' does not match ISO8601 format (YYYY-MM-DDThh:mm:ssZ)"
 
         # Verify we can parse it back to datetime
         datetime_obj = datetime.datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%SZ")
-        assert isinstance(datetime_obj, datetime.datetime), (
-            f"Failed to parse time string '{time_str}' back to datetime object"
-        )
+        assert isinstance(
+            datetime_obj, datetime.datetime
+        ), f"Failed to parse time string '{time_str}' back to datetime object"
 
         time_difference = abs((datetime_obj - timestamp.replace(microsecond=0)).total_seconds())
-        assert time_difference <= 60, (
-            f"Time in event '{time_str}' differs too much from sent time '{timestamp.isoformat()}'"
-        )
+        assert (
+            time_difference <= 60
+        ), f"Time in event '{time_str}' differs too much from sent time '{timestamp.isoformat()}'"
 
 
 class TestEventBus:

@@ -106,9 +106,9 @@ def test_call_s3_with_streaming_trait(payload, monkeypatch):
     response = moto.call_moto(
         moto.create_aws_request_context("s3", "GetObject", {"Bucket": bucket_name, "Key": key_name})
     )
-    assert hasattr(response["Body"], "read"), (
-        f"expected Body to be readable, was {type(response['Body'])}"
-    )
+    assert hasattr(
+        response["Body"], "read"
+    ), f"expected Body to be readable, was {type(response['Body'])}"
     assert response["Body"].read() == b"foobar"
 
     # cleanup

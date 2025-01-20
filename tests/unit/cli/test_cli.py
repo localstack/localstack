@@ -259,9 +259,9 @@ def test_do_not_publish_analytics_event_on_invalid_command_invocation(
     httpserver.expect_request("").respond_with_handler(_handler)
     monkeypatch.setenv("ANALYTICS_API", httpserver.url_for("/"))
     runner.invoke(cli, input)
-    assert len(request_data) == 0, (
-        "analytics API should not be invoked when an invalid command is supplied"
-    )
+    assert (
+        len(request_data) == 0
+    ), "analytics API should not be invoked when an invalid command is supplied"
 
 
 def test_disable_publish_analytics_event_on_command_invocation(
@@ -299,9 +299,9 @@ def test_timeout_publishing_command_invocation(runner, monkeypatch, caplog, http
     httpserver.expect_request("").respond_with_handler(_handler)
     monkeypatch.setenv("ANALYTICS_API", httpserver.url_for("/"))
     runner.invoke(cli, ["config", "show"])
-    assert len(request_data) == 0, (
-        "analytics event publisher process should time out if request is taking too long"
-    )
+    assert (
+        len(request_data) == 0
+    ), "analytics event publisher process should time out if request is taking too long"
 
 
 def test_is_frozen(monkeypatch):

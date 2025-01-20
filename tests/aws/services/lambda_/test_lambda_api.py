@@ -731,9 +731,9 @@ class TestLambdaFunction:
         # test other region in function arn than client
         function_name_1 = f"test-function-arn-{short_uid()}"
         other_region = "ap-southeast-1"
-        assert region_name != other_region, (
-            "This test assumes that the region in the function arn differs from the client region"
-        )
+        assert (
+            region_name != other_region
+        ), "This test assumes that the region in the function arn differs from the client region"
         function_arn_other_region = f"arn:{get_partition(other_region)}:lambda:{other_region}:{account_id}:function:{function_name_1}"
         with pytest.raises(ClientError) as e:
             aws_client.lambda_.create_function(
@@ -749,9 +749,9 @@ class TestLambdaFunction:
         # test other account in function arn than client
         function_name_1 = f"test-function-arn-{short_uid()}"
         other_account = "123456789012"
-        assert account_id != other_account, (
-            "This test assumes that the account in the function arn differs from the client region"
-        )
+        assert (
+            account_id != other_account
+        ), "This test assumes that the account in the function arn differs from the client region"
         function_arn_other_account = f"arn:{get_partition(region_name)}:lambda:{region_name}:{other_account}:function:{function_name_1}"
         with pytest.raises(ClientError) as e:
             aws_client.lambda_.create_function(

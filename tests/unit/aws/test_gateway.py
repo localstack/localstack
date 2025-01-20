@@ -33,9 +33,9 @@ def serve_gateway_hypercorn():
 
     for server in _servers:
         server.shutdown()
-        assert poll_condition(lambda: not server.is_up(), timeout=10), (
-            "gave up waiting for server to shut down"
-        )
+        assert poll_condition(
+            lambda: not server.is_up(), timeout=10
+        ), "gave up waiting for server to shut down"
 
 
 def test_gateway_served_through_hypercorn_preserves_client_headers(serve_gateway_hypercorn):

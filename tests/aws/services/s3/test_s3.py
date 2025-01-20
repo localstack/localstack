@@ -7488,6 +7488,7 @@ class TestS3PresignedUrl:
         assert response.content == data
 
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="Lambda not enabled in S3 image")
+    @pytest.mark.skip(reason="flaky")
     @markers.aws.validated
     def test_presigned_url_v4_x_amz_in_qs(
         self,

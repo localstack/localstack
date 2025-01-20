@@ -12,9 +12,9 @@ def handler(event, context):
     domain_endpoint = os.environ["DOMAIN_ENDPOINT"]
     results_bucket = os.environ["RESULTS_BUCKET"]
     results_key = os.environ["RESULTS_KEY"]
-    assert custom_localstack_hostname in domain_endpoint, (
-        f"{custom_localstack_hostname} not in {domain_endpoint}"
-    )
+    assert (
+        custom_localstack_hostname in domain_endpoint
+    ), f"{custom_localstack_hostname} not in {domain_endpoint}"
 
     print(f"Event handler function {context.function_name} invoked")
 

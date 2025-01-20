@@ -1800,9 +1800,9 @@ def test_accept_header_detection(
     if content_type_header:
         headers["Content-Type"] = content_type_header
     mime_type = response_serializer._get_mime_type(headers)
-    assert mime_type == expected_mime_type, (
-        f"Detected mime type ({mime_type}) was not as expected ({expected_mime_type})"
-    )
+    assert (
+        mime_type == expected_mime_type
+    ), f"Detected mime type ({mime_type}) was not as expected ({expected_mime_type})"
 
 
 @pytest.mark.parametrize(
