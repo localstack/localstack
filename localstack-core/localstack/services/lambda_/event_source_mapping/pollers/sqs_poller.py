@@ -57,7 +57,7 @@ class SqsPoller(Poller):
             if not requested_count or requested_count <= DEFAULT_MAX_RECEIVE_COUNT:
                 return
 
-            # Allow overide parameter to be greater than default and less than maxiumum batch size.
+            # Allow overide parameter to be greater than default and less than maximum batch size.
             # Useful for getting remaining records less than the batch size. i.e we need 100 records but BatchSize is 1k.
             override = min(requested_count, self.sqs_queue_parameters["BatchSize"])
             context[HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = str(override)

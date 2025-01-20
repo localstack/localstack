@@ -1231,13 +1231,12 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         if wait_time_seconds is None:
             wait_time_seconds = queue.wait_time_seconds
 
-        # override receieve count with value from custom header
+        num = max_number_of_messages or 1
+
+        # override receive count with value from custom header
         if override := extract_message_count_from_headers(context):
             num = override
-        else:
-            num = max_number_of_messages or 1
-
-        if num == -1:
+        elif num == -1:
             # backdoor to get all messages
             num = queue.approx_number_of_messages
         elif (
