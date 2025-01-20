@@ -73,11 +73,11 @@ from localstack.aws.protocol.parser import create_parser
 from localstack.aws.protocol.serializer import aws_response_serializer
 from localstack.aws.spec import load_service
 from localstack.config import SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT
-from localstack.constants import HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT
 from localstack.http import Request, route
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sqs import constants as sqs_constants
+from localstack.services.sqs.constants import HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT
 from localstack.services.sqs.exceptions import InvalidParameterValueException
 from localstack.services.sqs.models import (
     FifoQueue,
@@ -1231,12 +1231,13 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         if wait_time_seconds is None:
             wait_time_seconds = queue.wait_time_seconds
 
-        num = max_number_of_messages or 1
-
         # override receieve count with value from custom header
         if override := extract_message_count_from_headers(context):
             num = override
-        elif num == -1:
+        else:
+            num = max_number_of_messages or 1
+
+        if num == -1:
             # backdoor to get all messages
             num = queue.approx_number_of_messages
         elif (
@@ -1892,7 +1893,7 @@ def message_filter_message_attributes(message: Message, names: Optional[MessageA
         message.pop("MessageAttributes")
 
 
-def extract_message_count_from_headers(context: RequestContext) -> int:
+def extract_message_count_from_headers(context: RequestContext) -> int | None:
     if override := context.request.headers.get(
         HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT, default=None, type=int
     ):

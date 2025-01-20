@@ -8,7 +8,6 @@ from botocore.client import BaseClient
 from localstack.aws.api.pipes import PipeSourceSqsQueueParameters
 from localstack.aws.api.sqs import MessageSystemAttributeName
 from localstack.config import internal_service_url
-from localstack.constants import HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT
 from localstack.services.lambda_.event_source_mapping.event_processor import (
     EventProcessor,
     PartialBatchFailureError,
@@ -18,6 +17,7 @@ from localstack.services.lambda_.event_source_mapping.pollers.poller import (
     parse_batch_item_failures,
 )
 from localstack.services.lambda_.event_source_mapping.senders.sender_utils import batched
+from localstack.services.sqs.constants import HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import first_char_to_lower
 
@@ -58,6 +58,7 @@ class SqsPoller(Poller):
                 return
 
             # Allow overide parameter to be greater than default and less than maxiumum batch size.
+            # Useful for getting remaining records less than the batch size. i.e we need 100 records but BatchSize is 1k.
             override = min(requested_count, self.sqs_queue_parameters["BatchSize"])
             context[HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = str(override)
 
@@ -76,6 +77,7 @@ class SqsPoller(Poller):
         event_system.register(
             "provide-client-params.sqs.ReceiveMessage", _handle_receive_message_override
         )
+        # Since we delete SQS messages after processing, this allows us to remove up to 10K entries at a time.
         event_system.register(
             "provide-client-params.sqs.DeleteMessageBatch", _handle_delete_batch_override
         )
