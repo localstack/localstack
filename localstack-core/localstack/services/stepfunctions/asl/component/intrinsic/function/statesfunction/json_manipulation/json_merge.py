@@ -1,8 +1,8 @@
 import copy
 from typing import Any
 
-from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_list import (
-    FunctionArgumentList,
+from localstack.services.stepfunctions.asl.component.intrinsic.argument.argument import (
+    ArgumentList,
 )
 from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.states_function import (
     StatesFunction,
@@ -38,14 +38,14 @@ class JsonMerge(StatesFunction):
     #    }
     # }
 
-    def __init__(self, arg_list: FunctionArgumentList):
+    def __init__(self, argument_list: ArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.JsonMerge),
-            arg_list=arg_list,
+            argument_list=argument_list,
         )
-        if arg_list.size != 3:
+        if argument_list.size != 3:
             raise ValueError(
-                f"Expected 3 arguments for function type '{type(self)}', but got: '{arg_list}'."
+                f"Expected 3 arguments for function type '{type(self)}', but got: '{argument_list}'."
             )
 
     @staticmethod
@@ -67,7 +67,7 @@ class JsonMerge(StatesFunction):
             raise TypeError(f"Expected a JSON object the argument {num}, but got: '{argument}'.")
 
     def _eval_body(self, env: Environment) -> None:
-        self.arg_list.eval(env=env)
+        self.argument_list.eval(env=env)
         args = env.stack.pop()
 
         is_deep_merge = args.pop()
