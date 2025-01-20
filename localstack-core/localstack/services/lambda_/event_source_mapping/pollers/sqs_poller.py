@@ -21,6 +21,7 @@ from localstack.services.lambda_.event_source_mapping.senders.sender_utils impor
     batched,
     batched_by_size,
 )
+from localstack.services.sqs.constants import HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import first_char_to_lower
 
@@ -41,6 +42,7 @@ class SqsPoller(Poller):
     ):
         super().__init__(source_arn, source_parameters, source_client, processor)
         self.queue_url = get_queue_url(self.source_arn)
+        self._register_client_hooks()
 
     @property
     def sqs_queue_parameters(self) -> PipeSourceSqsQueueParameters:
@@ -50,6 +52,40 @@ class SqsPoller(Poller):
     def is_fifo_queue(self) -> bool:
         # Alternative heuristic: self.queue_url.endswith(".fifo"), but we need the call to get_queue_attributes for IAM
         return self.get_queue_attributes().get("FifoQueue", "false").lower() == "true"
+
+    def _register_client_hooks(self):
+        event_system = self.source_client.meta.events
+
+        def _handle_receive_message_override(params, context, **kwargs):
+            requested_count = params.get("MaxNumberOfMessages")
+            if not requested_count or requested_count <= DEFAULT_MAX_RECEIVE_COUNT:
+                return
+
+            # Allow overide parameter to be greater than default and less than maximum batch size.
+            # Useful for getting remaining records less than the batch size. i.e we need 100 records but BatchSize is 1k.
+            override = min(requested_count, self.sqs_queue_parameters["BatchSize"])
+            context[HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = str(override)
+
+        def _handle_delete_batch_override(params, context, **kwargs):
+            requested_count = len(params.get("Entries", []))
+            if not requested_count or requested_count <= DEFAULT_MAX_RECEIVE_COUNT:
+                return
+
+            override = min(requested_count, self.sqs_queue_parameters["BatchSize"])
+            context[HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = str(override)
+
+        def _handler_inject_header(params, context, **kwargs):
+            if override := context.pop(HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT, None):
+                params["headers"][HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = override
+
+        event_system.register(
+            "provide-client-params.sqs.ReceiveMessage", _handle_receive_message_override
+        )
+        # Since we delete SQS messages after processing, this allows us to remove up to 10K entries at a time.
+        event_system.register(
+            "provide-client-params.sqs.DeleteMessageBatch", _handle_delete_batch_override
+        )
+        event_system.register("before-call.sqs.*", _handler_inject_header)
 
     def get_queue_attributes(self) -> dict:
         """The API call to sqs:GetQueueAttributes is required for IAM policy streamsing."""
@@ -104,6 +140,11 @@ class SqsPoller(Poller):
             if time_elapsed >= max_batch_window or len(batch) >= max_batch_size:
                 return batch
 
+            # 1. Naive approach: jitter iterations between 2 values i.e [0.02-0.002]
+            # 2. Ideal rate of sending: limit the SQS iterations to adhere to some rate-limit i.e 50/s
+            # 3. Rate limit on gateway?
+            # 4. Long-polling on the SQS provider
+
         return batch
 
     def poll_events(self) -> None:
@@ -120,7 +161,7 @@ class SqsPoller(Poller):
         # NOTE: If the collection of messages exceeds the 6MB size-limit imposed on payloads sent to a Lambda,
         # split into chunks of up to 6MB each.
         # See https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventsourcemapping.html#invocation-eventsourcemapping-batching
-        for messages in batched_by_size(collected_messages, 6e6):
+        for messages in batched_by_size(collected_messages, 5e6):
             LOG.debug("Polled %d events from %s", len(messages), self.source_arn)
             try:
                 if self.is_fifo_queue:
@@ -219,7 +260,8 @@ class SqsPoller(Poller):
                 for count, message in enumerate(messages)
                 if message["MessageId"] in message_ids_to_delete
             ]
-            for batched_entries in batched(entries, DEFAULT_MAX_RECEIVE_COUNT):
+            batch_size = self.sqs_queue_parameters.get("BatchSize", DEFAULT_MAX_RECEIVE_COUNT)
+            for batched_entries in batched(entries, batch_size):
                 self.source_client.delete_message_batch(
                     QueueUrl=self.queue_url, Entries=batched_entries
                 )

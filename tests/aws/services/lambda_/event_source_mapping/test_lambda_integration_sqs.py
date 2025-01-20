@@ -1557,6 +1557,72 @@ class TestSQSEventSourceMapping:
             EventSourceArn=event_source_arn,
         )
 
+    @pytest.mark.parametrize(
+        "batch_size",
+        [
+            20,
+            100,
+            1_000,
+            10_000,
+        ],
+    )
+    @markers.aws.only_localstack
+    def test_sqs_event_source_mapping_batch_size_override(
+        self,
+        create_lambda_function,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        lambda_su_role,
+        cleanups,
+        aws_client,
+        batch_size,
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        queue_name = f"queue-{short_uid()}"
+        mapping_uuid = None
+
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        # Send messages in batches of 10 i.e batch_size = 10_000 means 1_000 requests of 10 messages each.
+        for _ in range(batch_size // 10):
+            entries = [{"Id": str(i), "MessageBody": json.dumps({"foo": "bar"})} for i in range(10)]
+            aws_client.sqs.send_message_batch(QueueUrl=queue_url, Entries=entries)
+
+        # Wait a few seconds to ensure all messages are loaded in queue
+        _await_queue_size(aws_client.sqs, queue_url, batch_size)
+
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            EventSourceArn=queue_arn,
+            FunctionName=function_name,
+            MaximumBatchingWindowInSeconds=10,
+            BatchSize=batch_size,
+        )
+        mapping_uuid = create_event_source_mapping_response["UUID"]
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
+        _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
+
+        events = retry(
+            check_expected_lambda_log_events_length,
+            retries=10,
+            sleep=1,
+            function_name=function_name,
+            expected_length=1,
+            logs_client=aws_client.logs,
+        )
+
+        assert len(events) == 1
+        assert len(events[0].get("Records", [])) == batch_size
+
+        rs = aws_client.sqs.receive_message(QueueUrl=queue_url)
+        assert rs.get("Messages", []) == []
+
 
 def _await_queue_size(sqs_client, queue_url: str, qsize: int, retries=10, sleep=1):
     # wait for all items to appear in the queue
