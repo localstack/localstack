@@ -73,6 +73,7 @@ from localstack.aws.api.apigateway import (
     RequestValidator,
     RequestValidators,
     Resource,
+    ResourceOwner,
     RestApi,
     RestApis,
     SecurityPolicy,
@@ -377,11 +378,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def put_rest_api(self, context: RequestContext, request: PutRestApiRequest) -> RestApi:
         # TODO: take into account the mode: overwrite or merge
         # the default is now `merge`, but we are removing everything
-        body_data = request["body"].read()
         rest_api = get_moto_rest_api(context, request["restApiId"])
+        rest_api, warnings = import_api_from_openapi_spec(
+            rest_api, context=context, request=request
+        )
 
-        openapi_spec = parse_json_or_yaml(to_str(body_data))
-        rest_api = import_api_from_openapi_spec(rest_api, openapi_spec, context=context)
         rest_api.root_resource_id = get_moto_rest_api_root_resource(rest_api)
         response = rest_api.to_dict()
         remove_empty_attributes_from_rest_api(response)
@@ -390,6 +391,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         # TODO: verify this
         response = to_rest_api_response_json(response)
         response.setdefault("tags", {})
+
+        # TODO Failing still keeps all applied mutations. We need to revert to the previous state instead
+        if warnings:
+            response["warnings"] = warnings
+
         return response
 
     @handler("CreateDomainName")
@@ -409,6 +415,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         security_policy: SecurityPolicy = None,
         mutual_tls_authentication: MutualTlsAuthenticationInput = None,
         ownership_verification_certificate_arn: String = None,
+        policy: String = None,
         **kwargs,
     ) -> DomainName:
         if not domain_name:
@@ -444,7 +451,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return domain
 
     @handler("GetDomainName")
-    def get_domain_name(self, context: RequestContext, domain_name: String, **kwargs) -> DomainName:
+    def get_domain_name(
+        self, context: RequestContext, domain_name: String, domain_name_id: String = None, **kwargs
+    ) -> DomainName:
         store: ApiGatewayStore = get_apigateway_store(context=context)
         if domain := store.domain_names.get(domain_name):
             return domain
@@ -456,6 +465,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         context: RequestContext,
         position: String = None,
         limit: NullableInteger = None,
+        resource_owner: ResourceOwner = None,
         **kwargs,
     ) -> DomainNames:
         store = get_apigateway_store(context=context)
@@ -463,7 +473,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return DomainNames(items=list(domain_names), position=position)
 
     @handler("DeleteDomainName")
-    def delete_domain_name(self, context: RequestContext, domain_name: String, **kwargs) -> None:
+    def delete_domain_name(
+        self, context: RequestContext, domain_name: String, domain_name_id: String = None, **kwargs
+    ) -> None:
         store: ApiGatewayStore = get_apigateway_store(context=context)
         if not store.domain_names.pop(domain_name, None):
             raise NotFoundException("Invalid domain name identifier specified")
@@ -1448,6 +1460,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         domain_name: String,
+        domain_name_id: String = None,
         position: String = None,
         limit: NullableInteger = None,
         **kwargs,
@@ -1462,7 +1475,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return BasePathMappings(items=result)
 
     def get_base_path_mapping(
-        self, context: RequestContext, domain_name: String, base_path: String, **kwargs
+        self,
+        context: RequestContext,
+        domain_name: String,
+        base_path: String,
+        domain_name_id: String = None,
+        **kwargs,
     ) -> BasePathMapping:
         region_details = get_apigateway_store(context=context)
 
@@ -1479,6 +1497,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         context: RequestContext,
         domain_name: String,
         rest_api_id: String,
+        domain_name_id: String = None,
         base_path: String = None,
         stage: String = None,
         **kwargs,
@@ -1505,6 +1524,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         context: RequestContext,
         domain_name: String,
         base_path: String,
+        domain_name_id: String = None,
         patch_operations: ListOfPatchOperation = None,
         **kwargs,
     ) -> BasePathMapping:
@@ -1533,7 +1553,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return BasePathMapping(**result)
 
     def delete_base_path_mapping(
-        self, context: RequestContext, domain_name: String, base_path: String, **kwargs
+        self,
+        context: RequestContext,
+        domain_name: String,
+        base_path: String,
+        domain_name_id: String = None,
+        **kwargs,
     ) -> None:
         region_details = get_apigateway_store(context=context)
 

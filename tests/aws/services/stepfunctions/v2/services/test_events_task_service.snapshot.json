@@ -574,5 +574,167 @@
         }
       ]
     }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_events_task_service.py::TestTaskServiceEvents::test_put_events_mixed_malformed_detail": {
+    "recorded-date": "05-12-2024, 13:56:38",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Entries": [
+                  {
+                    "Detail": "{\"Message\": \"HelloWorld0\"}",
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source"
+                  },
+                  {
+                    "Detail": "\"jsonstring\"",
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source"
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Entries": [
+                  {
+                    "Detail": "{\"Message\": \"HelloWorld0\"}",
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source"
+                  },
+                  {
+                    "Detail": "\"jsonstring\"",
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source"
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "PutEvents"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Entries": [
+                  {
+                    "Detail": "{\"Message\": \"HelloWorld0\"}",
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source"
+                  },
+                  {
+                    "Detail": "\"jsonstring\"",
+                    "DetailType": "<detail-type>",
+                    "Source": "some.source"
+                  }
+                ]
+              },
+              "region": "<region>",
+              "resource": "putEvents",
+              "resourceType": "events"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "putEvents",
+              "resourceType": "events"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": {
+                "Entries": [
+                  {
+                    "EventId": "<uuid:1>"
+                  },
+                  {
+                    "ErrorCode": "MalformedDetail",
+                    "ErrorMessage": "Detail is malformed."
+                  }
+                ],
+                "FailedEntryCount": 1
+              },
+              "error": "EventBridge.FailedEntry",
+              "resource": "putEvents",
+              "resourceType": "events"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": {
+                "Entries": [
+                  {
+                    "EventId": "<uuid:1>"
+                  },
+                  {
+                    "ErrorCode": "MalformedDetail",
+                    "ErrorMessage": "Detail is malformed."
+                  }
+                ],
+                "FailedEntryCount": 1
+              },
+              "error": "EventBridge.FailedEntry"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stepfunctions_events": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "<detail-type>",
+          "source": "some.source",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [
+            "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>"
+          ],
+          "detail": {
+            "Message": "HelloWorld0"
+          }
+        }
+      ]
+    }
   }
 }

@@ -13,6 +13,7 @@ from localstack.aws.api.stepfunctions import (
     HistoryEventType,
     StateEnteredEventDetails,
     StateExitedEventDetails,
+    TaskFailedEventDetails,
 )
 from localstack.services.stepfunctions.asl.component.common.assign.assign_decl import AssignDecl
 from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import CatchOutcome
@@ -32,15 +33,15 @@ from localstack.services.stepfunctions.asl.component.common.flow.next import Nex
 from localstack.services.stepfunctions.asl.component.common.outputdecl import Output
 from localstack.services.stepfunctions.asl.component.common.path.input_path import (
     InputPath,
-    InputPathBase,
 )
-from localstack.services.stepfunctions.asl.component.common.path.output_path import (
-    OutputPath,
-    OutputPathBase,
-)
+from localstack.services.stepfunctions.asl.component.common.path.output_path import OutputPath
 from localstack.services.stepfunctions.asl.component.common.query_language import (
     QueryLanguage,
     QueryLanguageMode,
+)
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
+    JSONPATH_ROOT_PATH,
+    StringJsonPath,
 )
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.component.state.state_continue_with import (
@@ -55,6 +56,7 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 from localstack.services.stepfunctions.asl.eval.program_state import ProgramRunning
 from localstack.services.stepfunctions.asl.eval.states import StateData
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.services.stepfunctions.asl.utils.json_path import NoSuchJsonPathError
 from localstack.services.stepfunctions.quotas import is_within_size_quota
 
 LOG = logging.getLogger(__name__)
@@ -95,9 +97,6 @@ class CommonStateField(EvalComponent, ABC):
         state_entered_event_type: HistoryEventType,
         state_exited_event_type: Optional[HistoryEventType],
     ):
-        self.comment = None
-        self.input_path = InputPathBase(InputPathBase.DEFAULT_PATH)
-        self.output_path = OutputPathBase(OutputPathBase.DEFAULT_PATH)
         self.state_entered_event_type = state_entered_event_type
         self.state_exited_event_type = state_exited_event_type
 
@@ -112,11 +111,11 @@ class CommonStateField(EvalComponent, ABC):
         self.assign_decl = state_props.get(AssignDecl)
         # JSONPath sub-productions.
         if self.query_language.query_language_mode == QueryLanguageMode.JSONPath:
-            self.input_path = state_props.get(InputPath) or InputPathBase(
-                InputPathBase.DEFAULT_PATH
+            self.input_path = state_props.get(InputPath) or InputPath(
+                StringJsonPath(JSONPATH_ROOT_PATH)
             )
-            self.output_path = state_props.get(OutputPath) or OutputPathBase(
-                OutputPathBase.DEFAULT_PATH
+            self.output_path = state_props.get(OutputPath) or OutputPath(
+                StringJsonPath(JSONPATH_ROOT_PATH)
             )
             self.output = None
         # JSONata sub-productions.
@@ -211,8 +210,27 @@ class CommonStateField(EvalComponent, ABC):
             env.stack.append(env.states.get_input())
 
         # Exec the state's logic.
-        self._eval_state(env)
-        #
+        try:
+            self._eval_state(env)
+        except NoSuchJsonPathError as no_such_json_path_error:
+            data_json_str = to_json_str(no_such_json_path_error.data)
+            cause = (
+                f"The JSONPath '{no_such_json_path_error.json_path}' specified for the field '{env.next_field_name}' "
+                f"could not be found in the input '{data_json_str}'"
+            )
+            raise FailureEventException(
+                failure_event=FailureEvent(
+                    env=env,
+                    error_name=StatesErrorName(typ=StatesErrorNameType.StatesRuntime),
+                    event_type=HistoryEventType.TaskFailed,
+                    event_details=EventDetails(
+                        taskFailedEventDetails=TaskFailedEventDetails(
+                            error=StatesErrorNameType.StatesRuntime.to_name(), cause=cause
+                        )
+                    ),
+                )
+            )
+
         if not isinstance(env.program_state(), ProgramRunning):
             return
 

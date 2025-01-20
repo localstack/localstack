@@ -92,7 +92,7 @@ from localstack.services.cloudformation.engine.entities import (
     StackInstance,
     StackSet,
 )
-from localstack.services.cloudformation.engine.parameters import strip_parameter_type
+from localstack.services.cloudformation.engine.parameters import mask_no_echo, strip_parameter_type
 from localstack.services.cloudformation.engine.resource_ordering import (
     NoResourceInStack,
     order_resources,
@@ -211,7 +211,7 @@ class CloudformationProvider(CloudformationApi):
         template_body = request.get("TemplateBody") or ""
         if len(template_body) > 51200:
             raise ValidationError(
-                f'1 validation error detected: Value \'{request["TemplateBody"]}\' at \'templateBody\' '
+                f"1 validation error detected: Value '{request['TemplateBody']}' at 'templateBody' "
                 "failed to satisfy constraint: Member must have length less than or equal to 51200"
             )
         api_utils.prepare_template_body(request)  # TODO: avoid mutating request directly
@@ -288,7 +288,7 @@ class CloudformationProvider(CloudformationApi):
         stack.set_resolved_stack_conditions(resolved_stack_conditions)
 
         stack.set_resolved_parameters(resolved_parameters)
-        stack.template_body = json.dumps(template)
+        stack.template_body = template_body
         state.stacks[stack.stack_id] = stack
         LOG.debug(
             'Creating stack "%s" with %s resources ...',
@@ -667,7 +667,8 @@ class CloudformationProvider(CloudformationApi):
             case ChangeSetType.UPDATE:
                 # add changeset to existing stack
                 old_parameters = {
-                    k: strip_parameter_type(v) for k, v in stack.resolved_parameters.items()
+                    k: mask_no_echo(strip_parameter_type(v))
+                    for k, v in stack.resolved_parameters.items()
                 }
             case ChangeSetType.IMPORT:
                 raise NotImplementedError()  # TODO: implement importing resources
@@ -812,7 +813,9 @@ class CloudformationProvider(CloudformationApi):
         ]
         result = remove_attributes(deepcopy(change_set.metadata), attrs)
         # TODO: replace this patch with a better solution
-        result["Parameters"] = [strip_parameter_type(p) for p in result.get("Parameters", [])]
+        result["Parameters"] = [
+            mask_no_echo(strip_parameter_type(p)) for p in result.get("Parameters", [])
+        ]
         return result
 
     @handler("DeleteChangeSet")
@@ -1016,7 +1019,7 @@ class CloudformationProvider(CloudformationApi):
                 TemplateParameter(
                     ParameterKey=k,
                     DefaultValue=v.get("Default", ""),
-                    NoEcho=False,
+                    NoEcho=v.get("NoEcho", False),
                     Description=v.get("Description", ""),
                 )
                 for k, v in valid_template.get("Parameters", {}).items()

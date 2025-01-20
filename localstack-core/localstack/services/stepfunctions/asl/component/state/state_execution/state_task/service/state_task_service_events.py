@@ -9,6 +9,9 @@ from localstack.services.stepfunctions.asl.component.common.error_name.error_nam
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
+    StateCredentials,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceCondition,
     ResourceRuntimePart,
@@ -84,26 +87,26 @@ class StateTaskServiceEvents(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-        task_credentials: dict,
+        state_credentials: StateCredentials,
     ):
         self._normalised_request_parameters(env=env, parameters=normalised_parameters)
         service_name = self._get_boto_service_name()
         api_action = self._get_boto_service_action()
         events_client = boto_client_for(
-            region=resource_runtime_part.region,
-            account=resource_runtime_part.account,
             service=service_name,
+            region=resource_runtime_part.region,
+            state_credentials=state_credentials,
         )
         response = getattr(events_client, api_action)(**normalised_parameters)
         response.pop("ResponseMetadata", None)
 
         # If the response from PutEvents contains a non-zero FailedEntryCount then the
         #  Task state fails with the error EventBridge.FailedEntry.
-        if self.resource.api_action == "putevents":
+        if self.resource.api_action == "putEvents":
             failed_entry_count = response.get("FailedEntryCount", 0)
             if failed_entry_count > 0:
                 # TODO: pipe events' cause in the exception object. At them moment
                 #  LS events does not update this field.
-                raise SfnFailedEntryCountException(cause={"Cause": "Unsupported"})
+                raise SfnFailedEntryCountException(cause=response)
 
         env.stack.append(response)

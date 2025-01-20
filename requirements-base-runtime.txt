@@ -4,16 +4,16 @@
 #
 #    pip-compile --extra=base-runtime --output-file=requirements-base-runtime.txt --strip-extras --unsafe-package=distribute --unsafe-package=localstack-core --unsafe-package=pip --unsafe-package=setuptools pyproject.toml
 #
-attrs==24.2.0
+attrs==24.3.0
     # via
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.23.0
+awscrt==0.23.6
     # via localstack-core (pyproject.toml)
-boto3==1.35.63
+boto3==1.35.97
     # via localstack-core (pyproject.toml)
-botocore==1.35.63
+botocore==1.35.97
     # via
     #   boto3
     #   localstack-core (pyproject.toml)
@@ -24,17 +24,17 @@ cachetools==5.5.0
     # via localstack-core (pyproject.toml)
 cbor2==5.6.5
     # via localstack-core (pyproject.toml)
-certifi==2024.8.30
+certifi==2024.12.14
     # via requests
 cffi==1.17.1
     # via cryptography
-charset-normalizer==3.4.0
+charset-normalizer==3.4.1
     # via requests
-click==8.1.7
+click==8.1.8
     # via localstack-core (pyproject.toml)
 constantly==23.10.4
     # via localstack-twisted
-cryptography==43.0.3
+cryptography==44.0.0
     # via
     #   localstack-core (pyproject.toml)
     #   pyopenssl
@@ -88,7 +88,7 @@ jsonschema-path==0.3.3
     # via
     #   openapi-core
     #   openapi-spec-validator
-jsonschema-specifications==2023.12.1
+jsonschema-specifications==2024.10.1
     # via
     #   jsonschema
     #   openapi-schema-validator
@@ -106,7 +106,7 @@ more-itertools==10.5.0
     # via openapi-core
 openapi-core==0.19.4
     # via localstack-core (pyproject.toml)
-openapi-schema-validator==0.6.2
+openapi-schema-validator==0.6.3
     # via
     #   openapi-core
     #   openapi-spec-validator
@@ -116,7 +116,7 @@ packaging==24.2
     # via build
 parse==1.20.2
     # via openapi-core
-pathable==0.4.3
+pathable==0.4.4
     # via jsonschema-path
 plux==1.12.1
     # via localstack-core (pyproject.toml)
@@ -124,13 +124,13 @@ priority==1.3.0
     # via
     #   hypercorn
     #   localstack-twisted
-psutil==6.1.0
+psutil==6.1.1
     # via localstack-core (pyproject.toml)
 pycparser==2.22
     # via cffi
-pygments==2.18.0
+pygments==2.19.1
     # via rich
-pyopenssl==24.2.1
+pyopenssl==25.0.0
     # via
     #   localstack-core (pyproject.toml)
     #   localstack-twisted
@@ -164,17 +164,17 @@ rfc3339-validator==0.1.4
     # via openapi-schema-validator
 rich==13.9.4
     # via localstack-core (pyproject.toml)
-rolo==0.7.3
+rolo==0.7.4
     # via localstack-core (pyproject.toml)
-rpds-py==0.21.0
+rpds-py==0.22.3
     # via
     #   jsonschema
     #   referencing
-s3transfer==0.10.3
+s3transfer==0.10.4
     # via boto3
 semver==3.0.2
     # via localstack-core (pyproject.toml)
-six==1.16.0
+six==1.17.0
     # via
     #   python-dateutil
     #   rfc3339-validator
@@ -183,8 +183,9 @@ tailer==0.4.1
 typing-extensions==4.12.2
     # via
     #   localstack-twisted
+    #   pyopenssl
     #   readerwriterlock
-urllib3==2.2.3
+urllib3==2.3.0
     # via
     #   botocore
     #   docker
@@ -199,7 +200,7 @@ wsproto==1.2.0
     # via hypercorn
 xmltodict==0.14.2
     # via localstack-core (pyproject.toml)
-zope-interface==7.1.1
+zope-interface==7.2
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:

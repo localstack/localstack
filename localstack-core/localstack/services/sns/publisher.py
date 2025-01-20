@@ -237,7 +237,7 @@ class LambdaTopicPublisher(TopicPublisher):
         :param subscriber: the SNS subscription
         :return: an SNS message body formatted as a lambda Event in a JSON string
         """
-        external_url = external_service_url().rstrip("/")
+        external_url = get_cert_base_url()
         unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
         message_attributes = prepare_message_attributes(message_context.message_attributes)
 
@@ -569,13 +569,16 @@ class EmailJsonTopicPublisher(TopicPublisher):
         region = extract_region_from_arn(subscriber["Endpoint"])
         ses_client = connect_to(aws_access_key_id=account_id, region_name=region).ses
         if endpoint := subscriber.get("Endpoint"):
+            # TODO: legacy value, replace by a more sane value in the future
+            #  no-reply@sns-localstack.cloud or similar
+            sender = config.SNS_SES_SENDER_ADDRESS or "admin@localstack.com"
             ses_client.verify_email_address(EmailAddress=endpoint)
-            ses_client.verify_email_address(EmailAddress="admin@localstack.com")
+            ses_client.verify_email_address(EmailAddress=sender)
             message_body = self.prepare_message(
                 context.message, subscriber, topic_attributes=context.topic_attributes
             )
             ses_client.send_email(
-                Source="admin@localstack.com",
+                Source=sender,
                 Message={
                     "Body": {"Text": {"Data": message_body}},
                     "Subject": {"Data": "SNS-Subscriber-Endpoint"},
@@ -853,7 +856,7 @@ def get_application_platform_arn_from_endpoint_arn(endpoint_arn: str) -> str:
     parsed_arn = parse_arn(endpoint_arn)
 
     _, platform_type, app_name, _ = parsed_arn["resource"].split("/")
-    base_arn = f'arn:aws:sns:{parsed_arn["region"]}:{parsed_arn["account"]}'
+    base_arn = f"arn:aws:sns:{parsed_arn['region']}:{parsed_arn['account']}"
     return f"{base_arn}:app/{platform_type}/{app_name}"
 
 
@@ -955,7 +958,7 @@ def create_sns_message_body(
     if message_type == "Notification" and is_raw_message_delivery(subscriber):
         return message_content
 
-    external_url = external_service_url().rstrip("/")
+    external_url = get_cert_base_url()
 
     data = {
         "Type": message_type,
@@ -1124,6 +1127,13 @@ def store_delivery_log(
     return store_cloudwatch_logs(
         logs_client, log_group_name, log_stream_name, log_output, invocation_time
     )
+
+
+def get_cert_base_url() -> str:
+    if config.SNS_CERT_URL_HOST:
+        return f"https://{config.SNS_CERT_URL_HOST}"
+
+    return external_service_url().rstrip("/")
 
 
 def create_subscribe_url(external_url, topic_arn, subscription_token):

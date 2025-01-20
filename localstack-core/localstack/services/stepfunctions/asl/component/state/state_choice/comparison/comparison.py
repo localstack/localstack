@@ -5,8 +5,8 @@ from enum import Enum
 from typing import Any, Final
 
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLLexer import ASLLexer
-from localstack.services.stepfunctions.asl.component.common.jsonata.jsonata_template_value_terminal import (
-    JSONataTemplateValueTerminalExpression,
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
+    StringJSONata,
 )
 from localstack.services.stepfunctions.asl.component.state.state_choice.choice_rule import (
     ChoiceRule,
@@ -39,17 +39,15 @@ class ConditionJSONataLit(Comparison):
         env.stack.append(self.literal)
 
 
-class ConditionJSONataExpression(Comparison):
-    jsonata_template_value_terminal_expression: Final[JSONataTemplateValueTerminalExpression]
+class ConditionStringJSONata(Comparison):
+    string_jsonata: Final[StringJSONata]
 
-    def __init__(
-        self, jsonata_template_value_terminal_expression: JSONataTemplateValueTerminalExpression
-    ):
+    def __init__(self, string_jsonata: StringJSONata):
         super().__init__()
-        self.jsonata_template_value_terminal_expression = jsonata_template_value_terminal_expression
+        self.string_jsonata = string_jsonata
 
     def _eval_body(self, env: Environment) -> None:
-        self.jsonata_template_value_terminal_expression.eval(env=env)
+        self.string_jsonata.eval(env=env)
         result = env.stack[-1]
         if not isinstance(result, bool):
             # TODO: add snapshot tests to verify AWS's behaviour about non boolean values.

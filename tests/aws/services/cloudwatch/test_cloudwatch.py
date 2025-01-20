@@ -989,6 +989,260 @@ class TestCloudwatch:
         snapshot.match("reset-alarm", describe_alarm)
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="New test for v2 provider")
+    def test_trigger_composite_alarm(
+        self, sns_create_topic, sqs_create_queue, aws_client, cleanups, snapshot
+    ):
+        # create topics for state 'ALARM' and 'OK' of the composite alarm
+        topic_name_alarm = f"topic-alarm-{short_uid()}"
+        topic_name_ok = f"topic-ok-{short_uid()}"
+
+        sns_topic_alarm = sns_create_topic(Name=topic_name_alarm)
+        topic_arn_alarm = sns_topic_alarm["TopicArn"]
+        sns_topic_ok = sns_create_topic(Name=topic_name_ok)
+        topic_arn_ok = sns_topic_ok["TopicArn"]
+
+        # TODO extract SNS-to-SQS into a fixture
+        # create queues for 'ALARM' and 'OK' of the composite alarm (will receive sns messages)
+        queue_url_alarm = sqs_create_queue(QueueName=f"AlarmQueue-{short_uid()}")
+        queue_url_ok = sqs_create_queue(QueueName=f"OKQueue-{short_uid()}")
+
+        arn_queue_alarm = aws_client.sqs.get_queue_attributes(
+            QueueUrl=queue_url_alarm, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+        arn_queue_ok = aws_client.sqs.get_queue_attributes(
+            QueueUrl=queue_url_ok, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+        aws_client.sqs.set_queue_attributes(
+            QueueUrl=queue_url_alarm,
+            Attributes={"Policy": get_sqs_policy(arn_queue_alarm, topic_arn_alarm)},
+        )
+        aws_client.sqs.set_queue_attributes(
+            QueueUrl=queue_url_ok, Attributes={"Policy": get_sqs_policy(arn_queue_ok, topic_arn_ok)}
+        )
+
+        # subscribe to SQS
+        subscription_alarm = aws_client.sns.subscribe(
+            TopicArn=topic_arn_alarm, Protocol="sqs", Endpoint=arn_queue_alarm
+        )
+        cleanups.append(
+            lambda: aws_client.sns.unsubscribe(
+                SubscriptionArn=subscription_alarm["SubscriptionArn"]
+            )
+        )
+        subscription_ok = aws_client.sns.subscribe(
+            TopicArn=topic_arn_ok, Protocol="sqs", Endpoint=arn_queue_ok
+        )
+        cleanups.append(
+            lambda: aws_client.sns.unsubscribe(SubscriptionArn=subscription_ok["SubscriptionArn"])
+        )
+
+        # put metric alarms that would be parts of a composite one
+        # TODO extract put metric alarm and associated cleanups into a fixture
+        def _put_metric_alarm(alarm_name: str):
+            aws_client.cloudwatch.put_metric_alarm(
+                AlarmName=alarm_name,
+                MetricName="CPUUtilization",
+                Namespace="AWS/EC2",
+                EvaluationPeriods=1,
+                Period=10,
+                Statistic="Sum",
+                ComparisonOperator="GreaterThanThreshold",
+                Threshold=30,
+            )
+            cleanups.append(lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name]))
+
+        alarm_1_name = f"simple-alarm-1-{short_uid()}"
+        alarm_2_name = f"simple-alarm-2-{short_uid()}"
+
+        _put_metric_alarm(alarm_1_name)
+        _put_metric_alarm(alarm_2_name)
+
+        alarm_1_arn = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_1_name])[
+            "MetricAlarms"
+        ][0]["AlarmArn"]
+        alarm_2_arn = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_2_name])[
+            "MetricAlarms"
+        ][0]["AlarmArn"]
+
+        # put composite alarm that is triggered when either of metric alarms is triggered.
+        composite_alarm_name = f"composite-alarm-{short_uid()}"
+        composite_alarm_description = "composite alarm description"
+
+        composite_alarm_rule = f'ALARM("{alarm_1_arn}") OR ALARM("{alarm_2_arn}")'
+
+        put_composite_alarm_response = aws_client.cloudwatch.put_composite_alarm(
+            AlarmName=composite_alarm_name,
+            AlarmDescription=composite_alarm_description,
+            AlarmRule=composite_alarm_rule,
+            OKActions=[topic_arn_ok],
+            AlarmActions=[topic_arn_alarm],
+        )
+        cleanups.append(
+            lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[composite_alarm_name])
+        )
+        snapshot.match("put-composite-alarm", put_composite_alarm_response)
+
+        composite_alarms_list = aws_client.cloudwatch.describe_alarms(
+            AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
+        )
+        composite_alarm = composite_alarms_list["CompositeAlarms"][0]
+        # TODO snapshot.match("describe-composite-alarm", composite_alarm) instead of asserts
+        # right now the lack of parity for initial composite alarm evaluation prevents from checking snapshot.
+        # Namely, for initial evaluation after alarm creation all child alarms
+        # should be included as triggering alarms
+        assert composite_alarm["AlarmName"] == composite_alarm_name
+        assert composite_alarm["AlarmRule"] == composite_alarm_rule
+
+        # add necessary transformers for the snapshot
+
+        # StateReason is a text with formatted dates inside it. For now stubbing it out fully because
+        # composite alarm reason can be checked via StateReasonData property which is simpler to check
+        # as its properties reference ARN and state of individual alarms without putting them all into a piece of text.
+        snapshot.add_transformer(snapshot.transform.key_value("StateReason"))
+        snapshot.add_transformer(
+            snapshot.transform.regex(composite_alarm_name, "<composite-alarm-name>")
+        )
+        snapshot.add_transformer(snapshot.transform.regex(alarm_1_name, "<simple-alarm-1-name>"))
+        snapshot.add_transformer(snapshot.transform.regex(alarm_2_name, "<simple-alarm-2-name>"))
+        snapshot.add_transformer(snapshot.transform.regex(topic_name_alarm, "<alarm-topic-name>"))
+        snapshot.add_transformer(snapshot.transform.regex(topic_name_ok, "<ok-topic-name>"))
+
+        # helper methods to verify that correct message landed in correct SQS queue
+        # for ALARM and OK state changes respectively
+
+        def _check_composite_alarm_alarm_message(
+            expected_triggering_child_arn,
+            expected_triggering_child_state,
+        ):
+            retry(
+                check_composite_alarm_message,
+                retries=PUBLICATION_RETRIES,
+                sleep_before=1,
+                sqs_client=aws_client.sqs,
+                queue_url=queue_url_alarm,
+                expected_topic_arn=topic_arn_alarm,
+                alarm_name=composite_alarm_name,
+                alarm_description=composite_alarm_description,
+                expected_state="ALARM",
+                expected_triggering_child_arn=expected_triggering_child_arn,
+                expected_triggering_child_state=expected_triggering_child_state,
+            )
+
+        def _check_composite_alarm_ok_message(
+            expected_triggering_child_arn,
+            expected_triggering_child_state,
+        ):
+            retry(
+                check_composite_alarm_message,
+                retries=PUBLICATION_RETRIES,
+                sleep_before=1,
+                sqs_client=aws_client.sqs,
+                queue_url=queue_url_ok,
+                expected_topic_arn=topic_arn_ok,
+                alarm_name=composite_alarm_name,
+                alarm_description=composite_alarm_description,
+                expected_state="OK",
+                expected_triggering_child_arn=expected_triggering_child_arn,
+                expected_triggering_child_state=expected_triggering_child_state,
+            )
+
+        # trigger alarm 1 - composite one should also go into ALARM state
+        aws_client.cloudwatch.set_alarm_state(
+            AlarmName=alarm_1_name, StateValue="ALARM", StateReason="trigger alarm 1"
+        )
+
+        _check_composite_alarm_alarm_message(
+            expected_triggering_child_arn=alarm_1_arn,
+            expected_triggering_child_state="ALARM",
+        )
+
+        composite_alarms_list = aws_client.cloudwatch.describe_alarms(
+            AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
+        )
+        composite_alarm_in_alarm_when_alarm_1_in_alarm = composite_alarms_list["CompositeAlarms"][0]
+        snapshot.match(
+            "composite-alarm-in-alarm-when-alarm-1-is-in-alarm",
+            composite_alarm_in_alarm_when_alarm_1_in_alarm,
+        )
+
+        # trigger OK for alarm 1 - composite one should also go back to OK
+        aws_client.cloudwatch.set_alarm_state(
+            AlarmName=alarm_1_name, StateValue="OK", StateReason="resetting alarm 1"
+        )
+
+        _check_composite_alarm_ok_message(
+            expected_triggering_child_arn=alarm_1_arn,
+            expected_triggering_child_state="OK",
+        )
+
+        composite_alarms_list = aws_client.cloudwatch.describe_alarms(
+            AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
+        )
+        composite_alarm_in_ok_when_alarm_1_back_to_ok = composite_alarms_list["CompositeAlarms"][0]
+        snapshot.match(
+            "composite-alarm-in-ok-when-alarm-1-is-back-to-ok",
+            composite_alarm_in_ok_when_alarm_1_back_to_ok,
+        )
+
+        # trigger alarm 2 - composite one should go again into ALARM state
+        aws_client.cloudwatch.set_alarm_state(
+            AlarmName=alarm_2_name, StateValue="ALARM", StateReason="trigger alarm 2"
+        )
+
+        _check_composite_alarm_alarm_message(
+            expected_triggering_child_arn=alarm_2_arn,
+            expected_triggering_child_state="ALARM",
+        )
+
+        composite_alarms_list = aws_client.cloudwatch.describe_alarms(
+            AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
+        )
+        composite_alarm_in_alarm_when_alarm_2_in_alarm = composite_alarms_list["CompositeAlarms"][0]
+        snapshot.match(
+            "composite-alarm-in-alarm-when-alarm-2-is-in-alarm",
+            composite_alarm_in_alarm_when_alarm_2_in_alarm,
+        )
+
+        # trigger OK for alarm 2 - composite one should also go back to OK
+        aws_client.cloudwatch.set_alarm_state(
+            AlarmName=alarm_2_name, StateValue="OK", StateReason="resetting alarm 2"
+        )
+
+        _check_composite_alarm_ok_message(
+            expected_triggering_child_arn=alarm_2_arn,
+            expected_triggering_child_state="OK",
+        )
+
+        composite_alarms_list = aws_client.cloudwatch.describe_alarms(
+            AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
+        )
+        composite_alarm_in_ok_when_alarm_2_back_to_ok = composite_alarms_list["CompositeAlarms"][0]
+        snapshot.match(
+            "composite-alarm-in-ok-when-alarm-2-is-back-to-ok",
+            composite_alarm_in_ok_when_alarm_2_back_to_ok,
+        )
+
+        # trigger alarm 2 while alarm 1 is triggered - composite one shouldn't change
+        aws_client.cloudwatch.set_alarm_state(
+            AlarmName=alarm_1_name, StateValue="ALARM", StateReason="trigger alarm 1"
+        )
+        aws_client.cloudwatch.set_alarm_state(
+            AlarmName=alarm_2_name, StateValue="ALARM", StateReason="trigger alarm 2"
+        )
+
+        composite_alarms_list = aws_client.cloudwatch.describe_alarms(
+            AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
+        )
+        composite_alarm_is_triggered_by_alarm_1_and_then_not_changed_by_alarm_2 = (
+            composite_alarms_list["CompositeAlarms"][0]
+        )
+        snapshot.match(
+            "composite-alarm-is-triggered-by-alarm-1-and-then-unchanged-by-alarm-2",
+            composite_alarm_is_triggered_by_alarm_1_and_then_not_changed_by_alarm_2,
+        )
+
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..AlarmHistoryItems..HistoryData.newState.stateReason",
@@ -2708,9 +2962,39 @@ def _sqs_messages_snapshot(expected_state, sqs_client, sqs_queue, snapshot, iden
             found_msg = message
             receipt_handle = msg["ReceiptHandle"]
             break
-    assert found_msg, f"no message found for {expected_state}. Got {len(result['Messages'])} messages.\n{json.dumps(result)}"
+    assert found_msg, (
+        f"no message found for {expected_state}. Got {len(result['Messages'])} messages.\n{json.dumps(result)}"
+    )
     sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=receipt_handle)
     snapshot.match(f"{identifier}-sqs-msg", found_msg)
+
+
+def check_composite_alarm_message(
+    sqs_client,
+    queue_url,
+    expected_topic_arn,
+    alarm_name,
+    alarm_description,
+    expected_state,
+    expected_triggering_child_arn,
+    expected_triggering_child_state,
+):
+    receive_result = sqs_client.receive_message(QueueUrl=queue_url)
+    message = None
+    for msg in receive_result["Messages"]:
+        body = json.loads(msg["Body"])
+        if body["TopicArn"] == expected_topic_arn:
+            message = json.loads(body["Message"])
+            receipt_handle = msg["ReceiptHandle"]
+            sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+            break
+    assert message["NewStateValue"] == expected_state
+    assert message["AlarmName"] == alarm_name
+    assert message["AlarmDescription"] == alarm_description
+    triggering_child_alarm = message["TriggeringChildren"][0]
+    assert triggering_child_alarm["Arn"] == expected_triggering_child_arn
+    assert triggering_child_alarm["State"]["Value"] == expected_triggering_child_state
+    return message
 
 
 def check_message(

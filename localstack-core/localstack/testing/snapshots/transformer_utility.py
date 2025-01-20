@@ -217,7 +217,11 @@ class TransformerUtility:
             ),
             TransformerUtility.key_value("X-Amzn-Apigateway-Api-Id"),
             TransformerUtility.key_value("X-Forwarded-For"),
-            TransformerUtility.key_value("X-Forwarded-Port"),
+            TransformerUtility.key_value(
+                "X-Forwarded-Port",
+                value_replacement="<X-Forwarded-Port>",
+                reference_replacement=False,
+            ),
             TransformerUtility.key_value(
                 "X-Forwarded-Proto",
                 value_replacement="<X-Forwarded-Proto>",
@@ -739,36 +743,6 @@ class TransformerUtility:
     # @staticmethod
     # def custom(fn: Callable[[dict], dict]) -> Transformer:
     #     return GenericTransformer(fn)
-
-    @staticmethod
-    def eventbridge_api_destination(snapshot, connection_name: str):
-        """
-        Add common transformers for EventBridge connection tests.
-
-        Args:
-            snapshot: The snapshot instance to add transformers to
-            connection_name: The name of the connection to transform in the snapshot
-        """
-        snapshot.add_transformer(snapshot.transform.regex(connection_name, "<connection-name>"))
-        snapshot.add_transformer(
-            snapshot.transform.key_value("ApiDestinationArn", reference_replacement=False)
-        )
-        snapshot.add_transformer(
-            snapshot.transform.key_value("ConnectionArn", reference_replacement=False)
-        )
-        return snapshot
-
-    @staticmethod
-    def eventbridge_connection(snapshot, connection_name: str):
-        """
-        Add common transformers for EventBridge connection tests.
-        Args:
-            snapshot: The snapshot instance to add transformers to
-            connection_name: The name of the connection to transform in the snapshot
-        """
-        snapshot.add_transformer(snapshot.transform.regex(connection_name, "<connection-name>"))
-        snapshot.add_transformer(TransformerUtility.resource_name())
-        return snapshot
 
 
 def _sns_pem_file_token_transformer(key: str, val: str) -> str:

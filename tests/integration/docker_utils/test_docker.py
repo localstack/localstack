@@ -6,7 +6,7 @@ import os
 import re
 import textwrap
 import time
-from typing import NamedTuple, Type
+from typing import Callable, NamedTuple, Type
 
 import pytest
 from docker.models.containers import Container
@@ -85,7 +85,7 @@ def create_container(docker_client: ContainerClient, create_network):
     """
     containers = []
 
-    def _create_container(image_name: str, **kwargs):
+    def _create_container(image_name: str, **kwargs) -> ContainerInfo:
         kwargs["name"] = kwargs.get("name", _random_container_name())
         cid = docker_client.create_container(image_name, **kwargs)
         cid = cid.strip()
@@ -186,6 +186,28 @@ class TestDockerClient:
 
         # it takes a while for it to be removed
         assert "foobar" in output
+
+    @pytest.mark.parametrize(
+        "entrypoint",
+        [
+            "echo",
+            ["echo"],
+        ],
+    )
+    def test_set_container_entrypoint(
+        self,
+        docker_client: ContainerClient,
+        create_container: Callable[..., ContainerInfo],
+        entrypoint: list[str] | str,
+    ):
+        info = create_container("alpine", entrypoint=entrypoint, command=["true"])
+        assert 1 == len(docker_client.list_containers(f"id={info.container_id}"))
+
+        # start the container
+        output, _ = docker_client.start_container(info.container_id, attach=True)
+        output = to_str(output).strip()
+
+        assert output == "true"
 
     @markers.skip_offline
     def test_create_container_non_existing_image(self, docker_client: ContainerClient):
@@ -367,7 +389,7 @@ class TestDockerClient:
         finally:
             docker_client.remove_container(container_name)
 
-    # TODO: currently failing under Podman in CI (works locally under MacOS)
+    # TODO: currently failing under Podman in CI (works locally under macOS)
     @pytest.mark.skipif(
         condition=_is_podman_test(),
         reason="Podman get_networks(..) does not return list of networks in CI",
@@ -443,7 +465,7 @@ class TestDockerClient:
                 container_name_or_id=dummy_container.container_id, container_network=network_name
             )
 
-    # TODO: currently failing under Podman in CI (works locally under MacOS)
+    # TODO: currently failing under Podman in CI (works locally under macOS)
     @pytest.mark.skipif(
         condition=_is_podman_test(),
         reason="Podman get_networks(..) does not return list of networks in CI",
@@ -471,7 +493,7 @@ class TestDockerClient:
                 container_name_or_id=dummy_container.container_id, container_network=network_name
             )
 
-    # TODO: currently failing under Podman in CI (works locally under MacOS)
+    # TODO: currently failing under Podman in CI (works locally under macOS)
     @pytest.mark.skipif(
         condition=_is_podman_test(),
         reason="Podman get_networks(..) does not return list of networks in CI",
@@ -756,6 +778,19 @@ class TestDockerClient:
             ],
         )
         assert "foo" in out.decode(config.DEFAULT_ENCODING)
+
+    def test_create_file_in_container(
+        self, tmpdir, docker_client: ContainerClient, create_container
+    ):
+        content = b"fancy content"
+        container_path = "/tmp/myfile.txt"
+
+        c = create_container("alpine", command=["cat", container_path])
+
+        docker_client.create_file_in_container(c.container_name, content, container_path)
+
+        output, _ = docker_client.start_container(c.container_id, attach=True)
+        assert output == content
 
     def test_get_network_non_existing_container(self, docker_client: ContainerClient):
         with pytest.raises(ContainerException):

@@ -21,11 +21,11 @@ top_layer_stmt:
     | timeout_seconds_decl
 ;
 
-startat_decl: STARTAT COLON keyword_or_string;
+startat_decl: STARTAT COLON string_literal;
 
-comment_decl: COMMENT COLON keyword_or_string;
+comment_decl: COMMENT COLON string_literal;
 
-version_decl: VERSION COLON keyword_or_string;
+version_decl: VERSION COLON string_literal;
 
 query_language_decl: QUERYLANGUAGE COLON (JSONPATH | JSONATA);
 
@@ -43,13 +43,9 @@ state_stmt:
     | default_decl
     | choices_decl
     | error_decl
-    | error_path_decl
     | cause_decl
-    | cause_path_decl
     | seconds_decl
-    | seconds_path_decl
     | timestamp_decl
-    | timestamp_path_decl
     | items_decl
     | items_path_decl
     | item_processor_decl
@@ -57,20 +53,15 @@ state_stmt:
     | item_selector_decl
     | item_reader_decl
     | max_concurrency_decl
-    | max_concurrency_path_decl
     | timeout_seconds_decl
-    | timeout_seconds_path_decl
     | heartbeat_seconds_decl
-    | heartbeat_seconds_path_decl
     | branches_decl
     | parameters_decl
     | retry_decl
     | catch_decl
     | result_selector_decl
     | tolerated_failure_count_decl
-    | tolerated_failure_count_path_decl
     | tolerated_failure_percentage_decl
-    | tolerated_failure_percentage_path_decl
     | label_decl
     | result_writer_decl
     | assign_decl
@@ -81,133 +72,88 @@ state_stmt:
 
 states_decl: STATES COLON LBRACE state_decl (COMMA state_decl)* RBRACE;
 
-state_name: keyword_or_string;
-
-// TODO: avoid redefinitions? -> check listener ok?
-state_decl: state_name COLON state_decl_body;
+state_decl: string_literal COLON state_decl_body;
 
 state_decl_body: LBRACE state_stmt (COMMA state_stmt)* RBRACE;
 
 type_decl: TYPE COLON state_type;
 
-next_decl: NEXT COLON keyword_or_string;
+next_decl: NEXT COLON string_literal;
 
-resource_decl: RESOURCE COLON keyword_or_string;
+resource_decl: RESOURCE COLON string_literal;
 
-input_path_decl:
-    INPUTPATH COLON variable_sample              # input_path_decl_var
-    | INPUTPATH COLON STRINGPATHCONTEXTOBJ       # input_path_decl_path_context_object
-    | INPUTPATH COLON (NULL | keyword_or_string) # input_path_decl_path
-;
+input_path_decl: INPUTPATH COLON (NULL | string_sampler);
 
 result_decl: RESULT COLON json_value_decl;
 
-result_path_decl: RESULTPATH COLON (NULL | keyword_or_string);
+result_path_decl: RESULTPATH COLON (NULL | string_jsonpath);
 
-output_path_decl:
-    OUTPUTPATH COLON variable_sample              # output_path_decl_var
-    | OUTPUTPATH COLON STRINGPATHCONTEXTOBJ       # output_path_decl_path_context_object
-    | OUTPUTPATH COLON (NULL | keyword_or_string) # output_path_decl_path
-;
+output_path_decl: OUTPUTPATH COLON (NULL | string_sampler);
 
 end_decl: END COLON (TRUE | FALSE);
 
-default_decl: DEFAULT COLON keyword_or_string;
+default_decl: DEFAULT COLON string_literal;
 
 error_decl:
-    ERROR COLON STRINGJSONATA       # error_jsonata
-    | ERROR COLON keyword_or_string # error_string
-;
-
-error_path_decl:
-    ERRORPATH COLON variable_sample       # error_path_decl_var
-    | ERRORPATH COLON STRINGPATH          # error_path_decl_path
-    | ERRORPATH COLON STRINGINTRINSICFUNC # error_path_decl_intrinsic
+    ERROR COLON (string_jsonata | string_literal) # error
+    | ERRORPATH COLON string_expression_simple    # error_path
 ;
 
 cause_decl:
-    CAUSE COLON STRINGJSONATA       # cause_jsonata
-    | CAUSE COLON keyword_or_string # cause_string
+    CAUSE COLON (string_jsonata | string_literal) # cause
+    | CAUSEPATH COLON string_expression_simple    # cause_path
 ;
 
-cause_path_decl:
-    CAUSEPATH COLON variable_sample       # cause_path_decl_var
-    | CAUSEPATH COLON STRINGPATH          # cause_path_decl_path
-    | CAUSEPATH COLON STRINGINTRINSICFUNC # cause_path_decl_intrinsic
-;
-
-seconds_decl: SECONDS COLON STRINGJSONATA # seconds_jsonata | SECONDS COLON INT # seconds_int;
-
-seconds_path_decl:
-    SECONDSPATH COLON variable_sample     # seconds_path_decl_var
-    | SECONDSPATH COLON keyword_or_string # seconds_path_decl_value
+seconds_decl:
+    SECONDS COLON string_jsonata       # seconds_jsonata
+    | SECONDS COLON INT                # seconds_int
+    | SECONDSPATH COLON string_sampler # seconds_path
 ;
 
 timestamp_decl:
-    TIMESTAMP COLON STRINGJSONATA       # timestamp_jsonata
-    | TIMESTAMP COLON keyword_or_string # timestamp_string
-;
-
-timestamp_path_decl:
-    TIMESTAMPPATH COLON variable_sample     # timestamp_path_decl_var
-    | TIMESTAMPPATH COLON keyword_or_string # timestamp_path_decl_value
+    TIMESTAMP COLON (string_jsonata | string_literal) # timestamp
+    | TIMESTAMPPATH COLON string_sampler              # timestamp_path
 ;
 
 items_decl:
     ITEMS COLON jsonata_template_value_array # items_array
-    | ITEMS COLON STRINGJSONATA              # items_jsonata
+    | ITEMS COLON string_jsonata             # items_jsonata
 ;
 
-items_path_decl:
-    ITEMSPATH COLON STRINGPATHCONTEXTOBJ # items_path_decl_path_context_object
-    | ITEMSPATH COLON variable_sample    # items_path_decl_path_var
-    | ITEMSPATH COLON keyword_or_string  # items_path_decl_path
-;
+items_path_decl: ITEMSPATH COLON string_sampler;
 
 max_concurrency_decl:
-    MAXCONCURRENCY COLON STRINGJSONATA # max_concurrency_jsonata
-    | MAXCONCURRENCY COLON INT         # max_concurrency_int
-;
-
-max_concurrency_path_decl:
-    MAXCONCURRENCYPATH COLON variable_sample # max_concurrency_path_var
-    | MAXCONCURRENCYPATH COLON STRINGPATH    # max_concurrency_path
+    MAXCONCURRENCY COLON string_jsonata       # max_concurrency_jsonata
+    | MAXCONCURRENCY COLON INT                # max_concurrency_int
+    | MAXCONCURRENCYPATH COLON string_sampler # max_concurrency_path
 ;
 
 parameters_decl: PARAMETERS COLON payload_tmpl_decl;
 
-credentials_decl: CREDENTIALS COLON payload_tmpl_decl;
+credentials_decl: CREDENTIALS COLON LBRACE role_arn_decl RBRACE;
 
-timeout_seconds_decl:
-    TIMEOUTSECONDS COLON STRINGJSONATA # timeout_seconds_jsonata
-    | TIMEOUTSECONDS COLON INT         # timeout_seconds_int
+role_arn_decl:
+    ROLEARN COLON (string_jsonata | string_literal) # role_arn
+    | ROLEARNPATH COLON string_expression_simple    # role_path
 ;
 
-timeout_seconds_path_decl:
-    TIMEOUTSECONDSPATH COLON variable_sample # timeout_seconds_path_decl_var
-    | TIMEOUTSECONDSPATH COLON STRINGPATH    # timeout_seconds_path_decl_path
+timeout_seconds_decl:
+    TIMEOUTSECONDS COLON string_jsonata       # timeout_seconds_jsonata
+    | TIMEOUTSECONDS COLON INT                # timeout_seconds_int
+    | TIMEOUTSECONDSPATH COLON string_sampler # timeout_seconds_path
 ;
 
 heartbeat_seconds_decl:
-    HEARTBEATSECONDS COLON STRINGJSONATA # heartbeat_seconds_jsonata
-    | HEARTBEATSECONDS COLON INT         # heartbeat_seconds_int
+    HEARTBEATSECONDS COLON string_jsonata       # heartbeat_seconds_jsonata
+    | HEARTBEATSECONDS COLON INT                # heartbeat_seconds_int
+    | HEARTBEATSECONDSPATH COLON string_sampler # heartbeat_seconds_path
 ;
-
-heartbeat_seconds_path_decl:
-    HEARTBEATSECONDSPATH COLON variable_sample # heartbeat_seconds_path_decl_var
-    | HEARTBEATSECONDSPATH COLON STRINGPATH    # heartbeat_seconds_path_decl_path
-;
-
-variable_sample: STRINGVAR;
 
 payload_tmpl_decl: LBRACE payload_binding (COMMA payload_binding)* RBRACE | LBRACE RBRACE;
 
 payload_binding:
-    STRINGDOLLAR COLON STRINGPATH                # payload_binding_path
-    | STRINGDOLLAR COLON STRINGPATHCONTEXTOBJ    # payload_binding_path_context_obj
-    | STRINGDOLLAR COLON STRINGINTRINSICFUNC     # payload_binding_intrinsic_func
-    | STRINGDOLLAR COLON variable_sample         # payload_binding_var
-    | keyword_or_string COLON payload_value_decl # payload_binding_value
+    STRINGDOLLAR COLON string_expression_simple # payload_binding_sample
+    | string_literal COLON payload_value_decl   # payload_binding_value
 ;
 
 payload_arr_decl: LBRACK payload_value_decl (COMMA payload_value_decl)* RBRACK | LBRACK RBRACK;
@@ -215,11 +161,11 @@ payload_arr_decl: LBRACK payload_value_decl (COMMA payload_value_decl)* RBRACK |
 payload_value_decl: payload_arr_decl | payload_tmpl_decl | payload_value_lit;
 
 payload_value_lit:
-    NUMBER              # payload_value_float
-    | INT               # payload_value_int
-    | (TRUE | FALSE)    # payload_value_bool
-    | NULL              # payload_value_null
-    | keyword_or_string # payload_value_str
+    NUMBER           # payload_value_float
+    | INT            # payload_value_int
+    | (TRUE | FALSE) # payload_value_bool
+    | NULL           # payload_value_null
+    | string_literal # payload_value_str
 ;
 
 assign_decl: ASSIGN COLON assign_decl_body;
@@ -233,13 +179,9 @@ assign_template_value_object:
     | LBRACE assign_template_binding (COMMA assign_template_binding)* RBRACE
 ;
 
-// TODO: add support for jsonata expression in assign declarations.
 assign_template_binding:
-    STRINGDOLLAR COLON STRINGPATH             # assign_template_binding_path
-    | STRINGDOLLAR COLON STRINGPATHCONTEXTOBJ # assign_template_binding_path_context
-    | STRINGDOLLAR COLON variable_sample      # assign_template_binding_var
-    | STRINGDOLLAR COLON STRINGINTRINSICFUNC  # assign_template_binding_intrinsic_func
-    | STRING COLON assign_template_value      # assign_template_binding_assign_value
+    STRINGDOLLAR COLON string_expression_simple  # assign_template_binding_string_expression_simple
+    | string_literal COLON assign_template_value # assign_template_binding_value
 ;
 
 assign_template_value:
@@ -254,17 +196,17 @@ assign_template_value_array:
 ;
 
 assign_template_value_terminal:
-    NUMBER              # assign_template_value_terminal_float
-    | INT               # assign_template_value_terminal_int
-    | (TRUE | FALSE)    # assign_template_value_terminal_bool
-    | NULL              # assign_template_value_terminal_null
-    | STRINGJSONATA     # assign_template_value_terminal_expression
-    | keyword_or_string # assign_template_value_terminal_str
+    NUMBER           # assign_template_value_terminal_float
+    | INT            # assign_template_value_terminal_int
+    | (TRUE | FALSE) # assign_template_value_terminal_bool
+    | NULL           # assign_template_value_terminal_null
+    | string_jsonata # assign_template_value_terminal_string_jsonata
+    | string_literal # assign_template_value_terminal_string_literal
 ;
 
 arguments_decl:
-    ARGUMENTS COLON jsonata_template_value_object # arguments_object
-    | ARGUMENTS COLON STRINGJSONATA               # arguments_expr
+    ARGUMENTS COLON jsonata_template_value_object # arguments_jsonata_template_value_object
+    | ARGUMENTS COLON string_jsonata              # arguments_string_jsonata
 ;
 
 output_decl: OUTPUT COLON jsonata_template_value;
@@ -274,7 +216,7 @@ jsonata_template_value_object:
     | LBRACE jsonata_template_binding (COMMA jsonata_template_binding)* RBRACE
 ;
 
-jsonata_template_binding: keyword_or_string COLON jsonata_template_value;
+jsonata_template_binding: string_literal COLON jsonata_template_value;
 
 jsonata_template_value:
     jsonata_template_value_object
@@ -288,12 +230,12 @@ jsonata_template_value_array:
 ;
 
 jsonata_template_value_terminal:
-    NUMBER              # jsonata_template_value_terminal_float
-    | INT               # jsonata_template_value_terminal_int
-    | (TRUE | FALSE)    # jsonata_template_value_terminal_bool
-    | NULL              # jsonata_template_value_terminal_null
-    | STRINGJSONATA     # jsonata_template_value_terminal_expression
-    | keyword_or_string # jsonata_template_value_terminal_str
+    NUMBER           # jsonata_template_value_terminal_float
+    | INT            # jsonata_template_value_terminal_int
+    | (TRUE | FALSE) # jsonata_template_value_terminal_bool
+    | NULL           # jsonata_template_value_terminal_null
+    | string_jsonata # jsonata_template_value_terminal_string_jsonata
+    | string_literal # jsonata_template_value_terminal_string_literal
 ;
 
 result_selector_decl: RESULTSELECTOR COLON payload_tmpl_decl;
@@ -315,23 +257,19 @@ comparison_variable_stmt:
     | comment_decl
 ;
 
-comparison_composite_stmt: comparison_composite | next_decl | assign_decl;
+comparison_composite_stmt: comparison_composite | next_decl | assign_decl | comment_decl;
 
-comparison_composite
-    // TODO: this allows for Next definitions in nested choice_rules, is this supported at parse time?
-    : choice_operator COLON (choice_rule | LBRACK choice_rule (COMMA choice_rule)* RBRACK);
+comparison_composite:
+    choice_operator COLON (choice_rule | LBRACK choice_rule (COMMA choice_rule)* RBRACK)
+; // TODO: this allows for Next definitions in nested choice_rules, is this supported at parse time?
 
-variable_decl:
-    VARIABLE COLON STRINGPATH             # variable_decl_path
-    | VARIABLE COLON variable_sample      # variable_decl_var
-    | VARIABLE COLON STRINGPATHCONTEXTOBJ # variable_decl_path_context_object
-;
+variable_decl: VARIABLE COLON string_sampler;
 
 comparison_func:
-    CONDITION COLON (TRUE | FALSE)        # condition_lit
-    | CONDITION COLON STRINGJSONATA       # condition_expr
-    | comparison_op COLON variable_sample # comparison_func_var
-    | comparison_op COLON json_value_decl # comparison_func_value
+    CONDITION COLON (TRUE | FALSE)               # condition_lit
+    | CONDITION COLON string_jsonata             # condition_string_jsonata
+    | comparison_op COLON string_variable_sample # comparison_func_string_variable_sample
+    | comparison_op COLON json_value_decl        # comparison_func_value
 ;
 
 branches_decl: BRANCHES COLON LBRACK program_decl (COMMA program_decl)* RBRACK;
@@ -375,47 +313,35 @@ reader_config_field:
     | csv_header_location_decl
     | csv_headers_decl
     | max_items_decl
-    | max_items_path_decl
 ;
 
-input_type_decl: INPUTTYPE COLON keyword_or_string;
+input_type_decl: INPUTTYPE COLON string_literal;
 
-csv_header_location_decl: CSVHEADERLOCATION COLON keyword_or_string;
+csv_header_location_decl: CSVHEADERLOCATION COLON string_literal;
 
-csv_headers_decl // TODO: are empty "CSVHeaders" list values supported?
-    : CSVHEADERS COLON LBRACK keyword_or_string (COMMA keyword_or_string)* RBRACK;
+csv_headers_decl:
+    CSVHEADERS COLON LBRACK string_literal (COMMA string_literal)* RBRACK
+; // TODO: are empty "CSVHeaders" list values supported?
 
 max_items_decl:
-    MAXITEMS COLON STRINGJSONATA # max_items_jsonata
-    | MAXITEMS COLON INT         # max_items_int
-;
-
-max_items_path_decl:
-    MAXITEMSPATH COLON variable_sample # max_items_path_var
-    | MAXITEMSPATH COLON STRINGPATH    # max_items_path
+    MAXITEMS COLON string_jsonata       # max_items_string_jsonata
+    | MAXITEMS COLON INT                # max_items_int
+    | MAXITEMSPATH COLON string_sampler # max_items_path
 ;
 
 tolerated_failure_count_decl:
-    TOLERATEDFAILURECOUNT COLON STRINGJSONATA # tolerated_failure_count_jsonata
-    | TOLERATEDFAILURECOUNT COLON INT         # tolerated_failure_count_int
-;
-
-tolerated_failure_count_path_decl:
-    TOLERATEDFAILURECOUNTPATH COLON variable_sample # tolerated_failure_count_path_var
-    | TOLERATEDFAILURECOUNTPATH COLON STRINGPATH    # tolerated_failure_count_path
+    TOLERATEDFAILURECOUNT COLON string_jsonata       # tolerated_failure_count_string_jsonata
+    | TOLERATEDFAILURECOUNT COLON INT                # tolerated_failure_count_int
+    | TOLERATEDFAILURECOUNTPATH COLON string_sampler # tolerated_failure_count_path
 ;
 
 tolerated_failure_percentage_decl:
-    TOLERATEDFAILUREPERCENTAGE COLON STRINGJSONATA # tolerated_failure_percentage_jsonata
-    | TOLERATEDFAILUREPERCENTAGE COLON NUMBER      # tolerated_failure_percentage_number
+    TOLERATEDFAILUREPERCENTAGE COLON string_jsonata       # tolerated_failure_percentage_string_jsonata
+    | TOLERATEDFAILUREPERCENTAGE COLON NUMBER             # tolerated_failure_percentage_number
+    | TOLERATEDFAILUREPERCENTAGEPATH COLON string_sampler # tolerated_failure_percentage_path
 ;
 
-tolerated_failure_percentage_path_decl:
-    TOLERATEDFAILUREPERCENTAGEPATH COLON variable_sample # tolerated_failure_percentage_path_var
-    | TOLERATEDFAILUREPERCENTAGEPATH COLON STRINGPATH    # tolerated_failure_percentage_path
-;
-
-label_decl: LABEL COLON keyword_or_string;
+label_decl: LABEL COLON string_literal;
 
 result_writer_decl:
     RESULTWRITER COLON LBRACE result_writer_field (COMMA result_writer_field)* RBRACE
@@ -525,11 +451,11 @@ states_error_name:
     | ERRORNAMEStatesQueryEvaluationError
 ;
 
-error_name: states_error_name | keyword_or_string;
+error_name: states_error_name | string_literal;
 
 json_obj_decl: LBRACE json_binding (COMMA json_binding)* RBRACE | LBRACE RBRACE;
 
-json_binding: keyword_or_string COLON json_value_decl;
+json_binding: string_literal COLON json_value_decl;
 
 json_arr_decl: LBRACK json_value_decl (COMMA json_value_decl)* RBRACK | LBRACK RBRACK;
 
@@ -542,19 +468,30 @@ json_value_decl:
     | json_binding
     | json_arr_decl
     | json_obj_decl
-    | keyword_or_string
+    | string_literal
 ;
 
-keyword_or_string:
-    STRINGDOLLAR
-    | STRINGINTRINSICFUNC
-    | STRINGVAR
-    | STRINGPATHCONTEXTOBJ
-    | STRINGPATH
-    | STRINGJSONATA
-    | STRING
-    //
-    | QUERYLANGUAGE
+string_sampler           : string_jsonpath | string_context_path | string_variable_sample;
+string_expression_simple : string_sampler | string_intrinsic_function;
+string_expression        : string_expression_simple | string_jsonata;
+
+string_jsonpath           : STRINGPATH;
+string_context_path       : STRINGPATHCONTEXTOBJ;
+string_variable_sample    : STRINGVAR;
+string_intrinsic_function : STRINGINTRINSICFUNC;
+string_jsonata            : STRINGJSONATA;
+string_literal:
+    STRING
+    | STRINGDOLLAR
+    | soft_string_keyword
+    | comparison_op
+    | choice_operator
+    | states_error_name
+    | string_expression
+;
+
+soft_string_keyword:
+    QUERYLANGUAGE
     | ASSIGN
     | ARGUMENTS
     | OUTPUT
@@ -576,48 +513,6 @@ keyword_or_string:
     | VARIABLE
     | DEFAULT
     | BRANCHES
-    | AND
-    | BOOLEANEQUALS
-    | BOOLEANQUALSPATH
-    | ISBOOLEAN
-    | ISNULL
-    | ISNUMERIC
-    | ISPRESENT
-    | ISSTRING
-    | ISTIMESTAMP
-    | NOT
-    | NUMERICEQUALS
-    | NUMERICEQUALSPATH
-    | NUMERICGREATERTHAN
-    | NUMERICGREATERTHANPATH
-    | NUMERICGREATERTHANEQUALS
-    | NUMERICGREATERTHANEQUALSPATH
-    | NUMERICLESSTHAN
-    | NUMERICLESSTHANPATH
-    | NUMERICLESSTHANEQUALS
-    | NUMERICLESSTHANEQUALSPATH
-    | OR
-    | STRINGEQUALS
-    | STRINGEQUALSPATH
-    | STRINGGREATERTHAN
-    | STRINGGREATERTHANPATH
-    | STRINGGREATERTHANEQUALS
-    | STRINGGREATERTHANEQUALSPATH
-    | STRINGLESSTHAN
-    | STRINGLESSTHANPATH
-    | STRINGLESSTHANEQUALS
-    | STRINGLESSTHANEQUALSPATH
-    | STRINGMATCHES
-    | TIMESTAMPEQUALS
-    | TIMESTAMPEQUALSPATH
-    | TIMESTAMPGREATERTHAN
-    | TIMESTAMPGREATERTHANPATH
-    | TIMESTAMPGREATERTHANEQUALS
-    | TIMESTAMPGREATERTHANEQUALSPATH
-    | TIMESTAMPLESSTHAN
-    | TIMESTAMPLESSTHANPATH
-    | TIMESTAMPLESSTHANEQUALS
-    | TIMESTAMPLESSTHANEQUALSPATH
     | SECONDSPATH
     | SECONDS
     | TIMESTAMPPATH
@@ -646,6 +541,8 @@ keyword_or_string:
     | RESULT
     | PARAMETERS
     | CREDENTIALS
+    | ROLEARN
+    | ROLEARNPATH
     | RESULTSELECTOR
     | ITEMREADER
     | READERCONFIG
@@ -674,19 +571,4 @@ keyword_or_string:
     | FULL
     | NONE
     | CATCH
-    | ERRORNAMEStatesALL
-    | ERRORNAMEStatesHeartbeatTimeout
-    | ERRORNAMEStatesTimeout
-    | ERRORNAMEStatesTaskFailed
-    | ERRORNAMEStatesPermissions
-    | ERRORNAMEStatesResultPathMatchFailure
-    | ERRORNAMEStatesParameterPathFailure
-    | ERRORNAMEStatesBranchFailed
-    | ERRORNAMEStatesNoChoiceMatched
-    | ERRORNAMEStatesIntrinsicFailure
-    | ERRORNAMEStatesExceedToleratedFailureThreshold
-    | ERRORNAMEStatesItemReaderFailed
-    | ERRORNAMEStatesResultWriterFailed
-    | ERRORNAMEStatesRuntime
-    | ERRORNAMEStatesQueryEvaluationError
 ;

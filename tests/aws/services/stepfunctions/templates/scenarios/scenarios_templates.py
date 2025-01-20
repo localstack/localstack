@@ -61,6 +61,9 @@ class ScenariosTemplate(TemplateLoader):
     MAP_STATE_CONFIG_DISTRIBUTED_ITEM_SELECTOR: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_config_distributed_item_selector.json5"
     )
+    MAP_STATE_CONFIG_DISTRIBUTED_ITEMS_PATH_FROM_PREVIOUS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_config_distributed_items_path_from_previous.json5"
+    )
     MAP_STATE_CONFIG_DISTRIBUTED_ITEM_SELECTOR_PARAMETERS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_config_distributed_item_selector_parameters.json5"
     )
@@ -81,6 +84,9 @@ class ScenariosTemplate(TemplateLoader):
     )
     MAP_STATE_NESTED: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_nested.json5"
+    )
+    MAP_STATE_NESTED_CONFIG_DISTRIBUTED: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_nested_config_distributed.json5"
     )
     MAP_STATE_NO_PROCESSOR_CONFIG: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_no_processor_config.json5"
@@ -108,6 +114,9 @@ class ScenariosTemplate(TemplateLoader):
     )
     MAP_ITEM_READER_BASE_JSON_MAX_ITEMS_JSONATA: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_item_reader_base_json_max_items_jsonata.json5"
+    )
+    MAP_ITEM_READER_BASE_JSON_WITH_ITEMS_PATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_item_reader_base_json_with_items_path.json5"
     )
     MAP_ITEM_BATCHER_BASE_JSON_MAX_PER_BATCH_JSONATA: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_item_batcher_base_max_per_batch_jsonata.json5"
@@ -243,4 +252,29 @@ class ScenariosTemplate(TemplateLoader):
     )
     RAISE_FAILURE_CAUSE_JSONATA: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/fail_cause_jsonata.json5"
+    )
+
+    INVALID_JSONPATH_IN_ERRORPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_errorpath.json5"
+    )
+    INVALID_JSONPATH_IN_CAUSEPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_causepath.json5"
+    )
+    INVALID_JSONPATH_IN_STRING_EXPR_JSONPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_string_expr_jsonpath.json5"
+    )
+    INVALID_JSONPATH_IN_STRING_EXPR_CONTEXTPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_string_expr_contextpath.json5"
+    )
+    INVALID_JSONPATH_IN_HEARTBEATSECONDSPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_heartbeatsecondspath.json5"
+    )
+    INVALID_JSONPATH_IN_TIMEOUTSECONDSPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_timeoutsecondspath.json5"
+    )
+    INVALID_JSONPATH_IN_INPUTPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_inputpath.json5"
+    )
+    INVALID_JSONPATH_IN_OUTPUTPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_outputpath.json5"
     )

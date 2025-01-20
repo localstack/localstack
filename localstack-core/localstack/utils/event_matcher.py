@@ -2,8 +2,15 @@ import json
 from typing import Any
 
 from localstack import config
+from localstack.services.events.event_rule_engine import (
+    EventPatternCompiler,
+    EventRuleEngine,
+    InvalidEventPatternException,
+)
 from localstack.services.events.event_ruler import matches_rule
-from localstack.services.events.v1.utils import matches_event as python_matches_event
+
+_event_pattern_compiler = EventPatternCompiler()
+_event_rule_engine = EventRuleEngine()
 
 
 def matches_event(event_pattern: dict[str, Any] | str | None, event: dict[str, Any] | str) -> bool:
@@ -48,7 +55,19 @@ def matches_event(event_pattern: dict[str, Any] | str | None, event: dict[str, A
         return matches_rule(event_str, pattern_str)
 
     # Python implementation (default)
-    # Convert strings to dicts if necessary
-    event_dict = json.loads(event) if isinstance(event, str) else event
-    pattern_dict = json.loads(event_pattern) if isinstance(event_pattern, str) else event_pattern
-    return python_matches_event(pattern_dict, event_dict)
+    compiled_event_pattern = _event_pattern_compiler.compile_event_pattern(
+        event_pattern=event_pattern
+    )
+    return _event_rule_engine.evaluate_pattern_on_event(
+        compiled_event_pattern=compiled_event_pattern,
+        event=event,
+    )
+
+
+def validate_event_pattern(event_pattern: dict[str, Any] | str | None) -> bool:
+    try:
+        _ = _event_pattern_compiler.compile_event_pattern(event_pattern=event_pattern)
+    except InvalidEventPatternException:
+        return False
+
+    return True

@@ -3,11 +3,7 @@ from typing import Final
 
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLParser import ASLParser
 from localstack.services.stepfunctions.asl.component.common.parargs import Parameters
-from localstack.services.stepfunctions.asl.component.common.path.input_path import (
-    InputPath,
-    InputPathContextObject,
-    InputPathVar,
-)
+from localstack.services.stepfunctions.asl.component.common.path.input_path import InputPath
 from localstack.services.stepfunctions.asl.component.common.path.result_path import ResultPath
 from localstack.services.stepfunctions.asl.component.common.query_language import QueryLanguage
 from localstack.services.stepfunctions.asl.component.common.result_selector import ResultSelector
@@ -87,28 +83,8 @@ class TestStatePreprocessor(Preprocessor):
         self._close_query_language_scope()
         return TestStateProgram(state_field)
 
-    def visitInput_path_decl_path(self, ctx: ASLParser.Input_path_decl_pathContext) -> InputPath:
-        input_path: InputPath = super().visitInput_path_decl_path(ctx=ctx)
-        input_path._eval_body = _decorated_updates_inspection_data(
-            method=input_path._eval_body,  # noqa
-            inspection_data_key=InspectionDataKey.AFTER_INPUT_PATH,
-        )
-        return input_path
-
-    def visitInput_path_decl_path_context_object(
-        self, ctx: ASLParser.Input_path_decl_path_context_objectContext
-    ) -> InputPathContextObject:
-        input_path: InputPathContextObject = super().visitInput_path_decl_path_context_object(
-            ctx=ctx
-        )
-        input_path._eval_body = _decorated_updates_inspection_data(
-            method=input_path._eval_body,  # noqa
-            inspection_data_key=InspectionDataKey.AFTER_INPUT_PATH,
-        )
-        return input_path
-
-    def visitInput_path_decl_var(self, ctx: ASLParser.Input_path_decl_varContext) -> InputPathVar:
-        input_path: InputPathVar = super().visitInput_path_decl_var(ctx=ctx)
+    def visitInput_path_decl(self, ctx: ASLParser.Input_path_declContext) -> InputPath:
+        input_path: InputPath = super().visitInput_path_decl(ctx=ctx)
         input_path._eval_body = _decorated_updates_inspection_data(
             method=input_path._eval_body,  # noqa
             inspection_data_key=InspectionDataKey.AFTER_INPUT_PATH,

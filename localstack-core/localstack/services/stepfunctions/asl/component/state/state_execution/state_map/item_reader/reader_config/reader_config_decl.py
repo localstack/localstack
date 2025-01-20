@@ -11,8 +11,8 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     InputType,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.max_items_decl import (
-    MaxItems,
     MaxItemsDecl,
+    MaxItemsInt,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 
@@ -52,7 +52,7 @@ class ReaderConfig(EvalComponent):
         max_items_decl: Optional[MaxItemsDecl],
     ):
         self.input_type = input_type
-        self.max_items_decl = max_items_decl or MaxItems()
+        self.max_items_decl = max_items_decl or MaxItemsInt()
         self.csv_header_location = csv_header_location
         self.csv_headers = csv_headers
         # TODO: verify behaviours:

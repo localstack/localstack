@@ -10,6 +10,8 @@ ActivationCode = str
 ActivationDescription = str
 ActivationId = str
 AgentErrorCode = str
+AgentType = str
+AgentVersion = str
 AggregatorSchemaOnly = bool
 AlarmName = str
 AllowedPattern = str
@@ -100,6 +102,7 @@ Duration = int
 EffectiveInstanceAssociationMaxResults = int
 ErrorCount = int
 ExcludeAccount = str
+ExecutionPreviewId = str
 ExecutionRoleName = str
 GetInventorySchemaMaxResults = int
 GetOpsMetadataMaxResults = int
@@ -121,6 +124,7 @@ InstancePropertyFilterValue = str
 InstancePropertyStringFilterKey = str
 InstanceRole = str
 InstanceState = str
+InstanceStatus = str
 InstanceTagName = str
 InstanceType = str
 InstancesCount = int
@@ -140,6 +144,7 @@ InventoryResultEntityId = str
 InventoryResultItemKey = str
 InventoryTypeDisplayName = str
 InvocationTraceOutput = str
+IpAddress = str
 IsSubTypeSchema = bool
 KeyName = str
 LastResourceDataSyncMessage = str
@@ -185,6 +190,12 @@ MaxSessionDuration = str
 MetadataKey = str
 MetadataValueString = str
 NextToken = str
+NodeAccountId = str
+NodeFilterValue = str
+NodeId = str
+NodeOrganizationalUnitId = str
+NodeOrganizationalUnitPath = str
+NodeRegion = str
 NotificationArn = str
 OpsAggregatorType = str
 OpsAggregatorValue = str
@@ -627,6 +638,13 @@ class ExecutionMode(StrEnum):
     Interactive = "Interactive"
 
 
+class ExecutionPreviewStatus(StrEnum):
+    Pending = "Pending"
+    InProgress = "InProgress"
+    Success = "Success"
+    Failed = "Failed"
+
+
 class ExternalAlarmState(StrEnum):
     UNKNOWN = "UNKNOWN"
     ALARM = "ALARM"
@@ -636,6 +654,12 @@ class Fault(StrEnum):
     Client = "Client"
     Server = "Server"
     Unknown = "Unknown"
+
+
+class ImpactType(StrEnum):
+    Mutating = "Mutating"
+    NonMutating = "NonMutating"
+    Undetermined = "Undetermined"
 
 
 class InstanceInformationFilterKey(StrEnum):
@@ -732,6 +756,53 @@ class MaintenanceWindowTaskType(StrEnum):
     AUTOMATION = "AUTOMATION"
     STEP_FUNCTIONS = "STEP_FUNCTIONS"
     LAMBDA = "LAMBDA"
+
+
+class ManagedStatus(StrEnum):
+    All = "All"
+    Managed = "Managed"
+    Unmanaged = "Unmanaged"
+
+
+class NodeAggregatorType(StrEnum):
+    Count = "Count"
+
+
+class NodeAttributeName(StrEnum):
+    AgentVersion = "AgentVersion"
+    PlatformName = "PlatformName"
+    PlatformType = "PlatformType"
+    PlatformVersion = "PlatformVersion"
+    Region = "Region"
+    ResourceType = "ResourceType"
+
+
+class NodeFilterKey(StrEnum):
+    AgentType = "AgentType"
+    AgentVersion = "AgentVersion"
+    ComputerName = "ComputerName"
+    InstanceId = "InstanceId"
+    InstanceStatus = "InstanceStatus"
+    IpAddress = "IpAddress"
+    ManagedStatus = "ManagedStatus"
+    PlatformName = "PlatformName"
+    PlatformType = "PlatformType"
+    PlatformVersion = "PlatformVersion"
+    ResourceType = "ResourceType"
+    OrganizationalUnitId = "OrganizationalUnitId"
+    OrganizationalUnitPath = "OrganizationalUnitPath"
+    Region = "Region"
+    AccountId = "AccountId"
+
+
+class NodeFilterOperatorType(StrEnum):
+    Equal = "Equal"
+    NotEqual = "NotEqual"
+    BeginWith = "BeginWith"
+
+
+class NodeTypeName(StrEnum):
+    Instance = "Instance"
 
 
 class NotificationEvent(StrEnum):
@@ -1856,6 +1927,12 @@ class UnsupportedOperatingSystem(ServiceException):
     status_code: int = 400
 
 
+class UnsupportedOperationException(ServiceException):
+    code: str = "UnsupportedOperationException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class UnsupportedParameterType(ServiceException):
     code: str = "UnsupportedParameterType"
     sender_fault: bool = False
@@ -1866,6 +1943,13 @@ class UnsupportedPlatformType(ServiceException):
     code: str = "UnsupportedPlatformType"
     sender_fault: bool = False
     status_code: int = 400
+
+
+class ValidationException(ServiceException):
+    code: str = "ValidationException"
+    sender_fault: bool = False
+    status_code: int = 400
+    ReasonCode: Optional[String]
 
 
 AccountIdList = List[AccountId]
@@ -2312,6 +2396,15 @@ class AutomationExecutionFilter(TypedDict, total=False):
 AutomationExecutionFilterList = List[AutomationExecutionFilter]
 
 
+class AutomationExecutionInputs(TypedDict, total=False):
+    Parameters: Optional[AutomationParameterMap]
+    TargetParameterName: Optional[AutomationParameterKey]
+    Targets: Optional[Targets]
+    TargetMaps: Optional[TargetMaps]
+    TargetLocations: Optional[TargetLocations]
+    TargetLocationsURL: Optional[TargetLocationsURL]
+
+
 class AutomationExecutionMetadata(TypedDict, total=False):
     AutomationExecutionId: Optional[AutomationExecutionId]
     DocumentName: Optional[DocumentName]
@@ -2347,6 +2440,25 @@ class AutomationExecutionMetadata(TypedDict, total=False):
 
 
 AutomationExecutionMetadataList = List[AutomationExecutionMetadata]
+
+
+class TargetPreview(TypedDict, total=False):
+    Count: Optional[Integer]
+    TargetType: Optional[String]
+
+
+TargetPreviewList = List[TargetPreview]
+RegionList = List[Region]
+StepPreviewMap = Dict[ImpactType, Integer]
+
+
+class AutomationExecutionPreview(TypedDict, total=False):
+    StepPreviews: Optional[StepPreviewMap]
+    Regions: Optional[RegionList]
+    TargetPreviews: Optional[TargetPreviewList]
+    TotalAccounts: Optional[Integer]
+
+
 PatchSourceProductList = List[PatchSourceProduct]
 
 
@@ -4154,6 +4266,14 @@ class DocumentVersionInfo(TypedDict, total=False):
 DocumentVersionList = List[DocumentVersionInfo]
 
 
+class ExecutionInputs(TypedDict, total=False):
+    Automation: Optional[AutomationExecutionInputs]
+
+
+class ExecutionPreview(TypedDict, total=False):
+    Automation: Optional[AutomationExecutionPreview]
+
+
 class GetAutomationExecutionRequest(ServiceRequest):
     AutomationExecutionId: AutomationExecutionId
 
@@ -4251,6 +4371,18 @@ class GetDocumentResult(TypedDict, total=False):
     Requires: Optional[DocumentRequiresList]
     AttachmentsContent: Optional[AttachmentContentList]
     ReviewStatus: Optional[ReviewStatus]
+
+
+class GetExecutionPreviewRequest(ServiceRequest):
+    ExecutionPreviewId: ExecutionPreviewId
+
+
+class GetExecutionPreviewResponse(TypedDict, total=False):
+    ExecutionPreviewId: Optional[ExecutionPreviewId]
+    EndedAt: Optional[DateTime]
+    Status: Optional[ExecutionPreviewStatus]
+    StatusMessage: Optional[String]
+    ExecutionPreview: Optional[ExecutionPreview]
 
 
 class ResultAttribute(TypedDict, total=False):
@@ -4764,6 +4896,19 @@ class GetServiceSettingResult(TypedDict, total=False):
     ServiceSetting: Optional[ServiceSetting]
 
 
+class InstanceInfo(TypedDict, total=False):
+    AgentType: Optional[AgentType]
+    AgentVersion: Optional[AgentVersion]
+    ComputerName: Optional[ComputerName]
+    InstanceStatus: Optional[InstanceStatus]
+    IpAddress: Optional[IpAddress]
+    ManagedStatus: Optional[ManagedStatus]
+    PlatformType: Optional[PlatformType]
+    PlatformName: Optional[PlatformName]
+    PlatformVersion: Optional[PlatformVersion]
+    ResourceType: Optional[ResourceType]
+
+
 InventoryItemContentContext = Dict[AttributeName, AttributeValue]
 
 
@@ -4921,6 +5066,81 @@ class ListInventoryEntriesResult(TypedDict, total=False):
     SchemaVersion: Optional[InventoryItemSchemaVersion]
     CaptureTime: Optional[InventoryItemCaptureTime]
     Entries: Optional[InventoryItemEntryList]
+    NextToken: Optional[NextToken]
+
+
+NodeFilterValueList = List[NodeFilterValue]
+
+
+class NodeFilter(TypedDict, total=False):
+    Key: NodeFilterKey
+    Values: NodeFilterValueList
+    Type: Optional[NodeFilterOperatorType]
+
+
+NodeFilterList = List[NodeFilter]
+
+
+class ListNodesRequest(ServiceRequest):
+    SyncName: Optional[ResourceDataSyncName]
+    Filters: Optional[NodeFilterList]
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[MaxResults]
+
+
+class NodeType(TypedDict, total=False):
+    Instance: Optional[InstanceInfo]
+
+
+class NodeOwnerInfo(TypedDict, total=False):
+    AccountId: Optional[NodeAccountId]
+    OrganizationalUnitId: Optional[NodeOrganizationalUnitId]
+    OrganizationalUnitPath: Optional[NodeOrganizationalUnitPath]
+
+
+NodeCaptureTime = datetime
+
+
+class Node(TypedDict, total=False):
+    CaptureTime: Optional[NodeCaptureTime]
+    Id: Optional[NodeId]
+    Owner: Optional[NodeOwnerInfo]
+    Region: Optional[NodeRegion]
+    NodeType: Optional[NodeType]
+
+
+NodeList = List[Node]
+
+
+class ListNodesResult(TypedDict, total=False):
+    Nodes: Optional[NodeList]
+    NextToken: Optional[NextToken]
+
+
+NodeAggregatorList = List["NodeAggregator"]
+
+
+class NodeAggregator(TypedDict, total=False):
+    AggregatorType: NodeAggregatorType
+    TypeName: NodeTypeName
+    AttributeName: NodeAttributeName
+    Aggregators: Optional[NodeAggregatorList]
+
+
+class ListNodesSummaryRequest(ServiceRequest):
+    SyncName: Optional[ResourceDataSyncName]
+    Filters: Optional[NodeFilterList]
+    Aggregators: NodeAggregatorList
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[MaxResults]
+
+
+NodeSummary = Dict[AttributeName, AttributeValue]
+NodeSummaryList = List[NodeSummary]
+
+
+class ListNodesSummaryResult(TypedDict, total=False):
+    Summary: Optional[NodeSummaryList]
     NextToken: Optional[NextToken]
 
 
@@ -5349,6 +5569,16 @@ class StartChangeRequestExecutionRequest(ServiceRequest):
 
 class StartChangeRequestExecutionResult(TypedDict, total=False):
     AutomationExecutionId: Optional[AutomationExecutionId]
+
+
+class StartExecutionPreviewRequest(ServiceRequest):
+    DocumentName: DocumentName
+    DocumentVersion: Optional[DocumentVersion]
+    ExecutionInputs: Optional[ExecutionInputs]
+
+
+class StartExecutionPreviewResponse(TypedDict, total=False):
+    ExecutionPreviewId: Optional[ExecutionPreviewId]
 
 
 class StartSessionRequest(ServiceRequest):
@@ -6430,6 +6660,12 @@ class SsmApi:
     ) -> GetDocumentResult:
         raise NotImplementedError
 
+    @handler("GetExecutionPreview")
+    def get_execution_preview(
+        self, context: RequestContext, execution_preview_id: ExecutionPreviewId, **kwargs
+    ) -> GetExecutionPreviewResponse:
+        raise NotImplementedError
+
     @handler("GetInventory")
     def get_inventory(
         self,
@@ -6746,6 +6982,31 @@ class SsmApi:
     ) -> ListInventoryEntriesResult:
         raise NotImplementedError
 
+    @handler("ListNodes")
+    def list_nodes(
+        self,
+        context: RequestContext,
+        sync_name: ResourceDataSyncName = None,
+        filters: NodeFilterList = None,
+        next_token: NextToken = None,
+        max_results: MaxResults = None,
+        **kwargs,
+    ) -> ListNodesResult:
+        raise NotImplementedError
+
+    @handler("ListNodesSummary")
+    def list_nodes_summary(
+        self,
+        context: RequestContext,
+        aggregators: NodeAggregatorList,
+        sync_name: ResourceDataSyncName = None,
+        filters: NodeFilterList = None,
+        next_token: NextToken = None,
+        max_results: MaxResults = None,
+        **kwargs,
+    ) -> ListNodesSummaryResult:
+        raise NotImplementedError
+
     @handler("ListOpsItemEvents")
     def list_ops_item_events(
         self,
@@ -7020,6 +7281,17 @@ class SsmApi:
         change_details: ChangeDetailsValue = None,
         **kwargs,
     ) -> StartChangeRequestExecutionResult:
+        raise NotImplementedError
+
+    @handler("StartExecutionPreview")
+    def start_execution_preview(
+        self,
+        context: RequestContext,
+        document_name: DocumentName,
+        document_version: DocumentVersion = None,
+        execution_inputs: ExecutionInputs = None,
+        **kwargs,
+    ) -> StartExecutionPreviewResponse:
         raise NotImplementedError
 
     @handler("StartSession")

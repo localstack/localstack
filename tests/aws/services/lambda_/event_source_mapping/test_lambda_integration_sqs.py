@@ -3,9 +3,8 @@ import time
 
 import pytest
 from botocore.exceptions import ClientError
-from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
+from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer, SortingTransformer
 
-from localstack import config
 from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
 from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled
 from localstack.testing.aws.util import is_aws_cloud
@@ -15,6 +14,7 @@ from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
 from tests.aws.services.lambda_.functions import FUNCTIONS_PATH, lambda_integration
 from tests.aws.services.lambda_.test_lambda import (
+    TEST_LAMBDA_EVENT_SOURCE_MAPPING_SEND_MESSAGE,
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_ECHO_VERSION_ENV,
@@ -55,18 +55,6 @@ def _snapshot_transformers(snapshot):
     )
 
 
-@markers.snapshot.skip_snapshot_verify(
-    paths=[
-        # FIXME: this is most of the event source mapping unfortunately
-        "$..ParallelizationFactor",
-        "$..LastProcessingResult",
-        "$..Topics",
-        "$..MaximumRetryAttempts",
-        "$..MaximumBatchingWindowInSeconds",
-        "$..StartingPosition",
-        "$..StateTransitionReason",
-    ]
-)
 @markers.aws.validated
 def test_failing_lambda_retries_after_visibility_timeout(
     create_lambda_function,
@@ -242,17 +230,6 @@ def test_message_body_and_attributes_passed_correctly(
     snapshot.match("first_attempt", response)
 
 
-@markers.snapshot.skip_snapshot_verify(
-    paths=[
-        "$..ParallelizationFactor",
-        "$..LastProcessingResult",
-        "$..Topics",
-        "$..MaximumRetryAttempts",
-        "$..MaximumBatchingWindowInSeconds",
-        "$..StartingPosition",
-        "$..StateTransitionReason",
-    ]
-)
 @markers.aws.validated
 def test_redrive_policy_with_failing_lambda(
     create_lambda_function,
@@ -412,27 +389,6 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
 
 
 # TODO: flaky against AWS
-@markers.snapshot.skip_snapshot_verify(
-    paths=[
-        # FIXME: we don't seem to be returning SQS FIFO sequence numbers correctly
-        "$..SequenceNumber",
-        # no idea why this one fails
-        "$..receiptHandle",
-        # matching these attributes doesn't work well because of the dynamic nature of messages
-        "$..md5OfBody",
-        "$..MD5OfMessageBody",
-        # FIXME: this is most of the event source mapping unfortunately
-        "$..create_event_source_mapping.ParallelizationFactor",
-        "$..create_event_source_mapping.LastProcessingResult",
-        "$..create_event_source_mapping.Topics",
-        "$..create_event_source_mapping.MaximumRetryAttempts",
-        "$..create_event_source_mapping.MaximumBatchingWindowInSeconds",
-        "$..create_event_source_mapping.StartingPosition",
-        "$..create_event_source_mapping.StateTransitionReason",
-        "$..create_event_source_mapping.State",
-        "$..create_event_source_mapping.ResponseMetadata",
-    ]
-)
 @markers.aws.validated
 def test_report_batch_item_failures(
     create_lambda_function,
@@ -923,17 +879,6 @@ def test_fifo_message_group_parallelism(
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        # create event source mapping attributes
-        "$..FunctionResponseTypes",
-        "$..LastProcessingResult",
-        "$..MaximumBatchingWindowInSeconds",
-        "$..MaximumRetryAttempts",
-        "$..ParallelizationFactor",
-        "$..ResponseMetadata.HTTPStatusCode",
-        "$..StartingPosition",
-        "$..State",
-        "$..StateTransitionReason",
-        "$..Topics",
         # events attribute
         "$..Records..md5OfMessageAttributes",
     ],
@@ -1042,57 +987,285 @@ class TestSQSEventSourceMapping:
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
         assert rs.get("Messages", []) == []
 
+    @pytest.mark.parametrize("batch_size", [15, 100, 1_000, 10_000])
+    @markers.aws.validated
+    def test_sqs_event_source_mapping_batch_size(
+        self,
+        create_lambda_function,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        lambda_su_role,
+        snapshot,
+        cleanups,
+        aws_client,
+        batch_size,
+    ):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(SortingTransformer("Records", lambda s: s["body"]), priority=-1)
+        # Intentional parity difference to speed up testing in LocalStack
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "MaximumBatchingWindowInSeconds", reference_replacement=False
+            )
+        )
+
+        destination_queue_name = f"destination-queue-{short_uid()}"
+        function_name = f"lambda_func-{short_uid()}"
+        source_queue_name = f"source-queue-{short_uid()}"
+        mapping_uuid = None
+
+        destination_queue_url = sqs_create_queue(QueueName=destination_queue_name)
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_EVENT_SOURCE_MAPPING_SEND_MESSAGE,
+            runtime=Runtime.python3_12,
+            envvars={"SQS_QUEUE_URL": destination_queue_url},
+            role=lambda_su_role,
+        )
+
+        queue_url = sqs_create_queue(QueueName=source_queue_name)
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            EventSourceArn=queue_arn,
+            FunctionName=function_name,
+            # Speed up testing in LocalStack by waiting only up to 2s instead of up to 10s; AWS is slower.
+            MaximumBatchingWindowInSeconds=10 if is_aws_cloud() else 2,
+            BatchSize=batch_size,
+        )
+        mapping_uuid = create_event_source_mapping_response["UUID"]
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
+        snapshot.match("create-event-source-mapping-response", create_event_source_mapping_response)
+        _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
+
+        response_batch_send_10 = aws_client.sqs.send_message_batch(
+            QueueUrl=queue_url,
+            Entries=[{"Id": f"{i}-0", "MessageBody": f"{i}-0-message-{i}"} for i in range(10)],
+        )
+        snapshot.match("send-message-batch-result-10", response_batch_send_10)
+
+        response_batch_send_5 = aws_client.sqs.send_message_batch(
+            QueueUrl=queue_url,
+            Entries=[{"Id": f"{i}-1", "MessageBody": f"{i}-1-message-{i}"} for i in range(5)],
+        )
+        snapshot.match("send-message-batch-result-5", response_batch_send_5)
+
+        batches = []
+
+        def get_msg_from_q():
+            messages_to_delete = []
+            receive_message_response = aws_client.sqs.receive_message(
+                QueueUrl=destination_queue_url,
+                MaxNumberOfMessages=10,
+                VisibilityTimeout=120,
+                WaitTimeSeconds=5 if is_aws_cloud() else 1,
+            )
+            messages = receive_message_response.get("Messages", [])
+            for message in messages:
+                received_batch = json.loads(message["Body"])
+                batches.append(received_batch)
+                messages_to_delete.append(
+                    {"Id": message["MessageId"], "ReceiptHandle": message["ReceiptHandle"]}
+                )
+
+            aws_client.sqs.delete_message_batch(
+                QueueUrl=destination_queue_url, Entries=messages_to_delete
+            )
+            assert sum([len(batch) for batch in batches]) == 15
+            return [message for batch in batches for message in batch]
+
+        events = retry(get_msg_from_q, retries=15, sleep=5)
+        snapshot.match("Records", events)
+
+    # FIXME: this fails due to ESM not correctly collecting and sending batches
+    # where size exceeds 10 messages.
+    @markers.snapshot.skip_snapshot_verify(paths=["$..total_batches_received"])
+    @markers.aws.validated
+    def test_sqs_event_source_mapping_batching_reserved_concurrency(
+        self,
+        create_lambda_function,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        lambda_su_role,
+        snapshot,
+        cleanups,
+        aws_client,
+    ):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(SortingTransformer("Records", lambda s: s["body"]), priority=-1)
+
+        destination_queue_name = f"destination-queue-{short_uid()}"
+        function_name = f"lambda_func-{short_uid()}"
+        source_queue_name = f"source-queue-{short_uid()}"
+        mapping_uuid = None
+
+        destination_queue_url = sqs_create_queue(QueueName=destination_queue_name)
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_EVENT_SOURCE_MAPPING_SEND_MESSAGE,
+            runtime=Runtime.python3_12,
+            envvars={"SQS_QUEUE_URL": destination_queue_url},
+            role=lambda_su_role,
+        )
+
+        # Prevent more than 2 Lambdas from being spun up at a time
+        put_concurrency_resp = aws_client.lambda_.put_function_concurrency(
+            FunctionName=function_name, ReservedConcurrentExecutions=2
+        )
+        snapshot.match("put_concurrency_resp", put_concurrency_resp)
+
+        queue_url = sqs_create_queue(QueueName=source_queue_name)
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            EventSourceArn=queue_arn,
+            FunctionName=function_name,
+            MaximumBatchingWindowInSeconds=10,
+            BatchSize=20,
+            ScalingConfig={
+                "MaximumConcurrency": 2
+            },  # Prevent more than 2 concurrent SQS workers from being spun up at a time
+        )
+        mapping_uuid = create_event_source_mapping_response["UUID"]
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
+        snapshot.match("create-event-source-mapping-response", create_event_source_mapping_response)
+        _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
+
+        for b in range(3):
+            aws_client.sqs.send_message_batch(
+                QueueUrl=queue_url,
+                Entries=[{"Id": f"{i}-{b}", "MessageBody": f"{i}-{b}-message"} for i in range(10)],
+            )
+
+        batches = []
+
+        def get_msg_from_q():
+            messages_to_delete = []
+            receive_message_response = aws_client.sqs.receive_message(
+                QueueUrl=destination_queue_url,
+                MaxNumberOfMessages=10,
+                VisibilityTimeout=120,
+                WaitTimeSeconds=5,
+            )
+            messages = receive_message_response.get("Messages", [])
+            for message in messages:
+                received_batch = json.loads(message["Body"])
+                batches.append(received_batch)
+                messages_to_delete.append(
+                    {"Id": message["MessageId"], "ReceiptHandle": message["ReceiptHandle"]}
+                )
+
+            if messages_to_delete:
+                aws_client.sqs.delete_message_batch(
+                    QueueUrl=destination_queue_url, Entries=messages_to_delete
+                )
+            assert sum([len(batch) for batch in batches]) == 30
+            return [message for batch in batches for message in batch]
+
+        events = retry(get_msg_from_q, retries=15, sleep=5)
+
+        # We expect to receive 2 batches where each batch contains some proportion of the
+        # 30 messages we sent through, divided by the 20 ESM batch size. How this is split is
+        # not determinable a priori so rather just snapshots the events and the no. of batches.
+        snapshot.match("batch_info", {"total_batches_received": len(batches)})
+        snapshot.match("Records", events)
+
     @markers.aws.validated
     @pytest.mark.parametrize(
+        # EventBridge event pattern filtering test suite: tests/aws/services/events/test_events_patterns.py
+        # Event filtering: https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html
+        # Special cases behavior: https://docs.aws.amazon.com/lambda/latest/dg/with-sqs-filtering.html
         "filter, item_matching, item_not_matching",
         [
             # test single filter
-            (
-                {"body": {"testItem": ["test24"]}},
-                {"testItem": "test24"},
-                {"testItem": "tesWER"},
+            pytest.param(
+                {"body": {"my-key": ["my-value"]}},
+                {"my-key": "my-value"},
+                {"my-key": "other-value"},
+                id="single",
             ),
             # test OR filter
-            (
-                {"body": {"testItem": ["test24", "test45"]}},
-                {"testItem": "test45"},
-                {"testItem": "WERTD"},
+            pytest.param(
+                {"body": {"my-key": ["my-value-one", "my-value-two"]}},
+                {"my-key": "my-value-two"},
+                {"my-key": "other-value"},
+                id="or",
             ),
             # test AND filter
-            (
-                {"body": {"testItem": ["test24", "test45"], "test2": ["go"]}},
-                {"testItem": "test45", "test2": "go"},
-                {"testItem": "test67", "test2": "go"},
+            pytest.param(
+                {
+                    "body": {
+                        "my-key-one": ["other-filter", "my-value-one"],
+                        "my-key-two": ["my-value-two"],
+                    }
+                },
+                {"my-key-one": "my-value-one", "my-key-two": "my-value-two"},
+                {"my-key-one": "other-value-", "my-key-two": "my-value-two"},
+                id="and",
             ),
             # exists
-            (
-                {"body": {"test2": [{"exists": True}]}},
-                {"test2": "7411"},
-                {"test5": "74545"},
+            pytest.param(
+                {"body": {"my-key": [{"exists": True}]}},
+                {"my-key": "any-value-one"},
+                {"other-key": "any-value-two"},
+                id="exists",
             ),
             # numeric (bigger)
-            (
-                {"body": {"test2": [{"numeric": [">", 100]}]}},
-                {"test2": 105},
-                "this is a test string",  # normal string should be dropped as well aka not fitting to filter
+            pytest.param(
+                {"body": {"my-number": [{"numeric": [">", 100]}]}},
+                {"my-number": 101},
+                {"my-number": 100},
+                id="numeric-bigger",
             ),
             # numeric (smaller)
-            (
-                {"body": {"test2": [{"numeric": ["<", 100]}]}},
-                {"test2": 93},
-                {"test2": 105},
+            pytest.param(
+                {"body": {"my-number": [{"numeric": ["<", 100]}]}},
+                {"my-number": 99},
+                {"my-number": 100},
+                id="numeric-smaller",
             ),
             # numeric (range)
-            (
-                {"body": {"test2": [{"numeric": [">=", 100, "<", 200]}]}},
-                {"test2": 105},
-                {"test2": 200},
+            pytest.param(
+                {"body": {"my-number": [{"numeric": [">=", 100, "<", 200]}]}},
+                {"my-number": 100},
+                {"my-number": 200},
+                id="numeric-range",
             ),
             # prefix
-            (
-                {"body": {"test2": [{"prefix": "us-1"}]}},
-                {"test2": "us-1-48454"},
-                {"test2": "eu-wert"},
+            pytest.param(
+                {"body": {"my-key": [{"prefix": "yes"}]}},
+                {"my-key": "yes-value"},
+                {"my-key": "no-value"},
+                id="prefix",
+            ),
+            # plain string matching
+            # TODO: How is plain string matching supposed to work?
+            #  https://docs.aws.amazon.com/lambda/latest/dg/with-sqs-filtering.html
+            pytest.param(
+                {"body": "plain-string"},
+                "plain-string",
+                "plain-string-not-matching",
+                id="plain-string-matching",
+                marks=pytest.mark.skip(reason="figure out how plain string matching works"),
+            ),
+            # plain string filter
+            # TODO: How is plain string matching supposed to work?
+            #  https://docs.aws.amazon.com/lambda/latest/dg/with-sqs-filtering.html
+            pytest.param(
+                {"body": "plain-string"},
+                "plain-string",
+                # valid json body vs. plain string filter for body -> drop the message
+                {"valid-json-key": "plain-string"},
+                id="plain-string-filter",
+                marks=pytest.mark.skip(reason="figure out how plain string matching works"),
+            ),
+            # valid json filter
+            pytest.param(
+                {"body": {"my-key": ["my-value"]}},
+                {"my-key": "my-value"},
+                # plain string body vs. valid json filter for body -> drop the message
+                "plain-string",
+                id="valid-json-filter",
             ),
         ],
     )
@@ -1110,11 +1283,6 @@ class TestSQSEventSourceMapping:
         aws_client,
         monkeypatch,
     ):
-        if item_not_matching == "this is a test string" and config.EVENT_RULE_ENGINE != "java":
-            pytest.skip(
-                "String comparison is broken in the Python rule engine for this specific case in ESM v2"
-            )
-
         function_name = f"lambda_func-{short_uid()}"
         queue_name_1 = f"queue-{short_uid()}-1"
         mapping_uuid = None
@@ -1178,7 +1346,6 @@ class TestSQSEventSourceMapping:
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
         assert rs.get("Messages", []) == []
 
-    @pytest.mark.skip(reason="Invalid filter detection not yet implemented in ESM v2")
     @markers.aws.validated
     @pytest.mark.parametrize(
         "invalid_filter", [None, "simple string", {"eventSource": "aws:sqs"}, {"eventSource": []}]

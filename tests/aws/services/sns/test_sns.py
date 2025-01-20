@@ -22,6 +22,7 @@ from werkzeug import Response
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
+from localstack.config import external_service_url
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
 )
@@ -3003,6 +3004,49 @@ class TestSNSSubscriptionSES:
 
         retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
+    @markers.aws.only_localstack
+    def test_email_sender(
+        self,
+        sns_create_topic,
+        sns_subscription,
+        aws_client,
+        monkeypatch,
+    ):
+        # make sure to reset all received emails in SES
+        requests.delete("http://localhost:4566/_aws/ses")
+
+        topic_arn = sns_create_topic()["TopicArn"]
+        sns_subscription(
+            TopicArn=topic_arn,
+            Protocol="email",
+            Endpoint="localstack@yopmail.com",
+        )
+
+        aws_client.sns.publish(
+            Message="Test message",
+            TopicArn=topic_arn,
+        )
+
+        def _get_messages(amount: int) -> list[dict]:
+            response = requests.get("http://localhost:4566/_aws/ses").json()
+            assert len(response["messages"]) == amount
+            return response["messages"]
+
+        messages = retry(lambda: _get_messages(1), retries=PUBLICATION_RETRIES, sleep=1)
+        # legacy default value, should be replaced at some point
+        assert messages[0]["Source"] == "admin@localstack.com"
+        requests.delete("http://localhost:4566/_aws/ses")
+
+        sender_address = "no-reply@sns.localstack.cloud"
+        monkeypatch.setattr(config, "SNS_SES_SENDER_ADDRESS", sender_address)
+
+        aws_client.sns.publish(
+            Message="Test message",
+            TopicArn=topic_arn,
+        )
+        messages = retry(lambda: _get_messages(1), retries=PUBLICATION_RETRIES, sleep=1)
+        assert messages[0]["Source"] == sender_address
+
 
 class TestSNSPlatformEndpoint:
     @markers.aws.only_localstack
@@ -3380,9 +3424,9 @@ class TestSNSSubscriptionHttp:
         )
 
         response = aws_client.sqs.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
-        assert (
-            len(response["Messages"]) == 1
-        ), f"invalid number of messages in DLQ response {response}"
+        assert len(response["Messages"]) == 1, (
+            f"invalid number of messages in DLQ response {response}"
+        )
         message = json.loads(response["Messages"][0]["Body"])
         assert message["Type"] == "Notification"
         assert json.loads(message["Message"])["message"] == "test_redrive_policy"
@@ -3419,9 +3463,9 @@ class TestSNSSubscriptionHttp:
             # fetch subscription information
             subscription_list = aws_client.sns.list_subscriptions_by_topic(TopicArn=topic_arn)
             assert subscription_list["ResponseMetadata"]["HTTPStatusCode"] == 200
-            assert (
-                len(subscription_list["Subscriptions"]) == number_of_endpoints
-            ), f"unexpected number of subscriptions {subscription_list}"
+            assert len(subscription_list["Subscriptions"]) == number_of_endpoints, (
+                f"unexpected number of subscriptions {subscription_list}"
+            )
 
             tokens = []
             for _ in range(number_of_endpoints):
@@ -3650,7 +3694,7 @@ class TestSNSSubscriptionHttp:
         assert "SigningCertURL" in payload
         token = payload["Token"]
         assert payload["SubscribeURL"] == (
-            f"{service_url}/?" f"Action=ConfirmSubscription&TopicArn={topic_arn}&Token={token}"
+            f"{service_url}/?Action=ConfirmSubscription&TopicArn={topic_arn}&Token={token}"
         )
         snapshot.match("unsubscribe-request", payload)
 
@@ -3714,9 +3758,9 @@ class TestSNSSubscriptionHttp:
         aws_client.sns.publish(TopicArn=topic_arn, Message=message)
 
         response = aws_client.sqs.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=3)
-        assert (
-            len(response["Messages"]) == 1
-        ), f"invalid number of messages in DLQ response {response}"
+        assert len(response["Messages"]) == 1, (
+            f"invalid number of messages in DLQ response {response}"
+        )
 
         if raw_message_delivery:
             assert response["Messages"][0]["Body"] == message
@@ -4307,6 +4351,51 @@ class TestSNSPublishDelivery:
         )
 
         snapshot.match("delivery-events", events)
+
+
+class TestSNSCertEndpoint:
+    @markers.aws.only_localstack
+    @pytest.mark.parametrize("cert_host", ["", "sns.us-east-1.amazonaws.com"])
+    def test_cert_endpoint_host(
+        self,
+        aws_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sns_create_sqs_subscription,
+        monkeypatch,
+        cert_host,
+    ):
+        """
+        Some SDK will validate the Cert URL matches a certain regex pattern. We validate the user can set the value
+        to arbitrary host, but those will obviously not resolve / return a valid certificate.
+        """
+        monkeypatch.setattr(config, "SNS_CERT_URL_HOST", cert_host)
+        topic_arn = sns_create_topic(
+            Attributes={
+                "DisplayName": "TestTopicSignature",
+                "SignatureVersion": "1",
+            },
+        )["TopicArn"]
+
+        queue_url = sqs_create_queue()
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+
+        aws_client.sns.publish(
+            TopicArn=topic_arn,
+            Message="test cert host",
+        )
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url,
+            WaitTimeSeconds=10,
+        )
+        message = json.loads(response["Messages"][0]["Body"])
+
+        cert_url = message["SigningCertURL"]
+        if not cert_host:
+            assert external_service_url() in cert_url
+        else:
+            assert cert_host in cert_url
+            assert external_service_url() not in cert_url
 
 
 @pytest.mark.usefixtures("openapi_validate")

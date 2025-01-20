@@ -99,6 +99,10 @@ from localstack.aws.api.s3 import (
     HeadBucketOutput,
     HeadObjectOutput,
     HeadObjectRequest,
+    IfMatch,
+    IfMatchInitiatedTime,
+    IfMatchLastModifiedTime,
+    IfMatchSize,
     IfNoneMatch,
     IntelligentTieringConfiguration,
     IntelligentTieringId,
@@ -656,11 +660,20 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         validate_object_key(key)
 
-        if (if_none_match := request.get("IfNoneMatch")) and if_none_match != "*":
+        if_match = request.get("IfMatch")
+        if (if_none_match := request.get("IfNoneMatch")) and if_match:
             raise NotImplementedException(
                 "A header you provided implies functionality that is not implemented",
-                Header="If-None-Match",
-                additionalMessage="We don't accept the provided value of If-None-Match header for this API",
+                Header="If-Match,If-None-Match",
+                additionalMessage="Multiple conditional request headers present in the request",
+            )
+
+        elif (if_none_match and if_none_match != "*") or (if_match and if_match == "*"):
+            header_name = "If-None-Match" if if_none_match else "If-Match"
+            raise NotImplementedException(
+                "A header you provided implies functionality that is not implemented",
+                Header=header_name,
+                additionalMessage=f"We don't accept the provided value of {header_name} header for this API",
             )
 
         system_metadata = get_system_metadata_from_request(request)
@@ -753,6 +766,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     "At least one of the pre-conditions you specified did not hold",
                     Condition="If-None-Match",
                 )
+
+            elif if_match:
+                verify_object_equality_precondition_write(s3_bucket, key, if_match)
 
             s3_stored_object.write(body)
 
@@ -1090,6 +1106,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request_payer: RequestPayer = None,
         bypass_governance_retention: BypassGovernanceRetention = None,
         expected_bucket_owner: AccountId = None,
+        if_match: IfMatch = None,
+        if_match_last_modified_time: IfMatchLastModifiedTime = None,
+        if_match_size: IfMatchSize = None,
         **kwargs,
     ) -> DeleteObjectOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
@@ -2351,6 +2370,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         checksum_sha256: ChecksumSHA256 = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        if_match: IfMatch = None,
         if_none_match: IfNoneMatch = None,
         sse_customer_algorithm: SSECustomerAlgorithm = None,
         sse_customer_key: SSECustomerKey = None,
@@ -2369,7 +2389,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 UploadId=upload_id,
             )
 
-        if if_none_match:
+        if if_none_match and if_match:
+            raise NotImplementedException(
+                "A header you provided implies functionality that is not implemented",
+                Header="If-Match,If-None-Match",
+                additionalMessage="Multiple conditional request headers present in the request",
+            )
+
+        elif if_none_match:
             if if_none_match != "*":
                 raise NotImplementedException(
                     "A header you provided implies functionality that is not implemented",
@@ -2387,6 +2414,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     Condition="If-None-Match",
                     Key=key,
                 )
+
+        elif if_match:
+            if if_match == "*":
+                raise NotImplementedException(
+                    "A header you provided implies functionality that is not implemented",
+                    Header="If-None-Match",
+                    additionalMessage="We don't accept the provided value of If-None-Match header for this API",
+                )
+            verify_object_equality_precondition_write(
+                s3_bucket, key, if_match, initiated=s3_multipart.initiated
+            )
 
         parts = multipart_upload.get("Parts", [])
         if not parts:
@@ -2464,6 +2502,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         upload_id: MultipartUploadId,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        if_match_initiated_time: IfMatchInitiatedTime = None,
         **kwargs,
     ) -> AbortMultipartUploadOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
@@ -4386,3 +4425,27 @@ def get_access_control_policy_for_new_resource_request(
 
 def object_exists_for_precondition_write(s3_bucket: S3Bucket, key: ObjectKey) -> bool:
     return (existing := s3_bucket.objects.get(key)) and not isinstance(existing, S3DeleteMarker)
+
+
+def verify_object_equality_precondition_write(
+    s3_bucket: S3Bucket,
+    key: ObjectKey,
+    etag: str,
+    initiated: datetime.datetime | None = None,
+) -> None:
+    existing = s3_bucket.objects.get(key)
+    if not existing or isinstance(existing, S3DeleteMarker):
+        raise NoSuchKey("The specified key does not exist.", Key=key)
+
+    if not existing.etag == etag.strip('"'):
+        raise PreconditionFailed(
+            "At least one of the pre-conditions you specified did not hold",
+            Condition="If-Match",
+        )
+
+    if initiated and initiated < existing.last_modified:
+        raise ConditionalRequestConflict(
+            "The conditional request cannot succeed due to a conflicting operation against this resource.",
+            Condition="If-Match",
+            Key=key,
+        )

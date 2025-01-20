@@ -27,7 +27,8 @@ from localstack.services.lambda_.event_source_mapping.pollers.poller import (
     get_batch_item_failures,
 )
 from localstack.services.lambda_.event_source_mapping.pollers.sqs_poller import get_queue_url
-from localstack.utils.aws.arns import parse_arn
+from localstack.utils.aws.arns import parse_arn, s3_bucket_name
+from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -40,6 +41,8 @@ class StreamPoller(Poller):
     # Iterator for round-robin polling from different shards because a batch cannot contain events from different shards
     # This is a workaround for not handling shards in parallel.
     iterator_over_shards: Iterator[tuple[str, str]] | None
+    # ESM UUID is needed in failure processing to form s3 failure destination object key
+    esm_uuid: str | None
 
     # The ARN of the processor (e.g., Pipe ARN)
     partner_resource_arn: str | None
@@ -51,9 +54,11 @@ class StreamPoller(Poller):
         source_client: BaseClient | None = None,
         processor: EventProcessor | None = None,
         partner_resource_arn: str | None = None,
+        esm_uuid: str | None = None,
     ):
         super().__init__(source_arn, source_parameters, source_client, processor)
         self.partner_resource_arn = partner_resource_arn
+        self.esm_uuid = esm_uuid
         self.shards = {}
         self.iterator_over_shards = None
 
@@ -219,7 +224,9 @@ class StreamPoller(Poller):
 
                 # This shouldn't be possible since a PartialBatchFailureError was raised
                 if len(failed_sequence_ids) == 0:
-                    assert failed_sequence_ids, "Invalid state encountered: PartialBatchFailureError raised but no batch item failures found."
+                    assert failed_sequence_ids, (
+                        "Invalid state encountered: PartialBatchFailureError raised but no batch item failures found."
+                    )
 
                 lowest_sequence_id: str = min(failed_sequence_ids, key=int)
 
@@ -283,12 +290,27 @@ class StreamPoller(Poller):
                 )
                 raise CustomerInvocationError from e
             elif "ResourceNotFoundException" in str(e):
-                LOG.warning(
-                    "Source stream %s does not exist: %s",
+                # FIXME: The 'Invalid ShardId in ShardIterator' error is returned by DynamoDB-local. Unsure when/why this is returned.
+                if "Invalid ShardId in ShardIterator" in str(e):
+                    LOG.warning(
+                        "Invalid ShardId in ShardIterator for %s. Re-initializing shards.",
+                        self.source_arn,
+                    )
+                    self.initialize_shards()
+                else:
+                    LOG.warning(
+                        "Source stream %s does not exist: %s",
+                        self.source_arn,
+                        e,
+                    )
+                    raise CustomerInvocationError from e
+            elif "TrimmedDataAccessException" in str(e):
+                LOG.debug(
+                    "Attempted to iterate over trimmed record or expired shard iterator %s for stream %s, re-initializing shards",
+                    shard_iterator,
                     self.source_arn,
-                    e,
                 )
-                raise CustomerInvocationError from e
+                self.initialize_shards()
             else:
                 LOG.debug("ClientError during get_records for stream %s: %s", self.source_arn, e)
                 raise PipeInternalError from e
@@ -296,7 +318,8 @@ class StreamPoller(Poller):
     def send_events_to_dlq(self, shard_id, events, context) -> None:
         dlq_arn = self.stream_parameters.get("DeadLetterConfig", {}).get("Arn")
         if dlq_arn:
-            dlq_event = self.create_dlq_event(shard_id, events, context)
+            failure_timstamp = get_current_time()
+            dlq_event = self.create_dlq_event(shard_id, events, context, failure_timstamp)
             # Send DLQ event to DLQ target
             parsed_arn = parse_arn(dlq_arn)
             service = parsed_arn["service"]
@@ -311,10 +334,25 @@ class StreamPoller(Poller):
             elif service == "sns":
                 sns_client = get_internal_client(dlq_arn)
                 sns_client.publish(TopicArn=dlq_arn, Message=json.dumps(dlq_event))
+            elif service == "s3":
+                s3_client = get_internal_client(dlq_arn)
+                dlq_event_with_payload = {
+                    **dlq_event,
+                    "payload": {
+                        "Records": events,
+                    },
+                }
+                s3_client.put_object(
+                    Bucket=s3_bucket_name(dlq_arn),
+                    Key=get_failure_s3_object_key(self.esm_uuid, shard_id, failure_timstamp),
+                    Body=json.dumps(dlq_event_with_payload),
+                )
             else:
                 LOG.warning("Unsupported DLQ service %s", service)
 
-    def create_dlq_event(self, shard_id: str, events: list[dict], context: dict) -> dict:
+    def create_dlq_event(
+        self, shard_id: str, events: list[dict], context: dict, failure_timestamp: datetime
+    ) -> dict:
         first_record = events[0]
         first_record_arrival = get_datetime_from_timestamp(
             self.get_approximate_arrival_time(first_record)
@@ -335,9 +373,9 @@ class StreamPoller(Poller):
                 "startSequenceNumber": self.get_sequence_number(first_record),
                 "streamArn": self.source_arn,
             },
-            "timestamp": get_current_time()
-            .isoformat(timespec="milliseconds")
-            .replace("+00:00", "Z"),
+            "timestamp": failure_timestamp.isoformat(timespec="milliseconds").replace(
+                "+00:00", "Z"
+            ),
             "version": "1.0",
         }
 
@@ -360,3 +398,18 @@ class StreamPoller(Poller):
                 return events[:i], events[i:]
 
         return events, []
+
+
+def get_failure_s3_object_key(esm_uuid: str, shard_id: str, failure_datetime: datetime) -> str:
+    """
+    From https://docs.aws.amazon.com/lambda/latest/dg/kinesis-on-failure-destination.html:
+
+    The S3 object containing the invocation record uses the following naming convention:
+    aws/lambda/<ESM-UUID>/<shardID>/YYYY/MM/DD/YYYY-MM-DDTHH.MM.SS-<Random UUID>
+
+    :return: Key for s3 object that invocation failure record will be put to
+    """
+    timestamp = failure_datetime.strftime("%Y-%m-%dT%H.%M.%S")
+    year_month_day = failure_datetime.strftime("%Y/%m/%d")
+    random_uuid = long_uid()
+    return f"aws/lambda/{esm_uuid}/{shard_id}/{year_month_day}/{timestamp}-{random_uuid}"

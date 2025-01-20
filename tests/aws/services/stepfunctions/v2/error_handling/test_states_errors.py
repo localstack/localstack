@@ -2,6 +2,7 @@ import json
 
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import (
     create_and_record_execution,
@@ -12,17 +13,12 @@ from tests.aws.services.stepfunctions.templates.errorhandling.error_handling_tem
 )
 
 
-@markers.snapshot.skip_snapshot_verify(
-    paths=[
-        "$..tracingConfiguration",
-    ]
-)
 class TestStatesErrors:
     @markers.aws.validated
     def test_service_task_lambada_data_limit_exceeded_on_large_utf8_response(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         sfn_snapshot,
@@ -37,7 +33,7 @@ class TestStatesErrors:
         create_lambda_function(
             func_name=function_name,
             handler_file=EHT.LAMBDA_FUNC_LARGE_OUTPUT_STRING,
-            runtime="python3.12",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
 
@@ -46,8 +42,8 @@ class TestStatesErrors:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -58,7 +54,7 @@ class TestStatesErrors:
     def test_service_task_lambada_catch_state_all_data_limit_exceeded_on_large_utf8_response(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         sfn_snapshot,
@@ -74,7 +70,7 @@ class TestStatesErrors:
         create_lambda_function(
             func_name=function_name,
             handler_file=EHT.LAMBDA_FUNC_LARGE_OUTPUT_STRING,
-            runtime="python3.12",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
 
@@ -83,8 +79,8 @@ class TestStatesErrors:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -95,7 +91,7 @@ class TestStatesErrors:
     def test_task_lambda_data_limit_exceeded_on_large_utf8_response(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         sfn_snapshot,
@@ -113,7 +109,7 @@ class TestStatesErrors:
         create_lambda_response = create_lambda_function(
             func_name=function_name,
             handler_file=EHT.LAMBDA_FUNC_LARGE_OUTPUT_STRING,
-            runtime="python3.12",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
         function_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
@@ -124,8 +120,8 @@ class TestStatesErrors:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -136,7 +132,7 @@ class TestStatesErrors:
     def test_task_lambda_catch_state_all_data_limit_exceeded_on_large_utf8_response(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
         sfn_snapshot,
@@ -154,7 +150,7 @@ class TestStatesErrors:
         create_lambda_response = create_lambda_function(
             func_name=function_name,
             handler_file=EHT.LAMBDA_FUNC_LARGE_OUTPUT_STRING,
-            runtime="python3.12",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
         function_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
@@ -165,8 +161,8 @@ class TestStatesErrors:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -177,7 +173,7 @@ class TestStatesErrors:
     def test_start_large_input(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -205,8 +201,8 @@ class TestStatesErrors:
 
         exec_input = json.dumps(dict())
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,

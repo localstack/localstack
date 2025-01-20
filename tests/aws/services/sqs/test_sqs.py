@@ -437,6 +437,16 @@ class TestSqsProvider:
         snapshot.match("send_oversized_message_batch", response)
 
     @markers.aws.validated
+    def test_send_message_to_standard_queue_with_empty_message_group_id(
+        self, sqs_create_queue, aws_client, snapshot
+    ):
+        queue = sqs_create_queue()
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sqs.send_message(QueueUrl=queue, MessageBody="message", MessageGroupId="")
+        snapshot.match("error-response", e.value.response)
+
+    @markers.aws.validated
     def test_tag_untag_queue(self, sqs_create_queue, aws_sqs_client, snapshot):
         queue_url = sqs_create_queue()
 
@@ -552,9 +562,9 @@ class TestSqsProvider:
         took = time.time() - then
         assert took < 2  # should take much less than 5 seconds
 
-        assert (
-            len(response.get("Messages", [])) >= 1
-        ), f"unexpected number of messages in {response}"
+        assert len(response.get("Messages", [])) >= 1, (
+            f"unexpected number of messages in {response}"
+        )
 
     @markers.aws.validated
     def test_wait_time_seconds_waits_correctly(self, sqs_queue, aws_sqs_client):
@@ -564,9 +574,9 @@ class TestSqsProvider:
         Timer(1, _send_message).start()  # send message asynchronously after 1 second
         response = aws_sqs_client.receive_message(QueueUrl=sqs_queue, WaitTimeSeconds=10)
 
-        assert (
-            len(response.get("Messages", [])) == 1
-        ), f"unexpected number of messages in response {response}"
+        assert len(response.get("Messages", [])) == 1, (
+            f"unexpected number of messages in response {response}"
+        )
 
     @markers.aws.validated
     def test_wait_time_seconds_queue_attribute_waits_correctly(
@@ -584,9 +594,9 @@ class TestSqsProvider:
         Timer(1, _send_message).start()  # send message asynchronously after 1 second
         response = aws_sqs_client.receive_message(QueueUrl=queue_url)
 
-        assert (
-            len(response.get("Messages", [])) == 1
-        ), f"unexpected number of messages in response {response}"
+        assert len(response.get("Messages", [])) == 1, (
+            f"unexpected number of messages in response {response}"
+        )
 
     @markers.aws.validated
     def test_create_queue_with_default_attributes_is_idempotent(self, sqs_create_queue):
@@ -982,9 +992,9 @@ class TestSqsProvider:
         assert "Messages" in result
         message_receipt_1 = result["Messages"][0]
 
-        assert (
-            message_receipt_0["ReceiptHandle"] != message_receipt_1["ReceiptHandle"]
-        ), "receipt handles should be different"
+        assert message_receipt_0["ReceiptHandle"] != message_receipt_1["ReceiptHandle"], (
+            "receipt handles should be different"
+        )
 
     @markers.aws.validated
     def test_receive_terminate_visibility_timeout(self, sqs_queue, aws_sqs_client):
@@ -1000,9 +1010,9 @@ class TestSqsProvider:
         assert "Messages" in result
         message_receipt_1 = result["Messages"][0]
 
-        assert (
-            message_receipt_0["ReceiptHandle"] != message_receipt_1["ReceiptHandle"]
-        ), "receipt handles should be different"
+        assert message_receipt_0["ReceiptHandle"] != message_receipt_1["ReceiptHandle"], (
+            "receipt handles should be different"
+        )
 
         # TODO: check if this is correct (whether receive with VisibilityTimeout = 0 is permanent)
         result = aws_sqs_client.receive_message(QueueUrl=queue_url)
@@ -1306,9 +1316,9 @@ class TestSqsProvider:
             messages.extend(response.get("Messages", []))
             return len(messages)
 
-        assert poll_condition(
-            lambda: collect_messages() >= 9, timeout=10
-        ), f"gave up waiting messages, got {len(messages)} from 9"
+        assert poll_condition(lambda: collect_messages() >= 9, timeout=10), (
+            f"gave up waiting messages, got {len(messages)} from 9"
+        )
 
         bodies = {message["Body"] for message in messages}
         assert bodies == {"0", "1", "2", "3", "4", "5", "6", "7", "8"}
@@ -2867,9 +2877,9 @@ class TestSqsProvider:
 
         # check the DLQ
         dlq_receive_response = aws_sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
-        assert (
-            len(dlq_receive_response["Messages"]) == 1
-        ), f"invalid number of messages in DLQ response {dlq_receive_response}"
+        assert len(dlq_receive_response["Messages"]) == 1, (
+            f"invalid number of messages in DLQ response {dlq_receive_response}"
+        )
         message_1 = dlq_receive_response["Messages"][0]
         assert message_1["MessageId"] == message_id_1
         assert message_1["Body"] == "foobar"

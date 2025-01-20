@@ -1,0 +1,59 @@
+{
+  "StartAt": "SetupState",
+  "States": {
+    "SetupState": {
+      "Type": "Pass",
+      "Result": {
+        "values": [
+          {
+            "sub-values": [
+              {
+                "num": 1,
+                "str": "A"
+              },
+              {
+                "num": 2,
+                "str": "B"
+              }
+            ]
+          }
+        ]
+      },
+      "Next": "MapState",
+    },
+    "MapState": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "ItemsPath": "$.values",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD",
+        },
+        "StartAt": "SubMapState",
+        "States": {
+          "SubMapState": {
+            "Type": "Map",
+            "MaxConcurrency": 1,
+            "ItemsPath": "$.sub-values",
+            "ResultPath": "$.result",
+            "ItemProcessor": {
+              "ProcessorConfig": {
+                "Mode": "DISTRIBUTED",
+                "ExecutionType": "STANDARD",
+              },
+              "StartAt": "SubMapStateSuccess",
+              "States": {
+                "SubMapStateSuccess": {
+                  "Type": "Succeed"
+                }
+              },
+            },
+            "End": true,
+          }
+        },
+      },
+      "End": true,
+    },
+  },
+}

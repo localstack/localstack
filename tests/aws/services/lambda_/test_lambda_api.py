@@ -17,6 +17,7 @@ import re
 import threading
 from hashlib import sha256
 from io import BytesIO
+from random import randint
 from typing import Callable
 
 import pytest
@@ -33,10 +34,10 @@ from localstack.aws.api.lambda_ import (
 )
 from localstack.services.lambda_.api_utils import ARCHITECTURES
 from localstack.services.lambda_.provider import TAG_KEY_CUSTOM_URL
+from localstack.services.lambda_.provider_utils import LambdaLayerVersionIdentifier
 from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
     DEPRECATED_RUNTIMES,
-    SNAP_START_SUPPORTED_RUNTIMES,
 )
 from localstack.testing.aws.lambda_utils import (
     _await_dynamodb_table_active,
@@ -59,7 +60,6 @@ from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, wait_until
 from localstack.utils.testutil import create_lambda_archive
 from tests.aws.services.lambda_.test_lambda import (
-    TEST_LAMBDA_JAVA_WITH_LIB,
     TEST_LAMBDA_NODEJS,
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_ECHO_ZIP,
@@ -731,9 +731,9 @@ class TestLambdaFunction:
         # test other region in function arn than client
         function_name_1 = f"test-function-arn-{short_uid()}"
         other_region = "ap-southeast-1"
-        assert (
-            region_name != other_region
-        ), "This test assumes that the region in the function arn differs from the client region"
+        assert region_name != other_region, (
+            "This test assumes that the region in the function arn differs from the client region"
+        )
         function_arn_other_region = f"arn:{get_partition(other_region)}:lambda:{other_region}:{account_id}:function:{function_name_1}"
         with pytest.raises(ClientError) as e:
             aws_client.lambda_.create_function(
@@ -749,9 +749,9 @@ class TestLambdaFunction:
         # test other account in function arn than client
         function_name_1 = f"test-function-arn-{short_uid()}"
         other_account = "123456789012"
-        assert (
-            account_id != other_account
-        ), "This test assumes that the account in the function arn differs from the client region"
+        assert account_id != other_account, (
+            "This test assumes that the account in the function arn differs from the client region"
+        )
         function_arn_other_account = f"arn:{get_partition(region_name)}:lambda:{region_name}:{other_account}:function:{function_name_1}"
         with pytest.raises(ClientError) as e:
             aws_client.lambda_.create_function(
@@ -5337,6 +5337,19 @@ class TestLambdaEventSourceMappings:
                 EventSourceArn="arn:aws:sqs:us-east-1:111111111111:somequeue",
             )
         snapshot.match("create_unknown_params", e.value.response)
+
+        with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
+            aws_client.lambda_.create_event_source_mapping(
+                FunctionName="doesnotexist",
+                EventSourceArn="arn:aws:sqs:us-east-1:111111111111:somequeue",
+                DestinationConfig={
+                    "OnSuccess": {
+                        "Destination": "arn:aws:sqs:us-east-1:111111111111:someotherqueue"
+                    }
+                },
+            )
+        snapshot.match("destination_config_failure", e.value.response)
+
         # TODO: add test for event source arn == failure destination
         # TODO: add test for adding success destination
         # TODO: add test_multiple_esm_conflict: create an event source mapping for a combination of function + target ARN that already exists
@@ -5595,6 +5608,67 @@ class TestLambdaEventSourceMappings:
 
         response = e.value.response
         snapshot.match("error", response)
+
+    @markers.aws.validated
+    def test_create_event_filter_criteria_validation(
+        self,
+        create_lambda_function,
+        lambda_su_role,
+        dynamodb_create_table,
+        snapshot,
+        aws_client,
+    ):
+        function_name = f"function-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
+
+        table_name = f"table-{short_uid()}"
+        # FIXME: Why is this not being automatically transformed?
+        snapshot.add_transformer(snapshot.transform.regex(table_name, "<table-name>"))
+
+        dynamodb_create_table(table_name=table_name, partition_key="id")
+        _await_dynamodb_table_active(aws_client.dynamodb, table_name)
+        update_table_response = aws_client.dynamodb.update_table(
+            TableName=table_name,
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
+        )
+        stream_arn = update_table_response["TableDescription"]["LatestStreamArn"]
+
+        response = aws_client.lambda_.create_event_source_mapping(
+            FunctionName=function_name,
+            EventSourceArn=stream_arn,
+            StartingPosition="LATEST",
+            FilterCriteria={"Filters": []},
+        )
+        snapshot.match("response-with-empty-filters", response)
+
+        with pytest.raises(ParamValidationError):
+            aws_client.lambda_.create_event_source_mapping(
+                FunctionName=function_name,
+                EventSourceArn=stream_arn,
+                StartingPosition="LATEST",
+                FilterCriteria={"Filters": [{"Pattern": []}]},
+            )
+
+        with pytest.raises(ParamValidationError):
+            aws_client.lambda_.create_event_source_mapping(
+                FunctionName=function_name,
+                EventSourceArn=stream_arn,
+                StartingPosition="LATEST",
+                FilterCriteria={"wrong": []},
+            )
+
+        with pytest.raises(ParamValidationError):
+            aws_client.lambda_.create_event_source_mapping(
+                FunctionName=function_name,
+                EventSourceArn=stream_arn,
+                StartingPosition="LATEST",
+                FilterCriteria=None,
+            )
 
     @markers.aws.validated
     @pytest.mark.skip(reason="ESM v2 validation for Kafka poller only works with ext")
@@ -6549,25 +6623,51 @@ class TestLambdaLayer:
             "get_layer_version_policy_postdeletes2", get_layer_version_policy_postdeletes2
         )
 
+    @markers.aws.only_localstack(reason="Deterministic id generation is LS only")
+    def test_layer_deterministic_version(
+        self, dummylayer, cleanups, aws_client, account_id, region_name, set_resource_custom_id
+    ):
+        """
+        Test deterministic layer version generation.
+        Ensuring we can control the version of the layer created through the LocalstackIdManager
+        """
+        layer_name = f"testlayer-{short_uid()}"
+        layer_version = randint(1, 10)
+
+        layer_version_identifier = LambdaLayerVersionIdentifier(
+            account_id=account_id, region=region_name, layer_name=layer_name
+        )
+        set_resource_custom_id(layer_version_identifier, layer_version)
+        publish_result = aws_client.lambda_.publish_layer_version(
+            LayerName=layer_name,
+            CompatibleRuntimes=[Runtime.python3_12],
+            Content={"ZipFile": dummylayer},
+            CompatibleArchitectures=[Architecture.x86_64],
+        )
+        cleanups.append(
+            lambda: aws_client.lambda_.delete_layer_version(
+                LayerName=layer_name, VersionNumber=publish_result["Version"]
+            )
+        )
+        assert publish_result["Version"] == layer_version
+
+        # Try to get the layer version. it will raise an error if it can't be found
+        aws_client.lambda_.get_layer_version(LayerName=layer_name, VersionNumber=layer_version)
+
 
 class TestLambdaSnapStart:
     @markers.aws.validated
-    @pytest.mark.parametrize("runtime", SNAP_START_SUPPORTED_RUNTIMES)
-    def test_snapstart_lifecycle(self, create_lambda_function, snapshot, aws_client, runtime):
+    @markers.lambda_runtime_update
+    @markers.multiruntime(scenario="echo")
+    def test_snapstart_lifecycle(self, multiruntime_lambda, snapshot, aws_client):
         """Test the API of the SnapStart feature. The optimization behavior is not supported in LocalStack.
         Slow (~1-2min) against AWS.
         """
-        function_name = f"fn-{short_uid()}"
-        java_jar_with_lib = load_file(TEST_LAMBDA_JAVA_WITH_LIB, mode="rb")
-        create_response = create_lambda_function(
-            func_name=function_name,
-            zip_file=java_jar_with_lib,
-            runtime=runtime,
-            handler="cloud.localstack.sample.LambdaHandlerWithLib",
-            SnapStart={"ApplyOn": "PublishedVersions"},
+        create_function_response = multiruntime_lambda.create_function(
+            MemorySize=1024, Timeout=5, SnapStart={"ApplyOn": "PublishedVersions"}
         )
-        snapshot.match("create_function_response", create_response)
-        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        function_name = create_function_response["FunctionName"]
+        snapshot.match("create_function_response", create_function_response)
 
         publish_response = aws_client.lambda_.publish_version(
             FunctionName=function_name, Description="version1"
@@ -6586,20 +6686,15 @@ class TestLambdaSnapStart:
         snapshot.match("get_function_response_version_1", get_function_response)
 
     @markers.aws.validated
-    @pytest.mark.parametrize("runtime", [Runtime.java21, Runtime.java17])
+    @markers.lambda_runtime_update
+    @markers.multiruntime(scenario="echo")
     def test_snapstart_update_function_configuration(
-        self, create_lambda_function, snapshot, aws_client, runtime
+        self, multiruntime_lambda, snapshot, aws_client
     ):
         """Test enabling SnapStart when updating a function."""
-        function_name = f"fn-{short_uid()}"
-        java_jar_with_lib = load_file(TEST_LAMBDA_JAVA_WITH_LIB, mode="rb")
-        create_response = create_lambda_function(
-            func_name=function_name,
-            zip_file=java_jar_with_lib,
-            runtime=runtime,
-            handler="cloud.localstack.sample.LambdaHandlerWithLib",
-        )
-        snapshot.match("create_function_response", create_response)
+        create_function_response = multiruntime_lambda.create_function(MemorySize=1024, Timeout=5)
+        function_name = create_function_response["FunctionName"]
+        snapshot.match("create_function_response", create_function_response)
         aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
 
         update_function_response = aws_client.lambda_.update_function_configuration(
@@ -6612,19 +6707,6 @@ class TestLambdaSnapStart:
     def test_snapstart_exceptions(self, lambda_su_role, snapshot, aws_client):
         function_name = f"invalid-function-{short_uid()}"
         zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
-        # Test unsupported runtime
-        # Only supports java11 (2023-02-15): https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html
-        with pytest.raises(ClientError) as e:
-            aws_client.lambda_.create_function(
-                FunctionName=function_name,
-                Handler="index.handler",
-                Code={"ZipFile": zip_file_bytes},
-                PackageType="Zip",
-                Role=lambda_su_role,
-                Runtime=Runtime.python3_12,
-                SnapStart={"ApplyOn": "PublishedVersions"},
-            )
-        snapshot.match("create_function_unsupported_snapstart_runtime", e.value.response)
 
         with pytest.raises(ClientError) as e:
             aws_client.lambda_.create_function(

@@ -49,6 +49,7 @@
               "Comment": "If task is complete, move to the SuccessState."
             }
           ],
+          "Comment": "Set the next state as the SuccessState",
           "Next": "SuccessState"
         }
       ],

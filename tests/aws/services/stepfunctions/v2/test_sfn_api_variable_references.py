@@ -76,17 +76,22 @@ class TestSfnApiVariableReferences:
         ],
     )
     def test_base_variable_references_in_assign_templates(
-        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client, template_path
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+        template_path,
     ):
         sfn_snapshot.add_transformer(_SfnSortVariableReferences())
-        snf_role_arn = create_iam_role_for_sfn()
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "sfn_role_arn"))
 
         definition = AT.load_sfn_template(template_path)
         definition_str = json.dumps(definition)
 
         creation_response = create_state_machine(
-            name=f"sm-{short_uid()}", definition=definition_str, roleArn=snf_role_arn
+            aws_client, name=f"sm-{short_uid()}", definition=definition_str, roleArn=snf_role_arn
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_response, 0))
         state_machine_arn = creation_response["stateMachineArn"]
@@ -126,17 +131,22 @@ class TestSfnApiVariableReferences:
         ],
     )
     def test_base_variable_references_in_jsonata_template(
-        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client, template_path
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+        template_path,
     ):
         # This test checks that variable references within jsonata expression are not included.
-        snf_role_arn = create_iam_role_for_sfn()
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "sfn_role_arn"))
 
         definition = AT.load_sfn_template(template_path)
         definition_str = json.dumps(definition)
 
         creation_response = create_state_machine(
-            name=f"sm-{short_uid()}", definition=definition_str, roleArn=snf_role_arn
+            aws_client, name=f"sm-{short_uid()}", definition=definition_str, roleArn=snf_role_arn
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_response, 0))
 

@@ -11,7 +11,7 @@ from tests.aws.services.events.helper_functions import (
     sqs_collect_messages,
 )
 from tests.aws.services.events.test_events import (
-    EVENT_DETAIL,
+    TEST_EVENT_DETAIL,
     TEST_EVENT_PATTERN_NO_SOURCE,
 )
 
@@ -231,7 +231,7 @@ def test_event_bus_to_event_bus_cross_account_region(
             {
                 "Source": SOURCE_PRIMARY,
                 "DetailType": TEST_EVENT_PATTERN_NO_SOURCE["detail-type"][0],
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
                 "EventBusName": event_bus_name_primary,
             }
         ],
@@ -265,7 +265,7 @@ def test_event_bus_to_event_bus_cross_account_region(
             {
                 "Source": SOURCE_SECONDARY,
                 "DetailType": TEST_EVENT_PATTERN_NO_SOURCE["detail-type"][0],
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
                 "EventBusName": event_bus_name_secondary,
             }
         ],
@@ -424,7 +424,7 @@ class TestEventsCrossAccountRegion:
                 {
                     "Source": SOURCE_PRIMARY,
                     "DetailType": TEST_EVENT_PATTERN_NO_SOURCE["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
                     "EventBusName": event_bus_arn,  # using arn for cross region / cross account
                 }
             ],

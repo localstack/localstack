@@ -12,7 +12,17 @@ from opensearchpy import OpenSearch
 from opensearchpy.exceptions import AuthorizationException
 
 from localstack import config
-from localstack.aws.api.opensearch import AdvancedSecurityOptionsInput, MasterUserOptions
+from localstack.aws.api.opensearch import (
+    AdvancedSecurityOptionsInput,
+    ClusterConfig,
+    DomainEndpointOptions,
+    EBSOptions,
+    EncryptionAtRestOptions,
+    MasterUserOptions,
+    NodeToNodeEncryptionOptions,
+    OpenSearchPartitionInstanceType,
+    VolumeType,
+)
 from localstack.constants import (
     ELASTICSEARCH_DEFAULT_VERSION,
     OPENSEARCH_DEFAULT_VERSION,
@@ -143,7 +153,7 @@ class TestOpensearchProvider:
             # wait for the cluster
             opensearch_wait_for_cluster(domain_name=domain_name)
 
-            # make sure the plugins are installed
+            # make sure the plugins are installed (Sort and display component)
             plugins_url = (
                 f"https://{domain_status['Endpoint']}/_cat/plugins?s=component&h=component"
             )
@@ -172,7 +182,7 @@ class TestOpensearchProvider:
             "Endpoint"
         ]
 
-        # make sure the plugins are installed
+        # make sure the plugins are installed (Sort and display component)
         plugins_url = f"https://{endpoint}/_cat/plugins?s=component&h=component"
 
         # request without credentials fails
@@ -245,6 +255,96 @@ class TestOpensearchProvider:
         # ensure the user can now write and create a new index
         test_user_client.create("new-index2", id="new-index-id2", body={})
         test_user_client.index(test_index_name, body={"test-key1": "test-value1"})
+
+    @markers.aws.validated
+    def test_sql_plugin(self, opensearch_create_domain, aws_client, snapshot, account_id):
+        master_user_auth = ("admin", "QWERTYuiop123!")
+        domain_name = f"sql-test-domain-{short_uid()}"
+        access_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"AWS": "*"},
+                    "Action": "es:*",
+                    "Resource": f"arn:aws:es:*:{account_id}:domain/{domain_name}/*",
+                }
+            ],
+        }
+
+        # create a domain that works on aws
+        opensearch_create_domain(
+            DomainName=domain_name,
+            EngineVersion=OPENSEARCH_DEFAULT_VERSION,
+            ClusterConfig=ClusterConfig(
+                InstanceType=OpenSearchPartitionInstanceType("t3.small.search"), InstanceCount=1
+            ),
+            EBSOptions=EBSOptions(EBSEnabled=True, VolumeType=VolumeType("gp2"), VolumeSize=10),
+            AdvancedSecurityOptions=AdvancedSecurityOptionsInput(
+                Enabled=True,
+                InternalUserDatabaseEnabled=True,
+                MasterUserOptions=MasterUserOptions(
+                    MasterUserName=master_user_auth[0],
+                    MasterUserPassword=master_user_auth[1],
+                ),
+            ),
+            NodeToNodeEncryptionOptions=NodeToNodeEncryptionOptions(Enabled=True),
+            EncryptionAtRestOptions=EncryptionAtRestOptions(Enabled=True),
+            DomainEndpointOptions=DomainEndpointOptions(EnforceHTTPS=True),
+            AccessPolicies=json.dumps(access_policy),
+        )
+        endpoint = aws_client.opensearch.describe_domain(DomainName=domain_name)["DomainStatus"][
+            "Endpoint"
+        ]
+
+        # make sure the sql plugin is installed (Sort and display component)
+        plugins_url = f"https://{endpoint}/_cat/plugins?s=component&h=component"
+        response = requests.get(
+            plugins_url,
+            auth=master_user_auth,
+            headers={**COMMON_HEADERS, "Accept": "application/json"},
+        )
+        installed_plugins = {plugin["component"] for plugin in response.json()}
+        assert "opensearch-sql" in installed_plugins
+        assert "opensearch-sql" in installed_plugins, "Opensearch sql plugin is not present"
+
+        # data insert preparation for sql query
+        document = {
+            "first_name": "Boba",
+            "last_name": "Fett",
+            "age": 41,
+            "about": "I'm just a simple man, trying to make my way in the universe.",
+            "interests": ["mandalorian armor", "tusken culture"],
+        }
+        index = "bountyhunters"
+        document_path = f"https://{endpoint}/{index}/_doc/1"
+        response = requests.put(
+            document_path,
+            auth=master_user_auth,
+            data=json.dumps(document),
+            headers=COMMON_HEADERS,
+        )
+        assert response.ok
+
+        # force the refresh of the index after the document was added, so it can appear in search
+        response = requests.post(
+            f"https://{endpoint}/_refresh", auth=master_user_auth, headers=COMMON_HEADERS
+        )
+        assert response.ok
+
+        # ensure sql query returns correct
+        query = {"query": f"SELECT * FROM {index} WHERE last_name = 'Fett'"}
+        response = requests.post(
+            f"https://{endpoint}/_plugins/_sql",
+            auth=master_user_auth,
+            data=json.dumps(query),
+            headers=COMMON_HEADERS,
+        )
+        snapshot.match("sql_query_response", response.json())
+
+        assert "I'm just a simple man" in response.text, (
+            f"query unsuccessful({response.status_code}): {response.text}"
+        )
 
     @markers.aws.validated
     def test_create_domain_with_invalid_name(self, aws_client):
@@ -414,9 +514,9 @@ class TestOpensearchProvider:
     @markers.aws.needs_fixing
     def test_get_document(self, opensearch_document_path):
         response = requests.get(opensearch_document_path)
-        assert (
-            "I'm just a simple man" in response.text
-        ), f"document not found({response.status_code}): {response.text}"
+        assert "I'm just a simple man" in response.text, (
+            f"document not found({response.status_code}): {response.text}"
+        )
 
     @markers.aws.needs_fixing
     def test_search(self, opensearch_endpoint, opensearch_document_path):
@@ -428,9 +528,9 @@ class TestOpensearchProvider:
         search = {"query": {"match": {"last_name": "Fett"}}}
         response = requests.get(f"{index}/_search", data=json.dumps(search), headers=COMMON_HEADERS)
 
-        assert (
-            "I'm just a simple man" in response.text
-        ), f"search unsuccessful({response.status_code}): {response.text}"
+        assert "I'm just a simple man" in response.text, (
+            f"search unsuccessful({response.status_code}): {response.text}"
+        )
 
     @markers.aws.only_localstack
     def test_endpoint_strategy_path(self, monkeypatch, opensearch_create_domain, aws_client):
@@ -507,9 +607,9 @@ class TestEdgeProxiedOpensearchCluster:
         finally:
             cluster.shutdown()
 
-        assert poll_condition(
-            lambda: not cluster.is_up(), timeout=240
-        ), "gave up waiting for cluster to shut down"
+        assert poll_condition(lambda: not cluster.is_up(), timeout=240), (
+            "gave up waiting for cluster to shut down"
+        )
 
     @markers.aws.only_localstack
     def test_custom_endpoint(
@@ -612,9 +712,9 @@ class TestMultiClusterManager:
 
             response = requests.put(index_url_0)
             assert response.ok, f"failed to put index into cluster {cluster_0.url}: {response.text}"
-            assert poll_condition(
-                lambda: requests.head(index_url_0).ok, timeout=10
-            ), "gave up waiting for index"
+            assert poll_condition(lambda: requests.head(index_url_0).ok, timeout=10), (
+                "gave up waiting for index"
+            )
 
             assert not requests.head(index_url_1).ok, "index should not appear in second cluster"
 
@@ -660,9 +760,9 @@ class TestMultiplexingClusterManager:
 
             response = requests.put(index_url_0)
             assert response.ok, f"failed to put index into cluster {cluster_0.url}: {response.text}"
-            assert poll_condition(
-                lambda: requests.head(index_url_0).ok, timeout=10
-            ), "gave up waiting for index"
+            assert poll_condition(lambda: requests.head(index_url_0).ok, timeout=10), (
+                "gave up waiting for index"
+            )
 
             assert requests.head(index_url_1).ok, "index should appear in second cluster"
 

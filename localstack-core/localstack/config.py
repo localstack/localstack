@@ -846,9 +846,10 @@ if not DOCKER_BRIDGE_IP:
 # get-function call.
 INTERNAL_RESOURCE_ACCOUNT = os.environ.get("INTERNAL_RESOURCE_ACCOUNT") or "949334387222"
 
+# TODO: remove with 4.1.0
 # Determine which implementation to use for the event rule / event filtering engine used by multiple services:
 # EventBridge, EventBridge Pipes, Lambda Event Source Mapping
-# Options: python (default) | java (preview)
+# Options: python (default) | java (deprecated since 4.0.3)
 EVENT_RULE_ENGINE = os.environ.get("EVENT_RULE_ENGINE", "python").strip()
 
 # -----
@@ -1122,6 +1123,10 @@ OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER")
 # Whether to really publish to GCM while using SNS Platform Application (needs credentials)
 LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")
 
+SNS_SES_SENDER_ADDRESS = os.environ.get("SNS_SES_SENDER_ADDRESS", "").strip()
+
+SNS_CERT_URL_HOST = os.environ.get("SNS_CERT_URL_HOST", "").strip()
+
 # Whether the Next Gen APIGW invocation logic is enabled (on by default)
 APIGW_NEXT_GEN_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_APIGATEWAY", "") in ("next_gen", "")
 
@@ -1334,6 +1339,7 @@ CONFIG_ENV_VARS = [
     "SNAPSHOT_LOAD_STRATEGY",
     "SNAPSHOT_SAVE_STRATEGY",
     "SNAPSHOT_FLUSH_INTERVAL",
+    "SNS_SES_SENDER_ADDRESS",
     "SQS_DELAY_PURGE_RETRY",
     "SQS_DELAY_RECENTLY_DELETED",
     "SQS_ENABLE_MESSAGE_RETENTION_PERIOD",

@@ -2,35 +2,50 @@
 Test creating and modifying event buses, as well as putting events to custom and the default bus.
 """
 
-import base64
+import datetime
 import json
 import os
+import re
 import time
 import uuid
 
 import pytest
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
-from pytest_httpserver import HTTPServer
-from werkzeug import Request, Response
 
 from localstack import config
+from localstack.aws.api.lambda_ import Runtime
 from localstack.services.events.v1.provider import _get_events_tmp_dir
 from localstack.testing.aws.eventbus_utils import allow_event_rule_to_sqs_queue
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.files import load_file
-from localstack.utils.strings import long_uid, short_uid, to_str
-from localstack.utils.sync import poll_condition, retry
+from localstack.utils.strings import long_uid, short_uid
+from localstack.utils.sync import retry
+from localstack.utils.testutil import check_expected_lambda_log_events_length
 from tests.aws.services.events.helper_functions import (
     assert_valid_event,
     is_old_provider,
     is_v2_provider,
     sqs_collect_messages,
 )
+from tests.aws.services.lambda_.test_lambda import (
+    TEST_LAMBDA_PYTHON_ECHO,
+)
 
 EVENT_DETAIL = {"command": "update-account", "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"}}
+
+SPECIAL_EVENT_DETAIL = {
+    "command": "update-account",
+    "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"},
+    "listsingle": ["HIGH"],
+    "listmulti": ["ACTIVE", "INACTIVE"],
+}
+
+TEST_EVENT_DETAIL = {
+    "command": "update-account",
+    "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"},
+}
 
 TEST_EVENT_PATTERN = {
     "source": ["core.update-account-command"],
@@ -48,32 +63,6 @@ TEST_EVENT_PATTERN_NO_SOURCE = {
     "detail": {"command": ["update-account"]},
 }
 
-API_DESTINATION_AUTHS = [
-    {
-        "type": "BASIC",
-        "key": "BasicAuthParameters",
-        "parameters": {"Username": "user", "Password": "pass"},
-    },
-    {
-        "type": "API_KEY",
-        "key": "ApiKeyAuthParameters",
-        "parameters": {"ApiKeyName": "Api", "ApiKeyValue": "apikey_secret"},
-    },
-    {
-        "type": "OAUTH_CLIENT_CREDENTIALS",
-        "key": "OAuthParameters",
-        "parameters": {
-            "AuthorizationEndpoint": "replace_this",
-            "ClientParameters": {"ClientID": "id", "ClientSecret": "password"},
-            "HttpMethod": "put",
-            "OAuthHttpParameters": {
-                "BodyParameters": [{"Key": "oauthbody", "Value": "value1"}],
-                "HeaderParameters": [{"Key": "oauthheader", "Value": "value2"}],
-                "QueryStringParameters": [{"Key": "oauthquery", "Value": "value3"}],
-            },
-        },
-    },
-]
 
 EVENT_BUS_ROLE = {
     "Statement": {
@@ -95,7 +84,7 @@ class TestEvents:
         entries = [
             {
                 "DetailType": TEST_EVENT_PATTERN_NO_SOURCE["detail-type"][0],
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
             },
         ]
         response = aws_client.events.put_events(Entries=entries)
@@ -121,12 +110,51 @@ class TestEvents:
         is_old_provider(),
         reason="V1 provider does not support this feature",
     )
+    def test_put_event_with_too_big_detail(self, snapshot, aws_client):
+        entries = [
+            {
+                "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                "Detail": json.dumps({"payload": ["p" * (256 * 1024 - 17)]}),
+            },
+        ]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.events.put_events(Entries=entries)
+        snapshot.match("put-events-too-big-detail-error", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
     def test_put_event_without_detail_type(self, snapshot, aws_client):
         entries = [
             {
                 "Source": "some.source",
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
                 "DetailType": "",
+            },
+        ]
+        response = aws_client.events.put_events(Entries=entries)
+        snapshot.match("put-events", response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    @pytest.mark.parametrize(
+        "detail",
+        ["NotJSON", "[]", "{{}", json.dumps("NotJSON")],
+        ids=["STRING", "ARRAY", "MALFORMED_JSON", "SERIALIZED_STRING"],
+    )
+    def test_put_event_malformed_detail(self, snapshot, aws_client, detail):
+        entries = [
+            {
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": detail,
             },
         ]
         response = aws_client.events.put_events(Entries=entries)
@@ -195,7 +223,7 @@ class TestEvents:
                 {
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
                     "EventBusName": bus_name,
                 }
             )
@@ -242,169 +270,8 @@ class TestEvents:
 
         assert [json.loads(event["Detail"]) for event in sorted_events] == event_details_to_publish
 
-    @markers.aws.only_localstack
-    @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
-    def test_api_destinations(self, httpserver: HTTPServer, auth, aws_client, clean_up):
-        token = short_uid()
-        bearer = f"Bearer {token}"
-
-        def _handler(_request: Request):
-            return Response(
-                json.dumps(
-                    {
-                        "access_token": token,
-                        "token_type": "Bearer",
-                        "expires_in": 86400,
-                    }
-                ),
-                mimetype="application/json",
-            )
-
-        httpserver.expect_request("").respond_with_handler(_handler)
-        http_endpoint = httpserver.url_for("/")
-
-        if auth.get("type") == "OAUTH_CLIENT_CREDENTIALS":
-            auth["parameters"]["AuthorizationEndpoint"] = http_endpoint
-
-        connection_name = f"c-{short_uid()}"
-        connection_arn = aws_client.events.create_connection(
-            Name=connection_name,
-            AuthorizationType=auth.get("type"),
-            AuthParameters={
-                auth.get("key"): auth.get("parameters"),
-                "InvocationHttpParameters": {
-                    "BodyParameters": [
-                        {
-                            "Key": "connection_body_param",
-                            "Value": "value",
-                            "IsValueSecret": False,
-                        },
-                    ],
-                    "HeaderParameters": [
-                        {
-                            "Key": "connection-header-param",
-                            "Value": "value",
-                            "IsValueSecret": False,
-                        },
-                        {
-                            "Key": "overwritten-header",
-                            "Value": "original",
-                            "IsValueSecret": False,
-                        },
-                    ],
-                    "QueryStringParameters": [
-                        {
-                            "Key": "connection_query_param",
-                            "Value": "value",
-                            "IsValueSecret": False,
-                        },
-                        {
-                            "Key": "overwritten_query",
-                            "Value": "original",
-                            "IsValueSecret": False,
-                        },
-                    ],
-                },
-            },
-        )["ConnectionArn"]
-
-        # create api destination
-        dest_name = f"d-{short_uid()}"
-        result = aws_client.events.create_api_destination(
-            Name=dest_name,
-            ConnectionArn=connection_arn,
-            InvocationEndpoint=http_endpoint,
-            HttpMethod="POST",
-        )
-
-        # create rule and target
-        rule_name = f"r-{short_uid()}"
-        target_id = f"target-{short_uid()}"
-        pattern = json.dumps({"source": ["source-123"], "detail-type": ["type-123"]})
-        aws_client.events.put_rule(Name=rule_name, EventPattern=pattern)
-        aws_client.events.put_targets(
-            Rule=rule_name,
-            Targets=[
-                {
-                    "Id": target_id,
-                    "Arn": result["ApiDestinationArn"],
-                    "Input": '{"target_value":"value"}',
-                    "HttpParameters": {
-                        "PathParameterValues": ["target_path"],
-                        "HeaderParameters": {
-                            "target-header": "target_header_value",
-                            "overwritten_header": "changed",
-                        },
-                        "QueryStringParameters": {
-                            "target_query": "t_query",
-                            "overwritten_query": "changed",
-                        },
-                    },
-                }
-            ],
-        )
-
-        entries = [
-            {
-                "Source": "source-123",
-                "DetailType": "type-123",
-                "Detail": '{"i": 0}',
-            }
-        ]
-        aws_client.events.put_events(Entries=entries)
-
-        # clean up
-        aws_client.events.delete_connection(Name=connection_name)
-        aws_client.events.delete_api_destination(Name=dest_name)
-        clean_up(rule_name=rule_name, target_ids=target_id)
-
-        to_recv = 2 if auth["type"] == "OAUTH_CLIENT_CREDENTIALS" else 1
-        poll_condition(lambda: len(httpserver.log) >= to_recv, timeout=5)
-
-        event_request, _ = httpserver.log[-1]
-        event = event_request.get_json(force=True)
-        headers = event_request.headers
-        query_args = event_request.args
-
-        # Connection data validation
-        assert event["connection_body_param"] == "value"
-        assert headers["Connection-Header-Param"] == "value"
-        assert query_args["connection_query_param"] == "value"
-
-        # Target parameters validation
-        assert "/target_path" in event_request.path
-        assert event["target_value"] == "value"
-        assert headers["Target-Header"] == "target_header_value"
-        assert query_args["target_query"] == "t_query"
-
-        # connection/target overwrite test
-        assert headers["Overwritten-Header"] == "original"
-        assert query_args["overwritten_query"] == "original"
-
-        # Auth validation
-        match auth["type"]:
-            case "BASIC":
-                user_pass = to_str(base64.b64encode(b"user:pass"))
-                assert headers["Authorization"] == f"Basic {user_pass}"
-            case "API_KEY":
-                assert headers["Api"] == "apikey_secret"
-
-            case "OAUTH_CLIENT_CREDENTIALS":
-                assert headers["Authorization"] == bearer
-
-                oauth_request, _ = httpserver.log[0]
-                oauth_login = oauth_request.get_json(force=True)
-                # Oauth login validation
-                assert oauth_login["client_id"] == "id"
-                assert oauth_login["client_secret"] == "password"
-                assert oauth_login["oauthbody"] == "value1"
-                assert oauth_request.headers["oauthheader"] == "value2"
-                assert oauth_request.args["oauthquery"] == "value3"
-
     @markers.aws.validated
-    @pytest.mark.skip(
-        reason="V2 provider does not support this feature yet and it also fails in V1 now"
-    )
+    @pytest.mark.skipif(is_old_provider(), reason="V1 provider does not support this feature")
     def test_create_connection_validations(self, aws_client, snapshot):
         connection_name = "This should fail with two errors 123467890123412341234123412341234"
 
@@ -422,12 +289,12 @@ class TestEvents:
 
     @markers.aws.validated
     def test_put_events_response_entries_order(
-        self, events_put_rule, create_sqs_events_target, aws_client, snapshot, clean_up
+        self, events_put_rule, sqs_as_events_target, aws_client, snapshot, clean_up
     ):
         """Test that put_events response contains each EventId only once, even with multiple targets."""
 
-        queue_url_1, queue_arn_1 = create_sqs_events_target()
-        queue_url_2, queue_arn_2 = create_sqs_events_target()
+        queue_url_1, queue_arn_1 = sqs_as_events_target()
+        queue_url_2, queue_arn_2 = sqs_as_events_target()
 
         rule_name = f"test-rule-{short_uid()}"
 
@@ -464,15 +331,15 @@ class TestEvents:
             ],
         )
 
-        assert (
-            target_response["FailedEntryCount"] == 0
-        ), f"Failed to add targets: {target_response.get('FailedEntries', [])}"
+        assert target_response["FailedEntryCount"] == 0, (
+            f"Failed to add targets: {target_response.get('FailedEntries', [])}"
+        )
 
         # Use the test constants for the event
         test_event = {
             "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
             "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
-            "Detail": json.dumps(EVENT_DETAIL),
+            "Detail": json.dumps(TEST_EVENT_DETAIL),
         }
 
         event_response = aws_client.events.put_events(Entries=[test_event])
@@ -487,20 +354,20 @@ class TestEvents:
             """Verify the message content matches what we sent."""
             body = json.loads(message["Body"])
 
-            assert (
-                body["source"] == TEST_EVENT_PATTERN_NO_DETAIL["source"][0]
-            ), f"Unexpected source: {body['source']}"
-            assert (
-                body["detail-type"] == TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0]
-            ), f"Unexpected detail-type: {body['detail-type']}"
+            assert body["source"] == TEST_EVENT_PATTERN_NO_DETAIL["source"][0], (
+                f"Unexpected source: {body['source']}"
+            )
+            assert body["detail-type"] == TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0], (
+                f"Unexpected detail-type: {body['detail-type']}"
+            )
 
             detail = body["detail"]  # detail is already parsed as dict
             assert isinstance(detail, dict), f"Detail should be a dict, got {type(detail)}"
-            assert detail == EVENT_DETAIL, f"Unexpected detail content: {detail}"
+            assert detail == TEST_EVENT_DETAIL, f"Unexpected detail content: {detail}"
 
-            assert (
-                body["id"] == original_event_id
-            ), f"Event ID mismatch. Expected {original_event_id}, got {body['id']}"
+            assert body["id"] == original_event_id, (
+                f"Event ID mismatch. Expected {original_event_id}, got {body['id']}"
+            )
 
             return body
 
@@ -563,7 +430,7 @@ class TestEvents:
         test_event = {
             "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
             "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
-            "Detail": json.dumps(EVENT_DETAIL),
+            "Detail": json.dumps(TEST_EVENT_DETAIL),
         }
 
         response = aws_client.events.put_events(Entries=[test_event])
@@ -580,6 +447,68 @@ class TestEvents:
 
         assert len(messages) == 0, "No messages should be delivered when queue doesn't exist"
 
+    @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="Test specific for v2 provider")
+    def test_put_events_with_time_field(
+        self, events_put_rule, sqs_as_events_target, aws_client, snapshot
+    ):
+        """Test that EventBridge correctly handles datetime serialization in events."""
+        rule_name = f"test-rule-{short_uid()}"
+        queue_url, queue_arn = sqs_as_events_target()
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("MD5OfBody", reference_replacement=False),
+                *snapshot.transform.sqs_api(),
+            ]
+        )
+
+        events_put_rule(
+            Name=rule_name,
+            EventPattern=json.dumps(
+                {"source": ["test-source"], "detail-type": ["test-detail-type"]}
+            ),
+        )
+
+        aws_client.events.put_targets(Rule=rule_name, Targets=[{"Id": "id1", "Arn": queue_arn}])
+
+        timestamp = datetime.datetime.utcnow()
+        event = {
+            "Source": "test-source",
+            "DetailType": "test-detail-type",
+            "Time": timestamp,
+            "Detail": json.dumps({"message": "test message"}),
+        }
+
+        response = aws_client.events.put_events(Entries=[event])
+        snapshot.match("put-events", response)
+
+        messages = sqs_collect_messages(aws_client, queue_url, expected_events_count=1)
+        assert len(messages) == 1
+        snapshot.match("sqs-messages", messages)
+
+        received_event = json.loads(messages[0]["Body"])
+        # Explicit assertions for time field format GH issue: https://github.com/localstack/localstack/issues/11630#issuecomment-2506187279
+        assert "time" in received_event, "Time field missing in the event"
+        time_str = received_event["time"]
+
+        # Verify ISO8601 format: YYYY-MM-DDThh:mm:ssZ
+        # Example: "2024-11-28T13:44:36Z"
+        assert re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$", time_str), (
+            f"Time field '{time_str}' does not match ISO8601 format (YYYY-MM-DDThh:mm:ssZ)"
+        )
+
+        # Verify we can parse it back to datetime
+        datetime_obj = datetime.datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%SZ")
+        assert isinstance(datetime_obj, datetime.datetime), (
+            f"Failed to parse time string '{time_str}' back to datetime object"
+        )
+
+        time_difference = abs((datetime_obj - timestamp.replace(microsecond=0)).total_seconds())
+        assert time_difference <= 60, (
+            f"Time in event '{time_str}' differs too much from sent time '{timestamp.isoformat()}'"
+        )
+
 
 class TestEventBus:
     @markers.aws.validated
@@ -588,8 +517,9 @@ class TestEventBus:
         reason="V1 provider does not support this feature",
     )
     @pytest.mark.parametrize("regions", [["us-east-1"], ["us-east-1", "us-west-1", "eu-central-1"]])
+    @pytest.mark.parametrize("with_description", [True, False])
     def test_create_list_describe_delete_custom_event_buses(
-        self, aws_client_factory, regions, snapshot
+        self, with_description, aws_client_factory, regions, snapshot
     ):
         bus_name = f"test-bus-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
@@ -600,7 +530,8 @@ class TestEventBus:
             snapshot.add_transformer(snapshot.transform.regex(region, "<region>"))
             events = aws_client_factory(region_name=region).events
 
-            response = events.create_event_bus(Name=bus_name)
+            kwargs = {"Description": "test bus"} if with_description else {}
+            response = events.create_event_bus(Name=bus_name, **kwargs)
             snapshot.match(f"create-custom-event-bus-{region}", response)
 
             response = events.list_event_buses(NamePrefix=bus_name)
@@ -613,6 +544,7 @@ class TestEventBus:
         for region in regions:
             events = aws_client_factory(region_name=region).events
 
+            kwargs = {"Description": "test bus"} if with_description else {}
             response = events.delete_event_bus(Name=bus_name)
             snapshot.match(f"delete-custom-event-bus-{region}", response)
 
@@ -946,7 +878,7 @@ class TestEventBus:
         self,
         strategy,
         monkeypatch,
-        create_sqs_events_target,
+        sqs_as_events_target,
         events_create_event_bus,
         events_put_rule,
         aws_client,
@@ -1022,7 +954,7 @@ class TestEventBus:
         )
 
         # Create sqs target
-        queue_url, queue_arn = create_sqs_events_target()
+        queue_url, queue_arn = sqs_as_events_target()
 
         # Rule and target bus 2 to sqs
         rule_name_bus_two = f"rule-{short_uid()}"
@@ -1044,7 +976,7 @@ class TestEventBus:
                     "EventBusName": bus_name_one,
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
                 }
             ]
         )
@@ -1476,6 +1408,338 @@ class TestEventRule:
         response = aws_client.events.list_targets_by_rule(Rule=rule_name)
         snapshot.match("list-targets-after-update", response)
 
+    @markers.aws.validated
+    def test_process_to_multiple_matching_rules_different_targets(
+        self,
+        events_create_event_bus,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        events_put_rule,
+        aws_client,
+    ):
+        """two rules with each two sqs targets, all 4 queues should receive the event"""
+
+        custom_bus_name = f"test-bus-{short_uid()}"
+        events_create_event_bus(Name=custom_bus_name)
+
+        # create sqs queues targets
+        targets = {}
+        for i in range(4):
+            queue_url = sqs_create_queue()
+            queue_arn = sqs_get_queue_arn(queue_url)
+            targets[f"sqs_target_{i}"] = {"queue_url": queue_url, "queue_arn": queue_arn}
+
+        # create rules
+        rules = {}
+        for i in range(2):
+            rule_name = f"test-rule-{i}-{short_uid()}"
+            rule = events_put_rule(
+                Name=rule_name,
+                EventBusName=custom_bus_name,
+                EventPattern=json.dumps(TEST_EVENT_PATTERN_NO_DETAIL),
+                State="ENABLED",
+            )
+            rule_arn = rule["RuleArn"]
+            rules[f"rule_{i}"] = {"rule_name": rule_name, "rule_arn": rule_arn}
+
+        # attach targets to rule
+        combinations = [("0", ["0", "1"]), ("1", ["2", "3"])]
+        for rule_idx, targets_idxs in combinations:
+            rule_arn = rules[f"rule_{rule_idx}"]["rule_arn"]
+            for target_idx in targets_idxs:
+                queue_url = targets[f"sqs_target_{target_idx}"]["queue_url"]
+                queue_arn = targets[f"sqs_target_{target_idx}"]["queue_arn"]
+                allow_event_rule_to_sqs_queue(
+                    aws_client=aws_client,
+                    sqs_queue_url=queue_url,
+                    sqs_queue_arn=queue_arn,
+                    event_rule_arn=rule_arn,
+                )
+
+                aws_client.events.put_targets(
+                    Rule=rules[f"rule_{rule_idx}"]["rule_name"],
+                    EventBusName=custom_bus_name,
+                    Targets=[
+                        {"Id": f"test-target-{target_idx}-{short_uid()}", "Arn": queue_arn},
+                    ],
+                )
+
+        # put event
+        aws_client.events.put_events(
+            Entries=[
+                {
+                    "EventBusName": custom_bus_name,
+                    "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                    "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
+                }
+            ],
+        )
+
+        sqs_collect_messages(
+            aws_client, targets["sqs_target_0"]["queue_url"], expected_events_count=1
+        )
+        sqs_collect_messages(
+            aws_client, targets["sqs_target_1"]["queue_url"], expected_events_count=1
+        )
+        sqs_collect_messages(
+            aws_client, targets["sqs_target_2"]["queue_url"], expected_events_count=1
+        )
+        sqs_collect_messages(
+            aws_client, targets["sqs_target_3"]["queue_url"], expected_events_count=1
+        )
+
+    @markers.aws.validated
+    def test_process_to_multiple_matching_rules_single_target(
+        self,
+        create_lambda_function,
+        events_create_event_bus,
+        events_put_rule,
+        aws_client,
+        snapshot,
+    ):
+        """two rules with both the same lambda target, the lambda target should be invoked twice.
+        This will only work for certain targets, since e.g. sqs has message deduplication"""
+
+        bus_name = f"test-bus-{short_uid()}"
+        events_create_event_bus(Name=bus_name)
+
+        # create lambda target
+        function_name = f"lambda-func-{short_uid()}"
+        create_lambda_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+        )
+        lambda_function_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
+
+        # create rules
+        for i in range(2):
+            rule_name = f"test-rule-{i}-{short_uid()}"
+            rule = events_put_rule(
+                Name=rule_name,
+                EventBusName=bus_name,
+                EventPattern=json.dumps(TEST_EVENT_PATTERN_NO_DETAIL),
+                State="ENABLED",
+            )
+            rule_arn = rule["RuleArn"]
+
+            aws_client.lambda_.add_permission(
+                FunctionName=function_name,
+                StatementId=f"{rule_name}-Event",
+                Action="lambda:InvokeFunction",
+                Principal="events.amazonaws.com",
+                SourceArn=rule_arn,
+            )
+
+            target_id = f"test-target-{i}-{short_uid()}"
+            aws_client.events.put_targets(
+                Rule=rule_name,
+                EventBusName=bus_name,
+                Targets=[{"Id": target_id, "Arn": lambda_function_arn}],
+            )
+
+        # put event
+        aws_client.events.put_events(
+            Entries=[
+                {
+                    "EventBusName": bus_name,
+                    "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                    "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
+                }
+            ],
+        )
+
+        # check lambda invocation
+        events = retry(
+            check_expected_lambda_log_events_length,
+            retries=3,
+            sleep=1,
+            function_name=function_name,
+            expected_length=2,
+            logs_client=aws_client.logs,
+        )
+        snapshot.match("events", events)
+
+    @markers.aws.validated
+    def test_process_to_single_matching_rules_single_target(
+        self,
+        create_lambda_function,
+        events_create_event_bus,
+        events_put_rule,
+        aws_client,
+        snapshot,
+    ):
+        """Three rules with all the same lambda target, but different patterns as condition.
+        The lambda should onl be invoked by the rule matching the event pattern."""
+
+        bus_name = f"test-bus-{short_uid()}"
+        events_create_event_bus(Name=bus_name)
+
+        # create lambda target
+        function_name = f"lambda-func-{short_uid()}"
+        create_lambda_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+        )
+        lambda_function_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
+
+        # create rules
+        sources = ["source-one", "source-two", "source-three"]
+        for i, source in zip(range(3), sources):
+            rule_name = f"test-rule-{i}-{short_uid()}"
+            rule = events_put_rule(
+                Name=rule_name,
+                EventBusName=bus_name,
+                EventPattern=json.dumps({"source": [source]}),
+                State="ENABLED",
+            )
+            rule_arn = rule["RuleArn"]
+
+            aws_client.lambda_.add_permission(
+                FunctionName=function_name,
+                StatementId=f"{rule_name}-Event",
+                Action="lambda:InvokeFunction",
+                Principal="events.amazonaws.com",
+                SourceArn=rule_arn,
+            )
+
+            target_id = f"test-target-{i}-{short_uid()}"
+            aws_client.events.put_targets(
+                Rule=rule_name,
+                EventBusName=bus_name,
+                Targets=[{"Id": target_id, "Arn": lambda_function_arn}],
+            )
+
+        for i, source in zip(range(3), sources):
+            num_events = i + 1
+            aws_client.events.put_events(
+                Entries=[
+                    {
+                        "EventBusName": bus_name,
+                        "Source": source,
+                        "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                        "Detail": json.dumps(TEST_EVENT_DETAIL),
+                    }
+                ],
+            )
+
+            # check lambda invocation
+            events = retry(
+                check_expected_lambda_log_events_length,
+                retries=3,
+                sleep=1,
+                function_name=function_name,
+                expected_length=num_events,
+                logs_client=aws_client.logs,
+            )
+            snapshot.match(f"events-{source}", events)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    def test_process_pattern_to_single_matching_rules_single_target(
+        self,
+        create_lambda_function,
+        events_create_event_bus,
+        events_put_rule,
+        aws_client,
+        snapshot,
+    ):
+        """Three rules with all the same lambda target, but different patterns as condition.
+        The lambda should onl be invoked by the rule matching the event pattern."""
+
+        bus_name = f"test-bus-{short_uid()}"
+        events_create_event_bus(Name=bus_name)
+
+        # create lambda target
+        function_name = f"lambda-func-{short_uid()}"
+        create_lambda_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+        )
+        lambda_function_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
+
+        # create rules
+        input_path_map = {"detail": "$.detail"}
+        patterns = [
+            {"detail": {"payload": {"id": [{"exists": True}]}}},
+            {"detail": {"id": [{"exists": True}]}},
+        ]
+        input_transformers = [
+            {
+                "InputPathsMap": input_path_map,
+                "InputTemplate": '{"detail-payload-with-id": <detail>}',
+            },
+            {
+                "InputPathsMap": input_path_map,
+                "InputTemplate": '{"detail-with-id": <detail>}',
+            },
+        ]
+        for i, pattern, input_transformer in zip(range(2), patterns, input_transformers):
+            rule_name = f"test-rule-{i}-{short_uid()}"
+            rule = events_put_rule(
+                Name=rule_name,
+                EventBusName=bus_name,
+                EventPattern=json.dumps(pattern),
+                State="ENABLED",
+            )
+            rule_arn = rule["RuleArn"]
+
+            aws_client.lambda_.add_permission(
+                FunctionName=function_name,
+                StatementId=f"{rule_name}-Event",
+                Action="lambda:InvokeFunction",
+                Principal="events.amazonaws.com",
+                SourceArn=rule_arn,
+            )
+
+            target_id = f"test-target-{i}-{short_uid()}"
+            aws_client.events.put_targets(
+                Rule=rule_name,
+                EventBusName=bus_name,
+                Targets=[
+                    {
+                        "Id": target_id,
+                        "Arn": lambda_function_arn,
+                        "InputTransformer": input_transformer,
+                    }
+                ],
+            )
+
+        details = [
+            {"payload": {"id": "123"}},
+            {"id": "123"},
+        ]
+        for i, detail in zip(range(2), details):
+            num_events = i + 1
+            aws_client.events.put_events(
+                Entries=[
+                    {
+                        "EventBusName": bus_name,
+                        "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                        "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                        "Detail": json.dumps(detail),
+                    }
+                ],
+            )
+
+            # check lambda invocation
+            events = retry(
+                check_expected_lambda_log_events_length,
+                retries=3,
+                sleep=1,
+                function_name=function_name,
+                expected_length=num_events,
+                logs_client=aws_client.logs,
+            )
+            snapshot.match(f"events-{num_events}", events)
+
 
 class TestEventPattern:
     @markers.aws.validated
@@ -1709,381 +1973,172 @@ class TestEventTarget:
             ],
         )
 
-
-API_DESTINATION_AUTH_PARAMS = [
-    {
-        "AuthorizationType": "BASIC",
-        "AuthParameters": {
-            "BasicAuthParameters": {"Username": "user", "Password": "pass"},
-        },
-    },
-    {
-        "AuthorizationType": "API_KEY",
-        "AuthParameters": {
-            "ApiKeyAuthParameters": {"ApiKeyName": "ApiKey", "ApiKeyValue": "secret"},
-        },
-    },
-    {
-        "AuthorizationType": "OAUTH_CLIENT_CREDENTIALS",
-        "AuthParameters": {
-            "OAuthParameters": {
-                "AuthorizationEndpoint": "https://example.com/oauth",
-                "ClientParameters": {"ClientID": "client_id", "ClientSecret": "client_secret"},
-                "HttpMethod": "POST",
-            }
-        },
-    },
-]
-
-
-class TestEventBridgeConnections:
-    @pytest.fixture(autouse=True)
-    def connection_snapshots(self, snapshot, connection_name):
-        """Common snapshot transformers for connection tests."""
-        return TransformerUtility.eventbridge_connection(snapshot, connection_name)
-
     @markers.aws.validated
-    @pytest.mark.skipif(
-        is_old_provider(),
-        reason="V1 provider does not support this feature",
-    )
-    def test_create_connection(self, aws_client, snapshot, create_connection, connection_name):
-        response = create_connection(
-            "API_KEY",
-            {
-                "ApiKeyAuthParameters": {"ApiKeyName": "ApiKey", "ApiKeyValue": "secret"},
-                "InvocationHttpParameters": {},
-            },
-        )
-        snapshot.match("create-connection", response)
-
-        describe_response = aws_client.events.describe_connection(Name=connection_name)
-        snapshot.match("describe-connection", describe_response)
-
-    @markers.aws.validated
-    @pytest.mark.skipif(
-        is_old_provider(),
-        reason="V1 provider does not support this feature",
-    )
-    @pytest.mark.parametrize("auth_params", API_DESTINATION_AUTH_PARAMS)
-    def test_create_connection_with_auth(
-        self, aws_client, snapshot, create_connection, auth_params, connection_name
+    def test_put_multiple_targets_with_same_id_single_rule(
+        self, sqs_create_queue, sqs_get_queue_arn, events_put_rule, snapshot, aws_client
     ):
-        response = create_connection(
-            auth_params["AuthorizationType"],
-            auth_params["AuthParameters"],
-        )
-        snapshot.match("create-connection-auth", response)
+        """Targets attached to a rule must have unique IDs, but there is no validation for this.
+        The last target with the same ID will overwrite the previous one."""
+        rule_name = f"rule-{short_uid()}"
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
 
-        describe_response = aws_client.events.describe_connection(Name=connection_name)
-        snapshot.match("describe-connection-auth", describe_response)
-
-    @markers.aws.validated
-    @pytest.mark.skipif(
-        is_old_provider(),
-        reason="V1 provider does not support this feature",
-    )
-    def test_list_connections(self, aws_client, snapshot, create_connection, connection_name):
-        create_connection(
-            "BASIC",
-            {
-                "BasicAuthParameters": {"Username": "user", "Password": "pass"},
-                "InvocationHttpParameters": {},
-            },
+        events_put_rule(
+            Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
         )
 
-        response = aws_client.events.list_connections(NamePrefix=connection_name)
-        snapshot.match("list-connections", response)
-
-    @markers.aws.validated
-    @pytest.mark.skipif(
-        is_old_provider(),
-        reason="V1 provider does not support this feature",
-    )
-    def test_delete_connection(self, aws_client, snapshot, create_connection, connection_name):
-        response = create_connection(
-            "API_KEY",
-            {
-                "ApiKeyAuthParameters": {"ApiKeyName": "ApiKey", "ApiKeyValue": "secret"},
-                "InvocationHttpParameters": {},
-            },
-        )
-        snapshot.match("create-connection-response", response)
-
-        secret_arn = aws_client.events.describe_connection(Name=connection_name)["SecretArn"]
-        # check if secret exists
-        aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
-
-        delete_response = aws_client.events.delete_connection(Name=connection_name)
-        snapshot.match("delete-connection", delete_response)
-
-        # wait until connection is deleted
-        def is_connection_deleted():
-            try:
-                aws_client.events.describe_connection(Name=connection_name)
-                return False
-            except Exception:
-                return True
-
-        poll_condition(is_connection_deleted)
-
-        with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as exc:
-            aws_client.events.describe_connection(Name=connection_name)
-        snapshot.match("describe-deleted-connection", exc.value.response)
-
-        def is_secret_deleted():
-            try:
-                aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
-                return False
-            except Exception:
-                return True
-
-        poll_condition(is_secret_deleted)
-
-        with pytest.raises(aws_client.secretsmanager.exceptions.ResourceNotFoundException):
-            aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
-
-    @markers.aws.validated
-    @pytest.mark.skipif(
-        is_old_provider(),
-        reason="V1 provider does not support this feature",
-    )
-    def test_create_connection_invalid_parameters(self, aws_client, snapshot, connection_name):
-        with pytest.raises(ClientError) as e:
-            aws_client.events.create_connection(
-                Name=connection_name,
-                AuthorizationType="INVALID_AUTH_TYPE",
-                AuthParameters={},
-            )
-        snapshot.match("create-connection-invalid-auth-error", e.value.response)
-
-    @markers.aws.validated
-    @pytest.mark.skipif(
-        is_old_provider(),
-        reason="V1 provider does not support this feature",
-    )
-    def test_update_connection(self, aws_client, snapshot, create_connection, connection_name):
-        create_response = create_connection(
-            "BASIC",
-            {
-                "BasicAuthParameters": {"Username": "user", "Password": "pass"},
-                "InvocationHttpParameters": {},
-            },
-        )
-        snapshot.match("create-connection", create_response)
-
-        describe_response = aws_client.events.describe_connection(Name=connection_name)
-        snapshot.match("describe-created-connection", describe_response)
-
-        # add secret id transformer
-        secret_id = describe_response["SecretArn"]
-        secret_uuid, _, secret_suffix = secret_id.rpartition("/")[2].rpartition("-")
-        snapshot.add_transformer(
-            snapshot.transform.regex(secret_uuid, "<secret-uuid>"), priority=-1
-        )
-        snapshot.add_transformer(
-            snapshot.transform.regex(secret_suffix, "<secret-id-suffix>"), priority=-1
+        target_id = f"test-With_valid.Characters-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
+            ],
         )
 
-        get_secret_response = aws_client.secretsmanager.get_secret_value(SecretId=secret_id)
-        snapshot.match("connection-secret-before-update", get_secret_response)
-
-        update_response = aws_client.events.update_connection(
-            Name=connection_name,
-            AuthorizationType="BASIC",
-            AuthParameters={
-                "BasicAuthParameters": {"Username": "new_user", "Password": "new_pass"},
-                "InvocationHttpParameters": {},
-            },
-        )
-        snapshot.match("update-connection", update_response)
-
-        describe_response = aws_client.events.describe_connection(Name=connection_name)
-        snapshot.match("describe-updated-connection", describe_response)
-
-        get_secret_response = aws_client.secretsmanager.get_secret_value(SecretId=secret_id)
-        snapshot.match("connection-secret-after-update", get_secret_response)
-
-    @markers.aws.validated
-    @pytest.mark.skipif(
-        is_old_provider(),
-        reason="V1 provider does not support this feature",
-    )
-    def test_create_connection_name_validation(self, aws_client, snapshot, connection_name):
-        invalid_name = "Invalid Name With Spaces!"
-
-        with pytest.raises(ClientError) as e:
-            aws_client.events.create_connection(
-                Name=invalid_name,
-                AuthorizationType="API_KEY",
-                AuthParameters={
-                    "ApiKeyAuthParameters": {"ApiKeyName": "ApiKey", "ApiKeyValue": "secret"},
-                    "InvocationHttpParameters": {},
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {
+                    "Id": target_id,
+                    "Arn": queue_arn,
+                    "InputPath": "$.notexisting",
                 },
-            )
-        snapshot.match("create-connection-invalid-name-error", e.value.response)
+            ],
+        )
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(target_id, "target-id"),
+                snapshot.transform.regex(queue_arn, "target-arn"),
+            ]
+        )
+        response = aws_client.events.list_targets_by_rule(Rule=rule_name)
+        snapshot.match("list-targets", response)
 
     @markers.aws.validated
-    @pytest.mark.parametrize(
-        "auth_params", API_DESTINATION_AUTH_PARAMS, ids=["basic", "api-key", "oauth"]
-    )
-    @pytest.mark.skipif(
-        is_old_provider(),
-        reason="V1 provider does not support this feature",
-    )
-    def test_connection_secrets(
-        self, aws_client, snapshot, create_connection, connection_name, auth_params
+    def test_put_multiple_targets_with_same_id_across_different_rules(
+        self, sqs_create_queue, sqs_get_queue_arn, events_put_rule, snapshot, aws_client
     ):
-        response = create_connection(
-            auth_params["AuthorizationType"],
-            auth_params["AuthParameters"],
+        """Targets attached to different rules can have the same ID"""
+        rule_one_name = f"test-rule-one-{short_uid()}"
+        rule_two_name = f"test-rule-two-{short_uid()}"
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        events_put_rule(
+            Name=rule_one_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
         )
-        snapshot.match("create-connection-auth", response)
-
-        describe_response = aws_client.events.describe_connection(Name=connection_name)
-        snapshot.match("describe-connection-auth", describe_response)
-
-        secret_id = describe_response["SecretArn"]
-        secret_uuid, _, secret_suffix = secret_id.rpartition("/")[2].rpartition("-")
-        snapshot.add_transformer(
-            snapshot.transform.regex(secret_uuid, "<secret-uuid>"), priority=-1
+        events_put_rule(
+            Name=rule_two_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
         )
-        snapshot.add_transformer(
-            snapshot.transform.regex(secret_suffix, "<secret-id-suffix>"), priority=-1
+
+        target_id = f"test-With_valid.Characters-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_one_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
+            ],
         )
-        get_secret_response = aws_client.secretsmanager.get_secret_value(SecretId=secret_id)
-        snapshot.match("connection-secret", get_secret_response)
 
+        aws_client.events.put_targets(
+            Rule=rule_two_name,
+            Targets=[
+                {
+                    "Id": target_id,
+                    "Arn": queue_arn,
+                    "InputPath": "$.notexisting",
+                },
+            ],
+        )
 
-API_DESTINATION_AUTHS = [
-    {
-        "type": "BASIC",
-        "key": "BasicAuthParameters",
-        "parameters": {"Username": "user", "Password": "pass"},
-    },
-    {
-        "type": "API_KEY",
-        "key": "ApiKeyAuthParameters",
-        "parameters": {"ApiKeyName": "ApiKey", "ApiKeyValue": "secret"},
-    },
-    {
-        "type": "OAUTH_CLIENT_CREDENTIALS",
-        "key": "OAuthParameters",
-        "parameters": {
-            "ClientParameters": {"ClientID": "id", "ClientSecret": "password"},
-            "AuthorizationEndpoint": "https://example.com/oauth",
-            "HttpMethod": "POST",
-            "OAuthHttpParameters": {
-                "BodyParameters": [{"Key": "oauthbody", "Value": "value1", "IsValueSecret": False}],
-                "HeaderParameters": [
-                    {"Key": "oauthheader", "Value": "value2", "IsValueSecret": False}
-                ],
-                "QueryStringParameters": [
-                    {"Key": "oauthquery", "Value": "value3", "IsValueSecret": False}
-                ],
-            },
-        },
-    },
-]
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(target_id, "target-id"),
+                snapshot.transform.regex(queue_arn, "target-arn"),
+            ]
+        )
 
+        response = aws_client.events.list_targets_by_rule(Rule=rule_one_name)
+        snapshot.match("list-targets-rule-one", response)
 
-class TestEventBridgeApiDestinations:
-    @pytest.fixture
-    def api_destination_snapshots(self, snapshot, destination_name):
-        """Common snapshot transformers for API destination tests."""
-        return TransformerUtility.eventbridge_api_destination(snapshot, destination_name)
+        response = aws_client.events.list_targets_by_rule(Rule=rule_two_name)
+        snapshot.match("list-targets-rule-two", response)
 
     @markers.aws.validated
-    @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
-    @pytest.mark.skipif(
-        is_old_provider(),
-        reason="V1 provider does not support this feature",
-    )
-    def test_api_destinations(
-        self,
-        aws_client,
-        api_destination_snapshots,
-        create_connection,
-        create_api_destination,
-        connection_name,
-        destination_name,
-        auth,
+    def test_put_multiple_targets_with_same_arn_single_rule(
+        self, sqs_create_queue, sqs_get_queue_arn, events_put_rule, snapshot, aws_client
     ):
-        connection_response = create_connection(auth)
-        connection_arn = connection_response["ConnectionArn"]
+        """Targets attached to a rule can have the same ARN, but different IDs"""
+        rule_name = f"rule-{short_uid()}"
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
 
-        response = create_api_destination(
-            ConnectionArn=connection_arn,
-            HttpMethod="POST",
-            InvocationEndpoint="https://example.com/api",
-            Description="Test API destination",
-        )
-        api_destination_snapshots.match("create-api-destination", response)
-
-        describe_response = aws_client.events.describe_api_destination(Name=destination_name)
-        api_destination_snapshots.match("describe-api-destination", describe_response)
-
-        list_response = aws_client.events.list_api_destinations(NamePrefix=destination_name)
-        api_destination_snapshots.match("list-api-destinations", list_response)
-
-        update_response = aws_client.events.update_api_destination(
-            Name=destination_name,
-            ConnectionArn=connection_arn,
-            HttpMethod="PUT",
-            InvocationEndpoint="https://example.com/api/v2",
-            Description="Updated API destination",
-        )
-        api_destination_snapshots.match("update-api-destination", update_response)
-
-        describe_updated_response = aws_client.events.describe_api_destination(
-            Name=destination_name
-        )
-        api_destination_snapshots.match(
-            "describe-updated-api-destination", describe_updated_response
+        events_put_rule(
+            Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
         )
 
-        delete_response = aws_client.events.delete_api_destination(Name=destination_name)
-        api_destination_snapshots.match("delete-api-destination", delete_response)
-
-        with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as exc_info:
-            aws_client.events.describe_api_destination(Name=destination_name)
-        api_destination_snapshots.match(
-            "describe-api-destination-not-found-error", exc_info.value.response
+        target_id_one = f"test-With_valid.Characters-{short_uid()}"
+        target_id_two = f"test-With_valid.Characters-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {"Id": target_id_one, "Arn": queue_arn, "InputPath": "$.detail"},
+                {"Id": target_id_two, "Arn": queue_arn, "InputPath": "$.doesnotexist"},
+            ],
         )
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(target_id_one, "target-id-one"),
+                snapshot.transform.regex(target_id_two, "target-id-two"),
+                snapshot.transform.regex(queue_arn, "target-arn"),
+            ]
+        )
+
+        response = aws_client.events.list_targets_by_rule(Rule=rule_name)
+        snapshot.match("list-targets", response)
 
     @markers.aws.validated
-    @pytest.mark.skipif(is_old_provider(), reason="V1 provider does not support this feature")
-    def test_create_api_destination_invalid_parameters(
-        self, aws_client, api_destination_snapshots, connection_name, destination_name
+    def test_put_multiple_targets_with_same_arn_across_different_rules(
+        self, sqs_create_queue, sqs_get_queue_arn, events_put_rule, snapshot, aws_client
     ):
-        with pytest.raises(ClientError) as e:
-            aws_client.events.create_api_destination(
-                Name=destination_name,
-                ConnectionArn="invalid-connection-arn",
-                HttpMethod="INVALID_METHOD",
-                InvocationEndpoint="invalid-endpoint",
-            )
-        api_destination_snapshots.match(
-            "create-api-destination-invalid-parameters-error", e.value.response
+        """Targets attached to different rules can have the same ARN"""
+        rule_one_name = f"test-rule-one-{short_uid()}"
+        rule_two_name = f"test-rule-two-{short_uid()}"
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        events_put_rule(
+            Name=rule_one_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
+        )
+        events_put_rule(
+            Name=rule_two_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
         )
 
-    @markers.aws.validated
-    @pytest.mark.skipif(is_old_provider(), reason="V1 provider does not support this feature")
-    def test_create_api_destination_name_validation(
-        self, aws_client, api_destination_snapshots, create_connection, connection_name
-    ):
-        invalid_name = "Invalid Name With Spaces!"
-
-        connection_response = create_connection(API_DESTINATION_AUTHS[0])
-        connection_arn = connection_response["ConnectionArn"]
-
-        with pytest.raises(ClientError) as e:
-            aws_client.events.create_api_destination(
-                Name=invalid_name,
-                ConnectionArn=connection_arn,
-                HttpMethod="POST",
-                InvocationEndpoint="https://example.com/api",
-            )
-        api_destination_snapshots.match(
-            "create-api-destination-invalid-name-error", e.value.response
+        target_id = f"test-With_valid.Characters-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_one_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
+            ],
         )
+
+        aws_client.events.put_targets(
+            Rule=rule_two_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn, "InputPath": "$.doesnotexist"},
+            ],
+        )
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(target_id, "target-id"),
+                snapshot.transform.regex(queue_arn, "target-arn"),
+            ]
+        )
+
+        response = aws_client.events.list_targets_by_rule(Rule=rule_one_name)
+        snapshot.match("list-targets-rule-one", response)
+
+        response = aws_client.events.list_targets_by_rule(Rule=rule_two_name)
+        snapshot.match("list-targets-rule-two", response)

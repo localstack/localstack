@@ -27,7 +27,7 @@ from .configurators import (
     PortConfigurator,
     SourceVolumeMountConfigurator,
 )
-from .paths import HostPaths
+from .paths import HOST_PATH_MAPPINGS, HostPaths
 
 
 @click.command("run")
@@ -36,7 +36,7 @@ from .paths import HostPaths
     type=str,
     required=False,
     help="Overwrite the container image to be used (defaults to localstack/localstack or "
-    "localstack/localstack-pro.",
+    "localstack/localstack-pro).",
 )
 @click.option(
     "--volume-dir",
@@ -66,7 +66,7 @@ from .paths import HostPaths
     "--mount-source/--no-mount-source",
     is_flag=True,
     default=True,
-    help="Mount source files from localstack, localstack-ext, and moto into the container.",
+    help="Mount source files from localstack and localstack-ext. Use --local-packages for optional dependencies such as moto.",
 )
 @click.option(
     "--mount-dependencies/--no-mount-dependencies",
@@ -114,6 +114,14 @@ from .paths import HostPaths
     required=False,
     help="Docker network to start the container in",
 )
+@click.option(
+    "--local-packages",
+    "-l",
+    multiple=True,
+    required=False,
+    type=click.Choice(HOST_PATH_MAPPINGS.keys(), case_sensitive=False),
+    help="Mount specified packages into the container",
+)
 @click.argument("command", nargs=-1, required=False)
 def run(
     image: str = None,
@@ -130,6 +138,7 @@ def run(
     publish: Tuple = (),
     entrypoint: str = None,
     network: str = None,
+    local_packages: list[str] | None = None,
     command: str = None,
 ):
     """
@@ -214,6 +223,16 @@ def run(
         │   ├── tests
         │   └── ...
 
+    You can choose which local source repositories are mounted in. For example, if `moto` and `rolo` are
+    both present, only mount `rolo` into the container.
+
+    \b
+        python -m localstack.dev.run --local-packages rolo
+
+    If both `rolo` and `moto` are available and both should be mounted, use the flag twice.
+
+    \b
+        python -m localstack.dev.run --local-packages rolo --local-packages moto
     """
     with console.status("Configuring") as status:
         env_vars = parse_env_vars(env)
@@ -288,6 +307,7 @@ def run(
                 SourceVolumeMountConfigurator(
                     host_paths=host_paths,
                     pro=pro,
+                    chosen_packages=local_packages,
                 )
             )
         if mount_entrypoints:

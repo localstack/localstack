@@ -201,6 +201,7 @@ from localstack.services.lambda_.invocation.runtime_executor import get_runtime_
 from localstack.services.lambda_.lambda_utils import HINT_LOG
 from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
 from localstack.services.lambda_.provider_utils import (
+    LambdaLayerVersionIdentifier,
     get_function_version,
     get_function_version_from_arn,
 )
@@ -209,7 +210,6 @@ from localstack.services.lambda_.runtimes import (
     DEPRECATED_RUNTIMES,
     DEPRECATED_RUNTIMES_UPGRADES,
     RUNTIMES_AGGREGATED,
-    SNAP_START_SUPPORTED_RUNTIMES,
     VALID_RUNTIMES,
 )
 from localstack.services.lambda_.urlrouter import FunctionUrlRouter
@@ -225,6 +225,7 @@ from localstack.utils.aws.arns import (
 )
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import PaginatedList
+from localstack.utils.event_matcher import validate_event_pattern
 from localstack.utils.lambda_debug_mode.lambda_debug_mode_session import LambdaDebugModeSession
 from localstack.utils.strings import get_random_hex, short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition
@@ -685,10 +686,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         ]:
             raise ValidationException(
                 f"1 validation error detected: Value '{apply_on}' at 'snapStart.applyOn' failed to satisfy constraint: Member must satisfy enum value set: [PublishedVersions, None]"
-            )
-        if runtime not in SNAP_START_SUPPORTED_RUNTIMES:
-            raise InvalidParameterValueException(
-                f"{runtime} is not supported for SnapStart enabled functions.", Type="User"
             )
 
     def _validate_layers(self, new_layers: list[str], region: str, account_id: str):
@@ -1889,6 +1886,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # TODO: test whether stream ARNs are valid sources for Pipes or ESM or whether only DynamoDB table ARNs work
         is_create_esm_request = context.operation.name == self.create_event_source_mapping.operation
 
+        if destination_config := request.get("DestinationConfig"):
+            if "OnSuccess" in destination_config:
+                raise InvalidParameterValueException(
+                    "Unsupported DestinationConfig parameter for given event source mapping type.",
+                    Type="User",
+                )
+
         service = None
         if "SelfManagedEventSource" in request:
             service = "kafka"
@@ -1913,6 +1917,20 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
                     Type="User",
                 )
+
+        if (filter_criteria := request.get("FilterCriteria")) is not None:
+            for filter_ in filter_criteria.get("Filters", []):
+                pattern_str = filter_.get("Pattern")
+                if not pattern_str or not isinstance(pattern_str, str):
+                    raise InvalidParameterValueException(
+                        "Invalid filter pattern definition.", Type="User"
+                    )
+
+                if not validate_event_pattern(pattern_str):
+                    raise InvalidParameterValueException(
+                        "Invalid filter pattern definition.", Type="User"
+                    )
+
         # Can either have a FunctionName (i.e CreateEventSourceMapping request) or
         # an internal EventSourceMappingConfiguration representation
         request_function_name = request.get("FunctionName") or request.get("FunctionArn")
@@ -3507,8 +3525,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         layer = state.layers[layer_name]
         with layer.next_version_lock:
-            next_version = layer.next_version
-            layer.next_version += 1
+            next_version = LambdaLayerVersionIdentifier(
+                account_id=account, region=region, layer_name=layer_name
+            ).generate(next_version=layer.next_version)
+            # When creating a layer with user defined layer version, it is possible that we
+            # create layer versions out of order.
+            # ie. a user could replicate layer v2 then layer v1. It is important to always keep the maximum possible
+            # value for next layer to avoid overwriting existing versions
+            if layer.next_version <= next_version:
+                # We don't need to update layer.next_version if the created version is lower than the "next in line"
+                layer.next_version = max(next_version, layer.next_version) + 1
 
         # creating a new layer
         if content.get("ZipFile"):
@@ -3589,7 +3615,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         store = lambda_stores[account_id][region_name]
-        layer_version = store.layers.get(layer_name, {}).layer_versions.get(layer_version)
+        if not (layers := store.layers.get(layer_name)):
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )
+
+        layer_version = layers.layer_versions.get(layer_version)
 
         if not layer_version:
             raise ResourceNotFoundException(

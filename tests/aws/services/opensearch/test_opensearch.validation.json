@@ -4,5 +4,8 @@
   },
   "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_list_versions": {
     "last_validated_date": "2024-07-16T13:18:18+00:00"
+  },
+  "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_sql_plugin": {
+    "last_validated_date": "2024-12-03T21:07:16+00:00"
   }
 }

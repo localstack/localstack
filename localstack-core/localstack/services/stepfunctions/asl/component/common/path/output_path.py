@@ -1,50 +1,51 @@
-import abc
 from typing import Final, Optional
 
-from localstack.services.stepfunctions.asl.component.common.variable_sample import VariableSample
+from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
+from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
+    FailureEvent,
+    FailureEventException,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
+    StatesErrorName,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
+    StatesErrorNameType,
+)
+from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
+    StringSampler,
+)
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.utils.json_path import extract_json
+from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
+from localstack.services.stepfunctions.asl.utils.json_path import NoSuchJsonPathError
 
 
-class OutputPath(EvalComponent, abc.ABC): ...
+class OutputPath(EvalComponent):
+    string_sampler: Final[Optional[StringSampler]]
 
-
-class OutputPathBase(OutputPath):
-    DEFAULT_PATH: Final[str] = "$"
-
-    output_path: Final[Optional[str]]
-
-    def __init__(self, output_path: Optional[str]):
-        self.output_path = output_path
+    def __init__(self, string_sampler: Optional[StringSampler]):
+        self.string_sampler = string_sampler
 
     def _eval_body(self, env: Environment) -> None:
-        if self.output_path is None:
+        if self.string_sampler is None:
             env.states.reset(input_value=dict())
-        else:
-            current_output = env.stack.pop()
-            state_output = extract_json(self.output_path, current_output)
-            env.states.reset(input_value=state_output)
-
-
-class OutputPathContextObject(OutputPathBase):
-    def __init__(self, output_path: str):
-        output_path_tail = output_path[1:]
-        super().__init__(output_path=output_path_tail)
-
-    def _eval_body(self, env: Environment) -> None:
-        env.stack.pop()  # Discards the state output in favour of the context object path.
-        value = extract_json(self.output_path, env.states.context_object.context_object_data)
-        env.states.reset(input_value=value)
-
-
-class OutputPathVar(OutputPath):
-    variable_sample: Final[VariableSample]
-
-    def __init__(self, variable_sample: VariableSample):
-        self.variable_sample = variable_sample
-
-    def _eval_body(self, env: Environment) -> None:
-        self.variable_sample.eval(env=env)
-        value = env.stack.pop()
-        env.states.reset(input_value=value)
+            return
+        try:
+            self.string_sampler.eval(env=env)
+        except NoSuchJsonPathError as no_such_json_path_error:
+            json_path = no_such_json_path_error.json_path
+            cause = f"Invalid path '{json_path}' : No results for path: $['{json_path[2:]}']"
+            raise FailureEventException(
+                failure_event=FailureEvent(
+                    env=env,
+                    error_name=StatesErrorName(typ=StatesErrorNameType.StatesRuntime),
+                    event_type=HistoryEventType.TaskFailed,
+                    event_details=EventDetails(
+                        taskFailedEventDetails=TaskFailedEventDetails(
+                            error=StatesErrorNameType.StatesRuntime.to_name(), cause=cause
+                        )
+                    ),
+                )
+            )
+        output_value = env.stack.pop()
+        env.states.reset(output_value)

@@ -904,10 +904,10 @@ def opensearch_wait_for_cluster(aws_client):
     def _wait_for_cluster(domain_name: str):
         def finished_processing():
             status = aws_client.opensearch.describe_domain(DomainName=domain_name)["DomainStatus"]
-            return status["Processing"] is False
+            return status["Processing"] is False and "Endpoint" in status
 
         assert poll_condition(
-            finished_processing, timeout=5 * 60
+            finished_processing, timeout=25 * 60, **({"interval": 10} if is_aws_cloud() else {})
         ), f"could not start domain: {domain_name}"
 
     return _wait_for_cluster
@@ -1386,7 +1386,8 @@ def create_echo_http_server(aws_client, create_lambda_function):
     from localstack.aws.api.lambda_ import Runtime
 
     lambda_client = aws_client.lambda_
-    handler_code = textwrap.dedent("""
+    handler_code = textwrap.dedent(
+        """
     import json
     import os
 
@@ -1419,7 +1420,8 @@ def create_echo_http_server(aws_client, create_lambda_function):
             "origin": event["requestContext"]["http"].get("sourceIp", ""),
             "path": event["requestContext"]["http"].get("path", ""),
         }
-        return make_response(response)""")
+        return make_response(response)"""
+    )
 
     def _create_echo_http_server(trim_x_headers: bool = False) -> str:
         """Creates a server that will echo any request. Any request will be returned with the
@@ -1806,40 +1808,6 @@ def firehose_create_delivery_stream(wait_for_delivery_stream_ready, aws_client):
 
 
 @pytest.fixture
-def events_create_rule(aws_client):
-    rules = []
-
-    def _create_rule(**kwargs):
-        rule_name = kwargs["Name"]
-        bus_name = kwargs.get("EventBusName", "")
-        pattern = kwargs.get("EventPattern", {})
-        schedule = kwargs.get("ScheduleExpression", "")
-        rule_arn = aws_client.events.put_rule(
-            Name=rule_name,
-            EventBusName=bus_name,
-            EventPattern=json.dumps(pattern),
-            ScheduleExpression=schedule,
-        )["RuleArn"]
-        rules.append({"name": rule_name, "bus": bus_name})
-        return rule_arn
-
-    yield _create_rule
-
-    for rule in rules:
-        targets = aws_client.events.list_targets_by_rule(
-            Rule=rule["name"], EventBusName=rule["bus"]
-        )["Targets"]
-
-        targetIds = [target["Id"] for target in targets]
-        if len(targetIds) > 0:
-            aws_client.events.remove_targets(
-                Rule=rule["name"], EventBusName=rule["bus"], Ids=targetIds
-            )
-
-        aws_client.events.delete_rule(Name=rule["name"], EventBusName=rule["bus"])
-
-
-@pytest.fixture
 def ses_configuration_set(aws_client):
     configuration_set_names = []
 
@@ -2169,7 +2137,7 @@ def echo_http_server_post(echo_http_server):
     if is_aws_cloud():
         return f"{PUBLIC_HTTP_ECHO_SERVER_URL}/post"
 
-    return f"{echo_http_server}/post"
+    return f"{echo_http_server}post"
 
 
 def create_policy_doc(effect: str, actions: List, resource=None) -> Dict:
@@ -2311,6 +2279,193 @@ def hosted_zone(aws_client):
 
 
 @pytest.fixture
+def openapi_validate(monkeypatch):
+    monkeypatch.setattr(config, "OPENAPI_VALIDATE_RESPONSE", "true")
+    monkeypatch.setattr(config, "OPENAPI_VALIDATE_REQUEST", "true")
+
+
+@pytest.fixture
+def set_resource_custom_id():
+    set_ids = []
+
+    def _set_custom_id(resource_identifier: ResourceIdentifier, custom_id):
+        localstack_id_manager.set_custom_id(
+            resource_identifier=resource_identifier, custom_id=custom_id
+        )
+        set_ids.append(resource_identifier)
+
+    yield _set_custom_id
+
+    for resource_identifier in set_ids:
+        localstack_id_manager.unset_custom_id(resource_identifier)
+
+
+###############################
+# Events (EventBridge) fixtures
+###############################
+
+
+@pytest.fixture
+def events_create_event_bus(aws_client, region_name, account_id):
+    event_bus_names = []
+
+    def _create_event_bus(**kwargs):
+        if "Name" not in kwargs:
+            kwargs["Name"] = f"test-event-bus-{short_uid()}"
+
+        response = aws_client.events.create_event_bus(**kwargs)
+        event_bus_names.append(kwargs["Name"])
+        return response
+
+    yield _create_event_bus
+
+    for event_bus_name in event_bus_names:
+        try:
+            response = aws_client.events.list_rules(EventBusName=event_bus_name)
+            rules = [rule["Name"] for rule in response["Rules"]]
+
+            # Delete all rules for the current event bus
+            for rule in rules:
+                try:
+                    response = aws_client.events.list_targets_by_rule(
+                        Rule=rule, EventBusName=event_bus_name
+                    )
+                    targets = [target["Id"] for target in response["Targets"]]
+
+                    # Remove all targets for the current rule
+                    if targets:
+                        for target in targets:
+                            aws_client.events.remove_targets(
+                                Rule=rule, EventBusName=event_bus_name, Ids=[target]
+                            )
+
+                    aws_client.events.delete_rule(Name=rule, EventBusName=event_bus_name)
+                except Exception as e:
+                    LOG.warning("Failed to delete rule %s: %s", rule, e)
+
+            # Delete archives for event bus
+            event_source_arn = (
+                f"arn:aws:events:{region_name}:{account_id}:event-bus/{event_bus_name}"
+            )
+            response = aws_client.events.list_archives(EventSourceArn=event_source_arn)
+            archives = [archive["ArchiveName"] for archive in response["Archives"]]
+            for archive in archives:
+                try:
+                    aws_client.events.delete_archive(ArchiveName=archive)
+                except Exception as e:
+                    LOG.warning("Failed to delete archive %s: %s", archive, e)
+
+            aws_client.events.delete_event_bus(Name=event_bus_name)
+        except Exception as e:
+            LOG.warning("Failed to delete event bus %s: %s", event_bus_name, e)
+
+
+@pytest.fixture
+def events_put_rule(aws_client):
+    rules = []
+
+    def _put_rule(**kwargs):
+        if "Name" not in kwargs:
+            kwargs["Name"] = f"rule-{short_uid()}"
+
+        response = aws_client.events.put_rule(**kwargs)
+        rules.append((kwargs["Name"], kwargs.get("EventBusName", "default")))
+        return response
+
+    yield _put_rule
+
+    for rule, event_bus_name in rules:
+        try:
+            response = aws_client.events.list_targets_by_rule(
+                Rule=rule, EventBusName=event_bus_name
+            )
+            targets = [target["Id"] for target in response["Targets"]]
+
+            # Remove all targets for the current rule
+            if targets:
+                for target in targets:
+                    aws_client.events.remove_targets(
+                        Rule=rule, EventBusName=event_bus_name, Ids=[target]
+                    )
+
+            aws_client.events.delete_rule(Name=rule, EventBusName=event_bus_name)
+        except Exception as e:
+            LOG.warning("Failed to delete rule %s: %s", rule, e)
+
+
+@pytest.fixture
+def events_create_rule(aws_client):
+    rules = []
+
+    def _create_rule(**kwargs):
+        rule_name = kwargs["Name"]
+        bus_name = kwargs.get("EventBusName", "")
+        pattern = kwargs.get("EventPattern", {})
+        schedule = kwargs.get("ScheduleExpression", "")
+        rule_arn = aws_client.events.put_rule(
+            Name=rule_name,
+            EventBusName=bus_name,
+            EventPattern=json.dumps(pattern),
+            ScheduleExpression=schedule,
+        )["RuleArn"]
+        rules.append({"name": rule_name, "bus": bus_name})
+        return rule_arn
+
+    yield _create_rule
+
+    for rule in rules:
+        targets = aws_client.events.list_targets_by_rule(
+            Rule=rule["name"], EventBusName=rule["bus"]
+        )["Targets"]
+
+        targetIds = [target["Id"] for target in targets]
+        if len(targetIds) > 0:
+            aws_client.events.remove_targets(
+                Rule=rule["name"], EventBusName=rule["bus"], Ids=targetIds
+            )
+
+        aws_client.events.delete_rule(Name=rule["name"], EventBusName=rule["bus"])
+
+
+@pytest.fixture
+def sqs_as_events_target(aws_client, sqs_get_queue_arn):
+    queue_urls = []
+
+    def _sqs_as_events_target(queue_name: str | None = None) -> tuple[str, str]:
+        if not queue_name:
+            queue_name = f"tests-queue-{short_uid()}"
+        sqs_client = aws_client.sqs
+        queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
+        queue_urls.append(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
+        policy = {
+            "Version": "2012-10-17",
+            "Id": f"sqs-eventbridge-{short_uid()}",
+            "Statement": [
+                {
+                    "Sid": f"SendMessage-{short_uid()}",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": "sqs:SendMessage",
+                    "Resource": queue_arn,
+                }
+            ],
+        }
+        sqs_client.set_queue_attributes(
+            QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
+        )
+        return queue_url, queue_arn
+
+    yield _sqs_as_events_target
+
+    for queue_url in queue_urls:
+        try:
+            aws_client.sqs.delete_queue(QueueUrl=queue_url)
+        except Exception as e:
+            LOG.debug("error cleaning up queue %s: %s", queue_url, e)
+
+
+@pytest.fixture
 def clean_up(
     aws_client,
 ):  # TODO: legacy clean up fixtures for eventbridge - remove and use individual fixtures for creating resources instead
@@ -2350,25 +2505,3 @@ def clean_up(
             call_safe(_delete_log_group)
 
     yield _clean_up
-
-
-@pytest.fixture
-def openapi_validate(monkeypatch):
-    monkeypatch.setattr(config, "OPENAPI_VALIDATE_RESPONSE", "true")
-    monkeypatch.setattr(config, "OPENAPI_VALIDATE_REQUEST", "true")
-
-
-@pytest.fixture
-def set_resource_custom_id():
-    set_ids = []
-
-    def _set_custom_id(resource_identifier: ResourceIdentifier, custom_id):
-        localstack_id_manager.set_custom_id(
-            resource_identifier=resource_identifier, custom_id=custom_id
-        )
-        set_ids.append(resource_identifier)
-
-    yield _set_custom_id
-
-    for resource_identifier in set_ids:
-        localstack_id_manager.unset_custom_id(resource_identifier)

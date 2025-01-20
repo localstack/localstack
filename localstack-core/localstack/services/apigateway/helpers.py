@@ -4,7 +4,7 @@ import hashlib
 import json
 import logging
 from datetime import datetime
-from typing import List, Optional, Union
+from typing import List, Optional, TypedDict, Union
 from urllib import parse as urlparse
 
 from jsonpatch import apply_patch
@@ -24,6 +24,7 @@ from localstack.aws.api.apigateway import (
     IntegrationType,
     Model,
     NotFoundException,
+    PutRestApiRequest,
     RequestValidator,
 )
 from localstack.constants import (
@@ -39,7 +40,8 @@ from localstack.services.apigateway.models import (
     apigateway_stores,
 )
 from localstack.utils import common
-from localstack.utils.strings import short_uid, to_bytes
+from localstack.utils.json import parse_json_or_yaml
+from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
@@ -89,6 +91,11 @@ class OpenAPIExt:
     REQUEST_VALIDATOR = "x-amazon-apigateway-request-validator"
     REQUEST_VALIDATORS = "x-amazon-apigateway-request-validators"
     TAG_VALUE = "x-amazon-apigateway-tag-value"
+
+
+class AuthorizerConfig(TypedDict):
+    authorizer: Authorizer
+    authorization_scopes: Optional[list[str]]
 
 
 # TODO: make the CRUD operations in this file generic for the different model types (authorizes, validators, ...)
@@ -470,11 +477,18 @@ def add_documentation_parts(rest_api_container, documentation):
 
 
 def import_api_from_openapi_spec(
-    rest_api: MotoRestAPI, body: dict, context: RequestContext
-) -> Optional[MotoRestAPI]:
+    rest_api: MotoRestAPI, context: RequestContext, request: PutRestApiRequest
+) -> tuple[MotoRestAPI, list[str]]:
     """Import an API from an OpenAPI spec document"""
+    body = parse_json_or_yaml(to_str(request["body"].read()))
 
+    warnings = []
+
+    # TODO There is an issue with the botocore specs so the parameters doesn't get populated as it should
+    #  Once this is fixed we can uncomment the code below instead of taking the parameters the context request
+    # query_params = request.get("parameters") or {}
     query_params: dict = context.request.values.to_dict()
+
     resolved_schema = resolve_references(copy.deepcopy(body), rest_api_id=rest_api.id)
     account_id = context.account_id
     region_name = context.region
@@ -564,14 +578,14 @@ def import_api_from_openapi_spec(
 
             authorizers[security_scheme_name] = authorizer
 
-    def get_authorizer(path_payload: dict) -> Optional[Authorizer]:
+    def get_authorizer(path_payload: dict) -> Optional[AuthorizerConfig]:
         if not (security_schemes := path_payload.get("security")):
             return None
 
         for security_scheme in security_schemes:
-            for security_scheme_name in security_scheme.keys():
+            for security_scheme_name, scopes in security_scheme.items():
                 if authorizer := authorizers.get(security_scheme_name):
-                    return authorizer
+                    return AuthorizerConfig(authorizer=authorizer, authorization_scopes=scopes)
 
     def get_or_create_path(abs_path: str, base_path: str):
         parts = abs_path.rstrip("/").replace("//", "/").split("/")
@@ -769,6 +783,21 @@ def import_api_from_openapi_spec(
                 else None
             )
 
+            if integration_request_parameters := method_integration.get("requestParameters"):
+                validated_parameters = {}
+                for k, v in integration_request_parameters.items():
+                    if isinstance(v, str):
+                        validated_parameters[k] = v
+                    else:
+                        # TODO This fixes for boolean serialization. We should validate how other types behave
+                        value = str(v).lower()
+                        warnings.append(
+                            "Invalid format for 'requestParameters'. Expected type string for property "
+                            f"'{k}' of resource '{resource.get_path()}' and method '{method_name}' but got '{value}'"
+                        )
+
+                integration_request_parameters = validated_parameters
+
             integration = Integration(
                 http_method=integration_method,
                 uri=method_integration.get("uri"),
@@ -777,7 +806,7 @@ def import_api_from_openapi_spec(
                     "passthroughBehavior", "WHEN_NO_MATCH"
                 ).upper(),
                 request_templates=method_integration.get("requestTemplates"),
-                request_parameters=method_integration.get("requestParameters"),
+                request_parameters=integration_request_parameters,
                 cache_namespace=resource.id,
                 timeout_in_millis=method_integration.get("timeoutInMillis") or "29000",
                 content_handling=method_integration.get("contentHandling"),
@@ -815,7 +844,7 @@ def import_api_from_openapi_spec(
         kwargs = {}
 
         if authorizer := get_authorizer(method_schema) or default_authorizer:
-            method_authorizer = authorizer or default_authorizer
+            method_authorizer = authorizer["authorizer"]
             # override the authorizer_type if it's a TOKEN or REQUEST to CUSTOM
             if (authorizer_type := method_authorizer["type"]) in ("TOKEN", "REQUEST"):
                 authorization_type = "CUSTOM"
@@ -823,6 +852,9 @@ def import_api_from_openapi_spec(
                 authorization_type = authorizer_type
 
             kwargs["authorizer_id"] = method_authorizer["id"]
+
+            if authorization_scopes := authorizer.get("authorization_scopes"):
+                kwargs["authorization_scopes"] = authorization_scopes
 
         return child.add_method(
             method,
@@ -939,7 +971,8 @@ def import_api_from_openapi_spec(
     documentation = resolved_schema.get(OpenAPIExt.DOCUMENTATION)
     if documentation:
         add_documentation_parts(rest_api_container, documentation)
-    return rest_api
+
+    return rest_api, warnings
 
 
 def is_greedy_path(path_part: str) -> bool:

@@ -27,7 +27,7 @@ from localstack.aws.api.lambda_ import Runtime
 # 6. Review special tests including:
 # a) [ext] tests.aws.services.lambda_.test_lambda_endpoint_injection
 # 7. Before merging, run the ext integration tests to cover transparent endpoint injection testing.
-# 8. Add the new runtime to the K8 image build: https://github.com/localstack/lambda-cve-mitigation
+# 8. Add the new runtime to the K8 image build: https://github.com/localstack/lambda-images
 # 9. Inform the web team to update the resource browser (consider offering an endpoint in the future)
 
 # Mapping from a) AWS Lambda runtime identifier => b) official AWS image on Amazon ECR Public
@@ -36,7 +36,7 @@ from localstack.aws.api.lambda_ import Runtime
 # => Synchronize the order with the "Supported runtimes" under "AWS Lambda runtimes" (a)
 # => Add comments for deprecated runtimes using <Deprecation date> => <Block function create> => <Block function update>
 IMAGE_MAPPING: dict[Runtime, str] = {
-    # "nodejs22.x": "nodejs:22", expected November 2024
+    Runtime.nodejs22_x: "nodejs:22",
     Runtime.nodejs20_x: "nodejs:20",
     Runtime.nodejs18_x: "nodejs:18",
     Runtime.nodejs16_x: "nodejs:16",
@@ -111,6 +111,7 @@ ALL_RUNTIMES: list[Runtime] = list(IMAGE_MAPPING.keys())
 # => Remove deprecated runtimes from this testing list
 RUNTIMES_AGGREGATED = {
     "nodejs": [
+        Runtime.nodejs22_x,
         Runtime.nodejs20_x,
         Runtime.nodejs18_x,
         Runtime.nodejs16_x,
@@ -148,11 +149,7 @@ TESTED_RUNTIMES: list[Runtime] = [
     runtime for runtime_group in RUNTIMES_AGGREGATED.values() for runtime in runtime_group
 ]
 
-# An unordered list of snapstart-enabled runtimes. Related to snapshots in test_snapstart_exceptions
-# https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html
-SNAP_START_SUPPORTED_RUNTIMES = [Runtime.java11, Runtime.java17, Runtime.java21]
-
 # An ordered list of all Lambda runtimes considered valid by AWS. Matching snapshots in test_create_lambda_exceptions
-VALID_RUNTIMES: str = "[nodejs20.x, provided.al2023, python3.12, python3.13, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9]"
+VALID_RUNTIMES: str = "[nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9]"
 # An ordered list of all Lambda runtimes for layers considered valid by AWS. Matching snapshots in test_layer_exceptions
 VALID_LAYER_RUNTIMES: str = "[ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, java21, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, dotnet8, java17, nodejs, nodejs4.3, java8.al2, go1.x, nodejs20.x, go1.9, byol, nodejs10.x, provided.al2023, nodejs22.x, python3.10, java8, nodejs12.x, python3.11, nodejs8.x, python3.12, nodejs14.x, nodejs8.9, python3.13, nodejs16.x, provided.al2, nodejs4.3-edge, nodejs18.x, ruby3.2, python3.4, ruby3.3, ruby2.5, python3.6, python2.7]"

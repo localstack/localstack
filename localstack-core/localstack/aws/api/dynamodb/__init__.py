@@ -61,6 +61,7 @@ PartiQLStatement = str
 PolicyRevisionId = str
 PositiveIntegerObject = int
 ProjectionExpression = str
+RecoveryPeriodInDays = int
 RegionName = str
 ReplicaStatusDescription = str
 ReplicaStatusPercentProgress = str
@@ -243,6 +244,11 @@ class InputFormat(StrEnum):
 class KeyType(StrEnum):
     HASH = "HASH"
     RANGE = "RANGE"
+
+
+class MultiRegionConsistency(StrEnum):
+    EVENTUAL = "EVENTUAL"
+    STRONG = "STRONG"
 
 
 class PointInTimeRecoveryStatus(StrEnum):
@@ -507,6 +513,12 @@ class ReplicaAlreadyExistsException(ServiceException):
 
 class ReplicaNotFoundException(ServiceException):
     code: str = "ReplicaNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class ReplicatedWriteConflictException(ServiceException):
+    code: str = "ReplicatedWriteConflictException"
     sender_fault: bool = False
     status_code: int = 400
 
@@ -942,6 +954,7 @@ class ConditionCheck(TypedDict, total=False):
 
 class PointInTimeRecoveryDescription(TypedDict, total=False):
     PointInTimeRecoveryStatus: Optional[PointInTimeRecoveryStatus]
+    RecoveryPeriodInDays: Optional[RecoveryPeriodInDays]
     EarliestRestorableDateTime: Optional[Date]
     LatestRestorableDateTime: Optional[Date]
 
@@ -1210,6 +1223,7 @@ class TableDescription(TypedDict, total=False):
     DeletionProtectionEnabled: Optional[DeletionProtectionEnabled]
     OnDemandThroughput: Optional[OnDemandThroughput]
     WarmThroughput: Optional[TableWarmThroughputDescription]
+    MultiRegionConsistency: Optional[MultiRegionConsistency]
 
 
 class CreateTableOutput(TypedDict, total=False):
@@ -1875,6 +1889,7 @@ class ListTagsOfResourceOutput(TypedDict, total=False):
 
 class PointInTimeRecoverySpecification(TypedDict, total=False):
     PointInTimeRecoveryEnabled: BooleanObject
+    RecoveryPeriodInDays: Optional[RecoveryPeriodInDays]
 
 
 class Put(TypedDict, total=False):
@@ -2237,6 +2252,7 @@ class UpdateTableInput(ServiceRequest):
     ReplicaUpdates: Optional[ReplicationGroupUpdateList]
     TableClass: Optional[TableClass]
     DeletionProtectionEnabled: Optional[DeletionProtectionEnabled]
+    MultiRegionConsistency: Optional[MultiRegionConsistency]
     OnDemandThroughput: Optional[OnDemandThroughput]
     WarmThroughput: Optional[WarmThroughput]
 
@@ -2878,6 +2894,7 @@ class DynamodbApi:
         replica_updates: ReplicationGroupUpdateList = None,
         table_class: TableClass = None,
         deletion_protection_enabled: DeletionProtectionEnabled = None,
+        multi_region_consistency: MultiRegionConsistency = None,
         on_demand_throughput: OnDemandThroughput = None,
         warm_throughput: WarmThroughput = None,
         **kwargs,

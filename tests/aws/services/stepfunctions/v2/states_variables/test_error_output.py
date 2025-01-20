@@ -40,7 +40,7 @@ class TestStateVariablesTemplate:
     def test_task_catch_error_output(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         create_lambda_function,
@@ -64,8 +64,8 @@ class TestStateVariablesTemplate:
         )
         exec_input = json.dumps({"inputData": "dummy"})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -87,7 +87,7 @@ class TestStateVariablesTemplate:
     def test_catch_error_variable_sampling(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         create_lambda_function,
@@ -111,8 +111,8 @@ class TestStateVariablesTemplate:
         )
         exec_input = json.dumps({"inputData": "dummy"})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -134,7 +134,7 @@ class TestStateVariablesTemplate:
     def test_task_catch_error_with_retry(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         create_lambda_function,
@@ -158,8 +158,8 @@ class TestStateVariablesTemplate:
         )
         exec_input = json.dumps({"inputData": "dummy"})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -184,7 +184,7 @@ class TestStateVariablesTemplate:
     def test_map_catch_error(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         create_lambda_function,
@@ -208,8 +208,8 @@ class TestStateVariablesTemplate:
         )
         exec_input = json.dumps({"items": [1, 2, 3]})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -234,7 +234,7 @@ class TestStateVariablesTemplate:
     def test_parallel_catch_error(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         create_lambda_function,
@@ -259,8 +259,8 @@ class TestStateVariablesTemplate:
         )
         exec_input = json.dumps({"inputData": "dummy"})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,

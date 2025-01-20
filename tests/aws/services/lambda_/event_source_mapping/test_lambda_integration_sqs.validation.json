@@ -5,6 +5,18 @@
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_event_source_mapping_default_batch_size": {
     "last_validated_date": "2024-10-12T13:37:18+00:00"
   },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[and-filter]": {
+    "last_validated_date": "2024-12-10T17:37:02+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[and]": {
+    "last_validated_date": "2024-12-10T19:35:53+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[exists-filter]": {
+    "last_validated_date": "2024-12-10T17:37:40+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[exists]": {
+    "last_validated_date": "2024-12-10T19:36:23+00:00"
+  },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[filter0-item_matching0-item_not_matching0]": {
     "last_validated_date": "2024-10-12T13:38:37+00:00"
   },
@@ -29,8 +41,53 @@
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[filter7-item_matching7-item_not_matching7]": {
     "last_validated_date": "2024-10-12T13:43:31+00:00"
   },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[numeric-bigger]": {
+    "last_validated_date": "2024-12-10T19:37:09+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[numeric-prefix]": {
+    "last_validated_date": "2024-12-10T17:40:32+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[numeric-range]": {
+    "last_validated_date": "2024-12-10T19:38:27+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[numeric-smaller]": {
+    "last_validated_date": "2024-12-10T19:37:54+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[or-filter]": {
+    "last_validated_date": "2024-12-10T17:36:19+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[or]": {
+    "last_validated_date": "2024-12-10T19:35:18+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[prefix]": {
+    "last_validated_date": "2024-12-10T19:47:21+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[single-filter]": {
+    "last_validated_date": "2024-12-10T17:35:39+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[single]": {
+    "last_validated_date": "2024-12-10T19:34:31+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[valid-json-filter]": {
+    "last_validated_date": "2024-12-10T19:40:27+00:00"
+  },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping": {
-    "last_validated_date": "2024-10-12T13:38:01+00:00"
+    "last_validated_date": "2024-11-25T15:46:54+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batch_size[10000]": {
+    "last_validated_date": "2024-12-11T13:45:31+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batch_size[1000]": {
+    "last_validated_date": "2024-12-11T13:44:38+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batch_size[100]": {
+    "last_validated_date": "2024-12-11T13:43:48+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batch_size[15]": {
+    "last_validated_date": "2024-12-11T13:42:55+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batching_reserved_concurrency": {
+    "last_validated_date": "2024-11-29T13:29:53+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_update": {
     "last_validated_date": "2024-10-12T13:45:43+00:00"
@@ -48,7 +105,7 @@
     "last_validated_date": "2024-10-12T13:43:40+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_failing_lambda_retries_after_visibility_timeout": {
-    "last_validated_date": "2024-10-12T13:32:29+00:00"
+    "last_validated_date": "2024-11-25T12:12:47+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_fifo_message_group_parallelism": {
     "last_validated_date": "2024-10-12T13:37:00+00:00"

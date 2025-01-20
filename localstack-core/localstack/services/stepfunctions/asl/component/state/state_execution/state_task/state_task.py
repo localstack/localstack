@@ -19,6 +19,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.execu
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
     Credentials,
+    StateCredentials,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     Resource,
@@ -68,13 +69,13 @@ class StateTask(ExecutionState, abc.ABC):
 
         return parameters
 
-    def _eval_credentials(self, env: Environment) -> dict:
+    def _eval_state_credentials(self, env: Environment) -> StateCredentials:
         if not self.credentials:
-            task_credentials = dict()
+            state_credentials = StateCredentials(role_arn=env.aws_execution_details.role_arn)
         else:
             self.credentials.eval(env=env)
-            task_credentials = env.stack.pop()
-        return task_credentials
+            state_credentials = env.stack.pop()
+        return state_credentials
 
     def _get_timed_out_failure_event(self, env: Environment) -> FailureEvent:
         return FailureEvent(

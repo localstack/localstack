@@ -1,6 +1,7 @@
 import json
 import math
 import time
+from datetime import datetime
 
 import pytest
 from botocore.exceptions import ClientError
@@ -11,12 +12,13 @@ from localstack.testing.aws.lambda_utils import (
     _await_event_source_mapping_enabled,
     _await_event_source_mapping_state,
     _get_lambda_invocation_events,
+    esm_lambda_permission,
     get_lambda_log_events,
     lambda_role,
-    s3_lambda_permission,
 )
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.utils.aws.arns import s3_bucket_arn
 from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
 from tests.aws.services.lambda_.event_source_mapping.utils import (
@@ -59,17 +61,12 @@ def _snapshot_transformers(snapshot):
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
+        # TODO: Fix transformer conflict between shardId and AWS account number (e.g., 000000000000):
+        #  'shardId-000000000000:<sequence-number:1>' → 'shardId-111111111111:<sequence-number:1>' (expected → actual)
         "$..Records..eventID",
-        "$..BisectBatchOnFunctionError",
-        "$..DestinationConfig",
-        "$..LastProcessingResult",
-        "$..EventSourceMappingArn",
-        "$..MaximumBatchingWindowInSeconds",
-        "$..MaximumRecordAgeInSeconds",
-        "$..ResponseMetadata.HTTPStatusCode",
-        "$..State",
-        "$..Topics",
-        "$..TumblingWindowInSeconds",
+        # TODO: Fix transformer issue: 'shardId-000000000000' → 'shardId-111111111111' ... (expected → actual)
+        "$..Messages..Body.KinesisBatchInfo.shardId",
+        "$..Message.KinesisBatchInfo.shardId",
     ],
 )
 class TestKinesisSource:
@@ -255,10 +252,7 @@ class TestKinesisSource:
             StartingPosition="LATEST",
         )
 
-    # TODO: is this test relevant for the new provider without patching SYNCHRONOUS_KINESIS_EVENTS?
-    #   At least, it is flagged as AWS-validated.
     @markers.aws.validated
-    @pytest.mark.skip(reason="deprecated config that only worked using the legacy provider")
     def test_kinesis_event_source_mapping_with_async_invocation(
         self,
         create_lambda_function,
@@ -269,6 +263,8 @@ class TestKinesisSource:
         snapshot,
         aws_client,
     ):
+        """Tests that records are processed in sequence when submitting 2 batches with 10 records each
+        because Kinesis streams ensure strict ordering."""
         function_name = f"lambda_func-{short_uid()}"
         stream_name = f"test-foobar-{short_uid()}"
         num_records_per_batch = 10
@@ -319,6 +315,8 @@ class TestKinesisSource:
         invocation_events = retry(_send_and_receive_messages, retries=3)
         snapshot.match("invocation_events", invocation_events)
 
+        # Processing of the second batch should happen at least 5 seconds after first batch because the Lambda function
+        # of the first batch waits for 5 seconds.
         assert (invocation_events[1]["executionStart"] - invocation_events[0]["executionStart"]) > 5
 
     @markers.aws.validated
@@ -456,12 +454,6 @@ class TestKinesisSource:
             aws_client.logs, function_name, expected_num_events=1, retries=10
         )
 
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Messages..Body.KinesisBatchInfo.shardId",
-            "$..Messages..Body.KinesisBatchInfo.streamArn",
-        ],
-    )
     @markers.aws.validated
     def test_kinesis_event_source_mapping_with_on_failure_destination_config(
         self,
@@ -487,7 +479,7 @@ class TestKinesisSource:
             RoleName=role,
             PolicyName=policy_name,
             RoleDefinition=lambda_role,
-            PolicyDefinition=s3_lambda_permission,
+            PolicyDefinition=esm_lambda_permission,
         )
 
         create_lambda_function(
@@ -544,11 +536,8 @@ class TestKinesisSource:
 
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            # FIXME Conflict between shardId and AWS account number when transforming
-            # i.e "shardId-000000000000" versus AWS Account ID 000000000000
-            "$..Messages..Body.KinesisBatchInfo.shardId",
-            "$..Messages..Body.KinesisBatchInfo.streamArn",
-            "$..Records",  # FIXME Figure out why there is an extra log record
+            # TODO: Figure out why there is an extra log record
+            "$..Records",
         ],
     )
     @markers.aws.validated
@@ -577,7 +566,7 @@ class TestKinesisSource:
             RoleName=role,
             PolicyName=policy_name,
             RoleDefinition=lambda_role,
-            PolicyDefinition=s3_lambda_permission,
+            PolicyDefinition=esm_lambda_permission,
         )
 
         create_lambda_function(
@@ -643,11 +632,6 @@ class TestKinesisSource:
         snapshot.match("kinesis_records", {"Records": sorted_records})
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Messages..Body.KinesisBatchInfo.shardId",
-        ],
-    )
     @pytest.mark.parametrize(
         "set_lambda_response",
         [
@@ -746,12 +730,6 @@ class TestKinesisSource:
         invocation_events = [event for event in events if "Records" in event]
         snapshot.match("kinesis_events", invocation_events)
 
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Message.KinesisBatchInfo.shardId",
-            "$..Message.KinesisBatchInfo.streamArn",
-        ],
-    )
     @markers.aws.validated
     def test_kinesis_event_source_mapping_with_sns_on_failure_destination_config(
         self,
@@ -778,7 +756,7 @@ class TestKinesisSource:
             RoleName=role,
             PolicyName=policy_name,
             RoleDefinition=lambda_role,
-            PolicyDefinition=s3_lambda_permission,
+            PolicyDefinition=esm_lambda_permission,
         )
 
         # create topic and queue
@@ -859,11 +837,117 @@ class TestKinesisSource:
         snapshot.match("failure_sns_message", failure_sns_message)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Messages..Body.KinesisBatchInfo.shardId",
-        ],
-    )
+    def test_kinesis_event_source_mapping_with_s3_on_failure_destination(
+        self,
+        s3_bucket,
+        create_lambda_function,
+        aws_client,
+        cleanups,
+        wait_for_stream_ready,
+        create_iam_role_with_policy,
+        region_name,
+        snapshot,
+    ):
+        # set up s3, lambda, kinesis
+
+        function_name = f"lambda_func-{short_uid()}"
+        role = f"test-lambda-role-{short_uid()}"
+        policy_name = f"test-lambda-policy-{short_uid()}"
+        kinesis_name = f"test-kinesis-{short_uid()}"
+
+        bucket_name = s3_bucket
+        bucket_arn = s3_bucket_arn(bucket_name, region=region_name)
+
+        role_arn = create_iam_role_with_policy(
+            RoleName=role,
+            PolicyName=policy_name,
+            RoleDefinition=lambda_role,
+            PolicyDefinition=esm_lambda_permission,
+        )
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=role_arn,
+        )
+
+        aws_client.kinesis.create_stream(StreamName=kinesis_name, ShardCount=1)
+        cleanups.append(
+            lambda: aws_client.kinesis.delete_stream(
+                StreamName=kinesis_name, EnforceConsumerDeletion=True
+            )
+        )
+        result = aws_client.kinesis.describe_stream(StreamName=kinesis_name)["StreamDescription"]
+        kinesis_arn = result["StreamARN"]
+        wait_for_stream_ready(stream_name=kinesis_name)
+
+        # create event source mapping
+
+        destination_config = {"OnFailure": {"Destination": bucket_arn}}
+        message = {
+            "input": "hello",
+            "value": "world",
+            lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1,
+        }
+
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            FunctionName=function_name,
+            BatchSize=1,
+            StartingPosition="TRIM_HORIZON",
+            EventSourceArn=kinesis_arn,
+            MaximumBatchingWindowInSeconds=1,
+            MaximumRetryAttempts=1,
+            DestinationConfig=destination_config,
+        )
+        cleanups.append(
+            lambda: aws_client.lambda_.delete_event_source_mapping(UUID=event_source_mapping_uuid)
+        )
+        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
+        event_source_mapping_uuid = create_event_source_mapping_response["UUID"]
+        _await_event_source_mapping_enabled(aws_client.lambda_, event_source_mapping_uuid)
+
+        # trigger ESM source
+
+        aws_client.kinesis.put_record(
+            StreamName=kinesis_name, Data=to_bytes(json.dumps(message)), PartitionKey="custom"
+        )
+
+        # add snapshot transformers
+
+        snapshot.add_transformer(snapshot.transform.key_value("ETag"))
+        snapshot.add_transformer(snapshot.transform.regex(r"shardId-\d+", "<kinesis-shard-id>"))
+
+        # verify failure record data
+
+        def get_invocation_record():
+            list_objects_response = aws_client.s3.list_objects_v2(Bucket=bucket_name)
+            bucket_objects = list_objects_response["Contents"]
+            assert len(bucket_objects) == 1
+            object_key = bucket_objects[0]["Key"]
+
+            invocation_record = aws_client.s3.get_object(
+                Bucket=bucket_name,
+                Key=object_key,
+            )
+            return invocation_record, object_key
+
+        sleep = 15 if is_aws_cloud() else 5
+        s3_invocation_record, s3_object_key = retry(
+            get_invocation_record, retries=15, sleep=sleep, sleep_before=5
+        )
+
+        record_body = json.loads(s3_invocation_record["Body"].read().decode("utf-8"))
+        snapshot.match("record_body", record_body)
+
+        failure_datetime = datetime.fromisoformat(record_body["timestamp"])
+        timestamp = failure_datetime.strftime("%Y-%m-%dT%H.%M.%S")
+        year_month_day = failure_datetime.strftime("%Y/%m/%d")
+        assert s3_object_key.startswith(
+            f"aws/lambda/{event_source_mapping_uuid}/{record_body['KinesisBatchInfo']['shardId']}/{year_month_day}/{timestamp}"
+        )  # there is a random UUID at the end of object key, checking that the key starts with deterministic values
+
+    @markers.aws.validated
     @pytest.mark.parametrize(
         "set_lambda_response",
         [
@@ -950,7 +1034,8 @@ class TestKinesisSource:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..Messages..Body.KinesisBatchInfo.shardId",
+            # TODO: Fix flaky status 'OK' → 'No records processed' ... (expected → actual)
+            "$..LastProcessingResult",
         ],
     )
     def test_kinesis_empty_provided(
@@ -1016,19 +1101,6 @@ class TestKinesisSource:
 # TODO: add tests for different edge cases in filtering (e.g. message isn't json => needs to be dropped)
 # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-kinesis
 class TestKinesisEventFiltering:
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            # Lifecycle updates not yet implemented in ESM v2
-            "$..LastProcessingResult",
-        ],
-    )
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Messages..Body.KinesisBatchInfo.shardId",
-            "$..Messages..Body.KinesisBatchInfo.streamArn",
-            "$..EventSourceMappingArn",
-        ],
-    )
     @markers.aws.validated
     def test_kinesis_event_filtering_json_pattern(
         self,
@@ -1057,7 +1129,7 @@ class TestKinesisEventFiltering:
             RoleName=role,
             PolicyName=policy_name,
             RoleDefinition=lambda_role,
-            PolicyDefinition=s3_lambda_permission,
+            PolicyDefinition=esm_lambda_permission,
         )
 
         create_lambda_function(

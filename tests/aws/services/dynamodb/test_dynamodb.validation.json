@@ -29,6 +29,9 @@
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_create_table_with_partial_sse_specification": {
     "last_validated_date": "2024-01-10T12:59:50+00:00"
   },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_execute_statement_empy_parameter": {
+    "last_validated_date": "2025-01-03T09:24:27+00:00"
+  },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_execute_transaction": {
     "last_validated_date": "2023-08-23T14:32:44+00:00"
   },
@@ -53,8 +56,17 @@
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_streams_describe_with_exclusive_start_shard_id": {
     "last_validated_date": "2023-10-22T20:27:28+00:00"
   },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_update_table_without_sse_specification_change": {
+    "last_validated_date": "2024-12-17T10:39:19+00:00"
+  },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_empty_and_binary_values": {
     "last_validated_date": "2023-08-23T14:32:29+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_gsi_with_billing_mode[PAY_PER_REQUEST]": {
+    "last_validated_date": "2025-01-08T18:17:06+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_gsi_with_billing_mode[PROVISIONED]": {
+    "last_validated_date": "2025-01-08T18:17:21+00:00"
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_return_values_in_put_item": {
     "last_validated_date": "2023-08-23T14:32:21+00:00"

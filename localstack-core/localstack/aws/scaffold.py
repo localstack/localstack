@@ -142,11 +142,11 @@ class ShapeNode:
 
     def _print_structure_declaration(self, output, doc=True, quote_types=False):
         if self.is_exception:
-            self._print_as_class(output, "ServiceException", doc)
+            self._print_as_class(output, "ServiceException", doc, quote_types)
             return
 
         if any(map(is_keyword, self.shape.members.keys())):
-            self._print_as_typed_dict(output)
+            self._print_as_typed_dict(output, doc, quote_types)
             return
 
         if self.is_request:
@@ -167,8 +167,8 @@ class ShapeNode:
         if self.is_exception:
             error_spec = self.shape.metadata.get("error", {})
             output.write(f'    code: str = "{error_spec.get("code", self.shape.name)}"\n')
-            output.write(f'    sender_fault: bool = {error_spec.get("senderFault", False)}\n')
-            output.write(f'    status_code: int = {error_spec.get("httpStatusCode", 400)}\n')
+            output.write(f"    sender_fault: bool = {error_spec.get('senderFault', False)}\n")
+            output.write(f"    status_code: int = {error_spec.get('httpStatusCode', 400)}\n")
         elif not self.shape.members:
             output.write("    pass\n")
 

@@ -14,8 +14,8 @@ from localstack.aws.api.stepfunctions import (
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import (
     await_execution_terminated,
-    create,
     create_and_record_logs,
+    create_state_machine_with_iam_role,
     launch_and_record_execution,
     launch_and_record_logs,
 )
@@ -60,7 +60,7 @@ _TEST_PARTIAL_LOG_LEVEL_CONFIGURATIONS_IDS = [
 
 
 @markers.snapshot.skip_snapshot_verify(
-    paths=["$..tracingConfiguration", "$..redriveCount", "$..redrive_count", "$..redriveStatus"]
+    paths=["$..redriveCount", "$..redrive_count", "$..redriveStatus"]
 )
 class TestLogs:
     @markers.aws.validated
@@ -69,11 +69,10 @@ class TestLogs:
         _TEST_BASE_CONFIGURATIONS,
         ids=_TEST_BASE_CONFIGURATIONS_IDS,
     )
-    @markers.snapshot.skip_snapshot_verify(paths=["$..cause"])
     def test_base(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         sfn_create_log_group,
         create_state_machine,
         sfn_snapshot,
@@ -87,7 +86,7 @@ class TestLogs:
         exec_input = json.dumps({})
         create_and_record_logs(
             aws_client,
-            create_iam_role_for_sfn,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_create_log_group,
             sfn_snapshot,
@@ -103,11 +102,10 @@ class TestLogs:
         _TEST_PARTIAL_LOG_LEVEL_CONFIGURATIONS,
         ids=_TEST_PARTIAL_LOG_LEVEL_CONFIGURATIONS_IDS,
     )
-    @markers.snapshot.skip_snapshot_verify(paths=["$..cause"])
     def test_partial_log_levels(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         sfn_create_log_group,
         create_state_machine,
         sfn_snapshot,
@@ -132,8 +130,9 @@ class TestLogs:
         template = BaseTemplate.load_sfn_template(template_path)
         definition = json.dumps(template)
 
-        state_machine_arn = create(
-            create_iam_role_for_sfn,
+        state_machine_arn = create_state_machine_with_iam_role(
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -149,7 +148,7 @@ class TestLogs:
     @markers.aws.validated
     def test_deleted_log_group(
         self,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_create_log_group,
         sfn_snapshot,
@@ -169,14 +168,15 @@ class TestLogs:
             ],
         )
 
-        snf_role_arn = create_iam_role_for_sfn()
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition = json.dumps(template)
 
-        state_machine_arn = create(
-            create_iam_role_for_sfn,
+        state_machine_arn = create_state_machine_with_iam_role(
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -194,7 +194,7 @@ class TestLogs:
 
         execution_input = json.dumps({})
         launch_and_record_execution(
-            aws_client.stepfunctions,
+            aws_client,
             sfn_snapshot,
             state_machine_arn,
             execution_input,
@@ -203,7 +203,7 @@ class TestLogs:
     @markers.aws.validated
     def test_log_group_with_multiple_runs(
         self,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_create_log_group,
         sfn_snapshot,
@@ -231,14 +231,15 @@ class TestLogs:
             ],
         )
 
-        snf_role_arn = create_iam_role_for_sfn()
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition = json.dumps(template)
 
-        state_machine_arn = create(
-            create_iam_role_for_sfn,
+        state_machine_arn = create_state_machine_with_iam_role(
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,

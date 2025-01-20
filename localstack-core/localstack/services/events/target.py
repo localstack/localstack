@@ -4,20 +4,31 @@ import logging
 import re
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Set
+from typing import Any, Dict, Set, Type
 from urllib.parse import urlencode
 
 import requests
 from botocore.client import BaseClient
 
 from localstack import config
-from localstack.aws.api.events import Arn, InputTransformer, RuleName, Target, TargetInputPath
+from localstack.aws.api.events import (
+    Arn,
+    InputTransformer,
+    RuleName,
+    Target,
+    TargetInputPath,
+)
 from localstack.aws.connect import connect_to
-from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
-from localstack.services.events.target_helper import send_event_to_api_destination
+from localstack.services.events.api_destination import add_api_destination_authorization
+from localstack.services.events.models import (
+    FormattedEvent,
+    TransformedEvent,
+    ValidationException,
+)
 from localstack.services.events.utils import (
     event_time_to_time_string,
     get_trace_header_encoded_region_account,
+    is_nested_in_string,
     to_json_str,
 )
 from localstack.utils import collections
@@ -30,6 +41,9 @@ from localstack.utils.aws.arns import (
     sqs_queue_url_for_arn,
 )
 from localstack.utils.aws.client_types import ServicePrincipal
+from localstack.utils.aws.message_forwarding import (
+    add_target_http_parameters,
+)
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_bytes
 from localstack.utils.time import now_utc
@@ -75,23 +89,50 @@ def get_template_replacements(
 
 
 def replace_template_placeholders(
-    template: str, replacements: dict[str, Any], is_json: bool
+    template: str, replacements: dict[str, Any], is_json_template: bool
 ) -> TransformedEvent:
     """Replace placeholders defined by <key> in the template with the values from the replacements dict.
     Can handle single template string or template dict."""
 
     def replace_placeholder(match):
         key = match.group(1)
-        value = replacements.get(key, match.group(0))  # handle non defined placeholders
-        if is_json:
-            return to_json_str(value)
+        value = replacements.get(key, "")  # handle non defined placeholders
         if isinstance(value, datetime.datetime):
             return event_time_to_time_string(value)
+        if isinstance(value, dict):
+            json_str = to_json_str(value).replace('\\"', '"')
+            if is_json_template:
+                return json_str
+            return json_str.replace('"', "")
+        if isinstance(value, list):
+            if is_json_template:
+                return json.dumps(value)
+            return f"[{','.join(value)}]"
+        if is_nested_in_string(template, match):
+            return value
+        if is_json_template:
+            return json.dumps(value)
         return value
 
-    formatted_template = TRANSFORMER_PLACEHOLDER_PATTERN.sub(replace_placeholder, template)
+    formatted_template = TRANSFORMER_PLACEHOLDER_PATTERN.sub(replace_placeholder, template).replace(
+        "\\n", "\n"
+    )
 
-    return json.loads(formatted_template) if is_json else formatted_template[1:-1]
+    if is_json_template:
+        try:
+            loaded_json_template = json.loads(formatted_template)
+            return loaded_json_template
+        except json.JSONDecodeError:
+            LOG.info(
+                json.dumps(
+                    {
+                        "InfoCode": "InternalInfoEvents at transform_event",
+                        "InfoMessage": f"Replaced template is not valid json: {formatted_template}",
+                    }
+                )
+            )
+    else:
+        return formatted_template[1:-1]
 
 
 class TargetSender(ABC):
@@ -100,8 +141,8 @@ class TargetSender(ABC):
     rule_name: RuleName
     service: str
 
-    region: str
-    account_id: str
+    region: str  # region of the event bus
+    account_id: str  # region of the event bus
     target_region: str
     target_account_id: str
     _client: BaseClient | None
@@ -133,6 +174,18 @@ class TargetSender(ABC):
         return self.target["Arn"]
 
     @property
+    def target_id(self):
+        return self.target["Id"]
+
+    @property
+    def unique_id(self):
+        """Necessary to distinguish between targets with the same ARN but for different rules.
+        The unique_id is a combination of the rule ARN and the Target Id.
+        This is necessary since input path and input transformer can be different for the same target ARN,
+        attached to different rules."""
+        return f"{self.rule_arn}-{self.target_id}"
+
+    @property
     def client(self):
         """Lazy initialization of internal botoclient factory."""
         if self._client is None:
@@ -154,7 +207,10 @@ class TargetSender(ABC):
                 event = transform_event_with_target_input_path(input_path, event)
             if input_transformer := self.target.get("InputTransformer"):
                 event = self.transform_event_with_target_input_transformer(input_transformer, event)
-        self.send_event(event)
+        if event:
+            self.send_event(event)
+        else:
+            LOG.info("No event to send to target %s", self.target.get("Id"))
 
     def transform_event_with_target_input_transformer(
         self, input_transformer: InputTransformer, event: FormattedEvent
@@ -164,9 +220,9 @@ class TargetSender(ABC):
         predefined_template_replacements = self._get_predefined_template_replacements(event)
         template_replacements.update(predefined_template_replacements)
 
-        is_json_format = input_template.strip().startswith(("{"))
+        is_json_template = input_template.strip().startswith(("{"))
         populated_template = replace_template_placeholders(
-            input_template, template_replacements, is_json_format
+            input_template, template_replacements, is_json_template
         )
 
         return populated_template
@@ -232,7 +288,7 @@ class TargetSender(ABC):
         return predefined_template_replacements
 
 
-TargetSenderDict = dict[Arn, TargetSender]
+TargetSenderDict = dict[str, TargetSender]  # rule_arn-target_id as global unique id
 
 # Target Senders are ordered alphabetically by service name
 
@@ -376,9 +432,9 @@ class BatchTargetSender(TargetSender):
         pass
 
 
-class ContainerTargetSender(TargetSender):
+class ECSTargetSender(TargetSender):
     def send_event(self, event):
-        raise NotImplementedError("ECS target is not yet implemented")
+        raise NotImplementedError("ECS target is a pro feature, please use LocalStack Pro")
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
@@ -391,10 +447,6 @@ class EventsTargetSender(TargetSender):
     def send_event(self, event):
         # TODO add validation and tests for eventbridge to eventbridge requires Detail, DetailType, and Source
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/events/client/put_events.html
-        target_arn = self.target["Arn"]
-        if ":api-destination/" in target_arn or ":destination/" in target_arn:
-            send_event_to_api_destination(target_arn, event, self.target.get("HttpParameters"))
-            return
         source = self._get_source(event)
         detail_type = self._get_detail_type(event)
         detail = event.get("detail", event)
@@ -431,6 +483,52 @@ class EventsTargetSender(TargetSender):
             return resources
         else:
             return []
+
+
+class EventsApiDestinationTargetSender(TargetSender):
+    def send_event(self, event):
+        """Send an event to an EventBridge API destination
+        See https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-destinations.html"""
+        target_arn = self.target["Arn"]
+        target_region = extract_region_from_arn(target_arn)
+        target_account_id = extract_account_id_from_arn(target_arn)
+        api_destination_name = target_arn.split(":")[-1].split("/")[1]
+
+        events_client = connect_to(
+            aws_access_key_id=target_account_id, region_name=target_region
+        ).events
+        destination = events_client.describe_api_destination(Name=api_destination_name)
+
+        # get destination endpoint details
+        method = destination.get("HttpMethod", "GET")
+        endpoint = destination.get("InvocationEndpoint")
+        state = destination.get("ApiDestinationState") or "ACTIVE"
+
+        LOG.debug(
+            'Calling EventBridge API destination (state "%s"): %s %s', state, method, endpoint
+        )
+        headers = {
+            # default headers AWS sends with every api destination call
+            "User-Agent": "Amazon/EventBridge/ApiDestinations",
+            "Content-Type": "application/json; charset=utf-8",
+            "Range": "bytes=0-1048575",
+            "Accept-Encoding": "gzip,deflate",
+            "Connection": "close",
+        }
+
+        endpoint = add_api_destination_authorization(destination, headers, event)
+        if http_parameters := self.target.get("HttpParameters"):
+            endpoint = add_target_http_parameters(http_parameters, endpoint, headers, event)
+
+        result = requests.request(
+            method=method, url=endpoint, data=json.dumps(event or {}), headers=headers
+        )
+        if result.status_code >= 400:
+            LOG.debug(
+                "Received code %s forwarding events: %s %s", result.status_code, method, endpoint
+            )
+            if result.status_code == 429 or 500 <= result.status_code <= 600:
+                pass  # TODO: retry logic (only retry on 429 and 5xx response status)
 
 
 class FirehoseTargetSender(TargetSender):
@@ -572,8 +670,9 @@ class TargetSenderFactory:
         "apigateway": ApiGatewayTargetSender,
         "appsync": AppSyncTargetSender,
         "batch": BatchTargetSender,
-        "ecs": ContainerTargetSender,
+        "ecs": ECSTargetSender,
         "events": EventsTargetSender,
+        "events_api_destination": EventsApiDestinationTargetSender,
         "firehose": FirehoseTargetSender,
         "kinesis": KinesisTargetSender,
         "lambda": LambdaTargetSender,
@@ -597,8 +696,15 @@ class TargetSenderFactory:
         self.region = region
         self.account_id = account_id
 
+    @classmethod
+    def register_target_sender(cls, service_name: str, sender_class: Type[TargetSender]):
+        cls.target_map[service_name] = sender_class
+
     def get_target_sender(self) -> TargetSender:
-        service = extract_service_from_arn(self.target["Arn"])
+        target_arn = self.target["Arn"]
+        service = extract_service_from_arn(target_arn)
+        if ":api-destination/" in target_arn or ":destination/" in target_arn:
+            service = "events_api_destination"
         if service in self.target_map:
             target_sender_class = self.target_map[service]
         else:

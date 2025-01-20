@@ -9,13 +9,14 @@ from tests.aws.services.stepfunctions.v2.intrinsic_functions.utils import create
 # TODO: test for validation errors, and boundary testing.
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestArray:
     @markers.aws.validated
-    def test_array_0(self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client):
+    def test_array_0(
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+    ):
         create_and_test_on_inputs(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             IFT.ARRAY_0,
@@ -23,7 +24,9 @@ class TestArray:
         )
 
     @markers.aws.validated
-    def test_array_2(self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client):
+    def test_array_2(
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+    ):
         values = [
             "",
             " ",
@@ -38,8 +41,8 @@ class TestArray:
         for value in values:
             input_values.append({"fst": value, "snd": value})
         create_and_test_on_inputs(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             IFT.ARRAY_2,
@@ -48,7 +51,7 @@ class TestArray:
 
     @markers.aws.validated
     def test_array_partition(
-        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         arrays = [list(range(i)) for i in range(5)]
         input_values = list()
@@ -56,8 +59,8 @@ class TestArray:
             for chunk_size in range(1, 6):
                 input_values.append({"fst": array, "snd": chunk_size})
         create_and_test_on_inputs(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             IFT.ARRAY_PARTITION,
@@ -66,7 +69,7 @@ class TestArray:
 
     @markers.aws.validated
     def test_array_contains(
-        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         search_bindings = [
             ([], None),
@@ -83,8 +86,8 @@ class TestArray:
         for array, value in search_bindings:
             input_values.append({"fst": array, "snd": value})
         create_and_test_on_inputs(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             IFT.ARRAY_CONTAINS,
@@ -93,7 +96,7 @@ class TestArray:
 
     @markers.aws.validated
     def test_array_range(
-        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         ranges = [
             (0, 9, 3),
@@ -105,8 +108,8 @@ class TestArray:
         for fst, lst, step in ranges:
             input_values.append({"fst": fst, "snd": lst, "trd": step})
         create_and_test_on_inputs(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             IFT.ARRAY_RANGE,
@@ -115,12 +118,12 @@ class TestArray:
 
     @markers.aws.validated
     def test_array_get_item(
-        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         input_values = [{"fst": [1, 2, 3, 4, 5, 6, 7, 8, 9], "snd": 5}]
         create_and_test_on_inputs(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             IFT.ARRAY_GET_ITEM,
@@ -129,12 +132,12 @@ class TestArray:
 
     @markers.aws.validated
     def test_array_length(
-        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         input_values = [[1, 2, 3, 4, 5, 6, 7, 8, 9]]
         create_and_test_on_inputs(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             IFT.ARRAY_LENGTH,
@@ -143,7 +146,7 @@ class TestArray:
 
     @markers.aws.validated
     def test_array_unique(
-        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         input_values = [
             [
@@ -170,8 +173,8 @@ class TestArray:
             ]
         ]
         create_and_test_on_inputs(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             IFT.ARRAY_LENGTH,

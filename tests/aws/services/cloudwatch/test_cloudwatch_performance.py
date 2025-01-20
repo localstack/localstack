@@ -165,7 +165,7 @@ class TestCloudWatchPerformance:
             nonlocal namespace
             create_barrier.wait()
             try:
-                metric_name = f"metric-{runner%100}"
+                metric_name = f"metric-{runner % 100}"
                 cw_client = aws_client_factory(config=CUSTOM_CLIENT_CONFIG_RETRY).cloudwatch
                 cw_client.put_metric_data(
                     Namespace=namespace,

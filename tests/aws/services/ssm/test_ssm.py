@@ -169,7 +169,7 @@ class TestSSM:
 
     @markers.aws.needs_fixing
     # TODO: remove parameters, set correct parameter prefix name, use events_create_event_bus and events_put_rule fixture,
-    # remove clean_up, use create_sqs_events_target fixture, use snapshot
+    # remove clean_up, use sqs_as_events_target fixture, use snapshot
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_trigger_event_on_systems_manager_change(
         self, monkeypatch, aws_client, clean_up, strategy
@@ -234,3 +234,32 @@ class TestSSM:
 
         # clean up
         clean_up(rule_name=rule_name, target_ids=target_id)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Tier"])
+    def test_parameters_with_path(self, create_parameter, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+        param_name = f"/test/param-{short_uid()}"
+        put_parameter_response = create_parameter(
+            Name=param_name,
+            Description="test",
+            Value="123",
+            Type="String",
+        )
+        snapshot.match("put-parameter-response", put_parameter_response)
+
+        get_parameter_response = aws_client.ssm.get_parameter(Name=param_name)
+        snapshot.match("get-parameter-response", get_parameter_response)
+
+        get_parameter_by_arn_response = aws_client.ssm.get_parameter(
+            Name=get_parameter_response["Parameter"]["ARN"]
+        )
+        snapshot.match("get-parameter-by-arn-response", get_parameter_by_arn_response)
+
+        get_parameters_response = aws_client.ssm.get_parameters(Names=[param_name])
+        snapshot.match("get-parameters-response", get_parameters_response)
+
+        get_parameters_by_arn_response = aws_client.ssm.get_parameters(
+            Names=[get_parameter_response["Parameter"]["ARN"]]
+        )
+        snapshot.match("get-parameters-by-arn-response", get_parameters_by_arn_response)

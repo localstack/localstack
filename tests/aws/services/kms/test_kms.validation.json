@@ -30,7 +30,7 @@
     "last_validated_date": "2024-04-11T15:53:40+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_derive_shared_secret": {
-    "last_validated_date": "2024-10-11T07:07:04+00:00"
+    "last_validated_date": "2024-12-25T14:45:00+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_describe_and_list_sign_key": {
     "last_validated_date": "2024-04-11T15:53:27+00:00"

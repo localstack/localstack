@@ -12,7 +12,7 @@ class ExpressStaticAnalyser(StaticAnalyser):
     def visitResource_decl(self, ctx: ASLParser.Resource_declContext) -> None:
         # TODO add resource path to the error messages.
 
-        resource_str: str = ctx.keyword_or_string().getText()[1:-1]
+        resource_str: str = ctx.string_literal().getText()[1:-1]
         resource = Resource.from_resource_arn(resource_str)
 
         if isinstance(resource, ActivityResource):

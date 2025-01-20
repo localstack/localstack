@@ -18,7 +18,6 @@ from tests.aws.services.stepfunctions.templates.scenarios.scenarios_templates im
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..tracingConfiguration",
         "$..billingDetails",
         "$..redrive_count",
         "$..event_timestamp",
@@ -34,7 +33,7 @@ class TestExpressAsync:
     )
     def test_base(
         self,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_create_log_group,
         sfn_snapshot,
@@ -45,7 +44,7 @@ class TestExpressAsync:
         exec_input = json.dumps({})
         create_and_record_express_async_execution(
             aws_client,
-            create_iam_role_for_sfn,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_create_log_group,
             sfn_snapshot,
@@ -57,7 +56,7 @@ class TestExpressAsync:
     @markers.aws.validated
     def test_query_runtime_memory(
         self,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         sfn_create_log_group,
         create_state_machine,
         aws_client,
@@ -90,7 +89,7 @@ class TestExpressAsync:
         exec_input = json.dumps({"message": "TestMessage"})
         create_and_record_express_async_execution(
             aws_client,
-            create_iam_role_for_sfn,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_create_log_group,
             sfn_snapshot,
@@ -102,7 +101,7 @@ class TestExpressAsync:
     def test_catch(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         sfn_create_log_group,
         create_state_machine,
         create_lambda_function,
@@ -129,7 +128,7 @@ class TestExpressAsync:
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_express_async_execution(
             aws_client,
-            create_iam_role_for_sfn,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_create_log_group,
             sfn_snapshot,
@@ -141,7 +140,7 @@ class TestExpressAsync:
     def test_retry(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         sfn_create_log_group,
         create_state_machine,
         create_lambda_function,
@@ -170,7 +169,7 @@ class TestExpressAsync:
         exec_input = json.dumps({})
         create_and_record_express_async_execution(
             aws_client,
-            create_iam_role_for_sfn,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_create_log_group,
             sfn_snapshot,

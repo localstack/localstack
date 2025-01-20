@@ -1,5 +1,5 @@
 # base: Stage which installs necessary runtime dependencies (OS packages, filesystem...)
-FROM python:3.11.10-slim-bookworm@sha256:e8381c802593deb0c4d25bd3f4e05e94382f6bf33090de22679fc7488cd68bbb AS base
+FROM python:3.11.11-slim-bookworm@sha256:873952659a04188d2a62d5f7e30fd673d2559432a847a8ad5fcaf9cbd085e9ed AS base
 ARG TARGETARCH
 
 # set workdir
@@ -102,7 +102,7 @@ RUN echo /usr/lib/localstack/python-packages/lib/python3.11/site-packages > loca
 # expose edge service and debugpy
 EXPOSE 4566 5678
 
-HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=5s CMD .venv/bin/localstack status services --format=json
+HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=10s CMD .venv/bin/localstack status services --format=json
 
 # default volume directory
 VOLUME /var/lib/localstack

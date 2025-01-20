@@ -1,7 +1,7 @@
 #
 # base: Stage which installs necessary runtime dependencies (OS packages, etc.)
 #
-FROM python:3.11.10-slim-bookworm@sha256:e8381c802593deb0c4d25bd3f4e05e94382f6bf33090de22679fc7488cd68bbb AS base
+FROM python:3.11.11-slim-bookworm@sha256:873952659a04188d2a62d5f7e30fd673d2559432a847a8ad5fcaf9cbd085e9ed AS base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -49,6 +49,8 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && tar -xJf "$LATEST_VERSION_FILENAME.tar.xz" -C /usr/local --strip-components=1 --no-same-owner \
   && rm "$LATEST_VERSION_FILENAME.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt \
   && ln -s /usr/local/bin/node /usr/local/bin/nodejs \
+  # upgrade npm to the latest version
+  && npm upgrade -g npm \
   # smoke tests
   && node --version \
   && npm --version \
@@ -151,6 +153,7 @@ RUN --mount=type=cache,target=/root/.cache \
     source .venv/bin/activate && \
     python -m localstack.cli.lpm install \
       lambda-runtime \
+      jpype-jsonata \
       dynamodb-local && \
     chown -R localstack:localstack /usr/lib/localstack && \
     chmod -R 777 /usr/lib/localstack
@@ -164,7 +167,7 @@ RUN echo /usr/lib/localstack/python-packages/lib/python3.11/site-packages > loca
 # expose edge service, external service ports, and debugpy
 EXPOSE 4566 4510-4559 5678
 
-HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=5s CMD .venv/bin/localstack status services --format=json
+HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=10s CMD .venv/bin/localstack status services --format=json
 
 # default volume directory
 VOLUME /var/lib/localstack

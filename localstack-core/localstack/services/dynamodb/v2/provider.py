@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 import os
@@ -526,6 +527,34 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             )
             table_description["TableClassSummary"] = {"TableClass": table_class}
 
+        if "GlobalSecondaryIndexes" in table_description:
+            gsis = copy.deepcopy(table_description["GlobalSecondaryIndexes"])
+            # update the different values, as DynamoDB-local v2 has a regression around GSI and does not return anything
+            # anymore
+            for gsi in gsis:
+                index_name = gsi.get("IndexName", "")
+                gsi.update(
+                    {
+                        "IndexArn": f"{table_arn}/index/{index_name}",
+                        "IndexSizeBytes": 0,
+                        "IndexStatus": "ACTIVE",
+                        "ItemCount": 0,
+                    }
+                )
+                gsi_provisioned_throughput = gsi.setdefault("ProvisionedThroughput", {})
+                gsi_provisioned_throughput["NumberOfDecreasesToday"] = 0
+
+                if billing_mode == BillingMode.PAY_PER_REQUEST:
+                    gsi_provisioned_throughput["ReadCapacityUnits"] = 0
+                    gsi_provisioned_throughput["WriteCapacityUnits"] = 0
+
+            # table_definitions["GlobalSecondaryIndexes"] = gsis
+            table_description["GlobalSecondaryIndexes"] = gsis
+
+        if "ProvisionedThroughput" in table_description:
+            if "NumberOfDecreasesToday" not in table_description["ProvisionedThroughput"]:
+                table_description["ProvisionedThroughput"]["NumberOfDecreasesToday"] = 0
+
         tags = table_definitions.pop("Tags", [])
         if tags:
             get_store(context.account_id, context.region).TABLE_TAGS[table_arn] = {
@@ -590,7 +619,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             if replica_region != context.region:
                 replica_description_list.append(replica_description)
 
-        table_description.update({"Replicas": replica_description_list})
+        if replica_description_list:
+            table_description.update({"Replicas": replica_description_list})
 
         # update only TableId and SSEDescription if present
         if table_definitions := store.table_definitions.get(table_name):
@@ -601,6 +631,17 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 table_description["TableClassSummary"] = {
                     "TableClass": table_definitions["TableClass"]
                 }
+
+        if "GlobalSecondaryIndexes" in table_description:
+            for gsi in table_description["GlobalSecondaryIndexes"]:
+                default_values = {
+                    "NumberOfDecreasesToday": 0,
+                    "ReadCapacityUnits": 0,
+                    "WriteCapacityUnits": 0,
+                }
+                # even if the billing mode is PAY_PER_REQUEST, AWS returns the Read and Write Capacity Units
+                # Terraform depends on this parity for update operations
+                gsi["ProvisionedThroughput"] = default_values | gsi.get("ProvisionedThroughput", {})
 
         return DescribeTableOutput(
             Table=select_from_typed_dict(TableDescription, table_description)
@@ -614,7 +655,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         global_table_region = self.get_global_table_region(context, table_name)
 
         try:
-            result = self._forward_request(context=context, region=global_table_region)
+            self._forward_request(context=context, region=global_table_region)
         except CommonServiceException as exc:
             # DynamoDBLocal refuses to update certain table params and raises.
             # But we still need to update this info in LocalStack stores
@@ -689,7 +730,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         SchemaExtractor.invalidate_table_schema(table_name, context.account_id, global_table_region)
 
-        return result
+        schema = SchemaExtractor.get_table_schema(
+            table_name, context.account_id, global_table_region
+        )
+
+        return UpdateTableOutput(TableDescription=schema["Table"])
 
     def list_tables(
         self,
@@ -884,6 +929,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # TODO: this operation is still really slow with streams enabled
         #  find a way to make it better, same way as the other operations, by using returnvalues
         # see https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.update.html
+
+        # We found out that 'Parameters' can be an empty list when the request comes from the AWS JS client.
+        if execute_statement_input.get("Parameters", None) == []:  # noqa
+            raise ValidationException(
+                "1 validation error detected: Value '[]' at 'parameters' failed to satisfy constraint: Member must have length greater than or equal to 1"
+            )
         return self.forward_request(context)
 
     #

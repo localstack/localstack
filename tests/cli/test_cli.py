@@ -27,7 +27,7 @@ def runner():
     return CliRunner()
 
 
-def container_exists(client, container_name):
+def container_exists(client: ContainerClient, container_name: str) -> bool:
     try:
         container_id = client.get_container_id(container_name)
         return True if container_id else False
@@ -81,9 +81,9 @@ class TestCliContainerLifecycle:
         result = runner.invoke(cli, ["wait", "-t", "60"])
         assert result.exit_code == 0
 
-        assert container_client.is_container_running(
-            config.MAIN_CONTAINER_NAME
-        ), "container name was not running after wait"
+        assert container_client.is_container_running(config.MAIN_CONTAINER_NAME), (
+            "container name was not running after wait"
+        )
 
         # Note: if `LOCALSTACK_HOST` is set to a domain that does not resolve to `127.0.0.1` then
         # this test will fail

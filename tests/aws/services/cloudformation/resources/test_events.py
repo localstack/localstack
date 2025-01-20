@@ -211,3 +211,20 @@ def test_rule_properties(deploy_cfn_template, aws_client, snapshot):
     snapshot.add_transformer(snapshot.transform.regex(without_bus_id, "<without-bus-id>"))
 
     snapshot.match("outputs", stack.outputs)
+
+
+@markers.aws.validated
+def test_rule_pattern_transformation(aws_client, deploy_cfn_template, snapshot):
+    """
+    The CFn provider for a rule applies a transformation to some properties. Extend this test as more properties or
+    situations arise.
+    """
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/events_rule_pattern.yml"
+        ),
+    )
+
+    rule = aws_client.events.describe_rule(Name=stack.outputs["RuleName"])
+    snapshot.match("rule", rule)
+    snapshot.add_transformer(snapshot.transform.key_value("Name"))

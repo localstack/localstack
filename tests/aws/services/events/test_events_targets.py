@@ -2,30 +2,33 @@
 Tests are separated in different classes for each target service.
 Classes are ordered alphabetically."""
 
+import base64
 import json
 import time
 
 import aws_cdk as cdk
 import pytest
+from pytest_httpserver import HTTPServer
+from werkzeug import Request, Response
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
-from localstack.utils.strings import short_uid
-from localstack.utils.sync import retry
+from localstack.utils.strings import short_uid, to_str
+from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 from tests.aws.scenario.kinesis_firehose.conftest import get_all_expected_messages_from_s3
 from tests.aws.services.events.helper_functions import is_old_provider, sqs_collect_messages
-from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTERN
+from tests.aws.services.events.test_api_destinations_and_connection import API_DESTINATION_AUTHS
+from tests.aws.services.events.test_events import TEST_EVENT_DETAIL, TEST_EVENT_PATTERN
 from tests.aws.services.firehose.helper_functions import get_firehose_iam_documents
 from tests.aws.services.kinesis.helper_functions import get_shard_iterator
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_AWS_PROXY_FORMAT,
     TEST_LAMBDA_PYTHON_ECHO,
 )
-
 
 # TODO:
 #  These tests should go into LocalStack Pro:
@@ -34,103 +37,173 @@ from tests.aws.services.lambda_.test_lambda import (
 #   - Container (pro)
 #   - Redshift (pro)
 #   - Sagemaker (pro)
-class TestEventsTargetCloudWatchLogs:
-    @markers.aws.validated
-    def test_put_events_with_target_cloudwatch_logs(
-        self,
-        events_create_event_bus,
-        events_put_rule,
-        events_log_group,
-        aws_client,
-        snapshot,
-        cleanups,
+
+
+class TestEventsTargetApiDestination:
+    # TODO validate against AWS & use common fixtures
+    @markers.aws.only_localstack
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
+    @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
+    def test_put_events_to_target_api_destinations(
+        self, httpserver: HTTPServer, auth, aws_client, clean_up
     ):
-        snapshot.add_transformers_list(
-            [
-                snapshot.transform.key_value("EventId"),
-                snapshot.transform.key_value("RuleArn"),
-                snapshot.transform.key_value("EventBusArn"),
-            ]
+        token = short_uid()
+        bearer = f"Bearer {token}"
+
+        def _handler(_request: Request):
+            return Response(
+                json.dumps(
+                    {
+                        "access_token": token,
+                        "token_type": "Bearer",
+                        "expires_in": 86400,
+                    }
+                ),
+                mimetype="application/json",
+            )
+
+        httpserver.expect_request("").respond_with_handler(_handler)
+        http_endpoint = httpserver.url_for("/")
+
+        if auth.get("type") == "OAUTH_CLIENT_CREDENTIALS":
+            auth["parameters"]["AuthorizationEndpoint"] = http_endpoint
+
+        connection_name = f"c-{short_uid()}"
+        connection_arn = aws_client.events.create_connection(
+            Name=connection_name,
+            AuthorizationType=auth.get("type"),
+            AuthParameters={
+                auth.get("key"): auth.get("parameters"),
+                "InvocationHttpParameters": {
+                    "BodyParameters": [
+                        {
+                            "Key": "connection_body_param",
+                            "Value": "value",
+                            "IsValueSecret": False,
+                        },
+                    ],
+                    "HeaderParameters": [
+                        {
+                            "Key": "connection-header-param",
+                            "Value": "value",
+                            "IsValueSecret": False,
+                        },
+                        {
+                            "Key": "overwritten-header",
+                            "Value": "original",
+                            "IsValueSecret": False,
+                        },
+                    ],
+                    "QueryStringParameters": [
+                        {
+                            "Key": "connection_query_param",
+                            "Value": "value",
+                            "IsValueSecret": False,
+                        },
+                        {
+                            "Key": "overwritten_query",
+                            "Value": "original",
+                            "IsValueSecret": False,
+                        },
+                    ],
+                },
+            },
+        )["ConnectionArn"]
+
+        # create api destination
+        dest_name = f"d-{short_uid()}"
+        result = aws_client.events.create_api_destination(
+            Name=dest_name,
+            ConnectionArn=connection_arn,
+            InvocationEndpoint=http_endpoint,
+            HttpMethod="POST",
         )
 
-        event_bus_name = f"test-bus-{short_uid()}"
-        event_bus_response = events_create_event_bus(Name=event_bus_name)
-        snapshot.match("event_bus_response", event_bus_response)
-
-        log_group = events_log_group()
-        log_group_name = log_group["log_group_name"]
-        log_group_arn = log_group["log_group_arn"]
-
-        resource_policy = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Sid": "EventBridgePutLogEvents",
-                    "Effect": "Allow",
-                    "Principal": {"Service": "events.amazonaws.com"},
-                    "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
-                    "Resource": f"{log_group_arn}:*",
-                }
-            ],
-        }
-        policy_name = f"EventBridgePolicy-{short_uid()}"
-        aws_client.logs.put_resource_policy(
-            policyName=policy_name, policyDocument=json.dumps(resource_policy)
-        )
-
-        if is_aws_cloud():
-            # Wait for IAM role propagation in AWS cloud environment before proceeding
-            # This delay is necessary as IAM changes can take several seconds to propagate globally
-            time.sleep(10)
-
-        rule_name = f"test-rule-{short_uid()}"
-        rule_response = events_put_rule(
-            Name=rule_name,
-            EventBusName=event_bus_name,
-            EventPattern=json.dumps(TEST_EVENT_PATTERN),
-        )
-        snapshot.match("rule_response", rule_response)
-
+        # create rule and target
+        rule_name = f"r-{short_uid()}"
         target_id = f"target-{short_uid()}"
-        put_targets_response = aws_client.events.put_targets(
+        pattern = json.dumps(
+            {"source": ["source-123"], "detail-type": ["type-123"]}
+        )  # TODO use standard defined event and pattern
+        aws_client.events.put_rule(Name=rule_name, EventPattern=pattern)
+        aws_client.events.put_targets(
             Rule=rule_name,
-            EventBusName=event_bus_name,
             Targets=[
                 {
                     "Id": target_id,
-                    "Arn": log_group_arn,
+                    "Arn": result["ApiDestinationArn"],
+                    "Input": '{"target_value":"value"}',
+                    "HttpParameters": {
+                        "PathParameterValues": ["target_path"],
+                        "HeaderParameters": {
+                            "target-header": "target_header_value",
+                            "overwritten_header": "changed",
+                        },
+                        "QueryStringParameters": {
+                            "target_query": "t_query",
+                            "overwritten_query": "changed",
+                        },
+                    },
                 }
             ],
         )
-        snapshot.match("put_targets_response", put_targets_response)
-        assert put_targets_response["FailedEntryCount"] == 0
 
-        event_entry = {
-            "EventBusName": event_bus_name,
-            "Source": TEST_EVENT_PATTERN["source"][0],
-            "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-            "Detail": json.dumps(EVENT_DETAIL),
-        }
-        put_events_response = aws_client.events.put_events(Entries=[event_entry])
-        snapshot.match("put_events_response", put_events_response)
-        assert put_events_response["FailedEntryCount"] == 0
+        entries = [
+            {
+                "Source": "source-123",
+                "DetailType": "type-123",
+                "Detail": '{"i": 0}',
+            }
+        ]
+        aws_client.events.put_events(Entries=entries)
 
-        def get_log_events():
-            response = aws_client.logs.describe_log_streams(logGroupName=log_group_name)
-            log_streams = response.get("logStreams", [])
-            assert log_streams, "No log streams found"
+        # clean up
+        aws_client.events.delete_connection(Name=connection_name)
+        aws_client.events.delete_api_destination(Name=dest_name)
+        clean_up(rule_name=rule_name, target_ids=target_id)
 
-            log_stream_name = log_streams[0]["logStreamName"]
-            events_response = aws_client.logs.get_log_events(
-                logGroupName=log_group_name,
-                logStreamName=log_stream_name,
-            )
-            events = events_response.get("events", [])
-            assert events, "No log events found"
-            return events
+        to_recv = 2 if auth["type"] == "OAUTH_CLIENT_CREDENTIALS" else 1
+        poll_condition(lambda: len(httpserver.log) >= to_recv, timeout=5)
 
-        events = retry(get_log_events, retries=5, sleep=5)
-        snapshot.match("log_events", events)
+        event_request, _ = httpserver.log[-1]
+        event = event_request.get_json(force=True)
+        headers = event_request.headers
+        query_args = event_request.args
+
+        # Connection data validation
+        assert event["connection_body_param"] == "value"
+        assert headers["Connection-Header-Param"] == "value"
+        assert query_args["connection_query_param"] == "value"
+
+        # Target parameters validation
+        assert "/target_path" in event_request.path
+        assert event["target_value"] == "value"
+        assert headers["Target-Header"] == "target_header_value"
+        assert query_args["target_query"] == "t_query"
+
+        # connection/target overwrite test
+        assert headers["Overwritten-Header"] == "original"
+        assert query_args["overwritten_query"] == "original"
+
+        # Auth validation
+        match auth["type"]:
+            case "BASIC":
+                user_pass = to_str(base64.b64encode(b"user:pass"))
+                assert headers["Authorization"] == f"Basic {user_pass}"
+            case "API_KEY":
+                assert headers["Api"] == "apikey_secret"
+
+            case "OAUTH_CLIENT_CREDENTIALS":
+                assert headers["Authorization"] == bearer
+
+                oauth_request, _ = httpserver.log[0]
+                oauth_login = oauth_request.get_json(force=True)
+                # Oauth login validation
+                assert oauth_login["client_id"] == "id"
+                assert oauth_login["client_secret"] == "password"
+                assert oauth_login["oauthbody"] == "value1"
+                assert oauth_request.headers["oauthheader"] == "value2"
+                assert oauth_request.args["oauthquery"] == "value3"
 
 
 class TestEventsTargetApiGateway:
@@ -387,6 +460,105 @@ class TestEventsTargetApiGateway:
         snapshot.match("lambda_logs", events)
 
 
+class TestEventsTargetCloudWatchLogs:
+    @markers.aws.validated
+    def test_put_events_with_target_cloudwatch_logs(
+        self,
+        events_create_event_bus,
+        events_put_rule,
+        events_log_group,
+        aws_client,
+        snapshot,
+        cleanups,
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("EventId"),
+                snapshot.transform.key_value("RuleArn"),
+                snapshot.transform.key_value("EventBusArn"),
+            ]
+        )
+
+        event_bus_name = f"test-bus-{short_uid()}"
+        event_bus_response = events_create_event_bus(Name=event_bus_name)
+        snapshot.match("event_bus_response", event_bus_response)
+
+        log_group = events_log_group()
+        log_group_name = log_group["log_group_name"]
+        log_group_arn = log_group["log_group_arn"]
+
+        resource_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "EventBridgePutLogEvents",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+                    "Resource": f"{log_group_arn}:*",
+                }
+            ],
+        }
+        policy_name = f"EventBridgePolicy-{short_uid()}"
+        aws_client.logs.put_resource_policy(
+            policyName=policy_name, policyDocument=json.dumps(resource_policy)
+        )
+
+        if is_aws_cloud():
+            # Wait for IAM role propagation in AWS cloud environment before proceeding
+            # This delay is necessary as IAM changes can take several seconds to propagate globally
+            time.sleep(10)
+
+        rule_name = f"test-rule-{short_uid()}"
+        rule_response = events_put_rule(
+            Name=rule_name,
+            EventBusName=event_bus_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+        )
+        snapshot.match("rule_response", rule_response)
+
+        target_id = f"target-{short_uid()}"
+        put_targets_response = aws_client.events.put_targets(
+            Rule=rule_name,
+            EventBusName=event_bus_name,
+            Targets=[
+                {
+                    "Id": target_id,
+                    "Arn": log_group_arn,
+                }
+            ],
+        )
+        snapshot.match("put_targets_response", put_targets_response)
+        assert put_targets_response["FailedEntryCount"] == 0
+
+        event_entry = {
+            "EventBusName": event_bus_name,
+            "Source": TEST_EVENT_PATTERN["source"][0],
+            "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+            "Detail": json.dumps(TEST_EVENT_DETAIL),
+        }
+        put_events_response = aws_client.events.put_events(Entries=[event_entry])
+        snapshot.match("put_events_response", put_events_response)
+        assert put_events_response["FailedEntryCount"] == 0
+
+        def get_log_events():
+            response = aws_client.logs.describe_log_streams(logGroupName=log_group_name)
+            log_streams = response.get("logStreams", [])
+            assert log_streams, "No log streams found"
+
+            log_stream_name = log_streams[0]["logStreamName"]
+            events_response = aws_client.logs.get_log_events(
+                logGroupName=log_group_name,
+                logStreamName=log_stream_name,
+            )
+            events = events_response.get("events", [])
+            assert events, "No log events found"
+            return events
+
+        events = retry(get_log_events, retries=5, sleep=5)
+        snapshot.match("log_events", events)
+
+
 class TestEventsTargetEvents:
     # cross region and cross account event bus to event buss tests are in test_events_cross_account_region.py
 
@@ -403,7 +575,7 @@ class TestEventsTargetEvents:
         account_id,
         events_put_rule,
         create_role_event_bus_source_to_bus_target,
-        create_sqs_events_target,
+        sqs_as_events_target,
         aws_client,
         snapshot,
     ):
@@ -467,7 +639,7 @@ class TestEventsTargetEvents:
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
 
-        queue_url, queue_arn = create_sqs_events_target()
+        queue_url, queue_arn = sqs_as_events_target()
         target_id = f"target-{short_uid()}"
         aws_client.events.put_targets(
             Rule=rule_name_target_to_sqs,
@@ -487,7 +659,7 @@ class TestEventsTargetEvents:
                 {
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
                     "EventBusName": event_bus_name_source,
                 }
             ],
@@ -612,7 +784,7 @@ class TestEventsTargetFirehose:
                         "EventBusName": event_bus_name,
                         "Source": TEST_EVENT_PATTERN["source"][0],
                         "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                        "Detail": json.dumps(EVENT_DETAIL),
+                        "Detail": json.dumps(TEST_EVENT_DETAIL),
                     }
                 ]
             )
@@ -725,7 +897,7 @@ class TestEventsTargetKinesis:
                     "EventBusName": event_bus_name,
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
                 }
             ]
         )
@@ -789,7 +961,7 @@ class TestEventsTargetLambda:
                     "EventBusName": bus_name,
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
                 }
             ]
         )
@@ -1077,7 +1249,7 @@ class TestEventsTargetSns:
                     "EventBusName": event_bus_name,
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
                 }
             ]
         )
@@ -1107,7 +1279,7 @@ class TestEventsTargetSqs:
             {
                 "Source": TEST_EVENT_PATTERN["source"][0],
                 "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
             }
         ]
         message = put_events_with_filter_to_sqs(

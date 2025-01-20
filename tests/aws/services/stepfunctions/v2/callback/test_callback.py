@@ -4,13 +4,14 @@ import threading
 import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.services.stepfunctions.asl.eval.count_down_latch import CountDownLatch
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import (
     await_execution_terminated,
-    create,
     create_and_record_execution,
+    create_state_machine_with_iam_role,
 )
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -52,7 +53,6 @@ def _handle_sqs_task_token_with_heartbeats_and_success(aws_client, queue_url) ->
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..tracingConfiguration",
         "$..SdkHttpMetadata",
         "$..SdkResponseMetadata",
     ]
@@ -62,7 +62,7 @@ class TestCallback:
     def test_sqs_wait_for_task_token(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
         sqs_send_task_success_state_machine,
@@ -90,8 +90,8 @@ class TestCallback:
         message_txt = "test_message_txt"
         exec_input = json.dumps({"QueueUrl": queue_url, "Message": message_txt})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -102,7 +102,7 @@ class TestCallback:
     def test_sqs_wait_for_task_token_timeout(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
         sqs_send_task_success_state_machine,
@@ -128,8 +128,8 @@ class TestCallback:
         message_txt = "test_message_txt"
         exec_input = json.dumps({"QueueUrl": queue_url, "Message": message_txt})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -140,7 +140,7 @@ class TestCallback:
     def test_sqs_failure_in_wait_for_task_token(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
         sqs_send_task_failure_state_machine,
@@ -168,8 +168,8 @@ class TestCallback:
         message_txt = "test_message_txt"
         exec_input = json.dumps({"QueueUrl": queue_url, "Message": message_txt})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -180,7 +180,7 @@ class TestCallback:
     def test_sqs_wait_for_task_tok_with_heartbeat(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
         sqs_send_heartbeat_and_task_success_state_machine,
@@ -209,8 +209,8 @@ class TestCallback:
         message_txt = "test_message_txt"
         exec_input = json.dumps({"QueueUrl": queue_url, "Message": message_txt})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -221,7 +221,7 @@ class TestCallback:
     def test_sns_publish_wait_for_task_token(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
         sqs_receive_num_messages,
@@ -272,8 +272,8 @@ class TestCallback:
         ).start()
 
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -286,7 +286,7 @@ class TestCallback:
     def test_start_execution_sync(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -307,8 +307,9 @@ class TestCallback:
 
         template_target = BT.load_sfn_template(BT.BASE_PASS_RESULT)
         definition_target = json.dumps(template_target)
-        state_machine_arn_target = create(
-            create_iam_role_for_sfn,
+        state_machine_arn_target = create_state_machine_with_iam_role(
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition_target,
@@ -321,8 +322,8 @@ class TestCallback:
             {"StateMachineArn": state_machine_arn_target, "Input": None, "Name": "TestStartTarget"}
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -333,7 +334,7 @@ class TestCallback:
     def test_start_execution_sync2(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -354,8 +355,9 @@ class TestCallback:
 
         template_target = BT.load_sfn_template(BT.BASE_PASS_RESULT)
         definition_target = json.dumps(template_target)
-        state_machine_arn_target = create(
-            create_iam_role_for_sfn,
+        state_machine_arn_target = create_state_machine_with_iam_role(
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition_target,
@@ -368,8 +370,8 @@ class TestCallback:
             {"StateMachineArn": state_machine_arn_target, "Input": None, "Name": "TestStartTarget"}
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -380,7 +382,7 @@ class TestCallback:
     def test_start_execution_sync_delegate_failure(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -408,8 +410,9 @@ class TestCallback:
 
         template_target = BT.load_sfn_template(BT.BASE_RAISE_FAILURE)
         definition_target = json.dumps(template_target)
-        state_machine_arn_target = create(
-            create_iam_role_for_sfn,
+        state_machine_arn_target = create_state_machine_with_iam_role(
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition_target,
@@ -422,8 +425,8 @@ class TestCallback:
             {"StateMachineArn": state_machine_arn_target, "Input": None, "Name": "TestStartTarget"}
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -435,7 +438,7 @@ class TestCallback:
         self,
         aws_client,
         create_lambda_function,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -465,7 +468,7 @@ class TestCallback:
         lambda_creation_response = create_lambda_function(
             func_name=function_name,
             handler_file=TT.LAMBDA_WAIT_60_SECONDS,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_1_name>"))
         lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
@@ -474,8 +477,9 @@ class TestCallback:
         template_target["States"]["Start"]["Resource"] = lambda_arn
         definition_target = json.dumps(template_target)
 
-        state_machine_arn_target = create(
-            create_iam_role_for_sfn,
+        state_machine_arn_target = create_state_machine_with_iam_role(
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition_target,
@@ -492,8 +496,8 @@ class TestCallback:
             }
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -505,7 +509,7 @@ class TestCallback:
     def test_multiple_heartbeat_notifications(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
         sfn_snapshot,
@@ -538,8 +542,8 @@ class TestCallback:
             {"QueueUrl": queue_url, "Message": "txt", "HeartbeatSecondsPath": 120}
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -553,7 +557,7 @@ class TestCallback:
     def test_multiple_executions_and_heartbeat_notifications(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
         sfn_snapshot,
@@ -579,7 +583,7 @@ class TestCallback:
         sfn_snapshot.add_transformer(RegexTransformer(queue_url, "sqs_queue_url"))
         sfn_snapshot.add_transformer(RegexTransformer(queue_name, "sqs_queue_name"))
 
-        sfn_role_arn = create_iam_role_for_sfn()
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
 
         template = CT.load_sfn_template(
             TT.SERVICE_SQS_SEND_AND_WAIT_FOR_TASK_TOKEN_WITH_HEARTBEAT_PATH
@@ -587,7 +591,10 @@ class TestCallback:
         definition = json.dumps(template)
 
         creation_response = create_state_machine(
-            name=f"state_machine_{short_uid()}", definition=definition, roleArn=sfn_role_arn
+            aws_client,
+            name=f"state_machine_{short_uid()}",
+            definition=definition,
+            roleArn=sfn_role_arn,
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_response, 0))
         state_machine_arn = creation_response["stateMachineArn"]
@@ -632,7 +639,7 @@ class TestCallback:
     def test_sqs_wait_for_task_token_call_chain(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
         sqs_send_task_success_state_machine,
@@ -666,8 +673,8 @@ class TestCallback:
 
         exec_input = json.dumps({"QueueUrl": queue_url, "Message": "HelloWorld"})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -678,7 +685,7 @@ class TestCallback:
     def test_sqs_wait_for_task_token_no_token_parameter(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
         sqs_send_task_success_state_machine,
@@ -696,8 +703,8 @@ class TestCallback:
 
         exec_input = json.dumps({"QueueUrl": queue_url})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -713,7 +720,7 @@ class TestCallback:
     def test_sqs_failure_in_wait_for_task_tok_no_error_field(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
         sfn_snapshot,
@@ -769,8 +776,8 @@ class TestCallback:
 
         exec_input = json.dumps({"QueueUrl": queue_url, "Message": "test_message_txt"})
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
@@ -783,7 +790,7 @@ class TestCallback:
         aws_client,
         sqs_create_queue,
         sqs_send_task_success_state_machine,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
@@ -833,8 +840,9 @@ class TestCallback:
         # worker and simulates a long-lasting task by waiting.
         template_target = BT.load_sfn_template(ST.SQS_SEND_MESSAGE_AND_WAIT)
         definition_target = json.dumps(template_target)
-        state_machine_arn_target = create(
-            create_iam_role_for_sfn,
+        state_machine_arn_target = create_state_machine_with_iam_role(
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition_target,
@@ -855,8 +863,8 @@ class TestCallback:
             }
         )
         create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,

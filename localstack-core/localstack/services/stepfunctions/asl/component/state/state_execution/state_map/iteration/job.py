@@ -50,7 +50,7 @@ class JobPool:
 
         self._jobs_number = len(job_inputs)
         self._open_jobs = [
-            Job(job_index=job_index, job_program=copy.deepcopy(job_program), job_input=job_input)
+            Job(job_index=job_index, job_program=job_program, job_input=job_input)
             for job_index, job_input in enumerate(job_inputs)
         ]
         self._open_jobs.reverse()

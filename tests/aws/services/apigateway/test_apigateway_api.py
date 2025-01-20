@@ -2572,3 +2572,66 @@ class TestApigatewayIntegration:
             )
 
         snapshot.match("put-integration-response-wrong-resource", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=not is_aws_cloud(), reason="Validation behavior not yet implemented"
+    )
+    def test_put_integration_request_parameter_bool_type(
+        self, aws_client, apigw_create_rest_api, aws_client_factory, snapshot
+    ):
+        apigw_client = aws_client_factory(config=Config(parameter_validation=False)).apigateway
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="APIGW test PutIntegration RequestParam",
+        )
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        bool_method = apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+            requestParameters={
+                "method.request.path.testPath": True,
+            },
+        )
+        snapshot.match("bool-method", bool_method)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.put_method(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="POST",
+                authorizationType="NONE",
+                requestParameters={
+                    "method.request.path.testPath": True,
+                    True: True,
+                },
+            )
+        snapshot.match("put-method-request-param-wrong-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.put_integration(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                type="HTTP_PROXY",
+                requestParameters={
+                    True: True,
+                },
+            )
+        snapshot.match("put-integration-request-param-wrong-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.put_integration(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                type="HTTP_PROXY",
+                requestParameters={
+                    "integration.request.path.testPath": True,
+                },
+            )
+        snapshot.match("put-integration-request-param-bool-value", e.value.response)

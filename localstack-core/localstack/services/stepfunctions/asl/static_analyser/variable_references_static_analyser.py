@@ -1,17 +1,13 @@
 from collections import OrderedDict
 from typing import Final
 
-from antlr4.tree.Tree import TerminalNodeImpl
-
 from localstack.aws.api.stepfunctions import (
     StateName,
     VariableName,
     VariableNameList,
     VariableReferences,
 )
-from localstack.services.stepfunctions.asl.antlr.runtime.ASLLexer import ASLLexer
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLParser import ASLParser
-from localstack.services.stepfunctions.asl.antlt4utils.antlr4utils import Antlr4Utils
 from localstack.services.stepfunctions.asl.jsonata.jsonata import (
     VariableReference,
     extract_jsonata_variable_references,
@@ -46,11 +42,9 @@ class VariableReferencesStaticAnalyser(StaticAnalyser):
     def _exit_state(self) -> None:
         self._fringe_state_names.pop()
 
-    def visitState_name(self, ctx: ASLParser.State_nameContext) -> None:
-        state_name: str = ctx.keyword_or_string().getText()[1:-1]
-        self._enter_state(state_name)
-
     def visitState_decl(self, ctx: ASLParser.State_declContext) -> None:
+        state_name: str = ctx.string_literal().getText()[1:-1]
+        self._enter_state(state_name=state_name)
         super().visitState_decl(ctx=ctx)
         self._exit_state()
 
@@ -67,36 +61,22 @@ class VariableReferencesStaticAnalyser(StaticAnalyser):
         if state_name not in self._variable_references:
             self._variable_references[state_name] = variable_name_list
 
-    def _extract_variable_references_from_string_var(self, terminal_node: TerminalNodeImpl) -> None:
-        reference_body = terminal_node.getText()[1:-1]
+    def visitString_variable_sample(self, ctx: ASLParser.String_variable_sampleContext):
+        reference_body = ctx.getText()[1:-1]
         variable_references: set[VariableReference] = extract_jsonata_variable_references(
             reference_body
         )
         for variable_reference in variable_references:
             self._put_variable_reference(variable_reference)
 
-    def _extract_variable_references_from_intrinsic_function(
-        self, terminal_node: TerminalNodeImpl
-    ) -> None:
-        definition_body = terminal_node.getText()[1:-1]
+    def visitString_intrinsic_function(self, ctx: ASLParser.String_intrinsic_functionContext):
+        definition_body = ctx.getText()[1:-1]
         variable_name_list: VariableNameList = VariableNamesIntrinsicStaticAnalyser.process_and_get(
             definition_body
         )
         for variable_name in variable_name_list:
             self._put_variable_name(variable_name)
 
-    def visitTerminal(self, node) -> None:
-        if Antlr4Utils.is_production(node.parentCtx, ASLParser.RULE_keyword_or_string):
-            return
-
-        maybe_string_var = Antlr4Utils.is_terminal(pt=node, token_type=ASLLexer.STRINGVAR)
-        if maybe_string_var is not None:
-            self._extract_variable_references_from_string_var(terminal_node=maybe_string_var)
-
-        maybe_intrinsic_function = Antlr4Utils.is_terminal(
-            pt=node, token_type=ASLLexer.STRINGINTRINSICFUNC
-        )
-        if maybe_intrinsic_function is not None:
-            self._extract_variable_references_from_intrinsic_function(
-                terminal_node=maybe_intrinsic_function
-            )
+    def visitString_literal(self, ctx: ASLParser.String_literalContext):
+        # Prune everything parsed as a string literal.
+        return

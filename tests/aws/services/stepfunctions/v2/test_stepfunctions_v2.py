@@ -672,7 +672,9 @@ def test_default_logging_configuration(create_state_machine, aws_client):
         definition = json.dumps(definition)
 
         sm_name = f"sts-logging-{short_uid()}"
-        result = create_state_machine(name=sm_name, definition=definition, roleArn=role_arn)
+        result = create_state_machine(
+            aws_client, name=sm_name, definition=definition, roleArn=role_arn
+        )
 
         assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
         result = aws_client.stepfunctions.describe_state_machine(
@@ -747,7 +749,7 @@ def test_aws_sdk_task(aws_client):
             # AWS initially straight up fails until the permissions seem to take effect
             # so we wait until the statemachine is at least running
             result = aws_client.stepfunctions.start_execution(
-                stateMachineArn=machine_arn, input='{"Name": "' f"{topic_name}" '"}'
+                stateMachineArn=machine_arn, input=f'{{"Name": "{topic_name}"}}'
             )
             assert wait_until(assert_execution_success(result["executionArn"]))
             describe_result = aws_client.stepfunctions.describe_execution(

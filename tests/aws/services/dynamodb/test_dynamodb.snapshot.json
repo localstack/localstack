@@ -1417,5 +1417,316 @@
         ]
       }
     }
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_update_table_without_sse_specification_change": {
+    "recorded-date": "17-12-2024, 10:40:03",
+    "recorded-content": {
+      "create_table_sse_description": {
+        "KMSMasterKeyArn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
+        "SSEType": "KMS",
+        "Status": "ENABLED"
+      },
+      "describe_kms_key": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "Default key that protects my DynamoDB data when no other key is defined",
+          "Enabled": true,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "KeyId": "<uuid:1>",
+          "KeyManager": "AWS",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "Enabled",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": false,
+          "Origin": "AWS_KMS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_table_sse_description": {
+        "KMSMasterKeyArn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
+        "SSEType": "KMS",
+        "Status": "ENABLED"
+      }
+    }
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_execute_statement_empy_parameter": {
+    "recorded-date": "03-01-2025, 09:24:27",
+    "recorded-content": {
+      "invalid-param-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '[]' at 'parameters' failed to satisfy constraint: Member must have length greater than or equal to 1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_gsi_with_billing_mode[PAY_PER_REQUEST]": {
+    "recorded-date": "08-01-2025, 18:17:06",
+    "recorded-content": {
+      "create-table-with-gsi": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "TID",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "TRID",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
+          "GlobalSecondaryIndexes": [
+            {
+              "IndexArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/index/TransactionRecordID",
+              "IndexName": "TransactionRecordID",
+              "IndexSizeBytes": 0,
+              "IndexStatus": "<index-status>",
+              "ItemCount": 0,
+              "KeySchema": [
+                {
+                  "AttributeName": "TRID",
+                  "KeyType": "HASH"
+                }
+              ],
+              "Projection": {
+                "ProjectionType": "ALL"
+              },
+              "ProvisionedThroughput": {
+                "NumberOfDecreasesToday": 0,
+                "ReadCapacityUnits": 0,
+                "WriteCapacityUnits": 0
+              }
+            }
+          ],
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "TID",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<table-name:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "<table-status>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-table": {
+        "Table": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "TID",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "TRID",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST",
+            "LastUpdateToPayPerRequestDateTime": "datetime"
+          },
+          "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
+          "GlobalSecondaryIndexes": [
+            {
+              "IndexArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/index/TransactionRecordID",
+              "IndexName": "TransactionRecordID",
+              "IndexSizeBytes": 0,
+              "IndexStatus": "<index-status>",
+              "ItemCount": 0,
+              "KeySchema": [
+                {
+                  "AttributeName": "TRID",
+                  "KeyType": "HASH"
+                }
+              ],
+              "Projection": {
+                "ProjectionType": "ALL"
+              },
+              "ProvisionedThroughput": {
+                "NumberOfDecreasesToday": 0,
+                "ReadCapacityUnits": 0,
+                "WriteCapacityUnits": 0
+              }
+            }
+          ],
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "TID",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<table-name:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "<table-status>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_gsi_with_billing_mode[PROVISIONED]": {
+    "recorded-date": "08-01-2025, 18:17:21",
+    "recorded-content": {
+      "create-table-with-gsi": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "TID",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "TRID",
+              "AttributeType": "S"
+            }
+          ],
+          "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
+          "GlobalSecondaryIndexes": [
+            {
+              "IndexArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/index/TransactionRecordID",
+              "IndexName": "TransactionRecordID",
+              "IndexSizeBytes": 0,
+              "IndexStatus": "<index-status>",
+              "ItemCount": 0,
+              "KeySchema": [
+                {
+                  "AttributeName": "TRID",
+                  "KeyType": "HASH"
+                }
+              ],
+              "Projection": {
+                "ProjectionType": "ALL"
+              },
+              "ProvisionedThroughput": {
+                "NumberOfDecreasesToday": 0,
+                "ReadCapacityUnits": 1,
+                "WriteCapacityUnits": 1
+              }
+            }
+          ],
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "TID",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 5,
+            "WriteCapacityUnits": 5
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<table-name:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "<table-status>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-table": {
+        "Table": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "TID",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "TRID",
+              "AttributeType": "S"
+            }
+          ],
+          "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
+          "GlobalSecondaryIndexes": [
+            {
+              "IndexArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/index/TransactionRecordID",
+              "IndexName": "TransactionRecordID",
+              "IndexSizeBytes": 0,
+              "IndexStatus": "<index-status>",
+              "ItemCount": 0,
+              "KeySchema": [
+                {
+                  "AttributeName": "TRID",
+                  "KeyType": "HASH"
+                }
+              ],
+              "Projection": {
+                "ProjectionType": "ALL"
+              },
+              "ProvisionedThroughput": {
+                "NumberOfDecreasesToday": 0,
+                "ReadCapacityUnits": 1,
+                "WriteCapacityUnits": 1
+              }
+            }
+          ],
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "TID",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 5,
+            "WriteCapacityUnits": 5
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<table-name:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "<table-status>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

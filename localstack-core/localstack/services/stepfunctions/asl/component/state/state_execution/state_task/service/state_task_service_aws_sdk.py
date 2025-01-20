@@ -14,6 +14,9 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
+    StateCredentials,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceCondition,
     ResourceRuntimePart,
@@ -112,7 +115,7 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
             ]
             if "HostId" in ex.response["ResponseMetadata"]:
                 cause_details.append(
-                    f'Extended Request ID: {ex.response["ResponseMetadata"]["HostId"]}'
+                    f"Extended Request ID: {ex.response['ResponseMetadata']['HostId']}"
                 )
 
             cause: str = f"{error_message} ({', '.join(cause_details)})"
@@ -125,14 +128,14 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-        task_credentials: dict,
+        state_credentials: StateCredentials,
     ):
         service_name = self._get_boto_service_name()
         api_action = self._get_boto_service_action()
         api_client = boto_client_for(
-            region=resource_runtime_part.region,
-            account=resource_runtime_part.account,
             service=service_name,
+            region=resource_runtime_part.region,
+            state_credentials=state_credentials,
         )
         response = getattr(api_client, api_action)(**normalised_parameters) or dict()
         if response:

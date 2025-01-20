@@ -436,7 +436,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_integrations.py::TestApiGatewayHeaderRemapping::test_apigateway_header_remapping_http[HTTP]": {
-    "recorded-date": "17-07-2024, 18:34:51",
+    "recorded-date": "11-12-2024, 15:28:47",
     "recorded-content": {
       "apigw-id": "<apigw-id:1>",
       "no-param-integration": {
@@ -451,7 +451,7 @@
         },
         "response-headers": {
           "Connection": "close",
-          "Content-Length": "463",
+          "Content-Length": "462",
           "Content-Type": "application/json",
           "Date": "<Date>",
           "X-Amzn-Trace-Id": "<X-Amzn-Trace-Id>",
@@ -521,7 +521,7 @@
           "Age": "response_param_Age",
           "Connection": "close",
           "Content-Encoding": "response_param_Content-Encoding",
-          "Content-Length": "2740",
+          "Content-Length": "2739",
           "Content-Type": "response_param_Content-Type",
           "Date": "<Date>",
           "Pragma": "response_param_Pragma",
@@ -580,7 +580,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_integrations.py::TestApiGatewayHeaderRemapping::test_apigateway_header_remapping_http[HTTP_PROXY]": {
-    "recorded-date": "17-07-2024, 18:35:02",
+    "recorded-date": "11-12-2024, 15:29:02",
     "recorded-content": {
       "apigw-id": "<apigw-id:1>",
       "no-param-integration": {
@@ -607,12 +607,12 @@
           "Access-Control-Allow-Credentials": "true",
           "Access-Control-Allow-Origin": "*",
           "Connection": "close",
-          "Content-Length": "791",
+          "Content-Length": "790",
           "Content-Type": "application/json",
           "Date": "<Date>",
           "x-amz-apigw-id": "<x-amz-apigw-id>",
           "x-amzn-Remapped-Connection": "keep-alive",
-          "x-amzn-Remapped-Content-Length": "791",
+          "x-amzn-Remapped-Content-Length": "790",
           "x-amzn-Remapped-Date": "<x-amzn-Remapped-Date>",
           "x-amzn-Remapped-Server": "gunicorn/19.9.0",
           "x-amzn-RequestId": "<uuid:1>"
@@ -649,12 +649,12 @@
           "Access-Control-Allow-Credentials": "true",
           "Access-Control-Allow-Origin": "*",
           "Connection": "close",
-          "Content-Length": "1189",
+          "Content-Length": "1188",
           "Content-Type": "application/json",
           "Date": "<Date>",
           "x-amz-apigw-id": "<x-amz-apigw-id>",
           "x-amzn-Remapped-Connection": "keep-alive",
-          "x-amzn-Remapped-Content-Length": "1189",
+          "x-amzn-Remapped-Content-Length": "1188",
           "x-amzn-Remapped-Date": "<x-amzn-Remapped-Date>",
           "x-amzn-Remapped-Server": "gunicorn/19.9.0",
           "x-amzn-RequestId": "<uuid:2>"
@@ -691,7 +691,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_integrations.py::TestApiGatewayHeaderRemapping::test_apigateway_header_remapping_aws[AWS]": {
-    "recorded-date": "18-07-2024, 23:22:48",
+    "recorded-date": "11-12-2024, 15:29:40",
     "recorded-content": {
       "apigw-id": "<apigw-id:1>",
       "no-param-integration": {
@@ -874,7 +874,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_integrations.py::TestApiGatewayHeaderRemapping::test_apigateway_header_remapping_aws[AWS_PROXY]": {
-    "recorded-date": "18-07-2024, 23:23:10",
+    "recorded-date": "11-12-2024, 15:29:56",
     "recorded-content": {
       "apigw-id": "<apigw-id:1>",
       "no-param-integration": {
@@ -897,12 +897,12 @@
           "Warn": "299 localStack/0.0",
           "X-Amzn-Trace-Id": "<X-Amzn-Trace-Id>",
           "X-Forwarded-For": "<x--forwarded--for:1>",
-          "X-Forwarded-Port": "<x--forwarded--port:1>",
+          "X-Forwarded-Port": "<X-Forwarded-Port>",
           "X-Forwarded-Proto": "<X-Forwarded-Proto>"
         },
         "response-headers": {
           "Connection": "close",
-          "Content-Length": "2339",
+          "Content-Length": "2336",
           "Content-Type": "application/json",
           "Date": "<Date>",
           "X-Amzn-Trace-Id": "<X-Amzn-Trace-Id>",
@@ -930,12 +930,12 @@
           "Warn": "299 localStack/0.0",
           "X-Amzn-Trace-Id": "<X-Amzn-Trace-Id>",
           "X-Forwarded-For": "<x--forwarded--for:1>",
-          "X-Forwarded-Port": "<x--forwarded--port:1>",
+          "X-Forwarded-Port": "<X-Forwarded-Port>",
           "X-Forwarded-Proto": "<X-Forwarded-Proto>"
         },
         "response-headers": {
           "Connection": "close",
-          "Content-Length": "2323",
+          "Content-Length": "2320",
           "Content-Type": "application/json",
           "Date": "<Date>",
           "X-Amzn-Trace-Id": "<X-Amzn-Trace-Id>",
@@ -1054,6 +1054,28 @@
       },
       "invoke-path-else": {
         "response": "this is the else clause"
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_integration_mock_with_path_param": {
+    "recorded-date": "29-11-2024, 19:27:54",
+    "recorded-content": {
+      "integration": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestParameters": {
+          "integration.request.path.integrationPath": "method.request.path.testPath"
+        },
+        "requestTemplates": {
+          "application/json": "{statusCode: 200}"
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
       }
     }
   }

@@ -3,6 +3,7 @@ import json
 import pytest
 
 from localstack import config
+from localstack.aws.api.events import InvalidEventPatternException
 from localstack.utils.event_matcher import matches_event
 
 EVENT_PATTERN_DICT = {
@@ -68,9 +69,20 @@ def test_matches_event_non_matching_pattern():
     assert not matches_event(non_matching_pattern, EVENT_DICT)
 
 
-def test_matches_event_invalid_json():
+@pytest.mark.parametrize("engine", ("python", "java"))
+def test_matches_event_invalid_json(event_rule_engine, engine):
     """Test with invalid JSON strings"""
-    with pytest.raises(json.JSONDecodeError):
+
+    if engine == "java":
+        # this lets the exception bubble up to the provider, when AWS returns a proper exception, it should be fixed
+        exception_type = json.JSONDecodeError
+        # do not re-enable this test, enabling jpype here will break StepFunctions
+        pytest.skip("jpype conflict")
+    else:
+        exception_type = InvalidEventPatternException
+
+    event_rule_engine(engine)
+    with pytest.raises(exception_type):
         matches_event("{invalid-json}", EVENT_STR)
 
 

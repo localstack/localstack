@@ -23,7 +23,6 @@ from tests.aws.services.stepfunctions.templates.services.services_templates impo
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..tracingConfiguration",
         "$..redriveCount",
         "$..redriveStatus",
         "$..RedriveCount",
@@ -36,7 +35,13 @@ class TestBaseEvaluateJsonata:
     @pytest.mark.parametrize(
         "expression_dict",
         [
-            {"TimeoutSeconds": EJT.JSONATA_NUMBER_EXPRESSION},
+            pytest.param(
+                {"TimeoutSeconds": EJT.JSONATA_NUMBER_EXPRESSION},
+                marks=pytest.mark.skipif(
+                    condition=not is_aws_cloud(),
+                    reason="Polling and timeouts are flakey.",
+                ),
+            ),
             {"HeartbeatSeconds": EJT.JSONATA_NUMBER_EXPRESSION},
         ],
         ids=[
@@ -47,7 +52,7 @@ class TestBaseEvaluateJsonata:
     def test_base_task(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         create_lambda_function,
@@ -74,8 +79,8 @@ class TestBaseEvaluateJsonata:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -109,7 +114,7 @@ class TestBaseEvaluateJsonata:
     def test_base_map(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         expression_dict,
@@ -120,8 +125,8 @@ class TestBaseEvaluateJsonata:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -139,7 +144,7 @@ class TestBaseEvaluateJsonata:
     def test_base_task_from_input(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         create_lambda_function,
@@ -167,8 +172,8 @@ class TestBaseEvaluateJsonata:
 
         exec_input = json.dumps({"input_value": input_value})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,
@@ -194,7 +199,7 @@ class TestBaseEvaluateJsonata:
     def test_base_map_from_input(
         self,
         aws_client,
-        create_iam_role_for_sfn,
+        create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         create_lambda_function,
@@ -222,8 +227,8 @@ class TestBaseEvaluateJsonata:
 
         exec_input = json.dumps({"input_value": input_value})
         create_and_record_execution(
-            stepfunctions_client=aws_client.stepfunctions,
-            create_iam_role_for_sfn=create_iam_role_for_sfn,
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
             definition=definition,

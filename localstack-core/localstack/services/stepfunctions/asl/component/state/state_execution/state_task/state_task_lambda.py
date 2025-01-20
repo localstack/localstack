@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Union
 
 from botocore.exceptions import ClientError
@@ -11,6 +12,7 @@ from localstack.aws.api.stepfunctions import (
     LambdaFunctionScheduledEventDetails,
     LambdaFunctionSucceededEventDetails,
     LambdaFunctionTimedOutEventDetails,
+    TaskCredentials,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
     CustomErrorName,
@@ -40,6 +42,8 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.quotas import is_within_size_quota
 
+LOG = logging.getLogger(__name__)
+
 
 class StateTaskLambda(StateTask):
     resource: LambdaResource
@@ -60,12 +64,20 @@ class StateTaskLambda(StateTask):
             return ex.failure_event
 
         error = "Exception"
-        if isinstance(ex, lambda_eval_utils.LambdaFunctionErrorException):
-            error_name = CustomErrorName(error)
-            cause = ex.payload
-        elif isinstance(ex, ClientError):
+        if isinstance(ex, ClientError):
             error_name = CustomErrorName(error)
             cause = ex.response["Error"]["Message"]
+        elif isinstance(ex, lambda_eval_utils.LambdaFunctionErrorException):
+            cause = ex.payload
+            try:
+                cause_object = json.loads(cause)
+                error = cause_object["errorType"]
+            except Exception as ex:
+                LOG.warning(
+                    "Could not retrieve 'errorType' field from LambdaFunctionErrorException object: %s",
+                    ex,
+                )
+            error_name = CustomErrorName(error)
         else:
             error_name = StatesErrorName(StatesErrorNameType.StatesTaskFailed)
             cause = str(ex)
@@ -119,6 +131,7 @@ class StateTaskLambda(StateTask):
 
     def _eval_execution(self, env: Environment) -> None:
         parameters = self._eval_parameters(env=env)
+        state_credentials = self._eval_state_credentials(env=env)
         payload = parameters["Payload"]
 
         scheduled_event_details = LambdaFunctionScheduledEventDetails(
@@ -132,6 +145,10 @@ class StateTaskLambda(StateTask):
             self.timeout.eval(env=env)
             timeout_seconds = env.stack.pop()
             scheduled_event_details["timeoutInSeconds"] = timeout_seconds
+        if self.credentials:
+            scheduled_event_details["taskCredentials"] = TaskCredentials(
+                roleArn=state_credentials.role_arn
+            )
         env.event_manager.add_event(
             context=env.event_history_context,
             event_type=HistoryEventType.LambdaFunctionScheduled,
@@ -151,7 +168,7 @@ class StateTaskLambda(StateTask):
             env=env,
             parameters=parameters,
             region=resource_runtime_part.region,
-            account=resource_runtime_part.account,
+            state_credentials=state_credentials,
         )
 
         # In lambda invocations, only payload is passed on as output.

@@ -10,6 +10,8 @@ from localstack.aws.api import RequestContext
 from localstack.aws.api.events import (
     ArchiveName,
     Arn,
+    ConnectionArn,
+    ConnectionName,
     EventBusName,
     EventBusNameOrArn,
     EventTime,
@@ -37,6 +39,9 @@ RULE_ARN_ARCHIVE_PATTERN = re.compile(
 )
 ARCHIVE_NAME_ARN_PATTERN = re.compile(
     rf"{ARN_PARTITION_REGEX}:events:[a-z0-9-]+:\d{{12}}:archive/(?P<name>.+)$"
+)
+CONNCTION_NAME_ARN_PATTERN = re.compile(
+    rf"{ARN_PARTITION_REGEX}:events:[a-z0-9-]+:\d{{12}}:connection/(?P<name>[^/]+)/(?P<id>[^/]+)$"
 )
 
 TARGET_ID_PATTERN = re.compile(r"[\.\-_A-Za-z0-9]+")
@@ -88,6 +93,17 @@ def extract_event_bus_name(
         if bool(RULE_ARN_CUSTOM_EVENT_BUS_PATTERN.match(resource_arn_or_name)):
             return resource_arn_or_name.split("rule/", 1)[1].split("/", 1)[0]
         return "default"
+
+
+def extract_connection_name(
+    connection_arn: ConnectionArn,
+) -> ConnectionName:
+    match = CONNCTION_NAME_ARN_PATTERN.match(connection_arn)
+    if not match:
+        raise ValidationException(
+            f"Parameter {connection_arn} is not valid. Reason: Provided Arn is not in correct format."
+        )
+    return match.group("name")
 
 
 def extract_archive_name(arn: Arn) -> ArchiveName:
@@ -181,6 +197,9 @@ def format_event(
     message_id = message.get("original_id", str(long_uid()))
     region = message.get("original_region", region)
     account_id = message.get("original_account", account_id)
+    # Format the datetime to ISO-8601 string
+    event_time = get_event_time(event)
+    formatted_time = event_time_to_time_string(event_time)
 
     formatted_event = {
         "version": "0",
@@ -188,7 +207,7 @@ def format_event(
         "detail-type": event.get("DetailType"),
         "source": event.get("Source"),
         "account": account_id,
-        "time": get_event_time(event),
+        "time": formatted_time,
         "region": region,
         "resources": event.get("Resources", []),
         "detail": json.loads(event.get("Detail", "{}")),
@@ -245,3 +264,32 @@ def get_trace_header_encoded_region_account(
             return json.dumps({"original_id": original_id, "original_account": source_account_id})
         else:
             return json.dumps({"original_account": source_account_id})
+
+
+def is_nested_in_string(template: str, match: re.Match[str]) -> bool:
+    """
+    Determines if a match (string) is within quotes in the given template.
+
+    Examples:
+    True for "users-service/users/<userId>"  # nested within larger string
+    True for "<userId>"                      # simple quoted placeholder
+    True for "Hello <name>"                  # nested within larger string
+    False for {"id": <userId>}               # not in quotes at all
+    """
+    start = match.start()
+    end = match.end()
+
+    left_quote = template.rfind('"', 0, start)
+    right_quote = template.find('"', end)
+    next_comma = template.find(",", end)
+    next_brace = template.find("}", end)
+
+    # If no right quote, or if comma/brace comes before right quote, not nested
+    if (
+        right_quote == -1
+        or (next_comma != -1 and next_comma < right_quote)
+        or (next_brace != -1 and next_brace < right_quote)
+    ):
+        return False
+
+    return left_quote != -1

@@ -146,6 +146,7 @@
 /localstack-core/localstack/aws/api/events/ @maxhoheiser @joe4dev
 /localstack-core/localstack/services/events/ @maxhoheiser @joe4dev
 /tests/aws/services/events/ @maxhoheiser @joe4dev
+/tests/unit/services/events/ @maxhoheiser @joe4dev
 
 # firehose
 /localstack-core/localstack/aws/api/firehose/ @pinzon
@@ -200,10 +201,15 @@
 /tests/aws/services/s3/ @bentsku
 /tests/unit/test_s3.py @bentsku
 
+# s3control
+/localstack-core/localstack/aws/api/s3control/ @bentsku
+/localstack-core/localstack/services/s3control/ @bentsku
+/tests/aws/services/s3control/ @bentsku
+
 # scheduler
-/localstack-core/localstack/aws/api/scheduler/ @joe4dev
-/localstack-core/localstack/services/scheduler/ @joe4dev
-/tests/aws/services/scheduler/ @joe4dev
+/localstack-core/localstack/aws/api/scheduler/ @zaingz @joe4dev
+/localstack-core/localstack/services/scheduler/ @zaingz @joe4dev
+/tests/aws/services/scheduler/ @zaingz @joe4dev
 
 # secretsmanager
 /localstack-core/localstack/aws/api/secretsmanager/ @dominikschubert @macnev2013 @MEPalma
@@ -233,10 +239,10 @@
 /tests/aws/services/ssm/ @dominikschubert
 
 # stepfunctions
-/localstack-core/localstack/aws/api/stepfunctions/ @MEPalma @joe4dev @dominikschubert @gregfurman
-/localstack-core/localstack/services/stepfunctions/ @MEPalma @joe4dev @dominikschubert @gregfurman
-/tests/aws/services/stepfunctions/ @MEPalma @joe4dev @dominikschubert @gregfurman
-/tests/unit/services/stepfunctions/ @MEPalma @joe4dev @dominikschubert @gregfurman
+/localstack-core/localstack/aws/api/stepfunctions/ @MEPalma @joe4dev @gregfurman
+/localstack-core/localstack/services/stepfunctions/ @MEPalma @joe4dev @gregfurman
+/tests/aws/services/stepfunctions/ @MEPalma @joe4dev @gregfurman
+/tests/unit/services/stepfunctions/ @MEPalma @joe4dev @gregfurman
 
 # sts
 /localstack-core/localstack/aws/api/sts/ @pinzon @dfangl

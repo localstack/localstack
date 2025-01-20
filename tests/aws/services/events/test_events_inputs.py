@@ -11,7 +11,11 @@ from tests.aws.services.events.helper_functions import (
     is_old_provider,
     sqs_collect_messages,
 )
-from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTERN
+from tests.aws.services.events.test_events import (
+    SPECIAL_EVENT_DETAIL,
+    TEST_EVENT_DETAIL,
+    TEST_EVENT_PATTERN,
+)
 
 EVENT_DETAIL_DUPLICATED_KEY = {
     "command": "update-account",
@@ -29,9 +33,9 @@ INPUT_TEMPLATE_PREDEFINED_VARIABLES_JSON = '{"originalEvent": <aws.events.event>
     reason="V1 provider does not support this feature",
 )
 def test_put_event_input_path_and_input_transformer(
-    create_sqs_events_target, events_create_event_bus, events_put_rule, aws_client, snapshot
+    sqs_as_events_target, events_create_event_bus, events_put_rule, aws_client, snapshot
 ):
-    _, queue_arn = create_sqs_events_target()
+    _, queue_arn = sqs_as_events_target()
     bus_name = f"test-bus-{short_uid()}"
     events_create_event_bus(Name=bus_name)
 
@@ -78,7 +82,7 @@ class TestInputPath:
             {
                 "Source": TEST_EVENT_PATTERN["source"][0],
                 "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
             }
         ]
         entries_asserts = [(entries1, True)]
@@ -97,7 +101,7 @@ class TestInputPath:
         snapshot.match("message", messages)
 
     @markers.aws.validated
-    @pytest.mark.parametrize("event_detail", [EVENT_DETAIL, EVENT_DETAIL_DUPLICATED_KEY])
+    @pytest.mark.parametrize("event_detail", [TEST_EVENT_DETAIL, EVENT_DETAIL_DUPLICATED_KEY])
     def test_put_events_with_input_path_nested(
         self, event_detail, put_events_with_filter_to_sqs, snapshot
     ):
@@ -131,7 +135,7 @@ class TestInputPath:
             {
                 "Source": TEST_EVENT_PATTERN["source"][0],
                 "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
             }
         ]
         entries_asserts = [(entries1, True)]
@@ -153,14 +157,14 @@ class TestInputPath:
     def test_put_events_with_input_path_multiple_targets(
         self,
         aws_client,
-        create_sqs_events_target,
+        sqs_as_events_target,
         events_create_event_bus,
         events_put_rule,
         snapshot,
     ):
         # prepare target queues
-        queue_url_1, queue_arn_1 = create_sqs_events_target()
-        queue_url_2, queue_arn_2 = create_sqs_events_target()
+        queue_url_1, queue_arn_1 = sqs_as_events_target()
+        queue_url_2, queue_arn_2 = sqs_as_events_target()
 
         bus_name = f"test-bus-{short_uid()}"
         events_create_event_bus(Name=bus_name)
@@ -189,7 +193,7 @@ class TestInputPath:
                     "EventBusName": bus_name,
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
                 }
             ]
         )
@@ -231,7 +235,7 @@ class TestInputTransformer:
             {
                 "Source": TEST_EVENT_PATTERN["source"][0],
                 "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
             }
         ]
         entries_asserts = [(entries, True)]
@@ -290,7 +294,7 @@ class TestInputTransformer:
             {
                 "Source": TEST_EVENT_PATTERN["source"][0],
                 "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
             }
         ]
         entries_asserts = [(entries, True)]
@@ -344,13 +348,13 @@ class TestInputTransformer:
     )
     def test_put_events_with_input_transformer_missing_keys(
         self,
-        create_sqs_events_target,
+        sqs_as_events_target,
         events_create_event_bus,
         events_put_rule,
         aws_client_factory,
         snapshot,
     ):
-        _, queue_arn = create_sqs_events_target()
+        _, queue_arn = sqs_as_events_target()
 
         bus_name = f"test-bus-{short_uid()}"
         events_create_event_bus(Name=bus_name)
@@ -388,6 +392,12 @@ class TestInputTransformer:
         snapshot.add_transformer(snapshot.transform.regex(target_id, "<target-id>"))
         snapshot.match("missing-key-exception-error", exception)
 
+    # TODO test wrong input template
+    # '{"userId": "users/<userId>/profile/<type>"}',
+    # ("prefix_<userId>_suffix",)
+    # ("multi_replacement/users/<userId>/second/<userId>",)
+    # "abc:  <userId>",
+
     @markers.aws.validated
     @pytest.mark.skipif(
         is_old_provider(),
@@ -397,10 +407,14 @@ class TestInputTransformer:
         "input_template",
         [INPUT_TEMPLATE_PREDEFINE_VARIABLES_STR, INPUT_TEMPLATE_PREDEFINED_VARIABLES_JSON],
     )
+    # Todo deal with
+    # "instance": "$.detail.resources[0].id",
+    # "platform": "$.detail.resources[0].details.awsEc2Instance.platform",
+    # "region": "$.detail.resources[0].region",
     def test_input_transformer_predefined_variables(
         self,
         input_template,
-        create_sqs_events_target,
+        sqs_as_events_target,
         events_create_event_bus,
         events_put_rule,
         aws_client,
@@ -409,7 +423,7 @@ class TestInputTransformer:
         # https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-transform-target-input.html#eb-transform-input-predefined
 
         # prepare target queues
-        queue_url, queue_arn = create_sqs_events_target()
+        queue_url, queue_arn = sqs_as_events_target()
 
         bus_name = f"test-bus-{short_uid()}"
         events_create_event_bus(Name=bus_name)
@@ -441,7 +455,7 @@ class TestInputTransformer:
                     "EventBusName": bus_name,
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
                 }
             ]
         )
@@ -462,3 +476,118 @@ class TestInputTransformer:
             ]
         )
         snapshot.match("messages", messages)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    @pytest.mark.parametrize(
+        "input_template",
+        [
+            '{"method": "PUT", "path": "users-service/users/<userId>", "bod": <payload>}',
+            '"Payload of <payload> with path users-service/users/<userId> and <userId>"',
+            '{"id" : <userId>}',
+            '{"id" : "<userId>"}',
+            '{"method": "PUT", "path": "users-service/users/<userId>", "id": <userId>, "body": <payload>}',
+            '{"method": "PUT", "path": "users-service/users/<userId>", "bod": [<userId>, "hardcoded"]}',
+            '{"method": "PUT", "nested": {"level1": {"level2": {"level3": "users-service/users/<userId>"} } }, "bod": "<userId>"}',
+            '"<listsingle> single list item"',
+            '"<listmulti> multiple list items"',
+            '{"singlelistitem": <listsingle>}',
+            '"<listsingle> single list item <listmulti> multiple list items <systemstring> system account id <payload> payload <userId> user id"',
+            '{"multi_replacement": "users/<userId>/second/<userId>"}',
+            # TODO known limitation due to sqs message handling sting with new line
+            # '"<listsingle> single list item\n<listmulti> multiple list items"',
+        ],
+    )
+    def test_input_transformer_nested_keys_replacement(
+        self,
+        input_template,
+        put_events_with_filter_to_sqs,
+        snapshot,
+    ):
+        """
+        Mapping a nested key via input path map e.g.
+        "userId" : "$.detail.id" maped to "users-service/users/<userId>"
+        replacement values that are valid json strings cannot be placed in quotes in the input template
+        since this will result in a non valid json string
+        """
+        entries = [
+            {
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": json.dumps(SPECIAL_EVENT_DETAIL),
+            }
+        ]
+        entries_asserts = [(entries, True)]
+
+        input_path_map = {
+            "userId": "$.detail.payload.acc_id",
+            "payload": "$.detail.payload",
+            "systemstring": "$.detail.awsAccountId",  # with resolve to empty value
+            "listsingle": "$.detail.listsingle",
+            "listmulti": "$.detail.listmulti",
+        }
+        input_transformer = {
+            "InputPathsMap": input_path_map,
+            "InputTemplate": input_template,
+        }
+        messages = put_events_with_filter_to_sqs(
+            pattern=TEST_EVENT_PATTERN,
+            entries_asserts=entries_asserts,
+            input_transformer=input_transformer,
+        )
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+            ]
+        )
+        snapshot.match("input-transformed-messages", messages)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    @pytest.mark.parametrize(
+        "input_template",
+        [
+            '{"not_valid": "users-service/users/<payload>", "bod": <payload>}',
+            '{"payload": "<payload>"}',  # json value must not be enclosed in quotes
+            '{"singlelistitem": "<listsingle>"}',  # list value must not be enclosed in quotes
+        ],
+    )
+    def test_input_transformer_nested_keys_replacement_not_valid(
+        self,
+        input_template,
+        put_events_with_filter_to_sqs,
+    ):
+        """
+        Mapping a nested key via input path map must be a valid string or json
+        else it will be silently ignored
+        """
+        entries = [
+            {
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": json.dumps(SPECIAL_EVENT_DETAIL),
+            }
+        ]
+        entries_asserts = [(entries, False)]
+
+        input_path_map = {
+            "userId": "$.detail.payload.acc_id",
+            "payload": "$.detail.payload",
+            "listsingle": "$.detail.listsingle",
+        }
+        input_transformer = {
+            "InputPathsMap": input_path_map,
+            "InputTemplate": input_template,
+        }
+        put_events_with_filter_to_sqs(
+            pattern=TEST_EVENT_PATTERN,
+            entries_asserts=entries_asserts,
+            input_transformer=input_transformer,
+        )

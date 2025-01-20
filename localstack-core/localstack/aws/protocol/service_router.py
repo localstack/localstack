@@ -85,6 +85,7 @@ signing_name_path_prefix_rules = {
     "bedrock": {
         "/guardrail/": ServiceModelIdentifier("bedrock-runtime"),
         "/model/": ServiceModelIdentifier("bedrock-runtime"),
+        "/async-invoke": ServiceModelIdentifier("bedrock-runtime"),
     },
     "execute-api": {
         "/@connections": ServiceModelIdentifier("apigatewaymanagementapi"),
