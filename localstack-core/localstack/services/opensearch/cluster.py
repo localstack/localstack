@@ -244,9 +244,9 @@ def register_cluster(
     # custom endpoints override any endpoint strategy
     if custom_endpoint and custom_endpoint.enabled:
         LOG.debug("Registering route from %s%s to %s", host, path, endpoint.proxy.forward_base_url)
-        assert not (
-            host == localstack_host().host and (not path or path == "/")
-        ), "trying to register an illegal catch all route"
+        assert not (host == localstack_host().host and (not path or path == "/")), (
+            "trying to register an illegal catch all route"
+        )
         rules.append(
             ROUTER.add(
                 path=path,

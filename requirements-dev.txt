@@ -16,7 +16,7 @@ antlr4-python3-runtime==4.13.2
     #   moto-ext
 anyio==4.8.0
     # via httpx
-apispec==6.8.0
+apispec==6.8.1
     # via localstack-core
 argparse==1.4.0
     # via amazon-kclpy
@@ -27,15 +27,15 @@ attrs==24.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.218
+aws-cdk-asset-awscli-v1==2.2.219
     # via aws-cdk-lib
 aws-cdk-asset-kubectl-v20==2.1.3
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==39.1.38
+aws-cdk-cloud-assembly-schema==39.1.45
     # via aws-cdk-lib
-aws-cdk-lib==2.174.0
+aws-cdk-lib==2.175.1
     # via localstack-core
 aws-sam-translator==1.94.0
     # via
@@ -43,17 +43,17 @@ aws-sam-translator==1.94.0
     #   localstack-core
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.36.27
+awscli==1.36.38
     # via localstack-core
 awscrt==0.23.6
     # via localstack-core
-boto3==1.35.86
+boto3==1.35.97
     # via
     #   amazon-kclpy
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-botocore==1.35.86
+botocore==1.35.97
     # via
     #   aws-xray-sdk
     #   awscli
@@ -85,7 +85,7 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.22.3
+cfn-lint==1.22.4
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -234,7 +234,7 @@ jsonschema-path==0.3.3
     # via
     #   openapi-core
     #   openapi-spec-validator
-jsonschema-specifications==2023.12.1
+jsonschema-specifications==2024.10.1
     # via
     #   jsonschema
     #   openapi-schema-validator
@@ -254,7 +254,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.5.0
     # via openapi-core
-moto-ext==5.0.26.post1
+moto-ext==5.0.26.post2
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -268,7 +268,7 @@ nodeenv==1.9.1
     # via pre-commit
 openapi-core==0.19.4
     # via localstack-core
-openapi-schema-validator==0.6.2
+openapi-schema-validator==0.6.3
     # via
     #   openapi-core
     #   openapi-spec-validator
@@ -292,7 +292,7 @@ pandoc==2.4
     # via localstack-core (pyproject.toml)
 parse==1.20.2
     # via openapi-core
-pathable==0.4.3
+pathable==0.4.4
     # via jsonschema-path
 platformdirs==4.3.6
     # via virtualenv
@@ -336,7 +336,7 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.10.4
+pydantic==2.10.5
     # via aws-sam-translator
 pydantic-core==2.27.2
     # via pydantic
@@ -344,11 +344,11 @@ pygments==2.19.1
     # via rich
 pymongo==4.10.1
     # via localstack-core
-pyopenssl==24.3.0
+pyopenssl==25.0.0
     # via
     #   localstack-core
     #   localstack-twisted
-pypandoc==1.14
+pypandoc==1.15
     # via localstack-core (pyproject.toml)
 pyparsing==3.2.1
     # via moto-ext
@@ -412,7 +412,7 @@ requests==2.32.3
     #   rolo
 requests-aws4auth==1.3.1
     # via localstack-core
-responses==0.25.3
+responses==0.25.6
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
@@ -430,7 +430,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.8.6
+ruff==0.9.1
     # via localstack-core (pyproject.toml)
 s3transfer==0.10.4
     # via
@@ -472,6 +472,7 @@ typing-extensions==4.12.2
     #   localstack-twisted
     #   pydantic
     #   pydantic-core
+    #   pyopenssl
     #   readerwriterlock
 urllib3==2.3.0
     # via
@@ -492,7 +493,7 @@ werkzeug==3.1.3
     #   openapi-core
     #   pytest-httpserver
     #   rolo
-wrapt==1.17.0
+wrapt==1.17.1
     # via aws-xray-sdk
 wsproto==1.2.0
     # via hypercorn

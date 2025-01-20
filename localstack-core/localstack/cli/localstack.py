@@ -361,7 +361,7 @@ def _print_docker_status_table(status: DockerStatus) -> None:
     grid.add_column()
     grid.add_column()
 
-    grid.add_row("Runtime version", f'[bold]{status["runtime_version"]}[/bold]')
+    grid.add_row("Runtime version", f"[bold]{status['runtime_version']}[/bold]")
     grid.add_row(
         "Docker image",
         f"tag: {status['image_tag']}, "

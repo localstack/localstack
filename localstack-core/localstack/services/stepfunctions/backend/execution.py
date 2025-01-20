@@ -245,7 +245,7 @@ class Execution:
     def _to_serialized_date(timestamp: datetime.datetime) -> str:
         """See test in tests.aws.services.stepfunctions.v2.base.test_base.TestSnfBase.test_execution_dateformat"""
         return (
-            f'{timestamp.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]}Z'
+            f"{timestamp.astimezone(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]}Z"
         )
 
     def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerCommunication:

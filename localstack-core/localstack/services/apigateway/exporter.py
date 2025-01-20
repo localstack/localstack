@@ -35,7 +35,7 @@ class _BaseOpenApiExporter(abc.ABC):
 
     def _resolve_refs(self, schema: dict, base_path: str):
         if "$ref" in schema:
-            schema["$ref"] = f'{base_path}/{schema["$ref"].rsplit("/", maxsplit=1)[-1]}'
+            schema["$ref"] = f"{base_path}/{schema['$ref'].rsplit('/', maxsplit=1)[-1]}"
         for value in schema.values():
             if isinstance(value, dict):
                 self._resolve_refs(value, base_path)

@@ -146,11 +146,11 @@ def recurse_object(obj: ComplexType, func: Callable, path: str = "") -> ComplexT
     obj = func(obj, path=path)
     if isinstance(obj, list):
         for i in range(len(obj)):
-            tmp_path = f'{path or "."}[{i}]'
+            tmp_path = f"{path or '.'}[{i}]"
             obj[i] = recurse_object(obj[i], func, tmp_path)
     elif isinstance(obj, dict):
         for k, v in obj.items():
-            tmp_path = f'{f"{path}." if path else ""}{k}'
+            tmp_path = f"{f'{path}.' if path else ''}{k}"
             obj[k] = recurse_object(v, func, tmp_path)
     return obj
 

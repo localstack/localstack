@@ -1,6 +1,6 @@
 import datetime
 import re
-from typing import Final
+from typing import Final, Optional
 
 from localstack.aws.api.stepfunctions import ExecutionFailedEventDetails, HistoryEventType
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
@@ -28,25 +28,60 @@ TIMESTAMP_FORMAT: Final[str] = "%Y-%m-%dT%H:%M:%SZ"
 TIMESTAMP_PATTERN: Final[str] = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$"
 
 
-def parse_timestamp(timestamp: str) -> datetime.datetime:
-    # TODO: need to fix this like we're doing for TimestampPath & add a test
-    return datetime.datetime.strptime(timestamp, TIMESTAMP_FORMAT)
-
-
 class Timestamp(WaitFunction):
     string: Final[StringExpression]
 
     def __init__(self, string: StringExpression):
         self.string = string
-        # If it's a string literal, assert it encodes a timestamp
+        # If a string literal, assert it encodes a valid timestamp.
         if isinstance(string, StringLiteral):
-            parse_timestamp(string.literal_value)
+            timestamp = string.literal_value
+            if self._from_timestamp_string(timestamp) is None:
+                raise ValueError(
+                    "The Timestamp value does not reference a valid ISO-8601 "
+                    f"extended offset date-time format string: '{timestamp}'"
+                )
+
+    @staticmethod
+    def _is_valid_timestamp_pattern(timestamp: str) -> bool:
+        return re.match(TIMESTAMP_PATTERN, timestamp) is not None
+
+    @staticmethod
+    def _from_timestamp_string(timestamp: str) -> Optional[datetime]:
+        if not Timestamp._is_valid_timestamp_pattern(timestamp):
+            return None
+        try:
+            # anything lower than seconds is truncated
+            processed_timestamp = timestamp.rsplit(".", 2)[0]
+            # add back the "Z" suffix if we removed it
+            if not processed_timestamp.endswith("Z"):
+                processed_timestamp = f"{processed_timestamp}Z"
+            datetime_timestamp = datetime.datetime.strptime(processed_timestamp, TIMESTAMP_FORMAT)
+            return datetime_timestamp
+        except Exception:
+            return None
+
+    def _create_failure_event(self, env: Environment, timestamp_str: str) -> FailureEvent:
+        return FailureEvent(
+            env=env,
+            error_name=StatesErrorName(typ=StatesErrorNameType.StatesRuntime),
+            event_type=HistoryEventType.ExecutionFailed,
+            event_details=EventDetails(
+                executionFailedEventDetails=ExecutionFailedEventDetails(
+                    error=StatesErrorNameType.StatesRuntime.to_name(),
+                    cause="The Timestamp parameter does not reference a valid ISO-8601 "
+                    f"extended offset date-time format string: {self.string.literal_value} == {timestamp_str}",
+                )
+            ),
+        )
 
     def _get_wait_seconds(self, env: Environment) -> int:
         self.string.eval(env=env)
         timestamp_str: str = env.stack.pop()
-        timestamp_datetime = parse_timestamp(timestamp_str)
-        delta = timestamp_datetime - datetime.datetime.now()
+        timestamp = self._from_timestamp_string(timestamp=timestamp_str)
+        if timestamp is None:
+            raise FailureEventException(self._create_failure_event(env, timestamp_str))
+        delta = timestamp - datetime.datetime.now()
         delta_sec = int(delta.total_seconds())
         return delta_sec
 
@@ -60,31 +95,8 @@ class TimestampPath(Timestamp):
             event_details=EventDetails(
                 executionFailedEventDetails=ExecutionFailedEventDetails(
                     error=StatesErrorNameType.StatesRuntime.to_name(),
-                    cause=f"The TimestampPath parameter does not reference a valid ISO-8601 extended offset date-time format string: {self.string.literal_value} == {timestamp_str}",
+                    cause="The TimestampPath parameter does not reference a valid ISO-8601 "
+                    f"extended offset date-time format string: {self.string.literal_value} == {timestamp_str}",
                 )
             ),
         )
-
-    def _compute_delta_seconds(self, env: Environment, timestamp_str: str):
-        try:
-            if not re.match(TIMESTAMP_PATTERN, timestamp_str):
-                raise FailureEventException(self._create_failure_event(env, timestamp_str))
-
-            # anything lower than seconds is truncated
-            processed_timestamp = timestamp_str.rsplit(".", 2)[0]
-            # add back the "Z" suffix if we removed it
-            if not processed_timestamp.endswith("Z"):
-                processed_timestamp = f"{processed_timestamp}Z"
-            timestamp = datetime.datetime.strptime(processed_timestamp, TIMESTAMP_FORMAT)
-        except Exception:
-            raise FailureEventException(self._create_failure_event(env, timestamp_str))
-
-        delta = timestamp - datetime.datetime.now()
-        delta_sec = int(delta.total_seconds())
-        return delta_sec
-
-    def _get_wait_seconds(self, env: Environment) -> int:
-        self.string.eval(env=env)
-        timestamp_str: str = env.stack.pop()
-        delta_sec = self._compute_delta_seconds(env=env, timestamp_str=timestamp_str)
-        return delta_sec

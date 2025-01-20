@@ -139,7 +139,7 @@ def _get_description_or_raise_not_found(
     delivery_stream_description = store.delivery_streams.get(delivery_stream_name)
     if not delivery_stream_description:
         raise ResourceNotFoundException(
-            f"Firehose {delivery_stream_name} under account {context.account_id} " f"not found."
+            f"Firehose {delivery_stream_name} under account {context.account_id} not found."
         )
     return delivery_stream_description
 
@@ -407,7 +407,7 @@ class FirehoseProvider(FirehoseApi):
         delivery_stream_description = store.delivery_streams.pop(delivery_stream_name, {})
         if not delivery_stream_description:
             raise ResourceNotFoundException(
-                f"Firehose {delivery_stream_name} under account {context.account_id} " f"not found."
+                f"Firehose {delivery_stream_name} under account {context.account_id} not found."
             )
 
         delivery_stream_arn = firehose_stream_arn(

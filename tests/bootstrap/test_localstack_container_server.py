@@ -47,9 +47,9 @@ class TestLocalstackContainerServer:
                 # second restart marker found and health endpoint returned with 200!
                 return True
 
-            assert poll_condition(
-                check_restart_successful, 45, 1
-            ), "expected two Ready markers in the logs after triggering restart via health endpoint"
+            assert poll_condition(check_restart_successful, 45, 1), (
+                "expected two Ready markers in the logs after triggering restart via health endpoint"
+            )
         finally:
             server.shutdown()
 
