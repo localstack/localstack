@@ -36,10 +36,7 @@ class Timestamp(WaitFunction):
         # If a string literal, assert it encodes a valid timestamp.
         if isinstance(string, StringLiteral):
             timestamp = string.literal_value
-            if (
-                not self._is_valid_timestamp_pattern(timestamp)
-                or self._from_timestamp_string(timestamp) is None
-            ):
+            if self._from_timestamp_string(timestamp) is None:
                 raise ValueError(
                     "The Timestamp value does not reference a valid ISO-8601 "
                     f"extended offset date-time format string: '{timestamp}'"
