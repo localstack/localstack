@@ -25,7 +25,7 @@ def add_role(fragment):
                 ]
             }
         ],
-        "RoleName": f"role-{str(random.randrange(0,1000))}",
+        "RoleName": f"role-{str(random.randrange(0, 1000))}",
     }
     fragment["Resources"]["Role"] = role
     return fragment

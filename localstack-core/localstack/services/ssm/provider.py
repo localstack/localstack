@@ -352,7 +352,12 @@ class SsmProvider(SsmApi, ABC):
     @staticmethod
     def _normalize_name(param_name: ParameterName, validate=False) -> ParameterName:
         if is_arn(param_name):
-            return extract_resource_from_arn(param_name).split("/")[-1]
+            resource_name = extract_resource_from_arn(param_name).replace("parameter/", "")
+            # if the parameter name is only the root path we want to look up without the leading slash.
+            # Otherwise, we add the leading slash
+            if "/" in resource_name:
+                resource_name = f"/{resource_name}"
+            return resource_name
 
         if validate:
             if "//" in param_name or ("/" in param_name and not param_name.startswith("/")):

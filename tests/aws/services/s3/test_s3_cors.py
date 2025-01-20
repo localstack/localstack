@@ -202,7 +202,7 @@ class TestS3Cors:
         )
         key = "test-cors-options-no-bucket"
         key_url = (
-            f'{_bucket_url_vhost(bucket_name=f"fake-bucket-{short_uid()}-{short_uid()}")}/{key}'
+            f"{_bucket_url_vhost(bucket_name=f'fake-bucket-{short_uid()}-{short_uid()}')}/{key}"
         )
 
         response = requests.options(key_url)
@@ -218,7 +218,7 @@ class TestS3Cors:
     @markers.aws.only_localstack
     def test_cors_http_options_non_existent_bucket_ls_allowed(self, s3_bucket):
         key = "test-cors-options-no-bucket"
-        key_url = f'{_bucket_url_vhost(bucket_name=f"fake-bucket-{short_uid()}")}/{key}'
+        key_url = f"{_bucket_url_vhost(bucket_name=f'fake-bucket-{short_uid()}')}/{key}"
         origin = ALLOWED_CORS_ORIGINS[0]
         response = requests.options(key_url, headers={"Origin": origin})
         assert response.ok

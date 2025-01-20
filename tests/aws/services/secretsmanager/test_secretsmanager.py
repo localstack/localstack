@@ -79,9 +79,9 @@ class TestSecretsManager:
             secret_ids: set[str] = {secret["Name"] for secret in lst.get("SecretList", [])}
             return secret_id in secret_ids
 
-        assert poll_condition(
-            condition=_is_secret_in_list, timeout=60, interval=2
-        ), f"Retried check for listing of {secret_id=} timed out"
+        assert poll_condition(condition=_is_secret_in_list, timeout=60, interval=2), (
+            f"Retried check for listing of {secret_id=} timed out"
+        )
 
     @staticmethod
     def _wait_force_deletion_completed(client, secret_id: str):
@@ -310,12 +310,12 @@ class TestSecretsManager:
 
         def assert_secret_names(res: dict, include_secrets: set[str], exclude_secrets: set[str]):
             secret_names = {secret["Name"] for secret in res["SecretList"]}
-            assert (
-                include_secrets - secret_names
-            ) == set(), "At least one secret which should be included is not."
-            assert (
-                exclude_secrets - secret_names
-            ) == exclude_secrets, "At least one secret which should not be included is."
+            assert (include_secrets - secret_names) == set(), (
+                "At least one secret which should be included is not."
+            )
+            assert (exclude_secrets - secret_names) == exclude_secrets, (
+                "At least one secret which should not be included is."
+            )
 
         response = aws_client.secretsmanager.list_secrets(
             Filters=[{"Key": "name", "Values": ["/"]}]

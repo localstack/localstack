@@ -61,6 +61,7 @@ PartiQLStatement = str
 PolicyRevisionId = str
 PositiveIntegerObject = int
 ProjectionExpression = str
+RecoveryPeriodInDays = int
 RegionName = str
 ReplicaStatusDescription = str
 ReplicaStatusPercentProgress = str
@@ -953,6 +954,7 @@ class ConditionCheck(TypedDict, total=False):
 
 class PointInTimeRecoveryDescription(TypedDict, total=False):
     PointInTimeRecoveryStatus: Optional[PointInTimeRecoveryStatus]
+    RecoveryPeriodInDays: Optional[RecoveryPeriodInDays]
     EarliestRestorableDateTime: Optional[Date]
     LatestRestorableDateTime: Optional[Date]
 
@@ -1887,6 +1889,7 @@ class ListTagsOfResourceOutput(TypedDict, total=False):
 
 class PointInTimeRecoverySpecification(TypedDict, total=False):
     PointInTimeRecoveryEnabled: BooleanObject
+    RecoveryPeriodInDays: Optional[RecoveryPeriodInDays]
 
 
 class Put(TypedDict, total=False):

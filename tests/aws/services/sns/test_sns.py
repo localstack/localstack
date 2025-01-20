@@ -3424,9 +3424,9 @@ class TestSNSSubscriptionHttp:
         )
 
         response = aws_client.sqs.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
-        assert (
-            len(response["Messages"]) == 1
-        ), f"invalid number of messages in DLQ response {response}"
+        assert len(response["Messages"]) == 1, (
+            f"invalid number of messages in DLQ response {response}"
+        )
         message = json.loads(response["Messages"][0]["Body"])
         assert message["Type"] == "Notification"
         assert json.loads(message["Message"])["message"] == "test_redrive_policy"
@@ -3463,9 +3463,9 @@ class TestSNSSubscriptionHttp:
             # fetch subscription information
             subscription_list = aws_client.sns.list_subscriptions_by_topic(TopicArn=topic_arn)
             assert subscription_list["ResponseMetadata"]["HTTPStatusCode"] == 200
-            assert (
-                len(subscription_list["Subscriptions"]) == number_of_endpoints
-            ), f"unexpected number of subscriptions {subscription_list}"
+            assert len(subscription_list["Subscriptions"]) == number_of_endpoints, (
+                f"unexpected number of subscriptions {subscription_list}"
+            )
 
             tokens = []
             for _ in range(number_of_endpoints):
@@ -3694,7 +3694,7 @@ class TestSNSSubscriptionHttp:
         assert "SigningCertURL" in payload
         token = payload["Token"]
         assert payload["SubscribeURL"] == (
-            f"{service_url}/?" f"Action=ConfirmSubscription&TopicArn={topic_arn}&Token={token}"
+            f"{service_url}/?Action=ConfirmSubscription&TopicArn={topic_arn}&Token={token}"
         )
         snapshot.match("unsubscribe-request", payload)
 
@@ -3758,9 +3758,9 @@ class TestSNSSubscriptionHttp:
         aws_client.sns.publish(TopicArn=topic_arn, Message=message)
 
         response = aws_client.sqs.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=3)
-        assert (
-            len(response["Messages"]) == 1
-        ), f"invalid number of messages in DLQ response {response}"
+        assert len(response["Messages"]) == 1, (
+            f"invalid number of messages in DLQ response {response}"
+        )
 
         if raw_message_delivery:
             assert response["Messages"][0]["Body"] == message

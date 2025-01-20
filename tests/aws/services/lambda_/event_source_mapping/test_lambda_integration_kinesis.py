@@ -944,7 +944,7 @@ class TestKinesisSource:
         timestamp = failure_datetime.strftime("%Y-%m-%dT%H.%M.%S")
         year_month_day = failure_datetime.strftime("%Y/%m/%d")
         assert s3_object_key.startswith(
-            f'aws/lambda/{event_source_mapping_uuid}/{record_body["KinesisBatchInfo"]["shardId"]}/{year_month_day}/{timestamp}'
+            f"aws/lambda/{event_source_mapping_uuid}/{record_body['KinesisBatchInfo']['shardId']}/{year_month_day}/{timestamp}"
         )  # there is a random UUID at the end of object key, checking that the key starts with deterministic values
 
     @markers.aws.validated
