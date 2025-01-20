@@ -330,7 +330,6 @@ class TestApiGatewayImportRestApi:
 
         response = aws_client.apigateway.get_resources(restApiId=rest_api_id)
         response["items"] = sorted(response["items"], key=itemgetter("path"))
-        print(f"{response=}")
         snapshot.match("resources", response)
 
         # this fixture will iterate over every resource and match its method, methodResponse, integration and
@@ -918,7 +917,6 @@ class TestApiGatewayImportRestApi:
 
         response = aws_client.apigateway.get_resources(restApiId=rest_api_id)
         response["items"] = sorted(response["items"], key=itemgetter("path"))
-        print(f"{response=}")
         snapshot.match("resources", response)
 
         # this fixture will iterate over every resource and match its method, methodResponse, integration and
