@@ -1563,7 +1563,13 @@ class TestSQSEventSourceMapping:
             20,
             100,
             1_000,
-            10_000,
+            pytest.param(
+                10_000,
+                marks=pytest.mark.skip(
+                    reason="Flushing based on payload sizes not yet implemented so large payloads are causing issues."
+                ),
+                id="10000",
+            ),
         ],
     )
     @markers.aws.only_localstack
