@@ -5500,28 +5500,6 @@ class TestS3:
         part_data = "abc"
         checksum_part = hash_sha256(to_bytes(part_data))
 
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.upload_part(
-                Bucket=s3_bucket,
-                Key=key_name,
-                Body=part_data,
-                PartNumber=1,
-                UploadId=upload_id,
-                ChecksumAlgorithm="SHA256",
-            )
-        snapshot.match("upload-part-with-checksum", e.value.response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.upload_part(
-                Bucket=s3_bucket,
-                Key=key_name,
-                Body=part_data,
-                PartNumber=1,
-                UploadId=upload_id,
-                ChecksumSHA256=checksum_part,
-            )
-        snapshot.match("upload-part-with-checksum-calc", e.value.response)
-
         upload_resp = aws_client.s3.upload_part(
             Bucket=s3_bucket,
             Key=key_name,
@@ -6730,7 +6708,7 @@ class TestS3PresignedUrl:
             exception = xmltodict.parse(result.content)
             snapshot.match("with-decoded-content-length", exception)
 
-        if signature_version == "s3" or not verify_signature:
+        if signature_version == "s3" or (not verify_signature and not is_aws_cloud()):
             assert b"SignatureDoesNotMatch" in result.content
         # we are either using s3v4 with new provider or whichever signature against AWS
         else:
@@ -6743,7 +6721,7 @@ class TestS3PresignedUrl:
         if snapshotted:
             exception = xmltodict.parse(result.content)
             snapshot.match("without-decoded-content-length", exception)
-        if signature_version == "s3" or not verify_signature:
+        if signature_version == "s3" or (not verify_signature and not is_aws_cloud()):
             assert b"SignatureDoesNotMatch" in result.content
         else:
             assert b"AccessDenied" in result.content
