@@ -255,9 +255,13 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_get_object_attributes": {
-    "recorded-date": "28-05-2024, 16:02:03",
+    "recorded-date": "21-01-2025, 17:37:50",
     "recorded-content": {
       "object-attrs": {
+        "Checksum": {
+          "ChecksumCRC32": "WC+ANw==",
+          "ChecksumType": "FULL_OBJECT"
+        },
         "ETag": "e92499db864217242396e8ef766079a9",
         "LastModified": "datetime",
         "ObjectSize": 7,
@@ -4681,10 +4685,11 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_checksum[SHA256]": {
-    "recorded-date": "04-06-2024, 14:41:58",
+    "recorded-date": "21-01-2025, 17:56:13",
     "recorded-content": {
       "put-object": {
         "ChecksumSHA256": "1YQo81vx2VFUl0q5ccWISq8AkSBQQ0WO80S82TmfdIQ=",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -4695,7 +4700,8 @@
       "get-object": {
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
-        "ContentEncoding": "",
+        "ChecksumSHA256": "1YQo81vx2VFUl0q5ccWISq8AkSBQQ0WO80S82TmfdIQ=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 13,
         "ContentType": "binary/octet-stream",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
@@ -4711,7 +4717,7 @@
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
         "ChecksumSHA256": "1YQo81vx2VFUl0q5ccWISq8AkSBQQ0WO80S82TmfdIQ=",
-        "ContentEncoding": "",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 13,
         "ContentType": "binary/octet-stream",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
@@ -4727,7 +4733,7 @@
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
         "ChecksumSHA256": "1YQo81vx2VFUl0q5ccWISq8AkSBQQ0WO80S82TmfdIQ=",
-        "ContentEncoding": "",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 13,
         "ContentType": "binary/octet-stream",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
@@ -4741,7 +4747,8 @@
       },
       "get-object-attrs": {
         "Checksum": {
-          "ChecksumSHA256": "1YQo81vx2VFUl0q5ccWISq8AkSBQQ0WO80S82TmfdIQ="
+          "ChecksumSHA256": "1YQo81vx2VFUl0q5ccWISq8AkSBQQ0WO80S82TmfdIQ=",
+          "ChecksumType": "FULL_OBJECT"
         },
         "LastModified": "datetime",
         "ResponseMetadata": {
@@ -4752,9 +4759,11 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_checksum[None]": {
-    "recorded-date": "04-06-2024, 14:42:01",
+    "recorded-date": "21-01-2025, 17:56:19",
     "recorded-content": {
       "put-object": {
+        "ChecksumCRC32": "lVk/nw==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -4765,6 +4774,8 @@
       "get-object": {
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
+        "ChecksumCRC32": "lVk/nw==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 13,
         "ContentType": "binary/octet-stream",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
@@ -4779,6 +4790,8 @@
       "get-object-with-checksum": {
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
+        "ChecksumCRC32": "lVk/nw==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 13,
         "ContentType": "binary/octet-stream",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
@@ -4793,6 +4806,8 @@
       "head-object-with-checksum": {
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
+        "ChecksumCRC32": "lVk/nw==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 13,
         "ContentType": "binary/octet-stream",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
@@ -4805,6 +4820,10 @@
         }
       },
       "get-object-attrs": {
+        "Checksum": {
+          "ChecksumCRC32": "lVk/nw==",
+          "ChecksumType": "FULL_OBJECT"
+        },
         "LastModified": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -6472,10 +6491,11 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_checksum[CRC32]": {
-    "recorded-date": "04-06-2024, 14:41:49",
+    "recorded-date": "21-01-2025, 17:56:05",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "lVk/nw==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -6486,7 +6506,8 @@
       "get-object": {
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
-        "ContentEncoding": "",
+        "ChecksumCRC32": "lVk/nw==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 13,
         "ContentType": "binary/octet-stream",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
@@ -6502,7 +6523,7 @@
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
         "ChecksumCRC32": "lVk/nw==",
-        "ContentEncoding": "",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 13,
         "ContentType": "binary/octet-stream",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
@@ -6518,7 +6539,7 @@
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
         "ChecksumCRC32": "lVk/nw==",
-        "ContentEncoding": "",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 13,
         "ContentType": "binary/octet-stream",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
@@ -6532,7 +6553,8 @@
       },
       "get-object-attrs": {
         "Checksum": {
-          "ChecksumCRC32": "lVk/nw=="
+          "ChecksumCRC32": "lVk/nw==",
+          "ChecksumType": "FULL_OBJECT"
         },
         "LastModified": "datetime",
         "ResponseMetadata": {
@@ -6543,10 +6565,11 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_checksum[CRC32C]": {
-    "recorded-date": "04-06-2024, 14:41:52",
+    "recorded-date": "21-01-2025, 17:56:08",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32C": "Fz3epA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -6557,7 +6580,8 @@
       "get-object": {
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
-        "ContentEncoding": "",
+        "ChecksumCRC32C": "Fz3epA==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 13,
         "ContentType": "binary/octet-stream",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
@@ -6573,7 +6597,7 @@
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
         "ChecksumCRC32C": "Fz3epA==",
-        "ContentEncoding": "",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 13,
         "ContentType": "binary/octet-stream",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
@@ -6589,7 +6613,7 @@
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
         "ChecksumCRC32C": "Fz3epA==",
-        "ContentEncoding": "",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 13,
         "ContentType": "binary/octet-stream",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
@@ -6603,7 +6627,8 @@
       },
       "get-object-attrs": {
         "Checksum": {
-          "ChecksumCRC32C": "Fz3epA=="
+          "ChecksumCRC32C": "Fz3epA==",
+          "ChecksumType": "FULL_OBJECT"
         },
         "LastModified": "datetime",
         "ResponseMetadata": {
@@ -6614,10 +6639,11 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_checksum[SHA1]": {
-    "recorded-date": "04-06-2024, 14:41:55",
+    "recorded-date": "21-01-2025, 17:56:10",
     "recorded-content": {
       "put-object": {
         "ChecksumSHA1": "jbXkHAsXUrubtL3dqDQ4w+7WXc0=",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -6628,7 +6654,8 @@
       "get-object": {
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
-        "ContentEncoding": "",
+        "ChecksumSHA1": "jbXkHAsXUrubtL3dqDQ4w+7WXc0=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 13,
         "ContentType": "binary/octet-stream",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
@@ -6644,7 +6671,7 @@
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
         "ChecksumSHA1": "jbXkHAsXUrubtL3dqDQ4w+7WXc0=",
-        "ContentEncoding": "",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 13,
         "ContentType": "binary/octet-stream",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
@@ -6660,7 +6687,7 @@
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
         "ChecksumSHA1": "jbXkHAsXUrubtL3dqDQ4w+7WXc0=",
-        "ContentEncoding": "",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 13,
         "ContentType": "binary/octet-stream",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
@@ -6674,7 +6701,8 @@
       },
       "get-object-attrs": {
         "Checksum": {
-          "ChecksumSHA1": "jbXkHAsXUrubtL3dqDQ4w+7WXc0="
+          "ChecksumSHA1": "jbXkHAsXUrubtL3dqDQ4w+7WXc0=",
+          "ChecksumType": "FULL_OBJECT"
         },
         "LastModified": "datetime",
         "ResponseMetadata": {
@@ -12063,13 +12091,14 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_get_object_attributes_with_space": {
-    "recorded-date": "31-05-2024, 12:44:23",
+    "recorded-date": "21-01-2025, 17:39:13",
     "recorded-content": {
       "get-attrs-with-whitespace": {
         "GetObjectAttributesResponse": {
           "@xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
           "Checksum": {
-            "ChecksumSHA256": "2dhlzFTsYGePGxGQhK15rn+TV9HEUZxkV94zFLf7uoo="
+            "ChecksumSHA256": "2dhlzFTsYGePGxGQhK15rn+TV9HEUZxkV94zFLf7uoo=",
+            "ChecksumType": "FULL_OBJECT"
           },
           "ETag": "70b68ae721a61941a1a62724dde5d5e4",
           "ObjectSize": "9",
@@ -12080,7 +12109,8 @@
         "GetObjectAttributesResponse": {
           "@xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
           "Checksum": {
-            "ChecksumSHA256": "2dhlzFTsYGePGxGQhK15rn+TV9HEUZxkV94zFLf7uoo="
+            "ChecksumSHA256": "2dhlzFTsYGePGxGQhK15rn+TV9HEUZxkV94zFLf7uoo=",
+            "ChecksumType": "FULL_OBJECT"
           },
           "ETag": "70b68ae721a61941a1a62724dde5d5e4",
           "ObjectSize": "9",
@@ -13550,6 +13580,80 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_checksum[CRC64NVME]": {
+    "recorded-date": "21-01-2025, 17:56:16",
+    "recorded-content": {
+      "put-object": {
+        "ChecksumCRC64NVME": "1f2xscCCZCU=",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object": {
+        "AcceptRanges": "bytes",
+        "Body": "test-checksum",
+        "ChecksumCRC64NVME": "1f2xscCCZCU=",
+        "ChecksumType": "FULL_OBJECT",
+        "ContentLength": 13,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-with-checksum": {
+        "AcceptRanges": "bytes",
+        "Body": "test-checksum",
+        "ChecksumCRC64NVME": "1f2xscCCZCU=",
+        "ChecksumType": "FULL_OBJECT",
+        "ContentLength": 13,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-with-checksum": {
+        "AcceptRanges": "bytes",
+        "Body": "test-checksum",
+        "ChecksumCRC64NVME": "1f2xscCCZCU=",
+        "ChecksumType": "FULL_OBJECT",
+        "ContentLength": 13,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-attrs": {
+        "Checksum": {
+          "ChecksumCRC64NVME": "1f2xscCCZCU=",
+          "ChecksumType": "FULL_OBJECT"
+        },
+        "LastModified": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

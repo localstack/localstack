@@ -1231,14 +1231,7 @@ class TestS3:
         snapshot.match("head-object-with-checksum", get_object_with_checksum)
 
     @markers.aws.validated
-    @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256", None])
-    @markers.snapshot.skip_snapshot_verify(
-        # https://github.com/aws/aws-sdk/issues/498
-        # https://github.com/boto/boto3/issues/3568
-        # This issue seems to only happen when the ContentEncoding is internally set to `aws-chunked`. Because we
-        # don't use HTTPS when testing, the issue does not happen, so we skip the flag
-        paths=["$..ContentEncoding"],
-    )
+    @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256", "CRC64NVME", None])
     def test_s3_get_object_checksum(self, s3_bucket, snapshot, algorithm, aws_client):
         key = "test-checksum-retrieval"
         body = b"test-checksum"

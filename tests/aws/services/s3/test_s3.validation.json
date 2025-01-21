@@ -105,13 +105,13 @@
     "last_validated_date": "2023-08-03T02:14:29+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_get_object_attributes": {
-    "last_validated_date": "2024-05-28T16:02:03+00:00"
+    "last_validated_date": "2025-01-21T17:37:50+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_get_object_attributes_versioned": {
     "last_validated_date": "2023-08-03T02:14:03+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_get_object_attributes_with_space": {
-    "last_validated_date": "2024-05-31T12:44:23+00:00"
+    "last_validated_date": "2025-01-21T17:39:13+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_get_object_content_length_with_virtual_host[False]": {
     "last_validated_date": "2023-08-07T17:56:13+00:00"
@@ -381,19 +381,22 @@
     "last_validated_date": "2023-08-03T02:23:32+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_checksum[CRC32C]": {
-    "last_validated_date": "2024-06-04T14:41:52+00:00"
+    "last_validated_date": "2025-01-21T17:56:08+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_checksum[CRC32]": {
-    "last_validated_date": "2024-06-04T14:41:49+00:00"
+    "last_validated_date": "2025-01-21T17:56:05+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_checksum[CRC64NVME]": {
+    "last_validated_date": "2025-01-21T17:56:16+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_checksum[None]": {
-    "last_validated_date": "2024-06-04T14:42:01+00:00"
+    "last_validated_date": "2025-01-21T17:56:19+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_checksum[SHA1]": {
-    "last_validated_date": "2024-06-04T14:41:55+00:00"
+    "last_validated_date": "2025-01-21T17:56:10+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_checksum[SHA256]": {
-    "last_validated_date": "2024-06-04T14:41:58+00:00"
+    "last_validated_date": "2025-01-21T17:56:13+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_header_overrides": {
     "last_validated_date": "2024-09-23T10:59:50+00:00"
