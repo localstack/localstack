@@ -6,7 +6,7 @@ from functools import cached_property
 from botocore.client import BaseClient
 
 from localstack.aws.api.pipes import PipeSourceSqsQueueParameters
-from localstack.aws.api.sqs import MessageSystemAttributeName
+from localstack.aws.api.sqs import MessageSystemAttributeName, TooManyEntriesInBatchRequest
 from localstack.config import internal_service_url
 from localstack.services.lambda_.event_source_mapping.event_processor import (
     EventProcessor,
@@ -61,6 +61,8 @@ class SqsPoller(Poller):
             # Useful for getting remaining records less than the batch size. i.e we need 100 records but BatchSize is 1k.
             override = min(requested_count, self.sqs_queue_parameters["BatchSize"])
             context[HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = str(override)
+            # Set MaxNumberOfMessages parameter value back to the default of 10.
+            params["MaxNumberOfMessages"] = DEFAULT_MAX_RECEIVE_COUNT
 
         def _handle_delete_batch_override(params, context, **kwargs):
             requested_count = len(params.get("Entries", []))
@@ -210,9 +212,16 @@ class SqsPoller(Poller):
             ]
             batch_size = self.sqs_queue_parameters.get("BatchSize", DEFAULT_MAX_RECEIVE_COUNT)
             for batched_entries in batched(entries, batch_size):
-                self.source_client.delete_message_batch(
-                    QueueUrl=self.queue_url, Entries=batched_entries
-                )
+                remaining_entries = batched_entries
+                while remaining_entries:
+                    current_batch_size = min(batch_size, len(remaining_entries))
+                    try:
+                        self.source_client.delete_message_batch(
+                            QueueUrl=self.queue_url, Entries=remaining_entries[:current_batch_size]
+                        )
+                        remaining_entries = remaining_entries[current_batch_size:]
+                    except TooManyEntriesInBatchRequest:
+                        batch_size = DEFAULT_MAX_RECEIVE_COUNT
 
 
 def split_by_message_group_id(messages) -> defaultdict[str, list[dict]]:
