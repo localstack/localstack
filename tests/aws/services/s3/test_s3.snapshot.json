@@ -1886,28 +1886,28 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_set_external_hostname": {
-    "recorded-date": "21-01-2025, 18:50:26",
+    "recorded-date": "21-01-2025, 19:47:46",
     "recorded-content": {
       "multipart-upload": {
-        "Bucket": "test-bucket-ebac69bd",
+        "Bucket": "<bucket:1>",
         "ETag": "\"b972025bc34adf8d76d6d51e93c035cc-1\"",
         "Key": "test.file",
-        "Location": "https://test-bucket-ebac69bd.s3.amazonaws.com/test.file",
+        "Location": "<location:1>",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
-          "HTTPHeaders": {
-            "content-type": "application/xml",
-            "date": "Tue, 21 Jan 2025 18:50:27 GMT",
-            "server": "AmazonS3",
-            "transfer-encoding": "chunked",
-            "x-amz-id-2": "I+qE7GTSJk/76YbW4kJsuVNivtdjcUF8+InLdaMRgu5v0fM+Id+PTqU1VM10GAXnDUy2Fy+Um2U=",
-            "x-amz-request-id": "26X48MB3SF18MP4Y",
-            "x-amz-server-side-encryption": "AES256"
-          },
-          "HTTPStatusCode": 200,
-          "HostId": "I+qE7GTSJk/76YbW4kJsuVNivtdjcUF8+InLdaMRgu5v0fM+Id+PTqU1VM10GAXnDUy2Fy+Um2U=",
-          "RequestId": "26X48MB3SF18MP4Y",
-          "RetryAttempts": 0
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object": {
+        "Bucket": "<bucket:1>",
+        "ETag": "\"b972025bc34adf8d76d6d51e93c035cc-1\"",
+        "Key": "test.file",
+        "Location": "<location:1>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
@@ -2599,17 +2599,17 @@
     "recorded-content": {}
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_batch_delete_public_objects_using_requests": {
-    "recorded-date": "21-01-2025, 18:39:19",
+    "recorded-date": "21-01-2025, 19:48:17",
     "recorded-content": {
       "multi-delete-with-requests": {
         "DeleteResult": {
           "@xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
           "Deleted": [
             {
-              "Key": "key-created-by-anonymous-2"
+              "Key": "key-created-by-anonymous-1"
             },
             {
-              "Key": "key-created-by-anonymous-1"
+              "Key": "key-created-by-anonymous-2"
             }
           ]
         }
@@ -7208,7 +7208,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_intelligent_tier_config": {
-    "recorded-date": "21-01-2025, 19:18:21",
+    "recorded-date": "21-01-2025, 19:48:46",
     "recorded-content": {
       "put_bucket_intelligent_tiering_configuration_err_1`": {
         "Error": {
@@ -7317,7 +7317,7 @@
       },
       "delete_bucket_intelligent_tiering_configuration_err_1": {
         "Error": {
-          "BucketName": "non-existing-bucket-500702ca-8ec5f19f",
+          "BucketName": "<bucket-name:1>",
           "Code": "NoSuchBucket",
           "Message": "The specified bucket does not exist"
         },

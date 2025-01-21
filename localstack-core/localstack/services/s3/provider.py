@@ -938,6 +938,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_object.restore:
             response["Restore"] = s3_object.restore
 
+        if not range_header and (checksum_algorithm := s3_object.checksum_algorithm):
+            if (request.get("ChecksumMode") or "").upper() == "ENABLED":
+                response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
+
         if range_data:
             s3_stored_object.seek(range_data.begin)
             response["Body"] = LimitedIterableStream(
@@ -948,9 +952,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["StatusCode"] = 206
         else:
             response["Body"] = s3_stored_object
-            if checksum_algorithm := s3_object.checksum_algorithm:
-                if (request.get("ChecksumMode") or "").upper() == "ENABLED":
-                    response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
 
         add_encryption_to_response(response, s3_object=s3_object)
 
@@ -1163,7 +1164,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         if s3_object.is_locked(bypass_governance_retention):
-            raise AccessDenied("Access Denied")
+            raise AccessDenied("Access Denied because object protected by object lock.")
 
         s3_bucket.objects.pop(object_key=key, version_id=version_id)
         response = DeleteObjectOutput(VersionId=s3_object.version_id)
@@ -1281,7 +1282,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     Error(
                         Code="AccessDenied",
                         Key=object_key,
-                        Message="Access Denied",
+                        Message="Access Denied because object protected by object lock.",
                         VersionId=version_id,
                     )
                 )
@@ -2440,6 +2441,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise InvalidRequest("You must specify at least one part")
 
         parts_numbers = [part.get("PartNumber") for part in parts]
+        # TODO: it seems that with new S3 data integrity, sorting might not be mandatory depending on checksum type
+        # see https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html
         # sorted is very fast (fastest) if the list is already sorted, which should be the case
         if sorted(parts_numbers) != parts_numbers:
             raise InvalidPartOrder(
@@ -3547,7 +3550,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         ) and not (
             bypass_governance_retention and s3_object.lock_mode == ObjectLockMode.GOVERNANCE
         ):
-            raise AccessDenied("Access Denied")
+            raise AccessDenied("Access Denied because object protected by object lock.")
 
         s3_object.lock_mode = retention["Mode"] if retention else None
         s3_object.lock_until = retention["RetainUntilDate"] if retention else None

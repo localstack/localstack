@@ -297,7 +297,7 @@
     "last_validated_date": "2023-08-03T02:23:41+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_batch_delete_public_objects_using_requests": {
-    "last_validated_date": "2025-01-21T18:39:19+00:00"
+    "last_validated_date": "2025-01-21T19:48:17+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_bucket_acl": {
     "last_validated_date": "2025-01-21T18:30:17+00:00"
@@ -420,7 +420,7 @@
     "last_validated_date": "2025-01-21T18:30:10+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_intelligent_tier_config": {
-    "last_validated_date": "2025-01-21T19:18:21+00:00"
+    "last_validated_date": "2025-01-21T19:48:46+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_invalid_content_md5": {
     "last_validated_date": "2025-01-21T18:32:49+00:00"
@@ -486,7 +486,7 @@
     "last_validated_date": "2025-01-21T18:31:47+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_set_external_hostname": {
-    "last_validated_date": "2023-08-03T15:09:20+00:00"
+    "last_validated_date": "2025-01-21T19:47:46+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_upload_big_file": {
     "last_validated_date": "2025-01-21T18:39:01+00:00"

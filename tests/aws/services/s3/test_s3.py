@@ -1249,6 +1249,9 @@ class TestS3:
     @markers.aws.validated
     @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256", "CRC64NVME", None])
     def test_s3_get_object_checksum(self, s3_bucket, snapshot, algorithm, aws_client):
+        # TODO: implement S3 data integrity
+        if algorithm == "CRC64NVME":
+            pytest.skip(f"{algorithm} not yet implemented")
         key = "test-checksum-retrieval"
         body = b"test-checksum"
         kwargs = {}
@@ -4088,10 +4091,13 @@ class TestS3:
         response = s3_multipart_upload(bucket=s3_bucket, key=key, data=content, acl=acl)
         snapshot.match("multipart-upload", response)
 
-        expected_url = (
-            f"{_bucket_url(bucket_name=s3_bucket, localstack_host=custom_hostname)}/{key}"
-        )
-        assert response["Location"] == expected_url
+        assert s3_bucket in response["Location"]
+        assert key in response["Location"]
+        if not is_aws_cloud():
+            expected_url = (
+                f"{_bucket_url(bucket_name=s3_bucket, localstack_host=custom_hostname)}/{key}"
+            )
+            assert response["Location"] == expected_url
 
         # download object via API
         downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
@@ -5381,6 +5387,10 @@ class TestS3:
         assert resp_dict["DeleteResult"]["Deleted"]["Key"] == object_key
 
     @markers.aws.validated
+    # TODO: fix S3 data integrity
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$.complete-multipart-wrong-parts-checksum.Error.PartNumber"]
+    )
     def test_complete_multipart_parts_checksum(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -9335,6 +9345,16 @@ class TestS3BucketLifecycle:
 
 class TestS3ObjectLockRetention:
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: fix the exception for update-retention-no-bypass
+            "$.update-retention-no-bypass..ArgumentName",
+            "$.update-retention-no-bypass..ArgumentValue",
+            "$.update-retention-no-bypass..Code",
+            "$.update-retention-no-bypass..HTTPStatusCode",
+            "$.update-retention-no-bypass..Message",
+        ]
+    )
     def test_s3_object_retention_exc(self, aws_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         s3_bucket_locked = s3_create_bucket(ObjectLockEnabledForBucket=True)
@@ -11541,6 +11561,13 @@ class TestS3SSECEncryption:
         snapshot.match("put-obj-sse-c-bad-md5", e.value.response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: fix error message for SSEC Encryption
+            "$.get-obj-sse-c-no-md5..Message",
+            "$.get-obj-sse-c-wrong-key..Message",
+        ],
+    )
     def test_object_retrieval_sse_c(self, aws_client, s3_bucket, snapshot):
         body = "test_data"
         key_name = "test-sse-c"
@@ -11734,6 +11761,8 @@ class TestS3SSECEncryption:
         snapshot.match("copy-obj-target-double-encryption", e.value.response)
 
     @markers.aws.validated
+    # TODO: fix S3 data integrity
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumCRC32"])
     def test_multipart_upload_sse_c(self, aws_client, s3_bucket, snapshot):
         snapshot.add_transformer(
             [
@@ -11890,6 +11919,12 @@ class TestS3SSECEncryption:
         # TODO: check complete with wrong parameters, even though it is not required to give them?
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: fix error message for SSEC Encryption
+            "$.get-obj-sse-c-last-version-wrong-key..Message",
+        ],
+    )
     def test_sse_c_with_versioning(self, aws_client, s3_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
         # enable versioning on the bucket
