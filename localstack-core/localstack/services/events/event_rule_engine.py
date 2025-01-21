@@ -66,15 +66,15 @@ class EventRuleEngine:
             # if must_exists is True then field_exists must be True
             # if must_exists is False then fields_exists must be False
             return must_exist == field_exists
-        elif anything_but := condition.get("anything-but"):
+        elif (anything_but := condition.get("anything-but")) is not None:
             if isinstance(anything_but, dict):
-                if not_condition := anything_but.get("prefix"):
+                if (not_condition := anything_but.get("prefix")) is not None:
                     predicate = self._evaluate_prefix
-                elif not_condition := anything_but.get("suffix"):
+                elif (not_condition := anything_but.get("suffix")) is not None:
                     predicate = self._evaluate_suffix
-                elif not_condition := anything_but.get("equals-ignore-case"):
+                elif (not_condition := anything_but.get("equals-ignore-case")) is not None:
                     predicate = self._evaluate_equal_ignore_case
-                elif not_condition := anything_but.get("wildcard"):
+                elif (not_condition := anything_but.get("wildcard")) is not None:
                     predicate = self._evaluate_wildcard
                 else:
                     # this should not happen as we validate the EventPattern before
@@ -97,7 +97,7 @@ class EventRuleEngine:
             return False
         elif (prefix := condition.get("prefix")) is not None:
             if isinstance(prefix, dict):
-                if prefix_equal_ignore_case := prefix.get("equals-ignore-case"):
+                if (prefix_equal_ignore_case := prefix.get("equals-ignore-case")) is not None:
                     return self._evaluate_prefix(prefix_equal_ignore_case.lower(), value.lower())
             else:
                 return self._evaluate_prefix(prefix, value)
@@ -109,7 +109,7 @@ class EventRuleEngine:
             else:
                 return self._evaluate_suffix(suffix, value)
 
-        elif equal_ignore_case := condition.get("equals-ignore-case"):
+        elif (equal_ignore_case := condition.get("equals-ignore-case")) is not None:
             return self._evaluate_equal_ignore_case(equal_ignore_case, value)
         elif numeric_condition := condition.get("numeric"):
             return self._evaluate_numeric_condition(numeric_condition, value)
@@ -117,7 +117,7 @@ class EventRuleEngine:
         elif cidr := condition.get("cidr"):
             return self._evaluate_cidr(cidr, value)
 
-        elif wildcard := condition.get("wildcard"):
+        elif (wildcard := condition.get("wildcard")) is not None:
             return self._evaluate_wildcard(wildcard, value)
 
         return False
@@ -147,7 +147,7 @@ class EventRuleEngine:
         return re.match(re.escape(condition).replace("\\*", ".+") + "$", value)
 
     @staticmethod
-    def _evaluate_numeric_condition(conditions, value) -> bool:
+    def _evaluate_numeric_condition(conditions: list, value) -> bool:
         if not isinstance(value, (int, float)):
             return False
         try:
@@ -407,6 +407,10 @@ class EventPatternCompiler:
                         if not self._is_str_or_list_of_str(value):
                             raise InvalidEventPatternException(
                                 f"{self.error_prefix}prefix/suffix match pattern must be a string"
+                            )
+                        elif not value:
+                            raise InvalidEventPatternException(
+                                f"{self.error_prefix}Null prefix/suffix not allowed"
                             )
 
                     elif isinstance(value, dict):
