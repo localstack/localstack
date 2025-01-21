@@ -77,7 +77,10 @@ from localstack.http import Request, route
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sqs import constants as sqs_constants
-from localstack.services.sqs.constants import HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT
+from localstack.services.sqs.constants import (
+    HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT,
+    HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS,
+)
 from localstack.services.sqs.exceptions import InvalidParameterValueException
 from localstack.services.sqs.models import (
     FifoQueue,
@@ -1228,7 +1231,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         # TODO add support for message_system_attribute_names
         queue = self._resolve_queue(context, queue_url=queue_url)
 
-        if wait_time_seconds is None:
+        if override := extract_wait_time_seconds_from_headers(context):
+            wait_time_seconds = override
+        elif wait_time_seconds is None:
             wait_time_seconds = queue.wait_time_seconds
 
         num = max_number_of_messages or 1
@@ -1895,6 +1900,15 @@ def message_filter_message_attributes(message: Message, names: Optional[MessageA
 def extract_message_count_from_headers(context: RequestContext) -> int | None:
     if override := context.request.headers.get(
         HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT, default=None, type=int
+    ):
+        return override
+
+    return None
+
+
+def extract_wait_time_seconds_from_headers(context: RequestContext) -> int | None:
+    if override := context.request.headers.get(
+        HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS, default=None, type=int
     ):
         return override
 
