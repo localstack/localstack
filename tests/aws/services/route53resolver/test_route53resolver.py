@@ -24,6 +24,27 @@ def route53resolver_api_snapshot_transformer(snapshot):
     snapshot.add_transformer(snapshot.transform.route53resolver_api())
 
 
+@pytest.fixture
+def create_firewall_rule(aws_client: ServiceLevelClientFactory):
+    rules = []
+
+    def inner(**kwargs):
+        kwargs.setdefault("Name", f"rule-name-{short_uid()}")
+        rule_group_id = kwargs["FirewallRuleGroupId"]
+        domain_list_id = kwargs["FirewallDomainListId"]
+        response = aws_client.route53resolver.create_firewall_rule(**kwargs)
+        rules.append((rule_group_id, domain_list_id))
+        return response
+
+    yield inner
+
+    for rule_group_id, domain_list_id in rules[::-1]:
+        aws_client.route53resolver.delete_firewall_rule(
+            FirewallRuleGroupId=rule_group_id,
+            FirewallDomainListId=domain_list_id,
+        )
+
+
 # TODO: extract this somewhere so that we can reuse it in other places
 def _cleanup_vpc(aws_client: ServiceLevelClientFactory, vpc_id: str):
     """
@@ -85,57 +106,6 @@ class TestRoute53Resolver:
         )
 
         yield vpc, subnet1, subnet2, security_group
-
-    @pytest.fixture(scope="function")
-    def route53resolver_create_firewall_rules(self, aws_client, cleanups):
-        """Set up the following resources:
-        - 1 firewall-rule-group
-        - 4 firewall-domain-lists
-        - 4 firewall-rules
-        """
-        firewall_rule_group_name = f"fw-rule-group-{short_uid()}"
-        rule_group_response = aws_client.route53resolver.create_firewall_rule_group(
-            Name=firewall_rule_group_name
-        )
-        cleanups.append(
-            lambda rule_group_id=rule_group_response["FirewallRuleGroup"][
-                "Id"
-            ]: aws_client.route53resolver.delete_firewall_rule_group(
-                FirewallRuleGroupId=rule_group_id
-            )
-        )
-        # Parameters for creating resources
-        priorities = [1, 2, 3, 4]
-        actions = [Action.ALLOW, Action.ALERT, Action.ALERT, Action.ALLOW]
-
-        for action, priority in zip(actions, priorities):
-            domain_list_response = aws_client.route53resolver.create_firewall_domain_list(
-                Name=f"fw-domain-list-{short_uid()}"
-            )
-            cleanups.append(
-                lambda domain_list_id=domain_list_response["FirewallDomainList"][
-                    "Id"
-                ]: aws_client.route53resolver.delete_firewall_domain_list(
-                    FirewallDomainListId=domain_list_id
-                )
-            )
-            _ = aws_client.route53resolver.create_firewall_rule(
-                FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"],
-                FirewallDomainListId=domain_list_response["FirewallDomainList"]["Id"],
-                Priority=priority,
-                Action=action,
-                Name=f"rule-name-{short_uid()}",
-            )
-            cleanups.append(
-                lambda rule_group_id=rule_group_response["FirewallRuleGroup"]["Id"],
-                domain_list_id=domain_list_response["FirewallDomainList"][
-                    "Id"
-                ]: aws_client.route53resolver.delete_firewall_rule(
-                    FirewallRuleGroupId=rule_group_id,
-                    FirewallDomainListId=domain_list_id,
-                )
-            )
-        return rule_group_response
 
     def _construct_ip_for_cidr_and_host(self, cidr_block: str, host_id: str) -> str:
         return re.sub(r"(.*)\.[0-9]+/.+", r"\1." + host_id, cidr_block)
@@ -810,7 +780,11 @@ class TestRoute53Resolver:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..FirewallDomainRedirectionAction"])
     def test_list_firewall_rules(
-        self, cleanups, snapshot, aws_client, route53resolver_create_firewall_rules
+        self,
+        cleanups,
+        snapshot,
+        aws_client,
+        create_firewall_rule,
     ):
         """Test listing firewall rules.
 
@@ -829,7 +803,38 @@ class TestRoute53Resolver:
             ]
         )
 
-        rule_group_response = route53resolver_create_firewall_rules
+        firewall_rule_group_name = f"fw-rule-group-{short_uid()}"
+        rule_group_response = aws_client.route53resolver.create_firewall_rule_group(
+            Name=firewall_rule_group_name
+        )
+        cleanups.append(
+            lambda rule_group_id=rule_group_response["FirewallRuleGroup"][
+                "Id"
+            ]: aws_client.route53resolver.delete_firewall_rule_group(
+                FirewallRuleGroupId=rule_group_id
+            )
+        )
+        # Parameters for creating resources
+        priorities = [1, 2, 3, 4]
+        actions = [Action.ALLOW, Action.ALERT, Action.ALERT, Action.ALLOW]
+
+        for action, priority in zip(actions, priorities):
+            domain_list_response = aws_client.route53resolver.create_firewall_domain_list(
+                Name=f"fw-domain-list-{short_uid()}"
+            )
+            cleanups.append(
+                lambda domain_list_id=domain_list_response["FirewallDomainList"][
+                    "Id"
+                ]: aws_client.route53resolver.delete_firewall_domain_list(
+                    FirewallDomainListId=domain_list_id
+                )
+            )
+            create_firewall_rule(
+                FirewallRuleGroupId=rule_group_response["FirewallRuleGroup"]["Id"],
+                FirewallDomainListId=domain_list_response["FirewallDomainList"]["Id"],
+                Priority=priority,
+                Action=action,
+            )
 
         # Check list filtering
         list_all_response = aws_client.route53resolver.list_firewall_rules(

@@ -615,7 +615,7 @@
     }
   },
   "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_list_firewall_rules_for_missing_rule_group": {
-    "recorded-date": "28-10-2024, 07:21:26",
+    "recorded-date": "21-01-2025, 16:40:17",
     "recorded-content": {
       "missing-firewall-rule-group-id": {
         "Error": {
@@ -631,7 +631,7 @@
     }
   },
   "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_list_firewall_rules_for_empty_rule_group": {
-    "recorded-date": "28-10-2024, 07:23:07",
+    "recorded-date": "21-01-2025, 16:40:17",
     "recorded-content": {
       "create-firewall-rule-group": {
         "FirewallRuleGroup": {
@@ -662,7 +662,7 @@
     }
   },
   "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_list_firewall_rules": {
-    "recorded-date": "28-10-2024, 07:26:28",
+    "recorded-date": "21-01-2025, 16:40:19",
     "recorded-content": {
       "firewall-rules-list-all": {
         "FirewallRules": [
