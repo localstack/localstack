@@ -23,8 +23,20 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key": {
     "last_validated_date": "2024-04-11T15:26:14+00:00"
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_with_invalid_tag_key[AWS:key1]": {
+    "last_validated_date": "2025-01-21T17:49:54+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_with_invalid_tag_key[aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]": {
+    "last_validated_date": "2025-01-21T17:49:54+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_with_invalid_tag_key[aws:key1]": {
+    "last_validated_date": "2025-01-21T17:49:54+00:00"
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_with_tag_and_untag": {
     "last_validated_date": "2025-01-10T09:40:40+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_with_too_many_tags_raises_error": {
+    "last_validated_date": "2025-01-21T17:15:38+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_create_list_delete_alias": {
     "last_validated_date": "2024-04-11T15:53:50+00:00"
@@ -158,6 +170,9 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_rotation_status": {
     "last_validated_date": "2024-04-11T15:53:48+00:00"
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_key_with_long_tag_value_raises_error": {
+    "last_validated_date": "2025-01-21T17:18:18+00:00"
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_list_aliases_of_key": {
     "last_validated_date": "2024-04-11T15:53:36+00:00"
   },
@@ -211,6 +226,12 @@
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_tag_existing_key_and_untag": {
     "last_validated_date": "2025-01-10T09:39:48+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_tag_existing_key_with_invalid_tag_key": {
+    "last_validated_date": "2025-01-21T17:17:25+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_tag_key_with_duplicate_tag_keys_raises_error": {
+    "last_validated_date": "2025-01-17T13:35:08+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_tag_untag_list_tags": {
     "last_validated_date": "2024-04-11T15:53:57+00:00"
