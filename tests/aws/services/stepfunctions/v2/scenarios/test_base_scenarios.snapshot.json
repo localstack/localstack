@@ -20849,7 +20849,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_choice_singleton_composite[CHOICE_STATE_SINGLETON_COMPOSITE]": {
-    "recorded-date": "18-11-2024, 11:19:46",
+    "recorded-date": "24-12-2024, 16:59:57",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -20957,7 +20957,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_choice_singleton_composite[CHOICE_STATE_SINGLETON_COMPOSITE_JSONATA]": {
-    "recorded-date": "18-11-2024, 11:20:02",
+    "recorded-date": "24-12-2024, 17:00:12",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -25035,6 +25035,140 @@
             },
             "id": 10,
             "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_choice_singleton_composite[CHOICE_STATE_SINGLETON_COMPOSITE_LITERAL_JSONATA]": {
+    "recorded-date": "24-12-2024, 17:00:22",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "type": "Public",
+                "value": 22
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "type": "Public",
+                "value": 22
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "Pass",
+              "output": {
+                "str_value": "string literal"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "str_value": "string literal"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Choice"
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "Choice",
+              "output": {
+                "str_value": "string literal"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateExited"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateEnteredEventDetails": {
+              "input": {
+                "str_value": "string literal"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Success"
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateEntered"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "Success",
+              "output": {
+                "str_value": "string literal"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "str_value": "string literal"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
             "timestamp": "timestamp",
             "type": "ExecutionSucceeded"
           }
