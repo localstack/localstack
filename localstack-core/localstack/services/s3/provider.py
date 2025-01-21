@@ -938,10 +938,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_object.restore:
             response["Restore"] = s3_object.restore
 
-        if checksum_algorithm := s3_object.checksum_algorithm:
-            if (request.get("ChecksumMode") or "").upper() == "ENABLED":
-                response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
-
         if range_data:
             s3_stored_object.seek(range_data.begin)
             response["Body"] = LimitedIterableStream(
@@ -952,6 +948,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["StatusCode"] = 206
         else:
             response["Body"] = s3_stored_object
+            if checksum_algorithm := s3_object.checksum_algorithm:
+                if (request.get("ChecksumMode") or "").upper() == "ENABLED":
+                    response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
 
         add_encryption_to_response(response, s3_object=s3_object)
 
@@ -2221,9 +2220,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 if s3_multipart.object.checksum_algorithm
                 else "null"
             )
-            raise InvalidRequest(
-                f"Checksum Type mismatch occurred, expected checksum Type: {error_mp_checksum}, actual checksum Type: {error_req_checksum}"
-            )
+            # TODO: properly fix this, this is to unblock default behavior of boto adding checksums and it being
+            #  accepted by AWS
+            if not error_mp_checksum == "null":
+                raise InvalidRequest(
+                    f"Checksum Type mismatch occurred, expected checksum Type: {error_mp_checksum}, actual checksum Type: {error_req_checksum}"
+                )
 
         stored_multipart = self._storage_backend.get_multipart(bucket_name, s3_multipart)
         with stored_multipart.open(s3_part, mode="w") as stored_s3_part:

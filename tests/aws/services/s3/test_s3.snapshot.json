@@ -7208,7 +7208,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_intelligent_tier_config": {
-    "recorded-date": "21-01-2025, 18:42:44",
+    "recorded-date": "21-01-2025, 19:18:21",
     "recorded-content": {
       "put_bucket_intelligent_tiering_configuration_err_1`": {
         "Error": {
@@ -7317,12 +7317,13 @@
       },
       "delete_bucket_intelligent_tiering_configuration_err_1": {
         "Error": {
-          "Code": "AccessDenied",
-          "Message": "Access Denied"
+          "BucketName": "non-existing-bucket-500702ca-8ec5f19f",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 403
+          "HTTPStatusCode": 404
         }
       },
       "delete_bucket_intelligent_tiering_configuration_err_2": {

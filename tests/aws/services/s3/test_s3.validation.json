@@ -420,7 +420,7 @@
     "last_validated_date": "2025-01-21T18:30:10+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_intelligent_tier_config": {
-    "last_validated_date": "2025-01-21T18:42:44+00:00"
+    "last_validated_date": "2025-01-21T19:18:21+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_invalid_content_md5": {
     "last_validated_date": "2025-01-21T18:32:49+00:00"

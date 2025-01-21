@@ -79,7 +79,12 @@ if TYPE_CHECKING:
 LOG = logging.getLogger(__name__)
 
 # TODO: implement new S3 Data Integrity logic (checksums)
-pytestmark = markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumType"])
+pytestmark = markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..ChecksumType",
+        "$..x-amz-checksum-type",
+    ]
+)
 
 
 # transformer list to transform headers, that will be validated for some specific s3-tests
@@ -762,7 +767,14 @@ class TestS3:
         snapshot.match("get-object-attrs-v1", response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..NextKeyMarker", "$..NextUploadIdMarker"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..NextKeyMarker",
+            "$..NextUploadIdMarker",
+            # FIXME: S3 data integrity
+            "$..Parts..ChecksumCRC32",
+        ],
+    )
     def test_multipart_and_list_parts(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -4671,7 +4683,7 @@ class TestS3:
 
         assert 200 == r.status_code
         response = xmltodict.parse(r.content)
-
+        response["DeleteResult"]["Deleted"].sort(key=itemgetter("Key"))
         snapshot.match("multi-delete-with-requests", response)
 
         response = aws_client.s3.list_objects(Bucket=s3_bucket)
@@ -5829,6 +5841,7 @@ class TestS3:
 
     @markers.aws.validated
     def test_s3_intelligent_tier_config(self, aws_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         intelligent_tier_configuration = {
             "Id": "test1",
             "Filter": {
@@ -5895,7 +5908,7 @@ class TestS3:
         # delete the config with non-existing bucket
         with pytest.raises(ClientError) as delete_err_1:
             aws_client.s3.delete_bucket_intelligent_tiering_configuration(
-                Bucket="non-existing-bucket",
+                Bucket=f"non-existing-bucket-{short_uid()}-{short_uid()}",
                 Id=intelligent_tier_configuration["Id"],
             )
         snapshot.match(
@@ -8652,6 +8665,8 @@ class TestS3Routing:
         assert exc.value.response["Error"]["Message"] == "Not Found"
 
 
+# TODO: implement TransitionDefaultMinimumObjectSize
+@markers.snapshot.skip_snapshot_verify(paths=["$..TransitionDefaultMinimumObjectSize"])
 class TestS3BucketLifecycle:
     @markers.aws.validated
     def test_delete_bucket_lifecycle_configuration(self, s3_bucket, snapshot, aws_client):
