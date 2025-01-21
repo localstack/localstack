@@ -2373,9 +2373,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         multipart_upload: CompletedMultipartUpload = None,
         checksum_crc32: ChecksumCRC32 = None,
         checksum_crc32_c: ChecksumCRC32C = None,
+        checksum_crc64_nvme: ChecksumCRC64NVME = None,
         checksum_sha1: ChecksumSHA1 = None,
         checksum_sha256: ChecksumSHA256 = None,
-        checksum_crc64_nvme: ChecksumCRC64NVME = None,
         checksum_type: ChecksumType = None,
         mpu_object_size: MpuObjectSize = None,
         request_payer: RequestPayer = None,
@@ -2387,7 +2387,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         sse_customer_key_md5: SSECustomerKeyMD5 = None,
         **kwargs,
     ) -> CompleteMultipartUploadOutput:
-        # TODO add support for if_none_match
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         if (
