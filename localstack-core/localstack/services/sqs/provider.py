@@ -79,6 +79,7 @@ from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sqs import constants as sqs_constants
 from localstack.services.sqs.constants import (
     HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT,
+    HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS,
 )
 from localstack.services.sqs.exceptions import InvalidParameterValueException
 from localstack.services.sqs.models import (
@@ -1234,9 +1235,17 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         # TODO add support for message_system_attribute_names
         queue = self._resolve_queue(context, queue_url=queue_url)
 
-        if wait_time_seconds is None:
+        poll_empty_queue = False
+        if override := extract_wait_time_seconds_from_headers(context):
+            wait_time_seconds = override
+            poll_empty_queue = True
+        elif wait_time_seconds is None:
             wait_time_seconds = queue.wait_time_seconds
-
+        elif wait_time_seconds < 1 or wait_time_seconds > 20:
+            raise InvalidParameterValueException(
+                f"Value {wait_time_seconds} for parameter WaitTimeSeconds is invalid. "
+                f"Reason: Must be >= 0 and <= 20, if provided."
+            )
         num = max_number_of_messages or 1
 
         # override receive count with value from custom header
@@ -1257,7 +1266,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         # fewer messages than requested on small queues. at some point we could maybe change this to randomly sample
         # between 1 and max_number_of_messages.
         # see https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ReceiveMessage.html
-        result = queue.receive(num, wait_time_seconds, visibility_timeout)
+        result = queue.receive(
+            num, wait_time_seconds, visibility_timeout, poll_empty_queue=poll_empty_queue
+        )
 
         # process dead letter messages
         if result.dead_letter_messages:
@@ -1901,6 +1912,15 @@ def message_filter_message_attributes(message: Message, names: Optional[MessageA
 def extract_message_count_from_headers(context: RequestContext) -> int | None:
     if override := context.request.headers.get(
         HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT, default=None, type=int
+    ):
+        return override
+
+    return None
+
+
+def extract_wait_time_seconds_from_headers(context: RequestContext) -> int | None:
+    if override := context.request.headers.get(
+        HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS, default=None, type=int
     ):
         return override
 
