@@ -37,8 +37,10 @@ from localstack.aws.api.s3 import (
     ChecksumAlgorithm,
     ChecksumCRC32,
     ChecksumCRC32C,
+    ChecksumCRC64NVME,
     ChecksumSHA1,
     ChecksumSHA256,
+    ChecksumType,
     CommonPrefix,
     CompletedMultipartUpload,
     CompleteMultipartUploadOutput,
@@ -135,6 +137,7 @@ from localstack.aws.api.s3 import (
     MaxUploads,
     MethodNotAllowed,
     MissingSecurityHeader,
+    MpuObjectSize,
     MultipartUpload,
     MultipartUploadId,
     NoSuchBucket,
@@ -2054,6 +2057,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # TODO: validate the algorithm?
         checksum_algorithm = request.get("ChecksumAlgorithm")
+        # ChecksumCRC64NVME
         if checksum_algorithm and checksum_algorithm not in CHECKSUM_ALGORITHMS:
             raise InvalidRequest(
                 "Checksum algorithm provided is unsupported. Please try again with any of the valid types: [CRC32, CRC32C, SHA1, SHA256]"
@@ -2368,6 +2372,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         checksum_crc32_c: ChecksumCRC32C = None,
         checksum_sha1: ChecksumSHA1 = None,
         checksum_sha256: ChecksumSHA256 = None,
+        checksum_crc64_nvme: ChecksumCRC64NVME = None,
+        checksum_type: ChecksumType = None,
+        mpu_object_size: MpuObjectSize = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
         if_match: IfMatch = None,
