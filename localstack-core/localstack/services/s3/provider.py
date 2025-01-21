@@ -938,9 +938,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_object.restore:
             response["Restore"] = s3_object.restore
 
-        if not range_header and (checksum_algorithm := s3_object.checksum_algorithm):
+        checksum_value = None
+        if checksum_algorithm := s3_object.checksum_algorithm:
             if (request.get("ChecksumMode") or "").upper() == "ENABLED":
-                response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
+                checksum_value = s3_object.checksum_value
 
         if range_data:
             s3_stored_object.seek(range_data.begin)
@@ -950,8 +951,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["ContentRange"] = range_data.content_range
             response["ContentLength"] = range_data.content_length
             response["StatusCode"] = 206
+            if range_data.content_length == s3_object.size and checksum_value:
+                response[f"Checksum{checksum_algorithm.upper()}"] = checksum_value
         else:
             response["Body"] = s3_stored_object
+            if checksum_value:
+                response[f"Checksum{checksum_algorithm.upper()}"] = checksum_value
 
         add_encryption_to_response(response, s3_object=s3_object)
 
@@ -2837,7 +2842,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if sse_algorithm != ServerSideEncryption.aws_kms and "KMSMasterKeyID" in encryption:
             raise InvalidArgument(
-                "a KMSMasterKeyID is not applicable if the default sse algorithm is not aws:kms",
+                "a KMSMasterKeyID is not applicable if the default sse algorithm is not aws:kms or aws:kms:dsse",
                 ArgumentName="ApplyServerSideEncryptionByDefault",
             )
         # elif master_kms_key := encryption.get("KMSMasterKeyID"):
