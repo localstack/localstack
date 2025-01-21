@@ -11,6 +11,9 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import long_uid, short_uid
 from tests.aws.services.s3.conftest import TEST_S3_IMAGE
 
+# TODO: implement new S3 Data Integrity logic (checksums)
+pytestmark = markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumType"])
+
 
 class TestS3BucketCRUD:
     @markers.aws.validated

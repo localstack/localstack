@@ -78,6 +78,10 @@ if TYPE_CHECKING:
 
 LOG = logging.getLogger(__name__)
 
+# TODO: implement new S3 Data Integrity logic (checksums)
+pytestmark = markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumType"])
+
+
 # transformer list to transform headers, that will be validated for some specific s3-tests
 HEADER_TRANSFORMER = [
     TransformerUtility.jsonpath("$..HTTPHeaders.date", "date", reference_replacement=False),
