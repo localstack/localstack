@@ -27,15 +27,15 @@ attrs==24.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.219
+aws-cdk-asset-awscli-v1==2.2.220
     # via aws-cdk-lib
 aws-cdk-asset-kubectl-v20==2.1.3
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==39.1.45
+aws-cdk-cloud-assembly-schema==39.2.1
     # via aws-cdk-lib
-aws-cdk-lib==2.175.1
+aws-cdk-lib==2.176.0
     # via localstack-core
 aws-sam-translator==1.94.0
     # via
@@ -85,7 +85,7 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.22.4
+cfn-lint==1.22.5
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -173,7 +173,7 @@ hyperframe==6.0.1
     # via h2
 hyperlink==21.0.0
     # via localstack-twisted
-identify==2.6.5
+identify==2.6.6
     # via pre-commit
 idna==3.10
     # via
@@ -196,7 +196,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.0.1
+joserfc==1.0.2
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core
@@ -252,7 +252,7 @@ markupsafe==3.0.2
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-more-itertools==10.5.0
+more-itertools==10.6.0
     # via openapi-core
 moto-ext==5.0.26.post2
     # via localstack-core
@@ -311,7 +311,7 @@ ply==3.11
     #   jsonpath-ng
     #   jsonpath-rw
     #   pandoc
-pre-commit==4.0.1
+pre-commit==4.1.0
     # via localstack-core (pyproject.toml)
 priority==1.3.0
     # via
@@ -430,7 +430,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.9.1
+ruff==0.9.2
     # via localstack-core (pyproject.toml)
 s3transfer==0.10.4
     # via
@@ -482,7 +482,7 @@ urllib3==2.3.0
     #   opensearch-py
     #   requests
     #   responses
-virtualenv==20.28.1
+virtualenv==20.29.1
     # via pre-commit
 websocket-client==1.8.0
     # via localstack-core
@@ -493,7 +493,7 @@ werkzeug==3.1.3
     #   openapi-core
     #   pytest-httpserver
     #   rolo
-wrapt==1.17.1
+wrapt==1.17.2
     # via aws-xray-sdk
 wsproto==1.2.0
     # via hypercorn

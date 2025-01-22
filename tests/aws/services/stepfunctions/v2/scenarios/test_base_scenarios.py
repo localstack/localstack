@@ -1529,8 +1529,16 @@ class TestBaseScenarios:
     @markers.aws.validated
     @pytest.mark.parametrize(
         "template_path",
-        [ST.CHOICE_STATE_SINGLETON_COMPOSITE, ST.CHOICE_STATE_SINGLETON_COMPOSITE_JSONATA],
-        ids=["CHOICE_STATE_SINGLETON_COMPOSITE", "CHOICE_STATE_SINGLETON_COMPOSITE_JSONATA"],
+        [
+            ST.CHOICE_STATE_SINGLETON_COMPOSITE,
+            ST.CHOICE_STATE_SINGLETON_COMPOSITE_JSONATA,
+            ST.CHOICE_STATE_SINGLETON_COMPOSITE_LITERAL_JSONATA,
+        ],
+        ids=[
+            "CHOICE_STATE_SINGLETON_COMPOSITE",
+            "CHOICE_STATE_SINGLETON_COMPOSITE_JSONATA",
+            "CHOICE_STATE_SINGLETON_COMPOSITE_LITERAL_JSONATA",
+        ],
     )
     def test_choice_singleton_composite(
         self,

@@ -10,7 +10,10 @@ from localstack.services.stepfunctions.asl.antlr.runtime.ASLIntrinsicParser impo
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLIntrinsicParserVisitor import (
     ASLIntrinsicParserVisitor,
 )
-from localstack.services.stepfunctions.asl.antlt4utils.antlr4utils import Antlr4Utils
+from localstack.services.stepfunctions.asl.antlt4utils.antlr4utils import (
+    is_production,
+    is_terminal,
+)
 from localstack.services.stepfunctions.asl.component.common.query_language import (
     QueryLanguageMode,
 )
@@ -56,7 +59,7 @@ class Preprocessor(ASLIntrinsicParserVisitor):
 
     @staticmethod
     def _text_of_str(parse_tree: ParseTree) -> str:
-        pt = Antlr4Utils.is_production(parse_tree) or Antlr4Utils.is_terminal(parse_tree)
+        pt = is_production(parse_tree) or is_terminal(parse_tree)
         inner_str = pt.getText()
         inner_str = inner_str[1:-1]
         inner_str = re.sub(r"\\(.)", Preprocessor._replace_escaped_characters, inner_str)

@@ -23,6 +23,9 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key": {
     "last_validated_date": "2024-04-11T15:26:14+00:00"
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_with_tag_and_untag": {
+    "last_validated_date": "2025-01-10T09:40:40+00:00"
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_create_list_delete_alias": {
     "last_validated_date": "2024-04-11T15:53:50+00:00"
   },
@@ -206,11 +209,20 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_4096-RSASSA_PKCS1_V1_5_SHA_512]": {
     "last_validated_date": "2024-04-11T15:53:06+00:00"
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_tag_existing_key_and_untag": {
+    "last_validated_date": "2025-01-10T09:39:48+00:00"
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_tag_untag_list_tags": {
     "last_validated_date": "2024-04-11T15:53:57+00:00"
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_untag_key_partially": {
+    "last_validated_date": "2025-01-10T09:41:02+00:00"
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_update_alias": {
     "last_validated_date": "2024-04-11T15:53:53+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_update_and_add_tags_on_tagged_key": {
+    "last_validated_date": "2025-01-17T12:25:39+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_update_key_description": {
     "last_validated_date": "2024-04-11T15:53:46+00:00"

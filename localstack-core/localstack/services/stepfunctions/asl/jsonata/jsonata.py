@@ -139,7 +139,6 @@ def compose_jsonata_expression(
     final_jsonata_expression: JSONataExpression,
     variable_declarations_list: list[VariableDeclarations],
 ) -> JSONataExpression:
-    # TODO: should be expanded to pack the intrinsic functions too.
     variable_declarations = "".join(variable_declarations_list)
     expression = "".join(
         [
