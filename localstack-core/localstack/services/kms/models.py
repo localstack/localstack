@@ -572,9 +572,8 @@ class KmsKey:
         # Do not care if we overwrite an existing tag:
         # https://docs.aws.amazon.com/kms/latest/APIReference/API_TagResource.html
         # "To edit a tag, specify an existing tag key and a new tag value."
-        for i in range(len(tags)):
-            tag = tags[i]
-            validate_tag(i + 1, tag)
+        for i, tag in enumerate(tags, start=1):
+            validate_tag(i, tag)
             self.tags[tag.get("TagKey")] = tag.get("TagValue")
 
     def schedule_key_deletion(self, pending_window_in_days: int) -> None:
