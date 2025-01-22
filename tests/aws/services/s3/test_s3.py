@@ -3589,12 +3589,8 @@ class TestS3:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        path=[
-            "$..Deleted..VersionId",  # we cannot guarantee order nor we can sort it
-            "$..Delimiter",
-            "$..EncodingType",
-            "$..VersionIdMarker",
-        ]
+        # we cannot guarantee order nor we can sort it
+        path=["$..Deleted..VersionId"],
     )
     def test_delete_keys_in_versioned_bucket(self, s3_bucket, snapshot, aws_client):
         # see https://docs.aws.amazon.com/AmazonS3/latest/userguide/DeletingObjectVersions.html
@@ -4417,9 +4413,6 @@ class TestS3:
         snapshot.match("head_object_key2", rs)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..Delimiter", "$..EncodingType", "$..VersionIdMarker"]
-    )
     def test_get_bucket_versioning_order(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         rs = aws_client.s3.list_object_versions(Bucket=s3_bucket, EncodingType="url")
@@ -4461,9 +4454,6 @@ class TestS3:
         snapshot.match("get_object_range", rs)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..Delimiter", "$..EncodingType", "$..VersionIdMarker"]
-    )
     def test_s3_delete_object_with_version_id(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
@@ -4510,9 +4500,6 @@ class TestS3:
         snapshot.match("get_bucket_versioning_suspended", rs)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..Delimiter", "$..EncodingType", "$..VersionIdMarker"]
-    )
     def test_s3_put_object_versioned(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
@@ -4644,9 +4631,6 @@ class TestS3:
         snapshot.match("list-remaining-objects", response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..DeleteResult.Deleted..VersionId", "$..Prefix", "$..DeleteResult.@xmlns"]
-    )
     def test_s3_batch_delete_public_objects_using_requests(
         self, s3_bucket, allow_bucket_acl, snapshot, aws_client, anonymous_client
     ):
@@ -4696,11 +4680,6 @@ class TestS3:
         snapshot.match("list-remaining-objects", response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Prefix",
-        ]
-    )
     def test_s3_batch_delete_objects(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformer(snapshot.transform.key_value("Key"))
@@ -6162,7 +6141,6 @@ class TestS3:
         "use_virtual_address",
         [True, False],
     )
-    @markers.snapshot.skip_snapshot_verify(paths=["$..x-amz-server-side-encryption"])
     @markers.aws.validated
     def test_get_object_content_length_with_virtual_host(
         self,
@@ -9345,16 +9323,6 @@ class TestS3BucketLifecycle:
 
 class TestS3ObjectLockRetention:
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            # TODO: fix the exception for update-retention-no-bypass
-            "$.update-retention-no-bypass..ArgumentName",
-            "$.update-retention-no-bypass..ArgumentValue",
-            "$.update-retention-no-bypass..Code",
-            "$.update-retention-no-bypass..HTTPStatusCode",
-            "$.update-retention-no-bypass..Message",
-        ]
-    )
     def test_s3_object_retention_exc(self, aws_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         s3_bucket_locked = s3_create_bucket(ObjectLockEnabledForBucket=True)
@@ -9409,9 +9377,19 @@ class TestS3ObjectLockRetention:
                 Bucket=s3_bucket_locked,
                 Key=object_key,
                 VersionId=version_id,
-                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2025, 1, 1)},
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2029, 1, 1)},
             )
         snapshot.match("update-retention-no-bypass", e.value.response)
+
+        # update a retention with date in the past
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_retention(
+                Bucket=s3_bucket_locked,
+                Key=object_key,
+                VersionId=version_id,
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2020, 1, 1)},
+            )
+        snapshot.match("update-retention-past-date", e.value.response)
 
         s3_bucket_basic = s3_create_bucket(ObjectLockEnabledForBucket=False)  # same as default
         aws_client.s3.put_object(Bucket=s3_bucket_basic, Key=object_key, Body="test")

@@ -9608,7 +9608,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_s3_object_retention_exc": {
-    "recorded-date": "21-01-2025, 18:17:43",
+    "recorded-date": "22-01-2025, 17:19:21",
     "recorded-content": {
       "put-object-retention-no-bucket": {
         "Error": {
@@ -9654,8 +9654,18 @@
       },
       "update-retention-no-bypass": {
         "Error": {
+          "Code": "AccessDenied",
+          "Message": "Access Denied because object protected by object lock."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      },
+      "update-retention-past-date": {
+        "Error": {
           "ArgumentName": "RetainUntilDate",
-          "ArgumentValue": "Tue Dec 31 16:00:00 PST 2024",
+          "ArgumentValue": "Tue Dec 31 16:00:00 PST 2019",
           "Code": "InvalidArgument",
           "Message": "The retain until date must be in the future!"
         },

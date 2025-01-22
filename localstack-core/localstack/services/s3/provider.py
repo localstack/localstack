@@ -9,6 +9,7 @@ from io import BytesIO
 from operator import itemgetter
 from typing import IO, Optional, Union
 from urllib import parse as urlparse
+from zoneinfo import ZoneInfo
 
 from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -2011,7 +2012,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             return RestoreObjectOutput()
 
         restore_expiration_date = add_expiration_days_to_datetime(
-            datetime.datetime.utcnow(), restore_days
+            datetime.datetime.now(datetime.UTC), restore_days
         )
         # TODO: add a way to transition from ongoing-request=true to false? for now it is instant
         s3_object.restore = f'ongoing-request="false", expiry-date="{restore_expiration_date}"'
@@ -3551,6 +3552,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             retention, required_fields={"Mode", "RetainUntilDate"}
         ):
             raise MalformedXML()
+
+        if retention and retention["RetainUntilDate"] < datetime.datetime.now(datetime.UTC):
+            # weirdly, this date is format as following: Tue Dec 31 16:00:00 PST 2019
+            # it contains the timezone as PST, even if you target a bucket in Europe or Asia
+            pst_datetime = retention["RetainUntilDate"].astimezone(tz=ZoneInfo("US/Pacific"))
+            raise InvalidArgument(
+                "The retain until date must be in the future!",
+                ArgumentName="RetainUntilDate",
+                ArgumentValue=pst_datetime.strftime("%a %b %d %H:%M:%S %Z %Y"),
+            )
 
         if (
             not retention
