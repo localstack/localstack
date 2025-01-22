@@ -263,6 +263,16 @@ class TestIntrinsicFunctions:
         assert stack.outputs["Threshold"] == threshold
         assert stack.outputs["Period"] == period
 
+    @markers.aws.validated
+    def test_join_no_value_construct(self, deploy_cfn_template, snapshot, aws_client):
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/engine/join_no_value.yml"
+            )
+        )
+
+        snapshot.match("join-output", stack.outputs)
+
 
 class TestImports:
     @markers.aws.validated
