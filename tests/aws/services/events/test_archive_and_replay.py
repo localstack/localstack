@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from localstack import config
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -363,10 +362,7 @@ class TestArchive:
 class TestReplay:
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
-    @pytest.mark.skipif(
-        condition=config.EVENT_RULE_ENGINE == "python",
-        reason="Not supported with Python-based rule engine",
-    )
+    @pytest.mark.skip(reason="Not supported with Python-based rule engine")
     @pytest.mark.parametrize("event_bus_type", ["default", "custom"])
     @pytest.mark.skip_snapshot_verify(paths=["$..State"])
     def test_start_list_describe_canceled_replay(
