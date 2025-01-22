@@ -111,9 +111,12 @@ class EventRuleEngine:
 
         elif (equal_ignore_case := condition.get("equals-ignore-case")) is not None:
             return self._evaluate_equal_ignore_case(equal_ignore_case, value)
+
+        # we validated that `numeric`  should be a non-empty list when creating the rule, we don't need the None check
         elif numeric_condition := condition.get("numeric"):
             return self._evaluate_numeric_condition(numeric_condition, value)
 
+        # we also validated the `cidr` that it cannot be empty
         elif cidr := condition.get("cidr"):
             return self._evaluate_cidr(cidr, value)
 
@@ -147,7 +150,7 @@ class EventRuleEngine:
         return re.match(re.escape(condition).replace("\\*", ".+") + "$", value)
 
     @staticmethod
-    def _evaluate_numeric_condition(conditions: list, value) -> bool:
+    def _evaluate_numeric_condition(conditions: list, value: t.Any) -> bool:
         if not isinstance(value, (int, float)):
             return False
         try:
@@ -493,6 +496,10 @@ class EventPatternCompiler:
                 )
 
     def _validate_numeric_condition(self, value):
+        if not isinstance(value, list):
+            raise InvalidEventPatternException(
+                f"{self.error_prefix}Value of numeric must be an array."
+            )
         if not value:
             raise InvalidEventPatternException(
                 f"{self.error_prefix}Invalid member in numeric match: ]"
