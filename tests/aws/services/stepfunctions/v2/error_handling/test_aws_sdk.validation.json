@@ -10,5 +10,8 @@
   },
   "tests/aws/services/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_no_such_bucket": {
     "last_validated_date": "2023-06-22T11:26:06+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_s3_no_such_key": {
+    "last_validated_date": "2025-01-22T13:27:57+00:00"
   }
 }
