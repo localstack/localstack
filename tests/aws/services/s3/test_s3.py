@@ -11561,13 +11561,6 @@ class TestS3SSECEncryption:
         snapshot.match("put-obj-sse-c-bad-md5", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            # TODO: fix error message for SSEC Encryption
-            "$.get-obj-sse-c-no-md5..Message",
-            "$.get-obj-sse-c-wrong-key..Message",
-        ],
-    )
     def test_object_retrieval_sse_c(self, aws_client, s3_bucket, snapshot):
         body = "test_data"
         key_name = "test-sse-c"
@@ -11636,6 +11629,15 @@ class TestS3SSECEncryption:
                 SSECustomerKey=cus_key,
             )
         snapshot.match("get-obj-sse-c-no-md5", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.head_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+                SSECustomerAlgorithm="AES256",
+                SSECustomerKey=cus_key,
+            )
+        snapshot.match("head-obj-sse-c-no-md5", e.value.response)
 
         with pytest.raises(ClientError) as e:
             bad_key_size = base64.b64encode(self.ENCRYPTION_KEY[:10]).decode("utf-8")
@@ -11919,12 +11921,6 @@ class TestS3SSECEncryption:
         # TODO: check complete with wrong parameters, even though it is not required to give them?
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            # TODO: fix error message for SSEC Encryption
-            "$.get-obj-sse-c-last-version-wrong-key..Message",
-        ],
-    )
     def test_sse_c_with_versioning(self, aws_client, s3_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
         # enable versioning on the bucket
