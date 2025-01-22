@@ -910,6 +910,9 @@ class TestApiGatewayImportRestApi:
         apigw_snapshot_imported_resources,
         snapshot,
     ):
+        # the following YAML file contains integer status code for the Method and IntegrationResponse
+        # when importing the API, we need to properly cast them into string to avoid any typing issue when serializing
+        # responses. Most typed languages would fail when parsing.
         snapshot.add_transformer(snapshot.transform.key_value("uri"))
         spec_file = load_file(OAS30_HTTP_STATUS_INT)
         import_resp, root_id = import_apigw(body=spec_file, failOnWarnings=True)
