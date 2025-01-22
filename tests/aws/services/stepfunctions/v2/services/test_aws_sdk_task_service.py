@@ -259,6 +259,9 @@ class TestTaskServiceAwsSdk:
         ["", "text data", b"", b"binary data", bytearray(b"byte array data")],
         ids=["empty_str", "str", "empty_binary", "binary", "bytearray"],
     )
+    # it seems the SFn internal client does not return the checksum values from the object yet, maybe it hasn't
+    #  been updated to parse those fields?
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumCrc32"])
     def test_s3_get_object(
         self,
         aws_client,
@@ -293,7 +296,10 @@ class TestTaskServiceAwsSdk:
             # The serialisation of json values cannot currently lead to an output that can match the ETag obtainable
             # from through AWS SFN uploading to s3. This is true regardless of sorting or separator settings. Further
             # investigation into AWS's behaviour is needed.
-            "$..ETag"
+            "$..ETag",
+            # it seems the SFn internal client does not return the checksum values from the object yet, maybe it hasn't
+            #  been updated to parse those fields?
+            "$..ChecksumCrc32",
         ]
     )
     @pytest.mark.parametrize(

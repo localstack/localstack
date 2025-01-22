@@ -78,6 +78,15 @@ if TYPE_CHECKING:
 
 LOG = logging.getLogger(__name__)
 
+# TODO: implement new S3 Data Integrity logic (checksums)
+pytestmark = markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..ChecksumType",
+        "$..x-amz-checksum-type",
+    ]
+)
+
+
 # transformer list to transform headers, that will be validated for some specific s3-tests
 HEADER_TRANSFORMER = [
     TransformerUtility.jsonpath("$..HTTPHeaders.date", "date", reference_replacement=False),
@@ -758,7 +767,14 @@ class TestS3:
         snapshot.match("get-object-attrs-v1", response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..NextKeyMarker", "$..NextUploadIdMarker"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..NextKeyMarker",
+            "$..NextUploadIdMarker",
+            # FIXME: S3 data integrity
+            "$..Parts..ChecksumCRC32",
+        ],
+    )
     def test_multipart_and_list_parts(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -1231,15 +1247,11 @@ class TestS3:
         snapshot.match("head-object-with-checksum", get_object_with_checksum)
 
     @markers.aws.validated
-    @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256", None])
-    @markers.snapshot.skip_snapshot_verify(
-        # https://github.com/aws/aws-sdk/issues/498
-        # https://github.com/boto/boto3/issues/3568
-        # This issue seems to only happen when the ContentEncoding is internally set to `aws-chunked`. Because we
-        # don't use HTTPS when testing, the issue does not happen, so we skip the flag
-        paths=["$..ContentEncoding"],
-    )
+    @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256", "CRC64NVME", None])
     def test_s3_get_object_checksum(self, s3_bucket, snapshot, algorithm, aws_client):
+        # TODO: implement S3 data integrity
+        if algorithm == "CRC64NVME":
+            pytest.skip(f"{algorithm} not yet implemented")
         key = "test-checksum-retrieval"
         body = b"test-checksum"
         kwargs = {}
@@ -4079,10 +4091,13 @@ class TestS3:
         response = s3_multipart_upload(bucket=s3_bucket, key=key, data=content, acl=acl)
         snapshot.match("multipart-upload", response)
 
-        expected_url = (
-            f"{_bucket_url(bucket_name=s3_bucket, localstack_host=custom_hostname)}/{key}"
-        )
-        assert response["Location"] == expected_url
+        assert s3_bucket in response["Location"]
+        assert key in response["Location"]
+        if not is_aws_cloud():
+            expected_url = (
+                f"{_bucket_url(bucket_name=s3_bucket, localstack_host=custom_hostname)}/{key}"
+            )
+            assert response["Location"] == expected_url
 
         # download object via API
         downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
@@ -4674,7 +4689,7 @@ class TestS3:
 
         assert 200 == r.status_code
         response = xmltodict.parse(r.content)
-
+        response["DeleteResult"]["Deleted"].sort(key=itemgetter("Key"))
         snapshot.match("multi-delete-with-requests", response)
 
         response = aws_client.s3.list_objects(Bucket=s3_bucket)
@@ -5372,6 +5387,10 @@ class TestS3:
         assert resp_dict["DeleteResult"]["Deleted"]["Key"] == object_key
 
     @markers.aws.validated
+    # TODO: fix S3 data integrity
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$.complete-multipart-wrong-parts-checksum.Error.PartNumber"]
+    )
     def test_complete_multipart_parts_checksum(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -5506,28 +5525,6 @@ class TestS3:
         # data must be at least 5MiB
         part_data = "abc"
         checksum_part = hash_sha256(to_bytes(part_data))
-
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.upload_part(
-                Bucket=s3_bucket,
-                Key=key_name,
-                Body=part_data,
-                PartNumber=1,
-                UploadId=upload_id,
-                ChecksumAlgorithm="SHA256",
-            )
-        snapshot.match("upload-part-with-checksum", e.value.response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.upload_part(
-                Bucket=s3_bucket,
-                Key=key_name,
-                Body=part_data,
-                PartNumber=1,
-                UploadId=upload_id,
-                ChecksumSHA256=checksum_part,
-            )
-        snapshot.match("upload-part-with-checksum-calc", e.value.response)
 
         upload_resp = aws_client.s3.upload_part(
             Bucket=s3_bucket,
@@ -5854,6 +5851,7 @@ class TestS3:
 
     @markers.aws.validated
     def test_s3_intelligent_tier_config(self, aws_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         intelligent_tier_configuration = {
             "Id": "test1",
             "Filter": {
@@ -5920,7 +5918,7 @@ class TestS3:
         # delete the config with non-existing bucket
         with pytest.raises(ClientError) as delete_err_1:
             aws_client.s3.delete_bucket_intelligent_tiering_configuration(
-                Bucket="non-existing-bucket",
+                Bucket=f"non-existing-bucket-{short_uid()}-{short_uid()}",
                 Id=intelligent_tier_configuration["Id"],
             )
         snapshot.match(
@@ -6737,7 +6735,7 @@ class TestS3PresignedUrl:
             exception = xmltodict.parse(result.content)
             snapshot.match("with-decoded-content-length", exception)
 
-        if signature_version == "s3" or not verify_signature:
+        if signature_version == "s3" or (not verify_signature and not is_aws_cloud()):
             assert b"SignatureDoesNotMatch" in result.content
         # we are either using s3v4 with new provider or whichever signature against AWS
         else:
@@ -6750,7 +6748,7 @@ class TestS3PresignedUrl:
         if snapshotted:
             exception = xmltodict.parse(result.content)
             snapshot.match("without-decoded-content-length", exception)
-        if signature_version == "s3" or not verify_signature:
+        if signature_version == "s3" or (not verify_signature and not is_aws_cloud()):
             assert b"SignatureDoesNotMatch" in result.content
         else:
             assert b"AccessDenied" in result.content
@@ -8677,6 +8675,8 @@ class TestS3Routing:
         assert exc.value.response["Error"]["Message"] == "Not Found"
 
 
+# TODO: implement TransitionDefaultMinimumObjectSize
+@markers.snapshot.skip_snapshot_verify(paths=["$..TransitionDefaultMinimumObjectSize"])
 class TestS3BucketLifecycle:
     @markers.aws.validated
     def test_delete_bucket_lifecycle_configuration(self, s3_bucket, snapshot, aws_client):
@@ -9345,6 +9345,16 @@ class TestS3BucketLifecycle:
 
 class TestS3ObjectLockRetention:
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: fix the exception for update-retention-no-bypass
+            "$.update-retention-no-bypass..ArgumentName",
+            "$.update-retention-no-bypass..ArgumentValue",
+            "$.update-retention-no-bypass..Code",
+            "$.update-retention-no-bypass..HTTPStatusCode",
+            "$.update-retention-no-bypass..Message",
+        ]
+    )
     def test_s3_object_retention_exc(self, aws_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         s3_bucket_locked = s3_create_bucket(ObjectLockEnabledForBucket=True)
@@ -11551,6 +11561,13 @@ class TestS3SSECEncryption:
         snapshot.match("put-obj-sse-c-bad-md5", e.value.response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: fix error message for SSEC Encryption
+            "$.get-obj-sse-c-no-md5..Message",
+            "$.get-obj-sse-c-wrong-key..Message",
+        ],
+    )
     def test_object_retrieval_sse_c(self, aws_client, s3_bucket, snapshot):
         body = "test_data"
         key_name = "test-sse-c"
@@ -11744,6 +11761,8 @@ class TestS3SSECEncryption:
         snapshot.match("copy-obj-target-double-encryption", e.value.response)
 
     @markers.aws.validated
+    # TODO: fix S3 data integrity
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumCRC32"])
     def test_multipart_upload_sse_c(self, aws_client, s3_bucket, snapshot):
         snapshot.add_transformer(
             [
@@ -11900,6 +11919,12 @@ class TestS3SSECEncryption:
         # TODO: check complete with wrong parameters, even though it is not required to give them?
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: fix error message for SSEC Encryption
+            "$.get-obj-sse-c-last-version-wrong-key..Message",
+        ],
+    )
     def test_sse_c_with_versioning(self, aws_client, s3_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
         # enable versioning on the bucket

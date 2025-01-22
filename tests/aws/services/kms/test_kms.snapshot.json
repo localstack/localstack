@@ -1793,5 +1793,107 @@
         }
       }
     }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_tag_existing_key_and_untag": {
+    "recorded-date": "10-01-2025, 09:39:48",
+    "recorded-content": {
+      "list-resource-tags": [
+        {
+          "TagKey": "tag1",
+          "TagValue": "value1"
+        },
+        {
+          "TagKey": "tag2",
+          "TagValue": "value2"
+        }
+      ],
+      "list-resource-tags-after-all-untagged": []
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_with_tag_and_untag": {
+    "recorded-date": "10-01-2025, 09:40:40",
+    "recorded-content": {
+      "list-resource-tags": [
+        {
+          "TagKey": "tag1",
+          "TagValue": "value1"
+        },
+        {
+          "TagKey": "tag2",
+          "TagValue": "value2"
+        }
+      ],
+      "list-resource-tags-after-all-untagged": []
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_untag_key_partially": {
+    "recorded-date": "10-01-2025, 09:41:02",
+    "recorded-content": {
+      "list-resource-tags": [
+        {
+          "TagKey": "tag1",
+          "TagValue": "value1"
+        },
+        {
+          "TagKey": "tag2",
+          "TagValue": "value2"
+        },
+        {
+          "TagKey": "tag3",
+          "TagValue": "value3"
+        }
+      ],
+      "list-resource-tags-after-partially-untagged": [
+        {
+          "TagKey": "tag1",
+          "TagValue": "value1"
+        },
+        {
+          "TagKey": "tag3",
+          "TagValue": "value3"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_update_and_add_tags_on_tagged_key": {
+    "recorded-date": "17-01-2025, 12:25:39",
+    "recorded-content": {
+      "list-resource-tags": [
+        {
+          "TagKey": "tag1",
+          "TagValue": "value1"
+        },
+        {
+          "TagKey": "tag2",
+          "TagValue": "value2"
+        },
+        {
+          "TagKey": "tag3",
+          "TagValue": "value3"
+        }
+      ],
+      "list-resource-tags-after-tags-updated": [
+        {
+          "TagKey": "tag1",
+          "TagValue": "value1"
+        },
+        {
+          "TagKey": "tag2",
+          "TagValue": "updated_value2"
+        },
+        {
+          "TagKey": "tag3",
+          "TagValue": "value3"
+        },
+        {
+          "TagKey": "tag4",
+          "TagValue": "value4"
+        },
+        {
+          "TagKey": "tag5",
+          "TagValue": "value5"
+        }
+      ]
+    }
   }
 }

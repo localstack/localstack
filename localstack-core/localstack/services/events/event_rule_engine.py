@@ -95,14 +95,14 @@ class EventRuleEngine:
         elif value is None:
             # the remaining conditions require the value to not be None
             return False
-        elif prefix := condition.get("prefix"):
+        elif (prefix := condition.get("prefix")) is not None:
             if isinstance(prefix, dict):
                 if prefix_equal_ignore_case := prefix.get("equals-ignore-case"):
                     return self._evaluate_prefix(prefix_equal_ignore_case.lower(), value.lower())
             else:
                 return self._evaluate_prefix(prefix, value)
 
-        elif suffix := condition.get("suffix"):
+        elif (suffix := condition.get("suffix")) is not None:
             if isinstance(suffix, dict):
                 if suffix_equal_ignore_case := suffix.get("equals-ignore-case"):
                     return self._evaluate_suffix(suffix_equal_ignore_case.lower(), value.lower())

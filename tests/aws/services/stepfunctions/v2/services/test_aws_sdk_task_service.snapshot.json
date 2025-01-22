@@ -1668,7 +1668,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[empty_str]": {
-    "recorded-date": "23-05-2024, 19:11:31",
+    "recorded-date": "21-01-2025, 19:06:32",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1804,7 +1804,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[str]": {
-    "recorded-date": "23-05-2024, 19:11:47",
+    "recorded-date": "21-01-2025, 19:06:50",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1940,7 +1940,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[empty_binary]": {
-    "recorded-date": "23-05-2024, 19:12:03",
+    "recorded-date": "21-01-2025, 19:07:08",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2076,7 +2076,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[binary]": {
-    "recorded-date": "23-05-2024, 19:12:25",
+    "recorded-date": "21-01-2025, 19:07:26",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2212,7 +2212,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[bytearray]": {
-    "recorded-date": "23-05-2024, 19:12:51",
+    "recorded-date": "21-01-2025, 19:07:44",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2348,7 +2348,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[str]": {
-    "recorded-date": "13-12-2024, 15:20:04",
+    "recorded-date": "21-01-2025, 19:12:30",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2470,7 +2470,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[dict]": {
-    "recorded-date": "13-12-2024, 15:20:52",
+    "recorded-date": "21-01-2025, 19:12:48",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2600,7 +2600,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[list]": {
-    "recorded-date": "13-12-2024, 15:21:44",
+    "recorded-date": "21-01-2025, 19:13:05",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2731,7 +2731,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[bool]": {
-    "recorded-date": "13-12-2024, 15:22:31",
+    "recorded-date": "21-01-2025, 19:13:23",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2853,7 +2853,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[num]": {
-    "recorded-date": "13-12-2024, 15:23:18",
+    "recorded-date": "21-01-2025, 19:13:41",
     "recorded-content": {
       "get_execution_history": {
         "events": [

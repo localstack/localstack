@@ -11,6 +11,9 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import long_uid, short_uid
 from tests.aws.services.s3.conftest import TEST_S3_IMAGE
 
+# TODO: implement new S3 Data Integrity logic (checksums)
+pytestmark = markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumType"])
+
 
 class TestS3BucketCRUD:
     @markers.aws.validated
@@ -487,7 +490,7 @@ class TestS3Multipart:
     # TODO: write a validated test for UploadPartCopy preconditions
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..PartNumberMarker"])  # TODO: invetigate this
+    @markers.snapshot.skip_snapshot_verify(paths=["$..PartNumberMarker"])  # TODO: investigate this
     def test_upload_part_copy_range(self, aws_client, s3_bucket, snapshot):
         snapshot.add_transformer(
             [

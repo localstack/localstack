@@ -29,17 +29,17 @@ aws-sam-translator==1.94.0
     #   localstack-core (pyproject.toml)
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.36.38
+awscli==1.37.2
     # via localstack-core (pyproject.toml)
 awscrt==0.23.6
     # via localstack-core
-boto3==1.35.97
+boto3==1.36.2
     # via
     #   amazon-kclpy
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-botocore==1.35.97
+botocore==1.36.2
     # via
     #   aws-xray-sdk
     #   awscli
@@ -64,7 +64,7 @@ certifi==2024.12.14
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.22.4
+cfn-lint==1.22.5
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -141,7 +141,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.0.1
+joserfc==1.0.2
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core (pyproject.toml)
@@ -186,7 +186,7 @@ markupsafe==3.0.2
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-more-itertools==10.5.0
+more-itertools==10.6.0
     # via openapi-core
 moto-ext==5.0.26.post2
     # via localstack-core (pyproject.toml)
@@ -312,7 +312,7 @@ rpds-py==0.22.3
     #   referencing
 rsa==4.7.2
     # via awscli
-s3transfer==0.10.4
+s3transfer==0.11.1
     # via
     #   awscli
     #   boto3
@@ -355,7 +355,7 @@ werkzeug==3.1.3
     #   moto-ext
     #   openapi-core
     #   rolo
-wrapt==1.17.1
+wrapt==1.17.2
     # via aws-xray-sdk
 wsproto==1.2.0
     # via hypercorn
