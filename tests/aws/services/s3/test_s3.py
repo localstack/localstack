@@ -7560,6 +7560,16 @@ class TestS3PresignedUrl:
         )
         assert response.status_code == 200
 
+        # assert that the checksum-crc-32 value is still validated and important for the signature
+        bad_presigned_url = presigned_url.replace("crc32=AAAAAA%3D%3D", "crc32=BBBBBB%3D%3D")
+        response = requests.put(
+            bad_presigned_url,
+            data=b"123456",
+            verify=False,
+            headers={"Content-MD5": "4QrcOUm6Wau+VuBX8g+IPg=="},
+        )
+        assert response.status_code == 403
+
         # verify that we properly saved the data
         head_object = aws_client.s3.head_object(
             Bucket=function_name, Key=object_key, ChecksumMode="ENABLED"
