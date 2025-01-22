@@ -47,7 +47,7 @@ def validate_tag(tag_position: int, tag: Tag) -> None:
     tag_key = tag.get("TagKey")
     tag_value = tag.get("TagValue")
 
-    if len(tag_key) == 0 or len(tag_key) > 128:
+    if len(tag_key) > 128:
         raise ValidationException(
             f"1 validation error detected: Value '{tag_key}' at 'tags.{tag_position}.member.tagKey' failed to satisfy constraint: Member must have length less than or equal to 128"
         )
