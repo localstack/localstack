@@ -761,6 +761,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
             body = AwsChunkedDecoder(body, decoded_content_length, s3_object=s3_object)
 
+            if content_encoding := s3_object.system_metadata.pop("ContentEncoding", None):
+                encodings = [enc for enc in content_encoding.split(",") if enc != "aws-chunked"]
+                if encodings:
+                    s3_object.system_metadata["ContentEncoding"] = ",".join(encodings)
+
         with self._storage_backend.open(bucket_name, s3_object, mode="w") as s3_stored_object:
             # as we are inside the lock here, if multiple concurrent requests happen for the same object, it's the first
             # one to finish to succeed, and subsequent will raise exceptions. Once the first write finishes, we're

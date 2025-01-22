@@ -3495,6 +3495,53 @@ class TestS3:
         assert len(str(download_file_object)) == 0
 
     @markers.aws.only_localstack
+    def test_put_object_chunked_content_encoding(self, s3_bucket, aws_client, region_name):
+        object_key = "data"
+        body = "Hello"
+        headers = {
+            "Authorization": mock_aws_request_headers(
+                "s3",
+                aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+                region_name=region_name,
+            )["Authorization"],
+            "Content-Type": "audio/mpeg",
+            "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD",
+            "X-Amz-Date": "20190918T051509Z",
+            "X-Amz-Decoded-Content-Length": str(len(body)),
+            "Content-Encoding": "aws-chunked",
+        }
+        data = (
+            f"5;chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n"
+            f"{body}\r\n"
+            "0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n"
+        )
+        # put object
+        url = f"{config.internal_service_url()}/{s3_bucket}/{object_key}"
+        requests.put(url, data, headers=headers, verify=False)
+        # get object and assert content length
+        downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        assert "ContentEncoding" not in downloaded_object
+
+        upload_file_object = BytesIO()
+        mtime = 1676569620  # hardcode the GZIP timestamp
+        with gzip.GzipFile(fileobj=upload_file_object, mode="w", mtime=mtime) as filestream:
+            filestream.write(body.encode("utf-8"))
+        raw_gzip = upload_file_object.getvalue()
+        gzip_data = (
+            b"19;chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n"
+            + raw_gzip
+            + b"\r\n"
+            + b"0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n"
+        )
+        headers["Content-Encoding"] = "aws-chunked,gzip"
+        headers["X-Amz-Decoded-Content-Length"] = str(len(raw_gzip))
+        requests.put(url, gzip_data, headers=headers, verify=False, stream=True)
+        downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        assert downloaded_object["ContentEncoding"] == "gzip"
+        # get the raw data, don't let requests decode the response
+        assert downloaded_object["Body"].read() == raw_gzip
+
+    @markers.aws.only_localstack
     def test_virtual_host_proxy_does_not_decode_gzip(self, aws_client, s3_bucket):
         # Write contents to memory rather than a file.
         data = "123gzipfile"
