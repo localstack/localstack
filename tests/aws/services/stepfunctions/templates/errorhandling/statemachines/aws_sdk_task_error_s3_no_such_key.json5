@@ -1,0 +1,30 @@
+{
+  "QueryLanguage": "JSONata",
+  "StartAt": "StartState",
+  "States": {
+    "StartState": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:s3:getObject",
+      "Arguments": {
+        "Bucket": "{% $states.input.Bucket %}",
+        "Key": "no_such_key.json"
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "S3.NoSuchKeyException"
+          ],
+          "Output": "{% $states.errorOutput %}",
+          "Next": "NoSuchKeyState"
+        }
+      ],
+      "Next": "TerminalState"
+    },
+    "TerminalState": {
+      "Type": "Succeed"
+    },
+    "NoSuchKeyState": {
+      "Type": "Fail"
+    }
+  }
+}

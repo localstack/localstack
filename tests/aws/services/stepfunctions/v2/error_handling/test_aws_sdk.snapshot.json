@@ -520,5 +520,124 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_s3_no_such_key": {
+    "recorded-date": "22-01-2025, 13:27:57",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "bucket-name"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "StartState"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Bucket": "bucket-name",
+                "Key": "no_such_key.json"
+              },
+              "region": "<region>",
+              "resource": "getObject",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "getObject",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "The specified key does not exist. (Service: S3, Status Code: 404, Request ID: <request_id>, Extended Request ID: <extended_request_id>)",
+              "error": "S3.NoSuchKeyException",
+              "resource": "getObject",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "StartState",
+              "output": {
+                "Error": "S3.NoSuchKeyException",
+                "Cause": "The specified key does not exist. (Service: S3, Status Code: 404, Request ID: <request_id>, Extended Request ID: <extended_request_id>)"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "S3.NoSuchKeyException",
+                "Cause": "The specified key does not exist. (Service: S3, Status Code: 404, Request ID: <request_id>, Extended Request ID: <extended_request_id>)"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "NoSuchKeyState"
+            },
+            "timestamp": "timestamp",
+            "type": "FailStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {},
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
