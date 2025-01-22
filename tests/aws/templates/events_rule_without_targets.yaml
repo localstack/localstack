@@ -8,4 +8,4 @@ Resources:
     Properties:
       Name: 
         Ref: EventRuleName
-      ScheduleExpression: 'cron(0 1 * * * *)'
+      ScheduleExpression: 'cron(0 1 * * ? *)'

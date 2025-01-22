@@ -49,5 +49,22 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_events.py::test_event_rule_creation_without_target": {
+    "recorded-date": "22-01-2025, 14:15:04",
+    "recorded-content": {
+      "describe_rule": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:rule/event-rule-name",
+        "CreatedBy": "111111111111",
+        "EventBusName": "default",
+        "Name": "event-rule-name",
+        "ScheduleExpression": "cron(0 1 * * ? *)",
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

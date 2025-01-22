@@ -146,7 +146,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0 10 * * ? *)]": {
-    "recorded-date": "21-01-2025, 17:46:05",
+    "recorded-date": "22-01-2025, 13:22:45",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
@@ -173,7 +173,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(15 12 * * ? *)]": {
-    "recorded-date": "21-01-2025, 17:46:05",
+    "recorded-date": "22-01-2025, 13:22:46",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
@@ -200,7 +200,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0 18 ? * MON-FRI *)]": {
-    "recorded-date": "21-01-2025, 17:46:06",
+    "recorded-date": "22-01-2025, 13:22:47",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
@@ -227,7 +227,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0 8 1 * ? *)]": {
-    "recorded-date": "21-01-2025, 17:46:06",
+    "recorded-date": "22-01-2025, 13:22:47",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
@@ -254,7 +254,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/15 * * * ? *)]": {
-    "recorded-date": "21-01-2025, 17:46:07",
+    "recorded-date": "22-01-2025, 13:22:48",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
@@ -281,7 +281,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/10 * ? * MON-FRI *)]": {
-    "recorded-date": "21-01-2025, 17:46:07",
+    "recorded-date": "22-01-2025, 13:22:48",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
@@ -308,7 +308,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/5 8-17 ? * MON-FRI *)]": {
-    "recorded-date": "21-01-2025, 17:46:08",
+    "recorded-date": "22-01-2025, 13:22:49",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
@@ -335,7 +335,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/30 20-23 ? * MON-FRI *)]": {
-    "recorded-date": "21-01-2025, 17:46:08",
+    "recorded-date": "22-01-2025, 13:22:49",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
@@ -362,7 +362,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/30 0-2 ? * MON-FRI *)]": {
-    "recorded-date": "21-01-2025, 17:46:09",
+    "recorded-date": "22-01-2025, 13:22:50",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
@@ -419,7 +419,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_invalid_schedule_cron[cron(INVALID)]": {
-    "recorded-date": "21-01-2025, 17:46:10",
+    "recorded-date": "22-01-2025, 13:55:49",
     "recorded-content": {
       "invalid-put-rule": {
         "Error": {
@@ -434,7 +434,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_invalid_schedule_cron[cron(0 dummy ? * MON-FRI *)]": {
-    "recorded-date": "21-01-2025, 17:46:11",
+    "recorded-date": "22-01-2025, 13:55:50",
     "recorded-content": {
       "invalid-put-rule": {
         "Error": {
@@ -449,7 +449,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0 2 ? * SAT *)]": {
-    "recorded-date": "21-01-2025, 17:46:01",
+    "recorded-date": "22-01-2025, 13:22:42",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
@@ -476,7 +476,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0 12 * * ? *)]": {
-    "recorded-date": "21-01-2025, 17:46:01",
+    "recorded-date": "22-01-2025, 13:22:42",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
@@ -503,7 +503,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(5,35 14 * * ? *)]": {
-    "recorded-date": "21-01-2025, 17:46:02",
+    "recorded-date": "22-01-2025, 13:22:43",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
@@ -530,7 +530,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(15 10 ? * 6L 2002-2005)]": {
-    "recorded-date": "21-01-2025, 17:46:02",
+    "recorded-date": "22-01-2025, 13:22:43",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
@@ -557,7 +557,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0 2 ? * SAT#3 *)]": {
-    "recorded-date": "21-01-2025, 17:46:03",
+    "recorded-date": "22-01-2025, 13:22:44",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
@@ -584,7 +584,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(* * ? * SAT#3 *)]": {
-    "recorded-date": "21-01-2025, 17:46:03",
+    "recorded-date": "22-01-2025, 13:22:44",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
@@ -611,7 +611,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/5 5 ? JAN 1-5 2022)]": {
-    "recorded-date": "21-01-2025, 17:46:04",
+    "recorded-date": "22-01-2025, 13:22:45",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
@@ -638,7 +638,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_invalid_schedule_cron[cron(7 20 * * NOT *)]": {
-    "recorded-date": "21-01-2025, 17:46:09",
+    "recorded-date": "22-01-2025, 13:55:49",
     "recorded-content": {
       "invalid-put-rule": {
         "Error": {
@@ -653,7 +653,22 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_invalid_schedule_cron[cron(71 8 1 * ? *)]": {
-    "recorded-date": "21-01-2025, 17:46:11",
+    "recorded-date": "22-01-2025, 13:55:50",
+    "recorded-content": {
+      "invalid-put-rule": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Parameter ScheduleExpression is not valid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_invalid_schedule_cron[cron(0 1 * * * *)]": {
+    "recorded-date": "22-01-2025, 13:55:48",
     "recorded-content": {
       "invalid-put-rule": {
         "Error": {

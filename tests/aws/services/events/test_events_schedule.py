@@ -13,6 +13,7 @@ from localstack.utils.sync import retry
 from tests.aws.services.events.helper_functions import (
     events_time_string_to_timestamp,
     get_cron_expression,
+    is_old_provider,
     sqs_collect_messages,
 )
 
@@ -310,9 +311,14 @@ class TestScheduleCron:
         snapshot.match("list-rules", response)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not properly validate",
+    )
     @pytest.mark.parametrize(
         "schedule_cron",
         [
+            "cron(0 1 * * * *)",  # you can't specify the Day-of-month and Day-of-week fields in the same cron expression
             "cron(7 20 * * NOT *)",
             "cron(INVALID)",
             "cron(0 dummy ? * MON-FRI *)",
