@@ -1,6 +1,6 @@
 {
   "tests/aws/services/s3/test_s3_notifications_lambda.py::TestS3NotificationsToLambda::test_create_object_put_via_dynamodb": {
-    "recorded-date": "13-07-2023, 18:06:28",
+    "recorded-date": "21-01-2025, 23:31:40",
     "recorded-content": {
       "table_content": {
         "M": {
@@ -91,7 +91,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_lambda.py::TestS3NotificationsToLambda::test_create_object_by_presigned_request_via_dynamodb": {
-    "recorded-date": "13-07-2023, 19:19:13",
+    "recorded-date": "21-01-2025, 23:32:08",
     "recorded-content": {
       "items": [
         {
@@ -280,7 +280,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_lambda.py::TestS3NotificationsToLambda::test_invalid_lambda_arn": {
-    "recorded-date": "05-08-2023, 00:51:19",
+    "recorded-date": "21-01-2025, 23:32:13",
     "recorded-content": {
       "invalid_not_skip": {
         "Error": {

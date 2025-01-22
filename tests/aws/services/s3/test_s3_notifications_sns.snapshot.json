@@ -1,6 +1,6 @@
 {
   "tests/aws/services/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_object_created_put": {
-    "recorded-date": "05-08-2023, 00:52:31",
+    "recorded-date": "21-01-2025, 23:20:27",
     "recorded-content": {
       "receive_messages": {
         "messages": [
@@ -107,7 +107,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_bucket_notifications_with_filter": {
-    "recorded-date": "05-08-2023, 00:52:37",
+    "recorded-date": "21-01-2025, 23:20:33",
     "recorded-content": {
       "message": {
         "Message": {
@@ -161,7 +161,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_invalid_topic_arn": {
-    "recorded-date": "05-08-2023, 00:52:42",
+    "recorded-date": "21-01-2025, 23:20:37",
     "recorded-content": {
       "invalid_not_skip": {
         "Error": {
@@ -205,7 +205,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_bucket_not_exist": {
-    "recorded-date": "05-08-2023, 00:52:39",
+    "recorded-date": "21-01-2025, 23:20:35",
     "recorded-content": {
       "bucket_not_exists": {
         "Error": {

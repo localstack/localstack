@@ -37,8 +37,10 @@ from localstack.aws.api.s3 import (
     ChecksumAlgorithm,
     ChecksumCRC32,
     ChecksumCRC32C,
+    ChecksumCRC64NVME,
     ChecksumSHA1,
     ChecksumSHA256,
+    ChecksumType,
     CommonPrefix,
     CompletedMultipartUpload,
     CompleteMultipartUploadOutput,
@@ -135,6 +137,7 @@ from localstack.aws.api.s3 import (
     MaxUploads,
     MethodNotAllowed,
     MissingSecurityHeader,
+    MpuObjectSize,
     MultipartUpload,
     MultipartUploadId,
     NoSuchBucket,
@@ -935,9 +938,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_object.restore:
             response["Restore"] = s3_object.restore
 
+        checksum_value = None
         if checksum_algorithm := s3_object.checksum_algorithm:
             if (request.get("ChecksumMode") or "").upper() == "ENABLED":
-                response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
+                checksum_value = s3_object.checksum_value
 
         if range_data:
             s3_stored_object.seek(range_data.begin)
@@ -947,8 +951,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["ContentRange"] = range_data.content_range
             response["ContentLength"] = range_data.content_length
             response["StatusCode"] = 206
+            if range_data.content_length == s3_object.size and checksum_value:
+                response[f"Checksum{checksum_algorithm.upper()}"] = checksum_value
         else:
             response["Body"] = s3_stored_object
+            if checksum_value:
+                response[f"Checksum{checksum_algorithm.upper()}"] = checksum_value
 
         add_encryption_to_response(response, s3_object=s3_object)
 
@@ -1161,7 +1169,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         if s3_object.is_locked(bypass_governance_retention):
-            raise AccessDenied("Access Denied")
+            raise AccessDenied("Access Denied because object protected by object lock.")
 
         s3_bucket.objects.pop(object_key=key, version_id=version_id)
         response = DeleteObjectOutput(VersionId=s3_object.version_id)
@@ -1279,7 +1287,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     Error(
                         Code="AccessDenied",
                         Key=object_key,
-                        Message="Access Denied",
+                        Message="Access Denied because object protected by object lock.",
                         VersionId=version_id,
                     )
                 )
@@ -2054,6 +2062,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # TODO: validate the algorithm?
         checksum_algorithm = request.get("ChecksumAlgorithm")
+        # ChecksumCRC64NVME
         if checksum_algorithm and checksum_algorithm not in CHECKSUM_ALGORITHMS:
             raise InvalidRequest(
                 "Checksum algorithm provided is unsupported. Please try again with any of the valid types: [CRC32, CRC32C, SHA1, SHA256]"
@@ -2217,9 +2226,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 if s3_multipart.object.checksum_algorithm
                 else "null"
             )
-            raise InvalidRequest(
-                f"Checksum Type mismatch occurred, expected checksum Type: {error_mp_checksum}, actual checksum Type: {error_req_checksum}"
-            )
+            # TODO: properly fix this, this is to unblock default behavior of boto adding checksums and it being
+            #  accepted by AWS
+            if not error_mp_checksum == "null":
+                raise InvalidRequest(
+                    f"Checksum Type mismatch occurred, expected checksum Type: {error_mp_checksum}, actual checksum Type: {error_req_checksum}"
+                )
 
         stored_multipart = self._storage_backend.get_multipart(bucket_name, s3_multipart)
         with stored_multipart.open(s3_part, mode="w") as stored_s3_part:
@@ -2366,8 +2378,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         multipart_upload: CompletedMultipartUpload = None,
         checksum_crc32: ChecksumCRC32 = None,
         checksum_crc32_c: ChecksumCRC32C = None,
+        checksum_crc64_nvme: ChecksumCRC64NVME = None,
         checksum_sha1: ChecksumSHA1 = None,
         checksum_sha256: ChecksumSHA256 = None,
+        checksum_type: ChecksumType = None,
+        mpu_object_size: MpuObjectSize = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
         if_match: IfMatch = None,
@@ -2377,7 +2392,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         sse_customer_key_md5: SSECustomerKeyMD5 = None,
         **kwargs,
     ) -> CompleteMultipartUploadOutput:
-        # TODO add support for if_none_match
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         if (
@@ -2431,6 +2445,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise InvalidRequest("You must specify at least one part")
 
         parts_numbers = [part.get("PartNumber") for part in parts]
+        # TODO: it seems that with new S3 data integrity, sorting might not be mandatory depending on checksum type
+        # see https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html
         # sorted is very fast (fastest) if the list is already sorted, which should be the case
         if sorted(parts_numbers) != parts_numbers:
             raise InvalidPartOrder(
@@ -2826,7 +2842,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if sse_algorithm != ServerSideEncryption.aws_kms and "KMSMasterKeyID" in encryption:
             raise InvalidArgument(
-                "a KMSMasterKeyID is not applicable if the default sse algorithm is not aws:kms",
+                "a KMSMasterKeyID is not applicable if the default sse algorithm is not aws:kms or aws:kms:dsse",
                 ArgumentName="ApplyServerSideEncryptionByDefault",
             )
         # elif master_kms_key := encryption.get("KMSMasterKeyID"):
@@ -3538,7 +3554,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         ) and not (
             bypass_governance_retention and s3_object.lock_mode == ObjectLockMode.GOVERNANCE
         ):
-            raise AccessDenied("Access Denied")
+            raise AccessDenied("Access Denied because object protected by object lock.")
 
         s3_object.lock_mode = retention["Mode"] if retention else None
         s3_object.lock_until = retention["RetainUntilDate"] if retention else None

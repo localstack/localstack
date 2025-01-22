@@ -1,8 +1,10 @@
 {
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_object_versioned": {
-    "recorded-date": "01-08-2023, 22:17:12",
+    "recorded-date": "21-01-2025, 18:09:37",
     "recorded-content": {
       "put-object": {
+        "ChecksumCRC32": "1jy6qw==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"a9a43d6b467d3dc6514412c3a4987415\"",
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:1>",
@@ -33,6 +35,8 @@
       "get-object-with-version": {
         "AcceptRanges": "bytes",
         "Body": "test-delete",
+        "ChecksumCRC32": "1jy6qw==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 11,
         "ContentType": "binary/octet-stream",
         "ETag": "\"a9a43d6b467d3dc6514412c3a4987415\"",
@@ -97,6 +101,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"a9a43d6b467d3dc6514412c3a4987415\"",
             "IsLatest": false,
             "Key": "test-delete",
@@ -165,9 +173,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_object": {
-    "recorded-date": "27-07-2023, 01:10:35",
+    "recorded-date": "21-01-2025, 18:09:31",
     "recorded-content": {
       "put-object": {
+        "ChecksumCRC32": "1jy6qw==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"a9a43d6b467d3dc6514412c3a4987415\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -250,9 +260,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_get_object_with_version_unversioned_bucket": {
-    "recorded-date": "27-07-2023, 00:53:12",
+    "recorded-date": "21-01-2025, 18:09:42",
     "recorded-content": {
       "put-object": {
+        "ChecksumCRC32": "jSiR5g==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"a8b14b49cca6ee9a2dc6e28f87cc542c\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -275,6 +287,8 @@
       "get-obj-with-null-version": {
         "AcceptRanges": "bytes",
         "Body": "test-version",
+        "ChecksumCRC32": "jSiR5g==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 12,
         "ContentType": "binary/octet-stream",
         "ETag": "\"a8b14b49cca6ee9a2dc6e28f87cc542c\"",
@@ -289,7 +303,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_list_object_versions_order_unversioned": {
-    "recorded-date": "26-07-2023, 21:32:00",
+    "recorded-date": "21-01-2025, 18:09:52",
     "recorded-content": {
       "list-empty": {
         "EncodingType": "url",
@@ -305,6 +319,8 @@
         }
       },
       "put-object": {
+        "ChecksumCRC32": "yNTGAg==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"1b5c4d94104ea274dc3a49a55179de86\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -313,6 +329,8 @@
         }
       },
       "put-object-3": {
+        "ChecksumCRC32": "JtqnLg==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"2532913c38a0c3046be3dc4e434df6e6\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -321,6 +339,8 @@
         }
       },
       "put-object-2": {
+        "ChecksumCRC32": "Ud2XuA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"2f3c2d190be43f3f6cd1c26ce4c59ae6\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -338,6 +358,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"1b5c4d94104ea274dc3a49a55179de86\"",
             "IsLatest": true,
             "Key": "a-test-object-1",
@@ -351,6 +375,10 @@
             "VersionId": "<version-id:1>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"2f3c2d190be43f3f6cd1c26ce4c59ae6\"",
             "IsLatest": true,
             "Key": "b-test-object-2",
@@ -364,6 +392,10 @@
             "VersionId": "<version-id:1>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"2532913c38a0c3046be3dc4e434df6e6\"",
             "IsLatest": true,
             "Key": "c-test-object-3",
@@ -413,9 +445,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_objects": {
-    "recorded-date": "27-07-2023, 02:01:09",
+    "recorded-date": "21-01-2025, 18:09:33",
     "recorded-content": {
       "put-object": {
+        "ChecksumCRC32": "1jy6qw==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"a9a43d6b467d3dc6514412c3a4987415\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -457,9 +491,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_objects_versioned": {
-    "recorded-date": "01-08-2023, 22:22:24",
+    "recorded-date": "21-01-2025, 18:09:40",
     "recorded-content": {
       "put-object": {
+        "ChecksumCRC32": "1jy6qw==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"a9a43d6b467d3dc6514412c3a4987415\"",
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:1>",
@@ -540,7 +576,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketVersioning::test_bucket_versioning_crud": {
-    "recorded-date": "15-01-2024, 03:12:30",
+    "recorded-date": "21-01-2025, 18:10:29",
     "recorded-content": {
       "get-versioning-before": {
         "ResponseMetadata": {
@@ -635,9 +671,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_put_object_on_suspended_bucket": {
-    "recorded-date": "01-08-2023, 22:59:19",
+    "recorded-date": "21-01-2025, 18:09:46",
     "recorded-content": {
       "put-object-0": {
+        "ChecksumCRC32": "yAYCLA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:1>",
@@ -647,6 +685,8 @@
         }
       },
       "put-object-1": {
+        "ChecksumCRC32": "vwEyug==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:2>",
@@ -656,6 +696,8 @@
         }
       },
       "put-object-2": {
+        "ChecksumCRC32": "JghjAA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"0aafaa2dd225df253328c024ceb9efc1\"",
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:3>",
@@ -674,6 +716,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0aafaa2dd225df253328c024ceb9efc1\"",
             "IsLatest": true,
             "Key": "test-version",
@@ -687,6 +733,10 @@
             "VersionId": "<version-id:3>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
             "IsLatest": false,
             "Key": "test-version",
@@ -700,6 +750,10 @@
             "VersionId": "<version-id:2>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
             "IsLatest": false,
             "Key": "test-version",
@@ -728,6 +782,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0aafaa2dd225df253328c024ceb9efc1\"",
             "IsLatest": true,
             "Key": "test-version",
@@ -741,6 +799,10 @@
             "VersionId": "<version-id:3>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
             "IsLatest": false,
             "Key": "test-version",
@@ -754,6 +816,10 @@
             "VersionId": "<version-id:2>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
             "IsLatest": false,
             "Key": "test-version",
@@ -773,6 +839,8 @@
         }
       },
       "put-object-suspended": {
+        "ChecksumCRC32": "EfW/TQ==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"bb7af07292c35f415ac7da933eb5c927\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -790,6 +858,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"bb7af07292c35f415ac7da933eb5c927\"",
             "IsLatest": true,
             "Key": "test-version",
@@ -803,6 +875,10 @@
             "VersionId": "<version-id:4>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0aafaa2dd225df253328c024ceb9efc1\"",
             "IsLatest": false,
             "Key": "test-version",
@@ -816,6 +892,10 @@
             "VersionId": "<version-id:3>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
             "IsLatest": false,
             "Key": "test-version",
@@ -829,6 +909,10 @@
             "VersionId": "<version-id:2>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
             "IsLatest": false,
             "Key": "test-version",
@@ -848,6 +932,8 @@
         }
       },
       "put-object-suspended-overwrite": {
+        "ChecksumCRC32": "EfW/TQ==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"bb7af07292c35f415ac7da933eb5c927\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -865,6 +951,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"bb7af07292c35f415ac7da933eb5c927\"",
             "IsLatest": true,
             "Key": "test-version",
@@ -878,6 +968,10 @@
             "VersionId": "<version-id:4>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0aafaa2dd225df253328c024ceb9efc1\"",
             "IsLatest": false,
             "Key": "test-version",
@@ -891,6 +985,10 @@
             "VersionId": "<version-id:3>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
             "IsLatest": false,
             "Key": "test-version",
@@ -904,6 +1002,10 @@
             "VersionId": "<version-id:2>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
             "IsLatest": false,
             "Key": "test-version",
@@ -925,6 +1027,8 @@
       "get-object-current": {
         "AcceptRanges": "bytes",
         "Body": "test-version-suspended",
+        "ChecksumCRC32": "EfW/TQ==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 22,
         "ContentType": "binary/octet-stream",
         "ETag": "\"bb7af07292c35f415ac7da933eb5c927\"",
@@ -940,9 +1044,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_object_on_suspended_bucket": {
-    "recorded-date": "01-08-2023, 23:07:50",
+    "recorded-date": "21-01-2025, 18:09:50",
     "recorded-content": {
       "put-object-0": {
+        "ChecksumCRC32": "yAYCLA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:1>",
@@ -952,6 +1058,8 @@
         }
       },
       "put-object-1": {
+        "ChecksumCRC32": "vwEyug==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:2>",
@@ -970,6 +1078,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
             "IsLatest": true,
             "Key": "test-delete-suspended",
@@ -983,6 +1095,10 @@
             "VersionId": "<version-id:2>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
             "IsLatest": false,
             "Key": "test-delete-suspended",
@@ -1031,6 +1147,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
             "IsLatest": false,
             "Key": "test-delete-suspended",
@@ -1044,6 +1164,10 @@
             "VersionId": "<version-id:2>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
             "IsLatest": false,
             "Key": "test-delete-suspended",
@@ -1063,6 +1187,8 @@
         }
       },
       "put-object-suspended": {
+        "ChecksumCRC32": "Hgr1MQ==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"195a8078a76b2922899312bf556585e1\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -1080,6 +1206,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"195a8078a76b2922899312bf556585e1\"",
             "IsLatest": true,
             "Key": "test-delete-suspended",
@@ -1093,6 +1223,10 @@
             "VersionId": "<version-id:3>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
             "IsLatest": false,
             "Key": "test-delete-suspended",
@@ -1106,6 +1240,10 @@
             "VersionId": "<version-id:2>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
             "IsLatest": false,
             "Key": "test-delete-suspended",
@@ -1154,6 +1292,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
             "IsLatest": false,
             "Key": "test-delete-suspended",
@@ -1167,6 +1309,10 @@
             "VersionId": "<version-id:2>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
             "IsLatest": false,
             "Key": "test-delete-suspended",
@@ -1188,7 +1334,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_default_bucket_encryption": {
-    "recorded-date": "02-08-2023, 00:10:29",
+    "recorded-date": "21-01-2025, 18:10:45",
     "recorded-content": {
       "default-bucket-encryption": {
         "ServerSideEncryptionConfiguration": {
@@ -1227,7 +1373,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_default_bucket_encryption_exc": {
-    "recorded-date": "02-08-2023, 00:12:29",
+    "recorded-date": "21-01-2025, 18:10:47",
     "recorded-content": {
       "get-bucket-enc-no-bucket": {
         "Error": {
@@ -1286,7 +1432,7 @@
         "Error": {
           "ArgumentName": "ApplyServerSideEncryptionByDefault",
           "Code": "InvalidArgument",
-          "Message": "a KMSMasterKeyID is not applicable if the default sse algorithm is not aws:kms"
+          "Message": "a KMSMasterKeyID is not applicable if the default sse algorithm is not aws:kms or aws:kms:dsse"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1296,7 +1442,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_bucket_encryption_sse_s3": {
-    "recorded-date": "02-08-2023, 01:37:10",
+    "recorded-date": "21-01-2025, 18:10:49",
     "recorded-content": {
       "put-bucket-enc": {
         "ResponseMetadata": {
@@ -1305,6 +1451,8 @@
         }
       },
       "put-object-encrypted": {
+        "ChecksumCRC32": "J1mCHA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"16b66fb6b9c0e864b0291fa0dbb5a946\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -1328,6 +1476,8 @@
       "get-object-encrypted": {
         "AcceptRanges": "bytes",
         "Body": "test-encrypted",
+        "ChecksumCRC32": "J1mCHA==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 14,
         "ContentType": "binary/octet-stream",
         "ETag": "\"16b66fb6b9c0e864b0291fa0dbb5a946\"",
@@ -1342,7 +1492,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_bucket_encryption_sse_kms_aws_managed_key": {
-    "recorded-date": "02-08-2023, 01:48:16",
+    "recorded-date": "21-01-2025, 18:10:55",
     "recorded-content": {
       "put-bucket-enc": {
         "ResponseMetadata": {
@@ -1368,7 +1518,9 @@
       },
       "put-object-encrypted": {
         "BucketKeyEnabled": true,
-        "ETag": "\"dc1b467a7cb371279306a6f710c7ad2d\"",
+        "ChecksumCRC32": "J1mCHA==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"08d16e16e9b2006587e811c5d81ea74f\"",
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
@@ -1405,7 +1557,7 @@
         "BucketKeyEnabled": true,
         "ContentLength": 14,
         "ContentType": "binary/octet-stream",
-        "ETag": "\"dc1b467a7cb371279306a6f710c7ad2d\"",
+        "ETag": "\"08d16e16e9b2006587e811c5d81ea74f\"",
         "LastModified": "datetime",
         "Metadata": {},
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
@@ -1419,9 +1571,11 @@
         "AcceptRanges": "bytes",
         "Body": "test-encrypted",
         "BucketKeyEnabled": true,
+        "ChecksumCRC32": "J1mCHA==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 14,
         "ContentType": "binary/octet-stream",
-        "ETag": "\"dc1b467a7cb371279306a6f710c7ad2d\"",
+        "ETag": "\"08d16e16e9b2006587e811c5d81ea74f\"",
         "LastModified": "datetime",
         "Metadata": {},
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
@@ -1434,7 +1588,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_bucket_encryption_sse_kms": {
-    "recorded-date": "15-08-2023, 00:14:18",
+    "recorded-date": "21-01-2025, 18:10:53",
     "recorded-content": {
       "put-bucket-enc": {
         "ResponseMetadata": {
@@ -1461,7 +1615,9 @@
       },
       "put-object-encrypted": {
         "BucketKeyEnabled": true,
-        "ETag": "\"31f9fc96ed971f30ac05dd6eb7b6c2cc\"",
+        "ChecksumCRC32": "J1mCHA==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"ed93a03fee21ae796b5619dfb8afbe13\"",
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
@@ -1474,7 +1630,7 @@
         "BucketKeyEnabled": true,
         "ContentLength": 14,
         "ContentType": "binary/octet-stream",
-        "ETag": "\"31f9fc96ed971f30ac05dd6eb7b6c2cc\"",
+        "ETag": "\"ed93a03fee21ae796b5619dfb8afbe13\"",
         "LastModified": "datetime",
         "Metadata": {},
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
@@ -1488,9 +1644,11 @@
         "AcceptRanges": "bytes",
         "Body": "test-encrypted",
         "BucketKeyEnabled": true,
+        "ChecksumCRC32": "J1mCHA==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 14,
         "ContentType": "binary/octet-stream",
-        "ETag": "\"31f9fc96ed971f30ac05dd6eb7b6c2cc\"",
+        "ETag": "\"ed93a03fee21ae796b5619dfb8afbe13\"",
         "LastModified": "datetime",
         "Metadata": {},
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
@@ -1507,7 +1665,9 @@
         }
       },
       "put-object-encrypted-bucket-key-disabled": {
-        "ETag": "\"ff3e3e3afc59e48b1d4ae52980c00bb8\"",
+        "ChecksumCRC32": "J1mCHA==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"0b507d4ef8c3b14da00a61984206ca0d\"",
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
@@ -1518,7 +1678,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_bucket_tagging_crud": {
-    "recorded-date": "02-08-2023, 22:18:20",
+    "recorded-date": "21-01-2025, 18:11:06",
     "recorded-content": {
       "get-bucket-tags-empty": {
         "Error": {
@@ -1586,9 +1746,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_crud": {
-    "recorded-date": "02-08-2023, 23:23:45",
+    "recorded-date": "21-01-2025, 18:11:10",
     "recorded-content": {
       "put-object": {
+        "ChecksumCRC32": "lpqTBg==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"b635a7fc30aa9091e0d236bee77e6844\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -1646,6 +1808,8 @@
       "get-obj-after-tags": {
         "AcceptRanges": "bytes",
         "Body": "test-tagging",
+        "ChecksumCRC32": "lpqTBg==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 12,
         "ContentType": "binary/octet-stream",
         "ETag": "\"b635a7fc30aa9091e0d236bee77e6844\"",
@@ -1674,6 +1838,8 @@
       "get-obj-after-tags-deleted": {
         "AcceptRanges": "bytes",
         "Body": "test-tagging",
+        "ChecksumCRC32": "lpqTBg==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 12,
         "ContentType": "binary/octet-stream",
         "ETag": "\"b635a7fc30aa9091e0d236bee77e6844\"",
@@ -1688,9 +1854,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_put_object_with_tags": {
-    "recorded-date": "03-08-2023, 01:21:13",
+    "recorded-date": "21-01-2025, 18:11:19",
     "recorded-content": {
       "put-object": {
+        "ChecksumCRC32": "lpqTBg==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"b635a7fc30aa9091e0d236bee77e6844\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -1752,6 +1920,8 @@
       "get-obj": {
         "AcceptRanges": "bytes",
         "Body": "test-tagging",
+        "ChecksumCRC32": "lpqTBg==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 12,
         "ContentType": "binary/octet-stream",
         "ETag": "\"b635a7fc30aa9091e0d236bee77e6844\"",
@@ -1799,7 +1969,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_bucket_tagging_exc": {
-    "recorded-date": "02-08-2023, 22:32:41",
+    "recorded-date": "21-01-2025, 18:11:07",
     "recorded-content": {
       "get-no-bucket-tags": {
         "Error": {
@@ -1837,9 +2007,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_versioned": {
-    "recorded-date": "11-07-2024, 13:53:37",
+    "recorded-date": "21-01-2025, 18:11:16",
     "recorded-content": {
       "put-obj-0": {
+        "ChecksumCRC32": "XCKz9A==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"86639701cdcc5b39438a5f009bd74cb1\"",
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:1>",
@@ -1849,6 +2021,8 @@
         }
       },
       "put-obj-1": {
+        "ChecksumCRC32": "KyWDYg==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"70a37754eb5a2e7db8cd887aaf11cda7\"",
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:2>",
@@ -1993,7 +2167,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_exc": {
-    "recorded-date": "03-08-2023, 00:04:47",
+    "recorded-date": "21-01-2025, 18:11:13",
     "recorded-content": {
       "get-no-bucket-tags": {
         "Error": {
@@ -2088,7 +2262,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tags_delete_or_overwrite_object": {
-    "recorded-date": "02-08-2023, 23:52:10",
+    "recorded-date": "21-01-2025, 18:11:22",
     "recorded-content": {
       "get-object-after-creation": {
         "TagSet": [
@@ -2119,7 +2293,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_tagging_validation": {
-    "recorded-date": "03-08-2023, 01:07:47",
+    "recorded-date": "21-01-2025, 18:11:25",
     "recorded-content": {
       "put-bucket-tags-duplicate-keys": {
         "Error": {
@@ -2202,7 +2376,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_put_object_lock_configuration_on_existing_bucket": {
-    "recorded-date": "15-01-2024, 03:13:25",
+    "recorded-date": "21-01-2025, 18:11:36",
     "recorded-content": {
       "get-object-lock-existing-bucket-no-config": {
         "Error": {
@@ -2265,7 +2439,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_get_put_object_lock_configuration": {
-    "recorded-date": "09-08-2023, 01:40:49",
+    "recorded-date": "21-01-2025, 18:11:37",
     "recorded-content": {
       "get-lock-config-start": {
         "ObjectLockConfiguration": {
@@ -2315,7 +2489,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_put_object_lock_configuration_exc": {
-    "recorded-date": "15-01-2024, 03:08:09",
+    "recorded-date": "21-01-2025, 18:11:40",
     "recorded-content": {
       "put-lock-config-no-enabled": {
         "Error": {
@@ -2380,7 +2554,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_get_object_lock_configuration_exc": {
-    "recorded-date": "09-08-2023, 01:41:42",
+    "recorded-date": "21-01-2025, 18:11:42",
     "recorded-content": {
       "get-lock-config-no-enabled": {
         "Error": {
@@ -2407,7 +2581,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_disable_versioning_on_locked_bucket": {
-    "recorded-date": "31-10-2024, 12:29:03",
+    "recorded-date": "21-01-2025, 18:11:43",
     "recorded-content": {
       "disable-versioning-on-locked-bucket": {
         "Error": {
@@ -2804,7 +2978,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_get_object_range": {
-    "recorded-date": "18-09-2024, 13:05:07",
+    "recorded-date": "21-01-2025, 18:09:59",
     "recorded-content": {
       "get-0-8": {
         "AcceptRanges": "bytes",
@@ -2839,6 +3013,8 @@
       "get-1-0": {
         "AcceptRanges": "bytes",
         "Body": "0123456789",
+        "ChecksumCRC32": "poTHxg==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 10,
         "ContentType": "binary/octet-stream",
         "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
@@ -2868,6 +3044,8 @@
       "get--1-": {
         "AcceptRanges": "bytes",
         "Body": "0123456789",
+        "ChecksumCRC32": "poTHxg==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 10,
         "ContentType": "binary/octet-stream",
         "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
@@ -2912,6 +3090,8 @@
       "get--15": {
         "AcceptRanges": "bytes",
         "Body": "0123456789",
+        "ChecksumCRC32": "poTHxg==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 10,
         "ContentRange": "bytes 0-9/10",
         "ContentType": "binary/octet-stream",
@@ -2927,6 +3107,8 @@
       "get-0-100": {
         "AcceptRanges": "bytes",
         "Body": "0123456789",
+        "ChecksumCRC32": "poTHxg==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 10,
         "ContentRange": "bytes 0-9/10",
         "ContentType": "binary/octet-stream",
@@ -2957,6 +3139,8 @@
       "get-0--1": {
         "AcceptRanges": "bytes",
         "Body": "0123456789",
+        "ChecksumCRC32": "poTHxg==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 10,
         "ContentType": "binary/octet-stream",
         "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
@@ -2971,6 +3155,8 @@
       "get-multiple-ranges": {
         "AcceptRanges": "bytes",
         "Body": "0123456789",
+        "ChecksumCRC32": "poTHxg==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 10,
         "ContentType": "binary/octet-stream",
         "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
@@ -2985,6 +3171,8 @@
       "get-wrong-format": {
         "AcceptRanges": "bytes",
         "Body": "0123456789",
+        "ChecksumCRC32": "poTHxg==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 10,
         "ContentType": "binary/octet-stream",
         "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
@@ -2999,6 +3187,8 @@
       "get--": {
         "AcceptRanges": "bytes",
         "Body": "0123456789",
+        "ChecksumCRC32": "poTHxg==",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 10,
         "ContentType": "binary/octet-stream",
         "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
@@ -3035,6 +3225,8 @@
         }
       },
       "put-after-failed": {
+        "ChecksumCRC32": "/Im61Q==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"be497c2168e374f414a351c49379c01a\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -3045,9 +3237,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_range": {
-    "recorded-date": "07-09-2023, 17:51:48",
+    "recorded-date": "21-01-2025, 18:10:14",
     "recorded-content": {
       "put-src-object": {
+        "ChecksumCRC32": "poTHxg==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -3285,7 +3479,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_delete_object_with_no_locking": {
-    "recorded-date": "08-09-2023, 18:29:03",
+    "recorded-date": "21-01-2025, 18:11:45",
     "recorded-content": {
       "delete-object-bypass-no-lock": {
         "Error": {
@@ -3323,9 +3517,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_no_copy_source_range": {
-    "recorded-date": "14-11-2023, 20:50:28",
+    "recorded-date": "21-01-2025, 18:10:16",
     "recorded-content": {
       "put-src-object": {
+        "ChecksumCRC32": "poTHxg==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -3365,6 +3561,7 @@
         "MaxParts": 1000,
         "NextPartNumberMarker": 1,
         "Owner": {
+          "DisplayName": "display-name",
           "ID": "i-d"
         },
         "PartNumberMarker": 0,
@@ -3386,9 +3583,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_none_match": {
-    "recorded-date": "21-08-2024, 22:26:22",
+    "recorded-date": "21-01-2025, 18:12:09",
     "recorded-content": {
       "put-obj": {
+        "ChecksumCRC32": "AAAAAA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -3414,6 +3613,8 @@
         }
       },
       "put-obj-after-del": {
+        "ChecksumCRC32": "AAAAAA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -3424,9 +3625,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_none_match_validation": {
-    "recorded-date": "21-08-2024, 22:26:24",
+    "recorded-date": "21-01-2025, 18:12:11",
     "recorded-content": {
       "put-obj": {
+        "ChecksumCRC32": "AAAAAA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -3449,9 +3652,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_none_match_versioned_bucket": {
-    "recorded-date": "21-08-2024, 22:26:32",
+    "recorded-date": "21-01-2025, 18:12:18",
     "recorded-content": {
       "put-obj": {
+        "ChecksumCRC32": "AAAAAA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:1>",
@@ -3480,6 +3685,8 @@
         }
       },
       "put-obj-after-del": {
+        "ChecksumCRC32": "AAAAAA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:3>",
@@ -3510,6 +3717,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
             "IsLatest": true,
             "Key": "test-precondition",
@@ -3523,6 +3734,10 @@
             "VersionId": "<version-id:3>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
             "IsLatest": false,
             "Key": "test-precondition",
@@ -3544,9 +3759,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_none_match_with_delete": {
-    "recorded-date": "21-08-2024, 22:26:27",
+    "recorded-date": "21-01-2025, 18:12:14",
     "recorded-content": {
       "put-obj": {
+        "ChecksumCRC32": "AAAAAA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -3607,7 +3824,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_none_match_with_put": {
-    "recorded-date": "21-08-2024, 22:26:29",
+    "recorded-date": "21-01-2025, 18:12:16",
     "recorded-content": {
       "create-multipart": {
         "Bucket": "<bucket:1>",
@@ -3620,6 +3837,8 @@
         }
       },
       "put-obj": {
+        "ChecksumCRC32": "AAAAAA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -3641,9 +3860,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketVersioning::test_object_version_id_format": {
-    "recorded-date": "03-09-2024, 13:17:03",
+    "recorded-date": "21-01-2025, 18:10:31",
     "recorded-content": {
       "put-object": {
+        "ChecksumCRC32": "AAAAAA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:1>",
@@ -3655,9 +3876,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_match": {
-    "recorded-date": "26-11-2024, 16:57:18",
+    "recorded-date": "21-01-2025, 18:12:20",
     "recorded-content": {
       "put-obj": {
+        "ChecksumCRC32": "2H9+DA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -3677,6 +3900,8 @@
         }
       },
       "put-obj-overwrite": {
+        "ChecksumCRC32": "AAAAAA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -3702,6 +3927,8 @@
         }
       },
       "put-obj-after-del": {
+        "ChecksumCRC32": "AAAAAA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -3712,7 +3939,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_match_validation": {
-    "recorded-date": "26-11-2024, 20:38:49",
+    "recorded-date": "21-01-2025, 18:12:22",
     "recorded-content": {
       "put-obj-if-match-star-value": {
         "Error": {
@@ -3751,9 +3978,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_match_with_put": {
-    "recorded-date": "26-11-2024, 20:44:46",
+    "recorded-date": "21-01-2025, 18:12:25",
     "recorded-content": {
       "put-obj": {
+        "ChecksumCRC32": "2H9+DA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -3772,6 +4001,8 @@
         }
       },
       "put-obj-during": {
+        "ChecksumCRC32": "E7uNWA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"ad0234829205b9033196ba818f7a872b\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -3826,9 +4057,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_match_with_put_identical": {
-    "recorded-date": "26-11-2024, 23:46:03",
+    "recorded-date": "21-01-2025, 18:12:28",
     "recorded-content": {
       "put-obj": {
+        "ChecksumCRC32": "2H9+DA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -3847,6 +4080,8 @@
         }
       },
       "put-obj-during": {
+        "ChecksumCRC32": "2H9+DA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -3890,9 +4125,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_match_with_delete": {
-    "recorded-date": "26-11-2024, 23:47:59",
+    "recorded-date": "21-01-2025, 18:12:31",
     "recorded-content": {
       "put-obj": {
+        "ChecksumCRC32": "2H9+DA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -3928,6 +4165,8 @@
         }
       },
       "put-obj-2": {
+        "ChecksumCRC32": "2H9+DA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
@@ -3950,9 +4189,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_match_versioned_bucket": {
-    "recorded-date": "26-11-2024, 23:49:59",
+    "recorded-date": "21-01-2025, 18:12:34",
     "recorded-content": {
       "put-obj": {
+        "ChecksumCRC32": "2H9+DA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:1>",
@@ -3992,6 +4233,8 @@
         }
       },
       "put-obj-after-del": {
+        "ChecksumCRC32": "SbCV6g==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"b022e6afbcd118faed117e3c2b6e7b19\"",
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:3>",
@@ -4001,6 +4244,8 @@
         }
       },
       "put-obj-if-match": {
+        "ChecksumCRC32": "Dp3Z0w==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"98e41c14fd4ec56bafc444346ecb74b7\"",
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:4>",
@@ -4031,6 +4276,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"98e41c14fd4ec56bafc444346ecb74b7\"",
             "IsLatest": true,
             "Key": "test-precondition",
@@ -4044,6 +4293,10 @@
             "VersionId": "<version-id:4>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"b022e6afbcd118faed117e3c2b6e7b19\"",
             "IsLatest": false,
             "Key": "test-precondition",
@@ -4057,6 +4310,10 @@
             "VersionId": "<version-id:3>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
             "IsLatest": false,
             "Key": "test-precondition",
@@ -4078,7 +4335,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_match_and_if_none_match_validation": {
-    "recorded-date": "26-11-2024, 23:54:00",
+    "recorded-date": "21-01-2025, 18:12:36",
     "recorded-content": {
       "put-obj-both-precondition": {
         "Error": {
@@ -4095,9 +4352,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_match_etag": {
-    "recorded-date": "27-11-2024, 10:35:20",
+    "recorded-date": "21-01-2025, 18:12:39",
     "recorded-content": {
       "put-obj": {
+        "ChecksumCRC32": "2H9+DA==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
