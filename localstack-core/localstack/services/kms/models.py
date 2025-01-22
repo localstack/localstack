@@ -10,7 +10,7 @@ import struct
 import uuid
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
@@ -44,11 +44,12 @@ from localstack.aws.api.kms import (
     OriginType,
     ReplicateKeyRequest,
     SigningAlgorithmSpec,
+    TagList,
     UnsupportedOperationException,
 )
 from localstack.constants import TAG_KEY_CUSTOM_ID
-from localstack.services.kms.exceptions import ValidationException
-from localstack.services.kms.utils import is_valid_key_arn
+from localstack.services.kms.exceptions import TagException, ValidationException
+from localstack.services.kms.utils import is_valid_key_arn, validate_tag
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 from localstack.utils.aws.arns import get_partition, kms_alias_arn, kms_key_arn
 from localstack.utils.crypto import decrypt, encrypt
@@ -556,15 +557,23 @@ class KmsKey:
                 ReplicaKeys=[],
             )
 
-    def add_tags(self, tags: List) -> None:
+    def add_tags(self, tags: TagList) -> None:
         # Just in case we get None from somewhere.
         if not tags:
             return
 
+        unique_tag_keys = {tag["TagKey"] for tag in tags}
+        if len(unique_tag_keys) < len(tags):
+            raise TagException("Duplicate tag keys")
+
+        if len(tags) > 50:
+            raise TagException("Too many tags")
+
         # Do not care if we overwrite an existing tag:
         # https://docs.aws.amazon.com/kms/latest/APIReference/API_TagResource.html
         # "To edit a tag, specify an existing tag key and a new tag value."
-        for tag in tags:
+        for i, tag in enumerate(tags, start=1):
+            validate_tag(i, tag)
             self.tags[tag.get("TagKey")] = tag.get("TagValue")
 
     def schedule_key_deletion(self, pending_window_in_days: int) -> None:

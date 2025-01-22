@@ -200,6 +200,87 @@ class TestKMS:
         response = kms_client.list_resource_tags(KeyId=key_id)["Tags"]
         snapshot.match("list-resource-tags-after-tags-updated", response)
 
+    @markers.aws.validated
+    def test_tag_key_with_duplicate_tag_keys_raises_error(
+        self, kms_client_for_region, kms_create_key, snapshot, region_name
+    ):
+        kms_client = kms_client_for_region(region_name)
+        key_id = kms_create_key(
+            region_name=region_name, Description="test key 123", KeyUsage="ENCRYPT_DECRYPT"
+        )["KeyId"]
+
+        tags = [
+            {"TagKey": "tag1", "TagValue": "value1"},
+            {"TagKey": "tag1", "TagValue": "another-value1"},
+        ]
+        with pytest.raises(ClientError) as e:
+            kms_client.tag_resource(KeyId=key_id, Tags=tags)
+        snapshot.match("duplicate-tag-keys", e.value.response)
+
+    @markers.aws.validated
+    def test_create_key_with_too_many_tags_raises_error(
+        self, kms_create_key, snapshot, region_name
+    ):
+        max_tags = 50
+        tags = create_tags(**{f"key{i}": f"value{i}" for i in range(0, max_tags + 1)})
+
+        with pytest.raises(ClientError) as e:
+            kms_create_key(
+                region_name=region_name,
+                Description="test key 123",
+                KeyUsage="ENCRYPT_DECRYPT",
+                Tags=tags,
+            )["KeyId"]
+        snapshot.match("invalid-tag-key", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "invalid_tag_key",
+        ["aws:key1", "AWS:key1", "a" * 129],
+        ids=["lowercase_prefix", "uppercase_prefix", "too_long_key"],
+    )
+    def test_create_key_with_invalid_tag_key(
+        self, invalid_tag_key, kms_create_key, snapshot, region_name
+    ):
+        tags = create_tags(**{invalid_tag_key: "value1"})
+
+        with pytest.raises(ClientError) as e:
+            kms_create_key(
+                region_name=region_name,
+                Description="test key 123",
+                KeyUsage="ENCRYPT_DECRYPT",
+                Tags=tags,
+            )["KeyId"]
+        snapshot.match("invalid-tag-key", e.value.response)
+
+    @markers.aws.validated
+    def test_tag_existing_key_with_invalid_tag_key(
+        self, kms_client_for_region, kms_create_key, snapshot, region_name
+    ):
+        kms_client = kms_client_for_region(region_name)
+
+        key_id = kms_create_key(
+            region_name=region_name, Description="test key 123", KeyUsage="ENCRYPT_DECRYPT"
+        )["KeyId"]
+        tags = create_tags(**{"aws:key1": "value1"})
+
+        with pytest.raises(ClientError) as e:
+            kms_client.tag_resource(KeyId=key_id, Tags=tags)
+        snapshot.match("invalid-tag-key", e.value.response)
+
+    @markers.aws.validated
+    def test_key_with_long_tag_value_raises_error(self, kms_create_key, snapshot, region_name):
+        tags = create_tags(**{"tag1": "v" * 257})
+
+        with pytest.raises(ClientError) as e:
+            kms_create_key(
+                region_name=region_name,
+                Description="test key 123",
+                KeyUsage="ENCRYPT_DECRYPT",
+                Tags=tags,
+            )["KeyId"]
+        snapshot.match("too-long-tag-value", e.value.response)
+
     @markers.aws.only_localstack
     def test_create_key_custom_id(self, kms_create_key, aws_client):
         custom_id = str(uuid.uuid4())

@@ -1895,5 +1895,115 @@
         }
       ]
     }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_tag_key_with_duplicate_tag_keys_raises_error": {
+    "recorded-date": "17-01-2025, 13:35:08",
+    "recorded-content": {
+      "duplicate-tag-keys": {
+        "Error": {
+          "Code": "TagException",
+          "Message": "Duplicate tag keys"
+        },
+        "message": "Duplicate tag keys",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_with_too_many_tags_raises_error": {
+    "recorded-date": "21-01-2025, 17:15:38",
+    "recorded-content": {
+      "invalid-tag-key": {
+        "Error": {
+          "Code": "TagException",
+          "Message": "Too many tags"
+        },
+        "message": "Too many tags",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_tag_existing_key_with_invalid_tag_key": {
+    "recorded-date": "21-01-2025, 17:17:25",
+    "recorded-content": {
+      "invalid-tag-key": {
+        "Error": {
+          "Code": "TagException",
+          "Message": "Tags beginning with aws: are reserved"
+        },
+        "message": "Tags beginning with aws: are reserved",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_key_with_long_tag_value_raises_error": {
+    "recorded-date": "21-01-2025, 17:18:18",
+    "recorded-content": {
+      "too-long-tag-value": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv' at 'tags.1.member.tagValue' failed to satisfy constraint: Member must have length less than or equal to 256"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_with_invalid_tag_key[lowercase_prefix]": {
+    "recorded-date": "22-01-2025, 13:37:31",
+    "recorded-content": {
+      "invalid-tag-key": {
+        "Error": {
+          "Code": "TagException",
+          "Message": "Tags beginning with aws: are reserved"
+        },
+        "message": "Tags beginning with aws: are reserved",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_with_invalid_tag_key[uppercase_prefix]": {
+    "recorded-date": "22-01-2025, 13:37:32",
+    "recorded-content": {
+      "invalid-tag-key": {
+        "Error": {
+          "Code": "TagException",
+          "Message": "Tags beginning with aws: are reserved"
+        },
+        "message": "Tags beginning with aws: are reserved",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_with_invalid_tag_key[too_long_key]": {
+    "recorded-date": "22-01-2025, 13:37:32",
+    "recorded-content": {
+      "invalid-tag-key": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' at 'tags.1.member.tagKey' failed to satisfy constraint: Member must have length less than or equal to 128"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
