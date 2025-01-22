@@ -102,7 +102,7 @@ markupsafe==3.0.2
     # via werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-more-itertools==10.5.0
+more-itertools==10.6.0
     # via openapi-core
 openapi-core==0.19.4
     # via localstack-core (pyproject.toml)
