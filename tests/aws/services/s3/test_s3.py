@@ -7486,7 +7486,6 @@ class TestS3PresignedUrl:
         assert response.content == data
 
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="Lambda not enabled in S3 image")
-    @pytest.mark.skip(reason="flaky")
     @markers.aws.validated
     def test_presigned_url_v4_x_amz_in_qs(
         self,
@@ -7544,6 +7543,8 @@ class TestS3PresignedUrl:
         # assert that the Javascript SDK hoists it in the URL, unlike Boto
         assert StorageClass.STANDARD in presigned_url
         assert "bar-complicated-no-random" in presigned_url
+        # the JS SDK also adds a default checksum now even for pre-signed URLs
+        assert "x-amz-checksum-crc32=AAAAAA%3D%3D" in presigned_url
 
         # missing Content-MD5
         response = requests.put(presigned_url, verify=False, data=b"123456")
@@ -7560,7 +7561,9 @@ class TestS3PresignedUrl:
         assert response.status_code == 200
 
         # verify that we properly saved the data
-        head_object = aws_client.s3.head_object(Bucket=function_name, Key=object_key)
+        head_object = aws_client.s3.head_object(
+            Bucket=function_name, Key=object_key, ChecksumMode="ENABLED"
+        )
         snapshot.match("head-object", head_object)
 
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="Lambda not enabled in S3 image")

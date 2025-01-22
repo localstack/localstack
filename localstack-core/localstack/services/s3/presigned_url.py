@@ -658,6 +658,11 @@ class S3SigV4SignatureContext:
                     # specially in the old JS SDK v2
                     headers.add(qs_param_low, qs_value)
                 else:
+                    # The JS SDK is adding the `x-amz-checksum-crc32` header to query parameters, even though it cannot
+                    # know in advance the actual checksum. Those are ignored by AWS, if they're not put in the
+                    # SignedHeaders
+                    if qs_param_low.startswith("x-amz-checksum-"):
+                        continue
                     query_args_to_headers[qs_param_low] = qs_value
 
             new_query_args[qs_parameter] = qs_value
