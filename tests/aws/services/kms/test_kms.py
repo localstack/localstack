@@ -237,7 +237,7 @@ class TestKMS:
     @pytest.mark.parametrize(
         "invalid_tag_key",
         ["aws:key1", "AWS:key1", "a" * 129],
-        ids=["lowercase_prefix", "uppercase_prefix", "too_long_key"]
+        ids=["lowercase_prefix", "uppercase_prefix", "too_long_key"],
     )
     def test_create_key_with_invalid_tag_key(
         self, invalid_tag_key, kms_create_key, snapshot, region_name
