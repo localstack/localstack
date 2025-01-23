@@ -9326,12 +9326,16 @@ class TestS3ObjectLockRetention:
     def test_s3_object_retention_exc(self, aws_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         s3_bucket_locked = s3_create_bucket(ObjectLockEnabledForBucket=True)
+
+        current_year = datetime.datetime.now().year
+        future_datetime = datetime.datetime(current_year + 5, 1, 1)
+
         # non-existing bucket
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_object_retention(
                 Bucket=f"non-existing-bucket-{long_uid()}",
                 Key="fake-key",
-                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": future_datetime},
             )
         snapshot.match("put-object-retention-no-bucket", e.value.response)
 
@@ -9340,7 +9344,7 @@ class TestS3ObjectLockRetention:
             aws_client.s3.put_object_retention(
                 Bucket=s3_bucket_locked,
                 Key="non-existing-key",
-                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": future_datetime},
             )
         snapshot.match("put-object-retention-no-key", e.value.response)
 
@@ -9369,15 +9373,17 @@ class TestS3ObjectLockRetention:
         aws_client.s3.put_object_retention(
             Bucket=s3_bucket_locked,
             Key=object_key,
-            Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+            Retention={"Mode": "GOVERNANCE", "RetainUntilDate": future_datetime},
         )
-        # update a retention without bypass
+
+        # update a retention to be lower than the existing one without bypass
+        earlier_datetime = future_datetime - datetime.timedelta(days=365)
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_object_retention(
                 Bucket=s3_bucket_locked,
                 Key=object_key,
                 VersionId=version_id,
-                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2029, 1, 1)},
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": earlier_datetime},
             )
         snapshot.match("update-retention-no-bypass", e.value.response)
 
@@ -9398,7 +9404,7 @@ class TestS3ObjectLockRetention:
             aws_client.s3.put_object_retention(
                 Bucket=s3_bucket_basic,
                 Key=object_key,
-                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": future_datetime},
             )
         snapshot.match("put-object-retention-regular-bucket", e.value.response)
 

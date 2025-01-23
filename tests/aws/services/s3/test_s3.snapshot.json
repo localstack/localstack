@@ -9608,7 +9608,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_s3_object_retention_exc": {
-    "recorded-date": "22-01-2025, 17:19:21",
+    "recorded-date": "23-01-2025, 11:12:34",
     "recorded-content": {
       "put-object-retention-no-bucket": {
         "Error": {
