@@ -112,6 +112,13 @@ class CmdDockerClient(ContainerClient):
         else:
             return DockerContainerStatus.DOWN
 
+    def get_container_stats(self, container_name: str) -> dict:
+        cmd = self._docker_cmd()
+        cmd += ["stats", "--no-stream", "--format", "{{json .}}", container_name]
+        cmd_result = run(cmd)
+
+        return json.loads(cmd_result)
+
     def stop_container(self, container_name: str, timeout: int = 10) -> None:
         cmd = self._docker_cmd()
         cmd += ["stop", "--time", str(timeout), container_name]
