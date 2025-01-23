@@ -420,7 +420,9 @@ def _resolve_refs_recursively(
                 raise Exception(
                     f"Cannot resolve CF Fn::Join {value} due to null values: {join_values}"
                 )
-            return value[keys_list[0]][0].join([str(v) for v in join_values])
+            return value[keys_list[0]][0].join(
+                [str(v) for v in join_values if v != "__aws_no_value__"]
+            )
 
         if stripped_fn_lower == "sub":
             item_to_sub = value[keys_list[0]]

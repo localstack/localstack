@@ -673,5 +673,15 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_join_no_value_construct": {
+    "recorded-date": "22-01-2025, 14:01:46",
+    "recorded-content": {
+      "join-output": {
+        "JoinConditionalNoValue": "",
+        "JoinOnlyNoValue": "",
+        "JoinWithNoValue": "Sample"
+      }
+    }
   }
 }
