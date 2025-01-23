@@ -11773,7 +11773,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_v4_x_amz_in_qs": {
-    "recorded-date": "21-01-2025, 18:25:21",
+    "recorded-date": "22-01-2025, 18:21:12",
     "recorded-content": {
       "head-object": {
         "AcceptRanges": "bytes",

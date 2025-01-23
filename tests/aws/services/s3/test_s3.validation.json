@@ -708,7 +708,7 @@
     "last_validated_date": "2025-01-21T18:25:34+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_v4_x_amz_in_qs": {
-    "last_validated_date": "2025-01-21T18:25:21+00:00"
+    "last_validated_date": "2025-01-22T18:21:12+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_with_different_user_credentials": {
     "last_validated_date": "2025-01-21T18:23:55+00:00"
