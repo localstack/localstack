@@ -1123,6 +1123,33 @@ class TestSNSSubscriptionCrud:
 
         snapshot.match("invalid-unsubscribe-arn-3", e.value.response)
 
+    @markers.aws.validated
+    def test_subscribe_with_invalid_topic(self, sns_create_topic, sns_subscription, snapshot):
+        with pytest.raises(ClientError) as e:
+            sns_subscription(
+                TopicArn="randomstring", Protocol="email", Endpoint="localstack@yopmail.com"
+            )
+
+        snapshot.match("invalid-subscribe-arn-1", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_subscription(
+                TopicArn="arn:aws:sns:us-east-1:random",
+                Protocol="email",
+                Endpoint="localstack@yopmail.com",
+            )
+
+        snapshot.match("invalid-subscribe-arn-2", e.value.response)
+
+        topic_arn = sns_create_topic()["TopicArn"]
+        bad_topic_arn = topic_arn + "aaa"
+        with pytest.raises(ClientError) as e:
+            sns_subscription(
+                TopicArn=bad_topic_arn, Protocol="email", Endpoint="localstack@yopmail.com"
+            )
+
+        snapshot.match("non-existent-topic", e.value.response)
+
 
 class TestSNSSubscriptionLambda:
     @markers.aws.validated

@@ -4949,5 +4949,43 @@
         "X-Amz-Sns-Topic-Arn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_subscribe_with_invalid_topic": {
+    "recorded-date": "23-01-2025, 22:38:17",
+    "recorded-content": {
+      "invalid-subscribe-arn-1": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: TopicArn Reason: An ARN must have at least 6 elements, not 1",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-subscribe-arn-2": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: TopicArn Reason: An ARN must have at least 6 elements, not 5",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "non-existent-topic": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "Topic does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }
