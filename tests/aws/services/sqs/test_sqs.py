@@ -250,6 +250,21 @@ class TestSqsProvider:
         snapshot.match("send_max_number_of_messages", e.value.response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
+    def test_send_receive_wait_time_seconds(self, sqs_queue, snapshot, aws_sqs_client):
+        queue_url = sqs_queue
+        send_result = aws_sqs_client.send_message(QueueUrl=queue_url, MessageBody="message")
+        assert send_result["MessageId"]
+
+        MAX_WAIT_TIME_SECONDS = 20
+        with pytest.raises(ClientError) as e:
+            aws_sqs_client.receive_message(
+                QueueUrl=queue_url, WaitTimeSeconds=MAX_WAIT_TIME_SECONDS + 1
+            )
+
+        snapshot.match("recieve_message_error", e.value.response)
+
+    @markers.aws.validated
     def test_receive_message_attributes_timestamp_types(self, sqs_queue, aws_sqs_client):
         aws_sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="message")
 
