@@ -725,6 +725,7 @@ def import_api_from_openapi_spec(
             # Create the `MethodResponse` for the previously created `Method`
             method_responses = field_schema.get("responses", {})
             for method_status_code, method_response in method_responses.items():
+                method_status_code = str(method_status_code)
                 method_response_model = None
                 model_ref = None
                 # separating the two different versions, Swagger (2.0) and OpenAPI 3.0
@@ -822,7 +823,7 @@ def import_api_from_openapi_spec(
                     )
 
                     integration_response = integration.create_integration_response(
-                        status_code=integration_responses.get("statusCode", 200),
+                        status_code=str(integration_responses.get("statusCode", 200)),
                         selection_pattern=pattern if pattern != "default" else None,
                         response_templates=integration_response_templates,
                         response_parameters=integration_response_parameters,
