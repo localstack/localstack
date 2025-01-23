@@ -14344,5 +14344,135 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_get_object_single_character_trailing_slash": {
+    "recorded-date": "22-01-2025, 19:05:31",
+    "recorded-content": {
+      "put-object-single-char-a/": {
+        "ChecksumCRC32": "2H9+DA==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-single-char-a/": {
+        "AcceptRanges": "bytes",
+        "Body": "test",
+        "ChecksumCRC32": "2H9+DA==",
+        "ChecksumType": "FULL_OBJECT",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-single-char-t/": {
+        "ChecksumCRC32": "2H9+DA==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-single-char-t/": {
+        "AcceptRanges": "bytes",
+        "Body": "test",
+        "ChecksumCRC32": "2H9+DA==",
+        "ChecksumType": "FULL_OBJECT",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-single-char-u/": {
+        "ChecksumCRC32": "2H9+DA==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-single-char-u/": {
+        "AcceptRanges": "bytes",
+        "Body": "test",
+        "ChecksumCRC32": "2H9+DA==",
+        "ChecksumType": "FULL_OBJECT",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-single-char": {
+        "Contents": [
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+            "Key": "a/",
+            "LastModified": "datetime",
+            "Size": 4,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+            "Key": "t/",
+            "LastModified": "datetime",
+            "Size": 4,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+            "Key": "u/",
+            "LastModified": "datetime",
+            "Size": 4,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 3,
+        "MaxKeys": 1000,
+        "Name": "<name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

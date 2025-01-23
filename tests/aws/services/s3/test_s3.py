@@ -532,6 +532,23 @@ class TestS3:
         snapshot.match("del-object-special-char", resp)
 
     @markers.aws.validated
+    def test_put_get_object_single_character_trailing_slash(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+        single_chars = [
+            "a/",
+            "t/",
+            "u/",
+        ]
+        for char in single_chars:
+            resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=char, Body=b"test")
+            snapshot.match(f"put-object-single-char-{char}", resp)
+            resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=char)
+            snapshot.match(f"get-object-single-char-{char}", resp)
+
+        resp = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
+        snapshot.match("list-objects-single-char", resp)
+
+    @markers.aws.validated
     def test_copy_object_special_character(self, s3_bucket, s3_create_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         dest_bucket = s3_create_bucket()

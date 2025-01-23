@@ -203,6 +203,9 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_bucket_policy_invalid_account_id[abcd]": {
     "last_validated_date": "2025-01-21T18:28:03+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_get_object_single_character_trailing_slash": {
+    "last_validated_date": "2025-01-22T19:05:31+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_get_object_special_character[a/%F0%9F%98%80/]": {
     "last_validated_date": "2025-01-21T18:26:56+00:00"
   },

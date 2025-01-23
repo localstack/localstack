@@ -1091,7 +1091,7 @@ class S3RequestParser(RestXMLRequestParser):
             and shape.serialization.get("location") == "uri"
             and shape.serialization.get("name") == "Key"
             and (
-                (trailing_slashes := request.path.partition(uri_params["Key"])[2])
+                (trailing_slashes := request.path.rpartition(uri_params["Key"])[2])
                 and all(char == "/" for char in trailing_slashes)
             )
         ):
