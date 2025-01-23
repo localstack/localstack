@@ -8,8 +8,8 @@ from typing import Any, Callable, Final, Optional
 import jpype
 import jpype.imports
 
-from localstack.services.stepfunctions.asl.jsonata.packages import jsonata_package
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.services.stepfunctions.packages import jpype_jsonata_package
 from localstack.utils.objects import singleton_factory
 
 JSONataExpression = str
@@ -40,17 +40,19 @@ class _JSONataJVMBridge:
     _java_JSONATA: "com.dashjoin.jsonata.Jsonata.jsonata"  # noqa
 
     def __init__(self):
-        installer = jsonata_package.get_installer()
+        installer = jpype_jsonata_package.get_installer()
         installer.install()
 
         from jpype import config as jpype_config
 
         jpype_config.destroy_jvm = False
 
+        # Limitation: We can only start one JVM instance within LocalStack and using JPype for another purpose
+        # (e.g., event-ruler) fails unless we change the way we load/reload the classpath.
         jvm_path = installer.get_java_lib_path()
         jsonata_libs_path = Path(installer.get_installed_dir())
-        event_ruler_libs_pattern = jsonata_libs_path.joinpath("*")
-        jpype.startJVM(jvm_path, classpath=[event_ruler_libs_pattern], interrupt=False)
+        jsonata_libs_pattern = jsonata_libs_path.joinpath("*")
+        jpype.startJVM(jvm_path, classpath=[jsonata_libs_pattern], interrupt=False)
 
         from com.fasterxml.jackson.databind import ObjectMapper  # noqa
         from com.dashjoin.jsonata.Jsonata import jsonata  # noqa
@@ -137,7 +139,6 @@ def compose_jsonata_expression(
     final_jsonata_expression: JSONataExpression,
     variable_declarations_list: list[VariableDeclarations],
 ) -> JSONataExpression:
-    # TODO: should be expanded to pack the intrinsic functions too.
     variable_declarations = "".join(variable_declarations_list)
     expression = "".join(
         [

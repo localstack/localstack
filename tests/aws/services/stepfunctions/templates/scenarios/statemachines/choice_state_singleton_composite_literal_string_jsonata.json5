@@ -1,0 +1,29 @@
+{
+  "StartAt": "Pass",
+  "QueryLanguage": "JSONata",
+  "States": {
+    "Pass": {
+      "Type": "Pass",
+      "Output": {
+        "str_value": "string literal",
+      },
+      "Next": "Choice"
+    },
+    "Choice": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Next": "Success",
+          "Condition": "{% $states.input.str_value = \"string literal\" %}"
+        }
+      ],
+      "Default": "Fail"
+    },
+    "Success": {
+      "Type": "Succeed"
+    },
+    "Fail": {
+      "Type": "Fail"
+    },
+  }
+}

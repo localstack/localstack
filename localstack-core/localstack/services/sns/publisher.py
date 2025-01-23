@@ -856,7 +856,7 @@ def get_application_platform_arn_from_endpoint_arn(endpoint_arn: str) -> str:
     parsed_arn = parse_arn(endpoint_arn)
 
     _, platform_type, app_name, _ = parsed_arn["resource"].split("/")
-    base_arn = f'arn:aws:sns:{parsed_arn["region"]}:{parsed_arn["account"]}'
+    base_arn = f"arn:aws:sns:{parsed_arn['region']}:{parsed_arn['account']}"
     return f"{base_arn}:app/{platform_type}/{app_name}"
 
 

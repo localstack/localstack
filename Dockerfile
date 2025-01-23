@@ -1,7 +1,7 @@
 #
 # base: Stage which installs necessary runtime dependencies (OS packages, etc.)
 #
-FROM python:3.11.11-slim-bookworm@sha256:873952659a04188d2a62d5f7e30fd673d2559432a847a8ad5fcaf9cbd085e9ed AS base
+FROM python:3.11.11-slim-bookworm@sha256:6ed5bff4d7d377e2a27d9285553b8c21cfccc4f00881de1b24c9bc8d90016e82 AS base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -153,6 +153,7 @@ RUN --mount=type=cache,target=/root/.cache \
     source .venv/bin/activate && \
     python -m localstack.cli.lpm install \
       lambda-runtime \
+      jpype-jsonata \
       dynamodb-local && \
     chown -R localstack:localstack /usr/lib/localstack && \
     chmod -R 777 /usr/lib/localstack

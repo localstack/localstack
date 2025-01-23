@@ -5,14 +5,9 @@ from botocore.exceptions import ClientError, UnknownServiceError
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
 from localstack.aws.protocol.service_router import get_service_catalog
+from localstack.services.stepfunctions.asl.component.common.error_name.error_name import ErrorName
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
-)
-from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
-    StatesErrorName,
-)
-from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
-    StatesErrorNameType,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
     StateCredentials,
@@ -90,7 +85,7 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
     def _get_task_failure_event(self, env: Environment, error: str, cause: str) -> FailureEvent:
         return FailureEvent(
             env=env,
-            error_name=StatesErrorName(typ=StatesErrorNameType.StatesTaskFailed),
+            error_name=ErrorName(error_name=error),
             event_type=HistoryEventType.TaskFailed,
             event_details=EventDetails(
                 taskFailedEventDetails=TaskFailedEventDetails(
@@ -115,7 +110,7 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
             ]
             if "HostId" in ex.response["ResponseMetadata"]:
                 cause_details.append(
-                    f'Extended Request ID: {ex.response["ResponseMetadata"]["HostId"]}'
+                    f"Extended Request ID: {ex.response['ResponseMetadata']['HostId']}"
                 )
 
             cause: str = f"{error_message} ({', '.join(cause_details)})"

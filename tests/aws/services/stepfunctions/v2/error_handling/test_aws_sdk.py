@@ -49,6 +49,29 @@ class TestAwsSdk:
             exec_input,
         )
 
+    @markers.aws.validated
+    def test_s3_no_such_key(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+        template = EHT.load_sfn_template(EHT.AWS_SDK_TASK_FAILED_S3_NO_SUCH_KEY)
+        definition = json.dumps(template)
+        exec_input = json.dumps({"Bucket": bucket_name})
+        create_and_record_execution(
+            aws_client,
+            create_state_machine_iam_role,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
     @pytest.mark.skipif(
         condition=not is_aws_cloud(),
         reason="No parameters validation for dynamodb api calls being returned.",

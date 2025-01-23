@@ -1,6 +1,6 @@
 {
   "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_created_put": {
-    "recorded-date": "05-08-2023, 00:41:37",
+    "recorded-date": "21-01-2025, 23:25:10",
     "recorded-content": {
       "object_deleted": {
         "account": "111111111111",
@@ -60,7 +60,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_put_acl": {
-    "recorded-date": "05-08-2023, 01:08:43",
+    "recorded-date": "21-01-2025, 23:36:07",
     "recorded-content": {
       "messages": {
         "messages": [
@@ -172,7 +172,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_restore_object": {
-    "recorded-date": "13-07-2023, 02:00:37",
+    "recorded-date": "21-01-2025, 23:38:04",
     "recorded-content": {
       "messages": {
         "messages": [
@@ -235,7 +235,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_created_put_in_different_region": {
-    "recorded-date": "18-10-2023, 01:26:55",
+    "recorded-date": "21-01-2025, 23:29:29",
     "recorded-content": {
       "object-created-different-regions": {
         "messages": [
@@ -300,9 +300,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_created_put_versioned": {
-    "recorded-date": "03-09-2024, 14:18:13",
+    "recorded-date": "21-01-2025, 23:40:14",
     "recorded-content": {
       "obj-ver1": {
+        "ChecksumCRC32": "rfPzYw==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:1>",
@@ -312,6 +314,8 @@
         }
       },
       "obj-ver2": {
+        "ChecksumCRC32": "DIwTWw==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"6869c34ca384e0ed836d49214f881e87\"",
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:2>",
@@ -394,6 +398,8 @@
         }
       ],
       "add-null-version": {
+        "ChecksumCRC32": "e4sjzQ==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"2fb1d4988881168bbcd6432d7593be5a\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {

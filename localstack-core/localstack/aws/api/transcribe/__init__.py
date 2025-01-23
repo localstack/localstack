@@ -339,6 +339,14 @@ class AbsoluteTimeRange(TypedDict, total=False):
     Last: Optional[TimestampMilliseconds]
 
 
+class Tag(TypedDict, total=False):
+    Key: TagKey
+    Value: TagValue
+
+
+TagList = List[Tag]
+
+
 class ChannelDefinition(TypedDict, total=False):
     ChannelId: Optional[ChannelId]
     ParticipantRole: Optional[ParticipantRole]
@@ -422,6 +430,7 @@ class CallAnalyticsJob(TypedDict, total=False):
     IdentifiedLanguageScore: Optional[IdentifiedLanguageScore]
     Settings: Optional[CallAnalyticsJobSettings]
     ChannelDefinitions: Optional[ChannelDefinitions]
+    Tags: Optional[TagList]
 
 
 class CallAnalyticsJobSummary(TypedDict, total=False):
@@ -498,6 +507,7 @@ class CategoryProperties(TypedDict, total=False):
     Rules: Optional[RuleList]
     CreateTime: Optional[DateTime]
     LastUpdateTime: Optional[DateTime]
+    Tags: Optional[TagList]
     InputType: Optional[InputType]
 
 
@@ -507,19 +517,12 @@ CategoryPropertiesList = List[CategoryProperties]
 class CreateCallAnalyticsCategoryRequest(ServiceRequest):
     CategoryName: CategoryName
     Rules: RuleList
+    Tags: Optional[TagList]
     InputType: Optional[InputType]
 
 
 class CreateCallAnalyticsCategoryResponse(TypedDict, total=False):
     CategoryProperties: Optional[CategoryProperties]
-
-
-class Tag(TypedDict, total=False):
-    Key: TagKey
-    Value: TagValue
-
-
-TagList = List[Tag]
 
 
 class InputDataConfig(TypedDict, total=False):
@@ -1084,6 +1087,7 @@ class StartCallAnalyticsJobRequest(ServiceRequest):
     OutputEncryptionKMSKeyId: Optional[KMSKeyId]
     DataAccessRoleArn: Optional[DataAccessRoleArn]
     Settings: Optional[CallAnalyticsJobSettings]
+    Tags: Optional[TagList]
     ChannelDefinitions: Optional[ChannelDefinitions]
 
 
@@ -1242,6 +1246,7 @@ class TranscribeApi:
         context: RequestContext,
         category_name: CategoryName,
         rules: RuleList,
+        tags: TagList = None,
         input_type: InputType = None,
         **kwargs,
     ) -> CreateCallAnalyticsCategoryResponse:
@@ -1535,6 +1540,7 @@ class TranscribeApi:
         output_encryption_kms_key_id: KMSKeyId = None,
         data_access_role_arn: DataAccessRoleArn = None,
         settings: CallAnalyticsJobSettings = None,
+        tags: TagList = None,
         channel_definitions: ChannelDefinitions = None,
         **kwargs,
     ) -> StartCallAnalyticsJobResponse:

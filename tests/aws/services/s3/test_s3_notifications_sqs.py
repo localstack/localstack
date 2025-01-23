@@ -23,6 +23,9 @@ if TYPE_CHECKING:
 
 LOG = logging.getLogger(__name__)
 
+# TODO: implement new S3 Data Integrity logic (checksums)
+pytestmark = markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumType"])
+
 
 class NotificationFactory(Protocol):
     """
@@ -226,9 +229,9 @@ class TestS3NotificationsToSQS:
 
         aws_client.s3.put_object(Bucket=s3_bucket, Key=src_key, Body="something")
 
-        assert not sqs_collect_s3_events(
-            aws_client.sqs, queue_url, 0, timeout=1
-        ), "unexpected event triggered for put_object"
+        assert not sqs_collect_s3_events(aws_client.sqs, queue_url, 0, timeout=1), (
+            "unexpected event triggered for put_object"
+        )
 
         aws_client.s3.copy_object(
             Bucket=s3_bucket,
@@ -488,9 +491,9 @@ class TestS3NotificationsToSQS:
 
         aws_client.s3.put_object(Bucket=s3_bucket, Key=dest_key, Body="FooBarBlitz")
 
-        assert not sqs_collect_s3_events(
-            aws_client.sqs, queue_url, 0, timeout=1
-        ), "unexpected event triggered for put_object"
+        assert not sqs_collect_s3_events(aws_client.sqs, queue_url, 0, timeout=1), (
+            "unexpected event triggered for put_object"
+        )
 
         aws_client.s3.put_object_tagging(
             Bucket=s3_bucket,
@@ -532,9 +535,9 @@ class TestS3NotificationsToSQS:
 
         aws_client.s3.put_object(Bucket=s3_bucket, Key=dest_key, Body="FooBarBlitz")
 
-        assert not sqs_collect_s3_events(
-            aws_client.sqs, queue_url, 0, timeout=1
-        ), "unexpected event triggered for put_object"
+        assert not sqs_collect_s3_events(aws_client.sqs, queue_url, 0, timeout=1), (
+            "unexpected event triggered for put_object"
+        )
 
         aws_client.s3.put_object_tagging(
             Bucket=s3_bucket,

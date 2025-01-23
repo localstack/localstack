@@ -2,6 +2,9 @@
   "tests/aws/services/cloudformation/resources/test_events.py::test_cfn_event_api_destination_resource": {
     "last_validated_date": "2024-04-16T06:36:56+00:00"
   },
+  "tests/aws/services/cloudformation/resources/test_events.py::test_event_rule_creation_without_target": {
+    "last_validated_date": "2025-01-22T14:15:04+00:00"
+  },
   "tests/aws/services/cloudformation/resources/test_events.py::test_eventbus_policy_statement": {
     "last_validated_date": "2024-11-14T21:46:23+00:00"
   },

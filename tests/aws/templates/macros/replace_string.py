@@ -13,6 +13,6 @@ def walk(node, context):
     elif isinstance(node, list):
         return [walk(elem, context) for elem in node]
     elif isinstance(node, str) and "<replace-this>" in node:
-        return node.replace("<replace-this>", f'{context.get("Input")} <replace-this>')
+        return node.replace("<replace-this>", f"{context.get('Input')} <replace-this>")
     else:
         return node

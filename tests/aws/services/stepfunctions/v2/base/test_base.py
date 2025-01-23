@@ -336,7 +336,7 @@ class TestSnfBase:
 
         # make sure execution start time on the API side is the same as the one returned internally when accessing the context object
         d = execution_done["startDate"].astimezone(datetime.UTC)
-        serialized_date = f'{d.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]}Z'
+        serialized_date = f"{d.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]}Z"
         assert context_start_time == serialized_date
 
     @markers.aws.validated

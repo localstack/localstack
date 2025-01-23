@@ -11,9 +11,9 @@ attrs==24.3.0
     #   referencing
 awscrt==0.23.6
     # via localstack-core (pyproject.toml)
-boto3==1.35.86
+boto3==1.36.2
     # via localstack-core (pyproject.toml)
-botocore==1.35.86
+botocore==1.36.2
     # via
     #   boto3
     #   localstack-core (pyproject.toml)
@@ -88,7 +88,7 @@ jsonschema-path==0.3.3
     # via
     #   openapi-core
     #   openapi-spec-validator
-jsonschema-specifications==2023.12.1
+jsonschema-specifications==2024.10.1
     # via
     #   jsonschema
     #   openapi-schema-validator
@@ -102,11 +102,11 @@ markupsafe==3.0.2
     # via werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-more-itertools==10.5.0
+more-itertools==10.6.0
     # via openapi-core
 openapi-core==0.19.4
     # via localstack-core (pyproject.toml)
-openapi-schema-validator==0.6.2
+openapi-schema-validator==0.6.3
     # via
     #   openapi-core
     #   openapi-spec-validator
@@ -116,7 +116,7 @@ packaging==24.2
     # via build
 parse==1.20.2
     # via openapi-core
-pathable==0.4.3
+pathable==0.4.4
     # via jsonschema-path
 plux==1.12.1
     # via localstack-core (pyproject.toml)
@@ -130,7 +130,7 @@ pycparser==2.22
     # via cffi
 pygments==2.19.1
     # via rich
-pyopenssl==24.3.0
+pyopenssl==25.0.0
     # via
     #   localstack-core (pyproject.toml)
     #   localstack-twisted
@@ -170,7 +170,7 @@ rpds-py==0.22.3
     # via
     #   jsonschema
     #   referencing
-s3transfer==0.10.4
+s3transfer==0.11.1
     # via boto3
 semver==3.0.2
     # via localstack-core (pyproject.toml)
@@ -183,6 +183,7 @@ tailer==0.4.1
 typing-extensions==4.12.2
     # via
     #   localstack-twisted
+    #   pyopenssl
     #   readerwriterlock
 urllib3==2.3.0
     # via

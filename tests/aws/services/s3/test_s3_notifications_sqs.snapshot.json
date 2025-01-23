@@ -1,6 +1,6 @@
 {
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_put": {
-    "recorded-date": "03-09-2024, 14:22:07",
+    "recorded-date": "21-01-2025, 23:21:10",
     "recorded-content": {
       "receive_messages": {
         "messages": [
@@ -77,7 +77,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_copy": {
-    "recorded-date": "05-08-2023, 00:55:27",
+    "recorded-date": "21-01-2025, 23:21:14",
     "recorded-content": {
       "receive_messages": {
         "messages": [
@@ -120,7 +120,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_and_object_removed": {
-    "recorded-date": "05-08-2023, 00:55:32",
+    "recorded-date": "21-01-2025, 23:21:18",
     "recorded-content": {
       "receive_messages": {
         "messages": [
@@ -229,7 +229,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_complete_multipart_upload": {
-    "recorded-date": "05-08-2023, 00:55:41",
+    "recorded-date": "21-01-2025, 23:21:25",
     "recorded-content": {
       "receive_messages": {
         "messages": [
@@ -272,7 +272,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_key_encoding": {
-    "recorded-date": "05-08-2023, 00:55:45",
+    "recorded-date": "21-01-2025, 23:21:29",
     "recorded-content": {
       "receive_messages": {
         "messages": [
@@ -315,7 +315,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_put_with_presigned_url_upload": {
-    "recorded-date": "29-08-2024, 14:05:28",
+    "recorded-date": "21-01-2025, 23:21:38",
     "recorded-content": {
       "receive_messages": {
         "messages": [
@@ -396,7 +396,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_tagging_put_event": {
-    "recorded-date": "05-08-2023, 00:55:54",
+    "recorded-date": "21-01-2025, 23:21:45",
     "recorded-content": {
       "receive_messages": {
         "messages": [
@@ -437,7 +437,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_tagging_delete_event": {
-    "recorded-date": "05-08-2023, 00:55:58",
+    "recorded-date": "21-01-2025, 23:21:49",
     "recorded-content": {
       "receive_messages": {
         "messages": [
@@ -478,7 +478,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_xray_header": {
-    "recorded-date": "05-08-2023, 00:56:03",
+    "recorded-date": "21-01-2025, 23:21:54",
     "recorded-content": {
       "receive_messages": {
         "messages": [
@@ -533,7 +533,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_notifications_with_filter": {
-    "recorded-date": "05-08-2023, 00:56:08",
+    "recorded-date": "21-01-2025, 23:21:59",
     "recorded-content": {
       "config": {
         "QueueConfigurations": [
@@ -669,7 +669,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_filter_rules_case_insensitive": {
-    "recorded-date": "05-08-2023, 00:56:10",
+    "recorded-date": "21-01-2025, 23:22:01",
     "recorded-content": {
       "bucket_notification_configuration": {
         "QueueConfigurations": [
@@ -703,7 +703,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_bucket_notification_with_invalid_filter_rules": {
-    "recorded-date": "05-08-2023, 00:56:12",
+    "recorded-date": "21-01-2025, 23:22:02",
     "recorded-content": {
       "invalid_filter_name": {
         "Error": {
@@ -720,7 +720,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_invalid_sqs_arn": {
-    "recorded-date": "05-08-2023, 00:56:15",
+    "recorded-date": "21-01-2025, 23:22:05",
     "recorded-content": {
       "invalid_not_skip": {
         "Error": {
@@ -776,7 +776,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_delete_objects": {
-    "recorded-date": "05-08-2023, 00:55:37",
+    "recorded-date": "21-01-2025, 23:21:22",
     "recorded-content": {
       "receive_messages": {
         "messages": [
@@ -881,7 +881,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_put_acl": {
-    "recorded-date": "05-08-2023, 00:56:22",
+    "recorded-date": "21-01-2025, 23:22:12",
     "recorded-content": {
       "receive_messages": {
         "messages": [
@@ -986,7 +986,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_multiple_invalid_sqs_arns": {
-    "recorded-date": "05-08-2023, 00:56:17",
+    "recorded-date": "21-01-2025, 23:22:07",
     "recorded-content": {
       "two-queue-arns-invalid": {
         "Error": {
@@ -1029,7 +1029,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_restore_object": {
-    "recorded-date": "13-07-2023, 01:18:19",
+    "recorded-date": "21-01-2025, 23:23:47",
     "recorded-content": {
       "receive_messages": {
         "messages": [
@@ -1112,9 +1112,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_put_versioned": {
-    "recorded-date": "03-09-2024, 14:30:59",
+    "recorded-date": "21-01-2025, 23:23:54",
     "recorded-content": {
       "obj-ver1": {
+        "ChecksumCRC32": "rfPzYw==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:1>",
@@ -1124,6 +1126,8 @@
         }
       },
       "obj-ver2": {
+        "ChecksumCRC32": "DIwTWw==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"6869c34ca384e0ed836d49214f881e87\"",
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:2>",
@@ -1287,6 +1291,8 @@
         }
       ],
       "add-null-version": {
+        "ChecksumCRC32": "e4sjzQ==",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"2fb1d4988881168bbcd6432d7593be5a\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {

@@ -103,7 +103,7 @@ class LambdaVersionManager:
                 reason=f"Error while creating lambda: {e}",
             )
             LOG.debug(
-                "Changing Lambda %s (id %s) to " "failed. Reason: %s",
+                "Changing Lambda %s (id %s) to failed. Reason: %s",
                 self.function_arn,
                 self.function_version.config.internal_revision,
                 e,

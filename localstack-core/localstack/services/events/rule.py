@@ -24,7 +24,29 @@ from localstack.services.events.scheduler import JobScheduler, convert_schedule_
 
 TARGET_ID_REGEX = re.compile(r"^[\.\-_A-Za-z0-9]+$")
 TARGET_ARN_REGEX = re.compile(r"arn:[\d\w:\-/]*")
-RULE_SCHEDULE_CRON_REGEX = re.compile(r"^cron\(.*\)")
+CRON_REGEX = (  # borrowed from https://regex101.com/r/I80Eu0/1
+    r"^(?:cron[(](?:(?:(?:[0-5]?[0-9])|[*])(?:(?:[-](?:(?:[0-5]?[0-9])|[*]))|(?:[/][0-9]+))?"
+    r"(?:[,](?:(?:[0-5]?[0-9])|[*])(?:(?:[-](?:(?:[0-5]?[0-9])|[*]))|(?:[/][0-9]+))?)*)[ ]+"
+    r"(?:(?:(?:[0-2]?[0-9])|[*])(?:(?:[-](?:(?:[0-2]?[0-9])|[*]))|(?:[/][0-9]+))?"
+    r"(?:[,](?:(?:[0-2]?[0-9])|[*])(?:(?:[-](?:(?:[0-2]?[0-9])|[*]))|(?:[/][0-9]+))?)*)[ ]+"
+    r"(?:(?:[?][ ]+(?:(?:(?:[1]?[0-9])|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)|[*])"
+    r"(?:(?:[-](?:(?:[1]?[0-9])|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)|[*])(?:[/][0-9]+)?)|"
+    r"(?:[/][0-9]+))?(?:[,](?:(?:[1]?[0-9])|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)|[*])"
+    r"(?:(?:[-](?:(?:[1]?[0-9])|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)|[*])(?:[/][0-9]+)?)|"
+    r"(?:[/][0-9]+))?)*)[ ]+(?:(?:(?:[1-7]|(?:SUN|MON|TUE|WED|THU|FRI|SAT))[#][0-5])|"
+    r"(?:(?:(?:(?:[1-7]|(?:SUN|MON|TUE|WED|THU|FRI|SAT))L?)|[L*])(?:(?:[-](?:(?:(?:[1-7]|"
+    r"(?:SUN|MON|TUE|WED|THU|FRI|SAT))L?)|[L*]))|(?:[/][0-9]+))?(?:[,](?:(?:(?:[1-7]|"
+    r"(?:SUN|MON|TUE|WED|THU|FRI|SAT))L?)|[L*])(?:(?:[-](?:(?:(?:[1-7]|(?:SUN|MON|TUE|WED|THU|FRI|SAT))L?)|"
+    r"[L*]))|(?:[/][0-9]+))?)*)))|(?:(?:(?:(?:(?:[1-3]?[0-9])W?)|LW|[L*])(?:(?:[-](?:(?:(?:[1-3]?[0-9])W?)|"
+    r"LW|[L*]))|(?:[/][0-9]+))?(?:[,](?:(?:(?:[1-3]?[0-9])W?)|LW|[L*])(?:(?:[-](?:(?:(?:[1-3]?[0-9])W?)|"
+    r"LW|[L*]))|(?:[/][0-9]+))?)*)[ ]+(?:(?:(?:[1]?[0-9])|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)|"
+    r"[*])(?:(?:[-](?:(?:[1]?[0-9])|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)|[*])(?:[/][0-9]+)?)|"
+    r"(?:[/][0-9]+))?(?:[,](?:(?:[1]?[0-9])|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)|[*])"
+    r"(?:(?:[-](?:(?:[1]?[0-9])|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)|[*])(?:[/][0-9]+)?)|"
+    r"(?:[/][0-9]+))?)*)[ ]+[?]))[ ]+(?:(?:(?:[12][0-9]{3})|[*])(?:(?:[-](?:(?:[12][0-9]{3})|[*]))|"
+    r"(?:[/][0-9]+))?(?:[,](?:(?:[12][0-9]{3})|[*])(?:(?:[-](?:(?:[12][0-9]{3})|[*]))|(?:[/][0-9]+))?)*)[)])$"
+)
+RULE_SCHEDULE_CRON_REGEX = re.compile(CRON_REGEX)
 RULE_SCHEDULE_RATE_REGEX = re.compile(r"^rate\(\d*\s(minute|minutes|hour|hours|day|days)\)")
 
 

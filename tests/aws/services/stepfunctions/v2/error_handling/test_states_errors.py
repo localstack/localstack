@@ -2,6 +2,7 @@ import json
 
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import (
     create_and_record_execution,
@@ -32,7 +33,7 @@ class TestStatesErrors:
         create_lambda_function(
             func_name=function_name,
             handler_file=EHT.LAMBDA_FUNC_LARGE_OUTPUT_STRING,
-            runtime="python3.12",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
 
@@ -69,7 +70,7 @@ class TestStatesErrors:
         create_lambda_function(
             func_name=function_name,
             handler_file=EHT.LAMBDA_FUNC_LARGE_OUTPUT_STRING,
-            runtime="python3.12",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
 
@@ -108,7 +109,7 @@ class TestStatesErrors:
         create_lambda_response = create_lambda_function(
             func_name=function_name,
             handler_file=EHT.LAMBDA_FUNC_LARGE_OUTPUT_STRING,
-            runtime="python3.12",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
         function_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
@@ -149,7 +150,7 @@ class TestStatesErrors:
         create_lambda_response = create_lambda_function(
             func_name=function_name,
             handler_file=EHT.LAMBDA_FUNC_LARGE_OUTPUT_STRING,
-            runtime="python3.12",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
         function_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]

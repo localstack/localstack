@@ -154,10 +154,11 @@ def test_event_rule_to_logs(deploy_cfn_template, aws_client):
     assert message_token in log_events["events"][0]["message"]
 
 
-# {"LogicalResourceId": "TestRule99A50909", "ResourceType": "AWS::Events::Rule", "ResourceStatus": "CREATE_FAILED", "ResourceStatusReason": "Parameter ScheduleExpression is not valid."}
-@markers.aws.needs_fixing
-def test_event_rule_creation_without_target(deploy_cfn_template, aws_client):
+@markers.aws.validated
+def test_event_rule_creation_without_target(deploy_cfn_template, aws_client, snapshot):
     event_rule_name = f"event-rule-{short_uid()}"
+    snapshot.add_transformer(snapshot.transform.regex(event_rule_name, "event-rule-name"))
+
     deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../../templates/events_rule_without_targets.yaml"
@@ -168,7 +169,7 @@ def test_event_rule_creation_without_target(deploy_cfn_template, aws_client):
     response = aws_client.events.describe_rule(
         Name=event_rule_name,
     )
-    assert response
+    snapshot.match("describe_rule", response)
 
 
 @markers.aws.validated

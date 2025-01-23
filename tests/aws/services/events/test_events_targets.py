@@ -40,7 +40,7 @@ from tests.aws.services.lambda_.test_lambda import (
 
 
 class TestEventsTargetApiDestination:
-    # TODO validate against AWS
+    # TODO validate against AWS & use common fixtures
     @markers.aws.only_localstack
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
@@ -122,7 +122,9 @@ class TestEventsTargetApiDestination:
         # create rule and target
         rule_name = f"r-{short_uid()}"
         target_id = f"target-{short_uid()}"
-        pattern = json.dumps({"source": ["source-123"], "detail-type": ["type-123"]})
+        pattern = json.dumps(
+            {"source": ["source-123"], "detail-type": ["type-123"]}
+        )  # TODO use standard defined event and pattern
         aws_client.events.put_rule(Name=rule_name, EventPattern=pattern)
         aws_client.events.put_targets(
             Rule=rule_name,

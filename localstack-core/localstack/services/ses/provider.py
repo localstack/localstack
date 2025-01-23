@@ -231,7 +231,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         # TODO: contribute upstream?
         backend = get_ses_backend(context)
         try:
-            backend.config_set.pop(configuration_set_name)
+            backend.config_sets.pop(configuration_set_name)
         except KeyError:
             raise ConfigurationSetDoesNotExistException(
                 f"Configuration set <{configuration_set_name}> does not exist."
@@ -252,7 +252,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         backend = get_ses_backend(context)
 
         # the configuration set must exist
-        if configuration_set_name not in backend.config_set:
+        if configuration_set_name not in backend.config_sets:
             raise ConfigurationSetDoesNotExistException(
                 f"Configuration set <{configuration_set_name}> does not exist."
             )

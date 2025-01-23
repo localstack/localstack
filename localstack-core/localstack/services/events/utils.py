@@ -10,6 +10,8 @@ from localstack.aws.api import RequestContext
 from localstack.aws.api.events import (
     ArchiveName,
     Arn,
+    ConnectionArn,
+    ConnectionName,
     EventBusName,
     EventBusNameOrArn,
     EventTime,
@@ -37,6 +39,9 @@ RULE_ARN_ARCHIVE_PATTERN = re.compile(
 )
 ARCHIVE_NAME_ARN_PATTERN = re.compile(
     rf"{ARN_PARTITION_REGEX}:events:[a-z0-9-]+:\d{{12}}:archive/(?P<name>.+)$"
+)
+CONNECTION_NAME_ARN_PATTERN = re.compile(
+    rf"{ARN_PARTITION_REGEX}:events:[a-z0-9-]+:\d{{12}}:connection/(?P<name>[^/]+)/(?P<id>[^/]+)$"
 )
 
 TARGET_ID_PATTERN = re.compile(r"[\.\-_A-Za-z0-9]+")
@@ -88,6 +93,17 @@ def extract_event_bus_name(
         if bool(RULE_ARN_CUSTOM_EVENT_BUS_PATTERN.match(resource_arn_or_name)):
             return resource_arn_or_name.split("rule/", 1)[1].split("/", 1)[0]
         return "default"
+
+
+def extract_connection_name(
+    connection_arn: ConnectionArn,
+) -> ConnectionName:
+    match = CONNECTION_NAME_ARN_PATTERN.match(connection_arn)
+    if not match:
+        raise ValidationException(
+            f"Parameter {connection_arn} is not valid. Reason: Provided Arn is not in correct format."
+        )
+    return match.group("name")
 
 
 def extract_archive_name(arn: Arn) -> ArchiveName:

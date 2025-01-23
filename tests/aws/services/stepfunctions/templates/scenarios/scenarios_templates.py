@@ -61,6 +61,9 @@ class ScenariosTemplate(TemplateLoader):
     MAP_STATE_CONFIG_DISTRIBUTED_ITEM_SELECTOR: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_config_distributed_item_selector.json5"
     )
+    MAP_STATE_CONFIG_DISTRIBUTED_ITEMS_PATH_FROM_PREVIOUS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_config_distributed_items_path_from_previous.json5"
+    )
     MAP_STATE_CONFIG_DISTRIBUTED_ITEM_SELECTOR_PARAMETERS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_config_distributed_item_selector_parameters.json5"
     )
@@ -111,6 +114,9 @@ class ScenariosTemplate(TemplateLoader):
     )
     MAP_ITEM_READER_BASE_JSON_MAX_ITEMS_JSONATA: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_item_reader_base_json_max_items_jsonata.json5"
+    )
+    MAP_ITEM_READER_BASE_JSON_WITH_ITEMS_PATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_item_reader_base_json_with_items_path.json5"
     )
     MAP_ITEM_BATCHER_BASE_JSON_MAX_PER_BATCH_JSONATA: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_item_batcher_base_max_per_batch_jsonata.json5"
@@ -199,6 +205,9 @@ class ScenariosTemplate(TemplateLoader):
     )
     CHOICE_STATE_SINGLETON_COMPOSITE_JSONATA: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/choice_state_singleton_composite_jsonata.json5"
+    )
+    CHOICE_STATE_SINGLETON_COMPOSITE_LITERAL_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/choice_state_singleton_composite_literal_string_jsonata.json5"
     )
     CHOICE_STATE_AWS_SCENARIO: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/choice_state_aws_scenario.json5"
