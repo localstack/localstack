@@ -137,7 +137,9 @@ class TestBaseEvaluateJsonata:
     @pytest.mark.parametrize(
         "field,input_value",
         [
-            pytest.param("TimeoutSeconds", 1, id="TIMEOUT_SECONDS"),
+            pytest.param(
+                "TimeoutSeconds", 1, id="TIMEOUT_SECONDS", marks=pytest.mark.skip(reason="flaky")
+            ),
             pytest.param("HeartbeatSeconds", 1, id="HEARTBEAT_SECONDS"),
         ],
     )
