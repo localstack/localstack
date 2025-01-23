@@ -3496,6 +3496,10 @@ class TestS3:
 
     @markers.aws.only_localstack
     def test_put_object_chunked_content_encoding(self, s3_bucket, aws_client, region_name):
+        # when a request is sent with a content-encoding set to `aws-chunked`, AWS will remove it from the object
+        # Content-Encoding field.
+        # Comment from Amazon employee, saying the server should remove it
+        # https://github.com/aws/aws-sdk-java-v2/issues/5769#issuecomment-2594242699
         object_key = "data"
         body = "Hello"
         headers = {
@@ -3537,8 +3541,8 @@ class TestS3:
         headers["X-Amz-Decoded-Content-Length"] = str(len(raw_gzip))
         requests.put(url, gzip_data, headers=headers, verify=False, stream=True)
         downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        # assert that we correctly removed `aws-chunked` from the object ContentEncoding
         assert downloaded_object["ContentEncoding"] == "gzip"
-        # get the raw data, don't let requests decode the response
         assert downloaded_object["Body"].read() == raw_gzip
 
     @markers.aws.only_localstack

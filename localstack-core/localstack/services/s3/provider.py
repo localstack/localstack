@@ -761,6 +761,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
             body = AwsChunkedDecoder(body, decoded_content_length, s3_object=s3_object)
 
+            # S3 removes the `aws-chunked` value from ContentEncoding
             if content_encoding := s3_object.system_metadata.pop("ContentEncoding", None):
                 encodings = [enc for enc in content_encoding.split(",") if enc != "aws-chunked"]
                 if encodings:
