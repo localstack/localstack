@@ -883,7 +883,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     "The correct parameters must be provided to retrieve the object."
                 )
             elif sse_key_hash != sse_c_key_md5:
-                raise AccessDenied("Access Denied")
+                raise AccessDenied(
+                    "Requests specifying Server Side Encryption with Customer provided keys must provide the correct secret key."
+                )
 
         validate_sse_c(
             algorithm=request.get("SSECustomerAlgorithm"),
@@ -1024,7 +1026,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     "The correct parameters must be provided to retrieve the object."
                 )
             elif s3_object.sse_key_hash != sse_c_key_md5:
-                raise AccessDenied("Access Denied")
+                raise AccessDenied(
+                    "Requests specifying Server Side Encryption with Customer provided keys must provide the correct secret key."
+                )
 
         validate_sse_c(
             algorithm=request.get("SSECustomerAlgorithm"),

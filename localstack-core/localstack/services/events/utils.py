@@ -40,7 +40,7 @@ RULE_ARN_ARCHIVE_PATTERN = re.compile(
 ARCHIVE_NAME_ARN_PATTERN = re.compile(
     rf"{ARN_PARTITION_REGEX}:events:[a-z0-9-]+:\d{{12}}:archive/(?P<name>.+)$"
 )
-CONNCTION_NAME_ARN_PATTERN = re.compile(
+CONNECTION_NAME_ARN_PATTERN = re.compile(
     rf"{ARN_PARTITION_REGEX}:events:[a-z0-9-]+:\d{{12}}:connection/(?P<name>[^/]+)/(?P<id>[^/]+)$"
 )
 
@@ -98,7 +98,7 @@ def extract_event_bus_name(
 def extract_connection_name(
     connection_arn: ConnectionArn,
 ) -> ConnectionName:
-    match = CONNCTION_NAME_ARN_PATTERN.match(connection_arn)
+    match = CONNECTION_NAME_ARN_PATTERN.match(connection_arn)
     if not match:
         raise ValidationException(
             f"Parameter {connection_arn} is not valid. Reason: Provided Arn is not in correct format."

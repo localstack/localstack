@@ -7,9 +7,12 @@ _THIS_FOLDER: Final[str] = os.path.dirname(os.path.realpath(__file__))
 
 
 class ErrorHandlingTemplate(TemplateLoader):
-    # State Machines.
     AWS_SDK_TASK_FAILED_S3_LIST_OBJECTS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/aws_sdk_task_error_s3_list_objects.json5"
+    )
+
+    AWS_SDK_TASK_FAILED_S3_NO_SUCH_KEY: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/aws_sdk_task_error_s3_no_such_key.json5"
     )
 
     AWS_SDK_TASK_FAILED_SECRETSMANAGER_CREATE_SECRET: Final[str] = os.path.join(

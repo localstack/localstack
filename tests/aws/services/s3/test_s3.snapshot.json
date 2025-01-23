@@ -12941,12 +12941,12 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_object_retrieval_sse_c": {
-    "recorded-date": "21-01-2025, 18:16:22",
+    "recorded-date": "22-01-2025, 14:21:49",
     "recorded-content": {
       "put-obj-sse-c": {
         "ChecksumCRC32": "qIrZrA==",
         "ChecksumType": "FULL_OBJECT",
-        "ETag": "\"3f1ecdf4a27b54bc3ccafd083183cbc4\"",
+        "ETag": "\"7f021303b8ca8e5af2c5ee7bf1e96a18\"",
         "SSECustomerAlgorithm": "AES256",
         "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
         "ResponseMetadata": {
@@ -13012,6 +13012,16 @@
         "Error": {
           "Code": "AccessDenied",
           "Message": "Requests specifying Server Side Encryption with Customer provided keys must provide the correct secret key."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      },
+      "head-obj-sse-c-no-md5": {
+        "Error": {
+          "Code": "403",
+          "Message": "Forbidden"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

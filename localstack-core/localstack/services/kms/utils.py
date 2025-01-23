@@ -1,6 +1,7 @@
 import re
 from typing import Tuple
 
+from localstack.aws.api.kms import Tag, TagException
 from localstack.services.kms.exceptions import ValidationException
 from localstack.utils.aws.arns import ARN_PARTITION_REGEX
 
@@ -40,3 +41,20 @@ def validate_alias_name(alias_name: str) -> None:
             'Alias must start with the prefix "alias/". Please see '
             "https://docs.aws.amazon.com/kms/latest/developerguide/kms-alias.html"
         )
+
+
+def validate_tag(tag_position: int, tag: Tag) -> None:
+    tag_key = tag.get("TagKey")
+    tag_value = tag.get("TagValue")
+
+    if len(tag_key) > 128:
+        raise ValidationException(
+            f"1 validation error detected: Value '{tag_key}' at 'tags.{tag_position}.member.tagKey' failed to satisfy constraint: Member must have length less than or equal to 128"
+        )
+    if len(tag_value) > 256:
+        raise ValidationException(
+            f"1 validation error detected: Value '{tag_value}' at 'tags.{tag_position}.member.tagValue' failed to satisfy constraint: Member must have length less than or equal to 256"
+        )
+
+    if tag_key.lower().startswith("aws:"):
+        raise TagException("Tags beginning with aws: are reserved")
