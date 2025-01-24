@@ -435,7 +435,7 @@ class S3Multipart:
         expires: Optional[datetime] = None,
         expiration: Optional[datetime] = None,  # come from lifecycle
         checksum_algorithm: Optional[ChecksumAlgorithm] = None,
-        checksum_type: Optional[ChecksumType] = ChecksumType.FULL_OBJECT,
+        checksum_type: Optional[ChecksumType] = ChecksumType.COMPOSITE,
         encryption: Optional[ServerSideEncryption] = None,  # inherit bucket
         kms_key_id: Optional[SSEKMSKeyId] = None,  # inherit bucket
         bucket_key_enabled: bool = False,  # inherit bucket
@@ -548,8 +548,7 @@ class S3Multipart:
 
         multipart_etag = f"{object_etag.hexdigest()}-{len(parts)}"
         self.object.etag = multipart_etag
-        # TODO: manage checksum here!!! can be COMPOSITE or FULL_OBJECT
-        # previous is COMPOSITE
+        # TODO: implement FULL_OBJECT checksum type
         if has_checksum:
             checksum_value = f"{base64.b64encode(checksum_hash.digest()).decode()}-{len(parts)}"
             self.checksum_value = checksum_value
