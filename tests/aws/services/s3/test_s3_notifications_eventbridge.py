@@ -8,9 +8,6 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from tests.aws.services.s3.conftest import TEST_S3_IMAGE
 
-# TODO: implement new S3 Data Integrity logic (checksums)
-pytestmark = markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumType"])
-
 
 @pytest.fixture
 def basic_event_bridge_rule_to_sqs_queue(

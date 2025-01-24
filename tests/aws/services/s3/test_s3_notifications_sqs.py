@@ -23,9 +23,6 @@ if TYPE_CHECKING:
 
 LOG = logging.getLogger(__name__)
 
-# TODO: implement new S3 Data Integrity logic (checksums)
-pytestmark = markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumType"])
-
 
 class NotificationFactory(Protocol):
     """

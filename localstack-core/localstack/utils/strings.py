@@ -159,6 +159,15 @@ def checksum_crc32c(string: Union[str, bytes]):
     return base64.b64encode(checksum.digest()).decode()
 
 
+def checksum_crc64nvme(string: Union[str, bytes]):
+    # import botocore locally here to avoid a dependency of the CLI to botocore
+    from botocore.httpchecksum import CrtCrc64NvmeChecksum
+
+    checksum = CrtCrc64NvmeChecksum()
+    checksum.update(to_bytes(string))
+    return base64.b64encode(checksum.digest()).decode()
+
+
 def hash_sha1(string: Union[str, bytes]) -> str:
     digest = hashlib.sha1(to_bytes(string)).digest()
     return base64.b64encode(digest).decode()
