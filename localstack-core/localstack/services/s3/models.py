@@ -19,6 +19,7 @@ from localstack.aws.api.s3 import (
     BucketRegion,
     BucketVersioningStatus,
     ChecksumAlgorithm,
+    ChecksumType,
     CompletedPartList,
     CORSConfiguration,
     DefaultRetention,
@@ -259,6 +260,7 @@ class S3Object:
     sse_key_hash: Optional[SSECustomerKeyMD5]
     checksum_algorithm: ChecksumAlgorithm
     checksum_value: str
+    checksum_type: ChecksumType
     lock_mode: Optional[ObjectLockMode | ObjectLockRetentionMode]
     lock_legal_status: Optional[ObjectLockLegalHoldStatus]
     lock_until: Optional[datetime]
@@ -282,6 +284,7 @@ class S3Object:
         expiration: Optional[Expiration] = None,
         checksum_algorithm: Optional[ChecksumAlgorithm] = None,
         checksum_value: Optional[str] = None,
+        checksum_type: Optional[ChecksumType] = ChecksumType.FULL_OBJECT,
         encryption: Optional[ServerSideEncryption] = None,
         kms_key_id: Optional[SSEKMSKeyId] = None,
         sse_key_hash: Optional[SSECustomerKeyMD5] = None,
@@ -305,6 +308,7 @@ class S3Object:
         self.expires = expires
         self.checksum_algorithm = checksum_algorithm
         self.checksum_value = checksum_value
+        self.checksum_type = checksum_type
         self.encryption = encryption
         self.kms_key_id = kms_key_id
         self.bucket_key_enabled = bucket_key_enabled
@@ -420,6 +424,7 @@ class S3Multipart:
     object: S3Object
     upload_id: MultipartUploadId
     checksum_value: Optional[str]
+    checksum_type: Optional[ChecksumType]
     initiated: datetime
     precondition: bool
 
@@ -430,6 +435,7 @@ class S3Multipart:
         expires: Optional[datetime] = None,
         expiration: Optional[datetime] = None,  # come from lifecycle
         checksum_algorithm: Optional[ChecksumAlgorithm] = None,
+        checksum_type: Optional[ChecksumType] = ChecksumType.FULL_OBJECT,
         encryption: Optional[ServerSideEncryption] = None,  # inherit bucket
         kms_key_id: Optional[SSEKMSKeyId] = None,  # inherit bucket
         bucket_key_enabled: bool = False,  # inherit bucket
@@ -452,6 +458,7 @@ class S3Multipart:
         self.initiator = initiator
         self.tagging = tagging
         self.checksum_value = None
+        self.checksum_type = checksum_type
         self.precondition = precondition
         self.object = S3Object(
             key=key,
@@ -461,6 +468,7 @@ class S3Multipart:
             expires=expires,
             expiration=expiration,
             checksum_algorithm=checksum_algorithm,
+            checksum_type=checksum_type,
             encryption=encryption,
             kms_key_id=kms_key_id,
             bucket_key_enabled=bucket_key_enabled,
@@ -540,6 +548,8 @@ class S3Multipart:
 
         multipart_etag = f"{object_etag.hexdigest()}-{len(parts)}"
         self.object.etag = multipart_etag
+        # TODO: manage checksum here!!! can be COMPOSITE or FULL_OBJECT
+        # previous is COMPOSITE
         if has_checksum:
             checksum_value = f"{base64.b64encode(checksum_hash.digest()).decode()}-{len(parts)}"
             self.checksum_value = checksum_value

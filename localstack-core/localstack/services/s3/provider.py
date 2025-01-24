@@ -820,6 +820,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if s3_object.checksum_algorithm:
             response[f"Checksum{s3_object.checksum_algorithm}"] = s3_object.checksum_value
+            response["ChecksumType"] = getattr(s3_object, "checksum_type", ChecksumType.FULL_OBJECT)
 
         if s3_bucket.lifecycle_rules:
             if expiration_header := self._get_expiration_header(
@@ -962,10 +963,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["StatusCode"] = 206
             if range_data.content_length == s3_object.size and checksum_value:
                 response[f"Checksum{checksum_algorithm.upper()}"] = checksum_value
+                response["ChecksumType"] = getattr(
+                    s3_object, "checksum_type", ChecksumType.FULL_OBJECT
+                )
         else:
             response["Body"] = s3_stored_object
             if checksum_value:
                 response[f"Checksum{checksum_algorithm.upper()}"] = checksum_value
+                response["ChecksumType"] = getattr(
+                    s3_object, "checksum_type", ChecksumType.FULL_OBJECT
+                )
 
         add_encryption_to_response(response, s3_object=s3_object)
 
@@ -1608,6 +1615,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
                 if s3_object.checksum_algorithm:
                     object_data["ChecksumAlgorithm"] = [s3_object.checksum_algorithm]
+                    object_data["ChecksumType"] = getattr(
+                        s3_object, "checksum_type", ChecksumType.FULL_OBJECT
+                    )
 
                 s3_objects.append(object_data)
 
@@ -1742,6 +1752,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
                 if s3_object.checksum_algorithm:
                     object_data["ChecksumAlgorithm"] = [s3_object.checksum_algorithm]
+                    object_data["ChecksumType"] = getattr(
+                        s3_object, "checksum_type", ChecksumType.FULL_OBJECT
+                    )
 
                 s3_objects.append(object_data)
 
@@ -1884,6 +1897,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
                 if version.checksum_algorithm:
                     object_version["ChecksumAlgorithm"] = [version.checksum_algorithm]
+                    object_version["ChecksumType"] = getattr(
+                        version, "checksum_type", ChecksumType.FULL_OBJECT
+                    )
 
                 object_versions.append(object_version)
 
@@ -1971,7 +1987,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 checksum_value = s3_object.checksum_value.split("-")[0]
             else:
                 checksum_value = s3_object.checksum_value
-            response["Checksum"] = {f"Checksum{checksum_algorithm.upper()}": checksum_value}
+            response["Checksum"] = {
+                f"Checksum{checksum_algorithm.upper()}": checksum_value,
+                "ChecksumType": getattr(s3_object, "checksum_type", ChecksumType.FULL_OBJECT),
+            }
 
         response["LastModified"] = s3_object.last_modified
 
@@ -2071,13 +2090,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not system_metadata.get("ContentType"):
             system_metadata["ContentType"] = "binary/octet-stream"
 
-        # TODO: validate the algorithm?
         checksum_algorithm = request.get("ChecksumAlgorithm")
-        # ChecksumCRC64NVME
         if checksum_algorithm and checksum_algorithm not in CHECKSUM_ALGORITHMS:
             raise InvalidRequest(
                 "Checksum algorithm provided is unsupported. Please try again with any of the valid types: [CRC32, CRC32C, SHA1, SHA256]"
             )
+
+        # TODO: validate the checksum map between COMPOSITE and FULL_OBJECT
+        # get value
+        checksum_type = request.get("ChecksumType")
 
         # TODO: we're not encrypting the object with the provided key for now
         sse_c_key_md5 = request.get("SSECustomerKeyMD5")
@@ -2105,6 +2126,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             user_metadata=request.get("Metadata"),
             system_metadata=system_metadata,
             checksum_algorithm=checksum_algorithm,
+            checksum_type=checksum_type,
             encryption=encryption_parameters.encryption,
             kms_key_id=encryption_parameters.kms_key_id,
             bucket_key_enabled=encryption_parameters.bucket_key_enabled,
@@ -2129,6 +2151,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if checksum_algorithm:
             response["ChecksumAlgorithm"] = checksum_algorithm
+            response["ChecksumType"] = checksum_type
 
         add_encryption_to_response(response, s3_object=s3_multipart.object)
         if sse_c_key_md5:
@@ -2511,6 +2534,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # TODO: check this?
         if s3_object.checksum_algorithm:
             response[f"Checksum{s3_object.checksum_algorithm.upper()}"] = s3_object.checksum_value
+            response["ChecksumType"] = s3_object.checksum_type
 
         if s3_object.expiration:
             response["Expiration"] = s3_object.expiration  # TODO: properly parse the datetime
@@ -2631,6 +2655,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["PartNumberMarker"] = part_number_marker
         if s3_multipart.object.checksum_algorithm:
             response["ChecksumAlgorithm"] = s3_multipart.object.checksum_algorithm
+            response["ChecksumType"] = s3_multipart.checksum_type
 
         return response
 
