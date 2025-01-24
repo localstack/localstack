@@ -435,6 +435,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if subscription["Protocol"] in ["http", "https"]:
             # TODO: actually validate this (re)subscribe behaviour somehow (localhost.run?)
             #  we might need to save the sub token in the store
+            # TODO: AWS only sends the UnsubscribeConfirmation if the call is unauthenticated or the requester is not
+            #  the owner
             subscription_token = encode_subscription_token_with_region(region=context.region)
             message_ctx = SnsMessage(
                 type=SnsMessageType.unsubscribe_confirmation,
