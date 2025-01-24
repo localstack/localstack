@@ -651,6 +651,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         parsed_topic_arn = parse_and_validate_topic_arn(topic_arn)
         store = self.get_store(account_id=parsed_topic_arn["account"], region_name=context.region)
 
+        if topic_arn not in store.topic_subscriptions:
+            raise NotFoundException("Topic does not exist")
+
         if not endpoint:
             # TODO: check AWS behaviour (because endpoint is optional)
             raise NotFoundException("Endpoint not specified in subscription")
