@@ -16,14 +16,21 @@ from localstack.services.lambda_.event_source_mapping.pollers.poller import (
     Poller,
     parse_batch_item_failures,
 )
-from localstack.services.lambda_.event_source_mapping.senders.sender_utils import batched
-from localstack.services.sqs.constants import HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT
+from localstack.services.lambda_.event_source_mapping.senders.sender_utils import (
+    batched,
+    batched_by_size,
+)
+from localstack.services.sqs.constants import (
+    HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT,
+    HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS,
+)
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import first_char_to_lower
 
 LOG = logging.getLogger(__name__)
 
 DEFAULT_MAX_RECEIVE_COUNT = 10
+DEFAULT_MAX_WAIT_TIME_SECONDS = 20
 
 
 class SqsPoller(Poller):
@@ -54,13 +61,17 @@ class SqsPoller(Poller):
 
         def _handle_receive_message_override(params, context, **kwargs):
             requested_count = params.get("MaxNumberOfMessages")
-            if not requested_count or requested_count <= DEFAULT_MAX_RECEIVE_COUNT:
-                return
+            if requested_count and requested_count > DEFAULT_MAX_RECEIVE_COUNT:
+                # Allow overide parameter to be greater than default and less than maximum batch size.
+                # Useful for getting remaining records less than the batch size. i.e we need 100 records but BatchSize is 1k.
+                override = min(requested_count, self.sqs_queue_parameters["BatchSize"])
+                context[HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = str(override)
+                params["MaxNumberOfMessages"] = DEFAULT_MAX_RECEIVE_COUNT
 
-            # Allow overide parameter to be greater than default and less than maximum batch size.
-            # Useful for getting remaining records less than the batch size. i.e we need 100 records but BatchSize is 1k.
-            override = min(requested_count, self.sqs_queue_parameters["BatchSize"])
-            context[HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = str(override)
+            requested_wait_time = params.get("MaximumBatchingWindowInSeconds")
+            if requested_wait_time and requested_wait_time > DEFAULT_MAX_WAIT_TIME_SECONDS:
+                context[HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS] = str(requested_wait_time)
+                params["MaximumBatchingWindowInSeconds"] = DEFAULT_MAX_WAIT_TIME_SECONDS
 
         def _handle_delete_batch_override(params, context, **kwargs):
             requested_count = len(params.get("Entries", []))
@@ -97,28 +108,47 @@ class SqsPoller(Poller):
     def poll_events(self) -> None:
         # SQS pipe source: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-sqs.html
         # "The 9 Ways an SQS Message can be Deleted": https://lucvandonkersgoed.com/2022/01/20/the-9-ways-an-sqs-message-can-be-deleted/
-        # TODO: implement batch window expires based on MaximumBatchingWindowInSeconds
         # TODO: implement invocation payload size quota
         # TODO: consider long-polling vs. short-polling trade-off. AWS uses long-polling:
         #  https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-sqs.html#pipes-sqs-scaling
-        response = self.source_client.receive_message(
-            QueueUrl=self.queue_url,
-            MaxNumberOfMessages=self.sqs_queue_parameters.get(
-                "BatchSize", DEFAULT_MAX_RECEIVE_COUNT
-            ),
-            MessageAttributeNames=["All"],
-            MessageSystemAttributeNames=[MessageSystemAttributeName.All],
-        )
-        if messages := response.get("Messages"):
+
+        response = {}
+        try:
+            response = self.source_client.receive_message(
+                QueueUrl=self.queue_url,
+                MaxNumberOfMessages=self.sqs_queue_parameters.get(
+                    "BatchSize", DEFAULT_MAX_RECEIVE_COUNT
+                ),
+                WaitTimeSeconds=self.sqs_queue_parameters.get(
+                    "MaximumBatchingWindowInSeconds", DEFAULT_MAX_WAIT_TIME_SECONDS
+                ),
+                MessageAttributeNames=["All"],
+                MessageSystemAttributeNames=[MessageSystemAttributeName.All],
+            )
+        except Exception as e:
+            # If an exception is raised here, break the loop and return whatever
+            # has been collected early.
+            # TODO: Handle exceptions differently i.e QueueNotExist or ConnectionFailed should retry with backoff
+            LOG.warning(
+                "Polling SQS queue %s failed: %s",
+                self.source_arn,
+                e,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+        messages = response.get("Messages", [])
+        # NOTE: If the collection of messages exceeds the 6MB size-limit imposed on payloads sent to a Lambda,
+        # split into chunks of up to 6MB each.
+        # See https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventsourcemapping.html#invocation-eventsourcemapping-batching
+        for message_batch in batched_by_size(messages, 5e6):
             LOG.debug("Polled %d events from %s", len(messages), self.source_arn)
             try:
                 if self.is_fifo_queue:
                     # TODO: think about starvation behavior because once failing message could block other groups
-                    fifo_groups = split_by_message_group_id(messages)
+                    fifo_groups = split_by_message_group_id(message_batch)
                     for fifo_group_messages in fifo_groups.values():
                         self.handle_messages(fifo_group_messages)
                 else:
-                    self.handle_messages(messages)
+                    self.handle_messages(message_batch)
 
             # TODO: unify exception handling across pollers: should we catch and raise?
             except Exception as e:
