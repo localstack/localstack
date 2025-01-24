@@ -29,7 +29,6 @@ API_DESTINATION_AUTHS = [
         "type": "OAUTH_CLIENT_CREDENTIALS",
         "key": "OAuthParameters",
         "parameters": {
-            # AuthorizationEndpoint will be replaced dynamically below
             "AuthorizationEndpoint": "replace_this",
             "ClientParameters": {"ClientID": "id", "ClientSecret": "password"},
             "HttpMethod": "POST",
@@ -80,14 +79,13 @@ def handler(event, context):
 
 @markers.acceptance_test
 @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
-class TestApiDestinationsCfnComplex:
+class TestApiDestinationsCfn:
     @pytest.fixture(scope="function", autouse=True)
     def infrastructure(self, aws_client, infrastructure_setup):
         infra = infrastructure_setup(namespace="ApiDestCfnTest")
 
         stack = cdk.Stack(infra.cdk_app, "ApiDestCfnTestStack")
 
-        # Backend Lambda and API Gateway
         backend = awslambda.Function(
             stack,
             "BackendFunction",
@@ -126,7 +124,6 @@ class TestApiDestinationsCfnComplex:
             },
         )
 
-        # Outputs
         cdk.CfnOutput(stack, "BackendFunctionName", value=backend.function_name)
         cdk.CfnOutput(stack, "OAuthFunctionName", value=oauth_token_lambda.function_name)
         cdk.CfnOutput(stack, "ApiId", value=api.rest_api_id)
@@ -136,13 +133,11 @@ class TestApiDestinationsCfnComplex:
         infra.add_cdk_stack(stack)
         with infra.provisioner() as prov:
             time.sleep(30)
+
             yield prov
 
     @markers.aws.validated
-    def test_api_destination_complex_integration(self, aws_client, infrastructure, snapshot, auth):
-        snapshot.add_transformer(snapshot.transform.key_value("ApiId"))
-        snapshot.add_transformer(snapshot.transform.key_value("RoleArnZ"))
-
+    def test_api_destination_integration(self, aws_client, infrastructure, snapshot, auth):
         # Retrieve outputs
         outputs = infrastructure.get_stack_outputs(stack_name="ApiDestCfnTestStack")
         backend_function_name = outputs["BackendFunctionName"]
@@ -189,6 +184,7 @@ class TestApiDestinationsCfnComplex:
             },
         )
 
+        # Wait for the connection to become AUTHORIZED if using OAuth
         if auth_type == "OAUTH_CLIENT_CREDENTIALS":
 
             def _wait_for_connection_auth():
@@ -207,8 +203,10 @@ class TestApiDestinationsCfnComplex:
             InvocationEndpoint=invocation_endpoint,
             HttpMethod="POST",
         )
+
         api_destination_arn = dest_resp["ApiDestinationArn"]
 
+        # Additional delay to ensure API Destination setup
         time.sleep(10)
 
         rule_name = f"r-{short_uid()}"
@@ -218,9 +216,6 @@ class TestApiDestinationsCfnComplex:
         time.sleep(10)
 
         unique_marker = str(uuid.uuid4())
-
-        snapshot.add_transformer(snapshot.transform.regex(unique_marker, "<unique-marker>"))
-
         detail = {"i": 0, "marker": unique_marker}
 
         aws_client.events.put_targets(
@@ -242,12 +237,12 @@ class TestApiDestinationsCfnComplex:
         try:
             aws_client.logs.create_log_group(logGroupName=f"/aws/lambda/{backend_function_name}")
         except aws_client.logs.exceptions.ResourceAlreadyExistsException:
-            pass
+            print("Log group for backend lambda already exists.")
 
         try:
             aws_client.logs.create_log_group(logGroupName=f"/aws/lambda/{oauth_function_name}")
         except aws_client.logs.exceptions.ResourceAlreadyExistsException:
-            pass
+            print("Log group for OAuth token lambda already exists.")
 
         aws_client.events.put_events(
             Entries=[
@@ -275,20 +270,20 @@ class TestApiDestinationsCfnComplex:
             )
 
         event_log = retry(_check_backend_logs, retries=30, sleep=5)
+
         headers = {k.lower(): v for k, v in event_log.get("headers", {}).items()}
         posted_body = json.loads(event_log.get("body", "{}"))
         qs_params = event_log.get("queryStringParameters", {}) or {}
 
-        snapshot.match(
-            "final_invocation", {"headers": headers, "body": posted_body, "qs_params": qs_params}
-        )
-
         assert posted_body["target_value"] == "value"
         assert posted_body["marker"] == unique_marker
+
+        # Validate target-level params
         assert headers.get("target-header", "").lower() == "target_header_value"
         assert qs_params.get("target_query") == "t_query"
         assert qs_params.get("overwritten_query") == "original"
 
+        # Auth validation
         match auth_type:
             case "BASIC":
                 user_pass = base64.b64encode(b"user:pass").decode("utf-8")

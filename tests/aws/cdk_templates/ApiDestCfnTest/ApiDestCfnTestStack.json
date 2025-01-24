@@ -1,0 +1,437 @@
+{
+  "Resources": {
+    "BackendFunctionServiceRoleCA938F8D": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "BackendFunction63314140": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "\nimport json\ndef handler(event, context):\n    print(json.dumps(event))\n    return {\n        \"statusCode\": 200,\n        \"headers\": event.get(\"headers\", {}),\n        \"body\": json.dumps(event.get(\"body\", {})),\n        \"queryStringParameters\": event.get(\"queryStringParameters\", {})\n    }\n"
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "BackendFunctionServiceRoleCA938F8D",
+            "Arn"
+          ]
+        },
+        "Runtime": "python3.10"
+      },
+      "DependsOn": [
+        "BackendFunctionServiceRoleCA938F8D"
+      ]
+    },
+    "RestApi0C43BF4B": {
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+        "Name": "RestApi"
+      }
+    },
+    "RestApiCloudWatchRoleE3ED6605": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "apigateway.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+              ]
+            ]
+          }
+        ]
+      },
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain"
+    },
+    "RestApiAccount7C83CF5A": {
+      "Type": "AWS::ApiGateway::Account",
+      "Properties": {
+        "CloudWatchRoleArn": {
+          "Fn::GetAtt": [
+            "RestApiCloudWatchRoleE3ED6605",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "RestApi0C43BF4B"
+      ],
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain"
+    },
+    "RestApiDeployment180EC503106a0252675a3d2373ad39675ecbff65": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "Properties": {
+        "Description": "Automatically created by the RestApi construct",
+        "RestApiId": {
+          "Ref": "RestApi0C43BF4B"
+        }
+      },
+      "DependsOn": [
+        "RestApitestPOSTEE6B79A5",
+        "RestApitest9059D171"
+      ]
+    },
+    "RestApiDeploymentStageprod3855DE66": {
+      "Type": "AWS::ApiGateway::Stage",
+      "Properties": {
+        "DeploymentId": {
+          "Ref": "RestApiDeployment180EC503106a0252675a3d2373ad39675ecbff65"
+        },
+        "RestApiId": {
+          "Ref": "RestApi0C43BF4B"
+        },
+        "StageName": "prod"
+      },
+      "DependsOn": [
+        "RestApiAccount7C83CF5A"
+      ]
+    },
+    "RestApitest9059D171": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "RestApi0C43BF4B",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "test",
+        "RestApiId": {
+          "Ref": "RestApi0C43BF4B"
+        }
+      }
+    },
+    "RestApitestPOSTApiPermissionApiDestCfnTestStackRestApi0DA7F096POSTtestC55E688A": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "BackendFunction63314140",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "RestApi0C43BF4B"
+              },
+              "/",
+              {
+                "Ref": "RestApiDeploymentStageprod3855DE66"
+              },
+              "/POST/test"
+            ]
+          ]
+        }
+      }
+    },
+    "RestApitestPOSTApiPermissionTestApiDestCfnTestStackRestApi0DA7F096POSTtestB8B9638F": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "BackendFunction63314140",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "RestApi0C43BF4B"
+              },
+              "/test-invoke-stage/POST/test"
+            ]
+          ]
+        }
+      }
+    },
+    "RestApitestPOSTEE6B79A5": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "BackendFunction63314140",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": {
+          "Ref": "RestApitest9059D171"
+        },
+        "RestApiId": {
+          "Ref": "RestApi0C43BF4B"
+        }
+      }
+    },
+    "OAuthTokenFunctionServiceRole4F89B0B4": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "OAuthTokenFunction3640A9F2": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "\nimport json\ndef handler(event, context):\n    print(json.dumps(event))\n    return {\n        \"statusCode\": 200,\n        \"headers\": {\"Content-Type\": \"application/json\"},\n        \"body\": json.dumps({\n            \"access_token\": \"my-oauth-token\",\n            \"token_type\": \"bearer\",\n            \"expires_in\": 86400\n        })\n    }\n"
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "OAuthTokenFunctionServiceRole4F89B0B4",
+            "Arn"
+          ]
+        },
+        "Runtime": "python3.10"
+      },
+      "DependsOn": [
+        "OAuthTokenFunctionServiceRole4F89B0B4"
+      ]
+    },
+    "OAuthTokenFunctionFunctionUrl96E12ABC": {
+      "Type": "AWS::Lambda::Url",
+      "Properties": {
+        "AuthType": "NONE",
+        "TargetFunctionArn": {
+          "Fn::GetAtt": [
+            "OAuthTokenFunction3640A9F2",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "OAuthTokenFunctioninvokefunctionurl4816A5A0": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunctionUrl",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "OAuthTokenFunction3640A9F2",
+            "Arn"
+          ]
+        },
+        "FunctionUrlAuthType": "NONE",
+        "Principal": "*"
+      }
+    },
+    "TargetRole7662179D": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "Policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "events:InvokeApiDestination",
+                  "Effect": "Allow",
+                  "Resource": "*"
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "PolicyName": "ApiDestinationPolicy"
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "RestApiEndpoint0551178A": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "RestApi0C43BF4B"
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region"
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix"
+            },
+            "/",
+            {
+              "Ref": "RestApiDeploymentStageprod3855DE66"
+            },
+            "/"
+          ]
+        ]
+      }
+    },
+    "BackendFunctionName": {
+      "Value": {
+        "Ref": "BackendFunction63314140"
+      }
+    },
+    "OAuthFunctionName": {
+      "Value": {
+        "Ref": "OAuthTokenFunction3640A9F2"
+      }
+    },
+    "ApiId": {
+      "Value": {
+        "Ref": "RestApi0C43BF4B"
+      }
+    },
+    "RoleArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "TargetRole7662179D",
+          "Arn"
+        ]
+      }
+    },
+    "OAuthTokenUrl": {
+      "Value": {
+        "Fn::GetAtt": [
+          "OAuthTokenFunctionFunctionUrl96E12ABC",
+          "FunctionUrl"
+        ]
+      }
+    }
+  }
+}
