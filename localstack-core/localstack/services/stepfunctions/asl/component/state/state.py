@@ -16,7 +16,6 @@ from localstack.aws.api.stepfunctions import (
     TaskFailedEventDetails,
 )
 from localstack.services.stepfunctions.asl.component.common.assign.assign_decl import AssignDecl
-from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import CatchOutcome
 from localstack.services.stepfunctions.asl.component.common.comment import Comment
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
@@ -187,8 +186,25 @@ class CommonStateField(EvalComponent, ABC):
             )
         )
 
+    def _eval_state_input(self, env: Environment) -> None:
+        # Filter the input onto the stack.
+        if self.input_path:
+            self.input_path.eval(env)
+        else:
+            env.stack.append(env.states.get_input())
+
     @abc.abstractmethod
     def _eval_state(self, env: Environment) -> None: ...
+
+    def _eval_state_output(self, env: Environment) -> None:
+        # Process output value as next state input.
+        if self.output_path:
+            self.output_path.eval(env=env)
+        elif self.output:
+            self.output.eval(env=env)
+        else:
+            current_output = env.stack.pop()
+            env.states.reset(input_value=current_output)
 
     def _eval_body(self, env: Environment) -> None:
         env.event_manager.add_event(
@@ -198,18 +214,12 @@ class CommonStateField(EvalComponent, ABC):
                 stateEnteredEventDetails=self._get_state_entered_event_details(env=env)
             ),
         )
-
         env.states.context_object.context_object_data["State"] = StateData(
             EnteredTime=datetime.datetime.now(tz=datetime.timezone.utc).isoformat(), Name=self.name
         )
 
-        # Filter the input onto the stack.
-        if self.input_path:
-            self.input_path.eval(env)
-        else:
-            env.stack.append(env.states.get_input())
+        self._eval_state_input(env=env)
 
-        # Exec the state's logic.
         try:
             self._eval_state(env)
         except NoSuchJsonPathError as no_such_json_path_error:
@@ -234,26 +244,11 @@ class CommonStateField(EvalComponent, ABC):
         if not isinstance(env.program_state(), ProgramRunning):
             return
 
-        # Obtain a reference to the state output.
-        output = env.stack[-1]
+        self._eval_state_output(env=env)
 
-        # CatcherOutputs (i.e. outputs of Catch blocks) are never subjects of output normalisers,
-        # the entire value is instead passed by value as input to the next state, or program output.
-        if not isinstance(output, CatchOutcome):
-            # Ensure the state's output is within state size quotas.
-            self._verify_size_quota(env=env, value=output)
+        self._verify_size_quota(env=env, value=env.states.get_input())
 
-            # Process output value as next state input.
-            if self.output_path:
-                self.output_path.eval(env=env)
-            elif self.output:
-                self.output.eval(env=env)
-            else:
-                current_output = env.stack.pop()
-                env.states.reset(input_value=current_output)
-
-            # Set next state or halt (end).
-            self._set_next(env)
+        self._set_next(env)
 
         if self.state_exited_event_type is not None:
             env.event_manager.add_event(
