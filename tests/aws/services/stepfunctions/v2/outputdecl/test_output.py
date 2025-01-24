@@ -202,3 +202,36 @@ class TestArgumentsBase:
             definition=definition,
             execution_input=exec_input,
         )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "input_value",
+        [
+            {"condition": True},
+            {"condition": False},
+        ],
+        ids=[
+            "CONDITION_TRUE",
+            "CONDITION_FALSE",
+        ],
+    )
+    def test_output_in_choice(
+        self,
+        sfn_snapshot,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        create_lambda_function,
+        input_value,
+    ):
+        template = OutputTemplates.load_sfn_template(OutputTemplates.CHOICE_CONDITION_JSONATA)
+        definition = json.dumps(template)
+        exec_input = json.dumps(input_value)
+        create_and_record_execution(
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
+            create_state_machine=create_state_machine,
+            sfn_snapshot=sfn_snapshot,
+            definition=definition,
+            execution_input=exec_input,
+        )
