@@ -225,6 +225,11 @@ def get_s3_checksum(algorithm) -> ChecksumHash:
 
             return CrtCrc32cChecksum()
 
+        case ChecksumAlgorithm.CRC64NVME:
+            from botocore.httpchecksum import CrtCrc64NvmeChecksum
+
+            return CrtCrc64NvmeChecksum()
+
         case ChecksumAlgorithm.SHA1:
             return hashlib.sha1(usedforsecurity=False)
 
