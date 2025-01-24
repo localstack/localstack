@@ -4987,5 +4987,96 @@
         }
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionHttp::test_subscribe_external_http_endpoint_lambda_url_sig_validation": {
+    "recorded-date": "24-01-2025, 18:51:33",
+    "recorded-content": {
+      "subscription-confirmation": {
+        "events": [
+          {
+            "body": {
+              "Message": "You have chosen to subscribe to the topic arn:<partition>:sns:<region>:111111111111:<resource:1>.\nTo confirm the subscription, visit the SubscribeURL included in this message.",
+              "MessageId": "<uuid:1>",
+              "Signature": "<signature>",
+              "SignatureVersion": "1",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "SubscribeURL": "<subscribe-domain>/?Action=ConfirmSubscription&TopicArn=arn:<partition>:sns:<region>:111111111111:<resource:1>&Token=<token:1>",
+              "Timestamp": "date",
+              "Token": "<token:1>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+              "Type": "SubscriptionConfirmation"
+            },
+            "headers": {
+              "accept-encoding": "gzip,deflate",
+              "content-type": "text/plain; charset=UTF-8",
+              "user-agent": "Amazon Simple Notification Service Agent",
+              "x-amz-sns-message-id": "<uuid:1>",
+              "x-amz-sns-message-type": "SubscriptionConfirmation",
+              "x-amz-sns-topic-arn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+            }
+          }
+        ]
+      },
+      "confirm-subscription": {
+        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "publish-event": {
+        "events": [
+          {
+            "body": {
+              "Message": "test_external_http_endpoint",
+              "MessageId": "<uuid:2>",
+              "Signature": "<signature>",
+              "SignatureVersion": "1",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "Timestamp": "date",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+              "Type": "Notification",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "headers": {
+              "accept-encoding": "gzip,deflate",
+              "content-type": "text/plain; charset=UTF-8",
+              "user-agent": "Amazon Simple Notification Service Agent",
+              "x-amz-sns-message-id": "<uuid:2>",
+              "x-amz-sns-message-type": "Notification",
+              "x-amz-sns-subscription-arn": "arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>",
+              "x-amz-sns-topic-arn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+            }
+          }
+        ]
+      },
+      "unsubscribe-event": {
+        "events": [
+          {
+            "body": {
+              "Message": "You have chosen to deactivate subscription arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>.\nTo cancel this operation and restore the subscription, visit the SubscribeURL included in this message.",
+              "MessageId": "<uuid:3>",
+              "Signature": "<signature>",
+              "SignatureVersion": "1",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "SubscribeURL": "<subscribe-domain>/?Action=ConfirmSubscription&TopicArn=arn:<partition>:sns:<region>:111111111111:<resource:1>&Token=<token:2>",
+              "Timestamp": "date",
+              "Token": "<token:2>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+              "Type": "UnsubscribeConfirmation"
+            },
+            "headers": {
+              "accept-encoding": "gzip,deflate",
+              "content-type": "text/plain; charset=UTF-8",
+              "user-agent": "Amazon Simple Notification Service Agent",
+              "x-amz-sns-message-id": "<uuid:3>",
+              "x-amz-sns-message-type": "UnsubscribeConfirmation",
+              "x-amz-sns-subscription-arn": "arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>",
+              "x-amz-sns-topic-arn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+            }
+          }
+        ]
+      }
+    }
   }
 }
