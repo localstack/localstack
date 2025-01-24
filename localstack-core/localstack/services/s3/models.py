@@ -424,6 +424,7 @@ class S3Multipart:
     object: S3Object
     upload_id: MultipartUploadId
     checksum_value: Optional[str]
+    checksum_type: Optional[ChecksumType]
     initiated: datetime
     precondition: bool
 
@@ -434,6 +435,7 @@ class S3Multipart:
         expires: Optional[datetime] = None,
         expiration: Optional[datetime] = None,  # come from lifecycle
         checksum_algorithm: Optional[ChecksumAlgorithm] = None,
+        checksum_type: Optional[ChecksumType] = ChecksumType.COMPOSITE,
         encryption: Optional[ServerSideEncryption] = None,  # inherit bucket
         kms_key_id: Optional[SSEKMSKeyId] = None,  # inherit bucket
         bucket_key_enabled: bool = False,  # inherit bucket
@@ -456,6 +458,7 @@ class S3Multipart:
         self.initiator = initiator
         self.tagging = tagging
         self.checksum_value = None
+        self.checksum_type = checksum_type
         self.precondition = precondition
         self.object = S3Object(
             key=key,
@@ -465,7 +468,7 @@ class S3Multipart:
             expires=expires,
             expiration=expiration,
             checksum_algorithm=checksum_algorithm,
-            checksum_type=ChecksumType.COMPOSITE,
+            checksum_type=checksum_type,
             encryption=encryption,
             kms_key_id=kms_key_id,
             bucket_key_enabled=bucket_key_enabled,
