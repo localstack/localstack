@@ -1,0 +1,327 @@
+openapi: "3.0.1"
+info:
+  title: "ORDERMANAGERRESTAPI"
+  version: "2021-12-21T15:32:58Z"
+paths:
+  /orders:
+    get:
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Empty"
+      security: [
+        {
+          "ServerlespressoAuth" : ["openid", "aws.cognito.signin.user.admin"]
+        }
+      ]
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::GetAtt: [RESTApiRole, Arn]
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:dynamodb:action/Query
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: "#set($Items = $input.path('$.Items'))\n$Items\n"
+        requestTemplates:
+          application/json: "\n#set($state = $input.params('state'))\n#if( $input.params('maxItems').toString()\
+            \ != \"\" )\n  #set($maxItems = $input.params('maxItems'))\n#else\n  #set($maxItems\
+            \ = 100)\n#end\n\n\n{\n    \"TableName\": \"serverlesspresso-order-table\"\
+            ,\n    \"IndexName\": \"GSI-status\",\n    \"KeyConditionExpression\"\
+            : \"#ORDERSTATE = :ORDERSTATE\",\n    \"ExpressionAttributeNames\": {\n\
+            \    \"#ORDERSTATE\": \"ORDERSTATE\"\n    },\n    \"ExpressionAttributeValues\"\
+            : {\n    \":ORDERSTATE\": {\n      \"S\": \"$state\"\n    }\n    },\n\
+            \    \"ScanIndexForward\": true,\n    \"Limit\": $maxItems,\n    \"ProjectionExpression\"\
+            : \"PK, SK, orderNumber, robot, drinkOrder, ORDERSTATE, TS, userId, baristaUserId\"\
+            \n}"
+        passthroughBehavior: "when_no_templates"
+        type: "aws"
+    options:
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: "{}\n"
+        requestTemplates:
+          application/json: "{\n  \"statusCode\" : 200\n}\n"
+        passthroughBehavior: "when_no_match"
+        type: "mock"
+  /orders/{id}:
+    get:
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Empty"
+      security: [
+        {
+          "ServerlespressoAuth" : ["openid", "aws.cognito.signin.user.admin"]
+        }
+      ]
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::GetAtt: [RESTApiRole, Arn]
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:dynamodb:action/GetItem
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: "\n#set($allParams = $input.params())\n{\n\"orderId\"\
+                \ : $input.json('$.Item.SK.S'),\n\"drinkOrder\":  $input.json('$.Item.drinkOrder'),\n\
+                \"orderState\":  $input.json('$.Item.ORDERSTATE.S'),\n\"TS\":  $input.json('$.Item.TS.N')\
+                \n}\n"
+        requestTemplates:
+          application/json: "\n#set($id = $input.params('id'))\n{\n    \"TableName\"\
+            : \"serverlesspresso-order-table\",\n     \"Key\": {\n      \"PK\":{\n\
+            \        \"S\":\"orders\"\n        },\n      \"SK\":{\n        \"S\":\"\
+            $id\"\n      }\n\n    }\n}"
+        passthroughBehavior: "when_no_templates"
+        type: "aws"
+    put:
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Empty"
+      security: [
+        {
+          "ServerlespressoAuth" : ["openid", "aws.cognito.signin.user.admin"]
+        }
+      ]
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::GetAtt: [RESTApiRole, Arn]
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:states:action/StartExecution
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS,PUT'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: ""
+        requestTemplates:
+          application/json:
+            Fn::Sub:
+              "\n#set($orderId = $input.params('id'))\n#set($body =\
+              \ $util.escapeJavaScript($input.body))\n#set($action = $input.params('action'))\
+              \ \n#set($baristaUserId = $context.authorizer.claims.sub) \n{\n   \"input\"\
+              : \"{\\\"action\\\":\\\"$action\\\",\\\"body\\\":$body,\\\"orderId\\\"\
+              :\\\"$orderId\\\",\\\"baristaUserId\\\":\\\"$baristaUserId\\\"}\",\n \
+              \   \"stateMachineArn\":\"${OrderManagerStateMachine}\"\
+              \n}"
+
+        passthroughBehavior: "when_no_templates"
+        type: "aws"
+    options:
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS,PUT'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: "{}\n"
+        requestTemplates:
+          application/json: "{\n  \"statusCode\" : 200\n}\n"
+        passthroughBehavior: "when_no_match"
+        type: "mock"
+  /myOrders:
+    get:
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Empty"
+      security: [
+        {
+          "ServerlespressoAuth" : ["openid", "aws.cognito.signin.user.admin"]
+        }
+      ]
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::GetAtt: [RESTApiRole, Arn]
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:dynamodb:action/Query
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: "#set($Items = $input.path('$.Items'))\n#if($Items && $Items.size() > 0)\n$Items\n#else\n{}\n#end"
+        requestTemplates:
+          application/json: "#set($sub = $input.params('sub'))\n#set($subFromJWT =\
+            \ $context.authorizer.claims.sub)\n\n{\n    \"TableName\": \"serverlesspresso-order-table\"\
+            ,\n    \"IndexName\": \"GSI-userId\",\n    \"KeyConditionExpression\"\
+            : \"#USERID = :USERID\",\n    \"ExpressionAttributeNames\": {\n    \"\
+            #USERID\": \"USERID\"\n    },\n    \"ExpressionAttributeValues\": {\n\
+            \    \":USERID\": {\n      \"S\": \"$subFromJWT\"\n    }\n    },\n   \
+            \ \"ScanIndexForward\": true,\n    \"ProjectionExpression\": \"PK, SK,\
+            \ orderNumber, robot, drinkOrder, ORDERSTATE, TS\"\n}"
+        passthroughBehavior: "when_no_templates"
+        type: "aws"
+    options:
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: "{}\n"
+        requestTemplates:
+          application/json: "{\n  \"statusCode\" : 200\n}\n"
+        passthroughBehavior: "when_no_match"
+        type: "mock"
+components:
+  schemas:
+    Empty:
+      title: "Empty Schema"
+      type: "object"
+  securitySchemes:
+    ServerlespressoAuth:
+      type: "apiKey"
+      name: "Authorization"
+      in: "header"
+      x-amazon-apigateway-authtype: "cognito_user_pools"
+      x-amazon-apigateway-authorizer:
+        providerARNs:
+          - Fn::GetAtt: [UserPool, Arn]
+        type: "cognito_user_pools"
