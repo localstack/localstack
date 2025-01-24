@@ -525,6 +525,10 @@ class ContainerClient(metaclass=ABCMeta):
         """Returns the status of the container with the given name"""
         pass
 
+    def get_container_stats(self, container_name: str) -> dict:
+        """Returns the usage statistics of the container with the given name"""
+        pass
+
     def get_networks(self, container_name: str) -> List[str]:
         LOG.debug("Getting networks for container: %s", container_name)
         container_attrs = self.inspect_container(container_name_or_id=container_name)
