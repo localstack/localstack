@@ -79,14 +79,6 @@ if TYPE_CHECKING:
 
 LOG = logging.getLogger(__name__)
 
-# TODO: implement new S3 Data Integrity logic (checksums)
-pytestmark = markers.snapshot.skip_snapshot_verify(
-    paths=[
-        "$..ChecksumType",
-        "$..x-amz-checksum-type",
-    ]
-)
-
 
 # transformer list to transform headers, that will be validated for some specific s3-tests
 HEADER_TRANSFORMER = [
@@ -490,6 +482,7 @@ class TestS3:
         assert metadata_saved["Metadata"] == {"test_meta_1": "foo", "__meta_2": "bar"}
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumType"])
     def test_upload_file_multipart(self, s3_bucket, tmpdir, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         key = "my-key"
@@ -11891,7 +11884,10 @@ class TestS3MultipartUploadChecksum:
     @markers.aws.validated
     # TODO: fix S3 data integrity
     @markers.snapshot.skip_snapshot_verify(
-        paths=["$.complete-multipart-wrong-parts-checksum.Error.PartNumber"]
+        paths=[
+            "$.complete-multipart-wrong-parts-checksum.Error.PartNumber",
+            "$..ChecksumType",
+        ]
     )
     def test_complete_multipart_parts_checksum(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
@@ -12001,6 +11997,7 @@ class TestS3MultipartUploadChecksum:
         snapshot.match("get-object-attrs", object_attrs)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumType"])
     def test_multipart_parts_checksum_exceptions(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
