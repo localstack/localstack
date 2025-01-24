@@ -2096,10 +2096,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 "Checksum algorithm provided is unsupported. Please try again with any of the valid types: [CRC32, CRC32C, SHA1, SHA256]"
             )
 
-        # TODO: validate the checksum map between COMPOSITE and FULL_OBJECT
-        # get value
-        checksum_type = request.get("ChecksumType")
-
         # TODO: we're not encrypting the object with the provided key for now
         sse_c_key_md5 = request.get("SSECustomerKeyMD5")
         validate_sse_c(
@@ -2126,7 +2122,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             user_metadata=request.get("Metadata"),
             system_metadata=system_metadata,
             checksum_algorithm=checksum_algorithm,
-            checksum_type=checksum_type,
             encryption=encryption_parameters.encryption,
             kms_key_id=encryption_parameters.kms_key_id,
             bucket_key_enabled=encryption_parameters.bucket_key_enabled,
@@ -2151,7 +2146,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if checksum_algorithm:
             response["ChecksumAlgorithm"] = checksum_algorithm
-            response["ChecksumType"] = checksum_type
 
         add_encryption_to_response(response, s3_object=s3_multipart.object)
         if sse_c_key_md5:
@@ -2534,7 +2528,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # TODO: check this?
         if s3_object.checksum_algorithm:
             response[f"Checksum{s3_object.checksum_algorithm.upper()}"] = s3_object.checksum_value
-            response["ChecksumType"] = s3_object.checksum_type
 
         if s3_object.expiration:
             response["Expiration"] = s3_object.expiration  # TODO: properly parse the datetime
@@ -2655,7 +2648,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["PartNumberMarker"] = part_number_marker
         if s3_multipart.object.checksum_algorithm:
             response["ChecksumAlgorithm"] = s3_multipart.object.checksum_algorithm
-            response["ChecksumType"] = s3_multipart.checksum_type
 
         return response
 
