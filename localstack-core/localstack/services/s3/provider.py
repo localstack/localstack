@@ -2102,7 +2102,25 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # TODO: validate the checksum map between COMPOSITE and FULL_OBJECT
         # get value
-        checksum_type = request.get("ChecksumType")
+        if not (checksum_type := request.get("ChecksumType")) and checksum_algorithm:
+            if checksum_algorithm == ChecksumAlgorithm.CRC64NVME:
+                checksum_type = ChecksumType.FULL_OBJECT
+            else:
+                checksum_type = ChecksumType.COMPOSITE
+
+        if (
+            checksum_type == ChecksumType.COMPOSITE
+            and checksum_algorithm == ChecksumAlgorithm.CRC64NVME
+        ):
+            raise InvalidRequest(
+                "The COMPOSITE checksum type cannot be used with the crc64nvme checksum algorithm."
+            )
+        elif checksum_type == ChecksumType.FULL_OBJECT and checksum_algorithm.upper().startswith(
+            "SHA"
+        ):
+            raise InvalidRequest(
+                f"The FULL_OBJECT checksum type cannot be used with the {checksum_algorithm.lower()} checksum algorithm."
+            )
 
         # TODO: we're not encrypting the object with the provided key for now
         sse_c_key_md5 = request.get("SSECustomerKeyMD5")
