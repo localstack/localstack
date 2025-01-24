@@ -158,9 +158,6 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_overwrite_key": {
     "last_validated_date": "2025-01-21T18:32:53+00:00"
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_parts_checksum_exceptions": {
-    "last_validated_date": "2025-01-21T18:56:16+00:00"
-  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_object_with_slashes_in_key[False]": {
     "last_validated_date": "2025-01-21T18:26:36+00:00"
   },
@@ -572,6 +569,15 @@
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_composite[SHA256]": {
     "last_validated_date": "2025-01-24T22:25:00+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_full_object[CRC32C]": {
+    "last_validated_date": "2025-01-24T22:58:33+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_full_object[CRC32]": {
+    "last_validated_date": "2025-01-24T22:58:24+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_full_object[CRC64NVME]": {
+    "last_validated_date": "2025-01-24T22:58:44+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_checksum_type_compatibility[COMPOSITE-CRC32C]": {
     "last_validated_date": "2025-01-24T22:30:13+00:00"
   },
@@ -616,6 +622,12 @@
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_checksum_type_default_for_checksum[SHA256]": {
     "last_validated_date": "2025-01-24T22:32:03+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_parts_checksum_exceptions_composite": {
+    "last_validated_date": "2025-01-24T22:48:05+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_parts_checksum_exceptions_full_object": {
+    "last_validated_date": "2025-01-24T23:34:58+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockLegalHold::test_delete_locked_object": {
     "last_validated_date": "2025-01-21T18:17:15+00:00"
