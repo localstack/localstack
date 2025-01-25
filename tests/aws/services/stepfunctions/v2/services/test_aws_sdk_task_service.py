@@ -261,7 +261,7 @@ class TestTaskServiceAwsSdk:
     )
     # it seems the SFn internal client does not return the checksum values from the object yet, maybe it hasn't
     #  been updated to parse those fields?
-    @markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumCrc32"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumCrc32", "$..ChecksumType"])
     def test_s3_get_object(
         self,
         aws_client,
@@ -300,6 +300,7 @@ class TestTaskServiceAwsSdk:
             # it seems the SFn internal client does not return the checksum values from the object yet, maybe it hasn't
             #  been updated to parse those fields?
             "$..ChecksumCrc32",
+            "$..ChecksumType",
         ]
     )
     @pytest.mark.parametrize(
