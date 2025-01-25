@@ -436,7 +436,7 @@ class S3Multipart:
         expires: Optional[datetime] = None,
         expiration: Optional[datetime] = None,  # come from lifecycle
         checksum_algorithm: Optional[ChecksumAlgorithm] = None,
-        checksum_type: Optional[ChecksumType] = ChecksumType.COMPOSITE,
+        checksum_type: Optional[ChecksumType] = None,
         encryption: Optional[ServerSideEncryption] = None,  # inherit bucket
         kms_key_id: Optional[SSEKMSKeyId] = None,  # inherit bucket
         bucket_key_enabled: bool = False,  # inherit bucket

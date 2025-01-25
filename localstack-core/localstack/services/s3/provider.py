@@ -2517,10 +2517,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         mpu_checksum_algorithm = s3_multipart.object.checksum_algorithm
+        mpu_checksum_type = getattr(s3_multipart, "checksum_type", None)
 
-        if checksum_type and checksum_type != s3_multipart.checksum_type:
+        if checksum_type and checksum_type != mpu_checksum_type:
             raise InvalidRequest(
-                f"The upload was created using the {s3_multipart.checksum_type or 'null'} checksum mode. "
+                f"The upload was created using the {mpu_checksum_type or 'null'} checksum mode. "
                 f"The complete request must use the same checksum mode."
             )
 
@@ -2551,7 +2552,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if (
             mpu_checksum_algorithm
             and not checksum_type
-            and s3_multipart.checksum_type == ChecksumType.FULL_OBJECT
+            and mpu_checksum_type == ChecksumType.FULL_OBJECT
         ):
             # this is not ideal, but this validation comes last... after the validation of individual parts
             s3_multipart.object.parts.clear()
@@ -2591,7 +2592,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if s3_object.checksum_algorithm:
             response[f"Checksum{s3_object.checksum_algorithm.upper()}"] = s3_object.checksum_value
-            response["ChecksumType"] = s3_object.checksum_type
+            response["ChecksumType"] = mpu_checksum_type
 
         if s3_object.expiration:
             response["Expiration"] = s3_object.expiration  # TODO: properly parse the datetime
@@ -2712,7 +2713,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["PartNumberMarker"] = part_number_marker
         if s3_multipart.object.checksum_algorithm:
             response["ChecksumAlgorithm"] = s3_multipart.object.checksum_algorithm
-            response["ChecksumType"] = s3_multipart.checksum_type
+            response["ChecksumType"] = getattr(s3_multipart, "checksum_type", None)
 
         return response
 
@@ -2812,7 +2813,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 )
                 if multipart.object.checksum_algorithm:
                     multipart_upload["ChecksumAlgorithm"] = multipart.object.checksum_algorithm
-                    multipart_upload["ChecksumType"] = multipart.checksum_type
+                    multipart_upload["ChecksumType"] = getattr(multipart, "checksum_type", None)
 
                 uploads.append(multipart_upload)
 
