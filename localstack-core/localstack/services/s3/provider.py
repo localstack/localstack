@@ -2107,6 +2107,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 checksum_type = ChecksumType.FULL_OBJECT
             else:
                 checksum_type = ChecksumType.COMPOSITE
+        elif checksum_type and not checksum_algorithm:
+            raise InvalidRequest(
+                "The x-amz-checksum-type header can only be used with the x-amz-checksum-algorithm header."
+            )
 
         if (
             checksum_type == ChecksumType.COMPOSITE
@@ -2511,21 +2515,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 UploadId=upload_id,
             )
 
-        checksum_map = {}
-        if s3_multipart.object.checksum_algorithm:
-            checksum_map = {
-                "crc32": checksum_crc32,
-                "crc32c": checksum_crc32_c,
-                "crc64nvme": checksum_crc64_nvme,
-                "sha1": checksum_sha1,
-                "sha256": checksum_sha256,
-            }
-
-            if checksum_type and checksum_type != s3_multipart.checksum_type:
-                raise InvalidRequest(
-                    f"The upload was created using the {s3_multipart.checksum_type} checksum mode. "
-                    f"The complete request must use the same checksum mode."
-                )
+        if checksum_type and checksum_type != s3_multipart.checksum_type:
+            raise InvalidRequest(
+                f"The upload was created using the {s3_multipart.checksum_type or 'null'} checksum mode. "
+                f"The complete request must use the same checksum mode."
+            )
 
         # generate the versionId before completing, in case the bucket versioning status has changed between
         # creation and completion? AWS validate this
@@ -2534,6 +2528,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_multipart.complete_multipart(parts)
         if s3_multipart.checksum_type == ChecksumType.FULL_OBJECT:
             checksum_algorithm = s3_multipart.object.checksum_algorithm.lower()
+            checksum_map = {
+                "crc32": checksum_crc32,
+                "crc32c": checksum_crc32_c,
+                "crc64nvme": checksum_crc64_nvme,
+                "sha1": checksum_sha1,
+                "sha256": checksum_sha256,
+            }
             checksum_value = checksum_map.get(checksum_algorithm)
             if s3_multipart.checksum_value != checksum_value or not checksum_type:
                 # reset the multipart, the best would have been to pass the checksum value to `complete_multipart`, but
@@ -2804,6 +2805,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     Owner=multipart.initiator,  # TODO: check the difference
                     Initiator=multipart.initiator,
                 )
+                if multipart.object.checksum_algorithm:
+                    multipart_upload["ChecksumAlgorithm"] = multipart.object.checksum_algorithm
+                    multipart_upload["ChecksumType"] = multipart.checksum_type
+
                 uploads.append(multipart_upload)
 
             count += 1

@@ -5195,7 +5195,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_parts_checksum_exceptions_composite": {
-    "recorded-date": "24-01-2025, 22:48:06",
+    "recorded-date": "25-01-2025, 17:26:01",
     "recorded-content": {
       "create-mpu-wrong-checksum-algo": {
         "Error": {
@@ -5207,11 +5207,54 @@
           "HTTPStatusCode": 400
         }
       },
-      "create-mpu-no-checksum": {
+      "create-mpu-no-checksum-algo-with-type": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "The x-amz-checksum-type header can only be used with the x-amz-checksum-algorithm header."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-mpu-composite-checksum": {
         "Bucket": "bucket",
+        "ChecksumAlgorithm": "CRC32",
+        "ChecksumType": "COMPOSITE",
         "Key": "test-multipart-checksum-exc",
         "ServerSideEncryption": "AES256",
         "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-multiparts": {
+        "Bucket": "bucket",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxUploads": 1000,
+        "NextKeyMarker": "test-multipart-checksum-exc",
+        "NextUploadIdMarker": "<upload-id:1>",
+        "UploadIdMarker": "",
+        "Uploads": [
+          {
+            "ChecksumAlgorithm": "CRC32",
+            "ChecksumType": "COMPOSITE",
+            "Initiated": "datetime",
+            "Initiator": {
+              "DisplayName": "display-name",
+              "ID": "i-d"
+            },
+            "Key": "test-multipart-checksum-exc",
+            "Owner": {
+              "DisplayName": "display-name",
+              "ID": "i-d"
+            },
+            "StorageClass": "STANDARD",
+            "UploadId": "<upload-id:1>"
+          }
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -5228,11 +5271,18 @@
       },
       "complete-part-with-checksum": {
         "Error": {
-          "Code": "InvalidPart",
-          "ETag": "900150983cd24fb0d6963f7d28e17f72",
-          "Message": "One or more of the specified parts could not be found.  The part may not have been uploaded, or the specified entity tag may not match the part's entity tag.",
-          "PartNumber": "1",
-          "UploadId": "<upload-id:1>"
+          "Code": "BadDigest",
+          "Message": "The sha256 you specified for part 1 did not match what we received."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "complete-part-with-bad-checksum-type": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "The upload was created using the COMPOSITE checksum mode. The complete request must use the same checksum mode."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -15923,8 +15973,18 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_parts_checksum_exceptions_full_object": {
-    "recorded-date": "25-01-2025, 04:22:18",
+    "recorded-date": "25-01-2025, 17:24:19",
     "recorded-content": {
+      "create-mpu-no-checksum-algo-with-type": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "The x-amz-checksum-type header can only be used with the x-amz-checksum-algorithm header."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "create-mpu-checksum-crc32c": {
         "Bucket": "bucket",
         "ChecksumAlgorithm": "CRC32C",
@@ -15932,6 +15992,37 @@
         "Key": "test-multipart-checksum-exc",
         "ServerSideEncryption": "AES256",
         "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-multiparts": {
+        "Bucket": "bucket",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxUploads": 1000,
+        "NextKeyMarker": "test-multipart-checksum-exc",
+        "NextUploadIdMarker": "<upload-id:1>",
+        "UploadIdMarker": "",
+        "Uploads": [
+          {
+            "ChecksumAlgorithm": "CRC32C",
+            "ChecksumType": "FULL_OBJECT",
+            "Initiated": "datetime",
+            "Initiator": {
+              "DisplayName": "display-name",
+              "ID": "i-d"
+            },
+            "Key": "test-multipart-checksum-exc",
+            "Owner": {
+              "DisplayName": "display-name",
+              "ID": "i-d"
+            },
+            "StorageClass": "STANDARD",
+            "UploadId": "<upload-id:1>"
+          }
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -16039,6 +16130,181 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_default": {
+    "recorded-date": "25-01-2025, 17:10:56",
+    "recorded-content": {
+      "create-mpu-no-checksum": {
+        "Bucket": "bucket",
+        "Key": "test-multipart-checksum",
+        "ServerSideEncryption": "AES256",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-multiparts": {
+        "Bucket": "bucket",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxUploads": 1000,
+        "NextKeyMarker": "test-multipart-checksum",
+        "NextUploadIdMarker": "<upload-id:1>",
+        "UploadIdMarker": "",
+        "Uploads": [
+          {
+            "Initiated": "datetime",
+            "Initiator": {
+              "DisplayName": "display-name",
+              "ID": "i-d"
+            },
+            "Key": "test-multipart-checksum",
+            "Owner": {
+              "DisplayName": "display-name",
+              "ID": "i-d"
+            },
+            "StorageClass": "STANDARD",
+            "UploadId": "<upload-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-part-different-checksum-than-default": {
+        "ChecksumCRC32C": "45fn2Q==",
+        "ETag": "\"47bce5c74f589f4867dbd57e9ca9f808\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-parts": {
+        "Bucket": "bucket",
+        "Initiator": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "IsTruncated": false,
+        "Key": "test-multipart-checksum",
+        "MaxParts": 1000,
+        "NextPartNumberMarker": 1,
+        "Owner": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "PartNumberMarker": 0,
+        "Parts": [
+          {
+            "ETag": "\"47bce5c74f589f4867dbd57e9ca9f808\"",
+            "LastModified": "datetime",
+            "PartNumber": 1,
+            "Size": 3
+          }
+        ],
+        "StorageClass": "STANDARD",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "complete-multipart-parts-checksum": {
+        "Error": {
+          "Code": "InvalidPart",
+          "ETag": "47bce5c74f589f4867dbd57e9ca9f808",
+          "Message": "One or more of the specified parts could not be found.  The part may not have been uploaded, or the specified entity tag may not match the part's entity tag.",
+          "PartNumber": "1",
+          "UploadId": "<upload-id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "complete-multipart-wrong-parts-checksum": {
+        "Error": {
+          "Code": "InvalidPart",
+          "ETag": "47bce5c74f589f4867dbd57e9ca9f808",
+          "Message": "One or more of the specified parts could not be found.  The part may not have been uploaded, or the specified entity tag may not match the part's entity tag.",
+          "PartNumber": "1",
+          "UploadId": "<upload-id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "complete-multipart-full-object-type": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "The upload was created using the null checksum mode. The complete request must use the same checksum mode."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "complete-multipart-composite-type": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "The upload was created using the null checksum mode. The complete request must use the same checksum mode."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "complete-multipart-checksum": {
+        "Bucket": "bucket",
+        "ETag": "\"e2c3da976e66ec9e7dc128fbc782fc91-1\"",
+        "Key": "test-multipart-checksum",
+        "Location": "<location:1>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-with-checksum": {
+        "AcceptRanges": "bytes",
+        "Body": "",
+        "ContentLength": 3,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e2c3da976e66ec9e7dc128fbc782fc91-1\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-with-checksum": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 3,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e2c3da976e66ec9e7dc128fbc782fc91-1\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-attrs": {
+        "ETag": "e2c3da976e66ec9e7dc128fbc782fc91-1",
+        "LastModified": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

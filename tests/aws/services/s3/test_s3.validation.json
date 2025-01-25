@@ -569,6 +569,9 @@
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_composite[SHA256]": {
     "last_validated_date": "2025-01-24T22:25:00+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_default": {
+    "last_validated_date": "2025-01-25T17:10:56+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_full_object[CRC32C]": {
     "last_validated_date": "2025-01-24T22:58:33+00:00"
   },
@@ -624,10 +627,10 @@
     "last_validated_date": "2025-01-24T22:32:03+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_parts_checksum_exceptions_composite": {
-    "last_validated_date": "2025-01-24T22:48:05+00:00"
+    "last_validated_date": "2025-01-25T17:26:01+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_parts_checksum_exceptions_full_object": {
-    "last_validated_date": "2025-01-25T04:22:18+00:00"
+    "last_validated_date": "2025-01-25T17:24:19+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockLegalHold::test_delete_locked_object": {
     "last_validated_date": "2025-01-21T18:17:15+00:00"

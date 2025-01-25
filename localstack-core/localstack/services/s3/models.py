@@ -13,6 +13,7 @@ from localstack.aws.api.s3 import (
     AccountId,
     AnalyticsConfiguration,
     AnalyticsId,
+    BadDigest,
     BucketAccelerateStatus,
     BucketKeyEnabled,
     BucketName,
@@ -505,7 +506,9 @@ class S3Multipart:
                 or (not has_checksum and any(k.startswith("Checksum") for k in part))
             ):
                 raise InvalidPart(
-                    "One or more of the specified parts could not be found.  The part may not have been uploaded, or the specified entity tag may not match the part's entity tag.",
+                    "One or more of the specified parts could not be found.  "
+                    "The part may not have been uploaded, "
+                    "or the specified entity tag may not match the part's entity tag.",
                     ETag=part_etag,
                     PartNumber=part_number,
                     UploadId=self.id,
@@ -515,6 +518,14 @@ class S3Multipart:
                 checksum_key = f"Checksum{self.object.checksum_algorithm.upper()}"
                 if not (part_checksum := part.get(checksum_key)):
                     if self.checksum_type == ChecksumType.COMPOSITE:
+                        # weird case, they still try to validate a different checksum type than the multipart
+                        for field in part:
+                            if field.startswith("Checksum"):
+                                algo = field.removeprefix("Checksum").lower()
+                                raise BadDigest(
+                                    f"The {algo} you specified for part {part_number} did not match what we received."
+                                )
+
                         raise InvalidRequest(
                             f"The upload was created using a {self.object.checksum_algorithm.lower()} checksum. "
                             f"The complete request must include the checksum for each part. "
