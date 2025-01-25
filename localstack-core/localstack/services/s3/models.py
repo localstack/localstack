@@ -71,7 +71,7 @@ from localstack.services.s3.constants import (
     S3_UPLOAD_PART_MIN_SIZE,
 )
 from localstack.services.s3.exceptions import InvalidRequest
-from localstack.services.s3.utils import get_s3_checksum, rfc_1123_datetime
+from localstack.services.s3.utils import CombinedCrcHash, get_s3_checksum, rfc_1123_datetime
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -483,14 +483,17 @@ class S3Multipart:
 
     def complete_multipart(self, parts: CompletedPartList):
         last_part_index = len(parts) - 1
-        # TODO: this part is currently not implemented, time permitting
         object_etag = hashlib.md5(usedforsecurity=False)
         has_checksum = self.object.checksum_algorithm is not None
         checksum_hash = None
         if has_checksum:
-            checksum_hash = get_s3_checksum(self.object.checksum_algorithm)
+            if self.object.checksum_type == ChecksumType.COMPOSITE:
+                checksum_hash = get_s3_checksum(self.object.checksum_algorithm)
+            else:
+                checksum_hash = CombinedCrcHash(self.object.checksum_algorithm)
 
         pos = 0
+        _checksum_value = 0
         for index, part in enumerate(parts):
             part_number = part["PartNumber"]
             part_etag = part["ETag"].strip('"')
@@ -511,10 +514,13 @@ class S3Multipart:
             if has_checksum:
                 checksum_key = f"Checksum{self.object.checksum_algorithm.upper()}"
                 if not (part_checksum := part.get(checksum_key)):
-                    raise InvalidRequest(
-                        f"The upload was created using a {self.object.checksum_algorithm.lower()} checksum. The complete request must include the checksum for each part. It was missing for part {part_number} in the request."
-                    )
-                if part_checksum != s3_part.checksum_value:
+                    if self.checksum_type == ChecksumType.COMPOSITE:
+                        raise InvalidRequest(
+                            f"The upload was created using a {self.object.checksum_algorithm.lower()} checksum. "
+                            f"The complete request must include the checksum for each part. "
+                            f"It was missing for part {part_number} in the request."
+                        )
+                elif part_checksum != s3_part.checksum_value:
                     raise InvalidPart(
                         "One or more of the specified parts could not be found.  The part may not have been uploaded, or the specified entity tag may not match the part's entity tag.",
                         ETag=part_etag,
@@ -522,7 +528,11 @@ class S3Multipart:
                         UploadId=self.id,
                     )
 
-                checksum_hash.update(base64.b64decode(part_checksum))
+                part_checksum_value = base64.b64decode(s3_part.checksum_value)
+                if self.checksum_type == ChecksumType.COMPOSITE:
+                    checksum_hash.update(part_checksum_value)
+                else:
+                    checksum_hash.combine(part_checksum_value, s3_part.size)
 
             elif any(k.startswith("Checksum") for k in part):
                 raise InvalidPart(
@@ -548,9 +558,10 @@ class S3Multipart:
 
         multipart_etag = f"{object_etag.hexdigest()}-{len(parts)}"
         self.object.etag = multipart_etag
-        # TODO: implement FULL_OBJECT checksum type
         if has_checksum:
-            checksum_value = f"{base64.b64encode(checksum_hash.digest()).decode()}-{len(parts)}"
+            checksum_value = base64.b64encode(checksum_hash.digest()).decode()
+            if self.checksum_type == ChecksumType.COMPOSITE:
+                checksum_value = f"{checksum_value}-{len(parts)}"
             self.checksum_value = checksum_value
             self.object.checksum_value = checksum_value
 

@@ -12104,10 +12104,13 @@ class TestS3MultipartUploadChecksum:
         snapshot.match("upload-part-different-checksum-exc", e.value.response)
 
     @markers.aws.validated
-    # @markers.snapshot.skip_snapshot_verify(
-    #     # it seems the PartNumber might not be deterministic, possibly parallelized on S3 side?
-    #     paths=["$.complete-multipart-wrong-parts-checksum.Error.PartNumber"]
-    # )
+    @markers.snapshot.skip_snapshot_verify(
+        # it seems the PartNumber might not be deterministic, possibly parallelized on S3 side?
+        paths=[
+            "$.complete-multipart-wrong-parts-checksum.Error.PartNumber",
+            "$.complete-multipart-wrong-parts-checksum.Error.ETag",
+        ]
+    )
     @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "CRC64NVME"])
     def test_complete_multipart_parts_checksum_full_object(
         self, s3_bucket, snapshot, aws_client, algorithm
