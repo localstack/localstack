@@ -4107,7 +4107,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_and_list_parts": {
-    "recorded-date": "21-01-2025, 18:27:36",
+    "recorded-date": "25-01-2025, 04:30:53",
     "recorded-content": {
       "create-multipart": {
         "Bucket": "bucket",

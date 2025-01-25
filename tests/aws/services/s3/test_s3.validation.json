@@ -141,7 +141,7 @@
     "last_validated_date": "2025-01-21T18:26:37+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_and_list_parts": {
-    "last_validated_date": "2025-01-21T18:27:36+00:00"
+    "last_validated_date": "2025-01-25T04:30:53+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_complete_multipart_too_small": {
     "last_validated_date": "2025-01-21T18:27:40+00:00"

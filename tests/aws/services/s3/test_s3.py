@@ -778,14 +778,6 @@ class TestS3:
         snapshot.match("get-object-attrs-v1", response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..NextKeyMarker",
-            "$..NextUploadIdMarker",
-            # FIXME: S3 data integrity
-            "$..Parts..ChecksumCRC32",
-        ],
-    )
     def test_multipart_and_list_parts(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -11382,8 +11374,6 @@ class TestS3SSECEncryption:
         snapshot.match("copy-obj-target-double-encryption", e.value.response)
 
     @markers.aws.validated
-    # TODO: fix S3 data integrity
-    @markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumCRC32"])
     def test_multipart_upload_sse_c(self, aws_client, s3_bucket, snapshot):
         snapshot.add_transformer(
             [

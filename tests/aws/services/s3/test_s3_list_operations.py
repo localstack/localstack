@@ -744,8 +744,6 @@ class TestS3ListMultipartUploads:
 
 class TestS3ListParts:
     @markers.aws.validated
-    # TODO: fix S3 data integrity
-    @markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumCRC32"])
     def test_list_parts_pagination(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -801,8 +799,6 @@ class TestS3ListParts:
         snapshot.match("list-parts-wrong-part", response)
 
     @markers.aws.validated
-    # TODO: fix S3 data integrity
-    @markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumCRC32"])
     def test_list_parts_empty_part_number_marker(self, s3_bucket, snapshot, aws_client_factory):
         # we need to disable validation for this test
         s3_client = aws_client_factory(config=Config(parameter_validation=False)).s3

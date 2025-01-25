@@ -2675,7 +2675,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 PartNumber=part_number,
                 Size=part.size,
             )
-            if part.checksum_algorithm:
+            if s3_multipart.object.checksum_algorithm:
                 part_item[f"Checksum{part.checksum_algorithm.upper()}"] = part.checksum_value
 
             parts.append(part_item)
