@@ -5,6 +5,7 @@ import json
 import logging
 import re
 from collections import defaultdict
+from inspect import signature
 from io import BytesIO
 from operator import itemgetter
 from typing import IO, Optional, Union
@@ -2515,6 +2516,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 UploadId=upload_id,
             )
 
+        mpu_checksum_algorithm = s3_multipart.object.checksum_algorithm
+
         if checksum_type and checksum_type != s3_multipart.checksum_type:
             raise InvalidRequest(
                 f"The upload was created using the {s3_multipart.checksum_type or 'null'} checksum mode. "
@@ -2525,9 +2528,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # creation and completion? AWS validate this
         version_id = generate_version_id(s3_bucket.versioning_status)
         s3_multipart.object.version_id = version_id
-        s3_multipart.complete_multipart(parts)
-        if s3_multipart.checksum_type == ChecksumType.FULL_OBJECT:
-            checksum_algorithm = s3_multipart.object.checksum_algorithm.lower()
+
+        # we're inspecting the signature of `complete_multipart`, in case the multipart has been restored from
+        # persistence. if we do not have a new version, do not validate those parameters
+        # TODO: remove for next major version (minor?)
+        if signature(s3_multipart.complete_multipart).parameters.get("mpu_size"):
+            checksum_algorithm = mpu_checksum_algorithm.lower() if mpu_checksum_algorithm else None
             checksum_map = {
                 "crc32": checksum_crc32,
                 "crc32c": checksum_crc32_c,
@@ -2536,15 +2542,22 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 "sha256": checksum_sha256,
             }
             checksum_value = checksum_map.get(checksum_algorithm)
-            if s3_multipart.checksum_value != checksum_value or not checksum_type:
-                # reset the multipart, the best would have been to pass the checksum value to `complete_multipart`, but
-                # that would change the API of the object stored/pickled in the store
-                s3_multipart.checksum_value = s3_multipart.object.checksum_value = None
-                s3_multipart.object.etag = None
-                s3_multipart.object.parts.clear()
-                raise BadDigest(
-                    f"The {checksum_algorithm} you specified did not match the calculated checksum."
-                )
+            s3_multipart.complete_multipart(
+                parts, mpu_size=mpu_object_size, validation_checksum=checksum_value
+            )
+        else:
+            s3_multipart.complete_multipart(parts)
+
+        if (
+            mpu_checksum_algorithm
+            and not checksum_type
+            and s3_multipart.checksum_type == ChecksumType.FULL_OBJECT
+        ):
+            # this is not ideal, but this validation comes last... after the validation of individual parts
+            s3_multipart.object.parts.clear()
+            raise BadDigest(
+                f"The {mpu_checksum_algorithm.lower()} you specified did not match the calculated checksum."
+            )
 
         stored_multipart = self._storage_backend.get_multipart(bucket, s3_multipart)
         stored_multipart.complete_multipart(
@@ -2564,14 +2577,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_multipart.tagging:
             store.TAGS.tags[key_id] = s3_multipart.tagging
 
-        # TODO: validate if you provide wrong checksum compared to the given algorithm? should you calculate it anyway
-        #  when you complete? sounds weird, not sure how that works?
-
-        #     ChecksumCRC32: Optional[ChecksumCRC32] ??
-        #     ChecksumCRC32C: Optional[ChecksumCRC32C] ??
-        #     ChecksumSHA1: Optional[ChecksumSHA1] ??
-        #     ChecksumSHA256: Optional[ChecksumSHA256] ??
-        #     RequestCharged: Optional[RequestCharged] TODO
+        # RequestCharged: Optional[RequestCharged] TODO
 
         response = CompleteMultipartUploadOutput(
             Bucket=bucket,
@@ -2583,7 +2589,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_object.version_id:
             response["VersionId"] = s3_object.version_id
 
-        # TODO: check this?
         if s3_object.checksum_algorithm:
             response[f"Checksum{s3_object.checksum_algorithm.upper()}"] = s3_object.checksum_value
             response["ChecksumType"] = s3_object.checksum_type

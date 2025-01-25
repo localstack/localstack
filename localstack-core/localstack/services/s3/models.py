@@ -482,7 +482,9 @@ class S3Multipart:
             owner=owner,
         )
 
-    def complete_multipart(self, parts: CompletedPartList):
+    def complete_multipart(
+        self, parts: CompletedPartList, mpu_size: int = None, validation_checksum: str = None
+    ):
         last_part_index = len(parts) - 1
         object_etag = hashlib.md5(usedforsecurity=False)
         has_checksum = self.object.checksum_algorithm is not None
@@ -495,6 +497,7 @@ class S3Multipart:
 
         pos = 0
         _checksum_value = 0
+        parts_map = {}
         for index, part in enumerate(parts):
             part_number = part["PartNumber"]
             part_etag = part["ETag"].strip('"')
@@ -564,20 +567,34 @@ class S3Multipart:
 
             object_etag.update(bytes.fromhex(s3_part.etag))
             # keep track of the parts size, as it can be queried afterward on the object as a Range
-            self.object.parts[part_number] = (pos, s3_part.size)
+            parts_map[part_number] = (pos, s3_part.size)
             pos += s3_part.size
 
-        multipart_etag = f"{object_etag.hexdigest()}-{len(parts)}"
-        self.object.etag = multipart_etag
+        if mpu_size and mpu_size != pos:
+            raise InvalidRequest(
+                f"The provided 'x-amz-mp-object-size' header value {mpu_size} "
+                f"does not match what was computed: {pos}"
+            )
+
         if has_checksum:
             checksum_value = base64.b64encode(checksum_hash.digest()).decode()
             if self.checksum_type == ChecksumType.COMPOSITE:
                 checksum_value = f"{checksum_value}-{len(parts)}"
+
+            elif self.checksum_type == ChecksumType.FULL_OBJECT:
+                if validation_checksum != checksum_value:
+                    raise BadDigest(
+                        f"The {self.object.checksum_algorithm.lower()} you specified did not match the calculated checksum."
+                    )
+
             self.checksum_value = checksum_value
             self.object.checksum_value = checksum_value
 
+        multipart_etag = f"{object_etag.hexdigest()}-{len(parts)}"
+        self.object.etag = multipart_etag
+        self.object.parts = parts_map
 
-# TODO: use SynchronizedDefaultDict to prevent updates during iteration?
+
 class KeyStore:
     """
     Object representing an S3 Un-versioned Bucket's Key Store. An object is mapped by a key, and you can simply

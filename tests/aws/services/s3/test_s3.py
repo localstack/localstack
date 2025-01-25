@@ -12501,6 +12501,57 @@ class TestS3MultipartUploadChecksum:
         )
         snapshot.match("get-object-attrs", object_attrs)
 
+    @markers.aws.validated
+    def test_multipart_size_validation(self, aws_client, s3_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("Location"),
+            ]
+        )
+        # test the default ChecksumType for each ChecksumAlgorithm
+        key_name = "test-multipart-size"
+        response = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
+        upload_id = response["UploadId"]
+
+        data = b"aaaa"
+
+        upload_part = aws_client.s3.upload_part(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body=data,
+            PartNumber=1,
+            UploadId=upload_id,
+        )
+        snapshot.match("upload-part", upload_part)
+
+        parts = [
+            {
+                "ETag": upload_part["ETag"],
+                "PartNumber": 1,
+            }
+        ]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                MultipartUpload={"Parts": parts},
+                UploadId=upload_id,
+                MpuObjectSize=len(data) + 1,
+            )
+        snapshot.match("complete-multipart-wrong-size", e.value.response)
+
+        success = aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={"Parts": parts},
+            UploadId=upload_id,
+            MpuObjectSize=len(data),
+        )
+        snapshot.match("complete-multipart-good-size", success)
+
 
 def _s3_client_pre_signed_client(conf: Config, endpoint_url: str = None):
     if is_aws_cloud():

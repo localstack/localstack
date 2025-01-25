@@ -632,6 +632,9 @@
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_parts_checksum_exceptions_full_object": {
     "last_validated_date": "2025-01-25T17:24:19+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_size_validation": {
+    "last_validated_date": "2025-01-25T17:40:59+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockLegalHold::test_delete_locked_object": {
     "last_validated_date": "2025-01-21T18:17:15+00:00"
   },

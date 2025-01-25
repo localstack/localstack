@@ -16308,5 +16308,40 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_size_validation": {
+    "recorded-date": "25-01-2025, 17:40:59",
+    "recorded-content": {
+      "upload-part": {
+        "ChecksumCRC32": "rZjlRQ==",
+        "ETag": "\"74b87337454200d4d33f80c4663dc5e5\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "complete-multipart-wrong-size": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "The provided 'x-amz-mp-object-size' header value 5 does not match what was computed: 4"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "complete-multipart-good-size": {
+        "Bucket": "bucket",
+        "ETag": "\"c890740ac2875a29117863d66dacc4f0-1\"",
+        "Key": "test-multipart-size",
+        "Location": "<location:1>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
