@@ -2101,8 +2101,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 "Checksum algorithm provided is unsupported. Please try again with any of the valid types: [CRC32, CRC32C, SHA1, SHA256]"
             )
 
-        # TODO: validate the checksum map between COMPOSITE and FULL_OBJECT
-        # get value
         if not (checksum_type := request.get("ChecksumType")) and checksum_algorithm:
             if checksum_algorithm == ChecksumAlgorithm.CRC64NVME:
                 checksum_type = ChecksumType.FULL_OBJECT
