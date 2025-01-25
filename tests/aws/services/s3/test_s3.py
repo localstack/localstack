@@ -12305,6 +12305,17 @@ class TestS3MultipartUploadChecksum:
             )
         snapshot.match("complete-part-bad-checksum", e.value.response)
 
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                MultipartUpload=mpu_data,
+                UploadId=upload_id,
+                ChecksumCRC32=checksum_crc32("bad string"),
+                ChecksumType="FULL_OBJECT",
+            )
+        snapshot.match("complete-part-bad-checksum-algo", e.value.response)
+
         complete_mpu = aws_client.s3.complete_multipart_upload(
             Bucket=s3_bucket,
             Key=key_name,

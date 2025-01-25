@@ -15923,7 +15923,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_parts_checksum_exceptions_full_object": {
-    "recorded-date": "24-01-2025, 23:34:58",
+    "recorded-date": "25-01-2025, 04:22:18",
     "recorded-content": {
       "create-mpu-checksum-crc32c": {
         "Bucket": "bucket",
@@ -15987,6 +15987,16 @@
         }
       },
       "complete-part-bad-checksum": {
+        "Error": {
+          "Code": "BadDigest",
+          "Message": "The crc32c you specified did not match the calculated checksum."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "complete-part-bad-checksum-algo": {
         "Error": {
           "Code": "BadDigest",
           "Message": "The crc32c you specified did not match the calculated checksum."
