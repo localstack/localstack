@@ -2231,8 +2231,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         checksum_value = (
             request.get(f"Checksum{checksum_algorithm.upper()}") if checksum_algorithm else None
         )
-        if checksum_value is not None:
-            validate_checksum_value(checksum_value, checksum_algorithm)
 
         # TODO: we're not encrypting the object with the provided key for now
         sse_c_key_md5 = request.get("SSECustomerKeyMD5")
@@ -2302,11 +2300,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 stored_multipart.remove_part(s3_part)
                 raise
 
-            if checksum_algorithm and s3_part.checksum_value != stored_s3_part.checksum:
-                stored_multipart.remove_part(s3_part)
-                raise BadDigest(
-                    f"The {checksum_algorithm.upper()} you specified did not match the calculated checksum."
-                )
+            if checksum_algorithm:
+                if not validate_checksum_value(s3_part.checksum_value, checksum_algorithm):
+                    stored_multipart.remove_part(s3_part)
+                    raise InvalidRequest(
+                        f"Value for x-amz-checksum-{s3_part.checksum_algorithm.lower()} header is invalid."
+                    )
+                elif s3_part.checksum_value != stored_s3_part.checksum:
+                    stored_multipart.remove_part(s3_part)
+                    raise BadDigest(
+                        f"The {checksum_algorithm.upper()} you specified did not match the calculated checksum."
+                    )
 
             if content_md5:
                 calculated_md5 = etag_to_base_64_content_md5(s3_part.etag)

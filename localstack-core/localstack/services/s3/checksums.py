@@ -1,5 +1,5 @@
-# code from https://github.com/aliyun/aliyun-oss-python-sdk/blob/master/oss2/crc64_combine.py, MIT licensed
-# this also linked to botocore/httpchecksum.py
+# Code ported/inspired from https://github.com/aliyun/aliyun-oss-python-sdk/blob/master/oss2/crc64_combine.py
+# MIT licensed
 import sys
 
 _CRC64NVME_POLYNOMIAL = 0xAD93D23594C93659
