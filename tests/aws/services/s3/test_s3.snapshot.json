@@ -501,12 +501,22 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PutObjectChecksum::test_put_object_checksum[CRC32]": {
-    "recorded-date": "24-01-2025, 19:22:02",
+    "recorded-date": "26-01-2025, 22:18:37",
     "recorded-content": {
-      "put-wrong-checksum": {
+      "put-wrong-checksum-no-b64": {
         "Error": {
           "Code": "InvalidRequest",
           "Message": "Value for x-amz-checksum-crc32 header is invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-wrong-checksum-value": {
+        "Error": {
+          "Code": "BadDigest",
+          "Message": "The CRC32 you specified did not match the calculated checksum."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -574,12 +584,22 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PutObjectChecksum::test_put_object_checksum[CRC32C]": {
-    "recorded-date": "24-01-2025, 19:22:04",
+    "recorded-date": "26-01-2025, 22:18:50",
     "recorded-content": {
-      "put-wrong-checksum": {
+      "put-wrong-checksum-no-b64": {
         "Error": {
           "Code": "InvalidRequest",
           "Message": "Value for x-amz-checksum-crc32c header is invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-wrong-checksum-value": {
+        "Error": {
+          "Code": "BadDigest",
+          "Message": "The CRC32C you specified did not match the calculated checksum."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -647,12 +667,22 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PutObjectChecksum::test_put_object_checksum[SHA1]": {
-    "recorded-date": "24-01-2025, 19:22:07",
+    "recorded-date": "26-01-2025, 22:18:58",
     "recorded-content": {
-      "put-wrong-checksum": {
+      "put-wrong-checksum-no-b64": {
         "Error": {
           "Code": "InvalidRequest",
           "Message": "Value for x-amz-checksum-sha1 header is invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-wrong-checksum-value": {
+        "Error": {
+          "Code": "BadDigest",
+          "Message": "The SHA1 you specified did not match the calculated checksum."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -720,12 +750,22 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PutObjectChecksum::test_put_object_checksum[SHA256]": {
-    "recorded-date": "24-01-2025, 19:22:09",
+    "recorded-date": "26-01-2025, 22:19:07",
     "recorded-content": {
-      "put-wrong-checksum": {
+      "put-wrong-checksum-no-b64": {
         "Error": {
           "Code": "InvalidRequest",
           "Message": "Value for x-amz-checksum-sha256 header is invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-wrong-checksum-value": {
+        "Error": {
+          "Code": "BadDigest",
+          "Message": "The SHA256 you specified did not match the calculated checksum."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -14493,12 +14533,22 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PutObjectChecksum::test_put_object_checksum[CRC64NVME]": {
-    "recorded-date": "24-01-2025, 19:22:12",
+    "recorded-date": "26-01-2025, 22:19:15",
     "recorded-content": {
-      "put-wrong-checksum": {
+      "put-wrong-checksum-no-b64": {
         "Error": {
           "Code": "InvalidRequest",
           "Message": "Value for x-amz-checksum-crc64nvme header is invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-wrong-checksum-value": {
+        "Error": {
+          "Code": "BadDigest",
+          "Message": "The CRC64NVME you specified did not match the calculated checksum."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

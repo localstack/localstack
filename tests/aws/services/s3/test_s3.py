@@ -11634,23 +11634,15 @@ class TestS3PutObjectChecksum:
 
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_object(**params)
-        snapshot.match("put-wrong-checksum", e.value.response)
+        snapshot.match("put-wrong-checksum-no-b64", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            params[f"Checksum{algorithm}"] = get_checksum_for_algorithm(algorithm, b"bad data")
+            aws_client.s3.put_object(**params)
+        snapshot.match("put-wrong-checksum-value", e.value.response)
 
         # Test our generated checksums
-        match algorithm:
-            case "CRC32":
-                checksum = checksum_crc32(data)
-            case "CRC32C":
-                checksum = checksum_crc32c(data)
-            case "SHA1":
-                checksum = hash_sha1(data)
-            case "SHA256":
-                checksum = hash_sha256(data)
-            case "CRC64NVME":
-                checksum = checksum_crc64nvme(data)
-            case _:
-                checksum = ""
-        params.update({f"Checksum{algorithm}": checksum})
+        params[f"Checksum{algorithm}"] = get_checksum_for_algorithm(algorithm, data)
         response = aws_client.s3.put_object(**params)
         snapshot.match("put-object-generated", response)
 
@@ -12193,3 +12185,20 @@ def presigned_snapshot_transformers(snapshot):
             snapshot.transform.key_value("CanonicalRequestBytes"),
         ]
     )
+
+
+def get_checksum_for_algorithm(algorithm: str, data: bytes) -> str:
+    # Test our generated checksums
+    match algorithm:
+        case "CRC32":
+            return checksum_crc32(data)
+        case "CRC32C":
+            return checksum_crc32c(data)
+        case "SHA1":
+            return hash_sha1(data)
+        case "SHA256":
+            return hash_sha256(data)
+        case "CRC64NVME":
+            return checksum_crc64nvme(data)
+        case _:
+            return ""
