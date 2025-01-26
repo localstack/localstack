@@ -16343,5 +16343,130 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_upload_part_checksum_exception[CRC32]": {
+    "recorded-date": "26-01-2025, 22:40:08",
+    "recorded-content": {
+      "put-wrong-checksum-no-b64": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Value for x-amz-checksum-crc32 header is invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-wrong-checksum-value": {
+        "Error": {
+          "Code": "BadDigest",
+          "Message": "The CRC32 you specified did not match the calculated checksum."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_upload_part_checksum_exception[CRC32C]": {
+    "recorded-date": "26-01-2025, 22:40:19",
+    "recorded-content": {
+      "put-wrong-checksum-no-b64": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Value for x-amz-checksum-crc32c header is invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-wrong-checksum-value": {
+        "Error": {
+          "Code": "BadDigest",
+          "Message": "The CRC32C you specified did not match the calculated checksum."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_upload_part_checksum_exception[SHA1]": {
+    "recorded-date": "26-01-2025, 22:40:26",
+    "recorded-content": {
+      "put-wrong-checksum-no-b64": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Value for x-amz-checksum-sha1 header is invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-wrong-checksum-value": {
+        "Error": {
+          "Code": "BadDigest",
+          "Message": "The SHA1 you specified did not match the calculated checksum."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_upload_part_checksum_exception[SHA256]": {
+    "recorded-date": "26-01-2025, 22:40:36",
+    "recorded-content": {
+      "put-wrong-checksum-no-b64": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Value for x-amz-checksum-sha256 header is invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-wrong-checksum-value": {
+        "Error": {
+          "Code": "BadDigest",
+          "Message": "The SHA256 you specified did not match the calculated checksum."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_upload_part_checksum_exception[CRC64NVME]": {
+    "recorded-date": "26-01-2025, 22:40:45",
+    "recorded-content": {
+      "put-wrong-checksum-no-b64": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Value for x-amz-checksum-crc64nvme header is invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-wrong-checksum-value": {
+        "Error": {
+          "Code": "BadDigest",
+          "Message": "The CRC64NVME you specified did not match the calculated checksum."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

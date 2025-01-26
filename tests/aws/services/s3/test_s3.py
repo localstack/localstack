@@ -12024,6 +12024,44 @@ class TestS3MultipartUploadChecksum:
         snapshot.match("create-mpu-default-checksum-type", response)
 
     @markers.aws.validated
+    @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256", "CRC64NVME"])
+    def test_multipart_upload_part_checksum_exception(
+        self, aws_client, s3_bucket, snapshot, algorithm
+    ):
+        key_name = "test-multipart-checksum-default"
+        response = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
+        upload_id = response["UploadId"]
+        body = b"right body"
+
+        with pytest.raises(ClientError) as e:
+            kwargs = {
+                f"Checksum{algorithm}": short_uid(),
+            }
+            aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name,
+                UploadId=upload_id,
+                PartNumber=1,
+                Body=body,
+                ChecksumAlgorithm=algorithm,
+                **kwargs,
+            )
+        snapshot.match("put-wrong-checksum-no-b64", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            kwargs = {f"Checksum{algorithm}": get_checksum_for_algorithm(algorithm, b"bad data")}
+            aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name,
+                UploadId=upload_id,
+                PartNumber=1,
+                Body=body,
+                ChecksumAlgorithm=algorithm,
+                **kwargs,
+            )
+        snapshot.match("put-wrong-checksum-value", e.value.response)
+
+    @markers.aws.validated
     def test_multipart_parts_checksum_exceptions_composite(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
