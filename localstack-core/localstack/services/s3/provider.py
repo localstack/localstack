@@ -701,8 +701,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         checksum_value = (
             request.get(f"Checksum{checksum_algorithm.upper()}") if checksum_algorithm else None
         )
-        if checksum_value is not None:
-            validate_checksum_value(checksum_value, checksum_algorithm)
 
         # TODO: we're not encrypting the object with the provided key for now
         sse_c_key_md5 = request.get("SSECustomerKeyMD5")
@@ -785,14 +783,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
             s3_stored_object.write(body)
 
-            if (
-                s3_object.checksum_algorithm
-                and s3_object.checksum_value != s3_stored_object.checksum
-            ):
-                self._storage_backend.remove(bucket_name, s3_object)
-                raise BadDigest(
-                    f"The {checksum_algorithm.upper()} you specified did not match the calculated checksum."
-                )
+            if s3_object.checksum_algorithm:
+                if not validate_checksum_value(s3_object.checksum_value, checksum_algorithm):
+                    self._storage_backend.remove(bucket_name, s3_object)
+                    raise InvalidRequest(
+                        f"Value for x-amz-checksum-{s3_object.checksum_algorithm.lower()} header is invalid."
+                    )
+                elif s3_object.checksum_value != s3_stored_object.checksum:
+                    self._storage_backend.remove(bucket_name, s3_object)
+                    raise BadDigest(
+                        f"The {checksum_algorithm.upper()} you specified did not match the calculated checksum."
+                    )
 
             # TODO: handle ContentMD5 and ChecksumAlgorithm in a handler for all requests except requests with a
             #  streaming body. We can use the specs to verify which operations needs to have the checksum validated

@@ -487,13 +487,11 @@ def validate_sse_c(
         )
 
 
-def validate_checksum_value(checksum_value: str, checksum_algorithm: ChecksumAlgorithm):
+def validate_checksum_value(checksum_value: str, checksum_algorithm: ChecksumAlgorithm) -> bool:
     try:
         checksum = base64.b64decode(checksum_value)
-    except Exception as e:
-        raise InvalidRequest(
-            f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
-        ) from e
+    except Exception:
+        return False
 
     match checksum_algorithm:
         case ChecksumAlgorithm.CRC32 | ChecksumAlgorithm.CRC32C:
@@ -507,7 +505,4 @@ def validate_checksum_value(checksum_value: str, checksum_algorithm: ChecksumAlg
         case _:
             valid_length = 0
 
-    if not len(checksum) == valid_length:
-        raise InvalidRequest(
-            f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
-        )
+    return len(checksum) == valid_length
