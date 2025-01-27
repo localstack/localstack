@@ -1668,7 +1668,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[empty_str]": {
-    "recorded-date": "21-01-2025, 19:06:32",
+    "recorded-date": "27-01-2025, 10:17:44",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1804,7 +1804,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[str]": {
-    "recorded-date": "21-01-2025, 19:06:50",
+    "recorded-date": "27-01-2025, 10:18:02",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1940,7 +1940,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[empty_binary]": {
-    "recorded-date": "21-01-2025, 19:07:08",
+    "recorded-date": "27-01-2025, 10:18:18",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2076,7 +2076,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[binary]": {
-    "recorded-date": "21-01-2025, 19:07:26",
+    "recorded-date": "27-01-2025, 10:18:40",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2212,7 +2212,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[bytearray]": {
-    "recorded-date": "21-01-2025, 19:07:44",
+    "recorded-date": "27-01-2025, 10:18:56",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2348,7 +2348,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[str]": {
-    "recorded-date": "21-01-2025, 19:12:30",
+    "recorded-date": "27-01-2025, 10:29:12",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2417,6 +2417,8 @@
             "previousEventId": 4,
             "taskSucceededEventDetails": {
               "output": {
+                "ChecksumCRC32": "KUmHvQ==",
+                "ChecksumType": "FULL_OBJECT",
                 "ETag": "\"2b5df3712557f503a9977a8ea893b2c9\"",
                 "ServerSideEncryption": "AES256"
               },
@@ -2435,6 +2437,8 @@
             "stateExitedEventDetails": {
               "name": "S3PutObject",
               "output": {
+                "ChecksumCRC32": "KUmHvQ==",
+                "ChecksumType": "FULL_OBJECT",
                 "ETag": "\"2b5df3712557f503a9977a8ea893b2c9\"",
                 "ServerSideEncryption": "AES256"
               },
@@ -2448,6 +2452,8 @@
           {
             "executionSucceededEventDetails": {
               "output": {
+                "ChecksumCRC32": "KUmHvQ==",
+                "ChecksumType": "FULL_OBJECT",
                 "ETag": "\"2b5df3712557f503a9977a8ea893b2c9\"",
                 "ServerSideEncryption": "AES256"
               },
@@ -2466,11 +2472,26 @@
           "HTTPStatusCode": 200
         }
       },
-      "s3-object-content-body": "\"text data\""
+      "get-s3-object": {
+        "AcceptRanges": "bytes",
+        "Body": "\"text data\"",
+        "ChecksumCRC32": "KUmHvQ==",
+        "ChecksumType": "FULL_OBJECT",
+        "ContentLength": 11,
+        "ContentType": "text/plain; charset=UTF-8",
+        "ETag": "\"2b5df3712557f503a9977a8ea893b2c9\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[dict]": {
-    "recorded-date": "21-01-2025, 19:12:48",
+    "recorded-date": "27-01-2025, 10:29:28",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2545,6 +2566,8 @@
             "previousEventId": 4,
             "taskSucceededEventDetails": {
               "output": {
+                "ChecksumCRC32": "hnEfWw==",
+                "ChecksumType": "FULL_OBJECT",
                 "ETag": "\"49e31cee5aec8faf3345893addb14346\"",
                 "ServerSideEncryption": "AES256"
               },
@@ -2563,6 +2586,8 @@
             "stateExitedEventDetails": {
               "name": "S3PutObject",
               "output": {
+                "ChecksumCRC32": "hnEfWw==",
+                "ChecksumType": "FULL_OBJECT",
                 "ETag": "\"49e31cee5aec8faf3345893addb14346\"",
                 "ServerSideEncryption": "AES256"
               },
@@ -2576,6 +2601,8 @@
           {
             "executionSucceededEventDetails": {
               "output": {
+                "ChecksumCRC32": "hnEfWw==",
+                "ChecksumType": "FULL_OBJECT",
                 "ETag": "\"49e31cee5aec8faf3345893addb14346\"",
                 "ServerSideEncryption": "AES256"
               },
@@ -2594,13 +2621,28 @@
           "HTTPStatusCode": 200
         }
       },
-      "s3-object-content-body": {
-        "Dict": "Value"
+      "get-s3-object": {
+        "AcceptRanges": "bytes",
+        "Body": {
+          "Dict": "Value"
+        },
+        "ChecksumCRC32": "hnEfWw==",
+        "ChecksumType": "FULL_OBJECT",
+        "ContentLength": 16,
+        "ContentType": "text/plain; charset=UTF-8",
+        "ETag": "\"49e31cee5aec8faf3345893addb14346\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[list]": {
-    "recorded-date": "21-01-2025, 19:13:05",
+    "recorded-date": "27-01-2025, 10:29:44",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2678,6 +2720,8 @@
             "previousEventId": 4,
             "taskSucceededEventDetails": {
               "output": {
+                "ChecksumCRC32": "1F2MPA==",
+                "ChecksumType": "FULL_OBJECT",
                 "ETag": "\"6b23860357f6e63a0272b7f1143a663a\"",
                 "ServerSideEncryption": "AES256"
               },
@@ -2696,6 +2740,8 @@
             "stateExitedEventDetails": {
               "name": "S3PutObject",
               "output": {
+                "ChecksumCRC32": "1F2MPA==",
+                "ChecksumType": "FULL_OBJECT",
                 "ETag": "\"6b23860357f6e63a0272b7f1143a663a\"",
                 "ServerSideEncryption": "AES256"
               },
@@ -2709,6 +2755,8 @@
           {
             "executionSucceededEventDetails": {
               "output": {
+                "ChecksumCRC32": "1F2MPA==",
+                "ChecksumType": "FULL_OBJECT",
                 "ETag": "\"6b23860357f6e63a0272b7f1143a663a\"",
                 "ServerSideEncryption": "AES256"
               },
@@ -2727,11 +2775,26 @@
           "HTTPStatusCode": 200
         }
       },
-      "s3-object-content-body": "[\"List\",\"Data\"]"
+      "get-s3-object": {
+        "AcceptRanges": "bytes",
+        "Body": "[\"List\",\"Data\"]",
+        "ChecksumCRC32": "1F2MPA==",
+        "ChecksumType": "FULL_OBJECT",
+        "ContentLength": 15,
+        "ContentType": "text/plain; charset=UTF-8",
+        "ETag": "\"6b23860357f6e63a0272b7f1143a663a\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[bool]": {
-    "recorded-date": "21-01-2025, 19:13:23",
+    "recorded-date": "27-01-2025, 10:30:01",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2800,6 +2863,8 @@
             "previousEventId": 4,
             "taskSucceededEventDetails": {
               "output": {
+                "ChecksumCRC32": "K81oMA==",
+                "ChecksumType": "FULL_OBJECT",
                 "ETag": "\"68934a3e9455fa72420237eb05902327\"",
                 "ServerSideEncryption": "AES256"
               },
@@ -2818,6 +2883,8 @@
             "stateExitedEventDetails": {
               "name": "S3PutObject",
               "output": {
+                "ChecksumCRC32": "K81oMA==",
+                "ChecksumType": "FULL_OBJECT",
                 "ETag": "\"68934a3e9455fa72420237eb05902327\"",
                 "ServerSideEncryption": "AES256"
               },
@@ -2831,6 +2898,8 @@
           {
             "executionSucceededEventDetails": {
               "output": {
+                "ChecksumCRC32": "K81oMA==",
+                "ChecksumType": "FULL_OBJECT",
                 "ETag": "\"68934a3e9455fa72420237eb05902327\"",
                 "ServerSideEncryption": "AES256"
               },
@@ -2849,11 +2918,26 @@
           "HTTPStatusCode": 200
         }
       },
-      "s3-object-content-body": "false"
+      "get-s3-object": {
+        "AcceptRanges": "bytes",
+        "Body": "false",
+        "ChecksumCRC32": "K81oMA==",
+        "ChecksumType": "FULL_OBJECT",
+        "ContentLength": 5,
+        "ContentType": "text/plain; charset=UTF-8",
+        "ETag": "\"68934a3e9455fa72420237eb05902327\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[num]": {
-    "recorded-date": "21-01-2025, 19:13:41",
+    "recorded-date": "27-01-2025, 10:30:17",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2922,6 +3006,8 @@
             "previousEventId": 4,
             "taskSucceededEventDetails": {
               "output": {
+                "ChecksumCRC32": "9NvfIQ==",
+                "ChecksumType": "FULL_OBJECT",
                 "ETag": "\"cfcd208495d565ef66e7dff9f98764da\"",
                 "ServerSideEncryption": "AES256"
               },
@@ -2940,6 +3026,8 @@
             "stateExitedEventDetails": {
               "name": "S3PutObject",
               "output": {
+                "ChecksumCRC32": "9NvfIQ==",
+                "ChecksumType": "FULL_OBJECT",
                 "ETag": "\"cfcd208495d565ef66e7dff9f98764da\"",
                 "ServerSideEncryption": "AES256"
               },
@@ -2953,6 +3041,8 @@
           {
             "executionSucceededEventDetails": {
               "output": {
+                "ChecksumCRC32": "9NvfIQ==",
+                "ChecksumType": "FULL_OBJECT",
                 "ETag": "\"cfcd208495d565ef66e7dff9f98764da\"",
                 "ServerSideEncryption": "AES256"
               },
@@ -2971,7 +3061,22 @@
           "HTTPStatusCode": 200
         }
       },
-      "s3-object-content-body": "0"
+      "get-s3-object": {
+        "AcceptRanges": "bytes",
+        "Body": "0",
+        "ChecksumCRC32": "9NvfIQ==",
+        "ChecksumType": "FULL_OBJECT",
+        "ContentLength": 1,
+        "ContentType": "text/plain; charset=UTF-8",
+        "ETag": "\"cfcd208495d565ef66e7dff9f98764da\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
     }
   }
 }
