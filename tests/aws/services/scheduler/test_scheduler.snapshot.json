@@ -27,5 +27,277 @@
         }
       }
     }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(0 1 * * * *)]": {
+    "recorded-date": "26-01-2025, 15:45:53",
+    "recorded-content": {
+      "invalid-schedule-expression": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Invalid Schedule Expression cron(0 1 * * * *)."
+        },
+        "Message": "Invalid Schedule Expression cron(0 1 * * * *).",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(7 20 * * NOT *)]": {
+    "recorded-date": "26-01-2025, 15:45:53",
+    "recorded-content": {
+      "invalid-schedule-expression": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Invalid Schedule Expression cron(7 20 * * NOT *)."
+        },
+        "Message": "Invalid Schedule Expression cron(7 20 * * NOT *).",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(INVALID)]": {
+    "recorded-date": "26-01-2025, 15:45:54",
+    "recorded-content": {
+      "invalid-schedule-expression": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Invalid Schedule Expression cron(INVALID)."
+        },
+        "Message": "Invalid Schedule Expression cron(INVALID).",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(0 dummy ? * MON-FRI *)]": {
+    "recorded-date": "26-01-2025, 15:45:54",
+    "recorded-content": {
+      "invalid-schedule-expression": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Invalid Schedule Expression cron(0 dummy ? * MON-FRI *)."
+        },
+        "Message": "Invalid Schedule Expression cron(0 dummy ? * MON-FRI *).",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(71 8 1 * ? *)]": {
+    "recorded-date": "26-01-2025, 15:45:54",
+    "recorded-content": {
+      "invalid-schedule-expression": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Invalid Schedule Expression cron(71 8 1 * ? *)."
+        },
+        "Message": "Invalid Schedule Expression cron(71 8 1 * ? *).",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron()]": {
+    "recorded-date": "26-01-2025, 15:45:55",
+    "recorded-content": {
+      "invalid-schedule-expression": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Invalid Schedule Expression cron()."
+        },
+        "Message": "Invalid Schedule Expression cron().",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(10 seconds)]": {
+    "recorded-date": "26-01-2025, 15:45:55",
+    "recorded-content": {
+      "invalid-schedule-expression": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Invalid Schedule Expression rate(10 seconds)."
+        },
+        "Message": "Invalid Schedule Expression rate(10 seconds).",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(10 years)]": {
+    "recorded-date": "26-01-2025, 15:45:56",
+    "recorded-content": {
+      "invalid-schedule-expression": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Invalid Schedule Expression rate(10 years)."
+        },
+        "Message": "Invalid Schedule Expression rate(10 years).",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate()]": {
+    "recorded-date": "26-01-2025, 15:45:56",
+    "recorded-content": {
+      "invalid-schedule-expression": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Invalid Schedule Expression rate()."
+        },
+        "Message": "Invalid Schedule Expression rate().",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(10)]": {
+    "recorded-date": "26-01-2025, 15:45:56",
+    "recorded-content": {
+      "invalid-schedule-expression": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Invalid Schedule Expression rate(10)."
+        },
+        "Message": "Invalid Schedule Expression rate(10).",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(10 minutess)]": {
+    "recorded-date": "26-01-2025, 15:45:57",
+    "recorded-content": {
+      "invalid-schedule-expression": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Invalid Schedule Expression rate(10 minutess)."
+        },
+        "Message": "Invalid Schedule Expression rate(10 minutess).",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(foo minutes)]": {
+    "recorded-date": "26-01-2025, 15:45:57",
+    "recorded-content": {
+      "invalid-schedule-expression": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Invalid Schedule Expression rate(foo minutes)."
+        },
+        "Message": "Invalid Schedule Expression rate(foo minutes).",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(-10 minutes)]": {
+    "recorded-date": "26-01-2025, 15:45:57",
+    "recorded-content": {
+      "invalid-schedule-expression": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Invalid Schedule Expression rate(-10 minutes)."
+        },
+        "Message": "Invalid Schedule Expression rate(-10 minutes).",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate( 10 minutes )]": {
+    "recorded-date": "26-01-2025, 15:45:58",
+    "recorded-content": {
+      "invalid-schedule-expression": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Invalid Schedule Expression rate( 10 minutes )."
+        },
+        "Message": "Invalid Schedule Expression rate( 10 minutes ).",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[ rate(10 minutes)]": {
+    "recorded-date": "26-01-2025, 15:45:58",
+    "recorded-content": {
+      "invalid-schedule-expression": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Invalid Schedule Expression  rate(10 minutes)."
+        },
+        "Message": "Invalid Schedule Expression  rate(10 minutes).",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[at(2021-12-31T23:59:59Z)]": {
+    "recorded-date": "26-01-2025, 15:45:59",
+    "recorded-content": {
+      "invalid-schedule-expression": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Invalid Schedule Expression at(2021-12-31T23:59:59Z)."
+        },
+        "Message": "Invalid Schedule Expression at(2021-12-31T23:59:59Z).",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[at(2021-12-31)]": {
+    "recorded-date": "26-01-2025, 15:45:59",
+    "recorded-content": {
+      "invalid-schedule-expression": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Invalid Schedule Expression at(2021-12-31)."
+        },
+        "Message": "Invalid Schedule Expression at(2021-12-31).",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

@@ -7,5 +7,56 @@
   },
   "tests/aws/services/scheduler/test_scheduler.py::test_untag_resource": {
     "last_validated_date": "2024-12-04T10:08:11+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[ rate(10 minutes)]": {
+    "last_validated_date": "2025-01-26T15:45:58+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[at(2021-12-31)]": {
+    "last_validated_date": "2025-01-26T15:45:59+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[at(2021-12-31T23:59:59Z)]": {
+    "last_validated_date": "2025-01-26T15:45:59+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron()]": {
+    "last_validated_date": "2025-01-26T15:45:55+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(0 1 * * * *)]": {
+    "last_validated_date": "2025-01-26T15:45:53+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(0 dummy ? * MON-FRI *)]": {
+    "last_validated_date": "2025-01-26T15:45:54+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(7 20 * * NOT *)]": {
+    "last_validated_date": "2025-01-26T15:45:53+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(71 8 1 * ? *)]": {
+    "last_validated_date": "2025-01-26T15:45:54+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(INVALID)]": {
+    "last_validated_date": "2025-01-26T15:45:54+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate( 10 minutes )]": {
+    "last_validated_date": "2025-01-26T15:45:58+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate()]": {
+    "last_validated_date": "2025-01-26T15:45:56+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(-10 minutes)]": {
+    "last_validated_date": "2025-01-26T15:45:57+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(10 minutess)]": {
+    "last_validated_date": "2025-01-26T15:45:57+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(10 seconds)]": {
+    "last_validated_date": "2025-01-26T15:45:55+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(10 years)]": {
+    "last_validated_date": "2025-01-26T15:45:56+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(10)]": {
+    "last_validated_date": "2025-01-26T15:45:56+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(foo minutes)]": {
+    "last_validated_date": "2025-01-26T15:45:57+00:00"
   }
 }
