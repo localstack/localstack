@@ -16,6 +16,11 @@
           "my_attribute_no_2": {
             "DataType": "String",
             "StringValue.$": "$.MessageAttributeValue2"
+          },
+          // Test the parsing of soft-keywords as payload templates key bindings.
+          "Version": {
+            "DataType": "String",
+            "StringValue": "string value literal"
           }
         }
       },
