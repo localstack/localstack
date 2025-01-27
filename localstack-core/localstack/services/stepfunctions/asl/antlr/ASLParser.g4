@@ -572,4 +572,5 @@ soft_string_keyword:
     | FULL
     | NONE
     | CATCH
+    | VERSION
 ;
