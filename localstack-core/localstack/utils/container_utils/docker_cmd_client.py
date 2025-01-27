@@ -15,6 +15,7 @@ from localstack.utils.container_utils.container_client import (
     CancellableStream,
     ContainerClient,
     ContainerException,
+    DockerContainerStats,
     DockerContainerStatus,
     DockerNotAvailable,
     DockerPlatform,
@@ -54,6 +55,35 @@ class CancellableProcessStream(CancellableStream):
 
     def close(self):
         return self.process.terminate()
+
+
+def parse_size_string(size_str: str) -> int:
+    """Parse human-readable size strings from Docker CLI into bytes"""
+    size_str = size_str.strip().replace(" ", "").upper()
+    if size_str == "0B":
+        return 0
+
+    # Match value and unit using regex
+    match = re.match(r"^([\d.]+)([A-Za-z]+)$", size_str)
+    if not match:
+        return 0
+
+    value = float(match.group(1))
+    unit = match.group(2)
+
+    unit_factors = {
+        "B": 1,
+        "KB": 10**3,
+        "MB": 10**6,
+        "GB": 10**9,
+        "TB": 10**12,
+        "KIB": 2**10,
+        "MIB": 2**20,
+        "GIB": 2**30,
+        "TIB": 2**40,
+    }
+
+    return int(value * unit_factors.get(unit, 1))
 
 
 class CmdDockerClient(ContainerClient):
@@ -112,12 +142,43 @@ class CmdDockerClient(ContainerClient):
         else:
             return DockerContainerStatus.DOWN
 
-    def get_container_stats(self, container_name: str) -> dict:
+    def get_container_stats(self, container_name: str) -> DockerContainerStats:
         cmd = self._docker_cmd()
         cmd += ["stats", "--no-stream", "--format", "{{json .}}", container_name]
         cmd_result = run(cmd)
+        raw_stats = json.loads(cmd_result)
 
-        return json.loads(cmd_result)
+        # BlockIO (read, write)
+        block_io_parts = raw_stats["BlockIO"].split("/")
+        block_read = parse_size_string(block_io_parts[0])
+        block_write = parse_size_string(block_io_parts[1])
+
+        # CPU percentage
+        cpu_percentage = float(raw_stats["CPUPerc"].strip("%"))
+
+        # Memory (usage, limit)
+        mem_parts = raw_stats["MemUsage"].split("/")
+        mem_used = parse_size_string(mem_parts[0])
+        mem_limit = parse_size_string(mem_parts[1])
+        mem_percentage = float(raw_stats["MemPerc"].strip("%"))
+
+        # Network (rx, tx)
+        net_parts = raw_stats["NetIO"].split("/")
+        net_rx = parse_size_string(net_parts[0])
+        net_tx = parse_size_string(net_parts[1])
+
+        return DockerContainerStats(
+            Container=raw_stats["ID"],
+            ID=raw_stats["ID"],
+            Name=raw_stats["Name"],
+            BlockIO=(block_read, block_write),
+            CPUPerc=round(cpu_percentage, 2),
+            MemPerc=round(mem_percentage, 2),
+            MemUsage=(mem_used, mem_limit),
+            NetIO=(net_rx, net_tx),
+            PIDs=int(raw_stats["PIDs"]),
+            SDKStats=None,
+        )
 
     def stop_container(self, container_name: str, timeout: int = 10) -> None:
         cmd = self._docker_cmd()

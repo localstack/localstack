@@ -11,7 +11,18 @@ import tempfile
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from pathlib import Path
-from typing import Dict, List, Literal, NamedTuple, Optional, Protocol, Tuple, Union, get_args
+from typing import (
+    Dict,
+    List,
+    Literal,
+    NamedTuple,
+    Optional,
+    Protocol,
+    Tuple,
+    TypedDict,
+    Union,
+    get_args,
+)
 
 import dotenv
 
@@ -33,6 +44,21 @@ class DockerContainerStatus(Enum):
     NON_EXISTENT = 0
     UP = 1
     PAUSED = 2
+
+
+class DockerContainerStats(TypedDict):
+    """Container usage statistics"""
+
+    Container: str
+    ID: str
+    Name: str
+    BlockIO: tuple[int, int]
+    CPUPerc: float
+    MemPerc: float
+    MemUsage: tuple[int, int]
+    NetIO: tuple[int, int]
+    PIDs: int
+    SDKStats: dict | None
 
 
 class ContainerException(Exception):
@@ -525,7 +551,7 @@ class ContainerClient(metaclass=ABCMeta):
         """Returns the status of the container with the given name"""
         pass
 
-    def get_container_stats(self, container_name: str) -> dict:
+    def get_container_stats(self, container_name: str) -> DockerContainerStats:
         """Returns the usage statistics of the container with the given name"""
         pass
 
