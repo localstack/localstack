@@ -58,7 +58,7 @@ class DockerContainerStats(TypedDict):
     MemUsage: tuple[int, int]
     NetIO: tuple[int, int]
     PIDs: int
-    SDKStats: dict | None
+    SDKStats: Optional[dict]
 
 
 class ContainerException(Exception):
