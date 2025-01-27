@@ -299,6 +299,7 @@ from localstack.services.s3.validation import (
     validate_bucket_analytics_configuration,
     validate_bucket_intelligent_tiering_configuration,
     validate_canned_acl,
+    validate_checksum_value,
     validate_cors_configuration,
     validate_inventory_configuration,
     validate_lifecycle_configuration,
@@ -782,14 +783,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
             s3_stored_object.write(body)
 
-            if (
-                s3_object.checksum_algorithm
-                and s3_object.checksum_value != s3_stored_object.checksum
-            ):
-                self._storage_backend.remove(bucket_name, s3_object)
-                raise InvalidRequest(
-                    f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
-                )
+            if s3_object.checksum_algorithm:
+                if not validate_checksum_value(s3_object.checksum_value, checksum_algorithm):
+                    self._storage_backend.remove(bucket_name, s3_object)
+                    raise InvalidRequest(
+                        f"Value for x-amz-checksum-{s3_object.checksum_algorithm.lower()} header is invalid."
+                    )
+                elif s3_object.checksum_value != s3_stored_object.checksum:
+                    self._storage_backend.remove(bucket_name, s3_object)
+                    raise BadDigest(
+                        f"The {checksum_algorithm.upper()} you specified did not match the calculated checksum."
+                    )
 
             # TODO: handle ContentMD5 and ChecksumAlgorithm in a handler for all requests except requests with a
             #  streaming body. We can use the specs to verify which operations needs to have the checksum validated
@@ -820,6 +824,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if s3_object.checksum_algorithm:
             response[f"Checksum{s3_object.checksum_algorithm}"] = s3_object.checksum_value
+            response["ChecksumType"] = getattr(s3_object, "checksum_type", ChecksumType.FULL_OBJECT)
 
         if s3_bucket.lifecycle_rules:
             if expiration_header := self._get_expiration_header(
@@ -962,10 +967,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["StatusCode"] = 206
             if range_data.content_length == s3_object.size and checksum_value:
                 response[f"Checksum{checksum_algorithm.upper()}"] = checksum_value
+                response["ChecksumType"] = getattr(
+                    s3_object, "checksum_type", ChecksumType.FULL_OBJECT
+                )
         else:
             response["Body"] = s3_stored_object
             if checksum_value:
                 response[f"Checksum{checksum_algorithm.upper()}"] = checksum_value
+                response["ChecksumType"] = getattr(
+                    s3_object, "checksum_type", ChecksumType.FULL_OBJECT
+                )
 
         add_encryption_to_response(response, s3_object=s3_object)
 
@@ -1608,6 +1619,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
                 if s3_object.checksum_algorithm:
                     object_data["ChecksumAlgorithm"] = [s3_object.checksum_algorithm]
+                    object_data["ChecksumType"] = getattr(
+                        s3_object, "checksum_type", ChecksumType.FULL_OBJECT
+                    )
 
                 s3_objects.append(object_data)
 
@@ -1742,6 +1756,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
                 if s3_object.checksum_algorithm:
                     object_data["ChecksumAlgorithm"] = [s3_object.checksum_algorithm]
+                    object_data["ChecksumType"] = getattr(
+                        s3_object, "checksum_type", ChecksumType.FULL_OBJECT
+                    )
 
                 s3_objects.append(object_data)
 
@@ -1884,6 +1901,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
                 if version.checksum_algorithm:
                     object_version["ChecksumAlgorithm"] = [version.checksum_algorithm]
+                    object_version["ChecksumType"] = getattr(
+                        version, "checksum_type", ChecksumType.FULL_OBJECT
+                    )
 
                 object_versions.append(object_version)
 
@@ -1971,7 +1991,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 checksum_value = s3_object.checksum_value.split("-")[0]
             else:
                 checksum_value = s3_object.checksum_value
-            response["Checksum"] = {f"Checksum{checksum_algorithm.upper()}": checksum_value}
+            response["Checksum"] = {
+                f"Checksum{checksum_algorithm.upper()}": checksum_value,
+                "ChecksumType": getattr(s3_object, "checksum_type", ChecksumType.FULL_OBJECT),
+            }
 
         response["LastModified"] = s3_object.last_modified
 
@@ -2071,9 +2094,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not system_metadata.get("ContentType"):
             system_metadata["ContentType"] = "binary/octet-stream"
 
-        # TODO: validate the algorithm?
         checksum_algorithm = request.get("ChecksumAlgorithm")
-        # ChecksumCRC64NVME
         if checksum_algorithm and checksum_algorithm not in CHECKSUM_ALGORITHMS:
             raise InvalidRequest(
                 "Checksum algorithm provided is unsupported. Please try again with any of the valid types: [CRC32, CRC32C, SHA1, SHA256]"
@@ -2254,6 +2275,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
             if checksum_algorithm and s3_part.checksum_value != stored_s3_part.checksum:
                 stored_multipart.remove_part(s3_part)
+                # TODO: validate this to be BadDigest as well
                 raise InvalidRequest(
                     f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
                 )

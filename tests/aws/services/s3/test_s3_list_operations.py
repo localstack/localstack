@@ -18,9 +18,6 @@ from localstack.constants import AWS_REGION_US_EAST_1, LOCALHOST_HOSTNAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 
-# TODO: implement new S3 Data Integrity logic (checksums)
-pytestmark = markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumType"])
-
 
 def _bucket_url(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
     return f"{_endpoint_url(region, localstack_host)}/{bucket_name}"

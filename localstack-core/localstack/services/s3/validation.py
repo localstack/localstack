@@ -13,6 +13,7 @@ from localstack.aws.api.s3 import (
     BucketCannedACL,
     BucketLifecycleConfiguration,
     BucketName,
+    ChecksumAlgorithm,
     CORSConfiguration,
     Grant,
     Grantee,
@@ -484,3 +485,24 @@ def validate_sse_c(
             ArgumentName="x-amz-server-side-encryption",
             ArgumentValue="null",
         )
+
+
+def validate_checksum_value(checksum_value: str, checksum_algorithm: ChecksumAlgorithm) -> bool:
+    try:
+        checksum = base64.b64decode(checksum_value)
+    except Exception:
+        return False
+
+    match checksum_algorithm:
+        case ChecksumAlgorithm.CRC32 | ChecksumAlgorithm.CRC32C:
+            valid_length = 4
+        case ChecksumAlgorithm.CRC64NVME:
+            valid_length = 8
+        case ChecksumAlgorithm.SHA1:
+            valid_length = 20
+        case ChecksumAlgorithm.SHA256:
+            valid_length = 32
+        case _:
+            valid_length = 0
+
+    return len(checksum) == valid_length
