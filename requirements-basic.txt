@@ -6,7 +6,7 @@
 #
 build==1.2.2.post1
     # via localstack-core (pyproject.toml)
-cachetools==5.5.0
+cachetools==5.5.1
     # via localstack-core (pyproject.toml)
 certifi==2024.12.14
     # via requests
@@ -50,7 +50,7 @@ requests==2.32.3
     # via localstack-core (pyproject.toml)
 rich==13.9.4
     # via localstack-core (pyproject.toml)
-semver==3.0.2
+semver==3.0.4
     # via localstack-core (pyproject.toml)
 tailer==0.4.1
     # via localstack-core (pyproject.toml)
