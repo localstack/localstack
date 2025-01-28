@@ -148,3 +148,26 @@ def parse_trace_id(trace_id: str) -> dict[str, str]:
             trace_values[key_value[0].capitalize()] = key_value[1]
 
     return trace_values
+
+
+def accept_header_matches_binary_media_types(accept: str | None, binary_media_types: list[str]):
+    accept_type_and_subtype = accept.split(",")[0].split(";")[0].split("/")
+    if len(accept_type_and_subtype) != 2:
+        return False
+    accept_type, accept_subtype = accept_type_and_subtype
+
+    for bmt in binary_media_types:
+        type_and_subtype = bmt.split(";")[0].split("/")
+        if len(type_and_subtype) != 2:
+            continue
+        _type, subtype = type_and_subtype
+        if _type == "*":
+            continue
+
+        if subtype == "*" and accept_type == _type:
+            return True
+
+        if accept_type == _type and accept_subtype == subtype:
+            return True
+
+    return False

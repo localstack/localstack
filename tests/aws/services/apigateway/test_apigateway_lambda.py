@@ -1455,7 +1455,7 @@ def test_aws_proxy_binary_response(
     assert _assert_invoke(accept="image/png,image/*,*/*;q=0.8", expect_binary=True)
 
     # lambda is returning that the payload is not b64 encoded
-    decoded_response.pop("isBase64Encoded")
+    decoded_response["isBase64Encoded"] = False
     assert _assert_invoke(accept="image/png", expect_binary=False)
 
     patch_operations = [
