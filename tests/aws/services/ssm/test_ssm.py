@@ -160,7 +160,8 @@ class TestSSM:
         snapshot.add_transformer(snapshot.transform.key_value("Name"))
 
     @markers.aws.validated
-    def test_get_parameter_history(self, create_parameter, aws_client):
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Tier", "$..Policies"])
+    def test_get_parameter_history(self, create_parameter, aws_client, snapshot):
         param_name = f"param-{short_uid()}"
         create_parameter(Name=param_name, Value="test", Type="String")
         create_parameter(Name=param_name, Value="test2", Type="String", Overwrite=True)
@@ -172,6 +173,10 @@ class TestSSM:
         assert response["Parameters"][0]["Version"] == 1
         assert response["Parameters"][2]["Value"] == "test3"
         assert response["Parameters"][2]["Version"] == 3
+
+        snapshot.match("get-parameter-history-response", response)
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+        snapshot.add_transformer(snapshot.transform.key_value("LastModifiedUser"))
 
     @markers.aws.validated
     def test_get_inexistent_maintenance_window(self, aws_client):
