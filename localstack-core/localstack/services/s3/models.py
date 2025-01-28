@@ -496,7 +496,6 @@ class S3Multipart:
                 checksum_hash = CombinedCrcHash(self.object.checksum_algorithm)
 
         pos = 0
-        _checksum_value = 0
         parts_map = {}
         for index, part in enumerate(parts):
             part_number = part["PartNumber"]

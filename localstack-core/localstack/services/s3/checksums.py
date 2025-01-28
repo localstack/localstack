@@ -1,5 +1,6 @@
 # Code ported/inspired from https://github.com/aliyun/aliyun-oss-python-sdk/blob/master/oss2/crc64_combine.py
-# MIT licensed
+# This code implements checksum combinations: the ability to get the full checksum of an object with the checksums of
+# its parts.
 import sys
 
 _CRC64NVME_POLYNOMIAL = 0xAD93D23594C93659
@@ -129,6 +130,17 @@ def _verify_params(size_bits: int, init_crc: int, xor_out: int):
 
 
 def create_combine_function(poly: int, size_bits: int, init_crc=~0, rev=True, xor_out=0):
+    """
+    The function returns the proper function depending on the checksum algorithm wanted.
+    Example, for the CRC64NVME function, you need to pass the proper polynomial, its size (64), and the proper XOR_OUT
+    (taken for the botocore/httpchecksums.py file).
+    :param poly: the CRC polynomial used (each algorithm has its own, for ex. CRC32C is called Castagnioli)
+    :param size_bits: the size of the algorithm, 32 for CRC32 and 64 for CRC64
+    :param init_crc: the init_crc, always 0 in our case
+    :param rev: reversing the polynomial, true in our case as well
+    :param xor_out: value used to initialize the register as we don't specify init_crc
+    :return:
+    """
     size_bits, init_crc, xor_out = _verify_params(size_bits, init_crc, xor_out)
 
     mask = (1 << size_bits) - 1
