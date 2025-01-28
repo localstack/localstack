@@ -252,11 +252,20 @@ class EC2InstanceProvider(ResourceProvider[EC2InstanceProperties]):
                 resource_model=model,
                 custom_context=request.custom_context,
             )
-        model["PublicIp"] = instance["PublicIpAddress"]
-        model["PublicDnsName"] = instance["PublicDnsName"]
+
         model["PrivateIp"] = instance["PrivateIpAddress"]
         model["PrivateDnsName"] = instance["PrivateDnsName"]
         model["AvailabilityZone"] = instance["Placement"]["AvailabilityZone"]
+
+        # PublicIp is not guaranteed to be returned by the request:
+        # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ec2.Instance.html#instancepublicip
+        # it says it is supposed to return an empty string, but trying to add an output with the value will result in
+        # an error: `Attribute 'PublicIp' does not exist`
+        if public_ip := instance.get("PublicIpAddress"):
+            model["PublicIp"] = public_ip
+
+        if public_dns_name := instance.get("PublicDnsName"):
+            model["PublicDnsName"] = public_dns_name
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
