@@ -5,7 +5,7 @@ import platform
 from typing import Optional
 
 from localstack import config
-from localstack import VERSION, ENV_PRO_ACTIVATED
+from localstack.constants import ENV_PRO_ACTIVATED, VERSION
 from localstack.runtime import hooks
 from localstack.utils.bootstrap import Container
 from localstack.utils.files import rm_rf
@@ -29,6 +29,8 @@ class ClientMetadata:
     is_ci: bool
     is_docker: bool
     is_testing: bool
+    product: str
+    edition: str
 
     def __repr__(self):
         d = dataclasses.asdict(self)
