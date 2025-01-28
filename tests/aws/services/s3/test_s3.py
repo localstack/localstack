@@ -778,14 +778,6 @@ class TestS3:
         snapshot.match("get-object-attrs-v1", response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..NextKeyMarker",
-            "$..NextUploadIdMarker",
-            # FIXME: S3 data integrity
-            "$..Parts..ChecksumCRC32",
-        ],
-    )
     def test_multipart_and_list_parts(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -11382,8 +11374,6 @@ class TestS3SSECEncryption:
         snapshot.match("copy-obj-target-double-encryption", e.value.response)
 
     @markers.aws.validated
-    # TODO: fix S3 data integrity
-    @markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumCRC32"])
     def test_multipart_upload_sse_c(self, aws_client, s3_bucket, snapshot):
         snapshot.add_transformer(
             [
@@ -11874,14 +11864,14 @@ class TestS3PutObjectChecksum:
 
 class TestS3MultipartUploadChecksum:
     @markers.aws.validated
-    # TODO: fix S3 data integrity
     @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$.complete-multipart-wrong-parts-checksum.Error.PartNumber",
-            "$..ChecksumType",
-        ]
+        # it seems the PartNumber might not be deterministic, possibly parallelized on S3 side?
+        paths=["$.complete-multipart-wrong-parts-checksum.Error.PartNumber"]
     )
-    def test_complete_multipart_parts_checksum(self, s3_bucket, snapshot, aws_client):
+    @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256"])
+    def test_complete_multipart_parts_checksum_composite(
+        self, s3_bucket, snapshot, aws_client, algorithm
+    ):
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("Bucket", reference_replacement=False),
@@ -11894,7 +11884,7 @@ class TestS3MultipartUploadChecksum:
 
         key_name = "test-multipart-checksum"
         response = aws_client.s3.create_multipart_upload(
-            Bucket=s3_bucket, Key=key_name, ChecksumAlgorithm="SHA256"
+            Bucket=s3_bucket, Key=key_name, ChecksumAlgorithm=algorithm, ChecksumType="COMPOSITE"
         )
         snapshot.match("create-mpu-checksum", response)
         upload_id = response["UploadId"]
@@ -11908,6 +11898,9 @@ class TestS3MultipartUploadChecksum:
         for part in range(parts):
             # Write contents to memory rather than a file.
             part_number = part + 1
+            if part_number == parts:
+                # the last part does not need to be 5mb, so make it smaller
+                part_data = part_data[:10]
             upload_file_object = BytesIO(part_data)
             response = aws_client.s3.upload_part(
                 Bucket=s3_bucket,
@@ -11915,14 +11908,14 @@ class TestS3MultipartUploadChecksum:
                 Body=upload_file_object,
                 PartNumber=part_number,
                 UploadId=upload_id,
-                ChecksumAlgorithm="SHA256",
+                ChecksumAlgorithm=algorithm,
             )
             snapshot.match(f"upload-part-{part}", response)
             multipart_upload_parts.append(
                 {
                     "ETag": response["ETag"],
                     "PartNumber": part_number,
-                    "ChecksumSHA256": response["ChecksumSHA256"],
+                    f"Checksum{algorithm}": response[f"Checksum{algorithm}"],
                 }
             )
 
@@ -11930,12 +11923,12 @@ class TestS3MultipartUploadChecksum:
         snapshot.match("list-parts", response)
 
         with pytest.raises(ClientError) as e:
-            # testing completing the multipart without the checksum of parts
+            # testing completing the multipart with bad checksums of parts
             multipart_upload_parts_wrong_checksum = [
                 {
                     "ETag": upload_part["ETag"],
                     "PartNumber": upload_part["PartNumber"],
-                    "ChecksumSHA256": hash_sha256("aaa"),
+                    f"Checksum{algorithm}": get_checksum_for_algorithm(algorithm, b"bbb"),
                 }
                 for upload_part in multipart_upload_parts
             ]
@@ -11959,7 +11952,7 @@ class TestS3MultipartUploadChecksum:
                 MultipartUpload={"Parts": multipart_upload_parts_no_checksum},
                 UploadId=upload_id,
             )
-        snapshot.match("complete-multipart-wrong-checksum", e.value.response)
+        snapshot.match("complete-multipart-no-checksum", e.value.response)
 
         response = aws_client.s3.complete_multipart_upload(
             Bucket=s3_bucket,
@@ -11989,8 +11982,87 @@ class TestS3MultipartUploadChecksum:
         snapshot.match("get-object-attrs", object_attrs)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumType"])
-    def test_multipart_parts_checksum_exceptions(self, s3_bucket, snapshot, aws_client):
+    @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256", "CRC64NVME"])
+    @pytest.mark.parametrize("checksum_type", ["COMPOSITE", "FULL_OBJECT"])
+    def test_multipart_checksum_type_compatibility(
+        self, aws_client, s3_bucket, snapshot, algorithm, checksum_type
+    ):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("UploadId"),
+            ]
+        )
+        try:
+            key_name = "test-multipart-checksum-compat"
+            response = aws_client.s3.create_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                ChecksumAlgorithm=algorithm,
+                ChecksumType=checksum_type,
+            )
+            snapshot.match("create-mpu-checksum", response)
+        except ClientError as e:
+            snapshot.match("create-mpu-checksum-exc", e.response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256", "CRC64NVME"])
+    def test_multipart_checksum_type_default_for_checksum(
+        self, aws_client, s3_bucket, snapshot, algorithm
+    ):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("UploadId"),
+            ]
+        )
+        # test the default ChecksumType for each ChecksumAlgorithm
+        key_name = "test-multipart-checksum-default"
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket, Key=key_name, ChecksumAlgorithm=algorithm
+        )
+        snapshot.match("create-mpu-default-checksum-type", response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256", "CRC64NVME"])
+    def test_multipart_upload_part_checksum_exception(
+        self, aws_client, s3_bucket, snapshot, algorithm
+    ):
+        key_name = "test-multipart-checksum-default"
+        response = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
+        upload_id = response["UploadId"]
+        body = b"right body"
+
+        with pytest.raises(ClientError) as e:
+            kwargs = {
+                f"Checksum{algorithm}": short_uid(),
+            }
+            aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name,
+                UploadId=upload_id,
+                PartNumber=1,
+                Body=body,
+                ChecksumAlgorithm=algorithm,
+                **kwargs,
+            )
+        snapshot.match("put-wrong-checksum-no-b64", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            kwargs = {f"Checksum{algorithm}": get_checksum_for_algorithm(algorithm, b"bad data")}
+            aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name,
+                UploadId=upload_id,
+                PartNumber=1,
+                Body=body,
+                ChecksumAlgorithm=algorithm,
+                **kwargs,
+            )
+        snapshot.match("put-wrong-checksum-value", e.value.response)
+
+    @markers.aws.validated
+    def test_multipart_parts_checksum_exceptions_composite(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("Bucket", reference_replacement=False),
@@ -12002,18 +12074,27 @@ class TestS3MultipartUploadChecksum:
         )
 
         key_name = "test-multipart-checksum-exc"
-
         with pytest.raises(ClientError) as e:
             aws_client.s3.create_multipart_upload(
                 Bucket=s3_bucket, Key=key_name, ChecksumAlgorithm="TEST"
             )
         snapshot.match("create-mpu-wrong-checksum-algo", e.value.response)
 
-        response = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
-        snapshot.match("create-mpu-no-checksum", response)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.create_multipart_upload(
+                Bucket=s3_bucket, Key=key_name, ChecksumType="COMPOSITE"
+            )
+        snapshot.match("create-mpu-no-checksum-algo-with-type", e.value.response)
+
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket, Key=key_name, ChecksumType="COMPOSITE", ChecksumAlgorithm="CRC32"
+        )
+        snapshot.match("create-mpu-composite-checksum", response)
         upload_id = response["UploadId"]
 
-        # data must be at least 5MiB
+        list_multiparts = aws_client.s3.list_multipart_uploads(Bucket=s3_bucket)
+        snapshot.match("list-multiparts", list_multiparts)
+
         part_data = "abc"
         checksum_part = hash_sha256(to_bytes(part_data))
 
@@ -12043,6 +12124,23 @@ class TestS3MultipartUploadChecksum:
             )
         snapshot.match("complete-part-with-checksum", e.value.response)
 
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                MultipartUpload={
+                    "Parts": [
+                        {
+                            "ETag": upload_resp["ETag"],
+                            "PartNumber": 1,
+                        }
+                    ],
+                },
+                UploadId=upload_id,
+                ChecksumType="FULL_OBJECT",
+            )
+        snapshot.match("complete-part-with-bad-checksum-type", e.value.response)
+
         response = aws_client.s3.create_multipart_upload(
             Bucket=s3_bucket, Key=key_name, ChecksumAlgorithm="SHA256"
         )
@@ -12057,7 +12155,440 @@ class TestS3MultipartUploadChecksum:
                 PartNumber=1,
                 UploadId=upload_id,
             )
-        snapshot.match("upload-part-no-checksum-exc", e.value.response)
+        snapshot.match("upload-part-different-checksum-exc", e.value.response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        # it seems the PartNumber might not be deterministic, possibly parallelized on S3 side?
+        paths=[
+            "$.complete-multipart-wrong-parts-checksum.Error.PartNumber",
+            "$.complete-multipart-wrong-parts-checksum.Error.ETag",
+        ]
+    )
+    @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "CRC64NVME"])
+    def test_complete_multipart_parts_checksum_full_object(
+        self, s3_bucket, snapshot, aws_client, algorithm
+    ):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value("ID", reference_replacement=False),
+            ]
+        )
+
+        key_name = "test-multipart-checksum"
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket, Key=key_name, ChecksumAlgorithm=algorithm, ChecksumType="FULL_OBJECT"
+        )
+        snapshot.match("create-mpu-checksum", response)
+        upload_id = response["UploadId"]
+
+        # data must be at least 5MiB
+        part_data = "a" * (5_242_880 + 1)
+        part_data = to_bytes(part_data)
+        full_object_hash = get_checksum_for_algorithm(
+            algorithm, to_bytes(part_data * 2 + part_data[:10])
+        )
+
+        parts = 3
+        multipart_upload_parts = []
+        for part in range(parts):
+            # Write contents to memory rather than a file.
+            part_number = part + 1
+            if part_number == parts:
+                # the last part does not need to be 5mb, so make it smaller
+                part_data = part_data[:10]
+            upload_file_object = BytesIO(part_data)
+            response = aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=upload_file_object,
+                PartNumber=part_number,
+                UploadId=upload_id,
+                ChecksumAlgorithm=algorithm,
+            )
+            snapshot.match(f"upload-part-{part}", response)
+            # with `FULL_OBJECT`, there is no need to store intermediate part checksums
+            multipart_upload_parts.append({"ETag": response["ETag"], "PartNumber": part_number})
+
+        response = aws_client.s3.list_parts(Bucket=s3_bucket, Key=key_name, UploadId=upload_id)
+        snapshot.match("list-parts", response)
+
+        with pytest.raises(ClientError) as e:
+            # testing completing the multipart with bad checksums of parts
+            multipart_upload_parts_wrong_checksum = [
+                {
+                    "ETag": upload_part["ETag"],
+                    "PartNumber": upload_part["PartNumber"],
+                    f"Checksum{algorithm}": get_checksum_for_algorithm(algorithm, b"bbb"),
+                }
+                for upload_part in multipart_upload_parts
+            ]
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                MultipartUpload={"Parts": multipart_upload_parts_wrong_checksum},
+                UploadId=upload_id,
+            )
+        snapshot.match("complete-multipart-wrong-parts-checksum", e.value.response)
+
+        kwargs = {f"Checksum{algorithm.upper()}": full_object_hash}
+        response = aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={"Parts": multipart_upload_parts},
+            UploadId=upload_id,
+            ChecksumType="FULL_OBJECT",
+            **kwargs,
+        )
+        snapshot.match("complete-multipart-checksum", response)
+
+        get_object_with_checksum = aws_client.s3.get_object(
+            Bucket=s3_bucket, Key=key_name, ChecksumMode="ENABLED"
+        )
+        # empty the stream, it's a 15MB string, we don't need to snapshot that
+        get_object_with_checksum["Body"].read()
+        snapshot.match("get-object-with-checksum", get_object_with_checksum)
+
+        head_object_with_checksum = aws_client.s3.head_object(
+            Bucket=s3_bucket, Key=key_name, ChecksumMode="ENABLED"
+        )
+        snapshot.match("head-object-with-checksum", head_object_with_checksum)
+
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=key_name,
+            ObjectAttributes=["Checksum", "ETag"],
+        )
+        snapshot.match("get-object-attrs", object_attrs)
+
+    @markers.aws.validated
+    def test_multipart_parts_checksum_exceptions_full_object(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value("ID", reference_replacement=False),
+            ]
+        )
+
+        key_name = "test-multipart-checksum-exc"
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.create_multipart_upload(
+                Bucket=s3_bucket, Key=key_name, ChecksumType="FULL_OBJECT"
+            )
+        snapshot.match("create-mpu-no-checksum-algo-with-type", e.value.response)
+
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket, Key=key_name, ChecksumAlgorithm="CRC32C", ChecksumType="FULL_OBJECT"
+        )
+        snapshot.match("create-mpu-checksum-crc32c", response)
+        upload_id = response["UploadId"]
+
+        list_multiparts = aws_client.s3.list_multipart_uploads(Bucket=s3_bucket)
+        snapshot.match("list-multiparts", list_multiparts)
+
+        part_data = "abc"
+        checksum_part = checksum_crc32c(part_data)
+
+        upload_resp = aws_client.s3.upload_part(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body=part_data,
+            PartNumber=1,
+            UploadId=upload_id,
+            ChecksumAlgorithm="CRC32C",
+        )
+        snapshot.match("upload-part-no-checksum-ok", upload_resp)
+
+        mpu_data = {
+            "Parts": [
+                {
+                    "ETag": upload_resp["ETag"],
+                    "PartNumber": 1,
+                    "ChecksumCRC32C": checksum_part,
+                }
+            ],
+        }
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                MultipartUpload=mpu_data,
+                UploadId=upload_id,
+                ChecksumType="COMPOSITE",
+            )
+        snapshot.match("complete-part-bad-checksum-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            composite_hash = checksum_crc32c(base64.b64decode(checksum_part))
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                MultipartUpload=mpu_data,
+                UploadId=upload_id,
+                ChecksumCRC32C=f"{composite_hash}-1",
+            )
+        snapshot.match("complete-part-good-checksum-no-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                MultipartUpload=mpu_data,
+                UploadId=upload_id,
+                ChecksumCRC32C=checksum_part,
+            )
+        snapshot.match("complete-part-only-checksum-algo", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                MultipartUpload=mpu_data,
+                UploadId=upload_id,
+                ChecksumCRC64NVME=checksum_crc64nvme(part_data),
+            )
+        snapshot.match("complete-part-only-checksum-algo-diff", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                MultipartUpload=mpu_data,
+                UploadId=upload_id,
+                ChecksumCRC32C=checksum_crc32c("bad string"),
+                ChecksumType="FULL_OBJECT",
+            )
+        snapshot.match("complete-part-bad-checksum", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                MultipartUpload=mpu_data,
+                UploadId=upload_id,
+                ChecksumCRC32=checksum_crc32("bad string"),
+                ChecksumType="FULL_OBJECT",
+            )
+        snapshot.match("complete-part-bad-checksum-algo", e.value.response)
+
+        complete_mpu = aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload=mpu_data,
+            UploadId=upload_id,
+            ChecksumCRC32C=checksum_part,
+            ChecksumType="FULL_OBJECT",
+        )
+        snapshot.match("complete-success", complete_mpu)
+
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket, Key=key_name, ChecksumAlgorithm="CRC32C", ChecksumType="FULL_OBJECT"
+        )
+        snapshot.match("create-mpu-with-checksum", response)
+        upload_id = response["UploadId"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=part_data,
+                PartNumber=1,
+                UploadId=upload_id,
+                ChecksumAlgorithm="CRC32",
+            )
+        snapshot.match("upload-part-different-checksum-exc", e.value.response)
+
+    @markers.aws.validated
+    def test_complete_multipart_parts_checksum_default(
+        self,
+        s3_bucket,
+        snapshot,
+        aws_client,
+    ):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value("ID", reference_replacement=False),
+            ]
+        )
+
+        key_name = "test-multipart-checksum"
+        response = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("create-mpu-no-checksum", response)
+        upload_id = response["UploadId"]
+
+        list_multiparts = aws_client.s3.list_multipart_uploads(Bucket=s3_bucket)
+        snapshot.match("list-multiparts", list_multiparts)
+
+        data = b"aaa"
+
+        upload_part = aws_client.s3.upload_part(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body=data,
+            PartNumber=1,
+            UploadId=upload_id,
+            ChecksumAlgorithm="CRC32C",
+        )
+        snapshot.match("upload-part-different-checksum-than-default", upload_part)
+
+        list_parts = aws_client.s3.list_parts(Bucket=s3_bucket, Key=key_name, UploadId=upload_id)
+        snapshot.match("list-parts", list_parts)
+
+        multipart_upload_parts = [
+            {
+                "ETag": upload_part["ETag"],
+                "PartNumber": 1,
+                "ChecksumCRC32C": upload_part["ChecksumCRC32C"],
+            }
+        ]
+        multipart_upload_parts_no_checksum = [
+            {"ETag": upload_part["ETag"], "PartNumber": upload_part["PartNumber"]}
+            for upload_part in multipart_upload_parts
+        ]
+
+        with pytest.raises(ClientError) as e:
+            # testing completing the multipart with the parts checksums will fail if the multipart does not have a
+            # configured checksum
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                MultipartUpload={"Parts": multipart_upload_parts},
+                UploadId=upload_id,
+            )
+        snapshot.match("complete-multipart-parts-checksum", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            # testing completing the multipart with different checksum type than uploaded
+            multipart_upload_parts_wrong_checksum = [
+                {
+                    "ETag": upload_part["ETag"],
+                    "PartNumber": upload_part["PartNumber"],
+                    "ChecksumSHA256": hash_sha256(data),
+                }
+                for upload_part in multipart_upload_parts
+            ]
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                MultipartUpload={"Parts": multipart_upload_parts_wrong_checksum},
+                UploadId=upload_id,
+            )
+        snapshot.match("complete-multipart-wrong-parts-checksum", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            # testing completing the multipart with bad checksum type?
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                MultipartUpload={"Parts": multipart_upload_parts_no_checksum},
+                UploadId=upload_id,
+                ChecksumType="FULL_OBJECT",
+            )
+        snapshot.match("complete-multipart-full-object-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            # testing completing the multipart with bad checksum type?
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                MultipartUpload={"Parts": multipart_upload_parts_no_checksum},
+                UploadId=upload_id,
+                ChecksumType="COMPOSITE",
+            )
+        snapshot.match("complete-multipart-composite-type", e.value.response)
+
+        # complete with the checksums even if unspecified
+        response = aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={"Parts": multipart_upload_parts_no_checksum},
+            UploadId=upload_id,
+            # bad composite checksum, seems like it is ignored
+            ChecksumCRC32C=f"{checksum_crc32c(base64.b64decode(checksum_crc32c(data)))}-2",
+        )
+        snapshot.match("complete-multipart-checksum", response)
+
+        get_object_with_checksum = aws_client.s3.get_object(
+            Bucket=s3_bucket, Key=key_name, ChecksumMode="ENABLED"
+        )
+        # empty the stream, it's a 15MB string, we don't need to snapshot that
+        get_object_with_checksum["Body"].read()
+        snapshot.match("get-object-with-checksum", get_object_with_checksum)
+
+        head_object_with_checksum = aws_client.s3.head_object(
+            Bucket=s3_bucket, Key=key_name, ChecksumMode="ENABLED"
+        )
+        snapshot.match("head-object-with-checksum", head_object_with_checksum)
+
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=key_name,
+            ObjectAttributes=["Checksum", "ETag"],
+        )
+        snapshot.match("get-object-attrs", object_attrs)
+
+    @markers.aws.validated
+    def test_multipart_size_validation(self, aws_client, s3_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("Location"),
+            ]
+        )
+        # test the default ChecksumType for each ChecksumAlgorithm
+        key_name = "test-multipart-size"
+        response = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
+        upload_id = response["UploadId"]
+
+        data = b"aaaa"
+
+        upload_part = aws_client.s3.upload_part(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body=data,
+            PartNumber=1,
+            UploadId=upload_id,
+        )
+        snapshot.match("upload-part", upload_part)
+
+        parts = [
+            {
+                "ETag": upload_part["ETag"],
+                "PartNumber": 1,
+            }
+        ]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                MultipartUpload={"Parts": parts},
+                UploadId=upload_id,
+                MpuObjectSize=len(data) + 1,
+            )
+        snapshot.match("complete-multipart-wrong-size", e.value.response)
+
+        success = aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={"Parts": parts},
+            UploadId=upload_id,
+            MpuObjectSize=len(data),
+        )
+        snapshot.match("complete-multipart-good-size", success)
 
 
 def _s3_client_pre_signed_client(conf: Config, endpoint_url: str = None):

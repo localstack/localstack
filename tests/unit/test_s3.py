@@ -182,46 +182,6 @@ class TestS3Utils:
         for bucket_name, expected_result in bucket_names:
             assert s3_utils.is_bucket_name_valid(bucket_name) == expected_result
 
-    def test_verify_checksum(self):
-        valid_checksums = [
-            (
-                "SHA256",
-                b"test data..",
-                {"ChecksumSHA256": "2l26x0trnT0r2AvakoFk2MB7eKVKzYESLMxSAKAzoik="},
-            ),
-            ("CRC32", b"test data..", {"ChecksumCRC32": "cZWHwQ=="}),
-            ("CRC32C", b"test data..", {"ChecksumCRC32C": "Pf4upw=="}),
-            ("SHA1", b"test data..", {"ChecksumSHA1": "B++3uSfJMSHWToQMQ1g6lIJY5Eo="}),
-            (
-                "SHA1",
-                b"test data..",
-                {"ChecksumSHA1": "B++3uSfJMSHWToQMQ1g6lIJY5Eo=", "ChecksumCRC32C": "test"},
-            ),
-        ]
-
-        for checksum_algorithm, data, request in valid_checksums:
-            # means that it did not raise an exception
-            assert s3_utils.verify_checksum(checksum_algorithm, data, request) is None
-
-        invalid_checksums = [
-            (
-                "sha256&",
-                b"test data..",
-                {"ChecksumSHA256": "2l26x0trnT0r2AvakoFk2MB7eKVKzYESLMxSAKAzoik="},
-            ),
-            (
-                "sha256",
-                b"test data..",
-                {"ChecksumSHA256": "2l26x0trnT0r2AvakoFk2MB7eKVKzYESLMxSAKAzoik="},
-            ),
-            ("CRC32", b"test data..", {"ChecksumCRC32": "cZWHwQ==="}),
-            ("CRC32", b"test data.", {"ChecksumCRC32C": "Pf4upw=="}),
-            ("SHA1", b"test da\nta..", {"ChecksumSHA1": "B++3uSfJMSHWToQMQ1g6lIJY5Eo="}),
-        ]
-        for checksum_algorithm, data, request in invalid_checksums:
-            with pytest.raises(Exception):
-                s3_utils.verify_checksum(checksum_algorithm, data, request)
-
     @pytest.mark.parametrize(
         "presign_url, expected_output_bucket, expected_output_key",
         [
