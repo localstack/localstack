@@ -63,7 +63,7 @@ def read_client_metadata() -> ClientMetadata:
         is_docker=config.is_in_docker,
         is_testing=config.is_local_test_mode(),
         product="aws",
-        edition="pro" if config.is_env_true(ENV_PRO_ACTIVATED) else "community"
+        edition="pro" if config.is_env_true(ENV_PRO_ACTIVATED) else "community",
     )
 
 
