@@ -18,7 +18,7 @@ apispec==6.8.1
     # via localstack-core (pyproject.toml)
 argparse==1.4.0
     # via amazon-kclpy
-attrs==24.3.0
+attrs==25.1.0
     # via
     #   jsonschema
     #   localstack-twisted
@@ -31,7 +31,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.37.6
     # via localstack-core (pyproject.toml)
-awscrt==0.23.6
+awscrt==0.23.8
     # via localstack-core
 boto3==1.36.6
     # via
@@ -51,7 +51,7 @@ build==1.2.2.post1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cachetools==5.5.0
+cachetools==5.5.1
     # via
     #   airspeed-ext
     #   localstack-core
@@ -64,7 +64,7 @@ certifi==2024.12.14
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.22.5
+cfn-lint==1.22.7
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -108,7 +108,7 @@ docutils==0.16
     # via awscli
 events==0.5
     # via opensearch-py
-graphql-core==3.2.5
+graphql-core==3.2.6
     # via moto-ext
 h11==0.14.0
     # via
@@ -118,11 +118,11 @@ h2==4.1.0
     # via
     #   hypercorn
     #   localstack-twisted
-hpack==4.0.0
+hpack==4.1.0
     # via h2
 hypercorn==0.17.3
     # via localstack-core
-hyperframe==6.0.1
+hyperframe==6.1.0
     # via h2
 hyperlink==21.0.0
     # via localstack-twisted
@@ -166,7 +166,7 @@ jsonschema==4.23.0
     #   openapi-core
     #   openapi-schema-validator
     #   openapi-spec-validator
-jsonschema-path==0.3.3
+jsonschema-path==0.3.4
     # via
     #   openapi-core
     #   openapi-spec-validator
@@ -239,7 +239,7 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.10.5
+pydantic==2.10.6
     # via aws-sam-translator
 pydantic-core==2.27.2
     # via pydantic
@@ -276,7 +276,7 @@ pyyaml==6.0.2
     #   responses
 readerwriterlock==1.0.9
     # via localstack-core
-referencing==0.35.1
+referencing==0.36.2
     # via
     #   jsonschema
     #   jsonschema-path
@@ -312,11 +312,11 @@ rpds-py==0.22.3
     #   referencing
 rsa==4.7.2
     # via awscli
-s3transfer==0.11.1
+s3transfer==0.11.2
     # via
     #   awscli
     #   boto3
-semver==3.0.2
+semver==3.0.4
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -341,6 +341,7 @@ typing-extensions==4.12.2
     #   pydantic-core
     #   pyopenssl
     #   readerwriterlock
+    #   referencing
 urllib3==2.3.0
     # via
     #   botocore
