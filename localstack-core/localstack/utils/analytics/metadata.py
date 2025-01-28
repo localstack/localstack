@@ -5,7 +5,7 @@ import platform
 from typing import Optional
 
 from localstack import config
-from localstack.constants import VERSION
+from localstack import VERSION, ENV_PRO_ACTIVATED
 from localstack.runtime import hooks
 from localstack.utils.bootstrap import Container
 from localstack.utils.files import rm_rf
@@ -60,6 +60,8 @@ def read_client_metadata() -> ClientMetadata:
         is_ci=os.getenv("CI") is not None,
         is_docker=config.is_in_docker,
         is_testing=config.is_local_test_mode(),
+        product="aws",
+        edition="pro" if config.is_env_true(ENV_PRO_ACTIVATED) else "community"
     )
 
 
