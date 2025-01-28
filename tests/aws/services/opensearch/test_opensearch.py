@@ -577,7 +577,9 @@ class TestOpensearchProvider:
         domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
         assert domain_name in domain_names
 
-    def test_advanced_security_options(self, opensearch_create_domain, aws_client):
+    # TODO: You must enable node-to-node encryption to use advanced security options.
+    @markers.aws.needs_fixing
+    def test_advanced_security_options(self, opensearch_create_domain, aws_client, snapshot):
         advanced_security_options = AdvancedSecurityOptionsInput(
             Enabled=True,
             InternalUserDatabaseEnabled=True,
