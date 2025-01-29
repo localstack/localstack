@@ -1431,7 +1431,7 @@ def test_aws_proxy_binary_response(
         lambda: _assert_invoke(accept="image/png", expect_binary=True), timeout=timeout, interval=1
     )
     if is_aws_cloud():
-        time.sleep(5)
+        time.sleep(10)
 
     # all conditions are met
     assert _assert_invoke(accept="image/png", expect_binary=True)
@@ -1439,19 +1439,22 @@ def test_aws_proxy_binary_response(
     # client is sending the wrong accept, so the API returns the base64 data
     assert _assert_invoke(accept="image/jpg", expect_binary=False)
 
-    # client is sending an accept that matches the wildcard, but does not match the returned Content-Type
-    assert _assert_invoke(accept="random/test", expect_binary=False)
+    # client is sending the wrong accept (wildcard), so the API returns the base64 data
+    assert _assert_invoke(accept="image/*", expect_binary=False)
 
     # wildcard on the left is not supported
     assert _assert_invoke(accept="*/test", expect_binary=False)
+
+    # client is sending an accept that matches the wildcard, but it does not work
+    assert _assert_invoke(accept="random/test", expect_binary=False)
 
     # Accept has to exactly match what is configured
     assert _assert_invoke(accept="*/*", expect_binary=False)
 
     # client is sending a multiple accept, but AWS only checks the first one
-    assert _assert_invoke(accept="image/webp,image/*,*/*;q=0.8", expect_binary=False)
+    assert _assert_invoke(accept="image/webp,image/png,*/*;q=0.8", expect_binary=False)
 
-    # client is sending a multiple accept, but AWS only checks the first one
+    # client is sending a multiple accept, but AWS only checks the first one, which is right
     assert _assert_invoke(accept="image/png,image/*,*/*;q=0.8", expect_binary=True)
 
     # lambda is returning that the payload is not b64 encoded
@@ -1465,9 +1468,11 @@ def test_aws_proxy_binary_response(
     ]
     aws_client.apigateway.update_rest_api(restApiId=api_id, patchOperations=patch_operations)
     if is_aws_cloud():
+        # AWS starts returning 200, but then fails again with 403. Wait a bit for it to be stable
         time.sleep(10)
+
     # this deployment has `binaryMediaTypes` configured, so it should now return binary data if the client sends the
-    # right `Accept` header and the lambda returns the Content-Type
+    # right `Accept` header
     stage_3 = "test3"
     endpoint = api_invoke_url(api_id=api_id, path="/test", stage=stage_3)
     aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_3)
@@ -1478,16 +1483,16 @@ def test_aws_proxy_binary_response(
         lambda: _assert_invoke(accept="image/png", expect_binary=True), timeout=timeout, interval=1
     )
     if is_aws_cloud():
-        time.sleep(5)
+        time.sleep(10)
 
-    # partial wildcard are simply not supported it seems
-    # ???
+    # different scenario with right side wildcard, all working
     decoded_response["headers"]["Content-Type"] = "application/test"
     assert _assert_invoke(accept="application/whatever", expect_binary=True)
     assert _assert_invoke(accept="application/test", expect_binary=True)
     assert _assert_invoke(accept="application/*", expect_binary=True)
 
     # lambda is returning a content-type that matches one binaryMediaType, but Accept matches another binaryMediaType
+    # it seems it does not matter, only Accept is checked
     decoded_response["headers"]["Content-Type"] = "image/png"
     assert _assert_invoke(accept="image/jpg", expect_binary=True)
 
@@ -1495,12 +1500,8 @@ def test_aws_proxy_binary_response(
     decoded_response["headers"]["Content-Type"] = "application/whatever"
     assert _assert_invoke(accept="image/png", expect_binary=True)
 
-    # does content-type matters?
+    # ContentType does not matter at all
     decoded_response["headers"].pop("Content-Type")
-    assert _assert_invoke(accept="image/png", expect_binary=True)
-
-    # reverse the logic with Content-Type/Accept
-    decoded_response["headers"]["Content-Type"] = "image/jpg"
     assert _assert_invoke(accept="image/png", expect_binary=True)
 
     # bad Accept
