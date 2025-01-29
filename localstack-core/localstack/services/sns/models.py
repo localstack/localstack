@@ -39,9 +39,9 @@ def get_next_sequence_number():
 
 
 class SnsMessageType(StrEnum):
-    notification = "Notification"
-    subscription_confirmation = "SubscriptionConfirmation"
-    unsubscribe_confirmation = "UnsubscribeConfirmation"
+    Notification = "Notification"
+    SubscriptionConfirmation = "SubscriptionConfirmation"
+    UnsubscribeConfirmation = "UnsubscribeConfirmation"
 
 
 @dataclass
@@ -82,7 +82,7 @@ class SnsMessage:
     @classmethod
     def from_batch_entry(cls, entry: PublishBatchRequestEntry, is_fifo=False) -> "SnsMessage":
         return cls(
-            type=SnsMessageType.notification,
+            type=SnsMessageType.Notification,
             message=entry["Message"],
             subject=entry.get("Subject"),
             message_structure=entry.get("MessageStructure"),

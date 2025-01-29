@@ -243,7 +243,7 @@ class LambdaTopicPublisher(TopicPublisher):
         message_attributes = prepare_message_attributes(message_context.message_attributes)
 
         event_payload = {
-            "Type": message_context.type or SnsMessageType.notification,
+            "Type": message_context.type or SnsMessageType.Notification,
             "MessageId": message_context.message_id,
             "Subject": message_context.subject,
             "TopicArn": subscriber["TopicArn"],
@@ -483,14 +483,14 @@ class HttpTopicPublisher(TopicPublisher):
                 "x-amz-sns-message-id": message_context.message_id,
                 "x-amz-sns-topic-arn": subscriber["TopicArn"],
             }
-            if message_context.type != SnsMessageType.subscription_confirmation:
+            if message_context.type != SnsMessageType.SubscriptionConfirmation:
                 # while testing, never had those from AWS but the docs above states it should be there
                 message_headers["x-amz-sns-subscription-arn"] = subscriber["SubscriptionArn"]
 
                 # When raw message delivery is enabled, x-amz-sns-rawdelivery needs to be set to 'true'
                 # indicating that the message has been published without JSON formatting.
                 # https://docs.aws.amazon.com/sns/latest/dg/sns-large-payload-raw-message-delivery.html
-                if message_context.type == SnsMessageType.notification:
+                if message_context.type == SnsMessageType.Notification:
                     if is_raw_message_delivery(subscriber):
                         message_headers["x-amz-sns-rawdelivery"] = "true"
                     if content_type := self._get_content_type(subscriber, context.topic_attributes):
@@ -527,7 +527,7 @@ class HttpTopicPublisher(TopicPublisher):
                 topic_attributes=context.topic_attributes,
             )
             # AWS doesn't send to the DLQ if there's an error trying to deliver a UnsubscribeConfirmation msg
-            if message_context.type != SnsMessageType.unsubscribe_confirmation:
+            if message_context.type != SnsMessageType.UnsubscribeConfirmation:
                 sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
 
     @staticmethod
@@ -923,11 +923,11 @@ def compute_canonical_string(message: dict, notification_type: str) -> str:
     See https://docs.aws.amazon.com/sns/latest/dg/sns-verify-signature-of-message.html
     """
     # create the canonical string
-    if notification_type == SnsMessageType.notification:
+    if notification_type == SnsMessageType.Notification:
         fields = ["Message", "MessageId", "Subject", "Timestamp", "TopicArn", "Type"]
     elif notification_type in (
-        SnsMessageType.subscription_confirmation,
-        SnsMessageType.unsubscribe_confirmation,
+        SnsMessageType.SubscriptionConfirmation,
+        SnsMessageType.UnsubscribeConfirmation,
     ):
         fields = ["Message", "MessageId", "SubscribeURL", "Timestamp", "Token", "TopicArn", "Type"]
     else:
@@ -972,13 +972,13 @@ def create_sns_message_body(
         "Timestamp": timestamp_millis(),
     }
 
-    if message_type == SnsMessageType.notification:
+    if message_type == SnsMessageType.Notification:
         unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
         data["UnsubscribeURL"] = unsubscribe_url
 
     elif message_type in (
-        SnsMessageType.subscription_confirmation,
-        SnsMessageType.unsubscribe_confirmation,
+        SnsMessageType.SubscriptionConfirmation,
+        SnsMessageType.UnsubscribeConfirmation,
     ):
         data["Token"] = message_context.token
         data["SubscribeURL"] = create_subscribe_url(
