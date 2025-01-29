@@ -18,7 +18,6 @@ from localstack.services.lambda_.event_source_mapping.pollers.poller import (
 )
 from localstack.services.lambda_.event_source_mapping.senders.sender_utils import (
     batched,
-    batched_by_size,
 )
 from localstack.services.sqs.constants import (
     HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT,
@@ -30,6 +29,7 @@ from localstack.utils.strings import first_char_to_lower
 LOG = logging.getLogger(__name__)
 
 DEFAULT_MAX_RECEIVE_COUNT = 10
+# See https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-short-and-long-polling.html
 DEFAULT_MAX_WAIT_TIME_SECONDS = 20
 
 
@@ -136,11 +136,11 @@ class SqsPoller(Poller):
                 exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
         messages = response.get("Messages", [])
-        # NOTE: If the collection of messages exceeds the 6MB size-limit imposed on payloads sent to a Lambda,
-        # split into chunks of up to 6MB each.
+        # NOTE: Split up a batch into mini-batches of up to 2.5K records each. This is to prevent exceeding the 6MB size-limit
+        # imposed on payloads sent to a Lambda as well as LocalStack Lambdas failing to handle large payloads efficiently.
         # See https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventsourcemapping.html#invocation-eventsourcemapping-batching
-        for message_batch in batched_by_size(messages, 5e6):
-            LOG.debug("Polled %d events from %s", len(messages), self.source_arn)
+        for message_batch in batched(messages, 2500):
+            LOG.debug("Polled %d events from %s", len(message_batch), self.source_arn)
             try:
                 if self.is_fifo_queue:
                     # TODO: think about starvation behavior because once failing message could block other groups

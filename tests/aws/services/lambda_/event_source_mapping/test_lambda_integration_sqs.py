@@ -1563,13 +1563,7 @@ class TestSQSEventSourceMapping:
             20,
             100,
             1_000,
-            pytest.param(
-                10_000,
-                marks=pytest.mark.skip(
-                    reason="Flushing based on payload sizes not yet implemented so large payloads are causing issues."
-                ),
-                id="10000",
-            ),
+            10_000,
         ],
     )
     @markers.aws.only_localstack
@@ -1614,19 +1608,19 @@ class TestSQSEventSourceMapping:
         cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
         _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
 
+        expected_invocations = -(batch_size // -2500)  # converts floor division to ceil
         events = retry(
             check_expected_lambda_log_events_length,
             retries=10,
             sleep=1,
             function_name=function_name,
-            expected_length=1,
+            expected_length=expected_invocations,
             logs_client=aws_client.logs,
         )
 
-        assert len(events) == 1
-        assert len(events[0].get("Records", [])) == batch_size
+        assert sum(len(event.get("Records", [])) for event in events) == batch_size
 
-        rs = aws_client.sqs.receive_message(QueueUrl=queue_url)
+        rs = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
         assert rs.get("Messages", []) == []
 
 
