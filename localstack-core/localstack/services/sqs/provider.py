@@ -823,6 +823,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._message_move_task_manager.close()
         self._stop_cloudwatch_metrics_reporting()
 
+        for queue in self._queue_update_worker.iter_queues():
+            queue.close()
+
     @staticmethod
     def _require_queue(
         account_id: str, region_name: str, name: str, is_query: bool = False

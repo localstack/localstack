@@ -277,6 +277,8 @@ class SqsQueue:
     inflight: Set[SqsMessage]
     receipts: Dict[str, SqsMessage]
 
+    shutdown_event: threading.Event
+
     def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
         self.name = name
         self.region = region
@@ -299,6 +301,12 @@ class SqsQueue:
 
         self.permissions = set()
         self.mutex = threading.RLock()
+
+        self.shutdown_event = threading.Event()
+        self.shutdown_event.clear()
+
+    def close(self) -> None:
+        self.shutdown_event.set()
 
     def default_attributes(self) -> QueueAttributeMap:
         return {
@@ -804,25 +812,24 @@ class StandardQueue(SqsQueue):
             self.visibility_timeout if visibility_timeout is None else visibility_timeout
         )
 
-        block = True if wait_time_seconds else False
         timeout = wait_time_seconds or 0
         start = time.time()
 
         # collect messages
-        while True:
+        while not self.shutdown_event.is_set():
             try:
-                message = self.visible.get(block=block, timeout=timeout)
+                message = self.visible.get_nowait()
             except Empty:
-                break
+                if not poll_empty_queue:
+                    break
+
+                if time.time() - start > timeout:
+                    break
+
+                continue
             # setting block to false guarantees that, if we've already waited before, we don't wait the
             # full time again in the next iteration if max_number_of_messages is set but there are no more
             # messages in the queue. see https://github.com/localstack/localstack/issues/5824
-            if not poll_empty_queue:
-                block = False
-
-            timeout -= time.time() - start
-            if timeout < 0:
-                timeout = 0
 
             if message.deleted:
                 # filter messages that were deleted with an expired receipt handle after they have been
