@@ -64,7 +64,13 @@ from localstack.services.sns import constants as sns_constants
 from localstack.services.sns import usage
 from localstack.services.sns.certificate import SNS_SERVER_CERT
 from localstack.services.sns.filter import FilterPolicyValidator
-from localstack.services.sns.models import SnsMessage, SnsStore, SnsSubscription, sns_stores
+from localstack.services.sns.models import (
+    SnsMessage,
+    SnsMessageType,
+    SnsStore,
+    SnsSubscription,
+    sns_stores,
+)
 from localstack.services.sns.publisher import (
     PublishDispatcher,
     SnsBatchPublishContext,
@@ -429,9 +435,11 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if subscription["Protocol"] in ["http", "https"]:
             # TODO: actually validate this (re)subscribe behaviour somehow (localhost.run?)
             #  we might need to save the sub token in the store
+            # TODO: AWS only sends the UnsubscribeConfirmation if the call is unauthenticated or the requester is not
+            #  the owner
             subscription_token = encode_subscription_token_with_region(region=context.region)
             message_ctx = SnsMessage(
-                type="UnsubscribeConfirmation",
+                type=SnsMessageType.UnsubscribeConfirmation,
                 token=subscription_token,
                 message=f"You have chosen to deactivate subscription {subscription_arn}.\nTo cancel this operation and restore the subscription, visit the SubscribeURL included in this message.",
             )
@@ -604,7 +612,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             store = self.get_store(account_id=context.account_id, region_name=context.region)
 
         message_ctx = SnsMessage(
-            type="Notification",
+            type=SnsMessageType.Notification,
             message=message,
             message_attributes=message_attributes,
             message_deduplication_id=message_deduplication_id,
@@ -763,7 +771,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         # Send out confirmation message for HTTP(S), fix for https://github.com/localstack/localstack/issues/881
         if protocol in ["http", "https"]:
             message_ctx = SnsMessage(
-                type="SubscriptionConfirmation",
+                type=SnsMessageType.SubscriptionConfirmation,
                 token=subscription_token,
                 message=f"You have chosen to subscribe to the topic {topic_arn}.\nTo confirm the subscription, visit the SubscribeURL included in this message.",
             )
