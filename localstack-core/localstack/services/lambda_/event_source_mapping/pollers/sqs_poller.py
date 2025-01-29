@@ -108,14 +108,22 @@ class SqsPoller(Poller):
 
         response = {}
         try:
+            max_batch_window = self.sqs_queue_parameters.get(
+                "MaximumBatchingWindowInSeconds", DEFAULT_MAX_WAIT_TIME_SECONDS
+            )
+            # AWS only respects long-polls of up to 20s.
+            wait_time_seconds = (
+                DEFAULT_MAX_WAIT_TIME_SECONDS
+                if max_batch_window > DEFAULT_MAX_WAIT_TIME_SECONDS
+                else max_batch_window
+            )
+
             response = self.source_client.receive_message(
                 QueueUrl=self.queue_url,
                 MaxNumberOfMessages=self.sqs_queue_parameters.get(
                     "BatchSize", DEFAULT_MAX_RECEIVE_COUNT
                 ),
-                WaitTimeSeconds=self.sqs_queue_parameters.get(
-                    "MaximumBatchingWindowInSeconds", DEFAULT_MAX_WAIT_TIME_SECONDS
-                ),
+                WaitTimeSeconds=wait_time_seconds,
                 MessageAttributeNames=["All"],
                 MessageSystemAttributeNames=[MessageSystemAttributeName.All],
             )
