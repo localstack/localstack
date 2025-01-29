@@ -119,6 +119,9 @@
   "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order[C-B-A]": {
     "last_validated_date": "2024-05-29T11:45:50+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_resource_not_found": {
+    "last_validated_date": "2025-01-29T09:08:15+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_stacks.py::test_update_termination_protection": {
     "last_validated_date": "2023-01-04T15:23:22+00:00"
   },
