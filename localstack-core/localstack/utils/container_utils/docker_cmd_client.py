@@ -470,7 +470,7 @@ class CmdDockerClient(ContainerClient):
         self.inspect_container(container_name_or_id)  # guard to check whether container is there
 
         cmd = self._docker_cmd()
-        cmd += ["logs", container_name_or_id, "--follow"]
+        cmd += ["logs", "--follow", container_name_or_id]
 
         process: subprocess.Popen = run(
             cmd, asynchronous=True, outfile=subprocess.PIPE, stderr=subprocess.STDOUT
