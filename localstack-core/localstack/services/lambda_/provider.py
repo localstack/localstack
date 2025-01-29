@@ -382,6 +382,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         get_runtime_executor().validate_environment()
 
     def on_before_stop(self) -> None:
+        for esm_worker in self.esm_workers.values():
+            esm_worker.stop_for_shutdown()
+
         # TODO: should probably unregister routes?
         self.lambda_service.stop()
         # Attempt to signal to the Lambda Debug Mode session object to stop.

@@ -79,6 +79,11 @@ class EsmWorker:
     def uuid(self) -> str:
         return self.esm_config["UUID"]
 
+    def stop_for_shutdown(self):
+        # Signal the worker's poller_loop thread to gracefully shutdown
+        # TODO: Once ESM state is de-coupled from lambda store, re-think this approach.
+        self._shutdown_event.set()
+
     def create(self):
         if self.enabled:
             with self._state_lock:
