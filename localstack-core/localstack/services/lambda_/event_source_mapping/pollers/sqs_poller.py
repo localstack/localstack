@@ -21,7 +21,6 @@ from localstack.services.lambda_.event_source_mapping.senders.sender_utils impor
 )
 from localstack.services.sqs.constants import (
     HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT,
-    HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS,
 )
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import first_char_to_lower
@@ -67,11 +66,6 @@ class SqsPoller(Poller):
                 override = min(requested_count, self.sqs_queue_parameters["BatchSize"])
                 context[HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = str(override)
                 params["MaxNumberOfMessages"] = DEFAULT_MAX_RECEIVE_COUNT
-
-            requested_wait_time = params.get("MaximumBatchingWindowInSeconds")
-            if requested_wait_time and requested_wait_time > DEFAULT_MAX_WAIT_TIME_SECONDS:
-                context[HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS] = str(requested_wait_time)
-                params["MaximumBatchingWindowInSeconds"] = DEFAULT_MAX_WAIT_TIME_SECONDS
 
         def _handle_delete_batch_override(params, context, **kwargs):
             requested_count = len(params.get("Entries", []))
