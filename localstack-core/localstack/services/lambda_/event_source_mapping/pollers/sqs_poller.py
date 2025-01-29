@@ -68,10 +68,10 @@ class SqsPoller(Poller):
                 context[HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = str(override)
                 params["MaxNumberOfMessages"] = DEFAULT_MAX_RECEIVE_COUNT
 
-            requested_wait_time = params.get("MaximumBatchingWindowInSeconds")
+            requested_wait_time = params.get("WaitTimeSeconds")
             if requested_wait_time and requested_wait_time > DEFAULT_MAX_WAIT_TIME_SECONDS:
                 context[HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS] = str(requested_wait_time)
-                params["MaximumBatchingWindowInSeconds"] = DEFAULT_MAX_WAIT_TIME_SECONDS
+                params["WaitTimeSeconds"] = DEFAULT_MAX_WAIT_TIME_SECONDS
 
         def _handle_delete_batch_override(params, context, **kwargs):
             requested_count = len(params.get("Entries", []))
@@ -84,6 +84,13 @@ class SqsPoller(Poller):
         def _handler_inject_header(params, context, **kwargs):
             if override := context.pop(HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT, None):
                 params["headers"][HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = override
+
+            if wait_time_seconds := context.pop(
+                HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS, None
+            ):
+                params["headers"][HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS] = (
+                    wait_time_seconds
+                )
 
         event_system.register(
             "provide-client-params.sqs.ReceiveMessage", _handle_receive_message_override
