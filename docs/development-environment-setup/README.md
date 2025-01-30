@@ -85,11 +85,6 @@ LocalStack runs its own [DNS server](https://docs.localstack.cloud/user-guide/to
 
 * macOS users need to configure `LAMBDA_DEV_PORT_EXPOSE=1` such that the host can reach Lambda containers via IPv4 in bridge mode (see [#7367](https://github.com/localstack/localstack/pull/7367)).
 
-#### EVENT_RULE_ENGINE=java
-
-* Requires Java to execute to invoke the AWS [event-ruler](https://github.com/aws/event-ruler) using [JPype](https://github.com/jpype-project/jpype), a Python to Java bridge.
-* Set `JAVA_HOME` to a JDK installation. For example: `JAVA_HOME=/opt/homebrew/Cellar/openjdk/21.0.2`
-
 ### Changing our fork of moto
 
 1. Fork our moto repository on GitHub [https://github.com/localstack/moto](https://github.com/localstack/moto)

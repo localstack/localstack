@@ -44,6 +44,9 @@
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_http_method_integration": {
     "last_validated_date": "2024-04-15T21:38:57+00:00"
   },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_integer_http_status_code": {
+    "last_validated_date": "2025-01-14T14:09:57+00:00"
+  },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_stage_variables": {
     "last_validated_date": "2024-08-12T13:42:13+00:00"
   }

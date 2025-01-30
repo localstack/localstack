@@ -451,6 +451,7 @@ class AllocationStrategy(StrEnum):
 
 class AllocationType(StrEnum):
     used = "used"
+    future = "future"
 
 
 class AllowedImagesSettingsDisabledState(StrEnum):

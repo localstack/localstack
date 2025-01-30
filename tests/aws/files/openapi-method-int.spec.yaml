@@ -1,0 +1,40 @@
+openapi: 3.0.1
+info:
+  title: test-import-oas-int
+  version: '2.0'
+paths:
+  "/test":
+    get:
+      responses:
+        # the responses are grouped under the 200 integer status code. In the JSON format, this has to be a string.101:
+        # AWS accepts integer status code in YAML.
+        200:
+          description: 200 response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Empty"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            # this represents the IntegrationResponse status code. In the YAML format, AWS accepts an integer, but the
+            # "official" type is string and should be cast as such.
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        requestParameters:
+          integration.request.header.X-Amz-Invocation-Type: "'Event'"
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        passthroughBehavior: when_no_match
+        type: mock
+
+components:
+  schemas:
+    Empty:
+      title: Empty Schema
+      type: object

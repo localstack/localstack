@@ -20,6 +20,7 @@ from localstack.utils.container_utils.container_client import (
     AccessDenied,
     ContainerClient,
     ContainerException,
+    DockerContainerStats,
     DockerContainerStatus,
     DockerNotAvailable,
     LogConfig,
@@ -2000,6 +2001,14 @@ class TestDockerLabels:
         assert len(containers) == 1
         container = containers[0]
         assert container["labels"] == labels
+
+    def test_get_container_stats(self, docker_client, create_container):
+        container = create_container("alpine", command=["sh", "-c", "while true; do sleep 1; done"])
+        docker_client.start_container(container.container_id)
+        stats: DockerContainerStats = docker_client.get_container_stats(container.container_id)
+        assert stats["Name"] == container.container_name
+        assert container.container_id.startswith(stats["ID"])
+        assert 0.0 <= stats["MemPerc"] <= 100.0
 
 
 def _pull_image_if_not_exists(docker_client: ContainerClient, image_name: str):

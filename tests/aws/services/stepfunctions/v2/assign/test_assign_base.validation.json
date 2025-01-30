@@ -1,4 +1,10 @@
 {
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_base.py::TestAssignBase::test_assign_in_choice[CONDITION_FALSE]": {
+    "last_validated_date": "2024-12-27T16:02:35+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/assign/test_assign_base.py::TestAssignBase::test_assign_in_choice[CONDITION_TRUE]": {
+    "last_validated_date": "2024-12-27T16:02:20+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/assign/test_assign_base.py::TestAssignBase::test_base_cases[BASE_CONSTANT_LITERALS]": {
     "last_validated_date": "2024-11-04T11:02:43+00:00"
   },

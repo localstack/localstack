@@ -1,0 +1,34 @@
+Conditions:
+  active: !Equals [ true, true ]
+  inactive: !Equals [ true, false ]
+
+Resources:
+  Parameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: Sample
+      Name: commands 
+
+Outputs:
+  JoinWithNoValue:
+    Value:
+      Fn::Join:
+        - ","
+        - - !GetAtt Parameter.Value
+          - !Ref AWS::NoValue
+
+  JoinOnlyNoValue:
+    Value:
+      Fn::Join:
+        - ","
+        - - !Ref AWS::NoValue
+
+  JoinConditionalNoValue:
+    Value:
+      Fn::Join:
+        - ","
+        - - Fn::If:
+              - active
+              - !Ref AWS::NoValue
+              - !Ref AWS::NoValue

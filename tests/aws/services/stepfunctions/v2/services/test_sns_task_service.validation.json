@@ -30,15 +30,15 @@
     "last_validated_date": "2023-09-03T11:34:55+00:00"
   },
   "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_message_attributes[\"HelloWorld\"]": {
-    "last_validated_date": "2024-02-01T20:48:07+00:00"
+    "last_validated_date": "2025-01-27T07:07:20+00:00"
   },
   "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_message_attributes[HelloWorld]": {
-    "last_validated_date": "2024-02-01T20:47:52+00:00"
+    "last_validated_date": "2025-01-27T07:07:04+00:00"
   },
   "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_message_attributes[message_value3]": {
-    "last_validated_date": "2024-02-01T20:48:37+00:00"
+    "last_validated_date": "2025-01-27T07:07:54+00:00"
   },
   "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_message_attributes[{}]": {
-    "last_validated_date": "2024-02-01T20:48:22+00:00"
+    "last_validated_date": "2025-01-27T07:07:36+00:00"
   }
 }

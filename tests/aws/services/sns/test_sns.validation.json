@@ -74,6 +74,9 @@
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_subscribe_with_invalid_protocol": {
     "last_validated_date": "2023-08-24T21:27:50+00:00"
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_subscribe_with_invalid_topic": {
+    "last_validated_date": "2025-01-23T22:38:16+00:00"
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_unsubscribe_from_non_existing_subscription": {
     "last_validated_date": "2023-08-24T21:27:52+00:00"
   },
@@ -100,6 +103,9 @@
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionHttp::test_subscribe_external_http_endpoint_content_type[True]": {
     "last_validated_date": "2024-10-03T22:35:07+00:00"
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionHttp::test_subscribe_external_http_endpoint_lambda_url_sig_validation": {
+    "last_validated_date": "2025-01-24T18:51:32+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionLambda::test_publish_lambda_verify_signature[1]": {
     "last_validated_date": "2024-01-04T18:31:41+00:00"

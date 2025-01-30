@@ -267,3 +267,11 @@ class ExecutionState(CommonStateField, abc.ABC):
                         break
 
                 self._handle_uncaught(env=env, failure_event=failure_event)
+
+    def _eval_state_output(self, env: Environment) -> None:
+        # Obtain a reference to the state output.
+        output = env.stack[-1]
+        # CatcherOutputs (i.e. outputs of Catch blocks) are never subjects of output normalisers,
+        # the entire value is instead passed by value as input to the next state, or program output.
+        if not isinstance(output, CatchOutcome):
+            super()._eval_state_output(env=env)

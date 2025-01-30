@@ -254,6 +254,7 @@ comparison_variable_stmt:
     | comparison_func
     | next_decl
     | assign_decl
+    | output_decl
     | comment_decl
 ;
 
@@ -571,4 +572,5 @@ soft_string_keyword:
     | FULL
     | NONE
     | CATCH
+    | VERSION
 ;

@@ -1,13 +1,10 @@
-import json
 from typing import Any
 
-from localstack import config
 from localstack.services.events.event_rule_engine import (
     EventPatternCompiler,
     EventRuleEngine,
     InvalidEventPatternException,
 )
-from localstack.services.events.event_ruler import matches_rule
 
 _event_pattern_compiler = EventPatternCompiler()
 _event_rule_engine = EventRuleEngine()
@@ -44,15 +41,6 @@ def matches_event(event_pattern: dict[str, Any] | str | None, event: dict[str, A
     """
     if not event_pattern:
         return True
-
-    if config.EVENT_RULE_ENGINE == "java":
-        # If inputs are already strings (EventBridge), use directly
-        if isinstance(event, str) and isinstance(event_pattern, str):
-            return matches_rule(event, event_pattern)
-        # Convert dicts (ESM/Pipes) to strings for Java engine
-        event_str = event if isinstance(event, str) else json.dumps(event)
-        pattern_str = event_pattern if isinstance(event_pattern, str) else json.dumps(event_pattern)
-        return matches_rule(event_str, pattern_str)
 
     # Python implementation (default)
     compiled_event_pattern = _event_pattern_compiler.compile_event_pattern(
