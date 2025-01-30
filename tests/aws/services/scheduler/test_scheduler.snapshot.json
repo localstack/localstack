@@ -299,5 +299,17 @@
         }
       }
     }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_valid_schedule_expression": {
+    "recorded-date": "02-02-2025, 00:22:13",
+    "recorded-content": {
+      "valid-schedule-expression": {
+        "ScheduleArn": "<schedule-arn:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
