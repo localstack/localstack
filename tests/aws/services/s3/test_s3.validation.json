@@ -536,6 +536,9 @@
   "tests/aws/services/s3/test_s3.py::TestS3BucketLifecycle::test_put_bucket_lifecycle_conf_exc": {
     "last_validated_date": "2025-01-21T18:18:24+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3BucketLifecycle::test_s3_transition_default_minimum_object_size": {
+    "last_validated_date": "2025-01-30T21:21:20+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3BucketLogging::test_put_bucket_logging": {
     "last_validated_date": "2023-08-12T17:54:07+00:00"
   },
