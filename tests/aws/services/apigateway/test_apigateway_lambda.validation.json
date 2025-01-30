@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/apigateway/test_apigateway_lambda.py::test_aws_proxy_binary_response": {
+    "last_validated_date": "2025-01-29T00:14:36+00:00"
+  },
   "tests/aws/services/apigateway/test_apigateway_lambda.py::test_aws_proxy_response_payload_format_validation": {
     "last_validated_date": "2024-11-15T17:48:06+00:00"
   },
