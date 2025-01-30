@@ -1051,3 +1051,21 @@ def test_no_echo_parameter(snapshot, aws_client, deploy_cfn_template):
     snapshot.match("describe_updated_change_set_no_echo_false", change_sets)
     describe_stacks = aws_client.cloudformation.describe_stacks(StackName=stack_id)
     snapshot.match("describe_updated_stacks_no_echo_false", describe_stacks)
+
+
+@markers.aws.validated
+def test_stack_resource_not_found(deploy_cfn_template, aws_client, snapshot):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"
+        ),
+        parameters={"TopicName": f"topic{short_uid()}"},
+    )
+
+    with pytest.raises(botocore.exceptions.ClientError) as ex:
+        aws_client.cloudformation.describe_stack_resource(
+            StackName=stack.stack_name, LogicalResourceId="NonExistentResource"
+        )
+
+    snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "<stack-name>"))
+    snapshot.match("Error", ex.value.response)

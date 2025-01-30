@@ -966,7 +966,15 @@ class CloudformationProvider(CloudformationApi):
         if not stack:
             return stack_not_found_error(stack_name)
 
-        details = stack.resource_status(logical_resource_id)
+        try:
+            details = stack.resource_status(logical_resource_id)
+        except Exception as e:
+            if "Unable to find details" in str(e):
+                raise ValidationError(
+                    f"Resource {logical_resource_id} does not exist for stack {stack_name}"
+                )
+            raise
+
         return DescribeStackResourceOutput(StackResourceDetail=details)
 
     @handler("DescribeStackResources")
