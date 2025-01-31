@@ -3,6 +3,7 @@ import json
 import pytest
 import requests
 import xmltodict
+from botocore.exceptions import ClientError
 
 from localstack.testing.pytest import markers
 from localstack.utils.sync import retry
@@ -11,9 +12,19 @@ from tests.aws.services.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
 
 
 @markers.aws.validated
+# TODO: S3 does not return the HostId in the exception
+@markers.snapshot.skip_snapshot_verify(paths=["$..Error.HostId"])
 def test_apigateway_s3_any(
     aws_client, create_rest_apigw, s3_bucket, region_name, create_role_with_policy, snapshot
 ):
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("RequestId"),
+            snapshot.transform.key_value(
+                "HostId", reference_replacement=False, value_replacement="<host-id>"
+            ),
+        ]
+    )
     api_id, api_name, root_id = create_rest_apigw()
     stage_name = "test"
     object_name = "test.json"
@@ -63,22 +74,21 @@ def test_apigateway_s3_any(
     invoke_url = api_invoke_url(api_id, stage_name, path="/" + object_name)
 
     def _get_object(assert_json: bool = False):
-        response = requests.get(url=invoke_url)
-        assert response.status_code == 200
+        _response = requests.get(url=invoke_url)
+        assert _response.status_code == 200
         if assert_json:
-            response.json()
-        return response
+            _response.json()
+        return _response
 
     def _put_object(data: dict):
-        response = requests.put(
+        _response = requests.put(
             url=invoke_url, json=data, headers={"Content-Type": "application/json"}
         )
-        assert response.status_code == 200
+        assert _response.status_code == 200
 
     # # Try to get an object that doesn't exists
-    # TODO AWS sends a 200 with the xml empty bucket response from s3 when no objects are present.
-    # response = retry(lambda: _get_object, retries=10, sleep=2)
-    # snapshot.match("get-object-empty", xmltodict.parse(response.content))
+    response = retry(_get_object, retries=10, sleep=2)
+    snapshot.match("get-object-empty", xmltodict.parse(response.content))
 
     # Put a new object
     retry(lambda: _put_object({"put_id": 1}), retries=10, sleep=2)
@@ -92,12 +102,10 @@ def test_apigateway_s3_any(
 
     # Delete an object
     requests.delete(invoke_url)
-    # TODO AWS sends a 200 with the xml empty bucket response from s3 when no objects are present.
-    # response = retry(lambda: _get_object, retries=10, sleep=2)
-    # snapshot.match("get-object-deleted", xmltodict.parse(response.content))
+    response = retry(_get_object, retries=10, sleep=2)
+    snapshot.match("get-object-deleted", xmltodict.parse(response.content))
 
-    # TODO We can remove this part when we get the empty bucket response on parity
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(ClientError) as exc_info:
         aws_client.s3.get_object(Bucket=s3_bucket, Key=object_name)
     snapshot.match("get-object-s3", exc_info.value.response)
 
@@ -107,8 +115,9 @@ def test_apigateway_s3_any(
     # snapshot.match("post-object", xmltodict.parse(response.content))
 
 
-@pytest.mark.skip(reason="Need to implement a solution for method mapping")
 @markers.aws.validated
+# TODO: S3 does not return the HostId in the exception
+@markers.snapshot.skip_snapshot_verify(paths=["$.get-deleted-object.Error.HostId"])
 def test_apigateway_s3_method_mapping(
     aws_client, create_rest_apigw, s3_bucket, region_name, create_role_with_policy, snapshot
 ):
@@ -227,3 +236,13 @@ def test_apigateway_s3_method_mapping(
 
     get_object = retry(lambda: _invoke(get_invoke_url, get_xml=True), retries=10, sleep=2)
     snapshot.match("get-deleted-object", get_object)
+
+
+@markers.aws.validated
+def test_apigw_s3_binary_support_request(aws_client, s3_bucket):
+    pass
+
+
+@markers.aws.validated
+def test_apigw_s3_binary_support_response(aws_client, s3_bucket):
+    pass

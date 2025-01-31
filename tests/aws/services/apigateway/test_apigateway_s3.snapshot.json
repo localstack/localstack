@@ -1,12 +1,30 @@
 {
   "tests/aws/services/apigateway/test_apigateway_s3.py::test_apigateway_s3_any": {
-    "recorded-date": "13-06-2024, 23:10:19",
+    "recorded-date": "31-01-2025, 19:00:37",
     "recorded-content": {
+      "get-object-empty": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "HostId": "<host-id>",
+          "Key": "test.json",
+          "Message": "The specified key does not exist.",
+          "RequestId": "<request-id:1>"
+        }
+      },
       "get-object-1": {
         "put_id": 1
       },
       "get-object-2": {
         "put_id": 2
+      },
+      "get-object-deleted": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "HostId": "<host-id>",
+          "Key": "test.json",
+          "Message": "The specified key does not exist.",
+          "RequestId": "<request-id:2>"
+        }
       },
       "get-object-s3": {
         "Error": {
