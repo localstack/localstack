@@ -2285,8 +2285,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 if s3_multipart.object.checksum_algorithm
                 else "null"
             )
-            # TODO: properly fix this, this is to unblock default behavior of boto adding checksums and it being
-            #  accepted by AWS
             if not error_mp_checksum == "null":
                 raise InvalidRequest(
                     f"Checksum Type mismatch occurred, expected checksum Type: {error_mp_checksum}, actual checksum Type: {error_req_checksum}"
@@ -3201,7 +3199,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 BucketName=bucket,
             )
 
-        return GetBucketLifecycleConfigurationOutput(Rules=s3_bucket.lifecycle_rules)
+        return GetBucketLifecycleConfigurationOutput(
+            Rules=s3_bucket.lifecycle_rules,
+            # TODO: remove for next major version, safe access to new attribute
+            TransitionDefaultMinimumObjectSize=getattr(
+                s3_bucket,
+                "transition_default_minimum_object_size",
+                TransitionDefaultMinimumObjectSize.all_storage_classes_128K,
+            ),
+        )
 
     def put_bucket_lifecycle_configuration(
         self,
@@ -3215,14 +3221,28 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> PutBucketLifecycleConfigurationOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
+        transition_min_obj_size = (
+            transition_default_minimum_object_size
+            or TransitionDefaultMinimumObjectSize.all_storage_classes_128K
+        )
+
+        if transition_min_obj_size not in (
+            TransitionDefaultMinimumObjectSize.all_storage_classes_128K,
+            TransitionDefaultMinimumObjectSize.varies_by_storage_class,
+        ):
+            raise InvalidRequest(
+                f"Invalid TransitionDefaultMinimumObjectSize found: {transition_min_obj_size}"
+            )
+
         validate_lifecycle_configuration(lifecycle_configuration)
         # TODO: we either apply the lifecycle to existing objects when we set the new rules, or we need to apply them
         #  everytime we get/head an object
         # for now, we keep a cache and get it everytime we fetch an object
         s3_bucket.lifecycle_rules = lifecycle_configuration["Rules"]
+        s3_bucket.transition_default_minimum_object_size = transition_min_obj_size
         self._expiration_cache[bucket].clear()
         return PutBucketLifecycleConfigurationOutput(
-            TransitionDefaultMinimumObjectSize=transition_default_minimum_object_size
+            TransitionDefaultMinimumObjectSize=transition_min_obj_size
         )
 
     def delete_bucket_lifecycle(
