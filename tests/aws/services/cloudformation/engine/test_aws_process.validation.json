@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/engine/test_aws_process.py::test_template_parsing_or_invalid_schema": {
+    "last_validated_date": "2025-01-31T22:35:17+00:00"
+  }
+}
