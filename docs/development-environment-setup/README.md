@@ -33,6 +33,9 @@ The basic steps include:
 > [!NOTE]
 > This will install the required pip dependencies in a local Python 3 `venv` directory called `.venv` (your global Python packages will remain untouched).
 > Depending on your system, some `pip` modules may require additional native libs installed.
+
+> [!NOTE]
+> Consider running `make install-dev-types` to enable type hinting for efficient [integration tests](../testing/integration-tests/README.md) development.
 5. Start localstack in host mode using `make start`
 
 <div align="left">
