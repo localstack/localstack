@@ -203,6 +203,12 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_posting_to_fifo_requires_deduplicationid_group_id[sqs_query]": {
     "last_validated_date": "2024-04-30T13:34:22+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_empty_queue[sqs]": {
+    "last_validated_date": "2025-01-30T22:32:45+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_empty_queue[sqs_query]": {
+    "last_validated_date": "2025-01-30T22:32:48+00:00"
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_attribute_names_filters[sqs]": {
     "last_validated_date": "2024-06-04T11:54:31+00:00"
   },
