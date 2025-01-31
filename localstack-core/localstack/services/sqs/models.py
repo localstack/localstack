@@ -7,7 +7,7 @@ import re
 import threading
 import time
 from datetime import datetime
-from queue import Empty, PriorityQueue, Queue
+from queue import Empty
 from typing import Dict, Optional, Set
 
 from localstack import config
@@ -28,6 +28,7 @@ from localstack.services.sqs.exceptions import (
     InvalidParameterValueException,
     MissingRequiredParameterException,
 )
+from localstack.services.sqs.queue import InterruptiblePriorityQueue, InterruptibleQueue
 from localstack.services.sqs.utils import (
     decode_receipt_handle,
     encode_move_task_handle,
@@ -299,6 +300,9 @@ class SqsQueue:
 
         self.permissions = set()
         self.mutex = threading.RLock()
+
+    def do_shutdown(self):
+        pass
 
     def default_attributes(self) -> QueueAttributeMap:
         return {
@@ -719,12 +723,12 @@ class SqsQueue:
 
 
 class StandardQueue(SqsQueue):
-    visible: PriorityQueue[SqsMessage]
+    visible: InterruptiblePriorityQueue[SqsMessage]
     inflight: Set[SqsMessage]
 
     def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
         super().__init__(name, region, account_id, attributes, tags)
-        self.visible = PriorityQueue()
+        self.visible = InterruptiblePriorityQueue()
 
     def clear(self):
         with self.mutex:
@@ -734,6 +738,9 @@ class StandardQueue(SqsQueue):
     @property
     def approx_number_of_messages(self):
         return self.visible.qsize()
+
+    def do_shutdown(self):
+        self.visible.shutdown()
 
     def put(
         self,
@@ -937,7 +944,7 @@ class FifoQueue(SqsQueue):
     deduplication: Dict[str, SqsMessage]
     message_groups: dict[str, MessageGroup]
     inflight_groups: set[MessageGroup]
-    message_group_queue: Queue
+    message_group_queue: InterruptibleQueue
     deduplication_scope: str
 
     def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
@@ -946,7 +953,7 @@ class FifoQueue(SqsQueue):
 
         self.message_groups = {}
         self.inflight_groups = set()
-        self.message_group_queue = Queue()
+        self.message_group_queue = InterruptibleQueue()
 
         # SQS does not seem to change the deduplication behaviour of fifo queues if you
         # change to/from 'queue'/'messageGroup' scope after creation -> we need to set this on creation
@@ -958,6 +965,9 @@ class FifoQueue(SqsQueue):
         for message_group in self.message_groups.values():
             n += len(message_group.messages)
         return n
+
+    def do_shutdown(self):
+        self.message_group_queue.shutdown()
 
     def get_message_group(self, message_group_id: str) -> MessageGroup:
         """
