@@ -66,6 +66,7 @@ SERIAL = int((datetime.utcnow() - EPOCH).total_seconds())
 DEFAULT_FALLBACK_DNS_SERVER = "8.8.8.8"
 FALLBACK_DNS_LOCK = threading.RLock()
 VERIFICATION_DOMAIN = config.DNS_VERIFICATION_DOMAIN
+OCTAL_WILDCARD: str = "\u005c\u0030\u0035\u0032\u002e"
 
 RCODE_REFUSED = 5
 
@@ -98,6 +99,10 @@ psutil_cache = TTLCache(maxsize=100, ttl=10)
 # TODO: update route53 provider to use this util
 def normalise_dns_name(name: DNSLabel | str) -> str:
     name = str(name)
+
+    if name[:5] == OCTAL_WILDCARD:
+        name = f"*.{name[5:]}"
+
     if not name.endswith("."):
         return f"{name}."
 
