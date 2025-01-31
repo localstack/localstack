@@ -55,5 +55,153 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_s3.py::TestApiGatewayS3BinarySupport::test_apigw_s3_binary_support_request_no_content_handling": {
+    "recorded-date": "31-01-2025, 22:48:00",
+    "recorded-content": {
+      "put-method": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "requestParameters": {
+          "method.request.header.Content-Type": false,
+          "method.request.path.object_path": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-integration": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "exsgsj",
+        "credentials": "arn:<partition>:iam::111111111111:role/role-eddd8f4f",
+        "httpMethod": "ANY",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestParameters": {
+          "integration.request.header.Content-Type": "method.request.header.Content-Type",
+          "integration.request.path.object_path": "method.request.path.object_path"
+        },
+        "timeoutInMillis": 29000,
+        "type": "AWS",
+        "uri": "arn:<partition>:apigateway:<region>:s3:path/test-bucket-093d7100/{object_path}",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-obj-no-binary-media-binary-raw": {
+        "AcceptRanges": "bytes",
+        "Body": "\u001f\ufffd\b\u0000\fS\ufffdg\u0002\ufffdK\ufffd\ufffd-(J-.NMQHI,I\ufffdQ(\ufffd\ufffd/\ufffdIQHJU\ufffd\ufffd+K\ufffd\ufffdLQ\b\rq\u04f5P(.)\ufffd\ufffdK\u0007\u0000\ufffd9\u0010W/\u0000\u0000\u0000",
+        "ContentLength": 99,
+        "ContentType": "image/png",
+        "ETag": "\"ec5fdc19947ad7e9cfc1f08006747412\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-no-binary-media-binary-encoded": {
+        "AcceptRanges": "bytes",
+        "Body": "H4sIAAxTnWcC/0vOzy0oSi0uTk1RSEksSdRRKM7IL81JUUhKVcjMK0vMyUxRCA1x07VQKC4pysxLBwC4ORBXLwAAAA==",
+        "ContentLength": 92,
+        "ContentType": "image/png",
+        "ETag": "\"d99fd4e509fb30330479fb821438aa53\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-no-binary-media-text": {
+        "AcceptRanges": "bytes",
+        "Body": "this is a UTF8 text typed object",
+        "ContentLength": 32,
+        "ContentType": "text/plain",
+        "ETag": "\"322a648674040849d29154aa1dce24a5\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-binary-media-binary-raw": {
+        "AcceptRanges": "bytes",
+        "Body": "\u001f\ufffd\b\u0000\fS\ufffdg\u0002\ufffdK\ufffd\ufffd-(J-.NMQHI,I\ufffdQ(\ufffd\ufffd/\ufffdIQHJU\ufffd\ufffd+K\ufffd\ufffdLQ\b\rq\u04f5P(.)\ufffd\ufffdK\u0007\u0000\ufffd9\u0010W/\u0000\u0000\u0000",
+        "ContentLength": 99,
+        "ContentType": "image/png",
+        "ETag": "\"ec5fdc19947ad7e9cfc1f08006747412\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-binary-media-binary-encoded": {
+        "AcceptRanges": "bytes",
+        "Body": "H4sIAAxTnWcC/0vOzy0oSi0uTk1RSEksSdRRKM7IL81JUUhKVcjMK0vMyUxRCA1x07VQKC4pysxLBwC4ORBXLwAAAA==",
+        "ContentLength": 92,
+        "ContentType": "image/png",
+        "ETag": "\"d99fd4e509fb30330479fb821438aa53\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-binary-media-text": {
+        "AcceptRanges": "bytes",
+        "Body": "this is a UTF8 text typed object",
+        "ContentLength": 32,
+        "ContentType": "text/plain",
+        "ETag": "\"322a648674040849d29154aa1dce24a5\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-wrong-binary-media-binary-raw": {
+        "AcceptRanges": "bytes",
+        "Body": "\u001f\ufffd\b\u0000\fS\ufffdg\u0002\ufffdK\ufffd\ufffd-(J-.NMQHI,I\ufffdQ(\ufffd\ufffd/\ufffdIQHJU\ufffd\ufffd+K\ufffd\ufffdLQ\b\rq\u04f5P(.)\ufffd\ufffdK\u0007\u0000\ufffd9\u0010W/\u0000\u0000\u0000",
+        "ContentLength": 99,
+        "ContentType": "image/jpg",
+        "ETag": "\"ec5fdc19947ad7e9cfc1f08006747412\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-text-binary-media-binary-raw": {
+        "AcceptRanges": "bytes",
+        "Body": "b'\\x1f\\xef\\xbf\\xbd\\x08\\x00\\x0cS\\xef\\xbf\\xbdg\\x02\\xef\\xbf\\xbdK\\xef\\xbf\\xbd\\xef\\xbf\\xbd-(J-.NMQHI,I\\xef\\xbf\\xbdQ(\\xef\\xbf\\xbd\\xef\\xbf\\xbd/\\xef\\xbf\\xbdIQHJU\\xef\\xbf\\xbd\\xef\\xbf\\xbd+K\\xef\\xbf\\xbd\\xef\\xbf\\xbdLQ\\x08\\rq\\xd3\\xb5P(.)\\xef\\xbf\\xbd\\xef\\xbf\\xbdK\\x07\\x00\\xef\\xbf\\xbd9\\x10W/\\x00\\x00\\x00'",
+        "ContentLength": 99,
+        "ContentType": "text/plain",
+        "ETag": "\"ec5fdc19947ad7e9cfc1f08006747412\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

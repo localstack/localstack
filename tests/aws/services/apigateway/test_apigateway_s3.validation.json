@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/apigateway/test_apigateway_s3.py::TestApiGatewayS3BinarySupport::test_apigw_s3_binary_support_request_no_content_handling": {
+    "last_validated_date": "2025-01-31T22:48:00+00:00"
+  },
   "tests/aws/services/apigateway/test_apigateway_s3.py::test_apigateway_s3_any": {
     "last_validated_date": "2025-01-31T19:00:37+00:00"
   },

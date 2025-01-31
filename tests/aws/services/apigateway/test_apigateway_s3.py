@@ -1,10 +1,15 @@
+import base64
+import gzip
 import json
+import time
 
 import pytest
 import requests
 import xmltodict
 from botocore.exceptions import ClientError
 
+from localstack.aws.api.apigateway import ContentHandlingStrategy
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.sync import retry
 from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url
@@ -86,7 +91,7 @@ def test_apigateway_s3_any(
         )
         assert _response.status_code == 200
 
-    # # Try to get an object that doesn't exists
+    # # Try to get an object that doesn't exist
     response = retry(_get_object, retries=10, sleep=2)
     snapshot.match("get-object-empty", xmltodict.parse(response.content))
 
@@ -238,11 +243,256 @@ def test_apigateway_s3_method_mapping(
     snapshot.match("get-deleted-object", get_object)
 
 
-@markers.aws.validated
-def test_apigw_s3_binary_support_request(aws_client, s3_bucket):
-    pass
+@pytest.mark.skip("Not fully implemented yet")
+class TestApiGatewayS3BinarySupport:
+    """
+    https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-payload-encodings.html
+    https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-payload-encodings-workflow.html
+    """
 
+    @pytest.fixture
+    def setup_s3_apigateway(
+        self,
+        aws_client,
+        s3_bucket,
+        create_rest_apigw,
+        create_role_with_policy,
+        region_name,
+        snapshot,
+    ):
+        def _setup(
+            request_content_handling: ContentHandlingStrategy | None = None,
+            response_content_handling: ContentHandlingStrategy | None = None,
+        ):
+            api_id, api_name, root_id = create_rest_apigw()
+            stage_name = "test"
 
-@markers.aws.validated
-def test_apigw_s3_binary_support_response(aws_client, s3_bucket):
-    pass
+            _, role_arn = create_role_with_policy(
+                "Allow", "s3:*", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
+            )
+
+            resource_id = aws_client.apigateway.create_resource(
+                restApiId=api_id, parentId=root_id, pathPart="{object_path+}"
+            )["id"]
+
+            put_method = aws_client.apigateway.put_method(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod="ANY",
+                authorizationType="NONE",
+                requestParameters={
+                    "method.request.path.object_path": True,
+                    "method.request.header.Content-Type": False,
+                },
+            )
+            snapshot.match("put-method", put_method)
+
+            req_kwargs = {}
+            if request_content_handling:
+                req_kwargs["contentHandling"] = request_content_handling
+
+            put_integration = aws_client.apigateway.put_integration(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod="ANY",
+                integrationHttpMethod="ANY",
+                type="AWS",
+                uri=f"arn:aws:apigateway:{region_name}:s3:path/{s3_bucket}/{{object_path}}",
+                requestParameters={
+                    "integration.request.path.object_path": "method.request.path.object_path",
+                    "integration.request.header.Content-Type": "method.request.header.Content-Type",
+                },
+                credentials=role_arn,
+                **req_kwargs,
+            )
+            snapshot.match("put-integration", put_integration)
+
+            resp_kwargs = {}
+            if response_content_handling:
+                resp_kwargs["contentHandling"] = response_content_handling
+
+            aws_client.apigateway.put_integration_response(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod="ANY",
+                statusCode="200",
+                **resp_kwargs,
+            )
+            aws_client.apigateway.put_method_response(
+                restApiId=api_id, resourceId=resource_id, httpMethod="ANY", statusCode="200"
+            )
+
+            aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+            return api_id, stage_name
+
+        return _setup
+
+    @markers.aws.validated
+    def test_apigw_s3_binary_support_request_no_content_handling(
+        self,
+        aws_client,
+        s3_bucket,
+        setup_s3_apigateway,
+        snapshot,
+    ):
+        # the current API does not have any `binaryMediaTypes` configured
+        api_id, stage_name = setup_s3_apigateway(
+            request_content_handling=None,
+        )
+        object_body_raw = gzip.compress(b"compressed data, should be invalid UTF-8 string")
+        with pytest.raises(ValueError):
+            object_body_raw.decode()
+
+        object_body_encoded = base64.b64encode(object_body_raw)
+        object_body_text = "this is a UTF8 text typed object"
+
+        object_key_raw = "binary-raw"
+        object_key_encoded = "binary-encoded"
+        object_key_text = "text"
+        keys = [object_key_raw, object_key_encoded, object_key_text]
+
+        def _invoke(url, body: bytes | str, content_type: str, expected_code: int = 200):
+            _response = requests.put(url=url, data=body, headers={"Content-Type": content_type})
+            assert _response.status_code == expected_code
+            # sometimes S3 will respond 200, but will have a permission error
+            assert not _response.content
+
+            return _response
+
+        invoke_url_raw = api_invoke_url(api_id, stage_name, path="/" + object_key_raw)
+        retry(
+            _invoke, retries=10, url=invoke_url_raw, body=object_body_raw, content_type="image/png"
+        )
+
+        invoke_url_encoded = api_invoke_url(api_id, stage_name, path="/" + object_key_encoded)
+        retry(_invoke, url=invoke_url_encoded, body=object_body_encoded, content_type="image/png")
+
+        invoke_url_text = api_invoke_url(api_id, stage_name, path="/" + object_key_text)
+        retry(_invoke, url=invoke_url_text, body=object_body_text, content_type="text/plain")
+
+        for key in keys:
+            get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
+            snapshot.match(f"get-obj-no-binary-media-{key}", get_obj)
+
+        # we now add a `binaryMediaTypes`
+        patch_operations = [
+            {"op": "add", "path": "/binaryMediaTypes/image~1png"},
+            {"op": "add", "path": "/binaryMediaTypes/text~1plain"},
+            {"op": "add", "path": "/binaryMediaTypes/application~1json"},
+        ]
+        aws_client.apigateway.update_rest_api(restApiId=api_id, patchOperations=patch_operations)
+
+        if is_aws_cloud():
+            time.sleep(10)
+
+        stage_2 = "test2"
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_2)
+
+        invoke_url_raw_2 = api_invoke_url(api_id, stage_name, path="/" + object_key_raw)
+        retry(
+            _invoke,
+            retries=10,
+            url=invoke_url_raw_2,
+            body=object_body_raw,
+            content_type="image/png",
+        )
+
+        invoke_url_encoded_2 = api_invoke_url(api_id, stage_name, path="/" + object_key_encoded)
+        retry(_invoke, url=invoke_url_encoded_2, body=object_body_encoded, content_type="image/png")
+
+        invoke_url_text_2 = api_invoke_url(api_id, stage_name, path="/" + object_key_text)
+        retry(_invoke, url=invoke_url_text_2, body=object_body_text, content_type="text/plain")
+
+        for key in keys:
+            get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
+            snapshot.match(f"get-obj-binary-media-{key}", get_obj)
+
+        retry(_invoke, url=invoke_url_raw_2, body=object_body_raw, content_type="image/jpg")
+        get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_raw)
+        snapshot.match(f"get-obj-wrong-binary-media-{object_key_raw}", get_obj)
+
+        retry(_invoke, url=invoke_url_raw_2, body=object_body_raw, content_type="text/plain")
+        get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_raw)
+        get_obj["Body"] = get_obj["Body"].read()
+        snapshot.match(f"get-obj-text-binary-media-{object_key_raw}", get_obj)
+        # we can also manually assert that API Gateway made the non-UTF8 compatible string "decodable" now
+        assert get_obj["Body"] != object_body_raw
+        assert get_obj["Body"].decode()
+
+    # @markers.aws.validated
+    # def test_apigw_s3_binary_support_request_convert_to_text(
+    #     self,
+    #     aws_client,
+    #     s3_bucket,
+    #     setup_s3_apigateway,
+    #     snapshot,
+    # ):
+    #     api_id, stage_name = setup_s3_apigateway(
+    #         request_content_handling=None,
+    #     )
+    #     object_key = "test-binary-raw"
+    #     object_body_raw = b""
+    #     invoke_url = api_invoke_url(api_id, stage_name, path="/" + object_key)
+    #
+    #     object_key = "test-binary-encoded"
+    #     object_body_encoded = base64.b64encode(object_body_raw)
+    #     invoke_url = api_invoke_url(api_id, stage_name, path="/" + object_key)
+    #
+    #     patch_operations = [
+    #         {"op": "add", "path": "/binaryMediaTypes/image~1png"},
+    #         # seems like wildcard with star on the left is not supported
+    #         {"op": "add", "path": "/binaryMediaTypes/*~1test"},
+    #     ]
+    #     aws_client.apigateway.update_rest_api(restApiId=api_id, patchOperations=patch_operations)
+    #
+    #     if is_aws_cloud():
+    #         time.sleep(10)
+    #     stage_2 = "test2"
+    #     aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_2)
+
+    # @markers.aws.validated
+    # def test_apigw_s3_binary_support_request_convert_to_binary(
+    #     self,
+    #     aws_client,
+    #     s3_bucket,
+    #     setup_s3_apigateway,
+    #     snapshot,
+    # ):
+    #     api_id, stage_name = setup_s3_apigateway(
+    #         request_content_handling=None,
+    #     )
+    #     object_key = "test-binary-raw"
+    #     object_body_raw = b""
+    #     invoke_url = api_invoke_url(api_id, stage_name, path="/" + object_key)
+    #
+    #     object_key = "test-binary-encoded"
+    #     object_body_encoded = base64.b64encode(object_body_raw)
+    #     invoke_url = api_invoke_url(api_id, stage_name, path="/" + object_key)
+    #
+    #     patch_operations = [
+    #         {"op": "add", "path": "/binaryMediaTypes/image~1png"},
+    #         # seems like wildcard with star on the left is not supported
+    #         {"op": "add", "path": "/binaryMediaTypes/*~1test"},
+    #     ]
+    #     aws_client.apigateway.update_rest_api(restApiId=api_id, patchOperations=patch_operations)
+    #
+    #     if is_aws_cloud():
+    #         time.sleep(10)
+    #     stage_2 = "test2"
+    #     endpoint = api_invoke_url(api_id=api_id, path="/test", stage=stage_2)
+    #     aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_2)
+
+    @markers.aws.validated
+    def test_apigw_s3_binary_support_request_no_passthrough(
+        self,
+        aws_client,
+        s3_bucket,
+        setup_s3_apigateway,
+        snapshot,
+    ):
+        pass
+
+    @markers.aws.validated
+    def test_apigw_s3_binary_support_response(self, aws_client, s3_bucket):
+        pass
