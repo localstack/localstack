@@ -32,7 +32,10 @@ from localstack.services.lambda_.event_source_mapping.pipe_utils import (
 from localstack.services.lambda_.event_source_mapping.pollers.dynamodb_poller import DynamoDBPoller
 from localstack.services.lambda_.event_source_mapping.pollers.kinesis_poller import KinesisPoller
 from localstack.services.lambda_.event_source_mapping.pollers.poller import Poller
-from localstack.services.lambda_.event_source_mapping.pollers.sqs_poller import SqsPoller
+from localstack.services.lambda_.event_source_mapping.pollers.sqs_poller import (
+    DEFAULT_MAX_WAIT_TIME_SECONDS,
+    SqsPoller,
+)
 from localstack.services.lambda_.event_source_mapping.senders.lambda_sender import LambdaSender
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.client_types import ServicePrincipal
@@ -111,6 +114,17 @@ class EsmWorkerFactory:
                 role_arn=self.function_role_arn,
                 service_principal=ServicePrincipal.lambda_,
                 source_arn=self.esm_config["FunctionArn"],
+                client_config=botocore.config.Config(
+                    retries={"total_max_attempts": 1},  # Disable retries
+                    read_timeout=max(
+                        self.esm_config.get(
+                            "MaximumBatchingWindowInSeconds", DEFAULT_MAX_WAIT_TIME_SECONDS
+                        ),
+                        60,
+                    )
+                    + 5,  # Extend read timeout (with 5s buffer) for long-polling
+                    tcp_keepalive=True,
+                ),
             )
 
         filter_criteria = self.esm_config.get("FilterCriteria", {"Filters": []})
