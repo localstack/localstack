@@ -3646,5 +3646,39 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_empty_redrive_policy[sqs_query]": {
     "recorded-date": "20-08-2024, 14:14:11",
     "recorded-content": {}
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_wait_time_seconds[sqs]": {
+    "recorded-date": "23-01-2025, 12:43:53",
+    "recorded-content": {
+      "recieve_message_error": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Value 21 for parameter WaitTimeSeconds is invalid. Reason: Must be >= 0 and <= 20, if provided.",
+          "QueryErrorCode": "InvalidParameterValueException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_wait_time_seconds[sqs_query]": {
+    "recorded-date": "23-01-2025, 12:43:54",
+    "recorded-content": {
+      "recieve_message_error": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "Value 21 for parameter WaitTimeSeconds is invalid. Reason: Must be >= 0 and <= 20, if provided.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
