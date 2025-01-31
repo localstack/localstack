@@ -33,7 +33,7 @@ aws-cdk-asset-kubectl-v20==2.1.3
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==39.2.7
+aws-cdk-cloud-assembly-schema==39.2.9
     # via aws-cdk-lib
 aws-cdk-lib==2.177.0
     # via localstack-core (pyproject.toml)
@@ -83,7 +83,7 @@ certifi==2024.12.14
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.22.7
+cfn-lint==1.23.0
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -312,7 +312,7 @@ pydantic-core==2.27.2
     # via pydantic
 pygments==2.19.1
     # via rich
-pymongo==4.10.1
+pymongo==4.11
     # via localstack-core
 pyopenssl==25.0.0
     # via
