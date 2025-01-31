@@ -58,5 +58,8 @@
   },
   "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(foo minutes)]": {
     "last_validated_date": "2025-01-26T15:45:57+00:00"
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_valid_schedule_expression[at(2022-12-31T23:59:59)]": {
+    "last_validated_date": "2025-01-31T14:25:20+00:00"
   }
 }

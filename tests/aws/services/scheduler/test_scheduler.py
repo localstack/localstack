@@ -1,10 +1,11 @@
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack.utils.aws.arns import get_partition
 from localstack.testing.aws.util import in_default_partition
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
-
+import json
 
 @pytest.mark.skipif(
     not in_default_partition(), reason="Test not applicable in non-default partitions"
@@ -82,6 +83,7 @@ def test_untag_resource(aws_client, events_scheduler_create_schedule_group, snap
         " rate(10 minutes)",
         "at(2021-12-31T23:59:59Z)",
         "at(2021-12-31)",
+        "at(2022-12-31T23:59:59)",
     ],
 )
 def tests_create_schedule_with_invalid_schedule_expression(
@@ -103,3 +105,77 @@ def tests_create_schedule_with_invalid_schedule_expression(
             },
         )
     snapshot.match("invalid-schedule-expression", e.value.response)
+
+
+
+@markers.aws.validated
+@pytest.mark.parametrize(
+    "schedule_expression",
+    [
+        "at(2022-12-31T23:59:59)",
+    ],
+)
+def tests_create_schedule_with_valid_schedule_expression(
+    schedule_expression, create_role, aws_client, region_name, account_id, cleanups, snapshot
+):
+    role_name = f"test-role-{short_uid()}"
+    scheduler_name = "MyLambdaScheduler"
+    lambda_function_name = "MyLambdaFunction"
+    policy_name = "EventBridgeSchedulerPolicy"
+
+    trust_policy = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": {"Service": "scheduler.amazonaws.com"},
+                "Action": "sts:AssumeRole"
+            }
+        ]
+    }
+
+    role = aws_client.iam.create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy), Description="IAM Role for EventBridge Scheduler to invoke Lambda.")
+    import time
+    time.sleep(5)
+    role_arn = role["Role"]["Arn"]
+
+    lambda_arn = f"arn:aws:lambda:{region_name}:{account_id}:function:{lambda_function_name}"
+
+    permissions_policy = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": "lambda:InvokeFunction",
+                "Resource": lambda_arn
+            }
+        ]
+    }
+    aws_client.iam.attach_role_policy(
+        RoleName=role_name,
+        PolicyArn=f"arn:{get_partition(aws_client.iam.meta.region_name)}:iam::aws:policy/AWSLambdaExecute",
+    )
+
+    time.sleep(5)
+
+
+    response = aws_client.scheduler.create_schedule(
+        Name=scheduler_name,
+        ScheduleExpression=schedule_expression,
+        FlexibleTimeWindow={
+            "MaximumWindowInMinutes": 4,
+            "Mode": "FLEXIBLE",
+        },
+        Target={
+            "Arn": lambda_arn,
+            "RoleArn": role_arn
+        },
+    )
+
+    # cleanup
+    cleanups.append(lambda: aws_client.iam.delete_role_policy(RoleName=role_name, PolicyName=policy_name))
+    cleanups.append(lambda: aws_client.iam.delete_role(RoleName=role_name))
+    cleanups.append(lambda: aws_client.scheduler.delete_schedule(Name=scheduler_name))
+
+    # assert response == []
+    snapshot.match("valid-schedule-expression", response)

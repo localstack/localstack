@@ -299,5 +299,17 @@
         }
       }
     }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_valid_schedule_expression[at(2022-12-31T23:59:59)]": {
+    "recorded-date": "31-01-2025, 14:25:20",
+    "recorded-content": {
+      "valid-schedule-expression": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/MyLambdaScheduler",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
