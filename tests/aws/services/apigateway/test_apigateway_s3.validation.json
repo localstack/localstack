@@ -11,6 +11,15 @@
   "tests/aws/services/apigateway/test_apigateway_s3.py::TestApiGatewayS3BinarySupport::test_apigw_s3_binary_support_request_no_content_handling": {
     "last_validated_date": "2025-01-31T23:06:37+00:00"
   },
+  "tests/aws/services/apigateway/test_apigateway_s3.py::TestApiGatewayS3BinarySupport::test_apigw_s3_binary_support_response_convert_to_binary": {
+    "last_validated_date": "2025-02-01T02:45:46+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_s3.py::TestApiGatewayS3BinarySupport::test_apigw_s3_binary_support_response_convert_to_text": {
+    "last_validated_date": "2025-02-01T02:31:20+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_s3.py::TestApiGatewayS3BinarySupport::test_apigw_s3_binary_support_response_no_content_handling": {
+    "last_validated_date": "2025-02-01T02:20:00+00:00"
+  },
   "tests/aws/services/apigateway/test_apigateway_s3.py::test_apigateway_s3_any": {
     "last_validated_date": "2025-01-31T19:00:37+00:00"
   },

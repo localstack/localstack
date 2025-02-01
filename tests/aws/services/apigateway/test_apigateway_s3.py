@@ -283,6 +283,17 @@ class TestApiGatewayS3BinarySupport:
                 requestParameters={
                     "method.request.path.object_path": True,
                     "method.request.header.Content-Type": False,
+                    "method.request.header.response-content-type": False,
+                },
+            )
+
+            aws_client.apigateway.put_method_response(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod="ANY",
+                statusCode="200",
+                responseParameters={
+                    "method.response.header.ETag": False,
                 },
             )
 
@@ -300,6 +311,7 @@ class TestApiGatewayS3BinarySupport:
                 requestParameters={
                     "integration.request.path.object_path": "method.request.path.object_path",
                     "integration.request.header.Content-Type": "method.request.header.Content-Type",
+                    "integration.request.querystring.response-content-type": "method.request.header.response-content-type",
                 },
                 credentials=role_arn,
                 **req_kwargs,
@@ -315,11 +327,12 @@ class TestApiGatewayS3BinarySupport:
                 resourceId=resource_id,
                 httpMethod="ANY",
                 statusCode="200",
+                responseParameters={
+                    "method.response.header.ETag": "integration.response.header.ETag",
+                },
                 **resp_kwargs,
             )
-            aws_client.apigateway.put_method_response(
-                restApiId=api_id, resourceId=resource_id, httpMethod="ANY", statusCode="200"
-            )
+
             if deploy:
                 aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
 
@@ -690,6 +703,7 @@ class TestApiGatewayS3BinarySupport:
         # the current API does not have any `binaryMediaTypes` configured
         api_id, resource_id, stage_name = setup_s3_apigateway(
             request_content_handling=ContentHandlingStrategy.CONVERT_TO_BINARY,
+            deploy=False,
         )
 
         # set up the VTL requestTemplate
@@ -757,6 +771,455 @@ class TestApiGatewayS3BinarySupport:
             expected_code=500,
         )
 
-    # @markers.aws.validated
-    # def test_apigw_s3_binary_support_response(self, aws_client, s3_bucket):
-    #     pass
+    @markers.aws.validated
+    def test_apigw_s3_binary_support_response_no_content_handling(
+        self,
+        aws_client,
+        s3_bucket,
+        setup_s3_apigateway,
+        snapshot,
+    ):
+        # the current API does not have any `binaryMediaTypes` configured
+        api_id, _, stage_name = setup_s3_apigateway(
+            request_content_handling=None,
+            response_content_handling=None,
+        )
+        object_body_raw = gzip.compress(
+            b"compressed data, should be invalid UTF-8 string", mtime=1676569620
+        )
+        with pytest.raises(ValueError):
+            object_body_raw.decode()
+
+        object_body_encoded = base64.b64encode(object_body_raw)
+        object_body_text = "this is a UTF8 text typed object"
+
+        object_key_raw = "binary-raw"
+        object_key_encoded = "binary-encoded"
+        object_key_text = "text"
+        keys_to_body = {
+            object_key_raw: object_body_raw,
+            object_key_encoded: object_body_encoded,
+            object_key_text: object_body_text,
+        }
+
+        for key, obj_body in keys_to_body.items():
+            put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=obj_body)
+            snapshot.match(f"put-obj-{key}", put_obj)
+
+        def _invoke(
+            url, accept: str, r_content_type: str = "binary/octet-stream", expected_code: int = 200
+        ):
+            _response = requests.get(
+                url=url, headers={"Accept": accept, "response-content-type": r_content_type}
+            )
+            assert _response.status_code == expected_code
+            if expected_code == 200:
+                assert _response.headers.get("ETag")
+
+            return _response
+
+        invoke_url_text = api_invoke_url(api_id, stage_name, path="/" + object_key_text)
+        obj = retry(_invoke, url=invoke_url_text, accept="text/plain", retries=10)
+        snapshot.match("text-no-media", {"content": obj.content, "etag": obj.headers.get("ETag")})
+
+        # it tries to decode the object as UTF8 and fails, hence 500
+        invoke_url_raw = api_invoke_url(api_id, stage_name, path="/" + object_key_raw)
+        obj = retry(_invoke, url=invoke_url_raw, accept="image/png")
+        snapshot.match("raw-no-media", {"content": obj.content, "etag": obj.headers.get("ETag")})
+
+        invoke_url_encoded = api_invoke_url(api_id, stage_name, path="/" + object_key_encoded)
+        obj = retry(_invoke, url=invoke_url_encoded, accept="image/png")
+        snapshot.match(
+            "encoded-no-media", {"content": obj.content, "etag": obj.headers.get("ETag")}
+        )
+
+        # we now add a `binaryMediaTypes`
+        patch_operations = [{"op": "add", "path": "/binaryMediaTypes/image~1png"}]
+        aws_client.apigateway.update_rest_api(restApiId=api_id, patchOperations=patch_operations)
+
+        if is_aws_cloud():
+            time.sleep(10)
+
+        stage_2 = "test2"
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_2)
+
+        invoke_url_encoded_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_encoded)
+        invoke_url_raw_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_raw)
+        invoke_url_text_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_text)
+
+        # test with Accept binary types (`Accept` that matches the binaryMediaTypes)
+        # and Text Payload (Payload `Content-Type` that does not match the binaryMediaTypes)
+        obj = retry(_invoke, url=invoke_url_encoded_2, accept="image/png", retries=20)
+        snapshot.match(
+            "encoded-payload-text-accept-binary",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        # those 2 fails because we are in the text payload/binary accept -> Base64-decoded blob
+        retry(_invoke, url=invoke_url_raw_2, accept="image/png", expected_code=500)
+        retry(_invoke, url=invoke_url_text_2, accept="image/png", expected_code=500)
+
+        # test with Accept binary types (`Accept` that matches the binaryMediaTypes)
+        # and binary Payload (Payload `Content-Type` that matches the binaryMediaTypes)
+        # those work because we're in the binary payload / binary accept -> Binary data
+        obj = retry(
+            _invoke, url=invoke_url_encoded_2, accept="image/png", r_content_type="image/png"
+        )
+        snapshot.match(
+            "encoded-payload-binary-accept-binary",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        obj = retry(_invoke, url=invoke_url_raw_2, accept="image/png", r_content_type="image/png")
+        snapshot.match(
+            "raw-payload-binary-accept-binary",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        obj = retry(_invoke, url=invoke_url_text_2, accept="image/png", r_content_type="image/png")
+        snapshot.match(
+            "text-payload-binary-accept-binary",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        # test with Accept text types (`Accept` that does not match the binaryMediaTypes)
+        # and Text Payload (Payload `Content-Type` that does not match the binaryMediaTypes)
+        obj = retry(_invoke, url=invoke_url_encoded_2, accept="text/plain")
+        snapshot.match(
+            "encoded-payload-text-accept-text",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        obj = retry(_invoke, url=invoke_url_raw_2, accept="text/plain")
+        snapshot.match(
+            "raw-payload-text-accept-text",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        obj = retry(_invoke, url=invoke_url_text_2, accept="text/plain")
+        snapshot.match(
+            "text-payload-text-accept-text",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        # test with Accept text types (`Accept` that does not match the binaryMediaTypes)
+        # and binary Payload (Payload `Content-Type` that matches the binaryMediaTypes)
+        obj = retry(
+            _invoke, url=invoke_url_encoded_2, accept="text/plain", r_content_type="image/png"
+        )
+        snapshot.match(
+            "encoded-payload-binary-accept-text",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        obj = retry(_invoke, url=invoke_url_raw_2, accept="text/plain", r_content_type="image/png")
+        snapshot.match(
+            "raw-payload-binary-accept-text",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        obj = retry(_invoke, url=invoke_url_text_2, accept="text/plain", r_content_type="image/png")
+        snapshot.match(
+            "text-payload-binary-accept-text",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+    @markers.aws.validated
+    def test_apigw_s3_binary_support_response_convert_to_text(
+        self,
+        aws_client,
+        s3_bucket,
+        setup_s3_apigateway,
+        snapshot,
+    ):
+        # the current API does not have any `binaryMediaTypes` configured
+        api_id, _, stage_name = setup_s3_apigateway(
+            request_content_handling=None,
+            response_content_handling=ContentHandlingStrategy.CONVERT_TO_TEXT,
+        )
+        object_body_raw = gzip.compress(
+            b"compressed data, should be invalid UTF-8 string", mtime=1676569620
+        )
+        with pytest.raises(ValueError):
+            object_body_raw.decode()
+
+        object_body_encoded = base64.b64encode(object_body_raw)
+        object_body_text = "this is a UTF8 text typed object"
+
+        object_key_raw = "binary-raw"
+        object_key_encoded = "binary-encoded"
+        object_key_text = "text"
+        keys_to_body = {
+            object_key_raw: object_body_raw,
+            object_key_encoded: object_body_encoded,
+            object_key_text: object_body_text,
+        }
+
+        for key, obj_body in keys_to_body.items():
+            put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=obj_body)
+            snapshot.match(f"put-obj-{key}", put_obj)
+
+        def _invoke(
+            url, accept: str, r_content_type: str = "binary/octet-stream", expected_code: int = 200
+        ):
+            _response = requests.get(
+                url=url, headers={"Accept": accept, "response-content-type": r_content_type}
+            )
+            assert _response.status_code == expected_code
+            if expected_code == 200:
+                assert _response.headers.get("ETag")
+
+            return _response
+
+        invoke_url_text = api_invoke_url(api_id, stage_name, path="/" + object_key_text)
+        obj = retry(_invoke, url=invoke_url_text, accept="text/plain", retries=10)
+        snapshot.match("text-no-media", {"content": obj.content, "etag": obj.headers.get("ETag")})
+
+        # it tries to decode the object as UTF8 and fails, hence 500
+        invoke_url_raw = api_invoke_url(api_id, stage_name, path="/" + object_key_raw)
+        obj = retry(_invoke, url=invoke_url_raw, accept="image/png")
+        snapshot.match("raw-no-media", {"content": obj.content, "etag": obj.headers.get("ETag")})
+
+        invoke_url_encoded = api_invoke_url(api_id, stage_name, path="/" + object_key_encoded)
+        obj = retry(_invoke, url=invoke_url_encoded, accept="image/png")
+        snapshot.match(
+            "encoded-no-media", {"content": obj.content, "etag": obj.headers.get("ETag")}
+        )
+
+        # we now add a `binaryMediaTypes`
+        patch_operations = [{"op": "add", "path": "/binaryMediaTypes/image~1png"}]
+        aws_client.apigateway.update_rest_api(restApiId=api_id, patchOperations=patch_operations)
+
+        if is_aws_cloud():
+            time.sleep(10)
+
+        stage_2 = "test2"
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_2)
+
+        invoke_url_encoded_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_encoded)
+        invoke_url_raw_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_raw)
+        invoke_url_text_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_text)
+
+        # test with Accept binary types (`Accept` that matches the binaryMediaTypes)
+        # and Text Payload (Payload `Content-Type` that does not match the binaryMediaTypes)
+        obj = retry(_invoke, url=invoke_url_encoded_2, accept="image/png", retries=20)
+        snapshot.match(
+            "encoded-payload-text-accept-binary",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        obj = retry(_invoke, url=invoke_url_raw_2, accept="image/png")
+        snapshot.match(
+            "raw-payload-text-accept-binary",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        obj = retry(_invoke, url=invoke_url_text_2, accept="image/png")
+        snapshot.match(
+            "text-payload-text-accept-binary",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        # test with Accept binary types (`Accept` that matches the binaryMediaTypes)
+        # and binary Payload (Payload `Content-Type` that matches the binaryMediaTypes)
+        obj = retry(
+            _invoke, url=invoke_url_encoded_2, accept="image/png", r_content_type="image/png"
+        )
+        snapshot.match(
+            "encoded-payload-binary-accept-binary",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        obj = retry(_invoke, url=invoke_url_raw_2, accept="image/png", r_content_type="image/png")
+        snapshot.match(
+            "raw-payload-binary-accept-binary",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        obj = retry(_invoke, url=invoke_url_text_2, accept="image/png", r_content_type="image/png")
+        snapshot.match(
+            "text-payload-binary-accept-binary",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        # test with Accept text types (`Accept` that does not match the binaryMediaTypes)
+        # and Text Payload (Payload `Content-Type` that does not match the binaryMediaTypes)
+        obj = retry(_invoke, url=invoke_url_encoded_2, accept="text/plain")
+        snapshot.match(
+            "encoded-payload-text-accept-text",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        obj = retry(_invoke, url=invoke_url_raw_2, accept="text/plain")
+        snapshot.match(
+            "raw-payload-text-accept-text",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        obj = retry(_invoke, url=invoke_url_text_2, accept="text/plain")
+        snapshot.match(
+            "text-payload-text-accept-text",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        # test with Accept text types (`Accept` that does not match the binaryMediaTypes)
+        # and binary Payload (Payload `Content-Type` that matches the binaryMediaTypes)
+        obj = retry(
+            _invoke, url=invoke_url_encoded_2, accept="text/plain", r_content_type="image/png"
+        )
+        snapshot.match(
+            "encoded-payload-binary-accept-text",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        obj = retry(_invoke, url=invoke_url_raw_2, accept="text/plain", r_content_type="image/png")
+        snapshot.match(
+            "raw-payload-binary-accept-text",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        obj = retry(_invoke, url=invoke_url_text_2, accept="text/plain", r_content_type="image/png")
+        snapshot.match(
+            "text-payload-binary-accept-text",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+    @markers.aws.validated
+    def test_apigw_s3_binary_support_response_convert_to_binary(
+        self,
+        aws_client,
+        s3_bucket,
+        setup_s3_apigateway,
+        snapshot,
+    ):
+        # the current API does not have any `binaryMediaTypes` configured
+        api_id, _, stage_name = setup_s3_apigateway(
+            request_content_handling=None,
+            response_content_handling=ContentHandlingStrategy.CONVERT_TO_BINARY,
+        )
+        object_body_raw = gzip.compress(
+            b"compressed data, should be invalid UTF-8 string", mtime=1676569620
+        )
+        with pytest.raises(ValueError):
+            object_body_raw.decode()
+
+        object_body_encoded = base64.b64encode(object_body_raw)
+        object_body_text = "this is a UTF8 text typed object"
+
+        object_key_raw = "binary-raw"
+        object_key_encoded = "binary-encoded"
+        object_key_text = "text"
+        keys_to_body = {
+            object_key_raw: object_body_raw,
+            object_key_encoded: object_body_encoded,
+            object_key_text: object_body_text,
+        }
+
+        for key, obj_body in keys_to_body.items():
+            put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=obj_body)
+            snapshot.match(f"put-obj-{key}", put_obj)
+
+        def _invoke(
+            url, accept: str, r_content_type: str = "binary/octet-stream", expected_code: int = 200
+        ):
+            _response = requests.get(
+                url=url, headers={"Accept": accept, "response-content-type": r_content_type}
+            )
+            assert _response.status_code == expected_code
+            if expected_code == 200:
+                assert _response.headers.get("ETag")
+
+            return _response
+
+        invoke_url_encoded = api_invoke_url(api_id, stage_name, path="/" + object_key_encoded)
+        obj = retry(_invoke, url=invoke_url_encoded, accept="image/png", retries=10)
+        snapshot.match(
+            "encoded-no-media", {"content": obj.content, "etag": obj.headers.get("ETag")}
+        )
+
+        # it tries to base64-decode the object and fails, hence 500
+        invoke_url_raw = api_invoke_url(api_id, stage_name, path="/" + object_key_raw)
+        retry(_invoke, url=invoke_url_raw, accept="image/png", expected_code=500)
+
+        invoke_url_text = api_invoke_url(api_id, stage_name, path="/" + object_key_text)
+        retry(_invoke, url=invoke_url_text, accept="text/plain", expected_code=500)
+
+        # we now add a `binaryMediaTypes`
+        patch_operations = [{"op": "add", "path": "/binaryMediaTypes/image~1png"}]
+        aws_client.apigateway.update_rest_api(restApiId=api_id, patchOperations=patch_operations)
+
+        if is_aws_cloud():
+            time.sleep(10)
+
+        stage_2 = "test2"
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_2)
+
+        invoke_url_encoded_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_encoded)
+        invoke_url_raw_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_raw)
+        invoke_url_text_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_text)
+
+        # test with Accept binary types (`Accept` that matches the binaryMediaTypes)
+        # and Text Payload (Payload `Content-Type` that does not match the binaryMediaTypes)
+        obj = retry(_invoke, url=invoke_url_encoded_2, accept="image/png", retries=20)
+        snapshot.match(
+            "encoded-payload-text-accept-binary",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        retry(_invoke, url=invoke_url_raw_2, accept="image/png", expected_code=500)
+        retry(_invoke, url=invoke_url_text_2, accept="image/png", expected_code=500)
+
+        # test with Accept binary types (`Accept` that matches the binaryMediaTypes)
+        # and binary Payload (Payload `Content-Type` that matches the binaryMediaTypes)
+        obj = retry(
+            _invoke, url=invoke_url_encoded_2, accept="image/png", r_content_type="image/png"
+        )
+        snapshot.match(
+            "encoded-payload-binary-accept-binary",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        obj = retry(_invoke, url=invoke_url_raw_2, accept="image/png", r_content_type="image/png")
+        snapshot.match(
+            "raw-payload-binary-accept-binary",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        obj = retry(_invoke, url=invoke_url_text_2, accept="image/png", r_content_type="image/png")
+        snapshot.match(
+            "text-payload-binary-accept-binary",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        # test with Accept text types (`Accept` that does not match the binaryMediaTypes)
+        # and Text Payload (Payload `Content-Type` that does not match the binaryMediaTypes)
+        obj = retry(_invoke, url=invoke_url_encoded_2, accept="text/plain")
+        snapshot.match(
+            "encoded-payload-text-accept-text",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        retry(_invoke, url=invoke_url_raw_2, accept="text/plain", expected_code=500)
+        retry(_invoke, url=invoke_url_text_2, accept="text/plain", expected_code=500)
+
+        # test with Accept text types (`Accept` that does not match the binaryMediaTypes)
+        # and binary Payload (Payload `Content-Type` that matches the binaryMediaTypes)
+        obj = retry(
+            _invoke, url=invoke_url_encoded_2, accept="text/plain", r_content_type="image/png"
+        )
+        snapshot.match(
+            "encoded-payload-binary-accept-text",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        obj = retry(_invoke, url=invoke_url_raw_2, accept="text/plain", r_content_type="image/png")
+        snapshot.match(
+            "raw-payload-binary-accept-text",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        obj = retry(_invoke, url=invoke_url_text_2, accept="text/plain", r_content_type="image/png")
+        snapshot.match(
+            "text-payload-binary-accept-text",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
