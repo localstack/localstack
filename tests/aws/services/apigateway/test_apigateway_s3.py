@@ -262,6 +262,7 @@ class TestApiGatewayS3BinarySupport:
         def _setup(
             request_content_handling: ContentHandlingStrategy | None = None,
             response_content_handling: ContentHandlingStrategy | None = None,
+            deploy: bool = True,
         ):
             api_id, api_name, root_id = create_rest_apigw()
             stage_name = "test"
@@ -319,8 +320,8 @@ class TestApiGatewayS3BinarySupport:
             aws_client.apigateway.put_method_response(
                 restApiId=api_id, resourceId=resource_id, httpMethod="ANY", statusCode="200"
             )
-
-            aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+            if deploy:
+                aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
 
             snapshot.add_transformers_list(
                 [
@@ -330,7 +331,7 @@ class TestApiGatewayS3BinarySupport:
                 ]
             )
 
-            return api_id, stage_name
+            return api_id, resource_id, stage_name
 
         return _setup
 
@@ -343,7 +344,7 @@ class TestApiGatewayS3BinarySupport:
         snapshot,
     ):
         # the current API does not have any `binaryMediaTypes` configured
-        api_id, stage_name = setup_s3_apigateway(
+        api_id, _, stage_name = setup_s3_apigateway(
             request_content_handling=None,
         )
         object_body_raw = gzip.compress(
@@ -441,7 +442,7 @@ class TestApiGatewayS3BinarySupport:
         snapshot,
     ):
         # the current API does not have any `binaryMediaTypes` configured
-        api_id, stage_name = setup_s3_apigateway(
+        api_id, _, stage_name = setup_s3_apigateway(
             request_content_handling=ContentHandlingStrategy.CONVERT_TO_TEXT,
         )
         object_body_raw = gzip.compress(
@@ -539,7 +540,7 @@ class TestApiGatewayS3BinarySupport:
         snapshot,
     ):
         # the current API does not have any `binaryMediaTypes` configured
-        api_id, stage_name = setup_s3_apigateway(
+        api_id, _, stage_name = setup_s3_apigateway(
             request_content_handling=ContentHandlingStrategy.CONVERT_TO_BINARY,
         )
         object_body_raw = gzip.compress(
@@ -678,18 +679,83 @@ class TestApiGatewayS3BinarySupport:
         get_obj["Body"] = get_obj["Body"].read()
         snapshot.match("get-obj-encoded-not-binary-media", get_obj)
 
-    # @markers.aws.validated
-    # def test_apigw_s3_binary_support_request_convert_to_binary_with_request_template(
-    #     self,
-    #     aws_client,
-    #     s3_bucket,
-    #     setup_s3_apigateway,
-    #     snapshot,
-    # ):
-    #     # the current API does not have any `binaryMediaTypes` configured
-    #     api_id, stage_name = setup_s3_apigateway(
-    #         request_content_handling=ContentHandlingStrategy.CONVERT_TO_BINARY,
-    #     )
+    @markers.aws.validated
+    def test_apigw_s3_binary_support_request_convert_to_binary_with_request_template(
+        self,
+        aws_client,
+        s3_bucket,
+        setup_s3_apigateway,
+        snapshot,
+    ):
+        # the current API does not have any `binaryMediaTypes` configured
+        api_id, resource_id, stage_name = setup_s3_apigateway(
+            request_content_handling=ContentHandlingStrategy.CONVERT_TO_BINARY,
+        )
+
+        # set up the VTL requestTemplate
+        aws_client.apigateway.update_integration(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="ANY",
+            patchOperations=[
+                {
+                    "op": "add",
+                    "path": "/requestTemplates/application~1json",
+                    "value": json.dumps({"data": "$input.body"}),
+                }
+            ],
+        )
+
+        get_integration = aws_client.apigateway.get_integration(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="ANY",
+        )
+        snapshot.match("get-integration", get_integration)
+
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+        object_body_raw = gzip.compress(
+            b"compressed data, should be invalid UTF-8 string", mtime=1676569620
+        )
+        with pytest.raises(ValueError):
+            object_body_raw.decode()
+
+        object_body_encoded = base64.b64encode(object_body_raw)
+        object_key_encoded = "binary-encoded"
+
+        def _invoke(url, body: bytes | str, content_type: str, expected_code: int = 200):
+            _response = requests.put(url=url, data=body, headers={"Content-Type": content_type})
+            assert _response.status_code == expected_code
+            # sometimes S3 will respond 200, but will have a permission error
+            if expected_code == 200:
+                assert not _response.content
+
+            return _response
+
+        # this request does not match the requestTemplates
+        invoke_url_encoded = api_invoke_url(api_id, stage_name, path="/" + object_key_encoded)
+        retry(
+            _invoke,
+            url=invoke_url_encoded,
+            body=object_body_encoded,
+            content_type="image/png",
+            retries=10,
+        )
+
+        get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_encoded)
+        get_obj["Body"] = get_obj["Body"].read()
+        snapshot.match("get-obj-encoded", get_obj)
+
+        # this request matches the requestTemplates (application/json)
+        # it fails because we cannot pass binary data that hasn't been sanitized to VTL templates
+        retry(
+            _invoke,
+            url=invoke_url_encoded,
+            body=object_body_encoded,
+            content_type="application/json",
+            expected_code=500,
+        )
 
     # @markers.aws.validated
     # def test_apigw_s3_binary_support_response(self, aws_client, s3_bucket):

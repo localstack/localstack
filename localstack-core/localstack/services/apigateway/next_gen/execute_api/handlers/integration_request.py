@@ -186,13 +186,18 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         if not template:
             return body, {}
 
+        try:
+            body_utf8 = to_str(body)
+        except UnicodeError:
+            raise InternalServerError("Internal server error")
+
         body, request_override = self._vtl_template.render_request(
             template=template,
             variables=MappingTemplateVariables(
                 context=context.context_variables,
                 stageVariables=context.stage_variables or {},
                 input=MappingTemplateInput(
-                    body=to_str(body),
+                    body=body_utf8,
                     params=MappingTemplateParams(
                         path=request.get("path_parameters"),
                         querystring=request.get("query_string_parameters", {}),

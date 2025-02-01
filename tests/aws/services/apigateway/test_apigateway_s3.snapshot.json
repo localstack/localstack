@@ -478,5 +478,72 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_s3.py::TestApiGatewayS3BinarySupport::test_apigw_s3_binary_support_request_convert_to_binary_with_request_template": {
+    "recorded-date": "01-02-2025, 00:48:04",
+    "recorded-content": {
+      "put-integration": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "contentHandling": "CONVERT_TO_BINARY",
+        "credentials": "<credentials:1>",
+        "httpMethod": "ANY",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestParameters": {
+          "integration.request.header.Content-Type": "method.request.header.Content-Type",
+          "integration.request.path.object_path": "method.request.path.object_path"
+        },
+        "timeoutInMillis": 29000,
+        "type": "AWS",
+        "uri": "arn:<partition>:apigateway:<region>:s3:path/<s3-bucket>/{object_path}",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-integration": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "contentHandling": "CONVERT_TO_BINARY",
+        "credentials": "<credentials:1>",
+        "httpMethod": "ANY",
+        "integrationResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestParameters": {
+          "integration.request.header.Content-Type": "method.request.header.Content-Type",
+          "integration.request.path.object_path": "method.request.path.object_path"
+        },
+        "requestTemplates": {
+          "application/json": {
+            "data": "$input.body"
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "AWS",
+        "uri": "arn:<partition>:apigateway:<region>:s3:path/<s3-bucket>/{object_path}",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-encoded": {
+        "AcceptRanges": "bytes",
+        "Body": "b'\\x1f\\x8b\\x08\\x00\\x14l\\xeec\\x02\\xffK\\xce\\xcf-(J-.NMQHI,I\\xd4Q(\\xce\\xc8/\\xcdIQHJU\\xc8\\xcc+K\\xcc\\xc9LQ\\x08\\rq\\xd3\\xb5P(.)\\xca\\xccK\\x07\\x00\\xb89\\x10W/\\x00\\x00\\x00'",
+        "ContentLength": 67,
+        "ContentType": "image/png",
+        "ETag": "\"1e5a1bfed5308938e5549848bab02ac6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
