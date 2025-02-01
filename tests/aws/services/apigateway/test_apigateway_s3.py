@@ -1106,3 +1106,111 @@ class TestApiGatewayS3BinarySupport:
             "text-payload-binary-accept-text",
             {"content": obj.content, "etag": obj.headers.get("ETag")},
         )
+
+    @markers.aws.validated
+    def test_apigw_s3_binary_support_response_convert_to_binary_with_request_template(
+        self,
+        aws_client,
+        s3_bucket,
+        setup_s3_apigateway,
+        snapshot,
+    ):
+        api_id, resource_id, stage_name = setup_s3_apigateway(
+            request_content_handling=None,
+            response_content_handling=ContentHandlingStrategy.CONVERT_TO_TEXT,
+            deploy=False,
+        )
+
+        patch_operations = [{"op": "add", "path": "/binaryMediaTypes/image~1png"}]
+        aws_client.apigateway.update_rest_api(restApiId=api_id, patchOperations=patch_operations)
+
+        # set up the VTL requestTemplate
+        aws_client.apigateway.update_integration_response(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="ANY",
+            statusCode="200",
+            patchOperations=[
+                {
+                    "op": "add",
+                    "path": "/responseTemplates/application~1json",
+                    "value": json.dumps({"data": "$input.body"}),
+                }
+            ],
+        )
+
+        get_integration = aws_client.apigateway.get_integration_response(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="ANY",
+            statusCode="200",
+        )
+        snapshot.match("get-integration-response", get_integration)
+
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+        object_body_raw = gzip.compress(
+            b"compressed data, should be invalid UTF-8 string", mtime=1676569620
+        )
+        with pytest.raises(ValueError):
+            object_body_raw.decode()
+
+        object_body_encoded = base64.b64encode(object_body_raw)
+        object_key_encoded = "binary-encoded"
+
+        put_obj = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=object_key_encoded, Body=object_body_encoded
+        )
+        snapshot.match("put-obj-encoded", put_obj)
+
+        def _invoke(
+            url, accept: str, r_content_type: str = "binary/octet-stream", expected_code: int = 200
+        ):
+            _response = requests.get(
+                url=url, headers={"Accept": accept, "response-content-type": r_content_type}
+            )
+            assert _response.status_code == expected_code
+            if expected_code == 200:
+                assert _response.headers.get("ETag")
+
+            return _response
+
+        # as we are in CONVERT_TO_TEXT, we always get back UTF8 strings back to the template
+        invoke_url_encoded = api_invoke_url(api_id, stage_name, path="/" + object_key_encoded)
+        obj = retry(_invoke, url=invoke_url_encoded, accept="image/png", retries=20)
+        snapshot.match(
+            "encoded-text-payload-binary-accept",
+            {"content": obj.content, "etag": obj.headers.get("ETag")},
+        )
+
+        # it seems responseTemplates are not auto-transforming in UTF8 string and are failing if the payload is in bytes
+        # set up the VTL requestTemplate
+        aws_client.apigateway.update_integration_response(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="ANY",
+            statusCode="200",
+            patchOperations=[
+                {
+                    "op": "replace",
+                    "path": "/contentHandling",
+                    "value": ContentHandlingStrategy.CONVERT_TO_BINARY,
+                }
+            ],
+        )
+        get_integration = aws_client.apigateway.get_integration_response(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="ANY",
+            statusCode="200",
+        )
+        snapshot.match("get-integration-response-update", get_integration)
+
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+        if is_aws_cloud():
+            # we need to sleep here, because we can't really assert that the error is the default deploy error, or just
+            # that it is failing
+            time.sleep(20)
+        # this actually returns the base64 file (so a UTF8 encoded string, but in bytes, raw from S3)
+        retry(_invoke, url=invoke_url_encoded, accept="image/png", expected_code=500)

@@ -13,7 +13,7 @@ from localstack.aws.api.apigateway import (
 )
 from localstack.constants import APPLICATION_JSON
 from localstack.http import Response
-from localstack.utils.strings import to_bytes, to_str
+from localstack.utils.strings import to_bytes
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import (
@@ -265,13 +265,18 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         if not template:
             return body, ContextVarsResponseOverride(status=0, header={})
 
+        # if there are no template, we can pass binary data through
+        if not isinstance(body, str):
+            # TODO: check, this might be ApiConfigurationError
+            raise InternalServerError("Internal server error")
+
         body, response_override = self._vtl_template.render_response(
             template=template,
             variables=MappingTemplateVariables(
                 context=context.context_variables,
                 stageVariables=context.stage_variables or {},
                 input=MappingTemplateInput(
-                    body=to_str(body),
+                    body=body,
                     params=MappingTemplateParams(
                         path=context.invocation_request.get("path_parameters"),
                         querystring=context.invocation_request.get("query_string_parameters", {}),
