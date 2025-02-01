@@ -184,7 +184,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         request: InvocationRequest = context.invocation_request
 
         if not template:
-            return body, {}
+            return to_bytes(body), {}
 
         try:
             body_utf8 = to_str(body)
