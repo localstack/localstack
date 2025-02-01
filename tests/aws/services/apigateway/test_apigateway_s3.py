@@ -349,16 +349,18 @@ class TestApiGatewayS3BinarySupport:
         return _setup
 
     @markers.aws.validated
-    def test_apigw_s3_binary_support_request_no_content_handling(
+    @pytest.mark.parametrize("content_handling", [None, ContentHandlingStrategy.CONVERT_TO_TEXT])
+    def test_apigw_s3_binary_support_request(
         self,
         aws_client,
         s3_bucket,
         setup_s3_apigateway,
         snapshot,
+        content_handling,
     ):
         # the current API does not have any `binaryMediaTypes` configured
         api_id, _, stage_name = setup_s3_apigateway(
-            request_content_handling=None,
+            request_content_handling=content_handling,
         )
         object_body_raw = gzip.compress(
             b"compressed data, should be invalid UTF-8 string", mtime=1676569620
@@ -396,18 +398,14 @@ class TestApiGatewayS3BinarySupport:
         retry(_invoke, url=invoke_url_encoded, body=object_body_encoded, content_type="image/png")
 
         invoke_url_text = api_invoke_url(api_id, stage_name, path="/" + object_key_text)
-        retry(_invoke, url=invoke_url_text, body=object_body_text, content_type="text/plain")
+        retry(_invoke, url=invoke_url_text, body=object_body_text, content_type="image/png")
 
         for key in keys:
             get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
             snapshot.match(f"get-obj-no-binary-media-{key}", get_obj)
 
         # we now add a `binaryMediaTypes`
-        patch_operations = [
-            {"op": "add", "path": "/binaryMediaTypes/image~1png"},
-            {"op": "add", "path": "/binaryMediaTypes/text~1plain"},
-            {"op": "add", "path": "/binaryMediaTypes/application~1json"},
-        ]
+        patch_operations = [{"op": "add", "path": "/binaryMediaTypes/image~1png"}]
         aws_client.apigateway.update_rest_api(restApiId=api_id, patchOperations=patch_operations)
 
         if is_aws_cloud():
@@ -417,6 +415,10 @@ class TestApiGatewayS3BinarySupport:
         aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_2)
 
         invoke_url_raw_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_raw)
+        invoke_url_encoded_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_encoded)
+        invoke_url_text_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_text)
+
+        # test with a ContentType that matches the binaryMediaTypes
         retry(
             _invoke,
             retries=10,
@@ -425,124 +427,25 @@ class TestApiGatewayS3BinarySupport:
             content_type="image/png",
         )
 
-        invoke_url_encoded_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_encoded)
         retry(_invoke, url=invoke_url_encoded_2, body=object_body_encoded, content_type="image/png")
+        retry(_invoke, url=invoke_url_text_2, body=object_body_text, content_type="image/png")
 
-        invoke_url_text_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_text)
+        for key in keys:
+            get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
+            get_obj["Body"] = get_obj["Body"].read()
+            snapshot.match(f"get-obj-binary-type-{key}", get_obj)
+
+        # test with a ContentType that does not match the binaryMediaTypes
+        retry(_invoke, url=invoke_url_raw_2, body=object_body_raw, content_type="text/plain")
+        retry(
+            _invoke, url=invoke_url_encoded_2, body=object_body_encoded, content_type="text/plain"
+        )
         retry(_invoke, url=invoke_url_text_2, body=object_body_text, content_type="text/plain")
 
         for key in keys:
             get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
             get_obj["Body"] = get_obj["Body"].read()
-            snapshot.match(f"get-obj-binary-media-{key}", get_obj)
-
-        retry(_invoke, url=invoke_url_raw_2, body=object_body_raw, content_type="image/jpg")
-        get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_raw)
-        get_obj["Body"] = get_obj["Body"].read()
-        snapshot.match(f"get-obj-wrong-binary-media-{object_key_raw}", get_obj)
-
-        retry(_invoke, url=invoke_url_raw_2, body=object_body_raw, content_type="text/plain")
-        get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_raw)
-        get_obj["Body"] = get_obj["Body"].read()
-        snapshot.match(f"get-obj-text-binary-media-{object_key_raw}", get_obj)
-
-    @markers.aws.validated
-    def test_apigw_s3_binary_support_request_convert_to_text(
-        self,
-        aws_client,
-        s3_bucket,
-        setup_s3_apigateway,
-        snapshot,
-    ):
-        # the current API does not have any `binaryMediaTypes` configured
-        api_id, _, stage_name = setup_s3_apigateway(
-            request_content_handling=ContentHandlingStrategy.CONVERT_TO_TEXT,
-        )
-        object_body_raw = gzip.compress(
-            b"compressed data, should be invalid UTF-8 string", mtime=1676569620
-        )
-        with pytest.raises(ValueError):
-            object_body_raw.decode()
-
-        put_obj = aws_client.s3.put_object(
-            Bucket=s3_bucket, Key="test-raw-key-etag", Body=object_body_raw
-        )
-        snapshot.match("put-obj-raw", put_obj)
-
-        object_body_encoded = base64.b64encode(object_body_raw)
-        object_body_text = "this is a UTF8 text typed object"
-
-        object_key_raw = "binary-raw"
-        object_key_encoded = "binary-encoded"
-        object_key_text = "text"
-        keys = [object_key_raw, object_key_encoded, object_key_text]
-
-        def _invoke(url, body: bytes | str, content_type: str, expected_code: int = 200):
-            _response = requests.put(url=url, data=body, headers={"Content-Type": content_type})
-            assert _response.status_code == expected_code
-            # sometimes S3 will respond 200, but will have a permission error
-            assert not _response.content
-
-            return _response
-
-        invoke_url_raw = api_invoke_url(api_id, stage_name, path="/" + object_key_raw)
-        retry(
-            _invoke, retries=10, url=invoke_url_raw, body=object_body_raw, content_type="image/png"
-        )
-
-        invoke_url_encoded = api_invoke_url(api_id, stage_name, path="/" + object_key_encoded)
-        retry(_invoke, url=invoke_url_encoded, body=object_body_encoded, content_type="image/png")
-
-        invoke_url_text = api_invoke_url(api_id, stage_name, path="/" + object_key_text)
-        retry(_invoke, url=invoke_url_text, body=object_body_text, content_type="text/plain")
-
-        for key in keys:
-            get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
-            snapshot.match(f"get-obj-no-binary-media-{key}", get_obj)
-
-        # we now add a `binaryMediaTypes`
-        patch_operations = [
-            {"op": "add", "path": "/binaryMediaTypes/image~1png"},
-            {"op": "add", "path": "/binaryMediaTypes/text~1plain"},
-            {"op": "add", "path": "/binaryMediaTypes/application~1json"},
-        ]
-        aws_client.apigateway.update_rest_api(restApiId=api_id, patchOperations=patch_operations)
-
-        if is_aws_cloud():
-            time.sleep(10)
-
-        stage_2 = "test2"
-        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_2)
-
-        invoke_url_raw_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_raw)
-        retry(
-            _invoke,
-            retries=10,
-            url=invoke_url_raw_2,
-            body=object_body_raw,
-            content_type="image/png",
-        )
-
-        invoke_url_encoded_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_encoded)
-        retry(_invoke, url=invoke_url_encoded_2, body=object_body_encoded, content_type="image/png")
-
-        invoke_url_text_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_text)
-        retry(_invoke, url=invoke_url_text_2, body=object_body_text, content_type="text/plain")
-
-        for key in keys:
-            get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
-            get_obj["Body"] = get_obj["Body"].read()
-            snapshot.match(f"get-obj-binary-media-{key}", get_obj)
-
-        retry(_invoke, url=invoke_url_raw_2, body=object_body_raw, content_type="image/jpg")
-        get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_raw)
-        get_obj["Body"] = get_obj["Body"].read()
-        snapshot.match(f"get-obj-wrong-binary-media-{object_key_raw}", get_obj)
-
-        retry(_invoke, url=invoke_url_raw_2, body=object_body_raw, content_type="text/plain")
-        get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_raw)
-        get_obj["Body"] = get_obj["Body"].read()
-        snapshot.match(f"get-obj-text-binary-media-{object_key_raw}", get_obj)
+            snapshot.match(f"get-obj-text-type-{key}", get_obj)
 
     @markers.aws.validated
     def test_apigw_s3_binary_support_request_convert_to_binary(
@@ -594,6 +497,9 @@ class TestApiGatewayS3BinarySupport:
             content_type="image/png",
             retries=10,
         )
+        get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_encoded)
+        get_obj["Body"] = get_obj["Body"].read()
+        snapshot.match(f"get-obj-no-binary-media-{object_key_encoded}", get_obj)
 
         invoke_url_raw = api_invoke_url(api_id, stage_name, path="/" + object_key_raw)
         retry(
@@ -613,20 +519,12 @@ class TestApiGatewayS3BinarySupport:
             expected_code=500,
         )
 
-        get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_encoded)
-        get_obj["Body"] = get_obj["Body"].read()
-        snapshot.match(f"get-obj-no-binary-media-{object_key_encoded}", get_obj)
-
         for key in [object_key_raw, object_key_text]:
             with pytest.raises(aws_client.s3.exceptions.NoSuchKey):
                 aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
 
         # we now add a `binaryMediaTypes`
-        patch_operations = [
-            {"op": "add", "path": "/binaryMediaTypes/image~1png"},
-            {"op": "add", "path": "/binaryMediaTypes/text~1plain"},
-            {"op": "add", "path": "/binaryMediaTypes/application~1json"},
-        ]
+        patch_operations = [{"op": "add", "path": "/binaryMediaTypes/image~1png"}]
         aws_client.apigateway.update_rest_api(restApiId=api_id, patchOperations=patch_operations)
 
         if is_aws_cloud():
@@ -636,6 +534,10 @@ class TestApiGatewayS3BinarySupport:
         aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_2)
 
         invoke_url_raw_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_raw)
+        invoke_url_encoded_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_encoded)
+        invoke_url_text_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_text)
+
+        # test with a ContentType that matches the binaryMediaTypes
         retry(
             _invoke,
             retries=10,
@@ -643,54 +545,36 @@ class TestApiGatewayS3BinarySupport:
             body=object_body_raw,
             content_type="image/png",
         )
-
-        invoke_url_encoded_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_encoded)
         retry(_invoke, url=invoke_url_encoded_2, body=object_body_encoded, content_type="image/png")
-
-        invoke_url_text_2 = api_invoke_url(api_id, stage_2, path="/" + object_key_text)
-        retry(_invoke, url=invoke_url_text_2, body=object_body_text, content_type="text/plain")
+        retry(_invoke, url=invoke_url_text_2, body=object_body_text, content_type="image/png")
 
         for key in keys:
             get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
             get_obj["Body"] = get_obj["Body"].read()
             snapshot.match(f"get-obj-binary-media-{key}", get_obj)
 
+        # test with a ContentType that does not match the binaryMediaTypes
         retry(
             _invoke,
             url=invoke_url_raw_2,
             body=object_body_raw,
-            content_type="image/jpg",
+            content_type="text/plain",
             expected_code=500,
         )
         retry(
             _invoke,
-            url=invoke_url_raw_2,
-            body=object_body_raw,
-            content_type="application/xml",
+            url=invoke_url_text_2,
+            body=object_body_text,
+            content_type="text/plain",
             expected_code=500,
         )
 
-        # those binary medias are defined (text/plain & application/json)
-        retry(_invoke, url=invoke_url_raw_2, body=object_body_raw, content_type="text/plain")
-        get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_raw)
-        get_obj["Body"] = get_obj["Body"].read()
-        snapshot.match("get-obj-raw-binary-media-text", get_obj)
-
-        retry(_invoke, url=invoke_url_raw_2, body=object_body_raw, content_type="application/json")
-        get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_raw)
-        get_obj["Body"] = get_obj["Body"].read()
-        snapshot.match("get-obj-raw-binary-media-json", get_obj)
-
-        # with a media type not configured
         retry(
-            _invoke,
-            url=invoke_url_encoded_2,
-            body=object_body_encoded,
-            content_type="application/xml",
+            _invoke, url=invoke_url_encoded_2, body=object_body_encoded, content_type="text/plain"
         )
         get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_encoded)
         get_obj["Body"] = get_obj["Body"].read()
-        snapshot.match("get-obj-encoded-not-binary-media", get_obj)
+        snapshot.match(f"get-obj-text-type-{object_key_encoded}", get_obj)
 
     @markers.aws.validated
     def test_apigw_s3_binary_support_request_convert_to_binary_with_request_template(
