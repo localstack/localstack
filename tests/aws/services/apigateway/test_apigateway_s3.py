@@ -706,7 +706,6 @@ class TestApiGatewayS3BinarySupport:
         obj = retry(_invoke, url=invoke_url_text, accept="text/plain", retries=10)
         snapshot.match("text-no-media", {"content": obj.content, "etag": obj.headers.get("ETag")})
 
-        # it tries to decode the object as UTF8 and fails, hence 500
         invoke_url_raw = api_invoke_url(api_id, stage_name, path="/" + object_key_raw)
         obj = retry(_invoke, url=invoke_url_raw, accept="image/png")
         snapshot.match("raw-no-media", {"content": obj.content, "etag": obj.headers.get("ETag")})
