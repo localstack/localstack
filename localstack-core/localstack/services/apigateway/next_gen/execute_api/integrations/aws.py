@@ -32,6 +32,7 @@ from ..context import (
 from ..gateway_response import IntegrationFailureError, InternalServerError
 from ..header_utils import build_multi_value_headers
 from ..helpers import (
+    accept_header_matches_binary_media_types,
     get_lambda_function_arn_from_invocation_uri,
     get_source_arn,
     mime_type_matches_binary_media_types,
@@ -396,8 +397,8 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         # TODO: maybe centralize this flag inside the context, when we are also using it for other integration types
         #  AWS_PROXY behaves a bit differently, but this could checked only once earlier
         binary_response_accepted = mime_type_matches_binary_media_types(
-            context.invocation_request["headers"].get("Accept"),
-            context.deployment.rest_api.rest_api.get("binaryMediaTypes", []),
+            mime_type=context.invocation_request["headers"].get("Accept"),
+            binary_media_types=context.deployment.rest_api.rest_api.get("binaryMediaTypes", []),
         )
         body = self._parse_body(
             body=lambda_response.get("body"),

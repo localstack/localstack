@@ -57,25 +57,12 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_s3.py::TestApiGatewayS3BinarySupport::test_apigw_s3_binary_support_request_no_content_handling": {
-    "recorded-date": "31-01-2025, 22:48:00",
+    "recorded-date": "31-01-2025, 23:06:37",
     "recorded-content": {
-      "put-method": {
-        "apiKeyRequired": false,
-        "authorizationType": "NONE",
-        "httpMethod": "ANY",
-        "requestParameters": {
-          "method.request.header.Content-Type": false,
-          "method.request.path.object_path": true
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
       "put-integration": {
         "cacheKeyParameters": [],
-        "cacheNamespace": "exsgsj",
-        "credentials": "arn:<partition>:iam::111111111111:role/role-eddd8f4f",
+        "cacheNamespace": "<cache-namespace:1>",
+        "credentials": "<credentials:1>",
         "httpMethod": "ANY",
         "passthroughBehavior": "WHEN_NO_MATCH",
         "requestParameters": {
@@ -84,18 +71,28 @@
         },
         "timeoutInMillis": 29000,
         "type": "AWS",
-        "uri": "arn:<partition>:apigateway:<region>:s3:path/test-bucket-093d7100/{object_path}",
+        "uri": "arn:<partition>:apigateway:<region>:s3:path/<s3-bucket>/{object_path}",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
         }
       },
+      "put-obj-raw": {
+        "ChecksumCRC32": "MjWu6g==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"1e5a1bfed5308938e5549848bab02ac6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "get-obj-no-binary-media-binary-raw": {
         "AcceptRanges": "bytes",
-        "Body": "\u001f\ufffd\b\u0000\fS\ufffdg\u0002\ufffdK\ufffd\ufffd-(J-.NMQHI,I\ufffdQ(\ufffd\ufffd/\ufffdIQHJU\ufffd\ufffd+K\ufffd\ufffdLQ\b\rq\u04f5P(.)\ufffd\ufffdK\u0007\u0000\ufffd9\u0010W/\u0000\u0000\u0000",
+        "Body": "\u001f\ufffd\b\u0000\u0014l\ufffdc\u0002\ufffdK\ufffd\ufffd-(J-.NMQHI,I\ufffdQ(\ufffd\ufffd/\ufffdIQHJU\ufffd\ufffd+K\ufffd\ufffdLQ\b\rq\u04f5P(.)\ufffd\ufffdK\u0007\u0000\ufffd9\u0010W/\u0000\u0000\u0000",
         "ContentLength": 99,
         "ContentType": "image/png",
-        "ETag": "\"ec5fdc19947ad7e9cfc1f08006747412\"",
+        "ETag": "\"7301f0a0e8fc87c6f03320bf795ffde7\"",
         "LastModified": "datetime",
         "Metadata": {},
         "ServerSideEncryption": "AES256",
@@ -106,10 +103,10 @@
       },
       "get-obj-no-binary-media-binary-encoded": {
         "AcceptRanges": "bytes",
-        "Body": "H4sIAAxTnWcC/0vOzy0oSi0uTk1RSEksSdRRKM7IL81JUUhKVcjMK0vMyUxRCA1x07VQKC4pysxLBwC4ORBXLwAAAA==",
+        "Body": "H4sIABRs7mMC/0vOzy0oSi0uTk1RSEksSdRRKM7IL81JUUhKVcjMK0vMyUxRCA1x07VQKC4pysxLBwC4ORBXLwAAAA==",
         "ContentLength": 92,
         "ContentType": "image/png",
-        "ETag": "\"d99fd4e509fb30330479fb821438aa53\"",
+        "ETag": "\"76020056aa8e57ba307f9264167a34e4\"",
         "LastModified": "datetime",
         "Metadata": {},
         "ServerSideEncryption": "AES256",
@@ -134,10 +131,10 @@
       },
       "get-obj-binary-media-binary-raw": {
         "AcceptRanges": "bytes",
-        "Body": "\u001f\ufffd\b\u0000\fS\ufffdg\u0002\ufffdK\ufffd\ufffd-(J-.NMQHI,I\ufffdQ(\ufffd\ufffd/\ufffdIQHJU\ufffd\ufffd+K\ufffd\ufffdLQ\b\rq\u04f5P(.)\ufffd\ufffdK\u0007\u0000\ufffd9\u0010W/\u0000\u0000\u0000",
-        "ContentLength": 99,
+        "Body": "b'\\x1f\\x8b\\x08\\x00\\x14l\\xeec\\x02\\xffK\\xce\\xcf-(J-.NMQHI,I\\xd4Q(\\xce\\xc8/\\xcdIQHJU\\xc8\\xcc+K\\xcc\\xc9LQ\\x08\\rq\\xd3\\xb5P(.)\\xca\\xccK\\x07\\x00\\xb89\\x10W/\\x00\\x00\\x00'",
+        "ContentLength": 67,
         "ContentType": "image/png",
-        "ETag": "\"ec5fdc19947ad7e9cfc1f08006747412\"",
+        "ETag": "\"1e5a1bfed5308938e5549848bab02ac6\"",
         "LastModified": "datetime",
         "Metadata": {},
         "ServerSideEncryption": "AES256",
@@ -148,10 +145,10 @@
       },
       "get-obj-binary-media-binary-encoded": {
         "AcceptRanges": "bytes",
-        "Body": "H4sIAAxTnWcC/0vOzy0oSi0uTk1RSEksSdRRKM7IL81JUUhKVcjMK0vMyUxRCA1x07VQKC4pysxLBwC4ORBXLwAAAA==",
+        "Body": "b'H4sIABRs7mMC/0vOzy0oSi0uTk1RSEksSdRRKM7IL81JUUhKVcjMK0vMyUxRCA1x07VQKC4pysxLBwC4ORBXLwAAAA=='",
         "ContentLength": 92,
         "ContentType": "image/png",
-        "ETag": "\"d99fd4e509fb30330479fb821438aa53\"",
+        "ETag": "\"76020056aa8e57ba307f9264167a34e4\"",
         "LastModified": "datetime",
         "Metadata": {},
         "ServerSideEncryption": "AES256",
@@ -162,7 +159,7 @@
       },
       "get-obj-binary-media-text": {
         "AcceptRanges": "bytes",
-        "Body": "this is a UTF8 text typed object",
+        "Body": "b'this is a UTF8 text typed object'",
         "ContentLength": 32,
         "ContentType": "text/plain",
         "ETag": "\"322a648674040849d29154aa1dce24a5\"",
@@ -176,10 +173,10 @@
       },
       "get-obj-wrong-binary-media-binary-raw": {
         "AcceptRanges": "bytes",
-        "Body": "\u001f\ufffd\b\u0000\fS\ufffdg\u0002\ufffdK\ufffd\ufffd-(J-.NMQHI,I\ufffdQ(\ufffd\ufffd/\ufffdIQHJU\ufffd\ufffd+K\ufffd\ufffdLQ\b\rq\u04f5P(.)\ufffd\ufffdK\u0007\u0000\ufffd9\u0010W/\u0000\u0000\u0000",
+        "Body": "b'\\x1f\\xef\\xbf\\xbd\\x08\\x00\\x14l\\xef\\xbf\\xbdc\\x02\\xef\\xbf\\xbdK\\xef\\xbf\\xbd\\xef\\xbf\\xbd-(J-.NMQHI,I\\xef\\xbf\\xbdQ(\\xef\\xbf\\xbd\\xef\\xbf\\xbd/\\xef\\xbf\\xbdIQHJU\\xef\\xbf\\xbd\\xef\\xbf\\xbd+K\\xef\\xbf\\xbd\\xef\\xbf\\xbdLQ\\x08\\rq\\xd3\\xb5P(.)\\xef\\xbf\\xbd\\xef\\xbf\\xbdK\\x07\\x00\\xef\\xbf\\xbd9\\x10W/\\x00\\x00\\x00'",
         "ContentLength": 99,
         "ContentType": "image/jpg",
-        "ETag": "\"ec5fdc19947ad7e9cfc1f08006747412\"",
+        "ETag": "\"7301f0a0e8fc87c6f03320bf795ffde7\"",
         "LastModified": "datetime",
         "Metadata": {},
         "ServerSideEncryption": "AES256",
@@ -190,10 +187,288 @@
       },
       "get-obj-text-binary-media-binary-raw": {
         "AcceptRanges": "bytes",
-        "Body": "b'\\x1f\\xef\\xbf\\xbd\\x08\\x00\\x0cS\\xef\\xbf\\xbdg\\x02\\xef\\xbf\\xbdK\\xef\\xbf\\xbd\\xef\\xbf\\xbd-(J-.NMQHI,I\\xef\\xbf\\xbdQ(\\xef\\xbf\\xbd\\xef\\xbf\\xbd/\\xef\\xbf\\xbdIQHJU\\xef\\xbf\\xbd\\xef\\xbf\\xbd+K\\xef\\xbf\\xbd\\xef\\xbf\\xbdLQ\\x08\\rq\\xd3\\xb5P(.)\\xef\\xbf\\xbd\\xef\\xbf\\xbdK\\x07\\x00\\xef\\xbf\\xbd9\\x10W/\\x00\\x00\\x00'",
-        "ContentLength": 99,
+        "Body": "b'\\x1f\\x8b\\x08\\x00\\x14l\\xeec\\x02\\xffK\\xce\\xcf-(J-.NMQHI,I\\xd4Q(\\xce\\xc8/\\xcdIQHJU\\xc8\\xcc+K\\xcc\\xc9LQ\\x08\\rq\\xd3\\xb5P(.)\\xca\\xccK\\x07\\x00\\xb89\\x10W/\\x00\\x00\\x00'",
+        "ContentLength": 67,
         "ContentType": "text/plain",
-        "ETag": "\"ec5fdc19947ad7e9cfc1f08006747412\"",
+        "ETag": "\"1e5a1bfed5308938e5549848bab02ac6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_s3.py::TestApiGatewayS3BinarySupport::test_apigw_s3_binary_support_request_convert_to_text": {
+    "recorded-date": "31-01-2025, 23:12:01",
+    "recorded-content": {
+      "put-integration": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "contentHandling": "CONVERT_TO_TEXT",
+        "credentials": "<credentials:1>",
+        "httpMethod": "ANY",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestParameters": {
+          "integration.request.header.Content-Type": "method.request.header.Content-Type",
+          "integration.request.path.object_path": "method.request.path.object_path"
+        },
+        "timeoutInMillis": 29000,
+        "type": "AWS",
+        "uri": "arn:<partition>:apigateway:<region>:s3:path/<s3-bucket>/{object_path}",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-obj-raw": {
+        "ChecksumCRC32": "MjWu6g==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"1e5a1bfed5308938e5549848bab02ac6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-no-binary-media-binary-raw": {
+        "AcceptRanges": "bytes",
+        "Body": "\u001f\ufffd\b\u0000\u0014l\ufffdc\u0002\ufffdK\ufffd\ufffd-(J-.NMQHI,I\ufffdQ(\ufffd\ufffd/\ufffdIQHJU\ufffd\ufffd+K\ufffd\ufffdLQ\b\rq\u04f5P(.)\ufffd\ufffdK\u0007\u0000\ufffd9\u0010W/\u0000\u0000\u0000",
+        "ContentLength": 99,
+        "ContentType": "image/png",
+        "ETag": "\"7301f0a0e8fc87c6f03320bf795ffde7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-no-binary-media-binary-encoded": {
+        "AcceptRanges": "bytes",
+        "Body": "H4sIABRs7mMC/0vOzy0oSi0uTk1RSEksSdRRKM7IL81JUUhKVcjMK0vMyUxRCA1x07VQKC4pysxLBwC4ORBXLwAAAA==",
+        "ContentLength": 92,
+        "ContentType": "image/png",
+        "ETag": "\"76020056aa8e57ba307f9264167a34e4\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-no-binary-media-text": {
+        "AcceptRanges": "bytes",
+        "Body": "this is a UTF8 text typed object",
+        "ContentLength": 32,
+        "ContentType": "text/plain",
+        "ETag": "\"322a648674040849d29154aa1dce24a5\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-binary-media-binary-raw": {
+        "AcceptRanges": "bytes",
+        "Body": "b'H4sIABRs7mMC/0vOzy0oSi0uTk1RSEksSdRRKM7IL81JUUhKVcjMK0vMyUxRCA1x07VQKC4pysxLBwC4ORBXLwAAAA=='",
+        "ContentLength": 92,
+        "ContentType": "image/png",
+        "ETag": "\"76020056aa8e57ba307f9264167a34e4\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-binary-media-binary-encoded": {
+        "AcceptRanges": "bytes",
+        "Body": "b'SDRzSUFCUnM3bU1DLzB2T3p5MG9TaTB1VGsxUlNFa3NTZFJSS003SUw4MUpVVWhLVmNqTUswdk15VXhSQ0ExeDA3VlFLQzRweXN4TEJ3QzRPUkJYTHdBQUFBPT0='",
+        "ContentLength": 124,
+        "ContentType": "image/png",
+        "ETag": "\"835317c6c047dd2a13bb05117594a71a\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-binary-media-text": {
+        "AcceptRanges": "bytes",
+        "Body": "b'dGhpcyBpcyBhIFVURjggdGV4dCB0eXBlZCBvYmplY3Q='",
+        "ContentLength": 44,
+        "ContentType": "text/plain",
+        "ETag": "\"1a39ff3d9eff87f24107669698573f35\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-wrong-binary-media-binary-raw": {
+        "AcceptRanges": "bytes",
+        "Body": "b'\\x1f\\xef\\xbf\\xbd\\x08\\x00\\x14l\\xef\\xbf\\xbdc\\x02\\xef\\xbf\\xbdK\\xef\\xbf\\xbd\\xef\\xbf\\xbd-(J-.NMQHI,I\\xef\\xbf\\xbdQ(\\xef\\xbf\\xbd\\xef\\xbf\\xbd/\\xef\\xbf\\xbdIQHJU\\xef\\xbf\\xbd\\xef\\xbf\\xbd+K\\xef\\xbf\\xbd\\xef\\xbf\\xbdLQ\\x08\\rq\\xd3\\xb5P(.)\\xef\\xbf\\xbd\\xef\\xbf\\xbdK\\x07\\x00\\xef\\xbf\\xbd9\\x10W/\\x00\\x00\\x00'",
+        "ContentLength": 99,
+        "ContentType": "image/jpg",
+        "ETag": "\"7301f0a0e8fc87c6f03320bf795ffde7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-text-binary-media-binary-raw": {
+        "AcceptRanges": "bytes",
+        "Body": "b'H4sIABRs7mMC/0vOzy0oSi0uTk1RSEksSdRRKM7IL81JUUhKVcjMK0vMyUxRCA1x07VQKC4pysxLBwC4ORBXLwAAAA=='",
+        "ContentLength": 92,
+        "ContentType": "text/plain",
+        "ETag": "\"76020056aa8e57ba307f9264167a34e4\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_s3.py::TestApiGatewayS3BinarySupport::test_apigw_s3_binary_support_request_convert_to_binary": {
+    "recorded-date": "01-02-2025, 00:14:21",
+    "recorded-content": {
+      "put-integration": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "contentHandling": "CONVERT_TO_BINARY",
+        "credentials": "<credentials:1>",
+        "httpMethod": "ANY",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestParameters": {
+          "integration.request.header.Content-Type": "method.request.header.Content-Type",
+          "integration.request.path.object_path": "method.request.path.object_path"
+        },
+        "timeoutInMillis": 29000,
+        "type": "AWS",
+        "uri": "arn:<partition>:apigateway:<region>:s3:path/<s3-bucket>/{object_path}",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-obj-raw": {
+        "ChecksumCRC32": "MjWu6g==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"1e5a1bfed5308938e5549848bab02ac6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-no-binary-media-binary-encoded": {
+        "AcceptRanges": "bytes",
+        "Body": "b'\\x1f\\x8b\\x08\\x00\\x14l\\xeec\\x02\\xffK\\xce\\xcf-(J-.NMQHI,I\\xd4Q(\\xce\\xc8/\\xcdIQHJU\\xc8\\xcc+K\\xcc\\xc9LQ\\x08\\rq\\xd3\\xb5P(.)\\xca\\xccK\\x07\\x00\\xb89\\x10W/\\x00\\x00\\x00'",
+        "ContentLength": 67,
+        "ContentType": "image/png",
+        "ETag": "\"1e5a1bfed5308938e5549848bab02ac6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-binary-media-binary-raw": {
+        "AcceptRanges": "bytes",
+        "Body": "b'\\x1f\\x8b\\x08\\x00\\x14l\\xeec\\x02\\xffK\\xce\\xcf-(J-.NMQHI,I\\xd4Q(\\xce\\xc8/\\xcdIQHJU\\xc8\\xcc+K\\xcc\\xc9LQ\\x08\\rq\\xd3\\xb5P(.)\\xca\\xccK\\x07\\x00\\xb89\\x10W/\\x00\\x00\\x00'",
+        "ContentLength": 67,
+        "ContentType": "image/png",
+        "ETag": "\"1e5a1bfed5308938e5549848bab02ac6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-binary-media-binary-encoded": {
+        "AcceptRanges": "bytes",
+        "Body": "b'H4sIABRs7mMC/0vOzy0oSi0uTk1RSEksSdRRKM7IL81JUUhKVcjMK0vMyUxRCA1x07VQKC4pysxLBwC4ORBXLwAAAA=='",
+        "ContentLength": 92,
+        "ContentType": "image/png",
+        "ETag": "\"76020056aa8e57ba307f9264167a34e4\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-binary-media-text": {
+        "AcceptRanges": "bytes",
+        "Body": "b'this is a UTF8 text typed object'",
+        "ContentLength": 32,
+        "ContentType": "text/plain",
+        "ETag": "\"322a648674040849d29154aa1dce24a5\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-raw-binary-media-text": {
+        "AcceptRanges": "bytes",
+        "Body": "b'\\x1f\\x8b\\x08\\x00\\x14l\\xeec\\x02\\xffK\\xce\\xcf-(J-.NMQHI,I\\xd4Q(\\xce\\xc8/\\xcdIQHJU\\xc8\\xcc+K\\xcc\\xc9LQ\\x08\\rq\\xd3\\xb5P(.)\\xca\\xccK\\x07\\x00\\xb89\\x10W/\\x00\\x00\\x00'",
+        "ContentLength": 67,
+        "ContentType": "text/plain",
+        "ETag": "\"1e5a1bfed5308938e5549848bab02ac6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-raw-binary-media-json": {
+        "AcceptRanges": "bytes",
+        "Body": "b'\\x1f\\x8b\\x08\\x00\\x14l\\xeec\\x02\\xffK\\xce\\xcf-(J-.NMQHI,I\\xd4Q(\\xce\\xc8/\\xcdIQHJU\\xc8\\xcc+K\\xcc\\xc9LQ\\x08\\rq\\xd3\\xb5P(.)\\xca\\xccK\\x07\\x00\\xb89\\x10W/\\x00\\x00\\x00'",
+        "ContentLength": 67,
+        "ContentType": "application/json",
+        "ETag": "\"1e5a1bfed5308938e5549848bab02ac6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-encoded-not-binary-media": {
+        "AcceptRanges": "bytes",
+        "Body": "b'\\x1f\\x8b\\x08\\x00\\x14l\\xeec\\x02\\xffK\\xce\\xcf-(J-.NMQHI,I\\xd4Q(\\xce\\xc8/\\xcdIQHJU\\xc8\\xcc+K\\xcc\\xc9LQ\\x08\\rq\\xd3\\xb5P(.)\\xca\\xccK\\x07\\x00\\xb89\\x10W/\\x00\\x00\\x00'",
+        "ContentLength": 67,
+        "ContentType": "application/xml",
+        "ETag": "\"1e5a1bfed5308938e5549848bab02ac6\"",
         "LastModified": "datetime",
         "Metadata": {},
         "ServerSideEncryption": "AES256",
