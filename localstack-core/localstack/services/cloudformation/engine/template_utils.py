@@ -71,8 +71,8 @@ def resolve_dependencies(d: dict, evaluated_conditions: dict[str, bool]) -> set[
                 items = items.union(resolve_dependencies(v, evaluated_conditions))
             elif isinstance(v, list):
                 for item in v:
-                    # TODO: assumption that every element is a dict might not be true
-                    items = items.union(resolve_dependencies(item, evaluated_conditions))
+                    if isinstance(item, (dict, list)):
+                        items = items.union(resolve_dependencies(item, evaluated_conditions))
             else:
                 pass
     elif isinstance(d, list):
