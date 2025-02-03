@@ -6,7 +6,9 @@ import yaml
 from localstack import version as localstack_version
 
 
-def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False, port: int = 4566):
+def generate_k8s_cluster_config(
+    pro: bool = False, mount_moto: bool = False, port: int = 4566, mount_entrypoints: bool = False
+):
     volumes = []
     root_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
     localstack_code_path = os.path.join(root_path, "localstack-core", "localstack")
@@ -17,15 +19,16 @@ def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False, por
         }
     )
 
-    egg_path = os.path.join(
-        root_path, "localstack-core", "localstack_core.egg-info/entry_points.txt"
-    )
-    volumes.append(
-        {
-            "volume": f"{os.path.normpath(egg_path)}:/code/entry_points_community",
-            "nodeFilters": ["server:*", "agent:*"],
-        }
-    )
+    if mount_entrypoints:
+        egg_path = os.path.join(
+            root_path, "localstack-core", "localstack_core.egg-info/entry_points.txt"
+        )
+        volumes.append(
+            {
+                "volume": f"{os.path.normpath(egg_path)}:/code/entry_points_community",
+                "nodeFilters": ["server:*", "agent:*"],
+            }
+        )
     if pro:
         pro_path = os.path.join(root_path, "..", "localstack-ext")
         pro_code_path = os.path.join(pro_path, "localstack-pro-core", "localstack", "pro", "core")
@@ -36,15 +39,16 @@ def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False, por
             }
         )
 
-        egg_path = os.path.join(
-            pro_path, "localstack-pro-core", "localstack_ext.egg-info/entry_points.txt"
-        )
-        volumes.append(
-            {
-                "volume": f"{os.path.normpath(egg_path)}:/code/entry_points_ext",
-                "nodeFilters": ["server:*", "agent:*"],
-            }
-        )
+        if mount_entrypoints:
+            egg_path = os.path.join(
+                pro_path, "localstack-pro-core", "localstack_ext.egg-info/entry_points.txt"
+            )
+            volumes.append(
+                {
+                    "volume": f"{os.path.normpath(egg_path)}:/code/entry_points_ext",
+                    "nodeFilters": ["server:*", "agent:*"],
+                }
+            )
 
     if mount_moto:
         moto_path = os.path.join(root_path, "..", "moto", "moto")
@@ -163,6 +167,9 @@ def print_file(content: dict, file_name: str):
     "--mount-moto", is_flag=True, default=None, help="Mount the moto code into the cluster."
 )
 @click.option(
+    "--mount-entrypoints", is_flag=True, default=None, help="Mount the entrypoints into the pod."
+)
+@click.option(
     "--write",
     is_flag=True,
     default=None,
@@ -200,6 +207,7 @@ def print_file(content: dict, file_name: str):
 def run(
     pro: bool = None,
     mount_moto: bool = False,
+    mount_entrypoints: bool = False,
     write: bool = False,
     output_dir=None,
     overrides_file: str = None,
@@ -212,7 +220,9 @@ def run(
     A tool for localstack developers to generate the kubernetes cluster configuration file and the overrides to mount the localstack code into the cluster.
     """
 
-    config = generate_k8s_cluster_config(pro=pro, mount_moto=mount_moto, port=port)
+    config = generate_k8s_cluster_config(
+        pro=pro, mount_moto=mount_moto, port=port, mount_entrypoints=mount_entrypoints
+    )
 
     overrides = generate_k8s_cluster_overrides(pro, config, env=env)
 
