@@ -200,6 +200,7 @@
 /localstack-core/localstack/services/s3/ @bentsku
 /tests/aws/services/s3/ @bentsku
 /tests/unit/test_s3.py @bentsku
+/tests/unit/services/s3/ @bentsku
 
 # s3control
 /localstack-core/localstack/aws/api/s3control/ @bentsku
