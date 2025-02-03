@@ -32,7 +32,6 @@ from ..context import (
 from ..gateway_response import IntegrationFailureError, InternalServerError
 from ..header_utils import build_multi_value_headers
 from ..helpers import (
-    accept_header_matches_binary_media_types,
     get_lambda_function_arn_from_invocation_uri,
     get_source_arn,
     mime_type_matches_binary_media_types,
