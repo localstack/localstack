@@ -16470,7 +16470,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketLifecycle::test_s3_transition_default_minimum_object_size": {
-    "recorded-date": "30-01-2025, 21:21:20",
+    "recorded-date": "03-02-2025, 10:15:23",
     "recorded-content": {
       "varies-by-storage": {
         "TransitionDefaultMinimumObjectSize": "varies_by_storage_class",

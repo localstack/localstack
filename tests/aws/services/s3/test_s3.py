@@ -31,7 +31,7 @@ from localstack_snapshot.snapshots.transformer import RegexTransformer
 import localstack.config
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.aws.api.s3 import StorageClass
+from localstack.aws.api.s3 import StorageClass, TransitionDefaultMinimumObjectSize
 from localstack.config import S3_VIRTUAL_HOSTNAME
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
@@ -8960,7 +8960,7 @@ class TestS3BucketLifecycle:
         put_lifecycle_varies = aws_client.s3.put_bucket_lifecycle_configuration(
             Bucket=s3_bucket,
             LifecycleConfiguration=lfc,
-            TransitionDefaultMinimumObjectSize="varies_by_storage_class",
+            TransitionDefaultMinimumObjectSize=TransitionDefaultMinimumObjectSize.varies_by_storage_class,
         )
         snapshot.match("varies-by-storage", put_lifecycle_varies)
 
@@ -8979,7 +8979,7 @@ class TestS3BucketLifecycle:
         put_lifecycle_all_storage = aws_client.s3.put_bucket_lifecycle_configuration(
             Bucket=s3_bucket,
             LifecycleConfiguration=lfc,
-            TransitionDefaultMinimumObjectSize="all_storage_classes_128K",
+            TransitionDefaultMinimumObjectSize=TransitionDefaultMinimumObjectSize.all_storage_classes_128K,
         )
         snapshot.match("all-storage", put_lifecycle_all_storage)
 
