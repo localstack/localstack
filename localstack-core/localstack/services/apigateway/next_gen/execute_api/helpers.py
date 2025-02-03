@@ -150,11 +150,14 @@ def parse_trace_id(trace_id: str) -> dict[str, str]:
     return trace_values
 
 
-def accept_header_matches_binary_media_types(accept: str | None, binary_media_types: list[str]):
-    accept_type_and_subtype = accept.split(",")[0].split(";")[0].split("/")
-    if len(accept_type_and_subtype) != 2:
+def mime_type_matches_binary_media_types(mime_type: str | None, binary_media_types: list[str]):
+    if not mime_type or not binary_media_types:
         return False
-    accept_type, accept_subtype = accept_type_and_subtype
+
+    mime_type_and_subtype = mime_type.split(",")[0].split(";")[0].split("/")
+    if len(mime_type_and_subtype) != 2:
+        return False
+    mime_type, mime_subtype = mime_type_and_subtype
 
     for bmt in binary_media_types:
         type_and_subtype = bmt.split(";")[0].split("/")
@@ -164,10 +167,10 @@ def accept_header_matches_binary_media_types(accept: str | None, binary_media_ty
         if _type == "*":
             continue
 
-        if subtype == "*" and accept_type == _type:
+        if subtype == "*" and mime_type == _type:
             return True
 
-        if accept_type == _type and accept_subtype == subtype:
+        if mime_type == _type and mime_subtype == subtype:
             return True
 
     return False
