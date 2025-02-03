@@ -5,8 +5,8 @@ import platform
 from typing import Optional
 
 from localstack import config
-from localstack.constants import ENV_PRO_ACTIVATED, VERSION
-from localstack.runtime import hooks
+from localstack.constants import VERSION
+from localstack.runtime import get_current_runtime, hooks
 from localstack.utils.bootstrap import Container
 from localstack.utils.files import rm_rf
 from localstack.utils.functions import call_safe
@@ -53,6 +53,8 @@ def get_version_string() -> str:
 
 
 def read_client_metadata() -> ClientMetadata:
+    runtime = get_current_runtime()
+
     return ClientMetadata(
         session_id=get_session_id(),
         machine_id=get_machine_id(),
@@ -62,8 +64,8 @@ def read_client_metadata() -> ClientMetadata:
         is_ci=os.getenv("CI") is not None,
         is_docker=config.is_in_docker,
         is_testing=config.is_local_test_mode(),
-        product="aws",
-        edition="pro" if config.is_env_true(ENV_PRO_ACTIVATED) else "community",
+        product=os.getenv("LOCALSTACK_TELEMETRY_PRODUCT") or runtime.components.name or "unknown",
+        edition=os.getenv("LOCALSTACK_TELEMETRY_EDITION") or get_localstack_edition(),
     )
 
 
