@@ -1,11 +1,14 @@
 {
-  "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_put_delete_item": {
-    "last_validated_date": "2023-07-27T17:08:33+00:00"
+  "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_base_integrations[DYNAMODB_PUT_DELETE_ITEM]": {
+    "last_validated_date": "2025-02-03T16:31:51+00:00"
   },
-  "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_put_get_item": {
-    "last_validated_date": "2023-07-27T17:08:09+00:00"
+  "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_base_integrations[DYNAMODB_PUT_GET_ITEM]": {
+    "last_validated_date": "2025-02-03T16:31:26+00:00"
   },
-  "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_put_update_get_item": {
-    "last_validated_date": "2023-07-27T17:09:00+00:00"
+  "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_base_integrations[DYNAMODB_PUT_UPDATE_GET_ITEM]": {
+    "last_validated_date": "2025-02-03T16:34:47+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_invalid_integration": {
+    "last_validated_date": "2025-02-03T16:35:03+00:00"
   }
 }

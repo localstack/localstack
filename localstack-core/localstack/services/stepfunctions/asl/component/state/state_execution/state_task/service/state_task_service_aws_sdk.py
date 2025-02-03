@@ -19,7 +19,6 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
 )
-from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
@@ -38,8 +37,9 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
     def __init__(self):
         super().__init__(supported_integration_patterns=_SUPPORTED_INTEGRATION_PATTERNS)
 
-    def from_state_props(self, state_props: StateProps) -> None:
-        super().from_state_props(state_props=state_props)
+    def _validate_service_integration_is_supported(self):
+        # As no aws-sdk support catalog is available, let invalid aws-sdk integration to fail at runtime.
+        pass
 
     def _get_sfn_resource_type(self) -> str:
         return f"{self.resource.service_name}:{self.resource.api_name}"
