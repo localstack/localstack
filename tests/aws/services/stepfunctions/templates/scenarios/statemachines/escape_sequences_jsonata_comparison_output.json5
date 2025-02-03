@@ -1,0 +1,16 @@
+{
+  "QueryLanguage": "JSONata",
+  "StartAt": "Pass",
+  "States": {
+    "Pass": {
+      "Type": "Pass",
+      "Output": "\"",
+      "Next": "Check"
+    },
+    "Check": {
+      "Type": "Pass",
+      "Output": "{% $states.input = '\"' %}",
+      "End": true
+    }
+  }
+}

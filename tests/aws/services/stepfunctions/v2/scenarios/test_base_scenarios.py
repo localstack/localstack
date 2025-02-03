@@ -2725,3 +2725,79 @@ class TestBaseScenarios:
             definition,
             exec_input,
         )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "template_path",
+        [
+            ST.ESCAPE_SEQUENCES_STRING_LITERALS,
+            ST.ESCAPE_SEQUENCES_JSONPATH,
+            ST.ESCAPE_SEQUENCES_JSONATA_COMPARISON_OUTPUT,
+            ST.ESCAPE_SEQUENCES_JSONATA_COMPARISON_ASSIGN,
+        ],
+        ids=[
+            "ESCAPE_SEQUENCES_STRING_LITERALS",
+            "ESCAPE_SEQUENCES_JSONPATH",
+            "ESCAPE_SEQUENCES_JSONATA_COMPARISON_OUTPUT",
+            "ESCAPE_SEQUENCES_JSONATA_COMPARISON_ASSIGN",
+        ],
+    )
+    def test_escape_sequence_parsing(
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        template_path,
+    ):
+        template = ST.load_sfn_template(template_path)
+        definition = json.dumps(template)
+        exec_input = json.dumps({'Test\\""Name"': 'Value"\\'})
+        create_and_record_execution(
+            aws_client,
+            create_state_machine_iam_role,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @pytest.mark.skip(
+        reason=(
+            "Lack of generalisable approach to escape sequences support "
+            "in intrinsic functions literals; see backlog item."
+        )
+    )
+    @pytest.mark.parametrize(
+        "template_path",
+        [
+            ST.ESCAPE_SEQUENCES_ILLEGAL_INTRINSIC_FUNCTION,
+            ST.ESCAPE_SEQUENCES_ILLEGAL_INTRINSIC_FUNCTION_2,
+        ],
+        ids=[
+            "ESCAPE_SEQUENCES_ILLEGAL_INTRINSIC_FUNCTION",
+            "ESCAPE_SEQUENCES_ILLEGAL_INTRINSIC_FUNCTION_2",
+        ],
+    )
+    def test_illegal_escapes(
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        template_path,
+    ):
+        template = ST.load_sfn_template(template_path)
+        definition = json.dumps(template)
+        with pytest.raises(Exception) as ex:
+            create_state_machine_with_iam_role(
+                aws_client,
+                create_state_machine_iam_role,
+                create_state_machine,
+                sfn_snapshot,
+                definition,
+            )
+        sfn_snapshot.match(
+            "exception", {"exception_typename": ex.typename, "exception_value": ex.value}
+        )
