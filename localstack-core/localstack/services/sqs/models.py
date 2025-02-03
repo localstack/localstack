@@ -301,7 +301,7 @@ class SqsQueue:
         self.permissions = set()
         self.mutex = threading.RLock()
 
-    def do_shutdown(self):
+    def shutdown(self):
         pass
 
     def default_attributes(self) -> QueueAttributeMap:
@@ -739,7 +739,7 @@ class StandardQueue(SqsQueue):
     def approx_number_of_messages(self):
         return self.visible.qsize()
 
-    def do_shutdown(self):
+    def shutdown(self):
         self.visible.shutdown()
 
     def put(
@@ -966,7 +966,7 @@ class FifoQueue(SqsQueue):
             n += len(message_group.messages)
         return n
 
-    def do_shutdown(self):
+    def shutdown(self):
         self.message_group_queue.shutdown()
 
     def get_message_group(self, message_group_id: str) -> MessageGroup:
