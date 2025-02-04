@@ -14,6 +14,7 @@ from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tc
 from localstack.utils.functions import run_safe
 from localstack.utils.net import wait_for_port_closed
 from localstack.utils.objects import singleton_factory
+from localstack.utils.platform import Arch, get_arch
 from localstack.utils.run import FuncThread, run
 from localstack.utils.serving import Server
 from localstack.utils.sync import retry, synchronized
@@ -153,20 +154,21 @@ class DynamodbServer(Server):
 
         # This command returns all supported JVM options
         with contextlib.suppress(subprocess.CalledProcessError):
-            stdout = run(
-                cmd=[
-                    "java",
-                    "-XX:UseSVE=0",
-                    "-XX:+UnlockDiagnosticVMOptions",
-                    "-XX:+PrintFlagsFinal",
-                    "-version",
-                ],
-                env_vars=dynamodblocal_installer.get_java_env_vars(),
-                print_error=True,
-            )
-            # Check if Scalable Vector Extensions are support on this JVM and CPU. If so, disable it
-            if "UseSVE" in stdout:
-                return ["-XX:UseSVE=0"]
+            if Arch.arm64 == get_arch():
+                stdout = run(
+                    cmd=[
+                        "java",
+                        "-XX:UseSVE=0",
+                        "-XX:+UnlockDiagnosticVMOptions",
+                        "-XX:+PrintFlagsFinal",
+                        "-version",
+                    ],
+                    env_vars=dynamodblocal_installer.get_java_env_vars(),
+                    print_error=True,
+                )
+                # Check if Scalable Vector Extensions are support on this JVM and CPU. If so, disable it
+                if "UseSVE" in stdout:
+                    return ["-XX:UseSVE=0"]
         return []
 
     def _create_shell_command(self) -> list[str]:
