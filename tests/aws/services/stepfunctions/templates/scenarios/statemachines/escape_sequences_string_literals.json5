@@ -1,0 +1,36 @@
+{
+  "StartAt": "TestEscapesParameters",
+  "States": {
+    "TestEscapesParameters": {
+      "Type": "Pass",
+      "Parameters": {
+        "literal_single_quote": "'",
+        "literal_double_quote": "\"",
+        "mixed_quotes": "Text with both \"double\" and 'single' quotes.",
+        "escaped_double_in_string": "An escaped quote: \\\"hello\\\"",
+        "escaped_backslash": "Backslash \\\\ in string",
+        "unicode_double_quote": "\u0022unicode-quote\u0022",
+        "whitespace_escapes": "Line1\nLine2\tTabbed",
+        "emoji": "\uD83C\uDD97",
+      },
+      "Next": "TestEscapesResult"
+    },
+    "TestEscapesResult": {
+      "Type": "Pass",
+      "Result": {
+        "literal_single_quote": "'",
+        "literal_double_quote": "\"",
+        "mixed_quotes": "Text with both \"double\" and 'single' quotes.",
+        "escaped_double_in_string": "An escaped quote: \\\"hello\\\"",
+        "escaped_backslash": "Backslash \\\\ in string",
+        "unicode_double_quote": "\u0022unicode-quote\u0022",
+        "whitespace_escapes": "Line1\nLine2\tTabbed",
+        "emoji": "\uD83C\uDD97",
+        // This tests the lexer in binding a string starting with States.
+        //  to a string literal whenever escape sequences are detected.
+        "not_an_intrinsic_function.$": "States.StringToJson('{\"text\":\"An \\\"escaped double quote\\\" here\"}')"
+      },
+      "End": true
+    }
+  }
+}
