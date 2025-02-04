@@ -93,14 +93,15 @@ Start LocalStack inside a Docker container by running:
   / /___/ /_/ / /__/ /_/ / /___/ / /_/ /_/ / /__/ ,<
  /_____/\____/\___/\__,_/_//____/\__/\__,_/\___/_/|_|
 
- 💻 LocalStack CLI 4.0.0
- 👤 Profile: default
+- LocalStack CLI: 4.1.0
+- Profile: default
+- App: https://app.localstack.cloud
 
-[12:47:13] starting LocalStack in Docker mode 🐳                       localstack.py:494
-           preparing environment                                       bootstrap.py:1240
-           configuring container                                       bootstrap.py:1248
-           starting container                                          bootstrap.py:1258
-[12:47:15] detaching                                                   bootstrap.py:1262
+[12:00:19] starting LocalStack in Docker mode 🐳               localstack.py:512
+           preparing environment                               bootstrap.py:1321
+           configuring container                               bootstrap.py:1329
+           starting container                                  bootstrap.py:1339
+[12:00:20] detaching                                           bootstrap.py:1343
 ```
 
 You can query the status of respective services on LocalStack by running:
