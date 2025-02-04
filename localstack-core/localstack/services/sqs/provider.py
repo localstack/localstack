@@ -77,7 +77,9 @@ from localstack.http import Request, route
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sqs import constants as sqs_constants
-from localstack.services.sqs.constants import HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT
+from localstack.services.sqs.constants import (
+    HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT,
+)
 from localstack.services.sqs.exceptions import InvalidParameterValueException
 from localstack.services.sqs.models import (
     FifoQueue,
@@ -192,7 +194,7 @@ class CloudwatchDispatcher:
         )
 
     def shutdown(self):
-        self.executor.shutdown(wait=False)
+        self.executor.shutdown(wait=True, cancel_futures=True)
 
     def dispatch_sqs_metric(
         self,
@@ -468,7 +470,7 @@ class MessageMoveTaskManager:
             for move_task in self.move_tasks.values():
                 move_task.cancel_event.set()
 
-            self.executor.shutdown(wait=False)
+            self.executor.shutdown(wait=True, cancel_futures=True)
 
     def _run(self, move_task: MessageMoveTask):
         try:
