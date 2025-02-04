@@ -35,6 +35,7 @@ from localstack.aws.api.firehose import (
     DestinationDescription,
     DestinationDescriptionList,
     DestinationId,
+    DirectPutSourceConfiguration,
     ElasticsearchDestinationConfiguration,
     ElasticsearchDestinationDescription,
     ElasticsearchDestinationUpdate,
@@ -261,6 +262,7 @@ class FirehoseProvider(FirehoseApi):
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         delivery_stream_type: DeliveryStreamType = None,
+        direct_put_source_configuration: DirectPutSourceConfiguration = None,
         kinesis_stream_source_configuration: KinesisStreamSourceConfiguration = None,
         delivery_stream_encryption_configuration_input: DeliveryStreamEncryptionConfigurationInput = None,
         s3_destination_configuration: S3DestinationConfiguration = None,
@@ -278,7 +280,7 @@ class FirehoseProvider(FirehoseApi):
         database_source_configuration: DatabaseSourceConfiguration = None,
         **kwargs,
     ) -> CreateDeliveryStreamOutput:
-        # TODO add support for database_source_configuration
+        # TODO add support for database_source_configuration and direct_put_source_configuration
         store = self.get_store(context.account_id, context.region)
 
         destinations: DestinationDescriptionList = []

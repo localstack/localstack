@@ -820,6 +820,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         self._queue_update_worker.stop()
         self._message_move_task_manager.close()
+        for _, _, store in sqs_stores.iter_stores():
+            for queue in store.queues.values():
+                queue.shutdown()
+
         self._stop_cloudwatch_metrics_reporting()
 
     @staticmethod

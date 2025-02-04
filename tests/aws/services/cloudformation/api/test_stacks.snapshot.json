@@ -2270,5 +2270,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_resource_not_found": {
+    "recorded-date": "29-01-2025, 09:08:15",
+    "recorded-content": {
+      "Error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Resource NonExistentResource does not exist for stack <stack-name>",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

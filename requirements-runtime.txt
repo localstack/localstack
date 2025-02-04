@@ -29,17 +29,17 @@ aws-sam-translator==1.94.0
     #   localstack-core (pyproject.toml)
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.37.6
+awscli==1.37.11
     # via localstack-core (pyproject.toml)
-awscrt==0.23.8
+awscrt==0.23.9
     # via localstack-core
-boto3==1.36.6
+boto3==1.36.11
     # via
     #   amazon-kclpy
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-botocore==1.36.6
+botocore==1.36.11
     # via
     #   aws-xray-sdk
     #   awscli
@@ -58,13 +58,13 @@ cachetools==5.5.1
     #   localstack-core (pyproject.toml)
 cbor2==5.6.5
     # via localstack-core
-certifi==2024.12.14
+certifi==2025.1.31
     # via
     #   opensearch-py
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.22.7
+cfn-lint==1.23.1
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -114,7 +114,7 @@ h11==0.14.0
     # via
     #   hypercorn
     #   wsproto
-h2==4.1.0
+h2==4.2.0
     # via
     #   hypercorn
     #   localstack-twisted
@@ -188,7 +188,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.6.0
     # via openapi-core
-moto-ext==5.0.26.post2
+moto-ext==5.0.28.post1
     # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
@@ -245,7 +245,7 @@ pydantic-core==2.27.2
     # via pydantic
 pygments==2.19.1
     # via rich
-pymongo==4.10.1
+pymongo==4.11
     # via localstack-core (pyproject.toml)
 pyopenssl==25.0.0
     # via

@@ -9,11 +9,11 @@ attrs==25.1.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.23.8
+awscrt==0.23.9
     # via localstack-core (pyproject.toml)
-boto3==1.36.6
+boto3==1.36.11
     # via localstack-core (pyproject.toml)
-botocore==1.36.6
+botocore==1.36.11
     # via
     #   boto3
     #   localstack-core (pyproject.toml)
@@ -24,7 +24,7 @@ cachetools==5.5.1
     # via localstack-core (pyproject.toml)
 cbor2==5.6.5
     # via localstack-core (pyproject.toml)
-certifi==2024.12.14
+certifi==2025.1.31
     # via requests
 cffi==1.17.1
     # via cryptography
@@ -50,7 +50,7 @@ h11==0.14.0
     # via
     #   hypercorn
     #   wsproto
-h2==4.1.0
+h2==4.2.0
     # via
     #   hypercorn
     #   localstack-twisted

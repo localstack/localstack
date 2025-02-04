@@ -31,7 +31,7 @@ from localstack_snapshot.snapshots.transformer import RegexTransformer
 import localstack.config
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.aws.api.s3 import StorageClass
+from localstack.aws.api.s3 import StorageClass, TransitionDefaultMinimumObjectSize
 from localstack.config import S3_VIRTUAL_HOSTNAME
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
@@ -8280,8 +8280,6 @@ class TestS3Routing:
         assert exc.value.response["Error"]["Message"] == "Not Found"
 
 
-# TODO: implement TransitionDefaultMinimumObjectSize
-@markers.snapshot.skip_snapshot_verify(paths=["$..TransitionDefaultMinimumObjectSize"])
 class TestS3BucketLifecycle:
     @markers.aws.validated
     def test_delete_bucket_lifecycle_configuration(self, s3_bucket, snapshot, aws_client):
@@ -8946,6 +8944,55 @@ class TestS3BucketLifecycle:
 
         response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
         snapshot.match("head-object", response)
+
+    @markers.aws.validated
+    def test_s3_transition_default_minimum_object_size(self, aws_client, s3_bucket, snapshot):
+        lfc = {
+            "Rules": [
+                {
+                    "Expiration": {"Days": 7},
+                    "ID": "wholebucket",
+                    "Filter": {"Prefix": ""},
+                    "Status": "Enabled",
+                }
+            ]
+        }
+        put_lifecycle_varies = aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket,
+            LifecycleConfiguration=lfc,
+            TransitionDefaultMinimumObjectSize=TransitionDefaultMinimumObjectSize.varies_by_storage_class,
+        )
+        snapshot.match("varies-by-storage", put_lifecycle_varies)
+
+        get_lifecycle_varies = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-varies-by-storage", get_lifecycle_varies)
+
+        put_lifecycle_default = aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket,
+            LifecycleConfiguration=lfc,
+        )
+        snapshot.match("default", put_lifecycle_default)
+
+        get_default = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-default", get_default)
+
+        put_lifecycle_all_storage = aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket,
+            LifecycleConfiguration=lfc,
+            TransitionDefaultMinimumObjectSize=TransitionDefaultMinimumObjectSize.all_storage_classes_128K,
+        )
+        snapshot.match("all-storage", put_lifecycle_all_storage)
+
+        get_all_storage = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-all-storage", get_all_storage)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_lifecycle_configuration(
+                Bucket=s3_bucket,
+                LifecycleConfiguration=lfc,
+                TransitionDefaultMinimumObjectSize="value",
+            )
+        snapshot.match("bad-value", e.value.response)
 
 
 class TestS3ObjectLockRetention:

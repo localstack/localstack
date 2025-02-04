@@ -101,6 +101,7 @@ SplunkRetryDurationInSeconds = int
 StringWithLettersDigitsUnderscoresDots = str
 TagKey = str
 TagValue = str
+ThroughputHintInMBs = int
 TopicName = str
 Username = str
 VpcEndpointServiceName = str
@@ -687,6 +688,7 @@ class IcebergDestinationConfiguration(TypedDict, total=False):
     S3BackupMode: Optional[IcebergS3BackupMode]
     RetryOptions: Optional[RetryOptions]
     RoleARN: RoleARN
+    AppendOnly: Optional[BooleanObject]
     CatalogConfiguration: CatalogConfiguration
     S3Configuration: S3DestinationConfiguration
 
@@ -961,9 +963,14 @@ class KinesisStreamSourceConfiguration(TypedDict, total=False):
     RoleARN: RoleARN
 
 
+class DirectPutSourceConfiguration(TypedDict, total=False):
+    ThroughputHintInMBs: ThroughputHintInMBs
+
+
 class CreateDeliveryStreamInput(ServiceRequest):
     DeliveryStreamName: DeliveryStreamName
     DeliveryStreamType: Optional[DeliveryStreamType]
+    DirectPutSourceConfiguration: Optional[DirectPutSourceConfiguration]
     KinesisStreamSourceConfiguration: Optional[KinesisStreamSourceConfiguration]
     DeliveryStreamEncryptionConfigurationInput: Optional[DeliveryStreamEncryptionConfigurationInput]
     S3DestinationConfiguration: Optional[S3DestinationConfiguration]
@@ -1049,6 +1056,7 @@ class IcebergDestinationDescription(TypedDict, total=False):
     S3BackupMode: Optional[IcebergS3BackupMode]
     RetryOptions: Optional[RetryOptions]
     RoleARN: Optional[RoleARN]
+    AppendOnly: Optional[BooleanObject]
     CatalogConfiguration: Optional[CatalogConfiguration]
     S3DestinationDescription: Optional[S3DestinationDescription]
 
@@ -1190,7 +1198,12 @@ class KinesisStreamSourceDescription(TypedDict, total=False):
     DeliveryStartTimestamp: Optional[DeliveryStartTimestamp]
 
 
+class DirectPutSourceDescription(TypedDict, total=False):
+    ThroughputHintInMBs: Optional[ThroughputHintInMBs]
+
+
 class SourceDescription(TypedDict, total=False):
+    DirectPutSourceDescription: Optional[DirectPutSourceDescription]
     KinesisStreamSourceDescription: Optional[KinesisStreamSourceDescription]
     MSKSourceDescription: Optional[MSKSourceDescription]
     DatabaseSourceDescription: Optional[DatabaseSourceDescription]
@@ -1287,6 +1300,7 @@ class IcebergDestinationUpdate(TypedDict, total=False):
     S3BackupMode: Optional[IcebergS3BackupMode]
     RetryOptions: Optional[RetryOptions]
     RoleARN: Optional[RoleARN]
+    AppendOnly: Optional[BooleanObject]
     CatalogConfiguration: Optional[CatalogConfiguration]
     S3Configuration: Optional[S3DestinationConfiguration]
 
@@ -1474,6 +1488,7 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         delivery_stream_type: DeliveryStreamType = None,
+        direct_put_source_configuration: DirectPutSourceConfiguration = None,
         kinesis_stream_source_configuration: KinesisStreamSourceConfiguration = None,
         delivery_stream_encryption_configuration_input: DeliveryStreamEncryptionConfigurationInput = None,
         s3_destination_configuration: S3DestinationConfiguration = None,

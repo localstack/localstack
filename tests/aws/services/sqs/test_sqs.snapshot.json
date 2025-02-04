@@ -3646,5 +3646,39 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_empty_redrive_policy[sqs_query]": {
     "recorded-date": "20-08-2024, 14:14:11",
     "recorded-content": {}
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_empty_queue[sqs]": {
+    "recorded-date": "30-01-2025, 22:32:45",
+    "recorded-content": {
+      "empty_short_poll_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "empty_long_poll_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_empty_queue[sqs_query]": {
+    "recorded-date": "30-01-2025, 22:32:48",
+    "recorded-content": {
+      "empty_short_poll_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "empty_long_poll_resp": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -62,6 +62,7 @@ from localstack.aws.api.s3 import (
     SSECustomerKeyMD5,
     SSEKMSKeyId,
     StorageClass,
+    TransitionDefaultMinimumObjectSize,
     WebsiteConfiguration,
     WebsiteRedirectLocation,
 )
@@ -98,6 +99,7 @@ class S3Bucket:
     objects: Union["KeyStore", "VersionedKeyStore"]
     versioning_status: BucketVersioningStatus | None
     lifecycle_rules: Optional[LifecycleRules]
+    transition_default_minimum_object_size: Optional[TransitionDefaultMinimumObjectSize]
     policy: Optional[Policy]
     website_configuration: Optional[WebsiteConfiguration]
     acl: AccessControlPolicy
@@ -145,6 +147,7 @@ class S3Bucket:
         self.logging = {}
         self.cors_rules = None
         self.lifecycle_rules = None
+        self.transition_default_minimum_object_size = None
         self.website_configuration = None
         self.policy = None
         self.accelerate_status = None

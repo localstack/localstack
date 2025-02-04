@@ -16468,5 +16468,98 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3BucketLifecycle::test_s3_transition_default_minimum_object_size": {
+    "recorded-date": "03-02-2025, 10:15:23",
+    "recorded-content": {
+      "varies-by-storage": {
+        "TransitionDefaultMinimumObjectSize": "varies_by_storage_class",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-varies-by-storage": {
+        "Rules": [
+          {
+            "Expiration": {
+              "Days": 7
+            },
+            "Filter": {
+              "Prefix": ""
+            },
+            "ID": "wholebucket",
+            "Status": "Enabled"
+          }
+        ],
+        "TransitionDefaultMinimumObjectSize": "varies_by_storage_class",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "default": {
+        "TransitionDefaultMinimumObjectSize": "all_storage_classes_128K",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-default": {
+        "Rules": [
+          {
+            "Expiration": {
+              "Days": 7
+            },
+            "Filter": {
+              "Prefix": ""
+            },
+            "ID": "wholebucket",
+            "Status": "Enabled"
+          }
+        ],
+        "TransitionDefaultMinimumObjectSize": "all_storage_classes_128K",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "all-storage": {
+        "TransitionDefaultMinimumObjectSize": "all_storage_classes_128K",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-all-storage": {
+        "Rules": [
+          {
+            "Expiration": {
+              "Days": 7
+            },
+            "Filter": {
+              "Prefix": ""
+            },
+            "ID": "wholebucket",
+            "Status": "Enabled"
+          }
+        ],
+        "TransitionDefaultMinimumObjectSize": "all_storage_classes_128K",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "bad-value": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Invalid TransitionDefaultMinimumObjectSize found: value"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

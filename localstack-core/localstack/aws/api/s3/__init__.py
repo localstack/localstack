@@ -108,7 +108,6 @@ MetadataValue = str
 MetricsId = str
 Minutes = int
 MissingMeta = int
-MpuObjectSize = int
 MultipartUploadId = str
 NextKeyMarker = str
 NextMarker = str
@@ -1328,6 +1327,9 @@ class CompleteMultipartUploadOutput(TypedDict, total=False):
     SSEKMSKeyId: Optional[SSEKMSKeyId]
     BucketKeyEnabled: Optional[BucketKeyEnabled]
     RequestCharged: Optional[RequestCharged]
+
+
+MpuObjectSize = int
 
 
 class CompletedPart(TypedDict, total=False):
