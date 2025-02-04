@@ -13,5 +13,8 @@
   },
   "tests/aws/services/ec2/test_ec2.py::TestEc2Integrations::test_vcp_peering_difference_regions": {
     "last_validated_date": "2024-06-07T21:28:25+00:00"
+  },
+  "tests/aws/services/ec2/test_ec2.py::test_raise_create_volume_without_size": {
+    "last_validated_date": "2025-02-04T12:53:29+00:00"
   }
 }
