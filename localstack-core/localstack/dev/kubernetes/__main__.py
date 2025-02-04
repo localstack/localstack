@@ -1,60 +1,148 @@
+import dataclasses
 import os
+from typing import Literal
 
 import click
 import yaml
 
-from localstack import version as localstack_version
+
+@dataclasses.dataclass
+class MountPoint:
+    name: str
+    host_path: str
+    container_path: str
+    node_path: str
+    read_only: bool = True
+    volume_type: Literal["Directory", "File"] = "Directory"
 
 
-def generate_k8s_cluster_config(
-    pro: bool = False, mount_moto: bool = False, port: int = 4566, mount_entrypoints: bool = False
-):
-    volumes = []
+def generate_mount_points(
+    pro: bool = False, mount_moto: bool = False, mount_entrypoints: bool = False
+) -> list[MountPoint]:
+    mount_points = []
+    # host paths
     root_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
     localstack_code_path = os.path.join(root_path, "localstack-core", "localstack")
-    volumes.append(
-        {
-            "volume": f"{os.path.normpath(localstack_code_path)}:/code/localstack",
-            "nodeFilters": ["server:*", "agent:*"],
-        }
-    )
+    pro_path = os.path.join(root_path, "..", "localstack-ext")
 
-    if mount_entrypoints:
-        egg_path = os.path.join(
-            root_path, "localstack-core", "localstack_core.egg-info/entry_points.txt"
-        )
-        volumes.append(
-            {
-                "volume": f"{os.path.normpath(egg_path)}:/code/entry_points_community",
-                "nodeFilters": ["server:*", "agent:*"],
-            }
-        )
+    # container paths
+    target_path = "/opt/code/localstack/"
+    venv_path = os.path.join(target_path, ".venv", "lib", "python3.11", "site-packages")
+
+    # Community code
     if pro:
-        pro_path = os.path.join(root_path, "..", "localstack-ext")
-        pro_code_path = os.path.join(pro_path, "localstack-pro-core", "localstack", "pro", "core")
-        volumes.append(
-            {
-                "volume": f"{os.path.normpath(pro_code_path)}:/code/localstack_ext",
-                "nodeFilters": ["server:*", "agent:*"],
-            }
+        # Pro installs community code as a package, so it lives in the venv site-packages
+        mount_points.append(
+            MountPoint(
+                name="localstack",
+                host_path=os.path.normpath(localstack_code_path),
+                node_path="/code/localstack",
+                container_path=os.path.join(venv_path, "localstack"),
+                # Read only has to be false here, as we mount the pro code into this mount, as it is the entire namespace package
+                read_only=False,
+            )
+        )
+    else:
+        # Community does not install the localstack package in the venv, but has the code directly in `/opt/code/localstack`
+        mount_points.append(
+            MountPoint(
+                name="localstack",
+                host_path=os.path.normpath(localstack_code_path),
+                node_path="/code/localstack",
+                container_path=os.path.join(target_path, "localstack-core", "localstack"),
+            )
         )
 
-        if mount_entrypoints:
+    # Pro code
+    if pro:
+        pro_code_path = os.path.join(pro_path, "localstack-pro-core", "localstack", "pro", "core")
+        mount_points.append(
+            MountPoint(
+                name="localstack-pro",
+                host_path=os.path.normpath(pro_code_path),
+                node_path="/code/localstack-pro",
+                container_path=os.path.join(venv_path, "localstack", "pro", "core"),
+            )
+        )
+
+    # entrypoints
+    if mount_entrypoints:
+        if pro:
+            # Community entrypoints in pro image
+            # TODO actual package version detection
+            community_version = "4.1.1.dev14"
+            pro_version = "4.1.1.dev16"
+            egg_path = os.path.join(
+                root_path, "localstack-core", "localstack_core.egg-info/entry_points.txt"
+            )
+            mount_points.append(
+                MountPoint(
+                    name="entry-points-community",
+                    host_path=os.path.normpath(egg_path),
+                    node_path="/code/entry-points-community",
+                    container_path=os.path.join(
+                        venv_path, f"localstack-{community_version}.egg-info", "entry_points.txt"
+                    ),
+                    volume_type="File",
+                )
+            )
+            # Pro entrypoints in pro image
             egg_path = os.path.join(
                 pro_path, "localstack-pro-core", "localstack_ext.egg-info/entry_points.txt"
             )
-            volumes.append(
-                {
-                    "volume": f"{os.path.normpath(egg_path)}:/code/entry_points_ext",
-                    "nodeFilters": ["server:*", "agent:*"],
-                }
+            mount_points.append(
+                MountPoint(
+                    name="entry-points-pro",
+                    host_path=os.path.normpath(egg_path),
+                    node_path="/code/entry-points-pro",
+                    container_path=os.path.join(
+                        venv_path, f"localstack_ext-{pro_version}.egg-info", "entry_points.txt"
+                    ),
+                    volume_type="File",
+                )
+            )
+        else:
+            # Community entrypoints in community repo
+            # In the community image, the code is not installed as package, so the paths are predictable
+            egg_path = os.path.join(
+                root_path, "localstack-core", "localstack_core.egg-info/entry_points.txt"
+            )
+            mount_points.append(
+                MountPoint(
+                    name="entry-points-community",
+                    host_path=os.path.normpath(egg_path),
+                    node_path="/code/entry-points-community",
+                    container_path=os.path.join(
+                        target_path,
+                        "localstack-core",
+                        "localstack_core.egg-info",
+                        "entry_points.txt",
+                    ),
+                    volume_type="File",
+                )
             )
 
     if mount_moto:
         moto_path = os.path.join(root_path, "..", "moto", "moto")
-        volumes.append(
-            {"volume": f"{moto_path}:/code/moto", "nodeFilters": ["server:*", "agent:*"]}
+        mount_points.append(
+            MountPoint(
+                name="moto",
+                host_path=os.path.normpath(moto_path),
+                node_path="/code/moto",
+                container_path=os.path.join(venv_path, "moto"),
+            )
         )
+    return mount_points
+
+
+def generate_k8s_cluster_config(mount_points: list[MountPoint], port: int = 4566):
+    volumes = [
+        {
+            "volume": f"{mount_point.host_path}:{mount_point.node_path}",
+            "nodeFilters": ["server:*", "agent:*"],
+        }
+        for mount_point in mount_points
+    ]
 
     ports = [{"port": f"{port}:31566", "nodeFilters": ["server:0"]}]
 
@@ -68,49 +156,24 @@ def snake_to_kebab_case(string: str):
 
 
 def generate_k8s_cluster_overrides(
-    pro: bool = False, cluster_config: dict = None, env: list[str] | None = None
+    mount_points: list[MountPoint], pro: bool = False, env: list[str] | None = None
 ):
-    volumes = []
-    for volume in cluster_config["volumes"]:
-        name = snake_to_kebab_case(volume["volume"].split(":")[-1].split("/")[-1])
-        volume_type = "Directory" if name != "entry-points" else "File"
-        volumes.append(
-            {
-                "name": name,
-                "hostPath": {"path": volume["volume"].split(":")[-1], "type": volume_type},
-            }
-        )
+    volumes = [
+        {
+            "name": mount_point.name,
+            "hostPath": {"path": mount_point.node_path, "type": mount_point.volume_type},
+        }
+        for mount_point in mount_points
+    ]
 
-    volume_mounts = []
-    target_path = "/opt/code/localstack/"
-    venv_path = os.path.join(target_path, ".venv", "lib", "python3.11", "site-packages")
-    for volume in volumes:
-        if volume["name"] == "entry-points":
-            entry_points_path = os.path.join(
-                target_path, "localstack_core.egg-info", "entry_points.txt"
-            )
-            if pro:
-                project = "localstack_ext-"
-                version = localstack_version.__version__
-                dist_info = f"{project}{version}0.dist-info"
-                entry_points_path = os.path.join(venv_path, dist_info, "entry_points.txt")
-
-            volume_mounts.append(
-                {
-                    "name": volume["name"],
-                    "readOnly": True,
-                    "mountPath": entry_points_path,
-                }
-            )
-            continue
-
-        volume_mounts.append(
-            {
-                "name": volume["name"],
-                "readOnly": True,
-                "mountPath": os.path.join(venv_path, volume["hostPath"]["path"].split("/")[-1]),
-            }
-        )
+    volume_mounts = [
+        {
+            "name": mount_point.name,
+            "readOnly": mount_point.read_only,
+            "mountPath": mount_point.container_path,
+        }
+        for mount_point in mount_points
+    ]
 
     extra_env_vars = []
     if env:
@@ -219,12 +282,11 @@ def run(
     """
     A tool for localstack developers to generate the kubernetes cluster configuration file and the overrides to mount the localstack code into the cluster.
     """
+    mount_points = generate_mount_points(pro, mount_moto, mount_entrypoints)
 
-    config = generate_k8s_cluster_config(
-        pro=pro, mount_moto=mount_moto, port=port, mount_entrypoints=mount_entrypoints
-    )
+    config = generate_k8s_cluster_config(mount_points, port=port)
 
-    overrides = generate_k8s_cluster_overrides(pro, config, env=env)
+    overrides = generate_k8s_cluster_overrides(mount_points, pro=pro, env=env)
 
     output_dir = output_dir or os.getcwd()
     overrides_file = overrides_file or "overrides.yml"
