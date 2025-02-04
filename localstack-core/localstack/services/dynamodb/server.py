@@ -154,7 +154,13 @@ class DynamodbServer(Server):
         # This command returns all supported JVM options
         with contextlib.suppress(subprocess.CalledProcessError):
             stdout = run(
-                cmd=["java", "-XX:+UnlockDiagnosticVMOptions", "-XX:+PrintFlagsFinal", "-version"],
+                cmd=[
+                    "java",
+                    "-XX:UseSVE=0",
+                    "-XX:+UnlockDiagnosticVMOptions",
+                    "-XX:+PrintFlagsFinal",
+                    "-version",
+                ],
                 env_vars=dynamodblocal_installer.get_java_env_vars(),
                 print_error=True,
             )
