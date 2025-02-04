@@ -187,12 +187,16 @@ def generate_k8s_cluster_overrides(
             )
 
     if pro:
-        extra_env_vars.append(
+        extra_env_vars += [
             {
                 "name": "LOCALSTACK_AUTH_TOKEN",
                 "value": "test",
-            }
-        )
+            },
+            {
+                "name": "CONTAINER_RUNTIME",
+                "value": "kubernetes",
+            },
+        ]
 
     image_repository = "localstack/localstack-pro" if pro else "localstack/localstack"
 
@@ -202,6 +206,7 @@ def generate_k8s_cluster_overrides(
         "volumeMounts": volume_mounts,
         "extraEnvVars": extra_env_vars,
         "image": {"repository": image_repository},
+        "lambda": {"executor": "kubernetes"},
     }
 
     return overrides

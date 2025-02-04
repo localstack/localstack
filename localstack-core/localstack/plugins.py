@@ -19,6 +19,7 @@ def deprecation_warnings() -> None:
     LOG.debug("Checking for the usage of deprecated community features and configs...")
     from localstack.deprecations import log_deprecation_warnings
 
+    LOG.warning("Community change")
     log_deprecation_warnings()
 
 
