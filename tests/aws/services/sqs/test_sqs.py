@@ -250,6 +250,21 @@ class TestSqsProvider:
         snapshot.match("send_max_number_of_messages", e.value.response)
 
     @markers.aws.validated
+    def test_receive_empty_queue(self, sqs_queue, snapshot, aws_sqs_client):
+        queue_url = sqs_queue
+
+        empty_short_poll_resp = aws_sqs_client.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=1
+        )
+
+        snapshot.match("empty_short_poll_resp", empty_short_poll_resp)
+
+        empty_long_poll_resp = aws_sqs_client.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=1, WaitTimeSeconds=1
+        )
+        snapshot.match("empty_long_poll_resp", empty_long_poll_resp)
+
+    @markers.aws.validated
     def test_receive_message_attributes_timestamp_types(self, sqs_queue, aws_sqs_client):
         aws_sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="message")
 
@@ -1035,7 +1050,9 @@ class TestSqsProvider:
             )
             assert aws_sqs_client.receive_message(QueueUrl=queue_url).get("Messages", []) == []
 
-        messages = aws_sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)["Messages"]
+        messages = aws_sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5).get(
+            "Messages", []
+        )
         assert messages[0]["Body"] == "test"
         assert len(messages) == 1
 
@@ -2287,7 +2304,7 @@ class TestSqsProvider:
         while len(result_recv) < message_count and i < message_count:
             result = aws_sqs_client.receive_message(
                 QueueUrl=queue_url, MaxNumberOfMessages=message_count
-            )["Messages"]
+            ).get("Messages", [])
             if result:
                 result_recv.extend(result)
                 i += 1
