@@ -1183,8 +1183,8 @@ class Preprocessor(ASLParserVisitor):
         return PayloadValueNull()
 
     def visitPayload_value_str(self, ctx: ASLParser.Payload_value_strContext) -> PayloadValueStr:
-        str_val = self._inner_string_of(parser_rule_context=ctx.string_literal())
-        return PayloadValueStr(val=str_val)
+        string_literal: StringLiteral = self.visitString_literal(ctx=ctx.string_literal())
+        return PayloadValueStr(val=string_literal.literal_value)
 
     def visitPayload_binding_sample(
         self, ctx: ASLParser.Payload_binding_sampleContext
@@ -1201,9 +1201,9 @@ class Preprocessor(ASLParserVisitor):
     def visitPayload_binding_value(
         self, ctx: ASLParser.Payload_binding_valueContext
     ) -> PayloadBindingValue:
-        field: str = self._inner_string_of(parser_rule_context=ctx.string_literal())
+        string_literal: StringLiteral = self.visitString_literal(ctx=ctx.string_literal())
         payload_value: PayloadValue = self.visit(ctx.payload_value_decl())
-        return PayloadBindingValue(field=field, payload_value=payload_value)
+        return PayloadBindingValue(field=string_literal.literal_value, payload_value=payload_value)
 
     def visitPayload_arr_decl(self, ctx: ASLParser.Payload_arr_declContext) -> PayloadArr:
         payload_values: list[PayloadValue] = list()
@@ -1330,9 +1330,11 @@ class Preprocessor(ASLParserVisitor):
     def visitAssign_template_binding_value(
         self, ctx: ASLParser.Assign_template_binding_valueContext
     ) -> AssignTemplateBindingValue:
-        identifier: str = self._inner_string_of(ctx.string_literal())
+        string_literal: StringLiteral = self.visitString_literal(ctx=ctx.string_literal())
         assign_value: AssignTemplateValue = self.visit(ctx.assign_template_value())
-        return AssignTemplateBindingValue(identifier=identifier, assign_value=assign_value)
+        return AssignTemplateBindingValue(
+            identifier=string_literal.literal_value, assign_value=assign_value
+        )
 
     def visitAssign_template_binding_string_expression_simple(
         self, ctx: ASLParser.Assign_template_binding_string_expression_simpleContext
@@ -1399,7 +1401,7 @@ class Preprocessor(ASLParserVisitor):
     def visitJsonata_template_value_terminal_string_literal(
         self, ctx: ASLParser.Jsonata_template_value_terminal_string_literalContext
     ) -> JSONataTemplateValueTerminalLit:
-        string = self._inner_string_of(ctx.string_literal())
+        string = from_string_literal(ctx.string_literal())
         return JSONataTemplateValueTerminalLit(value=string)
 
     def visitJsonata_template_value(
@@ -1470,8 +1472,8 @@ class Preprocessor(ASLParserVisitor):
         return self.visit(ctx.children[0])
 
     def visitString_literal(self, ctx: ASLParser.String_literalContext) -> StringLiteral:
-        literal_value: str = self._inner_string_of(parser_rule_context=ctx)
-        return StringLiteral(literal_value=literal_value)
+        string_literal = from_string_literal(parser_rule_context=ctx)
+        return StringLiteral(literal_value=string_literal)
 
     def visitString_jsonpath(self, ctx: ASLParser.String_jsonpathContext) -> StringJsonPath:
         json_path: str = self._inner_string_of(parser_rule_context=ctx)
@@ -1500,9 +1502,6 @@ class Preprocessor(ASLParserVisitor):
     def visitString_intrinsic_function(
         self, ctx: ASLParser.String_intrinsic_functionContext
     ) -> StringIntrinsicFunction:
-        intrinsic_function_derivation: str = self._inner_string_of(
-            parser_rule_context=ctx.STRINGINTRINSICFUNC()
-        )
         intrinsic_function_derivation = ctx.STRINGINTRINSICFUNC().getText()[1:-1]
         function, _ = IntrinsicParser.parse(intrinsic_function_derivation)
         return StringIntrinsicFunction(

@@ -1,7 +1,5 @@
-import contextlib
 import logging
 import os
-import subprocess
 import threading
 
 from localstack import config
@@ -14,6 +12,7 @@ from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tc
 from localstack.utils.functions import run_safe
 from localstack.utils.net import wait_for_port_closed
 from localstack.utils.objects import singleton_factory
+from localstack.utils.platform import Arch, get_arch
 from localstack.utils.run import FuncThread, run
 from localstack.utils.serving import Server
 from localstack.utils.sync import retry, synchronized
@@ -145,23 +144,10 @@ class DynamodbServer(Server):
         return f"{dynamodblocal_package.get_installed_dir()}/DynamoDBLocal_lib"
 
     def _get_java_vm_options(self) -> list[str]:
-        dynamodblocal_installer = dynamodblocal_package.get_installer()
-
         # Workaround for JVM SIGILL crash on Apple Silicon M4
         # See https://bugs.openjdk.org/browse/JDK-8345296
         # To be removed after Java is bumped to 17.0.15+ and 21.0.7+
-
-        # This command returns all supported JVM options
-        with contextlib.suppress(subprocess.CalledProcessError):
-            stdout = run(
-                cmd=["java", "-XX:+UnlockDiagnosticVMOptions", "-XX:+PrintFlagsFinal", "-version"],
-                env_vars=dynamodblocal_installer.get_java_env_vars(),
-                print_error=True,
-            )
-            # Check if Scalable Vector Extensions are support on this JVM and CPU. If so, disable it
-            if "UseSVE" in stdout:
-                return ["-XX:UseSVE=0"]
-        return []
+        return ["-XX:UseSVE=0"] if Arch.arm64 == get_arch() else []
 
     def _create_shell_command(self) -> list[str]:
         cmd = [

@@ -281,3 +281,21 @@ class ScenariosTemplate(TemplateLoader):
     INVALID_JSONPATH_IN_OUTPUTPATH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/invalid_jsonpath_in_outputpath.json5"
     )
+    ESCAPE_SEQUENCES_STRING_LITERALS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/escape_sequences_string_literals.json5"
+    )
+    ESCAPE_SEQUENCES_JSONPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/escape_sequences_jsonpath.json5"
+    )
+    ESCAPE_SEQUENCES_JSONATA_COMPARISON_OUTPUT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/escape_sequences_jsonata_comparison_output.json5"
+    )
+    ESCAPE_SEQUENCES_JSONATA_COMPARISON_ASSIGN: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/escape_sequences_jsonata_comparison_assign.json5"
+    )
+    ESCAPE_SEQUENCES_ILLEGAL_INTRINSIC_FUNCTION: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/escape_sequences_illegal_intrinsic_function.json5"
+    )
+    ESCAPE_SEQUENCES_ILLEGAL_INTRINSIC_FUNCTION_2: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/escape_sequences_illegal_intrinsic_function_2.json5"
+    )

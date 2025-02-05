@@ -1,0 +1,12 @@
+{
+  "StartAt": "JsonPathEscapeTest",
+  "States": {
+    "JsonPathEscapeTest": {
+      "Type": "Pass",
+      "Parameters": {
+        "value.$": "$['Test\\\"\"Name\"']"
+      },
+      "End": true
+    }
+  }
+}

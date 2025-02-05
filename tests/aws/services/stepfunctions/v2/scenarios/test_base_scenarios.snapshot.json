@@ -27427,5 +27427,425 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_escape_sequence_parsing[ESCAPE_SEQUENCES_JSONATA_COMPARISON_ASSIGN]": {
+    "recorded-date": "02-02-2025, 15:45:03",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Test\\\"\"Name\"": "Value\"\\"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Test\\\"\"Name\"": "Value\"\\"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "var": "\"\\\"\""
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Pass",
+              "output": {
+                "Test\\\"\"Name\"": "Value\"\\"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Test\\\"\"Name\"": "Value\"\\"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Check"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "Check",
+              "output": "true",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "true",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_escape_sequence_parsing[ESCAPE_SEQUENCES_STRING_LITERALS]": {
+    "recorded-date": "02-02-2025, 15:44:14",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Test\\\"\"Name\"": "Value\"\\"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Test\\\"\"Name\"": "Value\"\\"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "TestEscapesParameters"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "TestEscapesParameters",
+              "output": {
+                "literal_single_quote": "'",
+                "literal_double_quote": "\"",
+                "mixed_quotes": "Text with both \"double\" and 'single' quotes.",
+                "escaped_double_in_string": "An escaped quote: \\\"hello\\\"",
+                "escaped_backslash": "Backslash \\\\ in string",
+                "unicode_double_quote": "\"unicode-quote\"",
+                "whitespace_escapes": "Line1\nLine2\tTabbed",
+                "emoji": "\ud83c\udd97"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "literal_single_quote": "'",
+                "literal_double_quote": "\"",
+                "mixed_quotes": "Text with both \"double\" and 'single' quotes.",
+                "escaped_double_in_string": "An escaped quote: \\\"hello\\\"",
+                "escaped_backslash": "Backslash \\\\ in string",
+                "unicode_double_quote": "\"unicode-quote\"",
+                "whitespace_escapes": "Line1\nLine2\tTabbed",
+                "emoji": "\ud83c\udd97"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "TestEscapesResult"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "TestEscapesResult",
+              "output": {
+                "literal_single_quote": "'",
+                "literal_double_quote": "\"",
+                "mixed_quotes": "Text with both \"double\" and 'single' quotes.",
+                "escaped_double_in_string": "An escaped quote: \\\"hello\\\"",
+                "escaped_backslash": "Backslash \\\\ in string",
+                "unicode_double_quote": "\"unicode-quote\"",
+                "whitespace_escapes": "Line1\nLine2\tTabbed",
+                "emoji": "\ud83c\udd97",
+                "not_an_intrinsic_function.$": "States.StringToJson('{\"text\":\"An \\\"escaped double quote\\\" here\"}')"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "literal_single_quote": "'",
+                "literal_double_quote": "\"",
+                "mixed_quotes": "Text with both \"double\" and 'single' quotes.",
+                "escaped_double_in_string": "An escaped quote: \\\"hello\\\"",
+                "escaped_backslash": "Backslash \\\\ in string",
+                "unicode_double_quote": "\"unicode-quote\"",
+                "whitespace_escapes": "Line1\nLine2\tTabbed",
+                "emoji": "\ud83c\udd97",
+                "not_an_intrinsic_function.$": "States.StringToJson('{\"text\":\"An \\\"escaped double quote\\\" here\"}')"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_escape_sequence_parsing[ESCAPE_SEQUENCES_JSONPATH]": {
+    "recorded-date": "02-02-2025, 15:44:30",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Test\\\"\"Name\"": "Value\"\\"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Test\\\"\"Name\"": "Value\"\\"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "JsonPathEscapeTest"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "JsonPathEscapeTest",
+              "output": {
+                "value": "Value\"\\"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "value": "Value\"\\"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_escape_sequence_parsing[ESCAPE_SEQUENCES_JSONATA_COMPARISON_OUTPUT]": {
+    "recorded-date": "02-02-2025, 15:44:46",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Test\\\"\"Name\"": "Value\"\\"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Test\\\"\"Name\"": "Value\"\\"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "Pass",
+              "output": "\"\\\"\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": "\"\\\"\"",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Check"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "Check",
+              "output": "true",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "true",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_illegal_escapes[ESCAPE_SEQUENCES_ILLEGAL_INTRINSIC_FUNCTION]": {
+    "recorded-date": "02-02-2025, 15:46:00",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidDefinition",
+        "exception_value": "An error occurred (InvalidDefinition) when calling the CreateStateMachine operation: Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: The value for the field 'parsed.$' must be a valid JSONPath or a valid intrinsic function call at /States/IntrinsicEscape/Parameters'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_illegal_escapes[ESCAPE_SEQUENCES_ILLEGAL_INTRINSIC_FUNCTION_2]": {
+    "recorded-date": "02-02-2025, 15:46:15",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidDefinition",
+        "exception_value": "An error occurred (InvalidDefinition) when calling the CreateStateMachine operation: Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: The value for the field 'parsed.$' must be a valid JSONPath or a valid intrinsic function call at /States/IntrinsicEscape/Parameters'"
+      }
+    }
   }
 }
