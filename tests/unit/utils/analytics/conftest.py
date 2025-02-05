@@ -9,11 +9,14 @@ def enable_analytics(monkeypatch):
     """Makes sure that all tests in this package are executed with analytics enabled."""
     monkeypatch.setattr(config, "DISABLE_EVENTS", False)
 
+
 class MockComponents:
     name = "mock-product"
 
+
 class MockRuntime:
     components = MockComponents()
+
 
 @pytest.fixture(autouse=True)
 def mock_runtime():
