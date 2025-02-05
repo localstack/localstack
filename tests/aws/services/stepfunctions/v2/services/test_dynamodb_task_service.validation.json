@@ -5,6 +5,9 @@
   "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_base_integrations[DYNAMODB_PUT_GET_ITEM]": {
     "last_validated_date": "2025-02-03T16:31:26+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_base_integrations[DYNAMODB_PUT_QUERY]": {
+    "last_validated_date": "2025-02-05T09:50:00+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_base_integrations[DYNAMODB_PUT_UPDATE_GET_ITEM]": {
     "last_validated_date": "2025-02-03T16:34:47+00:00"
   },

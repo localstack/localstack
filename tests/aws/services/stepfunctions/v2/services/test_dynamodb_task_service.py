@@ -29,11 +29,13 @@ class TestTaskServiceDynamoDB:
             ST.DYNAMODB_PUT_GET_ITEM,
             ST.DYNAMODB_PUT_DELETE_ITEM,
             ST.DYNAMODB_PUT_UPDATE_GET_ITEM,
+            ST.DYNAMODB_PUT_QUERY,
         ],
         ids=[
             "DYNAMODB_PUT_GET_ITEM",
             "DYNAMODB_PUT_DELETE_ITEM",
             "DYNAMODB_PUT_UPDATE_GET_ITEM",
+            "DYNAMODB_PUT_QUERY",
         ],
     )
     def test_base_integrations(
