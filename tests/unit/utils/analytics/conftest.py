@@ -10,7 +10,7 @@ def enable_analytics(monkeypatch):
     monkeypatch.setattr(config, "DISABLE_EVENTS", False)
 
 class MockComponents:
-    name = "dummy-product"
+    name = "mock-product"
 
 class MockRuntime:
     components = MockComponents()
