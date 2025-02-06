@@ -70,6 +70,10 @@ def generate_mount_points(
         if pro:
             # Community entrypoints in pro image
             # TODO actual package version detection
+            print(
+                "WARNING: Package version detection is not implemented."
+                "You need to adapt the version in the .egg-info paths to match the package version installed in the used localstack-pro image."
+            )
             community_version = "4.1.1.dev14"
             pro_version = "4.1.1.dev16"
             egg_path = os.path.join(
