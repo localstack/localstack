@@ -123,6 +123,13 @@ class EsmWorkerFactory:
                         60,
                     )
                     + 5,  # Extend read timeout (with 5s buffer) for long-polling
+                    # Setting tcp_keepalive to true allows the boto client to keep
+                    # a long-running TCP connection when making calls to the gateway.
+                    # This ensures long-poll calls do not prematurely have their socket
+                    # connection marked as stale if no data is transferred for a given
+                    # period of time hence preventing premature drops or resets of the
+                    # connection.
+                    # See https://aws.amazon.com/blogs/networking-and-content-delivery/implementing-long-running-tcp-connections-within-vpc-networking/
                     tcp_keepalive=True,
                 ),
             )

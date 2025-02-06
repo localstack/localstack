@@ -105,6 +105,7 @@ class SqsPoller(Poller):
         # TODO: implement invocation payload size quota
         # TODO: consider long-polling vs. short-polling trade-off. AWS uses long-polling:
         #  https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-sqs.html#pipes-sqs-scaling
+        # NOTE: We allow our ReceiveMessage call to wait between 1-20s for at least 1 item to arrive in the queue.
 
         response = {}
         try:
