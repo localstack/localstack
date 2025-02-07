@@ -76,7 +76,9 @@ class SqsPoller(Poller):
         event_system.register(
             "provide-client-params.sqs.DeleteMessageBatch", handle_message_count_override
         )
-        event_system.register("before-call.sqs.*", handle_inject_headers)
+
+        event_system.register("before-call.sqs.ReceiveMessage", handle_inject_headers)
+        event_system.register("before-call.sqs.DeleteMessageBatch", handle_inject_headers)
 
     def get_queue_attributes(self) -> dict:
         """The API call to sqs:GetQueueAttributes is required for IAM policy streamsing."""
