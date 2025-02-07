@@ -159,6 +159,9 @@ from localstack.services.lambda_.event_source_mapping.esm_worker import (
 from localstack.services.lambda_.event_source_mapping.esm_worker_factory import (
     EsmWorkerFactory,
 )
+from localstack.services.lambda_.event_source_mapping.stream_factory import (
+    StreamManager,
+)
 from localstack.services.lambda_.invocation import AccessDeniedException
 from localstack.services.lambda_.invocation.execution_environment import (
     EnvironmentStartupTimeoutException,
@@ -253,6 +256,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     esm_workers: dict[str, EsmWorker]
     layer_fetcher: LayerFetcher | None
 
+    stream_manager: StreamManager
+
     def __init__(self) -> None:
         self.lambda_service = LambdaService()
         self.create_fn_lock = threading.RLock()
@@ -261,6 +266,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self.esm_workers = {}
         self.layer_fetcher = None
         lambda_hooks.inject_layer_fetcher.run(self)
+
+        self.stream_manager = StreamManager()
 
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(lambda_stores)
@@ -1859,7 +1866,22 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: CreateEventSourceMappingRequest,
     ) -> EventSourceMappingConfiguration:
-        return self.create_event_source_mapping_v2(context, request)
+        return self.create_event_source_mapping_v3(context, request)
+
+    def create_event_source_mapping_v3(
+        self,
+        context: RequestContext,
+        request: CreateEventSourceMappingRequest,
+    ) -> EventSourceMappingConfiguration:
+        # Validations
+        function_arn, _, state = self.validate_event_source_mapping(context, request)
+
+        esm_config = EsmConfigFactory(request, context, function_arn).get_esm_config()
+        self.stream_manager.create_sqs_stream(esm_config)
+
+        state.event_source_mappings[esm_config["UUID"]] = esm_config.copy()
+
+        return esm_config
 
     def create_event_source_mapping_v2(
         self,

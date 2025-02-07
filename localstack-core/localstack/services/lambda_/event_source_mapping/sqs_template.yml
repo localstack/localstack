@@ -1,0 +1,26 @@
+input:
+  aws_sqs:
+    url: "%SQS_SOURCE_QUEUE_URL%"
+    delete_message: true
+    reset_visibility: false
+    max_number_of_messages: 10
+    wait_time_seconds: 0
+    region: "us-east-1"
+    endpoint: "http://localhost:4566"
+    credentials:
+      id: test
+      secret: test
+
+pipeline:
+  processors:
+    - aws_lambda:
+        parallel: false
+        function: "%FUNCTION_NAME%"
+        region: "us-east-1"
+        endpoint: "http://localhost:4566"
+        credentials:
+          id: test
+          secret: test
+
+output:
+  drop: {}
