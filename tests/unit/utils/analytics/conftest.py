@@ -1,7 +1,7 @@
 import pytest
 
 from localstack import config
-from localstack.runtime.current import set_current_runtime
+from localstack.runtime.current import get_current_runtime, set_current_runtime
 
 
 @pytest.fixture(autouse=True)
@@ -20,7 +20,12 @@ class MockRuntime:
 
 @pytest.fixture(autouse=True)
 def mock_runtime():
-    runtime = MockRuntime()
-    set_current_runtime(runtime)
-    yield
-    set_current_runtime(None)
+    try:
+        # don't do anything if a runtime is set
+        get_current_runtime()
+        yield
+    except ValueError:
+        # set a mock runtime if no runtime is set
+        set_current_runtime(MockRuntime())
+        yield
+        set_current_runtime(None)

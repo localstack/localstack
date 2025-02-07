@@ -53,8 +53,6 @@ def get_version_string() -> str:
 
 
 def read_client_metadata() -> ClientMetadata:
-    runtime = get_current_runtime()
-
     return ClientMetadata(
         session_id=get_session_id(),
         machine_id=get_machine_id(),
@@ -64,7 +62,7 @@ def read_client_metadata() -> ClientMetadata:
         is_ci=os.getenv("CI") is not None,
         is_docker=config.is_in_docker,
         is_testing=config.is_local_test_mode(),
-        product=os.getenv("LOCALSTACK_TELEMETRY_PRODUCT") or runtime.components.name or "unknown",
+        product=get_localstack_product(),
         edition=os.getenv("LOCALSTACK_TELEMETRY_EDITION") or get_localstack_edition(),
     )
 
@@ -125,6 +123,18 @@ def get_localstack_edition() -> str:
 
     # Return the base name of the version file, or unknown if no file is found
     return version_file.removesuffix("-version").removeprefix(".") if version_file else "unknown"
+
+
+def get_localstack_product() -> str:
+    """
+    Returns the telemetry product name from the env var, runtime, or "unknown".
+    """
+    try:
+        runtime_product = get_current_runtime().components.name
+    except ValueError:
+        runtime_product = None
+
+    return os.getenv("LOCALSTACK_TELEMETRY_PRODUCT") or runtime_product or "unknown"
 
 
 def is_license_activated() -> bool:
