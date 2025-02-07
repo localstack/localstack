@@ -13,9 +13,12 @@ from localstack.utils.bootstrap import (
 )
 from localstack.utils.strings import short_uid
 
+pytestmarks = [
+    pytest.mark.skipif(condition=in_docker(), reason="cannot run bootstrap tests in docker"),
+    markers.aws.only_localstack,
+]
 
-@markers.aws.only_localstack
-@pytest.mark.skipif(condition=in_docker(), reason="cannot run bootstrap tests in docker")
+
 class TestBlockingServiceShutdown:
     def test_shutdown_during_sqs_long_poll(
         self,
