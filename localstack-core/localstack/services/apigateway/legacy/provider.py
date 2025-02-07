@@ -605,6 +605,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
             # for path "/responseTemplates/application~1json"
             if "/responseTemplates" in path:
+                integration_response.response_templates = (
+                    integration_response.response_templates or {}
+                )
                 value = patch_operation.get("value")
                 if not isinstance(value, str):
                     raise BadRequestException(
@@ -612,7 +615,13 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     )
                 param = path.removeprefix("/responseTemplates/")
                 param = param.replace("~1", "/")
-                integration_response.response_templates.pop(param)
+                if op == "remove":
+                    integration_response.response_templates.pop(param)
+                elif op == "add":
+                    integration_response.response_templates[param] = value
+
+            elif "/contentHandling" in path and op == "replace":
+                integration_response.content_handling = patch_operation.get("value")
 
     def update_resource(
         self,

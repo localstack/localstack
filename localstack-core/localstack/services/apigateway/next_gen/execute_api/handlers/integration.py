@@ -9,8 +9,6 @@ from ..integrations import REST_API_INTEGRATIONS
 LOG = logging.getLogger(__name__)
 
 
-# TODO: this will need to use ApiGatewayIntegration class, using Plugin for discoverability and a PluginManager,
-#  in order to automatically have access to defined Integrations that we can extend
 class IntegrationHandler(RestApiGatewayHandler):
     def __call__(
         self,
@@ -24,7 +22,7 @@ class IntegrationHandler(RestApiGatewayHandler):
         integration = REST_API_INTEGRATIONS.get(integration_type)
 
         if not integration:
-            # TODO: raise proper exception?
+            # this should not happen, as we validated the type in the provider
             raise NotImplementedError(
                 f"This integration type is not yet supported: {integration_type}"
             )
