@@ -16,7 +16,6 @@ from localstack.services.lambda_.event_source_mapping.pollers.poller import (
     Poller,
     parse_batch_item_failures,
 )
-from localstack.services.lambda_.event_source_mapping.senders.sender_utils import batched
 from localstack.services.sqs.constants import HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import first_char_to_lower
@@ -29,6 +28,9 @@ DEFAULT_MAX_RECEIVE_COUNT = 10
 class SqsPoller(Poller):
     queue_url: str
 
+    batch_size: int
+    maximum_batching_window: int
+
     def __init__(
         self,
         source_arn: str,
@@ -38,6 +40,10 @@ class SqsPoller(Poller):
     ):
         super().__init__(source_arn, source_parameters, source_client, processor)
         self.queue_url = get_queue_url(self.source_arn)
+
+        self.batch_size = self.sqs_queue_parameters["BatchSize"]
+        self.maximum_batching_window = self.sqs_queue_parameters["MaximumBatchingWindowInSeconds"]
+
         self._register_client_hooks()
 
     @property
@@ -52,36 +58,27 @@ class SqsPoller(Poller):
     def _register_client_hooks(self):
         event_system = self.source_client.meta.events
 
-        def _handle_receive_message_override(params, context, **kwargs):
-            requested_count = params.get("MaxNumberOfMessages")
+        def handle_message_count_override(params, context, **kwargs):
+            requested_count = params.pop("sqs_override_max_message_count", None)
             if not requested_count or requested_count <= DEFAULT_MAX_RECEIVE_COUNT:
                 return
 
-            # Allow overide parameter to be greater than default and less than maximum batch size.
-            # Useful for getting remaining records less than the batch size. i.e we need 100 records but BatchSize is 1k.
-            override = min(requested_count, self.sqs_queue_parameters["BatchSize"])
-            context[HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = str(override)
+            context[HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = str(requested_count)
 
-        def _handle_delete_batch_override(params, context, **kwargs):
-            requested_count = len(params.get("Entries", []))
-            if not requested_count or requested_count <= DEFAULT_MAX_RECEIVE_COUNT:
-                return
-
-            override = min(requested_count, self.sqs_queue_parameters["BatchSize"])
-            context[HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = str(override)
-
-        def _handler_inject_header(params, context, **kwargs):
+        def handle_inject_headers(params, context, **kwargs):
             if override := context.pop(HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT, None):
                 params["headers"][HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = override
 
         event_system.register(
-            "provide-client-params.sqs.ReceiveMessage", _handle_receive_message_override
+            "provide-client-params.sqs.ReceiveMessage", handle_message_count_override
         )
         # Since we delete SQS messages after processing, this allows us to remove up to 10K entries at a time.
         event_system.register(
-            "provide-client-params.sqs.DeleteMessageBatch", _handle_delete_batch_override
+            "provide-client-params.sqs.DeleteMessageBatch", handle_message_count_override
         )
-        event_system.register("before-call.sqs.*", _handler_inject_header)
+
+        event_system.register("before-call.sqs.ReceiveMessage", handle_inject_headers)
+        event_system.register("before-call.sqs.DeleteMessageBatch", handle_inject_headers)
 
     def get_queue_attributes(self) -> dict:
         """The API call to sqs:GetQueueAttributes is required for IAM policy streamsing."""
@@ -103,11 +100,11 @@ class SqsPoller(Poller):
         #  https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-sqs.html#pipes-sqs-scaling
         response = self.source_client.receive_message(
             QueueUrl=self.queue_url,
-            MaxNumberOfMessages=self.sqs_queue_parameters.get(
-                "BatchSize", DEFAULT_MAX_RECEIVE_COUNT
-            ),
+            MaxNumberOfMessages=min(self.batch_size, DEFAULT_MAX_RECEIVE_COUNT),
             MessageAttributeNames=["All"],
             MessageSystemAttributeNames=[MessageSystemAttributeName.All],
+            # Override how many messages we can receive per call
+            sqs_override_max_message_count=self.batch_size,
         )
         if messages := response.get("Messages"):
             LOG.debug("Polled %d events from %s", len(messages), self.source_arn)
@@ -208,11 +205,13 @@ class SqsPoller(Poller):
                 for count, message in enumerate(messages)
                 if message["MessageId"] in message_ids_to_delete
             ]
-            batch_size = self.sqs_queue_parameters.get("BatchSize", DEFAULT_MAX_RECEIVE_COUNT)
-            for batched_entries in batched(entries, batch_size):
-                self.source_client.delete_message_batch(
-                    QueueUrl=self.queue_url, Entries=batched_entries
-                )
+
+            self.source_client.delete_message_batch(
+                QueueUrl=self.queue_url,
+                Entries=entries,
+                # Override how many messages can be deleted at once
+                sqs_override_max_message_count=self.batch_size,
+            )
 
 
 def split_by_message_group_id(messages) -> defaultdict[str, list[dict]]:
