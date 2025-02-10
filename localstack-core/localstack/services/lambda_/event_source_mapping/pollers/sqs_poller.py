@@ -41,13 +41,19 @@ class SqsPoller(Poller):
         super().__init__(source_arn, source_parameters, source_client, processor)
         self.queue_url = get_queue_url(self.source_arn)
 
-        self.batch_size = self.sqs_queue_parameters["BatchSize"]
-        self.maximum_batching_window = self.sqs_queue_parameters["MaximumBatchingWindowInSeconds"]
+        self.batch_size = self.sqs_queue_parameters.get("BatchSize", DEFAULT_MAX_RECEIVE_COUNT)
+        # HACK: When the MaximumBatchingWindowInSeconds is not set, just default to short-polling.
+        # While set in ESM (via the config factory) setting this param as a default in Pipes causes
+        # parity issues with a retrieved config since no default value is returned.
+        self.maximum_batching_window = self.sqs_queue_parameters.get(
+            "MaximumBatchingWindowInSeconds", 0
+        )
 
         self._register_client_hooks()
 
     @property
     def sqs_queue_parameters(self) -> PipeSourceSqsQueueParameters:
+        # TODO: De-couple Poller configuration params from ESM/Pipes specific config (i.e PipeSourceSqsQueueParameters)
         return self.source_parameters["SqsQueueParameters"]
 
     @cached_property
