@@ -1,0 +1,12 @@
+{
+  "StartAt": "IntrinsicEscape",
+  "States": {
+    "IntrinsicEscape": {
+      "Type": "Pass",
+      "Parameters": {
+        "parsed.$": "States.Format('He said, \\\"Hello, {}!\\\"', 'Test \\\"Name\\\" Here')"
+      },
+      "End": true
+    }
+  }
+}
