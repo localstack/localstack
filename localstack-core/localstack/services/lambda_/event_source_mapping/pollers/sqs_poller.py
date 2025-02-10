@@ -132,32 +132,21 @@ class SqsPoller(Poller):
         # TODO: implement invocation payload size quota
         # TODO: consider long-polling vs. short-polling trade-off. AWS uses long-polling:
         #  https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-sqs.html#pipes-sqs-scaling
-        # NOTE: We allow our ReceiveMessage call to wait between 1-20s for at least 1 item to arrive in the queue.
+        # NOTE: We allow our ReceiveMessage call to wait between 1-300s for at least 1 item to arrive in the queue.
 
-        response = {}
-        try:
-            response = self.source_client.receive_message(
-                QueueUrl=self.queue_url,
-                MaxNumberOfMessages=min(self.batch_size, DEFAULT_MAX_RECEIVE_COUNT),
-                WaitTimeSeconds=min(self.maximum_batching_window, DEFAULT_MAX_WAIT_TIME_SECONDS),
-                MessageAttributeNames=["All"],
-                MessageSystemAttributeNames=[MessageSystemAttributeName.All],
-                # Override how many messages we can receive per call
-                sqs_override_max_message_count=self.batch_size,
-                # Override how long to wait until batching conditions are met
-                sqs_override_wait_time_seconds=self.maximum_batching_window,
-            )
+        # TODO: Handle exceptions differently i.e QueueNotExist or ConnectionFailed should retry with backoff
+        response = self.source_client.receive_message(
+            QueueUrl=self.queue_url,
+            MaxNumberOfMessages=min(self.batch_size, DEFAULT_MAX_RECEIVE_COUNT),
+            WaitTimeSeconds=min(self.maximum_batching_window, DEFAULT_MAX_WAIT_TIME_SECONDS),
+            MessageAttributeNames=["All"],
+            MessageSystemAttributeNames=[MessageSystemAttributeName.All],
+            # Override how many messages we can receive per call
+            sqs_override_max_message_count=self.batch_size,
+            # Override how long to wait until batching conditions are met
+            sqs_override_wait_time_seconds=self.maximum_batching_window,
+        )
 
-        except Exception as e:
-            # If an exception is raised here, break the loop and return whatever
-            # has been collected early.
-            # TODO: Handle exceptions differently i.e QueueNotExist or ConnectionFailed should retry with backoff
-            LOG.warning(
-                "Polling SQS queue %s failed: %s",
-                self.source_arn,
-                e,
-                exc_info=LOG.isEnabledFor(logging.DEBUG),
-            )
         messages = response.get("Messages", [])
         LOG.debug("Polled %d events from %s", len(messages), self.source_arn)
         # NOTE: Split up a batch into mini-batches of up to 2.5K records each. This is to prevent exceeding the 6MB size-limit
