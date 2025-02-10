@@ -21,6 +21,7 @@ from localstack.services.lambda_.event_source_mapping.senders.sender_utils impor
 )
 from localstack.services.sqs.constants import (
     HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT,
+    HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS,
 )
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import first_char_to_lower
@@ -78,9 +79,27 @@ class SqsPoller(Poller):
 
             context[HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = str(requested_count)
 
+        def handle_message_wait_time_seconds_override(params, context, **kwargs):
+            requested_count = params.pop("sqs_override_wait_time_seconds", None)
+            if not requested_count or requested_count <= DEFAULT_MAX_WAIT_TIME_SECONDS:
+                return
+
+            context[HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS] = str(requested_count)
+
         def handle_inject_headers(params, context, **kwargs):
-            if override := context.pop(HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT, None):
-                params["headers"][HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = override
+            if override_message_count := context.pop(
+                HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT, None
+            ):
+                params["headers"][HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = (
+                    override_message_count
+                )
+
+            if override_wait_time := context.pop(
+                HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS, None
+            ):
+                params["headers"][HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS] = (
+                    override_wait_time
+                )
 
         event_system.register(
             "provide-client-params.sqs.ReceiveMessage", handle_message_count_override
@@ -122,6 +141,7 @@ class SqsPoller(Poller):
                 MessageSystemAttributeNames=[MessageSystemAttributeName.All],
                 # Override how many messages we can receive per call
                 sqs_override_max_message_count=self.batch_size,
+                sqs_override_wait_time_seconds=self.maximum_batching_window,
             )
 
         except Exception as e:
