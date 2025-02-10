@@ -194,7 +194,7 @@ class CloudwatchDispatcher:
         )
 
     def shutdown(self):
-        self.executor.shutdown(wait=True, cancel_futures=True)
+        self.executor.shutdown(wait=False, cancel_futures=True)
 
     def dispatch_sqs_metric(
         self,
@@ -470,7 +470,7 @@ class MessageMoveTaskManager:
             for move_task in self.move_tasks.values():
                 move_task.cancel_event.set()
 
-            self.executor.shutdown(wait=True, cancel_futures=True)
+            self.executor.shutdown(wait=False, cancel_futures=True)
 
     def _run(self, move_task: MessageMoveTask):
         try:
