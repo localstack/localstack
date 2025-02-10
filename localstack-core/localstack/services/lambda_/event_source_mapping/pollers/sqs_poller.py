@@ -80,11 +80,11 @@ class SqsPoller(Poller):
             context[HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = str(requested_count)
 
         def handle_message_wait_time_seconds_override(params, context, **kwargs):
-            requested_count = params.pop("sqs_override_wait_time_seconds", None)
-            if not requested_count or requested_count <= DEFAULT_MAX_WAIT_TIME_SECONDS:
+            requested_wait = params.pop("sqs_override_wait_time_seconds", None)
+            if not requested_wait or requested_wait <= DEFAULT_MAX_WAIT_TIME_SECONDS:
                 return
 
-            context[HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS] = str(requested_count)
+            context[HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS] = str(requested_wait)
 
         def handle_inject_headers(params, context, **kwargs):
             if override_message_count := context.pop(
@@ -103,6 +103,9 @@ class SqsPoller(Poller):
 
         event_system.register(
             "provide-client-params.sqs.ReceiveMessage", handle_message_count_override
+        )
+        event_system.register(
+            "provide-client-params.sqs.ReceiveMessage", handle_message_wait_time_seconds_override
         )
         # Since we delete SQS messages after processing, this allows us to remove up to 10K entries at a time.
         event_system.register(
@@ -141,6 +144,7 @@ class SqsPoller(Poller):
                 MessageSystemAttributeNames=[MessageSystemAttributeName.All],
                 # Override how many messages we can receive per call
                 sqs_override_max_message_count=self.batch_size,
+                # Override how long to wait until batching conditions are met
                 sqs_override_wait_time_seconds=self.maximum_batching_window,
             )
 

@@ -1620,7 +1620,62 @@ class TestSQSEventSourceMapping:
 
         assert sum(len(event.get("Records", [])) for event in events) == batch_size
 
-        rs = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
+        rs = aws_client.sqs.receive_message(QueueUrl=queue_url)
+        assert rs.get("Messages", []) == []
+
+    @markers.aws.only_localstack
+    def test_sqs_event_source_mapping_batching_window_size_override(
+        self,
+        create_lambda_function,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        lambda_su_role,
+        cleanups,
+        aws_client,
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        queue_name = f"queue-{short_uid()}"
+        mapping_uuid = None
+
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            EventSourceArn=queue_arn,
+            FunctionName=function_name,
+            MaximumBatchingWindowInSeconds=30,
+            BatchSize=10_000,
+        )
+        mapping_uuid = create_event_source_mapping_response["UUID"]
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
+        _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
+
+        # Send 4 messages and delay their arrival by 5, 10, 15, and 25 seconds respectively
+        for s in [5, 10, 15, 25]:
+            aws_client.sqs.send_message(
+                QueueUrl=queue_url,
+                MessageBody=json.dumps({"delayed": f"{s}"}),
+            )
+
+        events = retry(
+            check_expected_lambda_log_events_length,
+            retries=60,
+            sleep=1,
+            function_name=function_name,
+            expected_length=1,
+            logs_client=aws_client.logs,
+        )
+
+        assert len(events) == 1
+        assert len(events[0].get("Records", [])) == 4
+
+        rs = aws_client.sqs.receive_message(QueueUrl=queue_url)
         assert rs.get("Messages", []) == []
 
 
