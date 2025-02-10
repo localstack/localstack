@@ -159,7 +159,7 @@ class SqsPoller(Poller):
         # NOTE: Split up a batch into mini-batches of up to 2.5K records each. This is to prevent exceeding the 6MB size-limit
         # imposed on payloads sent to a Lambda as well as LocalStack Lambdas failing to handle large payloads efficiently.
         # See https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventsourcemapping.html#invocation-eventsourcemapping-batching
-        for batch_no, message_batch in enumerate(batched(messages, 2500), 1):
+        for message_batch in batched(messages, 2500):
             if len(message_batch) < len(messages):
                 LOG.debug(
                     "Splitting events from %s into mini-batch (%d/%d)",
