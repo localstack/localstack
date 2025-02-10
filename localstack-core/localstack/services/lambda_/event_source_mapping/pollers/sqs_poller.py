@@ -135,11 +135,18 @@ class SqsPoller(Poller):
                 exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
         messages = response.get("Messages", [])
+        LOG.debug("Polled %d events from %s", len(messages), self.source_arn)
         # NOTE: Split up a batch into mini-batches of up to 2.5K records each. This is to prevent exceeding the 6MB size-limit
         # imposed on payloads sent to a Lambda as well as LocalStack Lambdas failing to handle large payloads efficiently.
         # See https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventsourcemapping.html#invocation-eventsourcemapping-batching
-        for message_batch in batched(messages, 2500):
-            LOG.debug("Polled %d events from %s", len(message_batch), self.source_arn)
+        for batch_no, message_batch in enumerate(batched(messages, 2500), 1):
+            if len(message_batch) < len(messages):
+                LOG.debug(
+                    "Splitting events from %s into mini-batch (%d/%d)",
+                    self.source_arn,
+                    len(message_batch),
+                    len(messages),
+                )
             try:
                 if self.is_fifo_queue:
                     # TODO: think about starvation behavior because once failing message could block other groups
