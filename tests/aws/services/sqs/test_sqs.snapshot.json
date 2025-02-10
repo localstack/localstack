@@ -3648,9 +3648,9 @@
     "recorded-content": {}
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_wait_time_seconds[sqs]": {
-    "recorded-date": "23-01-2025, 12:43:53",
+    "recorded-date": "10-02-2025, 13:22:29",
     "recorded-content": {
-      "recieve_message_error": {
+      "recieve_message_error_too_large": {
         "Error": {
           "Code": "InvalidParameterValue",
           "Message": "Value 21 for parameter WaitTimeSeconds is invalid. Reason: Must be >= 0 and <= 20, if provided.",
@@ -3660,15 +3660,54 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
-
+        }
+      },
+      "recieve_message_error_too_small": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Value -1 for parameter WaitTimeSeconds is invalid. Reason: Must be >= 0 and <= 20, if provided.",
+          "QueryErrorCode": "InvalidParameterValueException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "empty_short_poll_by_default_resp": {
+        "Messages": [
+          {
+            "Body": "message",
+            "MD5OfBody": "78e731027d8fd50ed642340b7c9a63b3",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "empty_short_poll_explicit_resp": {
+        "Messages": [
+          {
+            "Body": "message",
+            "MD5OfBody": "78e731027d8fd50ed642340b7c9a63b3",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_wait_time_seconds[sqs_query]": {
-    "recorded-date": "23-01-2025, 12:43:54",
+    "recorded-date": "10-02-2025, 13:22:32",
     "recorded-content": {
-      "recieve_message_error": {
+      "recieve_message_error_too_large": {
         "Error": {
           "Code": "InvalidParameterValue",
           "Detail": null,
@@ -3679,12 +3718,58 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
         }
+      },
+      "recieve_message_error_too_small": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "Value -1 for parameter WaitTimeSeconds is invalid. Reason: Must be >= 0 and <= 20, if provided.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "empty_short_poll_by_default_resp": {
+        "Messages": [
+          {
+            "Body": "message",
+            "MD5OfBody": "78e731027d8fd50ed642340b7c9a63b3",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "empty_short_poll_explicit_resp": {
+        "Messages": [
+          {
+            "Body": "message",
+            "MD5OfBody": "78e731027d8fd50ed642340b7c9a63b3",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_empty_queue[sqs]": {
-    "recorded-date": "30-01-2025, 22:32:45",
+    "recorded-date": "10-02-2025, 13:18:17",
     "recorded-content": {
+      "empty_short_poll_resp_no_param": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "empty_short_poll_resp": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -3700,8 +3785,14 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_empty_queue[sqs_query]": {
-    "recorded-date": "30-01-2025, 22:32:48",
+    "recorded-date": "10-02-2025, 13:18:20",
     "recorded-content": {
+      "empty_short_poll_resp_no_param": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "empty_short_poll_resp": {
         "ResponseMetadata": {
           "HTTPHeaders": {},

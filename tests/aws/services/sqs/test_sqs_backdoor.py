@@ -7,6 +7,11 @@ import xmltodict
 from botocore.exceptions import ClientError
 
 from localstack import config
+from localstack.services.sqs.constants import (
+    HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT,
+    HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS,
+)
+from localstack.services.sqs.provider import MAX_NUMBER_OF_MESSAGES
 from localstack.services.sqs.utils import parse_queue_url
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -373,20 +378,16 @@ class TestSqsOverrideHeaders:
     ):
         # Create standalone boto3 client since registering hooks to the session-wide
         # aws_client (from the fixture) will have side-effects.
-        aws_client = aws_client_factory().sqs
+        sqs_client = aws_client_factory().sqs
 
         override_max_number_of_messages = 20
-
-        from localstack.services.sqs.constants import HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT
-        from localstack.services.sqs.provider import MAX_NUMBER_OF_MESSAGES
-
         queue_url = sqs_create_queue()
 
         for i in range(override_max_number_of_messages):
-            aws_client.send_message(QueueUrl=queue_url, MessageBody=f"message-{i}")
+            sqs_client.send_message(QueueUrl=queue_url, MessageBody=f"message-{i}")
 
         with pytest.raises(ClientError):
-            aws_client.receive_message(
+            sqs_client.receive_message(
                 QueueUrl=queue_url,
                 VisibilityTimeout=0,
                 MaxNumberOfMessages=override_max_number_of_messages,
@@ -407,13 +408,13 @@ class TestSqsOverrideHeaders:
                     override_message_count
                 )
 
-        aws_client.meta.events.register(
+        sqs_client.meta.events.register(
             "provide-client-params.sqs.ReceiveMessage", _handle_receive_message_override
         )
 
-        aws_client.meta.events.register("before-call.sqs.ReceiveMessage", _handler_inject_header)
+        sqs_client.meta.events.register("before-call.sqs.ReceiveMessage", _handler_inject_header)
 
-        response = aws_client.receive_message(
+        response = sqs_client.receive_message(
             QueueUrl=queue_url,
             VisibilityTimeout=30,
             MaxNumberOfMessages=override_max_number_of_messages,
@@ -427,19 +428,12 @@ class TestSqsOverrideHeaders:
     def test_receive_message_override_message_wait_time_seconds(
         self, sqs_create_queue, aws_client_factory
     ):
-        aws_client = aws_client_factory().sqs
-
+        sqs_client = aws_client_factory().sqs
         override_message_wait_time_seconds = 30
-
-        from localstack.services.sqs.constants import (
-            HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS,
-        )
-        from localstack.services.sqs.provider import MAX_NUMBER_OF_MESSAGES
-
         queue_url = sqs_create_queue()
 
         with pytest.raises(ClientError):
-            aws_client.receive_message(
+            sqs_client.receive_message(
                 QueueUrl=queue_url,
                 VisibilityTimeout=0,
                 MaxNumberOfMessages=MAX_NUMBER_OF_MESSAGES,
@@ -461,24 +455,24 @@ class TestSqsOverrideHeaders:
                     override_wait_time
                 )
 
-        aws_client.meta.events.register(
+        sqs_client.meta.events.register(
             "provide-client-params.sqs.ReceiveMessage", _handle_receive_message_override
         )
 
-        aws_client.meta.events.register("before-call.sqs.ReceiveMessage", _handler_inject_header)
+        sqs_client.meta.events.register("before-call.sqs.ReceiveMessage", _handler_inject_header)
 
         def _send_message():
-            aws_client.send_message(QueueUrl=queue_url, MessageBody=f"message-{short_uid()}")
+            sqs_client.send_message(QueueUrl=queue_url, MessageBody=f"message-{short_uid()}")
 
         # Populate with 9 messages (1 below the MaxNumberOfMessages threshold).
         # This should cause long-polling to exit since MaxNumberOfMessages is met.
         for _ in range(9):
             _send_message()
 
-        Timer(25, _send_message).start()  # send message asynchronously after 1 second
+        Timer(25, _send_message).start()  # send message asynchronously after 25 seconds
 
         start_t = time.time()
-        response = aws_client.receive_message(
+        response = sqs_client.receive_message(
             QueueUrl=queue_url,
             VisibilityTimeout=30,
             MaxNumberOfMessages=MAX_NUMBER_OF_MESSAGES,

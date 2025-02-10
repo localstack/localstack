@@ -1241,7 +1241,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             poll_empty_queue = True
         elif wait_time_seconds is None:
             wait_time_seconds = queue.wait_time_seconds
-        elif wait_time_seconds < 1 or wait_time_seconds > 20:
+        elif wait_time_seconds < 0 or wait_time_seconds > 20:
             raise InvalidParameterValueException(
                 f"Value {wait_time_seconds} for parameter WaitTimeSeconds is invalid. "
                 f"Reason: Must be >= 0 and <= 20, if provided."
