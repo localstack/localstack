@@ -38,7 +38,7 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
         super().__init__(supported_integration_patterns=_SUPPORTED_INTEGRATION_PATTERNS)
 
     def _validate_service_integration_is_supported(self):
-        # As no aws-sdk support catalog is available, let invalid aws-sdk integration to fail at runtime.
+        # As no aws-sdk support catalog is available, allow invalid aws-sdk integration to fail at runtime.
         pass
 
     def _get_sfn_resource_type(self) -> str:
