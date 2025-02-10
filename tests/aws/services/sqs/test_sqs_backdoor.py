@@ -471,7 +471,7 @@ class TestSqsOverrideHeaders:
 
         Timer(25, _send_message).start()  # send message asynchronously after 25 seconds
 
-        start_t = time.time()
+        start_t = time.perf_counter()
         response = sqs_client.receive_message(
             QueueUrl=queue_url,
             VisibilityTimeout=30,
@@ -479,7 +479,7 @@ class TestSqsOverrideHeaders:
             WaitTimeSeconds=override_message_wait_time_seconds,
             AttributeNames=["All"],
         )
-        assert time.time() - start_t >= 25
+        assert time.perf_counter() - start_t >= 25
 
         messages = response.get("Messages", [])
         assert len(messages) == 10
