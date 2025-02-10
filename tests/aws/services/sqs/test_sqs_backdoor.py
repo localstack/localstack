@@ -1,9 +1,17 @@
+import time
+from threading import Timer
+
 import pytest
 import requests
 import xmltodict
 from botocore.exceptions import ClientError
 
 from localstack import config
+from localstack.services.sqs.constants import (
+    HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT,
+    HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS,
+)
+from localstack.services.sqs.provider import MAX_NUMBER_OF_MESSAGES
 from localstack.services.sqs.utils import parse_queue_url
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -361,3 +369,117 @@ class TestSqsDeveloperEndpoints:
         assert response.status_code == 400
         doc = response.json()
         assert doc["ErrorResponse"]["Error"]["Code"] == "AWS.SimpleQueueService.NonExistentQueue"
+
+
+class TestSqsOverrideHeaders:
+    @markers.aws.only_localstack
+    def test_receive_message_override_max_number_of_messages(
+        self, sqs_create_queue, aws_client_factory
+    ):
+        # Create standalone boto3 client since registering hooks to the session-wide
+        # aws_client (from the fixture) will have side-effects.
+        sqs_client = aws_client_factory().sqs
+
+        override_max_number_of_messages = 20
+        queue_url = sqs_create_queue()
+
+        for i in range(override_max_number_of_messages):
+            sqs_client.send_message(QueueUrl=queue_url, MessageBody=f"message-{i}")
+
+        with pytest.raises(ClientError):
+            sqs_client.receive_message(
+                QueueUrl=queue_url,
+                VisibilityTimeout=0,
+                MaxNumberOfMessages=override_max_number_of_messages,
+                AttributeNames=["All"],
+            )
+
+        def _handle_receive_message_override(params, context, **kwargs):
+            if not (requested_count := params.get("MaxNumberOfMessages")):
+                return
+            context[HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = str(requested_count)
+            params["MaxNumberOfMessages"] = min(MAX_NUMBER_OF_MESSAGES, requested_count)
+
+        def _handler_inject_header(params, context, **kwargs):
+            if override_message_count := context.pop(
+                HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT, None
+            ):
+                params["headers"][HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT] = (
+                    override_message_count
+                )
+
+        sqs_client.meta.events.register(
+            "provide-client-params.sqs.ReceiveMessage", _handle_receive_message_override
+        )
+
+        sqs_client.meta.events.register("before-call.sqs.ReceiveMessage", _handler_inject_header)
+
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url,
+            VisibilityTimeout=30,
+            MaxNumberOfMessages=override_max_number_of_messages,
+            AttributeNames=["All"],
+        )
+
+        messages = response.get("Messages", [])
+        assert len(messages) == 20
+
+    @markers.aws.only_localstack
+    def test_receive_message_override_message_wait_time_seconds(
+        self, sqs_create_queue, aws_client_factory
+    ):
+        sqs_client = aws_client_factory().sqs
+        override_message_wait_time_seconds = 30
+        queue_url = sqs_create_queue()
+
+        with pytest.raises(ClientError):
+            sqs_client.receive_message(
+                QueueUrl=queue_url,
+                VisibilityTimeout=0,
+                MaxNumberOfMessages=MAX_NUMBER_OF_MESSAGES,
+                WaitTimeSeconds=override_message_wait_time_seconds,
+                AttributeNames=["All"],
+            )
+
+        def _handle_receive_message_override(params, context, **kwargs):
+            if not (requested_wait_time := params.get("WaitTimeSeconds")):
+                return
+            context[HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS] = str(requested_wait_time)
+            params["WaitTimeSeconds"] = min(20, requested_wait_time)
+
+        def _handler_inject_header(params, context, **kwargs):
+            if override_wait_time := context.pop(
+                HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS, None
+            ):
+                params["headers"][HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS] = (
+                    override_wait_time
+                )
+
+        sqs_client.meta.events.register(
+            "provide-client-params.sqs.ReceiveMessage", _handle_receive_message_override
+        )
+
+        sqs_client.meta.events.register("before-call.sqs.ReceiveMessage", _handler_inject_header)
+
+        def _send_message():
+            sqs_client.send_message(QueueUrl=queue_url, MessageBody=f"message-{short_uid()}")
+
+        # Populate with 9 messages (1 below the MaxNumberOfMessages threshold).
+        # This should cause long-polling to exit since MaxNumberOfMessages is met.
+        for _ in range(9):
+            _send_message()
+
+        Timer(25, _send_message).start()  # send message asynchronously after 25 seconds
+
+        start_t = time.perf_counter()
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url,
+            VisibilityTimeout=30,
+            MaxNumberOfMessages=MAX_NUMBER_OF_MESSAGES,
+            WaitTimeSeconds=override_message_wait_time_seconds,
+            AttributeNames=["All"],
+        )
+        assert time.perf_counter() - start_t >= 25
+
+        messages = response.get("Messages", [])
+        assert len(messages) == 10

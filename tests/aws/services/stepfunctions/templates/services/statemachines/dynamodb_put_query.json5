@@ -1,0 +1,30 @@
+{
+  "StartAt": "PutItem",
+  "States": {
+    "PutItem": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:putItem",
+      "Parameters": {
+        "TableName.$": "$.TableName",
+        "Item.$": "$.Item"
+      },
+      "ResultPath": "$.putItemOutput",
+      "Next": "QueryItems"
+    },
+    "QueryItems": {
+      "Type": "Task",
+      // Use aws-sdk for the query call: see AWS's limitations
+      //  of the ddb optimised service integration.
+      "Resource": "arn:aws:states:::aws-sdk:dynamodb:query",
+      "ResultPath": "$.queryOutput",
+      "Parameters": {
+        "TableName.$": "$.TableName",
+        "KeyConditionExpression": "id = :id",
+        "ExpressionAttributeValues": {
+          ":id.$": "$.Item.id"
+        }
+      },
+      "End": true
+    }
+  }
+}

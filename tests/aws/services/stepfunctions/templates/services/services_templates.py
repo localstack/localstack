@@ -98,6 +98,12 @@ class ServicesTemplates(TemplateLoader):
     DYNAMODB_PUT_UPDATE_GET_ITEM: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/dynamodb_put_update_get_item.json5"
     )
+    DYNAMODB_PUT_QUERY: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/dynamodb_put_query.json5"
+    )
+    INVALID_INTEGRATION_DYNAMODB_QUERY: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_integration_dynamodb_query.json5"
+    )
     # Lambda Functions.
     LAMBDA_ID_FUNCTION: Final[str] = os.path.join(_THIS_FOLDER, "lambdafunctions/id_function.py")
     LAMBDA_RETURN_BYTES_STR: Final[str] = os.path.join(
