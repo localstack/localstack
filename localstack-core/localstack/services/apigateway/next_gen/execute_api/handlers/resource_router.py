@@ -71,7 +71,7 @@ class RestAPIResourceRouter:
 
         :param context:
         :return: A tuple with the matched resource and the (already parsed) path params
-        :raises: TODO: Gateway exception in case the given request does not match any operation
+        :raises: MissingAuthTokenError, weird naming but that is the default NotFound for REST API
         """
 
         request = context.request

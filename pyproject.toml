@@ -53,9 +53,9 @@ Issues = "https://github.com/localstack/localstack/issues"
 # minimal required to actually run localstack on the host for services natively implemented in python
 base-runtime = [
     # pinned / updated by ASF update action
-    "boto3==1.36.11",
+    "boto3==1.36.16",
     # pinned / updated by ASF update action
-    "botocore==1.36.11",
+    "botocore==1.36.16",
     "awscrt>=0.13.14",
     "cbor2>=5.5.0",
     "dnspython>=1.16.0",
