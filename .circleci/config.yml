@@ -371,6 +371,7 @@ jobs:
               # if test selection contains tests that are outside of integration ones then the test files variable is empty which breaks circleci split command, so additional check is needed
               if [[ -n "$TEST_FILES" ]] ; then
                 TEST_FILES= $( echo "$TEST_FILES" | circleci tests split --verbose --split-by=timings | tr '\n' ' ')
+              fi
             fi
             echo $TEST_FILES
             if [[ -z "$TEST_FILES" ]] ; then
