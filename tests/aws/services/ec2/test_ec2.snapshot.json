@@ -320,5 +320,20 @@
         }
       }
     }
+  },
+  "tests/aws/services/ec2/test_ec2.py::test_raise_create_volume_without_size": {
+    "recorded-date": "04-02-2025, 12:53:29",
+    "recorded-content": {
+      "request-missing-size": {
+        "Error": {
+          "Code": "MissingParameter",
+          "Message": "The request must contain the parameter size/snapshot"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
