@@ -367,7 +367,10 @@ jobs:
             if [ -z $TESTSELECTION_PYTEST_ARGS ] ; then
               TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | circleci tests split --verbose --split-by=timings | tr '\n' ' ')
             else
-              TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | PYTHONPATH=localstack-core python -m localstack.testing.testselection.scripts.filter_by_test_selection target/testselection/test-selection.txt | circleci tests split --verbose --split-by=timings | tr '\n' ' ')
+              TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | PYTHONPATH=localstack-core python -m localstack.testing.testselection.scripts.filter_by_test_selection target/testselection/test-selection.txt)
+              # if test selection contains tests that are outside of integration ones then the test files variable is empty which breaks circleci split command, so additional check is needed
+              if [[ -n "$TEST_FILES" ]] ; then
+                TEST_FILES= $( echo "$TEST_FILES" | circleci tests split --verbose --split-by=timings | tr '\n' ' ')
             fi
             echo $TEST_FILES
             if [[ -z "$TEST_FILES" ]] ; then
