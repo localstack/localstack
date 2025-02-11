@@ -477,184 +477,195 @@ def test_diff_after_update(deploy_cfn_template, aws_client, snapshot):
     assert describe_stack_response["Stacks"][0]["StackStatus"] == "UPDATE_COMPLETE"
 
 
-@pytest.fixture
-def capture_update_process(aws_client, snapshot, cleanups, capture_per_resource_events):
-    def try_do(f, *args, **kwargs):
-        try:
-            f(*args, **kwargs)
-        except Exception as e:
-            print(f"Error executing function: {e}")
+class TestCaptureUpdateProcess:
+    @pytest.fixture
+    def capture_update_process(self, aws_client, snapshot, cleanups, capture_per_resource_events):
+        def try_do(f, *args, **kwargs):
+            try:
+                f(*args, **kwargs)
+            except Exception as e:
+                print(f"Error executing function: {e}")
 
-    stack_name = f"stack-{short_uid()}"
-    change_set_name = f"cs-{short_uid()}"
+        stack_name = f"stack-{short_uid()}"
+        change_set_name = f"cs-{short_uid()}"
 
-    def inner(t1: dict | str, t2: dict | str):
-        if isinstance(t1, dict):
-            t1 = json.dumps(t1)
-        elif isinstance(t1, str):
-            with open(t1) as infile:
-                t1 = infile.read()
-        if isinstance(t2, dict):
-            t2 = json.dumps(t2)
-        elif isinstance(t2, str):
-            with open(t2) as infile:
-                t2 = infile.read()
+        def inner(t1: dict | str, t2: dict | str):
+            if isinstance(t1, dict):
+                t1 = json.dumps(t1)
+            elif isinstance(t1, str):
+                with open(t1) as infile:
+                    t1 = infile.read()
+            if isinstance(t2, dict):
+                t2 = json.dumps(t2)
+            elif isinstance(t2, str):
+                with open(t2) as infile:
+                    t2 = infile.read()
 
-        # deploy original stack
-        change_set_details = aws_client.cloudformation.create_change_set(
-            StackName=stack_name,
-            ChangeSetName=change_set_name,
-            TemplateBody=t1,
-            ChangeSetType="CREATE",
-        )
-        snapshot.match("create-change-set-1", change_set_details)
-        stack_id = change_set_details["StackId"]
-        change_set_id = change_set_details["Id"]
-        aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
-            ChangeSetName=change_set_id
-        )
-        cleanups.append(
-            lambda: try_do(aws_client.cloudformation.delete_change_set, ChangeSetName=change_set_id)
-        )
+            # deploy original stack
+            change_set_details = aws_client.cloudformation.create_change_set(
+                StackName=stack_name,
+                ChangeSetName=change_set_name,
+                TemplateBody=t1,
+                ChangeSetType="CREATE",
+            )
+            snapshot.match("create-change-set-1", change_set_details)
+            stack_id = change_set_details["StackId"]
+            change_set_id = change_set_details["Id"]
+            aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+                ChangeSetName=change_set_id
+            )
+            cleanups.append(
+                lambda: try_do(
+                    aws_client.cloudformation.delete_change_set, ChangeSetName=change_set_id
+                )
+            )
 
-        describe_change_set_with_prop_values = aws_client.cloudformation.describe_change_set(
-            ChangeSetName=change_set_id, IncludePropertyValues=True
-        )
-        snapshot.match("describe-change-set-1-prop-values", describe_change_set_with_prop_values)
-        describe_change_set_without_prop_values = aws_client.cloudformation.describe_change_set(
-            ChangeSetName=change_set_id, IncludePropertyValues=False
-        )
-        snapshot.match("describe-change-set-1", describe_change_set_without_prop_values)
+            describe_change_set_with_prop_values = aws_client.cloudformation.describe_change_set(
+                ChangeSetName=change_set_id, IncludePropertyValues=True
+            )
+            snapshot.match(
+                "describe-change-set-1-prop-values", describe_change_set_with_prop_values
+            )
+            describe_change_set_without_prop_values = aws_client.cloudformation.describe_change_set(
+                ChangeSetName=change_set_id, IncludePropertyValues=False
+            )
+            snapshot.match("describe-change-set-1", describe_change_set_without_prop_values)
 
-        execute_results = aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
-        snapshot.match("execute-change-set-1", execute_results)
-        aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_id)
+            execute_results = aws_client.cloudformation.execute_change_set(
+                ChangeSetName=change_set_id
+            )
+            snapshot.match("execute-change-set-1", execute_results)
+            aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_id)
 
-        # ensure stack deletion
-        cleanups.append(lambda: try_do(aws_client.cloudformation.delete_stack(StackName=stack_id)))
+            # ensure stack deletion
+            cleanups.append(
+                lambda: try_do(aws_client.cloudformation.delete_stack(StackName=stack_id))
+            )
 
-        describe = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0]
-        snapshot.match("post-create-1-describe", describe)
+            describe = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0]
+            snapshot.match("post-create-1-describe", describe)
 
-        # update stack
-        change_set_details = aws_client.cloudformation.create_change_set(
-            StackName=stack_name,
-            ChangeSetName=change_set_name,
-            TemplateBody=t2,
-            ChangeSetType="UPDATE",
-        )
-        snapshot.match("create-change-set-2", change_set_details)
-        stack_id = change_set_details["StackId"]
-        change_set_id = change_set_details["Id"]
-        aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
-            ChangeSetName=change_set_id
-        )
+            # update stack
+            change_set_details = aws_client.cloudformation.create_change_set(
+                StackName=stack_name,
+                ChangeSetName=change_set_name,
+                TemplateBody=t2,
+                ChangeSetType="UPDATE",
+            )
+            snapshot.match("create-change-set-2", change_set_details)
+            stack_id = change_set_details["StackId"]
+            change_set_id = change_set_details["Id"]
+            aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+                ChangeSetName=change_set_id
+            )
 
-        describe_change_set_with_prop_values = aws_client.cloudformation.describe_change_set(
-            ChangeSetName=change_set_id, IncludePropertyValues=True
-        )
-        snapshot.match("describe-change-set-2-prop-values", describe_change_set_with_prop_values)
-        describe_change_set_without_prop_values = aws_client.cloudformation.describe_change_set(
-            ChangeSetName=change_set_id, IncludePropertyValues=False
-        )
-        snapshot.match("describe-change-set-2", describe_change_set_without_prop_values)
+            describe_change_set_with_prop_values = aws_client.cloudformation.describe_change_set(
+                ChangeSetName=change_set_id, IncludePropertyValues=True
+            )
+            snapshot.match(
+                "describe-change-set-2-prop-values", describe_change_set_with_prop_values
+            )
+            describe_change_set_without_prop_values = aws_client.cloudformation.describe_change_set(
+                ChangeSetName=change_set_id, IncludePropertyValues=False
+            )
+            snapshot.match("describe-change-set-2", describe_change_set_without_prop_values)
 
-        execute_results = aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
-        snapshot.match("execute-change-set-2", execute_results)
-        aws_client.cloudformation.get_waiter("stack_update_complete").wait(StackName=stack_id)
+            execute_results = aws_client.cloudformation.execute_change_set(
+                ChangeSetName=change_set_id
+            )
+            snapshot.match("execute-change-set-2", execute_results)
+            aws_client.cloudformation.get_waiter("stack_update_complete").wait(StackName=stack_id)
 
-        describe = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0]
-        snapshot.match("post-create-2-describe", describe)
+            describe = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0]
+            snapshot.match("post-create-2-describe", describe)
 
-        events = capture_per_resource_events(stack_name)
-        snapshot.match("per-resource-events", events)
+            events = capture_per_resource_events(stack_name)
+            snapshot.match("per-resource-events", events)
 
-        # delete stack
-        aws_client.cloudformation.delete_stack(StackName=stack_id)
-        aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack_id)
-        describe = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0]
-        snapshot.match("delete-describe", describe)
+            # delete stack
+            aws_client.cloudformation.delete_stack(StackName=stack_id)
+            aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack_id)
+            describe = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0]
+            snapshot.match("delete-describe", describe)
 
-    yield inner
+        yield inner
 
-
-@markers.aws.validated
-@pytest.mark.wip
-# @pytest.mark.skip(reason="WIP")
-def test_direct_update(
-    capture_update_process,
-):
-    name1 = f"topic-1-{short_uid()}"
-    name2 = f"topic-2-{short_uid()}"
-    t1 = {
-        "Resources": {
-            "Foo": {
-                "Type": "AWS::SNS::Topic",
-                "Properties": {
-                    "TopicName": name1,
-                },
-            },
-        },
-    }
-    t2 = {
-        "Resources": {
-            "Foo": {
-                "Type": "AWS::SNS::Topic",
-                "Properties": {
-                    "TopicName": name2,
-                },
-            },
-        },
-    }
-
-    capture_update_process(t1, t2)
-
-
-@markers.aws.validated
-@pytest.mark.wip
-# @pytest.mark.skip(reason="WIP")
-def test_dynamic_update(
-    capture_update_process,
-):
-    name1 = f"topic-1-{short_uid()}"
-    name2 = f"topic-2-{short_uid()}"
-    t1 = {
-        "Resources": {
-            "Foo": {
-                "Type": "AWS::SNS::Topic",
-                "Properties": {
-                    "TopicName": name1,
-                },
-            },
-            "Parameter": {
-                "Type": "AWS::SSM::Parameter",
-                "Properties": {
-                    "Type": "String",
-                    "Value": {
-                        "Fn::GetAtt": ["Foo", "TopicName"],
+    @markers.aws.validated
+    # @pytest.mark.skip(reason="WIP")
+    def test_direct_update(
+        self,
+        capture_update_process,
+    ):
+        name1 = f"topic-1-{short_uid()}"
+        name2 = f"topic-2-{short_uid()}"
+        t1 = {
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": name1,
                     },
                 },
             },
-        },
-    }
-    t2 = {
-        "Resources": {
-            "Foo": {
-                "Type": "AWS::SNS::Topic",
-                "Properties": {
-                    "TopicName": name2,
-                },
-            },
-            "Parameter": {
-                "Type": "AWS::SSM::Parameter",
-                "Properties": {
-                    "Type": "String",
-                    "Value": {
-                        "Fn::GetAtt": ["Foo", "TopicName"],
+        }
+        t2 = {
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": name2,
                     },
                 },
             },
-        },
-    }
+        }
 
-    capture_update_process(t1, t2)
+        capture_update_process(t1, t2)
+
+    @markers.aws.validated
+    # @pytest.mark.skip(reason="WIP")
+    def test_dynamic_update(
+        self,
+        capture_update_process,
+    ):
+        name1 = f"topic-1-{short_uid()}"
+        name2 = f"topic-2-{short_uid()}"
+        t1 = {
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": name1,
+                    },
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::GetAtt": ["Foo", "TopicName"],
+                        },
+                    },
+                },
+            },
+        }
+        t2 = {
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": name2,
+                    },
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::GetAtt": ["Foo", "TopicName"],
+                        },
+                    },
+                },
+            },
+        }
+
+        capture_update_process(t1, t2)
