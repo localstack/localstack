@@ -31,7 +31,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.37.16
     # via localstack-core (pyproject.toml)
-awscrt==0.23.9
+awscrt==0.23.10
     # via localstack-core
 boto3==1.36.16
     # via
@@ -64,7 +64,7 @@ certifi==2025.1.31
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.23.1
+cfn-lint==1.24.0
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -141,7 +141,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.0.2
+joserfc==1.0.3
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core (pyproject.toml)
@@ -245,7 +245,7 @@ pydantic-core==2.27.2
     # via pydantic
 pygments==2.19.1
     # via rich
-pymongo==4.11
+pymongo==4.11.1
     # via localstack-core (pyproject.toml)
 pyopenssl==25.0.0
     # via
@@ -304,7 +304,7 @@ rich==13.9.4
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-rolo==0.7.4
+rolo==0.7.5
     # via localstack-core
 rpds-py==0.22.3
     # via

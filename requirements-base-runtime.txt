@@ -9,7 +9,7 @@ attrs==25.1.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.23.9
+awscrt==0.23.10
     # via localstack-core (pyproject.toml)
 boto3==1.36.16
     # via localstack-core (pyproject.toml)
@@ -164,7 +164,7 @@ rfc3339-validator==0.1.4
     # via openapi-schema-validator
 rich==13.9.4
     # via localstack-core (pyproject.toml)
-rolo==0.7.4
+rolo==0.7.5
     # via localstack-core (pyproject.toml)
 rpds-py==0.22.3
     # via
