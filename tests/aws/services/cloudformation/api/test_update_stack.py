@@ -579,7 +579,8 @@ def capture_update_process(aws_client, snapshot, cleanups, capture_per_resource_
 
 
 @markers.aws.validated
-def test_capture_update_process(
+@pytest.mark.wip
+def test_direct_update(
     capture_update_process,
 ):
     name1 = f"topic-1-{short_uid()}"
@@ -600,6 +601,55 @@ def test_capture_update_process(
                 "Type": "AWS::SNS::Topic",
                 "Properties": {
                     "TopicName": name2,
+                },
+            },
+        },
+    }
+
+    capture_update_process(t1, t2)
+
+
+@markers.aws.validated
+@pytest.mark.wip
+def test_dynamic_update(
+    capture_update_process,
+):
+    name1 = f"topic-1-{short_uid()}"
+    name2 = f"topic-2-{short_uid()}"
+    t1 = {
+        "Resources": {
+            "Foo": {
+                "Type": "AWS::SNS::Topic",
+                "Properties": {
+                    "TopicName": name1,
+                },
+            },
+            "Parameter": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": {
+                        "Fn::GetAtt": ["Foo", "TopicName"],
+                    },
+                },
+            },
+        },
+    }
+    t2 = {
+        "Resources": {
+            "Foo": {
+                "Type": "AWS::SNS::Topic",
+                "Properties": {
+                    "TopicName": name2,
+                },
+            },
+            "Parameter": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": {
+                        "Fn::GetAtt": ["Foo", "TopicName"],
+                    },
                 },
             },
         },
