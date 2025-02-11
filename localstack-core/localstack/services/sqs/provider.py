@@ -1065,6 +1065,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 queue.region,
                 queue.account_id,
             )
+            # Trigger a shutdown prior to removing the queue resource
+            store.queues[queue.name].shutdown()
             del store.queues[queue.name]
             store.deleted[queue.name] = time.time()
 
