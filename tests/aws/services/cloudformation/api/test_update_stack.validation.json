@@ -1,4 +1,10 @@
 {
+  "tests/aws/services/cloudformation/api/test_update_stack.py::TestCaptureUpdateProcess::test_direct_update": {
+    "last_validated_date": "2025-02-11T17:04:47+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::TestCaptureUpdateProcess::test_dynamic_update": {
+    "last_validated_date": "2025-02-11T17:04:53+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_update_stack.py::test_basic_update": {
     "last_validated_date": "2025-02-11T16:49:47+00:00"
   },
