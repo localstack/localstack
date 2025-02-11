@@ -580,6 +580,7 @@ def capture_update_process(aws_client, snapshot, cleanups, capture_per_resource_
 
 @markers.aws.validated
 @pytest.mark.wip
+# @pytest.mark.skip(reason="WIP")
 def test_direct_update(
     capture_update_process,
 ):
@@ -611,6 +612,7 @@ def test_direct_update(
 
 @markers.aws.validated
 @pytest.mark.wip
+# @pytest.mark.skip(reason="WIP")
 def test_dynamic_update(
     capture_update_process,
 ):
