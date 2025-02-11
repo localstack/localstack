@@ -101,7 +101,7 @@ coverage==7.6.11
     # via localstack-core (pyproject.toml)
 crontab==1.0.1
     # via localstack-core
-cryptography==44.0.0
+cryptography==44.0.1
     # via
     #   joserfc
     #   localstack-core

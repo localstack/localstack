@@ -111,7 +111,7 @@ coveralls==4.0.1
     # via localstack-core
 crontab==1.0.1
     # via localstack-core
-cryptography==44.0.0
+cryptography==44.0.1
     # via
     #   joserfc
     #   localstack-core
