@@ -27,15 +27,15 @@ attrs==24.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.222
+aws-cdk-asset-awscli-v1==2.2.223
     # via aws-cdk-lib
-aws-cdk-asset-kubectl-v20==2.1.3
+aws-cdk-asset-kubectl-v20==2.1.4
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==39.2.14
+aws-cdk-cloud-assembly-schema==39.2.20
     # via aws-cdk-lib
-aws-cdk-lib==2.177.0
+aws-cdk-lib==2.178.1
     # via localstack-core
 aws-sam-translator==1.94.0
     # via
@@ -45,7 +45,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.37.16
     # via localstack-core
-awscrt==0.23.9
+awscrt==0.23.10
     # via localstack-core
 boto3==1.36.16
     # via
@@ -53,7 +53,7 @@ boto3==1.36.16
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.36.12
+boto3-stubs==1.36.17
     # via localstack-core (pyproject.toml)
 botocore==1.36.16
     # via
@@ -64,7 +64,7 @@ botocore==1.36.16
     #   localstack-snapshot
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.36.12
+botocore-stubs==1.36.17
     # via boto3-stubs
 build==1.2.2.post1
     # via
@@ -89,7 +89,7 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.23.1
+cfn-lint==1.24.0
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -103,7 +103,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.4.2
     # via aws-cdk-lib
-coverage==7.6.10
+coverage==7.6.11
     # via
     #   coveralls
     #   localstack-core
@@ -122,7 +122,7 @@ cython==3.0.11
     # via localstack-core
 decorator==5.1.1
     # via jsonpath-rw
-deepdiff==8.1.1
+deepdiff==8.2.0
     # via
     #   localstack-core
     #   localstack-snapshot
@@ -177,7 +177,7 @@ hyperframe==6.1.0
     # via h2
 hyperlink==21.0.0
     # via localstack-twisted
-identify==2.6.6
+identify==2.6.7
     # via pre-commit
 idna==3.10
     # via
@@ -200,7 +200,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.0.2
+joserfc==1.0.3
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core
@@ -272,7 +272,7 @@ mypy-boto3-amplify==1.36.0
     # via boto3-stubs
 mypy-boto3-apigateway==1.36.0
     # via boto3-stubs
-mypy-boto3-apigatewayv2==1.36.0
+mypy-boto3-apigatewayv2==1.36.17
     # via boto3-stubs
 mypy-boto3-appconfig==1.36.0
     # via boto3-stubs
@@ -294,9 +294,9 @@ mypy-boto3-ce==1.36.0
     # via boto3-stubs
 mypy-boto3-cloudcontrol==1.36.0
     # via boto3-stubs
-mypy-boto3-cloudformation==1.36.0
+mypy-boto3-cloudformation==1.36.15
     # via boto3-stubs
-mypy-boto3-cloudfront==1.36.0
+mypy-boto3-cloudfront==1.36.17
     # via boto3-stubs
 mypy-boto3-cloudtrail==1.36.6
     # via boto3-stubs
@@ -314,7 +314,7 @@ mypy-boto3-cognito-identity==1.36.0
     # via boto3-stubs
 mypy-boto3-cognito-idp==1.36.3
     # via boto3-stubs
-mypy-boto3-dms==1.36.0
+mypy-boto3-dms==1.36.17
     # via boto3-stubs
 mypy-boto3-docdb==1.36.0
     # via boto3-stubs
@@ -324,13 +324,13 @@ mypy-boto3-dynamodbstreams==1.36.0
     # via boto3-stubs
 mypy-boto3-ec2==1.36.8
     # via boto3-stubs
-mypy-boto3-ecr==1.36.10
+mypy-boto3-ecr==1.36.16
     # via boto3-stubs
 mypy-boto3-ecs==1.36.1
     # via boto3-stubs
 mypy-boto3-efs==1.36.0
     # via boto3-stubs
-mypy-boto3-eks==1.36.6
+mypy-boto3-eks==1.36.16
     # via boto3-stubs
 mypy-boto3-elasticache==1.36.0
     # via boto3-stubs
@@ -354,7 +354,7 @@ mypy-boto3-glacier==1.36.0
     # via boto3-stubs
 mypy-boto3-glue==1.36.4
     # via boto3-stubs
-mypy-boto3-iam==1.36.0
+mypy-boto3-iam==1.36.13
     # via boto3-stubs
 mypy-boto3-identitystore==1.36.0
     # via boto3-stubs
@@ -384,7 +384,7 @@ mypy-boto3-logs==1.36.3
     # via boto3-stubs
 mypy-boto3-managedblockchain==1.36.0
     # via boto3-stubs
-mypy-boto3-mediaconvert==1.36.7
+mypy-boto3-mediaconvert==1.36.16
     # via boto3-stubs
 mypy-boto3-mediastore==1.36.0
     # via boto3-stubs
@@ -398,7 +398,7 @@ mypy-boto3-opensearch==1.36.0
     # via boto3-stubs
 mypy-boto3-organizations==1.36.0
     # via boto3-stubs
-mypy-boto3-pi==1.36.0
+mypy-boto3-pi==1.36.16
     # via boto3-stubs
 mypy-boto3-pinpoint==1.36.0
     # via boto3-stubs
@@ -408,7 +408,7 @@ mypy-boto3-qldb==1.36.0
     # via boto3-stubs
 mypy-boto3-qldb-session==1.36.0
     # via boto3-stubs
-mypy-boto3-rds==1.36.11
+mypy-boto3-rds==1.36.14
     # via boto3-stubs
 mypy-boto3-rds-data==1.36.0
     # via boto3-stubs
@@ -424,11 +424,11 @@ mypy-boto3-route53==1.36.0
     # via boto3-stubs
 mypy-boto3-route53resolver==1.36.0
     # via boto3-stubs
-mypy-boto3-s3==1.36.9
+mypy-boto3-s3==1.36.15
     # via boto3-stubs
 mypy-boto3-s3control==1.36.7
     # via boto3-stubs
-mypy-boto3-sagemaker==1.36.11
+mypy-boto3-sagemaker==1.36.13
     # via boto3-stubs
 mypy-boto3-sagemaker-runtime==1.36.0
     # via boto3-stubs
@@ -458,7 +458,7 @@ mypy-boto3-timestream-query==1.36.0
     # via boto3-stubs
 mypy-boto3-timestream-write==1.36.0
     # via boto3-stubs
-mypy-boto3-transcribe==1.36.0
+mypy-boto3-transcribe==1.36.16
     # via boto3-stubs
 mypy-boto3-wafv2==1.36.0
     # via boto3-stubs
@@ -546,7 +546,7 @@ pydantic-core==2.27.2
     # via pydantic
 pygments==2.19.1
     # via rich
-pymongo==4.11
+pymongo==4.11.1
     # via localstack-core
 pyopenssl==25.0.0
     # via
@@ -624,7 +624,7 @@ rich==13.9.4
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-rolo==0.7.4
+rolo==0.7.5
     # via localstack-core
 rpds-py==0.22.3
     # via
@@ -634,7 +634,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core
-ruff==0.9.4
+ruff==0.9.6
     # via localstack-core
 s3transfer==0.11.2
     # via
@@ -667,7 +667,7 @@ typeguard==2.13.3
     #   aws-cdk-lib
     #   constructs
     #   jsii
-types-awscrt==0.23.9
+types-awscrt==0.23.10
     # via botocore-stubs
 types-s3transfer==0.11.2
     # via boto3-stubs
@@ -792,7 +792,7 @@ urllib3==2.3.0
     #   opensearch-py
     #   requests
     #   responses
-virtualenv==20.29.1
+virtualenv==20.29.2
     # via pre-commit
 websocket-client==1.8.0
     # via localstack-core
