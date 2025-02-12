@@ -222,6 +222,9 @@ jobs:
                   fi
 
                   TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | PYTHONPATH=localstack-core python -m localstack.testing.testselection.scripts.filter_by_test_selection target/testselection/test-selection.txt)
+                  echo "=== TEST_FILES ==="
+                  echo "${TEST_FILES}"
+                  echo "============="
                   [ -z "${TEST_FILES}" ] && { echo "No tests found: skipping test selection"; circleci-agent step halt; }
 
             - persist_to_workspace:
