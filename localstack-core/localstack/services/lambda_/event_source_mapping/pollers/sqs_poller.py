@@ -127,12 +127,26 @@ class SqsPoller(Poller):
         return "aws:sqs"
 
     def poll_events(self) -> None:
-        # SQS pipe source: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-sqs.html
-        # "The 9 Ways an SQS Message can be Deleted": https://lucvandonkersgoed.com/2022/01/20/the-9-ways-an-sqs-message-can-be-deleted/
-        # TODO: implement invocation payload size quota
-        # TODO: consider long-polling vs. short-polling trade-off. AWS uses long-polling:
-        #  https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-sqs.html#pipes-sqs-scaling
-        # NOTE: We allow our ReceiveMessage call to wait between 1-300s for at least 1 item to arrive in the queue.
+        # In order to improve performance, we've adopted long-polling for the SQS poll operation `ReceiveMessage` [1].
+        # * Our LS-internal optimizations leverage custom boto-headers to set larger batch sizes and longer wait times than what the AWS API allows [2].
+        # * Higher batch collection durations and no. of records retrieved per request mean fewer calls to the LocalStack gateway [3] when polling an event-source [4].
+        # * LocalStack shutdown works because the LocalStack gateway shuts down and terminates the open connection.
+        # * Provider lifecycle hooks have been added to ensure blocking long-poll calls are gracefully interrupted and returned.
+        #
+        # Benchmarking showed the long-polling optimizations (with a 20s duration) improved LS RPS by >100%:
+        # * Short-polling: 282.26 req/sec
+        # * Long-polling: 576.32 req/sec (~2.04x improvement)
+        #
+        # Pros (+) / Cons (-):
+        # + Reduces latency because the `ReceiveMessage` call immediately returns once we reach the desired `BatchSize` or the `WaitTimeSeconds` elapses.
+        # + Matches the AWS behavior also using long-polling
+        # - Blocks a LocalStack gateway thread (default 1k) for every open connection, which could lead to resource contention if used at scale.
+        #
+        # Refs / Notes:
+        # [1] Amazon SQS short and long polling: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-short-and-long-polling.html
+        # [2] PR (2025-02): https://github.com/localstack/localstack/pull/12002
+        # [3] Note: Under high volumes of requests, the LocalStack gateway becomes a major performance bottleneck.
+        # [4] ESM blog mentioning long-polling: https://aws.amazon.com/de/blogs/aws/aws-lambda-adds-amazon-simple-queue-service-to-supported-event-sources/
 
         # TODO: Handle exceptions differently i.e QueueNotExist or ConnectionFailed should retry with backoff
         response = self.source_client.receive_message(
@@ -148,7 +162,13 @@ class SqsPoller(Poller):
         )
 
         messages = response.get("Messages", [])
+        if not messages:
+            # TODO: Consider this case triggering longer wait-times (with backoff) between poll_events calls in the outer-loop.
+            LOG.debug("Polled no events from %s", self.source_arn)
+            return
+
         LOG.debug("Polled %d events from %s", len(messages), self.source_arn)
+        # TODO: implement invocation payload size quota
         # NOTE: Split up a batch into mini-batches of up to 2.5K records each. This is to prevent exceeding the 6MB size-limit
         # imposed on payloads sent to a Lambda as well as LocalStack Lambdas failing to handle large payloads efficiently.
         # See https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventsourcemapping.html#invocation-eventsourcemapping-batching
