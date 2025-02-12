@@ -193,9 +193,11 @@ class CloudwatchDispatcher:
         self.executor = ThreadPoolExecutor(
             num_thread, thread_name_prefix="sqs-metrics-cloudwatch-dispatcher"
         )
+        self.running = True
 
     def shutdown(self):
         self.executor.shutdown(wait=False, cancel_futures=True)
+        self.running = False
 
     def dispatch_sqs_metric(
         self,
@@ -215,6 +217,9 @@ class CloudwatchDispatcher:
         :param value The value for that metric, default 1
         :param unit The unit for the value, default "Count"
         """
+        if not self.running:
+            return
+
         self.executor.submit(
             publish_sqs_metric,
             account_id=account_id,
@@ -1060,6 +1065,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 queue.region,
                 queue.account_id,
             )
+            # Trigger a shutdown prior to removing the queue resource
+            store.queues[queue.name].shutdown()
             del store.queues[queue.name]
             store.deleted[queue.name] = time.time()
 
