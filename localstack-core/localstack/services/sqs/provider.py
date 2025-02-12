@@ -190,14 +190,14 @@ class CloudwatchDispatcher:
     """
 
     def __init__(self, num_thread: int = 3):
-        self._is_shutdown = threading.Event()
         self.executor = ThreadPoolExecutor(
             num_thread, thread_name_prefix="sqs-metrics-cloudwatch-dispatcher"
         )
+        self.running = True
 
     def shutdown(self):
-        self._is_shutdown.set()
         self.executor.shutdown(wait=False, cancel_futures=True)
+        self.running = False
 
     def dispatch_sqs_metric(
         self,
@@ -217,7 +217,7 @@ class CloudwatchDispatcher:
         :param value The value for that metric, default 1
         :param unit The unit for the value, default "Count"
         """
-        if self._is_shutdown.is_set():
+        if not self.running:
             return
 
         self.executor.submit(
