@@ -35,7 +35,7 @@ aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==39.2.20
     # via aws-cdk-lib
-aws-cdk-lib==2.178.1
+aws-cdk-lib==2.178.2
     # via localstack-core
 aws-sam-translator==1.94.0
     # via
@@ -53,7 +53,7 @@ boto3==1.36.16
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.36.17
+boto3-stubs==1.36.19
     # via localstack-core (pyproject.toml)
 botocore==1.36.16
     # via
@@ -64,7 +64,7 @@ botocore==1.36.16
     #   localstack-snapshot
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.36.17
+botocore-stubs==1.36.18
     # via boto3-stubs
 build==1.2.2.post1
     # via
@@ -103,7 +103,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.4.2
     # via aws-cdk-lib
-coverage==7.6.11
+coverage==7.6.12
     # via
     #   coveralls
     #   localstack-core
@@ -111,14 +111,14 @@ coveralls==4.0.1
     # via localstack-core
 crontab==1.0.1
     # via localstack-core
-cryptography==44.0.0
+cryptography==44.0.1
     # via
     #   joserfc
     #   localstack-core
     #   localstack-core (pyproject.toml)
     #   moto-ext
     #   pyopenssl
-cython==3.0.11
+cython==3.0.12
     # via localstack-core
 decorator==5.1.1
     # via jsonpath-rw
@@ -266,7 +266,7 @@ multipart==1.2.1
     # via moto-ext
 mypy-boto3-acm==1.36.0
     # via boto3-stubs
-mypy-boto3-acm-pca==1.36.0
+mypy-boto3-acm-pca==1.36.18
     # via boto3-stubs
 mypy-boto3-amplify==1.36.0
     # via boto3-stubs
@@ -280,7 +280,7 @@ mypy-boto3-appconfigdata==1.36.0
     # via boto3-stubs
 mypy-boto3-application-autoscaling==1.36.0
     # via boto3-stubs
-mypy-boto3-appsync==1.36.8
+mypy-boto3-appsync==1.36.18
     # via boto3-stubs
 mypy-boto3-athena==1.36.0
     # via boto3-stubs
@@ -302,7 +302,7 @@ mypy-boto3-cloudtrail==1.36.6
     # via boto3-stubs
 mypy-boto3-cloudwatch==1.36.0
     # via boto3-stubs
-mypy-boto3-codebuild==1.36.11
+mypy-boto3-codebuild==1.36.19
     # via boto3-stubs
 mypy-boto3-codecommit==1.36.0
     # via boto3-stubs
@@ -322,7 +322,7 @@ mypy-boto3-dynamodb==1.36.0
     # via boto3-stubs
 mypy-boto3-dynamodbstreams==1.36.0
     # via boto3-stubs
-mypy-boto3-ec2==1.36.8
+mypy-boto3-ec2==1.36.18
     # via boto3-stubs
 mypy-boto3-ecr==1.36.16
     # via boto3-stubs
@@ -398,7 +398,7 @@ mypy-boto3-opensearch==1.36.0
     # via boto3-stubs
 mypy-boto3-organizations==1.36.0
     # via boto3-stubs
-mypy-boto3-pi==1.36.16
+mypy-boto3-pi==1.36.18
     # via boto3-stubs
 mypy-boto3-pinpoint==1.36.0
     # via boto3-stubs
