@@ -562,7 +562,7 @@ class TestS3ListObjectVersions:
         )
         snapshot.match("list-object-version-prefix-page-2-after-delete", page_2_response)
 
-    @markers.aws.only_localstack
+    @markers.aws.validated
     def test_list_objects_versions_with_prefix_only_and_pagination_many_versions(
         self,
         s3_bucket,
