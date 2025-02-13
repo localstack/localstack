@@ -20,6 +20,9 @@
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectVersions::test_list_objects_versions_with_prefix": {
     "last_validated_date": "2025-01-21T18:15:03+00:00"
   },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectVersions::test_list_objects_versions_with_prefix_only_and_pagination": {
+    "last_validated_date": "2025-02-13T03:52:21+00:00"
+  },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectVersions::test_s3_list_object_versions_timestamp_precision": {
     "last_validated_date": "2025-01-21T18:15:06+00:00"
   },

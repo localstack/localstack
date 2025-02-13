@@ -491,6 +491,75 @@ class TestS3ListObjectVersions:
         snapshot.match("list-objects-versions-no-encoding", resp_dict)
 
     @markers.aws.validated
+    def test_list_objects_versions_with_prefix_only_and_pagination(
+        self, s3_bucket, snapshot, aws_client, aws_http_client_factory
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket,
+            VersioningConfiguration={"Status": "Enabled"},
+        )
+
+        for _ in range(5):
+            aws_client.s3.put_object(Bucket=s3_bucket, Key="prefixed_key")
+
+        aws_client.s3.put_object(Bucket=s3_bucket, Key="non_prefixed_key")
+
+        prefixed_full = aws_client.s3.list_object_versions(Bucket=s3_bucket, Prefix="prefix")
+        snapshot.match("list-object-version-prefix-full", prefixed_full)
+
+        full_response = aws_client.s3.list_object_versions(Bucket=s3_bucket)
+        assert len(full_response["Versions"]) == 6
+
+        page_1_response = aws_client.s3.list_object_versions(
+            Bucket=s3_bucket, Prefix="prefix", MaxKeys=3
+        )
+        snapshot.match("list-object-version-prefix-page-1", page_1_response)
+        next_version_id_marker = page_1_response["NextVersionIdMarker"]
+
+        page_2_key_marker_only = aws_client.s3.list_object_versions(
+            Bucket=s3_bucket,
+            Prefix="prefix",
+            MaxKeys=4,
+            KeyMarker=page_1_response["NextKeyMarker"],
+        )
+        snapshot.match("list-object-version-prefix-key-marker-only", page_2_key_marker_only)
+
+        page_2_response = aws_client.s3.list_object_versions(
+            Bucket=s3_bucket,
+            Prefix="prefix",
+            MaxKeys=5,
+            KeyMarker=page_1_response["NextKeyMarker"],
+            VersionIdMarker=page_1_response["NextVersionIdMarker"],
+        )
+        snapshot.match("list-object-version-prefix-page-2", page_2_response)
+
+        delete_version_id_marker = aws_client.s3.delete_objects(
+            Bucket=s3_bucket,
+            Delete={
+                "Objects": [
+                    {"Key": version["Key"], "VersionId": version["VersionId"]}
+                    for version in page_1_response["Versions"]
+                ],
+            },
+        )
+        # result is unordered in AWS, pretty hard to snapshot and tested in other places anyway
+        assert len(delete_version_id_marker["Deleted"]) == 3
+        assert any(
+            version["VersionId"] == next_version_id_marker
+            for version in delete_version_id_marker["Deleted"]
+        )
+
+        page_2_response = aws_client.s3.list_object_versions(
+            Bucket=s3_bucket,
+            Prefix="prefix",
+            MaxKeys=5,
+            KeyMarker=page_1_response["NextKeyMarker"],
+            VersionIdMarker=next_version_id_marker,
+        )
+        snapshot.match("list-object-version-prefix-page-2-after-delete", page_2_response)
+
+    @markers.aws.validated
     def test_s3_list_object_versions_timestamp_precision(
         self, s3_bucket, aws_client, aws_http_client_factory
     ):
