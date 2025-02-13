@@ -6,7 +6,8 @@ from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import HandlerChain
 from localstack.aws.forwarder import create_aws_request_context
-from localstack.aws.handlers.analytics import ServiceRequestCounter
+from localstack.aws.gateway import Gateway
+from localstack.aws.handlers.analytics import ErrorCapture, ServiceRequestCounter
 from localstack.http import Response
 from localstack.utils.analytics.service_request_aggregator import ServiceRequestInfo
 
@@ -120,4 +121,39 @@ class TestServiceRequestCounter:
             [
                 call(ServiceRequestInfo("opensearch", "DescribeDomain", 404, "404")),
             ]
+        )
+
+
+class TestExceptionLogger:
+    def test_no_exception_capture(self):
+        log = MagicMock()
+        handler = ErrorCapture(log=log)
+        chain = HandlerChain([handler])
+
+        chain.handle(
+            create_aws_request_context("opensearch", "DescribeDomain", {"DomainName": "foobar"}),
+            Response(b'{"__type": "ResourceN}', 404),
+        )
+
+        log.event.assert_not_called()
+
+    def test_exception_handling(self):
+        log = MagicMock()
+        handler = ErrorCapture(log=log)
+
+        exc = ValueError("bad")
+
+        def raises_error(*args, **kwargs):
+            raise exc
+
+        gateway = Gateway(request_handlers=[raises_error], exception_handlers=[handler])
+
+        gateway.handle(
+            create_aws_request_context("opensearch", "DescribeDomain", {"DomainName": "foobar"}),
+            Response(b'{"__type": "ResourceN}', 404),
+        )
+
+        log.event.assert_called_once_with(
+            "exception",
+            payload={"service": "opensearch", "operation": "DescribeDomain", "exception": str(exc)},
         )
