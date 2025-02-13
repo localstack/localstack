@@ -1,6 +1,7 @@
 import datetime
 import os
 import re
+import string
 import zoneinfo
 from io import BytesIO
 from urllib.parse import urlparse
@@ -707,3 +708,21 @@ class TestS3TemporaryStorageBackend:
                 pass
 
         temp_storage_backend.close()
+
+
+class TestS3VersionIdGenerator:
+    def test_version_is_xml_safe(self):
+        # assert than we don't have unsafe characters in 500 different versions id
+        safe_characters = string.ascii_letters + string.digits + "._"
+        assert all(
+            all(char in safe_characters for char in s3_utils.generate_safe_version_id())
+            for _ in range(500)
+        )
+
+    def test_version_id_ordering(self):
+        version_ids = [s3_utils.generate_safe_version_id() for _ in range(500)]
+
+        # assert that every version id can be ordered with each other
+        for index, version_id in enumerate(version_ids[1:]):
+            previous_version = version_ids[index]
+            assert s3_utils.is_version_older_than_other(previous_version, version_id)

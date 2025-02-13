@@ -492,7 +492,10 @@ class TestS3ListObjectVersions:
 
     @markers.aws.validated
     def test_list_objects_versions_with_prefix_only_and_pagination(
-        self, s3_bucket, snapshot, aws_client, aws_http_client_factory
+        self,
+        s3_bucket,
+        snapshot,
+        aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
         aws_client.s3.put_bucket_versioning(
@@ -558,6 +561,36 @@ class TestS3ListObjectVersions:
             VersionIdMarker=next_version_id_marker,
         )
         snapshot.match("list-object-version-prefix-page-2-after-delete", page_2_response)
+
+    @markers.aws.only_localstack
+    def test_list_objects_versions_with_prefix_only_and_pagination_many_versions(
+        self,
+        s3_bucket,
+        aws_client,
+    ):
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket,
+            VersioningConfiguration={"Status": "Enabled"},
+        )
+        # with our internal pagination system, we use characters from the alphabet (lower and upper) + digits
+        # by creating more than 100 objects, we can make sure we circle all the way around our sequencing, and properly
+        # paginate over all of them
+        for _ in range(101):
+            aws_client.s3.put_object(Bucket=s3_bucket, Key="prefixed_key")
+
+        paginator = aws_client.s3.get_paginator("list_object_versions")
+        # even if the PageIterator looks like it should be an iterator, it's actually an iterable and needs to be
+        # wrapped in `iter`
+        page_iterator = iter(
+            paginator.paginate(
+                Bucket=s3_bucket, Prefix="prefix", PaginationConfig={"PageSize": 100}
+            )
+        )
+        page_1 = next(page_iterator)
+        assert len(page_1["Versions"]) == 100
+
+        page_2 = next(page_iterator)
+        assert len(page_2["Versions"]) == 1
 
     @markers.aws.validated
     def test_s3_list_object_versions_timestamp_precision(
