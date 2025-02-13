@@ -2801,5 +2801,510 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectVersions::test_list_objects_versions_with_prefix_only_and_pagination": {
+    "recorded-date": "13-02-2025, 02:27:21",
+    "recorded-content": {
+      "list-object-version-prefix-full": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "prefix",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": true,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:2>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:3>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:4>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:5>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:6>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:7>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:8>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:9>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:10>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-version-prefix-page-1": {
+        "EncodingType": "url",
+        "IsTruncated": true,
+        "KeyMarker": "",
+        "MaxKeys": 5,
+        "Name": "<bucket-name:1>",
+        "NextKeyMarker": "prefixed_key",
+        "NextVersionIdMarker": "<version-id:5>",
+        "Prefix": "prefix",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": true,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:2>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:3>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:4>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:5>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-version-prefix-key-marker-only": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "prefixed_key",
+        "MaxKeys": 7,
+        "Name": "<bucket-name:1>",
+        "Prefix": "prefix",
+        "VersionIdMarker": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-version-prefix-page-2": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "prefixed_key",
+        "MaxKeys": 10,
+        "Name": "<bucket-name:1>",
+        "Prefix": "prefix",
+        "VersionIdMarker": "<version-id:5>",
+        "Versions": [
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:6>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:7>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:8>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:9>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:10>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-version-prefix-page-2-after-delete": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "prefixed_key",
+        "MaxKeys": 10,
+        "Name": "<bucket-name:1>",
+        "Prefix": "prefix",
+        "VersionIdMarker": "<version-id:5>",
+        "Versions": [
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": true,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:6>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:7>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:8>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:9>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:10>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

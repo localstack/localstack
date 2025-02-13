@@ -1854,6 +1854,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     if version.version_id == version_id_marker:
                         version_key_marker_found = True
                         continue
+
+                    # it is possible that the version_id_marker related object has been deleted, in that case, start
+                    # as soon as the next version id is smaller than the version id marker (meaning this version was
+                    # next after the now-deleted version)
+                    elif version.version_id < version_id_marker:
+                        version_key_marker_found = True
+
                     elif not version_key_marker_found:
                         # as long as we have not passed the version_key_marker, skip the versions
                         continue
