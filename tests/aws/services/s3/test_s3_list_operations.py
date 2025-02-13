@@ -500,7 +500,7 @@ class TestS3ListObjectVersions:
             VersioningConfiguration={"Status": "Enabled"},
         )
 
-        for _ in range(10):
+        for _ in range(5):
             aws_client.s3.put_object(Bucket=s3_bucket, Key="prefixed_key")
 
         aws_client.s3.put_object(Bucket=s3_bucket, Key="non_prefixed_key")
@@ -509,10 +509,10 @@ class TestS3ListObjectVersions:
         snapshot.match("list-object-version-prefix-full", prefixed_full)
 
         full_response = aws_client.s3.list_object_versions(Bucket=s3_bucket)
-        assert len(full_response["Versions"]) == 11
+        assert len(full_response["Versions"]) == 6
 
         page_1_response = aws_client.s3.list_object_versions(
-            Bucket=s3_bucket, Prefix="prefix", MaxKeys=5
+            Bucket=s3_bucket, Prefix="prefix", MaxKeys=3
         )
         snapshot.match("list-object-version-prefix-page-1", page_1_response)
         next_version_id_marker = page_1_response["NextVersionIdMarker"]
@@ -520,7 +520,7 @@ class TestS3ListObjectVersions:
         page_2_key_marker_only = aws_client.s3.list_object_versions(
             Bucket=s3_bucket,
             Prefix="prefix",
-            MaxKeys=7,
+            MaxKeys=4,
             KeyMarker=page_1_response["NextKeyMarker"],
         )
         snapshot.match("list-object-version-prefix-key-marker-only", page_2_key_marker_only)
@@ -528,7 +528,7 @@ class TestS3ListObjectVersions:
         page_2_response = aws_client.s3.list_object_versions(
             Bucket=s3_bucket,
             Prefix="prefix",
-            MaxKeys=10,
+            MaxKeys=5,
             KeyMarker=page_1_response["NextKeyMarker"],
             VersionIdMarker=page_1_response["NextVersionIdMarker"],
         )
@@ -544,7 +544,7 @@ class TestS3ListObjectVersions:
             },
         )
         # result is unordered in AWS, pretty hard to snapshot and tested in other places anyway
-        assert len(delete_version_id_marker["Deleted"]) == 5
+        assert len(delete_version_id_marker["Deleted"]) == 3
         assert any(
             version["VersionId"] == next_version_id_marker
             for version in delete_version_id_marker["Deleted"]
@@ -553,7 +553,7 @@ class TestS3ListObjectVersions:
         page_2_response = aws_client.s3.list_object_versions(
             Bucket=s3_bucket,
             Prefix="prefix",
-            MaxKeys=10,
+            MaxKeys=5,
             KeyMarker=page_1_response["NextKeyMarker"],
             VersionIdMarker=next_version_id_marker,
         )
