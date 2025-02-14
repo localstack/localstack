@@ -7,6 +7,8 @@ from localstack.aws.api import RequestContext
 from localstack.aws.chain import HandlerChain
 from localstack.aws.client import parse_response
 from localstack.http import Response
+from localstack.utils import analytics
+from localstack.utils.analytics.logger import EventLogger
 from localstack.utils.analytics.service_request_aggregator import (
     ServiceRequestAggregator,
     ServiceRequestInfo,
@@ -67,3 +69,22 @@ class ServiceRequestCounter:
             if config.DEBUG_ANALYTICS:
                 LOG.exception("error parsing error response")
             return None
+
+
+class ErrorCapture:
+    def __init__(self, log: EventLogger | None = None):
+        self.log = log or analytics.log
+
+    def __call__(
+        self,
+        chain: HandlerChain,
+        exception: Exception,
+        context: RequestContext,
+        response: Response,
+    ):
+        payload = {
+            "service": context.service.service_name if context.service is not None else None,
+            "operation": context.operation.name if context.operation is not None else None,
+            "exception": str(exception),
+        }
+        self.log.event("exception", payload=payload)
