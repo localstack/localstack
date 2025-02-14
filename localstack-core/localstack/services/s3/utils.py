@@ -1039,11 +1039,14 @@ def parse_post_object_tagging_xml(tagging: str) -> Optional[dict]:
 
 
 def generate_safe_version_id() -> str:
-    # the safe b64 encoding is inspired by the stdlib base64.urlsafe_b64encode
-    # and also using stdlib secrets.token_urlsafe, but with a different alphabet adapted for S3
-    # VersionId cannot have `-` in it, as it fails in XML
-    # we need an ever-increasing number, in order to properly implement pagination around ListObjectVersions
-    # by prepending the version-id with a global increasing number, we can lexicographically sort the versions
+    """
+    Generate a safe version id for XML rendering.
+    VersionId cannot have `-` in it, as it fails in XML
+    Combine an ever-increasing part in the 8 first characters, and a random element.
+    We need the sequence part in order to properly implement pagination around ListObjectVersions.
+    By prefixing the version-id with a global increasing number, we can sort the versions
+    :return: an S3 VersionId containing a timestamp part in the first 8 characters
+    """
     tok = next(global_version_id_sequence()).to_bytes(length=6) + token_bytes(18)
     return base64.b64encode(tok, altchars=b"._").rstrip(b"=").decode("ascii")
 
@@ -1053,3 +1056,11 @@ def global_version_id_sequence():
     start = int(time.time() * 1000)
     # itertools.count is thread safe over the GIL since its getAndIncrement operation is a single python bytecode op
     return itertools.count(start)
+
+
+def is_version_older_than_other(version_id: str, other: str):
+    """
+    Compare the sequence part of a VersionId against the sequence part of a VersionIdMarker. Used for pagination
+    See `generate_safe_version_id`
+    """
+    return base64.b64decode(version_id, altchars=b"._") < base64.b64decode(other, altchars=b"._")

@@ -282,6 +282,7 @@ from localstack.services.s3.utils import (
     get_system_metadata_from_request,
     get_unique_key_id,
     is_bucket_name_valid,
+    is_version_older_than_other,
     parse_copy_source_range_header,
     parse_post_object_tagging_xml,
     parse_range_header,
@@ -1856,9 +1857,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                         continue
 
                     # it is possible that the version_id_marker related object has been deleted, in that case, start
-                    # as soon as the next version id is smaller than the version id marker (meaning this version was
+                    # as soon as the next version id is older than the version id marker (meaning this version was
                     # next after the now-deleted version)
-                    elif version.version_id < version_id_marker:
+                    elif is_version_older_than_other(version.version_id, version_id_marker):
                         version_key_marker_found = True
 
                     elif not version_key_marker_found:
