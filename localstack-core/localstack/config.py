@@ -290,6 +290,13 @@ def ping(host):
     )
 
 
+def tcp_port4566_open():
+    """
+    Returns True if this runs inside a Kubernetes pod and if the sidecar has port 4566 (TCP) open.
+    """
+    return os.getenv("LOCALSTACK_PORT_4566_TCP_ADDR") is not None
+
+
 def in_docker():
     """
     Returns True if running in a docker container, else False
@@ -382,6 +389,7 @@ def in_docker():
 OVERRIDE_IN_DOCKER = parse_boolean_env("OVERRIDE_IN_DOCKER")
 
 is_in_docker = in_docker()
+is_tcp_port4566_open = tcp_port4566_open()
 is_in_linux = is_linux()
 is_in_macos = is_macos()
 default_ip = "0.0.0.0" if is_in_docker else "127.0.0.1"

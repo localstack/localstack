@@ -53,18 +53,26 @@ def get_main_container_network() -> Optional[str]:
 def get_endpoint_for_network(network: Optional[str] = None) -> str:
     """
     Get the LocalStack endpoint (= IP address) on the given network.
-    If a network is given, it will return the IP address/hostname of LocalStack on that network
-    If omitted, it will return the IP address/hostname of the main container network
+
+    Can return the endpoint IP of the LS container. If a network is specified, it is assumed that
+    LS runs inside a Docker container.
+
+    If LS runs inside Kubernetes, the network is no longer relevant, and the IP address of the
+    is returned.
+
     This is a cached call, clear cache if networks might have changed
 
-    :param network: Network to return the endpoint for
-    :return: IP address or hostname of LS on the given network
+    :param network: Network to return the endpoint for. Applicable when using Docker.
+    :return: IP address or hostname of LS on the given network.
     """
     container_name = get_main_container_name()
     network = network or get_main_container_network()
     main_container_ip = None
+
     try:
-        if config.is_in_docker:
+        if config.is_in_docker and config.is_tcp_port4566_open:
+            main_container_ip = os.getenv("LOCALSTACK_PORT_4566_TCP_ADDR")
+        elif config.is_in_docker:
             main_container_ip = DOCKER_CLIENT.get_container_ipv4_for_network(
                 container_name_or_id=container_name,
                 container_network=network,
