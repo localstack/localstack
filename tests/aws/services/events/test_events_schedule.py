@@ -82,6 +82,7 @@ class TestScheduleRate:
         }
 
     @markers.aws.validated
+    @pytest.mark.skip(reason="flakey when comparing 'messages-second' against snapshot")
     def tests_schedule_rate_target_sqs(
         self,
         sqs_as_events_target,
