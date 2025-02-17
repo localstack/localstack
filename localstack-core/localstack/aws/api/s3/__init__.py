@@ -2544,6 +2544,7 @@ class HeadObjectOutput(TypedDict, total=False):
     ContentEncoding: Optional[ContentEncoding]
     ContentLanguage: Optional[ContentLanguage]
     ContentType: Optional[ContentType]
+    ContentRange: Optional[ContentRange]
     Expires: Optional[Expires]
     WebsiteRedirectLocation: Optional[WebsiteRedirectLocation]
     ServerSideEncryption: Optional[ServerSideEncryption]
