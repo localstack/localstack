@@ -146,7 +146,31 @@ class IAMRoleProvider(ResourceProvider[IAMRoleProperties]):
           - iam:ListRolePolicies
           - iam:GetRolePolicy
         """
-        raise NotImplementedError
+        role_name = request.desired_state["RoleName"]
+        get_role = request.aws_client_factory.iam.get_role(RoleName=role_name)
+
+        model = {**get_role["Role"]}
+        model.pop("CreateDate")
+        model.pop("RoleLastUsed")
+
+        list_managed_policies = request.aws_client_factory.iam.list_attached_role_policies(
+            RoleName=role_name
+        )
+        model["ManagedPolicyArns"] = [
+            policy["PolicyArn"] for policy in list_managed_policies["AttachedPolicies"]
+        ]
+        model["Policies"] = []
+
+        policies = request.aws_client_factory.iam.list_role_policies(RoleName=role_name)
+        for policy_name in policies["PolicyNames"]:
+            policy = request.aws_client_factory.iam.get_role_policy(
+                RoleName=role_name, PolicyName=policy_name
+            )
+            policy.pop("ResponseMetadata")
+            policy.pop("RoleName")
+            model["Policies"].append(policy)
+
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
 
     def delete(
         self,
