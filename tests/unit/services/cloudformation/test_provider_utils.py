@@ -115,3 +115,23 @@ class TestDictUtils:
                 }
             ],
         }
+
+    def test_lower_camelcase_to_pascalcase(self):
+        original_dict = {
+            "eventBusName": "my-event-bus",
+            "targets": [
+                {
+                    "id": "an-id",
+                }
+            ],
+        }
+
+        converted_dict = utils.keys_lower_camelcase_to_pascalcase(original_dict)
+        assert converted_dict == {
+            "EventBusName": "my-event-bus",
+            "Targets": [
+                {
+                    "Id": "an-id",
+                }
+            ],
+        }
