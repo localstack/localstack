@@ -27,15 +27,13 @@ attrs==24.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.223
-    # via aws-cdk-lib
-aws-cdk-asset-kubectl-v20==2.1.4
+aws-cdk-asset-awscli-v1==2.2.224
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==39.2.20
     # via aws-cdk-lib
-aws-cdk-lib==2.178.2
+aws-cdk-lib==2.179.0
     # via localstack-core
 aws-sam-translator==1.94.0
     # via
@@ -85,7 +83,7 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.24.0
+cfn-lint==1.25.1
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -203,7 +201,6 @@ jpype1-ext==0.0.2
 jsii==1.106.0
     # via
     #   aws-cdk-asset-awscli-v1
-    #   aws-cdk-asset-kubectl-v20
     #   aws-cdk-asset-node-proxy-agent-v6
     #   aws-cdk-cloud-assembly-schema
     #   aws-cdk-lib
@@ -317,14 +314,13 @@ priority==1.3.0
     # via
     #   hypercorn
     #   localstack-twisted
-psutil==6.1.1
+psutil==7.0.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
 publication==0.0.3
     # via
     #   aws-cdk-asset-awscli-v1
-    #   aws-cdk-asset-kubectl-v20
     #   aws-cdk-asset-node-proxy-agent-v6
     #   aws-cdk-cloud-assembly-schema
     #   aws-cdk-lib
@@ -457,7 +453,6 @@ tailer==0.4.1
 typeguard==2.13.3
     # via
     #   aws-cdk-asset-awscli-v1
-    #   aws-cdk-asset-kubectl-v20
     #   aws-cdk-asset-node-proxy-agent-v6
     #   aws-cdk-cloud-assembly-schema
     #   aws-cdk-lib

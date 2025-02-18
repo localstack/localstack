@@ -34,7 +34,7 @@ packaging==24.2
     # via build
 plux==1.12.1
     # via localstack-core (pyproject.toml)
-psutil==6.1.1
+psutil==7.0.0
     # via localstack-core (pyproject.toml)
 pycparser==2.22
     # via cffi
