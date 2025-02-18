@@ -22,6 +22,7 @@ from localstack.aws.connect import connect_to
 from localstack.config import external_service_url
 from localstack.services.sns import constants as sns_constants
 from localstack.services.sns.certificate import SNS_SERVER_PRIVATE_KEY
+from localstack.services.sns.executor import TopicPartitionedThreadPoolExecutor
 from localstack.services.sns.filter import SubscriptionFilter
 from localstack.services.sns.models import (
     SnsApplicationPlatforms,
@@ -1177,8 +1178,19 @@ class PublishDispatcher:
     def __init__(self, num_thread: int = 10):
         self.executor = ThreadPoolExecutor(num_thread, thread_name_prefix="sns_pub")
 
+        def _get_topic_from_context(*args, **kwargs) -> str:
+            subscriber: SnsSubscription = kwargs.get("subscriber")
+            return subscriber.get("TopicArn")
+
+        self.topic_partitioned_executor = TopicPartitionedThreadPoolExecutor(
+            max_workers=num_thread,
+            thread_name_prefix="sns_pub_fifo",
+            itemgetter=_get_topic_from_context,
+        )
+
     def shutdown(self):
         self.executor.shutdown(wait=False)
+        self.topic_partitioned_executor.shutdown(wait=False)
 
     def _should_publish(
         self,
@@ -1295,8 +1307,15 @@ class PublishDispatcher:
                         )
                         self._submit_notification(notifier, individual_ctx, subscriber)
 
-    def _submit_notification(self, notifier, ctx: SnsPublishContext, subscriber: SnsSubscription):
-        self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
+    def _submit_notification(
+        self, notifier, ctx: SnsPublishContext | SnsBatchPublishContext, subscriber: SnsSubscription
+    ):
+        if subscriber.get("TopicArn", "").endswith(".fifo"):
+            self.topic_partitioned_executor.submit(
+                notifier.publish, context=ctx, subscriber=subscriber
+            )
+        else:
+            self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
 
     def publish_to_phone_number(self, ctx: SnsPublishContext, phone_number: str) -> None:
         LOG.debug(
