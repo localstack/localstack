@@ -50,7 +50,7 @@ class ExponentialBackoff:
 
     initial_interval: float = Field(0.5, title="Initial backoff interval in seconds", gt=0)
     randomization_factor: float = Field(0.5, title="Factor to randomize backoff", ge=0, le=1)
-    multiplier: float = Field(1.5, title="Multiply interval by this factor each retry", gt=0)
+    multiplier: float = Field(1.5, title="Multiply interval by this factor each retry", gt=1)
     max_interval: float = Field(60.0, title="Maximum backoff interval in seconds", gt=0)
     max_retries: int = Field(-1, title="Max retry attempts (-1 for unlimited)", ge=-1)
     max_time_elapsed: float = Field(-1, title="Max total time in seconds (-1 for unlimited)", ge=-1)
