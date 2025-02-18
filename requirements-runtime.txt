@@ -64,7 +64,7 @@ certifi==2025.1.31
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.24.0
+cfn-lint==1.25.1
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -229,7 +229,7 @@ priority==1.3.0
     # via
     #   hypercorn
     #   localstack-twisted
-psutil==6.1.1
+psutil==7.0.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
