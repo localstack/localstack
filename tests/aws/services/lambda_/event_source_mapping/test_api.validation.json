@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/lambda_/event_source_mapping/test_api.py::TestLambdaEventSourceMappings::test_create_starting_position_validation_exceptions[dynamodb]": {
+    "last_validated_date": "2025-02-17T16:33:02+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_api.py::TestLambdaEventSourceMappings::test_create_starting_position_validation_exceptions[kinesis]": {
+    "last_validated_date": "2025-02-18T09:39:29+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_api.py::TestLambdaEventSourceMappings::test_create_starting_position_validation_exceptions[sqs]": {
+    "last_validated_date": "2025-02-18T09:39:53+00:00"
+  }
+}

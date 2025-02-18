@@ -1,0 +1,119 @@
+{
+  "tests/aws/services/lambda_/event_source_mapping/test_api.py::TestLambdaEventSourceMappings::test_create_starting_position_validation_exceptions[kinesis]": {
+    "recorded-date": "17-02-2025, 16:32:48",
+    "recorded-content": {
+      "create_invalid_starting_position_param": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '0' at 'startingPosition' failed to satisfy constraint: Member must satisfy enum value set: [LATEST, AT_TIMESTAMP, TRIM_HORIZON]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create_invalid_timestamp_with_starting_position_param": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Timestamp only valid with StartingPosition AT_TIMESTAMP"
+        },
+        "Type": "User",
+        "message": "Timestamp only valid with StartingPosition AT_TIMESTAMP",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create_negative_starting_position_timestamp_param": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Received Exception while reading from provided stream. class java.lang.Long can not be converted to a Timestamp"
+        },
+        "Type": "User",
+        "message": "Received Exception while reading from provided stream. class java.lang.Long can not be converted to a Timestamp",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_api.py::TestLambdaEventSourceMappings::test_create_starting_position_validation_exceptions[dynamodb]": {
+    "recorded-date": "17-02-2025, 16:33:05",
+    "recorded-content": {
+      "create_invalid_starting_position_param": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '0' at 'startingPosition' failed to satisfy constraint: Member must satisfy enum value set: [LATEST, AT_TIMESTAMP, TRIM_HORIZON]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create_invalid_timestamp_with_starting_position_param": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Timestamp only valid with StartingPosition AT_TIMESTAMP"
+        },
+        "Type": "User",
+        "message": "Timestamp only valid with StartingPosition AT_TIMESTAMP",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create_negative_starting_position_timestamp_param": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Unsupported starting position for arn type: arn:<partition>:dynamodb:<region>:111111111111:table/table-36060751/stream/2025-02-17T16:33:01.784"
+        },
+        "Type": "User",
+        "message": "Unsupported starting position for arn type: arn:<partition>:dynamodb:<region>:111111111111:table/table-36060751/stream/2025-02-17T16:33:01.784",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_api.py::TestLambdaEventSourceMappings::test_create_starting_position_validation_exceptions[sqs]": {
+    "recorded-date": "17-02-2025, 16:33:12",
+    "recorded-content": {
+      "create_invalid_starting_position_param": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '0' at 'startingPosition' failed to satisfy constraint: Member must satisfy enum value set: [LATEST, AT_TIMESTAMP, TRIM_HORIZON]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create_invalid_timestamp_with_starting_position_param": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "StartingPosition is not valid for SQS event sources."
+        },
+        "Type": "User",
+        "message": "StartingPosition is not valid for SQS event sources.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create_negative_starting_position_timestamp_param": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "StartingPosition is not valid for SQS event sources."
+        },
+        "Type": "User",
+        "message": "StartingPosition is not valid for SQS event sources.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}
