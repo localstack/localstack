@@ -1,6 +1,8 @@
 import random
 import time
-from dataclasses import dataclass
+
+from pydantic import Field
+from pydantic.dataclasses import dataclass
 
 
 @dataclass
@@ -46,31 +48,31 @@ class ExponentialBackoff:
     Note: The sequence stops at request #10 when `max_retries` or `max_time_elapsed` is exceeded
     """
 
-    initial_interval: float = 0.5  # Initial backoff interval in seconds
-    randomization_factor: float = 0.5  # Factor to randomize backoff [0,1]
-    multiplier: float = 1.5  # Multiply interval by this factor each retry
-    max_interval: float = 60.0  # Maximum backoff interval in seconds
-    max_retries: int = -1  # Max retry attempts (-1 for unlimited)
-    max_time_elapsed: float = -1  # Max total time in seconds (-1 for unlimited)
+    initial_interval: float = Field(0.5, title="Initial backoff interval in seconds", gt=0)
+    randomization_factor: float = Field(0.5, title="Factor to randomize backoff", ge=0, le=1)
+    multiplier: float = Field(1.5, title="Multiply interval by this factor each retry", gt=0)
+    max_interval: float = Field(60.0, title="Maximum backoff interval in seconds", gt=0)
+    max_retries: int = Field(-1, title="Max retry attempts (-1 for unlimited)", ge=-1)
+    max_time_elapsed: float = Field(-1, title="Max total time in seconds (-1 for unlimited)", ge=-1)
 
     def __post_init__(self):
         self.retry_interval: float = 0
         self.retries: int = 0
-        self.start_t: float = 0.0
+        self.start_time: float = 0.0
 
     @property
     def elapsed_duration(self) -> float:
-        return max(time.monotonic() - self.start_t, 0)
+        return max(time.monotonic() - self.start_time, 0)
 
     def reset(self) -> None:
         self.retry_interval = 0
         self.retries = 0
-        self.start_t = 0
+        self.start_time = 0
 
     def next_backoff(self) -> float:
         if self.retry_interval == 0:
             self.retry_interval = self.initial_interval
-            self.start_t = time.monotonic()
+            self.start_time = time.monotonic()
 
         self.retries += 1
 
