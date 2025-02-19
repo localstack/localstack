@@ -3,7 +3,6 @@ import logging
 import os
 import queue
 import threading
-from typing import Callable
 
 LOG = logging.getLogger(__name__)
 
@@ -51,19 +50,13 @@ class TopicPartitionedThreadPoolExecutor:
     # Used to assign unique thread names when thread_name_prefix is not supplied.
     _counter = itertools.count().__next__
 
-    def __init__(
-        self, max_workers: int = None, thread_name_prefix: str = "", itemgetter: Callable = None
-    ):
+    def __init__(self, max_workers: int = None, thread_name_prefix: str = ""):
         if max_workers is None:
             max_workers = min(32, (os.cpu_count() or 1) + 4)
         if max_workers <= 0:
             raise ValueError("max_workers must be greater than 0")
 
-        if itemgetter is not None and not callable(itemgetter):
-            raise TypeError("itemgetter must be a callable")
-
         self._max_workers = max_workers
-        self._itemgetter = itemgetter
         self._thread_name_prefix = (
             thread_name_prefix or f"TopicThreadPoolExecutor-{self._counter()}"
         )
@@ -98,9 +91,8 @@ class TopicPartitionedThreadPoolExecutor:
             self._pool[topic] = work_queue
         return work_queue
 
-    def submit(self, fn, /, *args, **kwargs) -> None:
+    def submit(self, fn, topic, /, *args, **kwargs) -> None:
         with self._shutdown_lock:
-            topic = self._itemgetter(*args, **kwargs)
             work_queue = self._get_work_queue(topic)
 
             if self._shutdown:

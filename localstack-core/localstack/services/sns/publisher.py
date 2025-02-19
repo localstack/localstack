@@ -1177,15 +1177,8 @@ class PublishDispatcher:
 
     def __init__(self, num_thread: int = 10):
         self.executor = ThreadPoolExecutor(num_thread, thread_name_prefix="sns_pub")
-
-        def _get_topic_from_context(*args, **kwargs) -> str:
-            subscriber: SnsSubscription = kwargs.get("subscriber")
-            return subscriber.get("TopicArn")
-
         self.topic_partitioned_executor = TopicPartitionedThreadPoolExecutor(
-            max_workers=num_thread,
-            thread_name_prefix="sns_pub_fifo",
-            itemgetter=_get_topic_from_context,
+            max_workers=num_thread, thread_name_prefix="sns_pub_fifo"
         )
 
     def shutdown(self):
@@ -1310,10 +1303,10 @@ class PublishDispatcher:
     def _submit_notification(
         self, notifier, ctx: SnsPublishContext | SnsBatchPublishContext, subscriber: SnsSubscription
     ):
-        if subscriber.get("TopicArn", "").endswith(".fifo"):
+        if (topic_arn := subscriber.get("TopicArn", "")).endswith(".fifo"):
             # TODO: we still need to implement Message deduplication on the topic level with `should_publish` for FIFO
             self.topic_partitioned_executor.submit(
-                notifier.publish, context=ctx, subscriber=subscriber
+                notifier.publish, topic_arn, context=ctx, subscriber=subscriber
             )
         else:
             self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
