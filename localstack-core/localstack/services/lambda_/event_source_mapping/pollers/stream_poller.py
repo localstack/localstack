@@ -120,20 +120,6 @@ class StreamPoller(Poller):
     def post_filter(self, events: list[dict]) -> list[dict]:
         return events
 
-    def has_record_expired(self, event: dict):
-        # Check MaximumRecordAgeInSeconds
-        if maximum_record_age_in_seconds := self.stream_parameters.get("MaximumRecordAgeInSeconds"):
-            arrival_timestamp_of_last_event = event.get("approximateArrivalTimestamp")
-            if not arrival_timestamp_of_last_event:
-                return False
-
-            now = get_current_time().timestamp()
-            record_age_in_seconds = now - arrival_timestamp_of_last_event
-            if record_age_in_seconds > maximum_record_age_in_seconds:
-                return True
-
-        return False
-
     def poll_events(self):
         """Generalized poller for streams such as Kinesis or DynamoDB
         Examples of Kinesis consumers:
@@ -170,13 +156,14 @@ class StreamPoller(Poller):
         abort_condition = None
         get_records_response = self.get_records(shard_iterator)
         records = get_records_response["Records"]
-        if not records:
-            return
-
         polled_events = self.transform_into_events(records, shard_id)
         # Check MaximumRecordAgeInSeconds
-        if self.has_record_expired(polled_events[-1]):
-            abort_condition = "RecordAgeExpired"
+        if maximum_record_age_in_seconds := self.stream_parameters.get("MaximumRecordAgeInSeconds"):
+            arrival_timestamp_of_last_event = polled_events[-1]["approximateArrivalTimestamp"]
+            now = get_current_time().timestamp()
+            record_age_in_seconds = now - arrival_timestamp_of_last_event
+            if record_age_in_seconds > maximum_record_age_in_seconds:
+                abort_condition = "RecordAgeExpired"
 
         # TODO: implement format detection behavior (e.g., for JSON body):
         #  https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-event-filtering.html
