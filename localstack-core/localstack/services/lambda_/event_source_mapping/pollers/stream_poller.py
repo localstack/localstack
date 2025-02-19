@@ -1,5 +1,6 @@
 import json
 import logging
+import threading
 from abc import abstractmethod
 from datetime import datetime
 from typing import Iterator
@@ -28,6 +29,7 @@ from localstack.services.lambda_.event_source_mapping.pollers.poller import (
 )
 from localstack.services.lambda_.event_source_mapping.pollers.sqs_poller import get_queue_url
 from localstack.utils.aws.arns import parse_arn, s3_bucket_name
+from localstack.utils.backoff import ExponentialBackoff
 from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
@@ -47,6 +49,9 @@ class StreamPoller(Poller):
     # The ARN of the processor (e.g., Pipe ARN)
     partner_resource_arn: str | None
 
+    # Used for backing-off between retries and breaking the retry loop
+    _is_shutdown: threading.Event
+
     def __init__(
         self,
         source_arn: str,
@@ -61,6 +66,8 @@ class StreamPoller(Poller):
         self.esm_uuid = esm_uuid
         self.shards = {}
         self.iterator_over_shards = None
+
+        self._is_shutdown = threading.Event()
 
     @abstractmethod
     def transform_into_events(self, records: list[dict], shard_id) -> list[dict]:
@@ -103,6 +110,9 @@ class StreamPoller(Poller):
     @abstractmethod
     def get_sequence_number(self, record: dict) -> str:
         pass
+
+    def close(self):
+        self._is_shutdown.set()
 
     def pre_filter(self, events: list[dict]) -> list[dict]:
         return events
@@ -187,9 +197,23 @@ class StreamPoller(Poller):
         # TODO: think about how to avoid starvation of other shards if one shard runs into infinite retries
         attempts = 0
         error_payload = {}
-        while not abort_condition and not self.max_retries_exceeded(attempts):
+
+        boff = ExponentialBackoff(max_retries=attempts)
+        while (
+            not abort_condition
+            and not self.max_retries_exceeded(attempts)
+            and not self._is_shutdown.is_set()
+        ):
             try:
+                if attempts > 0:
+                    # TODO: Should we always backoff (with jitter) before processing since we may not want multiple pollers
+                    # all starting up and polling simultaneously
+                    # For example: 500 persisted ESMs starting up and requesting concurrently could flood gateway
+                    self._is_shutdown.wait(boff.next_backoff())
+
                 self.processor.process_events_batch(events)
+                boff.reset()
+
                 # Update shard iterator if execution is successful
                 self.shards[shard_id] = get_records_response["NextShardIterator"]
                 return
