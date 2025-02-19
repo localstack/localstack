@@ -205,9 +205,6 @@ class StreamPoller(Poller):
             and not self._is_shutdown.is_set()
         ):
             try:
-                if self.has_record_expired(polled_events[-1]):
-                    abort_condition = "RecordAgeExpired"
-
                 if attempts > 0:
                     # TODO: Should we always backoff (with jitter) before processing since we may not want multiple pollers
                     # all starting up and polling simultaneously
