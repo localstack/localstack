@@ -16,6 +16,9 @@ def _worker(work_queue: queue.Queue):
                 work_item.run()
 
                 del work_item
+                continue
+
+            return
 
     except Exception:
         LOG.exception("Exception in worker")
