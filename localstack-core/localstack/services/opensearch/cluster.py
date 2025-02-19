@@ -676,13 +676,24 @@ class ElasticsearchCluster(OpensearchCluster):
         settings = {
             "http.port": self.port,
             "http.publish_port": self.port,
-            "transport.port": "0",
             "network.host": self.host,
             "http.compression": "false",
             "path.data": f'"{dirs.data}"',
             "path.repo": f'"{dirs.backup}"',
-            "discovery.type": "single-node",
         }
+
+        # This config option was renamed between 6.7 and 6.8, yet not documented as a breaking change
+        # See https://github.com/elastic/elasticsearch/blob/f220abaf/build-tools/src/main/java/org/elasticsearch/gradle/testclusters/ElasticsearchNode.java#L1349-L1353
+        if self.version.startswith("Elasticsearch_5.") or (
+            self.version.startswith("Elasticsearch_6.") and self.version != "Elasticsearch_6.8"
+        ):
+            settings["transport.tcp.port"] = "0"
+        else:
+            settings["transport.port"] = "0"
+
+        # `discovery.type` had a different meaning in 5.x
+        if not self.version.startswith("Elasticsearch_5."):
+            settings["discovery.type"] = "single-node"
 
         if os.path.exists(os.path.join(dirs.mods, "x-pack-ml")):
             settings["xpack.ml.enabled"] = "false"
