@@ -1311,6 +1311,7 @@ class PublishDispatcher:
         self, notifier, ctx: SnsPublishContext | SnsBatchPublishContext, subscriber: SnsSubscription
     ):
         if subscriber.get("TopicArn", "").endswith(".fifo"):
+            # TODO: we still need to implement Message deduplication on the topic level with `should_publish` for FIFO
             self.topic_partitioned_executor.submit(
                 notifier.publish, context=ctx, subscriber=subscriber
             )

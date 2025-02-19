@@ -2997,6 +2997,59 @@ class TestSNSSubscriptionSQSFifo:
         )
         assert "MessageId" in response
 
+    @markers.aws.validated
+    def test_message_to_fifo_sqs_ordering(
+        self,
+        sns_create_topic,
+        sqs_create_queue,
+        sns_create_sqs_subscription,
+        snapshot,
+        aws_client,
+        sqs_collect_messages,
+    ):
+        topic_name = f"topic-{short_uid()}.fifo"
+        topic_attributes = {"FifoTopic": "true", "ContentBasedDeduplication": "true"}
+        topic_arn = sns_create_topic(
+            Name=topic_name,
+            Attributes=topic_attributes,
+        )["TopicArn"]
+
+        queue_attributes = {"FifoQueue": "true", "ContentBasedDeduplication": "true"}
+        queues = []
+        queue_amount = 5
+        message_amount = 10
+
+        for _ in range(queue_amount):
+            queue_name = f"queue-{short_uid()}.fifo"
+            queue_url = sqs_create_queue(
+                QueueName=queue_name,
+                Attributes=queue_attributes,
+            )
+            sns_create_sqs_subscription(
+                topic_arn=topic_arn, queue_url=queue_url, Attributes={"RawMessageDelivery": "true"}
+            )
+            queues.append(queue_url)
+
+        for i in range(message_amount):
+            aws_client.sns.publish(
+                TopicArn=topic_arn, Message=str(i), MessageGroupId="message-group-id-1"
+            )
+
+        all_messages = []
+        for queue_url in queues:
+            messages = sqs_collect_messages(
+                queue_url,
+                expected=message_amount,
+                timeout=10,
+                max_number_of_messages=message_amount,
+            )
+            contents = [message["Body"] for message in messages]
+            all_messages.append(contents)
+
+        # we're expecting the order to be the same across all queues
+        for index, received_content in enumerate(all_messages[1:]):
+            assert received_content == all_messages[index]
+
 
 class TestSNSSubscriptionSES:
     @markers.aws.only_localstack
