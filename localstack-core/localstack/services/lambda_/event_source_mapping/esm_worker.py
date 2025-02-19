@@ -5,12 +5,24 @@ from enum import StrEnum
 from localstack.aws.api.lambda_ import (
     EventSourceMappingConfiguration,
 )
-from localstack.services.lambda_.event_source_mapping.pollers.poller import Poller
+from localstack.config import (
+    LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_EMPTY_POLL_SEC,
+    LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_ERROR_SEC,
+    LAMBDA_EVENT_SOURCE_MAPPING_POLL_INTERVAL_SEC,
+)
+from localstack.services.lambda_.event_source_mapping.pollers.poller import (
+    EmptyPollResultsException,
+    Poller,
+)
 from localstack.services.lambda_.invocation.models import LambdaStore, lambda_stores
 from localstack.services.lambda_.provider_utils import get_function_version_from_arn
+from localstack.utils.backoff import ExponentialBackoff
 from localstack.utils.threads import FuncThread
 
-POLL_INTERVAL_SEC: float = 1
+POLL_INTERVAL_SEC: float = LAMBDA_EVENT_SOURCE_MAPPING_POLL_INTERVAL_SEC
+MAX_BACKOFF_POLL_EMPTY_SEC: float = LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_EMPTY_POLL_SEC
+MAX_BACKOFF_POLL_ERROR_SEC: float = LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_ERROR_SEC
+
 
 LOG = logging.getLogger(__name__)
 
@@ -133,13 +145,31 @@ class EsmWorker:
             self.update_esm_state_in_store(EsmState.ENABLED)
             self.state_transition_reason = self.user_state_reason
 
+        error_boff = ExponentialBackoff(initial_interval=2, max_interval=MAX_BACKOFF_POLL_ERROR_SEC)
+        empty_boff = ExponentialBackoff(initial_interval=1, max_interval=MAX_BACKOFF_POLL_EMPTY_SEC)
+
+        poll_interval_duration = POLL_INTERVAL_SEC
+
         while not self._shutdown_event.is_set():
             try:
-                self.poller.poll_events()
                 # TODO: update state transition reason?
-                # Wait for next short-polling interval
-                # MAYBE: read the poller interval from self.poller if we need the flexibility
-                self._shutdown_event.wait(POLL_INTERVAL_SEC)
+                self.poller.poll_events()
+
+                # If no exception encountered, reset the backoff
+                error_boff.reset()
+                empty_boff.reset()
+
+                # Set the poll frequency back to the default
+                poll_interval_duration = POLL_INTERVAL_SEC
+            except EmptyPollResultsException as miss_ex:
+                # If the event source is empty, backoff
+                poll_miss_boff_duration = empty_boff.next_backoff()
+                LOG.debug(
+                    "The event source %s is empty. Backing off for for %s seconds until next request.",
+                    miss_ex.source_arn,
+                    poll_miss_boff_duration,
+                )
+                poll_interval_duration = empty_boff.next_backoff()
             except Exception as e:
                 LOG.error(
                     "Error while polling messages for event source %s: %s",
@@ -148,9 +178,10 @@ class EsmWorker:
                     e,
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
-                # TODO: implement some backoff here and stop poller upon continuous errors
                 # Wait some time between retries to avoid running into the problem right again
-                self._shutdown_event.wait(2)
+                poll_interval_duration = error_boff.next_backoff()
+            finally:
+                self._shutdown_event.wait(poll_interval_duration)
 
         # Optionally closes internal components of Poller. This is a no-op for unimplemented pollers.
         self.poller.close()

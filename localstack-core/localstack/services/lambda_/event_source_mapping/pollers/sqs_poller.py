@@ -13,6 +13,7 @@ from localstack.services.lambda_.event_source_mapping.event_processor import (
     PartialBatchFailureError,
 )
 from localstack.services.lambda_.event_source_mapping.pollers.poller import (
+    EmptyPollResultsException,
     Poller,
     parse_batch_item_failures,
 )
@@ -131,6 +132,12 @@ class SqsPoller(Poller):
                     e,
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
+        else:
+            raise EmptyPollResultsException(
+                "No results found in poll call to SQS",
+                service="sqs",
+                source_arn=self.source_arn,
+            )
 
     def handle_messages(self, messages):
         polled_events = transform_into_events(messages)
