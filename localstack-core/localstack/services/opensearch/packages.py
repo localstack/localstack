@@ -238,7 +238,9 @@ class ElasticsearchPackageInstaller(PackageInstaller):
 
     def get_java_env_vars(self, target: InstallTarget) -> dict[str, str]:
         install_dir = self._get_install_dir(target)
-        return {"JAVA_HOME": os.path.join(install_dir, "jdk")}
+        return {
+            "JAVA_HOME": os.path.join(install_dir, "jdk"),
+        }
 
     def _install(self, target: InstallTarget):
         # locally import to avoid having a dependency on ASF when starting the CLI
@@ -358,12 +360,8 @@ class ElasticsearchLegacyPackageInstaller(ElasticsearchPackageInstaller):
         java_package.get_installer(self.JAVA_VERSION).install(target)
 
     def get_java_env_vars(self, target: InstallTarget) -> dict[str, str]:
-        java_home = java_package.get_installer(self.JAVA_VERSION).get_java_home()
-        path = f"{java_home}/bin:{os.environ['PATH']}"
-
         return {
-            "JAVA_HOME": java_home,
-            "PATH": path,
+            "JAVA_HOME": java_package.get_installer(self.JAVA_VERSION).get_java_home(),
         }
 
 
