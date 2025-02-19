@@ -18,6 +18,7 @@ from localstack.constants import (
     OPENSEARCH_PLUGIN_LIST,
 )
 from localstack.packages import InstallTarget, Package, PackageInstaller
+from localstack.packages.java import java_package
 from localstack.services.opensearch import versions
 from localstack.utils.archives import download_and_extract_with_retry
 from localstack.utils.files import chmod_r, load_file, mkdir, rm_rf, save_file
@@ -42,6 +43,8 @@ class OpensearchPackage(Package):
 
     def _get_installer(self, version: str) -> PackageInstaller:
         if version in versions._prefixed_elasticsearch_install_versions:
+            if version.startswith("5.") or version.startswith("6."):
+                return ElasticsearchLegacyPackageInstaller(version)
             return ElasticsearchPackageInstaller(version)
         else:
             return OpensearchPackageInstaller(version)
@@ -233,6 +236,10 @@ class ElasticsearchPackageInstaller(PackageInstaller):
     def __init__(self, version: str):
         super().__init__("elasticsearch", version)
 
+    def get_java_env_vars(self, target: InstallTarget) -> dict[str, str]:
+        install_dir = self._get_install_dir(target)
+        return {"JAVA_HOME": os.path.join(install_dir, "jdk")}
+
     def _install(self, target: InstallTarget):
         # locally import to avoid having a dependency on ASF when starting the CLI
         from localstack.aws.api.opensearch import EngineType
@@ -263,7 +270,7 @@ class ElasticsearchPackageInstaller(PackageInstaller):
                 **java_system_properties_proxy(),
                 **java_system_properties_ssl(
                     os.path.join(install_dir, "jdk", "bin", "keytool"),
-                    {"JAVA_HOME": os.path.join(install_dir, "jdk")},
+                    self.get_java_env_vars(target),
                 ),
             }
             java_opts = system_properties_to_cli_args(sys_props)
@@ -334,6 +341,30 @@ class ElasticsearchPackageInstaller(PackageInstaller):
             return ELASTICSEARCH_DEFAULT_VERSION
 
         return versions.get_install_version(self.version)
+
+
+class ElasticsearchLegacyPackageInstaller(ElasticsearchPackageInstaller):
+    """
+    Specialised package installer for ElasticSearch 5.x and 6.x since these releases do not have a bundled JDK.
+
+    This installer ensures that Java is installed as part of the setup.
+    """
+
+    # ES 5.x and 6.x require Java 8
+    # See: https://www.elastic.co/guide/en/elasticsearch/reference/6.0/zip-targz.html
+    JAVA_VERSION = "8"
+
+    def _prepare_installation(self, target: InstallTarget) -> None:
+        java_package.get_installer(self.JAVA_VERSION).install(target)
+
+    def get_java_env_vars(self, target: InstallTarget) -> dict[str, str]:
+        java_home = java_package.get_installer(self.JAVA_VERSION).get_java_home()
+        path = f"{java_home}/bin:{os.environ['PATH']}"
+
+        return {
+            "JAVA_HOME": java_home,
+            "PATH": path,
+        }
 
 
 opensearch_package = OpensearchPackage(default_version=OPENSEARCH_DEFAULT_VERSION)
