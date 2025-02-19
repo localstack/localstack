@@ -43,7 +43,7 @@ class OpensearchPackage(Package):
 
     def _get_installer(self, version: str) -> PackageInstaller:
         if version in versions._prefixed_elasticsearch_install_versions:
-            if version.startswith("5.") or version.startswith("6."):
+            if version.startswith("Elasticsearch_5.") or version.startswith("Elasticsearch_6."):
                 return ElasticsearchLegacyPackageInstaller(version)
             return ElasticsearchPackageInstaller(version)
         else:
