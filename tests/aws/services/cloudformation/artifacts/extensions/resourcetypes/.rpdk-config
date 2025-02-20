@@ -1,0 +1,7 @@
+{
+    "runtime": "python3.9",
+    "entrypoint": "app.handler",
+    "settings": {
+        "protocolVersion": "2.0.0"
+    }
+}

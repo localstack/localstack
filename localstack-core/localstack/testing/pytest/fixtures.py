@@ -4,8 +4,12 @@ import json
 import logging
 import os
 import re
+import shutil
+import tempfile
 import textwrap
 import time
+import zipfile
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
 import botocore.auth
@@ -2274,11 +2278,30 @@ def create_user_with_policy(create_policy_generated_document, create_user, aws_c
 
 
 @pytest.fixture()
-def register_extension(s3_bucket, aws_client):
+def register_extension(s3_bucket, aws_client, cleanups):
     cfn_client = aws_client.cloudformation
     extensions_arns = []
 
-    def _register(extension_name, extension_type, artifact_path):
+    def _register(extension_name: str, extension_type: str, artifact_path: str | os.PathLike):
+        artifact_path = Path(artifact_path)
+        if artifact_path.is_dir():
+            tdir = Path(tempfile.mkdtemp())
+            cleanups.append(lambda: shutil.rmtree(tdir))
+
+            # TODO: don't assume app.py is handler
+            resource_provider_zip_path = tdir.joinpath("ResourceProvider.zip")
+            with zipfile.ZipFile(resource_provider_zip_path, "w") as zfile:
+                zfile.write(artifact_path.joinpath("app.py"), "app.py")
+
+            zipfile_path = tdir.joinpath("extension.zip")
+
+            with zipfile.ZipFile(zipfile_path, "w") as zfile:
+                zfile.write(resource_provider_zip_path, "ResourceProvider.zip")
+                zfile.write(artifact_path.joinpath(".rpdk-config"), ".rpdk-config")
+                zfile.write(artifact_path.joinpath("schema.json"), "schema.json")
+
+            artifact_path = zipfile_path
+
         bucket = s3_bucket
         key = f"artifact-{short_uid()}"
 
