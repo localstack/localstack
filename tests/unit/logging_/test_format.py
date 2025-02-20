@@ -5,6 +5,8 @@ import pytest
 from localstack.logging.format import (
     AddFormattedAttributes,
     AwsTraceLoggingFormatter,
+    MaskSensitiveInputFilter,
+    TraceLoggingFormatter,
     compress_logger_name,
 )
 
@@ -29,6 +31,13 @@ class TestHandler(logging.Handler):
 
     def emit(self, record):
         self.messages.append(self.format(record))
+
+
+class CustomMaskSensitiveInputFilter(MaskSensitiveInputFilter):
+    sensitive_keys = ["sensitive_key"]
+
+    def __init__(self):
+        super(CustomMaskSensitiveInputFilter, self).__init__(self.sensitive_keys)
 
 
 class TestTraceLoggingFormatter:
@@ -109,3 +118,63 @@ class TestTraceLoggingFormatter:
 
         assert "{'request': 'header'}" in log_message
         assert "{'response': 'header'}" in log_message
+
+
+class TestMaskSensitiveInputFilter:
+    @pytest.fixture
+    def handler(self):
+        handler = TestHandler()
+
+        handler.setLevel(logging.DEBUG)
+        handler.setFormatter(TraceLoggingFormatter())
+        handler.addFilter(AddFormattedAttributes())
+        handler.addFilter(CustomMaskSensitiveInputFilter())
+        return handler
+
+    @pytest.fixture
+    def logger(self, handler):
+        logger = logging.getLogger("test.logger")
+
+        # avoid propagation to parent loggers
+        logger.propagate = False
+        logger.addHandler(handler)
+        return logger
+
+    def test_input_payload_masked(self, handler, logger):
+        logger.info(
+            "%s %s => %d",
+            "POST",
+            "/_localstack/path",
+            200,
+            extra={
+                # request
+                "input_type": "Request",
+                "input": b'{"sensitive_key": "sensitive", "other_key": "value"}',
+                "request_headers": {},
+                # response
+                "output_type": "Response",
+                "output": "StreamingBody(unknown)",
+                "response_headers": {},
+            },
+        )
+        log_message = handler.messages[0]
+        assert """b'{"sensitive_key": "******", "other_key": "value"}'""" in log_message
+
+    def test_input_leave_null_unmasked(self, handler, logger):
+        logger.info(
+            "%s %s => %d",
+            "POST",
+            "/_localstack/path",
+            200,
+            extra={
+                "input_type": "Request",
+                "input": b'{"sensitive_key": null, "other_key": "value"}',
+                "request_headers": {},
+                # response
+                "output_type": "Response",
+                "output": "StreamingBody(unknown)",
+                "response_headers": {},
+            },
+        )
+        log_message = handler.messages[0]
+        assert """b'{"sensitive_key": null, "other_key": "value"}'""" in log_message
