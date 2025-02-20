@@ -1,10 +1,12 @@
 """Tools for formatting localstack logs."""
 
 import logging
+import re
 from functools import lru_cache
 from typing import Any, Dict
 
 from localstack.utils.numbers import format_bytes
+from localstack.utils.strings import to_bytes
 
 MAX_THREAD_NAME_LEN = 12
 MAX_NAME_LEN = 26
@@ -59,6 +61,36 @@ class AddFormattedAttributes(logging.Filter):
     @lru_cache(maxsize=256)
     def _get_compressed_logger_name(self, name):
         return compress_logger_name(name, self.max_name_len)
+
+
+class MaskSensitiveInputFilter(logging.Filter):
+    """
+    Filter that hides sensitive from a binary json string in a record input.
+    It will find the mathing keys and replace their values with "******"
+
+    For example, if initialized with `sensitive_keys=["my_key"]`, the input
+    b'{"my_key": "sensitive_value"}' would become b'{"my_key": "******"}'.
+    """
+
+    patterns: Dict[str, re.Pattern]
+
+    def __init__(self, sensitive_keys: list[str]):
+        super(MaskSensitiveInputFilter, self).__init__()
+        self.sensitive_keys = sensitive_keys
+
+        self.patterns = {
+            key: re.compile(to_bytes(rf'"{key}":\s*"[^"]+"')) for key in self.sensitive_keys
+        }
+
+    def filter(self, record):
+        if record.input and isinstance(record.input, bytes):
+            record.input = self.mask_sensitive_msg(record.input)
+        return True
+
+    def mask_sensitive_msg(self, message: bytes) -> bytes:
+        for key, pattern in self.patterns.items():
+            message = re.sub(pattern, to_bytes(f'"{key}": "******"'), message)
+        return message
 
 
 def compress_logger_name(name: str, length: int) -> str:
