@@ -8,3 +8,7 @@ Resources:
     Properties:
       Name:
         Ref: Name
+      OutputBucket: !Ref OutputBucket
+
+  OutputBucket:
+    Type: AWS::S3::Bucket
