@@ -40,6 +40,25 @@ class CustomMaskSensitiveInputFilter(MaskSensitiveInputFilter):
         super(CustomMaskSensitiveInputFilter, self).__init__(self.sensitive_keys)
 
 
+@pytest.fixture
+def get_logger():
+    handlers: list[logging.Handler] = []
+    logger = logging.getLogger("test.logger")
+
+    def _get_logger(handler: logging.Handler) -> logging.Logger:
+        handlers.append(handler)
+
+        # avoid propagation to parent loggers
+        logger.propagate = False
+        logger.addHandler(handler)
+        return logger
+
+    yield _get_logger
+
+    for handler in handlers:
+        logger.removeHandler(handler)
+
+
 class TestTraceLoggingFormatter:
     @pytest.fixture
     def handler(self):
@@ -50,16 +69,8 @@ class TestTraceLoggingFormatter:
         handler.addFilter(AddFormattedAttributes())
         return handler
 
-    @pytest.fixture
-    def logger(self, handler):
-        logger = logging.getLogger("test.logger")
-
-        # avoid propagation to parent loggers
-        logger.propagate = False
-        logger.addHandler(handler)
-        return logger
-
-    def test_aws_trace_logging_contains_payload(self, handler, logger):
+    def test_aws_trace_logging_contains_payload(self, handler, get_logger):
+        logger = get_logger(handler)
         logger.info(
             "AWS %s.%s => %s",
             "TestService",
@@ -89,7 +100,8 @@ class TestTraceLoggingFormatter:
         assert "{'request': 'header'}" in log_message
         assert "{'response': 'header'}" in log_message
 
-    def test_aws_trace_logging_replaces_bigger_blobs(self, handler, logger):
+    def test_aws_trace_logging_replaces_bigger_blobs(self, handler, get_logger):
+        logger = get_logger(handler)
         logger.info(
             "AWS %s.%s => %s",
             "TestService",
@@ -131,16 +143,8 @@ class TestMaskSensitiveInputFilter:
         handler.addFilter(CustomMaskSensitiveInputFilter())
         return handler
 
-    @pytest.fixture
-    def logger(self, handler):
-        logger = logging.getLogger("test.logger")
-
-        # avoid propagation to parent loggers
-        logger.propagate = False
-        logger.addHandler(handler)
-        return logger
-
-    def test_input_payload_masked(self, handler, logger):
+    def test_input_payload_masked(self, handler, get_logger):
+        logger = get_logger(handler)
         logger.info(
             "%s %s => %d",
             "POST",
@@ -160,7 +164,8 @@ class TestMaskSensitiveInputFilter:
         log_message = handler.messages[0]
         assert """b'{"sensitive_key": "******", "other_key": "value"}'""" in log_message
 
-    def test_input_leave_null_unmasked(self, handler, logger):
+    def test_input_leave_null_unmasked(self, handler, get_logger):
+        logger = get_logger(handler)
         logger.info(
             "%s %s => %d",
             "POST",
