@@ -72,15 +72,15 @@ class MaskSensitiveInputFilter(logging.Filter):
     b'{"my_key": "sensitive_value"}' would become b'{"my_key": "******"}'.
     """
 
-    patterns: Dict[str, re.Pattern]
+    patterns: list[tuple[re.Pattern[bytes], bytes]]
 
     def __init__(self, sensitive_keys: list[str]):
         super(MaskSensitiveInputFilter, self).__init__()
-        self.sensitive_keys = sensitive_keys
 
-        self.patterns = {
-            key: re.compile(to_bytes(rf'"{key}":\s*"[^"]+"')) for key in self.sensitive_keys
-        }
+        self.patterns = [
+            (re.compile(to_bytes(rf'"{key}":\s*"[^"]+"')), to_bytes(f'"{key}": "******"'))
+            for key in sensitive_keys
+        ]
 
     def filter(self, record):
         if record.input and isinstance(record.input, bytes):
@@ -88,8 +88,8 @@ class MaskSensitiveInputFilter(logging.Filter):
         return True
 
     def mask_sensitive_msg(self, message: bytes) -> bytes:
-        for key, pattern in self.patterns.items():
-            message = re.sub(pattern, to_bytes(f'"{key}": "******"'), message)
+        for pattern, replacement in self.patterns:
+            message = re.sub(pattern, replacement, message)
         return message
 
 
