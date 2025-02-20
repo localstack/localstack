@@ -2278,11 +2278,35 @@ def create_user_with_policy(create_policy_generated_document, create_user, aws_c
 
 
 @pytest.fixture()
-def register_extension(s3_bucket, aws_client, cleanups):
+def register_extension(
+    s3_bucket, aws_client, create_role_with_policy, wait_and_assume_role, cleanups
+):
     cfn_client = aws_client.cloudformation
     extensions_arns = []
 
     def _register(extension_name: str, extension_type: str, artifact_path: str | os.PathLike):
+        # create cloudwatch log group
+        log_group_name = f"custom-resource-type-{short_uid()}"
+        aws_client.logs.create_log_group(
+            logGroupName=log_group_name,
+        )
+        cleanups.append(lambda: aws_client.logs.delete_log_group(logGroupName=log_group_name))
+
+        # create logging role
+        _, role_arn = create_role_with_policy(
+            "Allow",
+            ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+            json.dumps(
+                {
+                    "Statement": {
+                        "Effect": "Allow",
+                        "Principal": {"Service": "cloudformation.amazonaws.com"},
+                        "Action": "sts:AssumeRole",
+                    }
+                }
+            ),
+        )
+
         artifact_path = Path(artifact_path)
         if artifact_path.is_dir():
             tdir = Path(tempfile.mkdtemp())
@@ -2311,6 +2335,10 @@ def register_extension(s3_bucket, aws_client, cleanups):
             Type=extension_type,
             TypeName=extension_name,
             SchemaHandlerPackage=f"s3://{bucket}/{key}",
+            LoggingConfig={
+                "LogRoleArn": role_arn,
+                "LogGroupName": log_group_name,
+            },
         )
 
         registration_token = register_response["RegistrationToken"]

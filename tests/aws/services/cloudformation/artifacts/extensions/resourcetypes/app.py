@@ -4,6 +4,9 @@ LOG = logging.getLogger(__name__)
 
 
 def handler(event, ctx):
+    print(event)
+    LOG.info(event)
+
     if event["action"] == "CREATE":
         return {
             "message": "",
