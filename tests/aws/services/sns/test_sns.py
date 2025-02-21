@@ -3047,8 +3047,9 @@ class TestSNSSubscriptionSQSFifo:
             all_messages.append(contents)
 
         # we're expecting the order to be the same across all queues
-        for index, received_content in enumerate(all_messages[1:]):
-            assert received_content == all_messages[index]
+        reference_order = all_messages[0]
+        for received_content in all_messages[1:]:
+            assert received_content == reference_order
 
 
 class TestSNSSubscriptionSES:
