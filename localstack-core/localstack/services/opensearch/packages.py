@@ -236,8 +236,8 @@ class ElasticsearchPackageInstaller(PackageInstaller):
     def __init__(self, version: str):
         super().__init__("elasticsearch", version)
 
-    def get_java_env_vars(self, target: InstallTarget) -> dict[str, str]:
-        install_dir = self._get_install_dir(target)
+    def get_java_env_vars(self) -> dict[str, str]:
+        install_dir = self.get_installed_dir()
         return {
             "JAVA_HOME": os.path.join(install_dir, "jdk"),
         }
@@ -272,7 +272,7 @@ class ElasticsearchPackageInstaller(PackageInstaller):
                 **java_system_properties_proxy(),
                 **java_system_properties_ssl(
                     os.path.join(install_dir, "jdk", "bin", "keytool"),
-                    self.get_java_env_vars(target),
+                    self.get_java_env_vars(),
                 ),
             }
             java_opts = system_properties_to_cli_args(sys_props)
@@ -361,7 +361,7 @@ class ElasticsearchLegacyPackageInstaller(ElasticsearchPackageInstaller):
     def _prepare_installation(self, target: InstallTarget) -> None:
         java_package.get_installer(self.JAVA_VERSION).install(target)
 
-    def get_java_env_vars(self, target: InstallTarget) -> dict[str, str]:
+    def get_java_env_vars(self) -> dict[str, str]:
         return {
             "JAVA_HOME": java_package.get_installer(self.JAVA_VERSION).get_java_home(),
         }

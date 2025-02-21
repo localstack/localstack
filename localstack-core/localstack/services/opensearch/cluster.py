@@ -16,7 +16,6 @@ from localstack.aws.api.opensearch import (
 )
 from localstack.http.client import SimpleRequestsClient
 from localstack.http.proxy import ProxyHandler
-from localstack.packages import InstallTarget
 from localstack.services.edge import ROUTER
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.packages import elasticsearch_package, opensearch_package
@@ -670,7 +669,7 @@ class ElasticsearchCluster(OpensearchCluster):
         return constants.OS_USER_OPENSEARCH
 
     def _ensure_installed(self):
-        elasticsearch_package.install(self.version, target=InstallTarget.VAR_LIBS)
+        elasticsearch_package.install(self.version)
 
     def _base_settings(self, dirs) -> CommandSettings:
         settings = {
@@ -702,9 +701,7 @@ class ElasticsearchCluster(OpensearchCluster):
 
     def _create_env_vars(self, directories: Directories) -> Dict:
         return {
-            **elasticsearch_package.get_installer(self.version).get_java_env_vars(
-                InstallTarget.VAR_LIBS
-            ),
+            **elasticsearch_package.get_installer(self.version).get_java_env_vars(),
             "ES_JAVA_OPTS": os.environ.get("ES_JAVA_OPTS", "-Xms200m -Xmx600m"),
             "ES_TMPDIR": directories.tmp,
         }
