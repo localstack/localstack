@@ -347,9 +347,11 @@ class ElasticsearchPackageInstaller(PackageInstaller):
 
 class ElasticsearchLegacyPackageInstaller(ElasticsearchPackageInstaller):
     """
-    Specialised package installer for ElasticSearch 5.x and 6.x since these releases do not have a bundled JDK.
+    Specialised package installer for ElasticSearch 5.x and 6.x
 
-    This installer ensures that Java is installed as part of the setup.
+    It installs Java during setup because these releases of ES do not have a bundled JDK.
+    This should be removed after these versions are dropped in line with AWS EOL, scheduled for Nov 2026.
+    https://docs.aws.amazon.com/opensearch-service/latest/developerguide/what-is.html#choosing-version
     """
 
     # ES 5.x and 6.x require Java 8
