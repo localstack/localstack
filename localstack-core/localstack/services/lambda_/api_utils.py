@@ -95,6 +95,8 @@ VERSION_REGEX = re.compile(r"^[0-9]+$")
 ALIAS_REGEX = re.compile(r"(?!^[0-9]+$)(^[a-zA-Z0-9-_]+$)")
 # Permission statement id
 STATEMENT_ID_REGEX = re.compile(r"^[a-zA-Z0-9-_]+$")
+# Pattern for a valid SubnetId
+SUBNET_ID_REGEX = re.compile(r"^subnet-[0-9a-z]*$")
 
 
 URL_CHAR_SET = string.ascii_lowercase + string.digits

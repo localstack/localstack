@@ -22258,5 +22258,59 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_invalid_vpc_config_subnet": {
+    "recorded-date": "20-02-2025, 17:53:33",
+    "recorded-content": {
+      "create-response-non-existent-subnet-id": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Error occurred while DescribeSubnets. EC2 Error Code: InvalidSubnetID.NotFound. EC2 Error Message: The subnet ID '<subnet_id_1>' does not exist"
+        },
+        "Type": "User",
+        "message": "Error occurred while DescribeSubnets. EC2 Error Code: InvalidSubnetID.NotFound. EC2 Error Message: The subnet ID '<subnet_id_1>' does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-response-invalid-format-subnet-id": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '[<subnet_id_2>]' at 'vpcConfig.subnetIds' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 1024, Member must have length greater than or equal to 0, Member must satisfy regular expression pattern: ^subnet-[0-9a-z]*$]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_invalid_vpc_config_security_group": {
+    "recorded-date": "20-02-2025, 17:57:29",
+    "recorded-content": {
+      "create-response-non-existent-security-group": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Error occurred while DescribeSecurityGroups. EC2 Error Code: InvalidGroup.NotFound. EC2 Error Message: The security group '<security_group_id_1>' does not exist"
+        },
+        "Type": "User",
+        "message": "Error occurred while DescribeSecurityGroups. EC2 Error Code: InvalidGroup.NotFound. EC2 Error Message: The security group '<security_group_id_1>' does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-response-invalid-format-security-group": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '[<security_group_id_2>]' at 'vpcConfig.securityGroupIds' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 1024, Member must have length greater than or equal to 0, Member must satisfy regular expression pattern: ^sg-[0-9a-zA-Z]*$]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

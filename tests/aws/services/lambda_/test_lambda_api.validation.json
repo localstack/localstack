@@ -356,6 +356,15 @@
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_invalid_invoke": {
     "last_validated_date": "2024-09-12T11:34:43+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_invalid_vpc_config": {
+    "last_validated_date": "2025-02-20T17:44:18+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_invalid_vpc_config_security_group": {
+    "last_validated_date": "2025-02-20T17:57:29+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_invalid_vpc_config_subnet": {
+    "last_validated_date": "2025-02-20T17:53:33+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_s3": {
     "last_validated_date": "2024-09-12T11:29:56+00:00"
   },
