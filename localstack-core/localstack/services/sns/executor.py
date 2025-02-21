@@ -62,35 +62,36 @@ class TopicPartitionedThreadPoolExecutor:
         # for now, the pool isn't fair and is not redistributed depending on load
         self._pool = {}
         self._shutdown = False
-        self._shutdown_lock = threading.Lock()
+        self._lock = threading.Lock()
         self._threads = set()
         self._work_queues = []
         self._cycle = itertools.cycle(range(max_workers))
 
     def _add_worker(self):
-        num_threads = len(self._threads)
-        if num_threads < self._max_workers:
-            work_queue = queue.SimpleQueue()
-            self._work_queues.append(work_queue)
-            thread_name = f"{self._thread_name_prefix}_{num_threads}"
-            t = threading.Thread(name=thread_name, target=_worker, args=(work_queue,))
-            t.daemon = True
-            t.start()
-            self._threads.add(t)
+        work_queue = queue.SimpleQueue()
+        self._work_queues.append(work_queue)
+        thread_name = f"{self._thread_name_prefix}_{len(self._threads)}"
+        t = threading.Thread(name=thread_name, target=_worker, args=(work_queue,))
+        t.daemon = True
+        t.start()
+        self._threads.add(t)
 
     def _get_work_queue(self, topic: str) -> queue.SimpleQueue:
         if not (work_queue := self._pool.get(topic)):
-            index = next(self._cycle)
-            if index <= len(self._work_queues):
+            if len(self._threads) < self._max_workers:
                 self._add_worker()
 
+            # we cycle through the possible indexes for a work queue, in order to distribute the load across
+            # once we get to the max amount of worker, the cycle will start back at 0
+            index = next(self._cycle)
             work_queue = self._work_queues[index]
-            # the pool is not cleaned up at the moment, not sure if we'd need to change the interface
+
+            # TODO: the pool is not cleaned up at the moment, think about the clean-up interface
             self._pool[topic] = work_queue
         return work_queue
 
     def submit(self, fn, topic, /, *args, **kwargs) -> None:
-        with self._shutdown_lock:
+        with self._lock:
             work_queue = self._get_work_queue(topic)
 
             if self._shutdown:
@@ -100,7 +101,7 @@ class TopicPartitionedThreadPoolExecutor:
             work_queue.put(w)
 
     def shutdown(self, wait=True):
-        with self._shutdown_lock:
+        with self._lock:
             self._shutdown = True
 
             # Send a wake-up to prevent threads calling
