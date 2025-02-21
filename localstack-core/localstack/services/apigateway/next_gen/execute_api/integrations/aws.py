@@ -518,8 +518,12 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         invocation_req: InvocationRequest = context.invocation_request
         integration_req: IntegrationRequest = context.integration_request
 
-        # TODO: binary support of APIGW
         body, is_b64_encoded = self._format_body(integration_req["body"])
+
+        if context.base_path:
+            path = context.context_variables["path"]
+        else:
+            path = invocation_req["path"]
 
         input_event = LambdaInputEvent(
             headers=self._format_headers(dict(integration_req["headers"])),
@@ -536,7 +540,7 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
             or None,
             pathParameters=invocation_req["path_parameters"] or None,
             httpMethod=invocation_req["http_method"],
-            path=invocation_req["path"],
+            path=path,
             resource=context.resource["path"],
         )
 
