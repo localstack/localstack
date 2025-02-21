@@ -11,13 +11,11 @@ def _worker(work_queue: queue.Queue):
     try:
         while True:
             work_item = work_queue.get(block=True)
-            if work_item is not None:
-                work_item.run()
-
-                del work_item
-                continue
-
-            return
+            if work_item is None:
+                return
+            work_item.run()
+            # delete reference to the work item to avoid it being in memory until the next blocking `queue.get` call returns
+            del work_item
 
     except Exception:
         LOG.exception("Exception in worker")
