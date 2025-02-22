@@ -94,6 +94,30 @@ def get_lambda_logs_event(aws_client):
 )
 class TestDynamoDBEventSourceMapping:
     @markers.aws.validated
+    def test_esm_with_not_existing_dynamodb_stream(
+        self, aws_client, create_lambda_function, lambda_su_role
+    ):
+        function_name = f"simple-lambda-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+            timeout=5,
+        )
+        not_existing_dynamodb_stream_arn = "arn:aws:dynamodb:us-east-1:000000000000:table/test-table-c94b13dc/stream/2025-02-22T03:03:25.490"
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_event_source_mapping(
+                FunctionName=function_name,
+                BatchSize=1,
+                StartingPosition="TRIM_HORIZON",
+                EventSourceArn=not_existing_dynamodb_stream_arn,
+                MaximumBatchingWindowInSeconds=1,
+                MaximumRetryAttempts=1,
+            )
+        e.match(InvalidParameterValueException.code)
+
+    @markers.aws.validated
     def test_dynamodb_event_source_mapping(
         self,
         create_lambda_function,
