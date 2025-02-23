@@ -7,27 +7,25 @@
         "Name": {
             "type": "string"
         },
-        "OutputBucket": {
+        "OutputBucketName": {
             "type": "string"
         }
     },
     "additionalProperties": false,
     "required": [
         "Name",
-        "OutputBucket"
+        "OutputBucketName"
     ],
     "createOnlyProperties": [
         "/properties/Name",
-        "/properties/OutputBucket"
+        "/properties/OutputBucketName"
     ],
     "primaryIdentifier": [
         "/properties/Name"
     ],
     "handlers": {
         "create": {
-            "permissions": [
-                "s3:PutObject"
-            ]
+            "permissions": ["s3:PutObject"]
         },
         "read": {
             "permissions": []

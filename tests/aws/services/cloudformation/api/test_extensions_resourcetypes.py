@@ -1,3 +1,4 @@
+import json
 import os
 
 from localstack.testing.pytest import markers
@@ -7,17 +8,33 @@ from localstack.utils.strings import short_uid
 class TestExtensionsResourceTypes:
     @markers.aws.validated
     def test_deploy_resource_type(
-        self, deploy_cfn_template, register_extension, snapshot, aws_client
+        self, deploy_cfn_template, register_extension, create_role_with_policy, snapshot, aws_client
     ):
         artifact_path = os.path.join(
             os.path.dirname(__file__),
             "../artifacts/extensions/resourcetypes",
         )
 
+        _, execution_role_arn = create_role_with_policy(
+            "Allow",
+            ["s3:PutObject"],
+            json.dumps(
+                {
+                    "Statement": {
+                        "Sid": "",
+                        "Effect": "Allow",
+                        "Principal": {"Service": "resources.cloudformation.amazonaws.com"},
+                        "Action": "sts:AssumeRole",
+                    }
+                }
+            ),
+        )
+
         register_extension(
             extension_type="RESOURCE",
             extension_name="LocalStack::Testing::DeployableResource",
             artifact_path=artifact_path,
+            execution_role_arn=execution_role_arn,
         )
 
         template_path = os.path.join(

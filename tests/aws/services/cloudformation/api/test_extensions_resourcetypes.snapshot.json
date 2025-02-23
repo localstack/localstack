@@ -1,6 +1,6 @@
 {
   "tests/aws/services/cloudformation/api/test_extensions_resourcetypes.py::TestExtensionsResourceTypes::test_deploy_resource_type": {
-    "recorded-date": "20-02-2025, 16:27:53",
+    "recorded-date": "23-02-2025, 15:47:23",
     "recorded-content": {
       "resource_description": {
         "DriftInformation": {

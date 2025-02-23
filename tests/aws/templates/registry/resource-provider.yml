@@ -6,9 +6,8 @@ Resources:
   MyCustomResource:
     Type: "LocalStack::Testing::DeployableResource"
     Properties:
-      Name:
-        Ref: Name
-      OutputBucket: !Ref OutputBucket
+      Name: !Ref Name
+      OutputBucketName: !Ref OutputBucket
 
   OutputBucket:
     Type: AWS::S3::Bucket

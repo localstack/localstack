@@ -2284,7 +2284,14 @@ def register_extension(
     cfn_client = aws_client.cloudformation
     extensions_arns = []
 
-    def _register(extension_name: str, extension_type: str, artifact_path: str | os.PathLike):
+    account_arn = aws_client.sts.get_caller_identity()["Arn"]
+
+    def _register(
+        extension_name: str,
+        extension_type: str,
+        artifact_path: str | os.PathLike,
+        execution_role_arn: str | None = None,
+    ):
         # create cloudwatch log group
         log_group_name = f"custom-resource-type-{short_uid()}"
         aws_client.logs.create_log_group(
@@ -2295,17 +2302,33 @@ def register_extension(
         # create logging role
         _, role_arn = create_role_with_policy(
             "Allow",
-            ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+            [
+                "*",
+                # "logs:CreateLogGroup",
+                # "logs:CreateLogStream",
+                # "logs:DescribeLogGroups",
+                # "logs:DescribeLogStreams",
+                # "logs:PutLogEvents",
+                # "cloudwatch:ListMetrics",
+                # "cloudwatch:PutMetricData",
+            ],
             json.dumps(
                 {
                     "Statement": {
                         "Effect": "Allow",
-                        "Principal": {"Service": "cloudformation.amazonaws.com"},
+                        "Principal": {
+                            "Service": [
+                                "resources.cloudformation.amazonaws.com",
+                                "hooks.cloudformation.amazonaws.com",
+                            ],
+                            "AWS": account_arn,
+                        },
                         "Action": "sts:AssumeRole",
                     }
                 }
             ),
         )
+        wait_and_assume_role(role_arn)
 
         artifact_path = Path(artifact_path)
         if artifact_path.is_dir():
@@ -2331,7 +2354,7 @@ def register_extension(
 
         aws_client.s3.upload_file(artifact_path, bucket, key)
 
-        register_response = cfn_client.register_type(
+        register_type_payload = dict(
             Type=extension_type,
             TypeName=extension_name,
             SchemaHandlerPackage=f"s3://{bucket}/{key}",
@@ -2340,11 +2363,18 @@ def register_extension(
                 "LogGroupName": log_group_name,
             },
         )
+        if arn := execution_role_arn:
+            register_type_payload["ExecutionRoleArn"] = arn
+
+        register_response = cfn_client.register_type(**register_type_payload)
 
         registration_token = register_response["RegistrationToken"]
-        cfn_client.get_waiter("type_registration_complete").wait(
-            RegistrationToken=registration_token
-        )
+        try:
+            cfn_client.get_waiter("type_registration_complete").wait(
+                RegistrationToken=registration_token
+            )
+        except Exception as e:
+            print(f"{e}")
 
         describe_response = cfn_client.describe_type_registration(
             RegistrationToken=registration_token
