@@ -1777,6 +1777,9 @@ class TestLambdaFeatures:
 
 class TestLambdaErrors:
     @markers.aws.validated
+    # TODO it seems like the used lambda images have a newer version of the RIC than AWS in production
+    # remove this skip once they have caught up
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Payload.stackTrace"])
     def test_lambda_runtime_error(self, aws_client, create_lambda_function, snapshot):
         """Test Lambda that raises an exception during runtime startup."""
         snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<uuid>"))
@@ -1786,7 +1789,7 @@ class TestLambdaErrors:
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_RUNTIME_ERROR,
             handler="lambda_runtime_error.handler",
-            runtime=Runtime.python3_12,
+            runtime=Runtime.python3_13,
         )
 
         result = aws_client.lambda_.invoke(
