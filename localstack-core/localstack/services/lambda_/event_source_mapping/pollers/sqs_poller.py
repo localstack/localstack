@@ -133,12 +133,8 @@ class SqsPoller(Poller):
         # * LocalStack shutdown works because the LocalStack gateway shuts down and terminates the open connection.
         # * Provider lifecycle hooks have been added to ensure blocking long-poll calls are gracefully interrupted and returned.
         #
-        # Benchmarking showed the long-polling optimizations (with a 20s duration) improved LS RPS by >100%:
-        # * Short-polling: 282.26 req/sec
-        # * Long-polling: 576.32 req/sec (~2.04x improvement)
-        #
         # Pros (+) / Cons (-):
-        # + Reduces latency because the `ReceiveMessage` call immediately returns once we reach the desired `BatchSize` or the `WaitTimeSeconds` elapses.
+        # + Alleviates pressure on the gateway since each `ReceiveMessage` call only returns once we reach the desired `BatchSize` or the `WaitTimeSeconds` elapses.
         # + Matches the AWS behavior also using long-polling
         # - Blocks a LocalStack gateway thread (default 1k) for every open connection, which could lead to resource contention if used at scale.
         #
