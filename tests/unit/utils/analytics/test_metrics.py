@@ -138,3 +138,29 @@ def test_labels_method_raises_error_if_label_value_is_empty():
 def test_counter_raises_error_if_name_is_empty():
     with pytest.raises(ValueError, match="Name is required and cannot be empty."):
         Counter(name="")
+
+
+def test_counter_raises_if_label_values_off():
+    with pytest.raises(ValueError):
+        Counter(name="test_counter", labels=["l1", "l2"]).labels(l1="a", non_existing="asdf")
+
+    with pytest.raises(ValueError):
+        Counter(name="test_counter", labels=["l1", "l2"]).labels(l1="a")
+
+    with pytest.raises(ValueError):
+        Counter(name="test_counter", labels=["l1", "l2"]).labels(l1="a", l2="b", l3="c")
+
+
+def test_label_kwargs_order_independent():
+    labeled_counter = Counter(name="test_multilabel_counter", labels=["status", "type"])
+    labeled_counter.labels(status="success", type="counter").increment(value=2)
+    labeled_counter.labels(type="counter", status="success").increment(value=3)
+    labeled_counter.labels(type="counter", status="error").increment(value=3)
+    collected_metrics = labeled_counter.collect()
+
+    assert any(
+        metric["value"] == 5 for metric in collected_metrics if metric["label_1_value"] == "success"
+    ), "Unexpected counter value for label success"
+    assert any(
+        metric["value"] == 3 for metric in collected_metrics if metric["label_1_value"] == "error"
+    ), "Unexpected counter value for label error"

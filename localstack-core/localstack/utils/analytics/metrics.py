@@ -22,7 +22,7 @@ class MetricRegistry:
     Provides methods for retrieving and collecting metrics.
     """
 
-    _instance = None
+    _instance: "MetricRegistry" = None
     _mutex: threading.Lock = threading.Lock()
 
     def __new__(cls):
@@ -107,34 +107,22 @@ class Metric(ABC):
         pass
 
 
-class _SimpleCounter(Metric):
+class _Counter:
     """
-    A thread-safe counter for tracking occurrences of an event without labels.
+    A thread-safe counter for any kind of tracking.
     """
 
     _mutex: threading.Lock
-    _namespace: Optional[str]
-    _name: str
-    _type: str
     _count: int
 
-    @property
-    def mutex(self) -> threading.Lock:
-        """
-        Provides thread-safe access to the internal lock.
-        """
-        return self._mutex
-
-    def __init__(self, name: str, namespace: Optional[str] = ""):
-        if not name:
-            raise ValueError("Name is required and cannot be empty.")
-
+    def __init__(self):
+        super(_Counter, self).__init__()
         self._mutex = threading.Lock()
-        self._name = name.strip()
-        self._namespace = namespace.strip() if namespace else ""
-        self._type = "counter"
         self._count = 0
-        MetricRegistry().register(self)
+
+    @property
+    def count(self) -> int:
+        return self._count
 
     def increment(self, value: int = 1) -> None:
         """Increments the counter unless events are disabled."""
@@ -155,38 +143,56 @@ class _SimpleCounter(Metric):
         with self._mutex:
             self._count = 0
 
+
+class _CounterMetric(Metric, _Counter):
+    """
+    A thread-safe counter for tracking occurrences of an event without labels.
+    """
+
+    _namespace: Optional[str]
+    _name: str
+    _type: str
+
+    def __init__(self, name: str, namespace: Optional[str] = ""):
+        super(_CounterMetric, self).__init__()
+        if not name:
+            raise ValueError("Name is required and cannot be empty.")
+
+        self._name = name.strip()
+        self._namespace = namespace.strip() if namespace else ""
+        self._type = "counter"
+        MetricRegistry().register(self)
+
     def collect(self) -> List[Dict[str, Union[str, int]]]:
         """Collects the metric unless events are disabled."""
         if config.DISABLE_EVENTS:
             return list()
 
-        with self._mutex:
-            if self._count == 0:
-                # Return an empty list if the count is 0, as there are no metrics to send to the analytics backend.
-                return list()
-            return [
-                {
-                    "namespace": self._namespace,
-                    "name": self._name,
-                    "value": self._count,
-                    "type": self._type,
-                }
-            ]
+        if self._count == 0:
+            # Return an empty list if the count is 0, as there are no metrics to send to the analytics backend.
+            return list()
+        return [
+            {
+                "namespace": self._namespace,
+                "name": self._name,
+                "value": self._count,
+                "type": self._type,
+            }
+        ]
 
 
-class _LabeledCounter(Metric):
+class _LabeledCounterMetric(Metric):
     """
     A labeled counter that tracks occurrences of an event across different label combinations.
     """
 
-    _mutex: threading.Lock
     _namespace: Optional[str]
     _name: str
     _type: str
     _unit: str
-    _labels: List[str]
+    _labels: list[str]
     _label_values: tuple[Optional[str], ...]
-    _count_by_labels: defaultdict[Tuple[str, ...], int]
+    _counters_by_label_values: defaultdict[Tuple[str, ...], _Counter]
 
     def __init__(self, name: str, labels: List[str] = list, namespace: Optional[str] = ""):
         if not name:
@@ -198,32 +204,19 @@ class _LabeledCounter(Metric):
         if len(labels) > 8:
             raise ValueError("A maximum of 8 labels are allowed.")
 
-        self._mutex = threading.Lock()
         self._name = name.strip()
         self._namespace = namespace.strip() if namespace else ""
         self._type = "counter"
         self._labels = labels
-        self._label_values = tuple()
-        self._count_by_labels = defaultdict(int)
+        self._counters_by_label_values = defaultdict(_Counter)
         MetricRegistry().register(self)
 
-    @property
-    def mutex(self) -> threading.Lock:
-        """
-        Provides thread-safe access to the internal lock.
-        """
-        return self._mutex
-
-    @property
-    def count_by_labels(self) -> defaultdict[Tuple[str, ...], int]:
-        return self._count_by_labels
-
-    def labels(self, **kwargs: str) -> _LabeledCounterProxy:
+    def labels(self, **kwargs: str) -> _Counter:
         """
         Create a scoped counter instance with specific label values.
 
         This method assigns values to the predefined labels of a labeled counter and returns
-        a proxy object (`_LabeledCounterProxy`) that allows tracking metrics for that specific
+        a _Counter object (``) that allows tracking metrics for that specific
         combination of label values.
 
         The proxy ensures that increments and resets are scoped to the given label values,
@@ -233,15 +226,15 @@ class _LabeledCounter(Metric):
             - If the number of provided labels does not match the expected count.
             - If any of the provided labels are empty strings.
         """
-        self._label_values = tuple(label_value for label_value in kwargs.values())
+        if set(self._labels) != set(kwargs.keys()):
+            raise ValueError(f"Expected labels {self._labels}, got {list(kwargs.keys())}")
 
-        if len(kwargs) != len(self._label_values):
-            raise ValueError(f"Expected labels {self._label_values}, got {list(kwargs.values())}")
+        _label_values = tuple(kwargs[label] for label in self._labels)
 
-        if any(not label for label in self._label_values):
+        if any(not label for label in _label_values):
             raise ValueError("Label values must be non-empty strings.")
 
-        return _LabeledCounterProxy(counter=self, label_values=self._label_values)
+        return self._counters_by_label_values[_label_values]
 
     def _as_list(self) -> List[Dict[str, Union[str, int]]]:
         num_labels = len(self._labels)
@@ -251,8 +244,8 @@ class _LabeledCounter(Metric):
 
         collected_metrics = []
 
-        for label_values, count in self._count_by_labels.items():
-            if count == 0:
+        for label_values, counter in self._counters_by_label_values.items():
+            if counter.count == 0:
                 continue  # Skip items with a count of 0, as they should not be sent to the analytics backend.
 
             if len(label_values) != num_labels:
@@ -265,7 +258,7 @@ class _LabeledCounter(Metric):
                 {
                     "namespace": self._namespace,
                     "name": self._name,
-                    "value": count,
+                    "value": counter.count,
                     "type": self._type,
                     **dict(zip(static_key_label_value, label_values)),
                     **dict(zip(static_key_label, self._labels)),
@@ -277,36 +270,7 @@ class _LabeledCounter(Metric):
     def collect(self) -> List[Dict[str, Union[str, int]]]:
         if config.DISABLE_EVENTS:
             return list()
-
-        with self._mutex:
-            return self._as_list()
-
-
-class _LabeledCounterProxy:
-    """A proxy for a labeled counter, enforcing scoped label values."""
-
-    def __init__(self, counter: _LabeledCounter, label_values: Tuple[str, ...]):
-        self._counter = counter
-        self._label_values = label_values
-
-    def increment(self, value: int = 1) -> None:
-        """Increments the counter for the assigned labels unless events are disabled."""
-        if config.DISABLE_EVENTS:
-            return
-
-        if value <= 0:
-            raise ValueError("Increment value must be positive.")
-
-        with self._counter.mutex:
-            self._counter.count_by_labels[self._label_values] += value
-
-    def reset(self) -> None:
-        """Resets the counter to zero for the assigned labels unless events are disabled."""
-        if config.DISABLE_EVENTS:
-            return
-
-        with self._counter.mutex:
-            self._counter.count_by_labels[self._label_values] = 0
+        return self._as_list()
 
 
 class Counter:
@@ -319,21 +283,21 @@ class Counter:
     """
 
     @overload
-    def __new__(cls, name: str, namespace: Optional[str] = "") -> _SimpleCounter:
-        return _SimpleCounter(namespace=namespace, name=name)
+    def __new__(cls, name: str, namespace: Optional[str] = "") -> _CounterMetric:
+        return _CounterMetric(namespace=namespace, name=name)
 
     @overload
     def __new__(
         cls, name: str, labels: List[str], namespace: Optional[str] = ""
-    ) -> _LabeledCounter:
-        return _LabeledCounter(namespace=namespace, name=name, labels=labels)
+    ) -> _LabeledCounterMetric:
+        return _LabeledCounterMetric(namespace=namespace, name=name, labels=labels)
 
     def __new__(
         cls, name: str, namespace: Optional[str] = "", labels: Optional[List[str]] = None
-    ) -> Union[_SimpleCounter, _LabeledCounter]:
+    ) -> Union[_CounterMetric, _LabeledCounterMetric]:
         if labels:
-            return _LabeledCounter(namespace=namespace, name=name, labels=labels)
-        return _SimpleCounter(namespace=namespace, name=name)
+            return _LabeledCounterMetric(namespace=namespace, name=name, labels=labels)
+        return _CounterMetric(namespace=namespace, name=name)
 
 
 @hooks.on_infra_shutdown()
