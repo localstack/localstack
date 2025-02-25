@@ -489,7 +489,7 @@ class TestCaptureUpdateProcess:
         stack_name = f"stack-{short_uid()}"
         change_set_name = f"cs-{short_uid()}"
 
-        def inner(t1: dict | str, t2: dict | str):
+        def inner(t1: dict | str, t2: dict | str, p1: dict | None = None, p2: dict | None = None):
             if isinstance(t1, dict):
                 t1 = json.dumps(t1)
             elif isinstance(t1, str):
@@ -501,12 +501,16 @@ class TestCaptureUpdateProcess:
                 with open(t2) as infile:
                     t2 = infile.read()
 
+            p1 = p1 or {}
+            p2 = p2 or {}
+
             # deploy original stack
             change_set_details = aws_client.cloudformation.create_change_set(
                 StackName=stack_name,
                 ChangeSetName=change_set_name,
                 TemplateBody=t1,
                 ChangeSetType="CREATE",
+                Parameters=[{"ParameterKey": k, "ParameterValue": v} for (k, v) in p1.items()],
             )
             snapshot.match("create-change-set-1", change_set_details)
             stack_id = change_set_details["StackId"]
@@ -551,6 +555,7 @@ class TestCaptureUpdateProcess:
                 ChangeSetName=change_set_name,
                 TemplateBody=t2,
                 ChangeSetType="UPDATE",
+                Parameters=[{"ParameterKey": k, "ParameterValue": v} for (k, v) in p2.items()],
             )
             snapshot.match("create-change-set-2", change_set_details)
             stack_id = change_set_details["StackId"]
@@ -669,3 +674,38 @@ class TestCaptureUpdateProcess:
         }
 
         capture_update_process(t1, t2)
+
+    @markers.aws.validated
+    # @pytest.mark.skip(reason="WIP")
+    def test_parameter_changes(
+        self,
+        capture_update_process,
+    ):
+        name1 = f"topic-1-{short_uid()}"
+        name2 = f"topic-2-{short_uid()}"
+        t1 = {
+            "Parameters": {
+                "TopicName": {
+                    "Type": "String",
+                },
+            },
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": {"Ref": "TopicName"},
+                    },
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::GetAtt": ["Foo", "TopicName"],
+                        },
+                    },
+                },
+            },
+        }
+
+        capture_update_process(t1, t1, p1={"TopicName": name1}, p2={"TopicName": name2})
