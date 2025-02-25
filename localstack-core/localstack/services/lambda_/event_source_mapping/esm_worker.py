@@ -5,11 +5,6 @@ from enum import StrEnum
 from localstack.aws.api.lambda_ import (
     EventSourceMappingConfiguration,
 )
-from localstack.config import (
-    LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_EMPTY_POLL_SEC,
-    LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_ERROR_SEC,
-    LAMBDA_EVENT_SOURCE_MAPPING_POLL_INTERVAL_SEC,
-)
 from localstack.services.lambda_.event_source_mapping.pollers.poller import (
     EmptyPollResultsException,
     Poller,
@@ -19,9 +14,9 @@ from localstack.services.lambda_.provider_utils import get_function_version_from
 from localstack.utils.backoff import ExponentialBackoff
 from localstack.utils.threads import FuncThread
 
-POLL_INTERVAL_SEC: float = LAMBDA_EVENT_SOURCE_MAPPING_POLL_INTERVAL_SEC
-MAX_BACKOFF_POLL_EMPTY_SEC: float = LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_EMPTY_POLL_SEC
-MAX_BACKOFF_POLL_ERROR_SEC: float = LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_ERROR_SEC
+POLL_INTERVAL_SEC: float = 1
+MAX_BACKOFF_POLL_EMPTY_SEC: float = 10
+MAX_BACKOFF_POLL_ERROR_SEC: float = 60
 
 
 LOG = logging.getLogger(__name__)

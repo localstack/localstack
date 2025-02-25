@@ -1071,24 +1071,6 @@ LAMBDA_INIT_POST_INVOKE_WAIT_MS = os.environ.get("LAMBDA_INIT_POST_INVOKE_WAIT_M
 # DEV: sbx_user1051 (default when not provided) Alternative system user or empty string to skip dropping privileges.
 LAMBDA_INIT_USER = os.environ.get("LAMBDA_INIT_USER")
 
-# INTERNAL: 1 (default)
-# The duration (in seconds) to wait between each poll call to an event source.
-LAMBDA_EVENT_SOURCE_MAPPING_POLL_INTERVAL_SEC = float(
-    os.environ.get("LAMBDA_EVENT_SOURCE_MAPPING_POLL_INTERVAL_SEC") or 1
-)
-
-# INTERNAL: 60 (default)
-# Maximum duration (in seconds) to wait between retries when an event source poll fails.
-LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_ERROR_SEC = float(
-    os.environ.get("LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_ERROR_SEC") or 60
-)
-
-# INTERNAL: 10 (default)
-# Maximum duration (in seconds) to wait between polls when an event source returns empty results.
-LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_EMPTY_POLL_SEC = float(
-    os.environ.get("LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_EMPTY_POLL_SEC") or 10
-)
-
 # Adding Stepfunctions default port
 LOCAL_PORT_STEPFUNCTIONS = int(os.environ.get("LOCAL_PORT_STEPFUNCTIONS") or 8083)
 # Stepfunctions lambda endpoint override
