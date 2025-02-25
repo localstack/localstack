@@ -219,12 +219,8 @@ class _LabeledCounterMetric(Metric):
         a _Counter object (``) that allows tracking metrics for that specific
         combination of label values.
 
-        The proxy ensures that increments and resets are scoped to the given label values,
-        enforcing proper metric categorization.
-
         :raises ValueError:
-            - If the number of provided labels does not match the expected count.
-            - If any of the provided labels are empty strings.
+            - If the set of keys provided labels does not match the expected set of labels.
         """
         if set(self._labels) != set(kwargs.keys()):
             raise ValueError(f"Expected labels {self._labels}, got {list(kwargs.keys())}")
