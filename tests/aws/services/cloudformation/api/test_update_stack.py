@@ -10,6 +10,7 @@ import pytest
 
 from localstack.aws.api.cloudformation import StackEvent
 from localstack.aws.connect import ServiceLevelClientFactory
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
@@ -477,6 +478,7 @@ def test_diff_after_update(deploy_cfn_template, aws_client, snapshot):
     assert describe_stack_response["Stacks"][0]["StackStatus"] == "UPDATE_COMPLETE"
 
 
+@pytest.mark.skipif(condition=not is_aws_cloud(), reason="Not implemented yet")
 class TestCaptureUpdateProcess:
     @pytest.fixture
     def capture_update_process(self, aws_client, snapshot, cleanups, capture_per_resource_events):
@@ -596,7 +598,6 @@ class TestCaptureUpdateProcess:
         yield inner
 
     @markers.aws.validated
-    # @pytest.mark.skip(reason="WIP")
     def test_direct_update(
         self,
         capture_update_process,
@@ -627,7 +628,6 @@ class TestCaptureUpdateProcess:
         capture_update_process(t1, t2)
 
     @markers.aws.validated
-    # @pytest.mark.skip(reason="WIP")
     def test_dynamic_update(
         self,
         capture_update_process,
@@ -676,7 +676,6 @@ class TestCaptureUpdateProcess:
         capture_update_process(t1, t2)
 
     @markers.aws.validated
-    # @pytest.mark.skip(reason="WIP")
     def test_parameter_changes(
         self,
         capture_update_process,
@@ -711,7 +710,6 @@ class TestCaptureUpdateProcess:
         capture_update_process(t1, t1, p1={"TopicName": name1}, p2={"TopicName": name2})
 
     @markers.aws.validated
-    # @pytest.mark.skip(reason="WIP")
     def test_mappings_with_static_fields(
         self,
         capture_update_process,
@@ -788,7 +786,6 @@ class TestCaptureUpdateProcess:
         capture_update_process(t1, t2)
 
     @markers.aws.validated
-    # @pytest.mark.skip(reason="WIP")
     def test_mappings_with_parameter_lookup(
         self,
         capture_update_process,
@@ -839,7 +836,6 @@ class TestCaptureUpdateProcess:
         capture_update_process(t1, t1, p1={"TopicName": name1}, p2={"TopicName": name2})
 
     @markers.aws.validated
-    # @pytest.mark.skip(reason="WIP")
     def test_conditions(
         self,
         capture_update_process,
