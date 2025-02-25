@@ -211,7 +211,7 @@ class _LabeledCounterMetric(Metric):
         self._counters_by_label_values = defaultdict(_Counter)
         MetricRegistry().register(self)
 
-    def labels(self, **kwargs: str) -> _Counter:
+    def labels(self, **kwargs: Union[str, float, None]) -> _Counter:
         """
         Create a scoped counter instance with specific label values.
 
@@ -230,9 +230,6 @@ class _LabeledCounterMetric(Metric):
             raise ValueError(f"Expected labels {self._labels}, got {list(kwargs.keys())}")
 
         _label_values = tuple(kwargs[label] for label in self._labels)
-
-        if any(not label for label in _label_values):
-            raise ValueError("Label values must be non-empty strings.")
 
         return self._counters_by_label_values[_label_values]
 

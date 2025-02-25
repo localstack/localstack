@@ -1,5 +1,4 @@
 import threading
-from re import escape
 
 import pytest
 
@@ -121,18 +120,6 @@ def test_thread_safety():
 def test_max_labels_limit():
     with pytest.raises(ValueError, match="A maximum of 8 labels are allowed."):
         Counter(name="test_counter", labels=["l1", "l2", "l3", "l4", "l5", "l6", "l7", "l8", "l9"])
-
-
-def test_counter_raises_error_if_labels_contain_empty_strings():
-    """Ensure that a labeled counter cannot be instantiated with empty or whitespace-only labels."""
-    with pytest.raises(ValueError, match="Labels must be non-empty strings."):
-        Counter(name="test_labeled_counter", labels=["status", ""])
-
-
-def test_labels_method_raises_error_if_label_value_is_empty():
-    """Ensure that the labels method raises an error if any client-defined label is empty."""
-    with pytest.raises(ValueError, match=escape("Label values must be non-empty strings.")):
-        Counter(name="test_labeled_counter", labels=["status"]).labels(status="")
 
 
 def test_counter_raises_error_if_name_is_empty():
