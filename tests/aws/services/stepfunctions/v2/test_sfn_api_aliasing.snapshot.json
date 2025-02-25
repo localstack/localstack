@@ -1,0 +1,511 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_create_alias_single_router_config": {
+    "recorded-date": "25-02-2025, 08:09:58",
+    "recorded-content": {
+      "create_state_machine_alias_response": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_with_state_machine_arn": {
+    "recorded-date": "25-02-2025, 08:10:13",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the CreateStateMachineAlias operation: Routing configuration must contain state machine version ARNs. Received: [arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>]"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_not_idempotent": {
+    "recorded-date": "25-02-2025, 08:10:27",
+    "recorded-content": {
+      "create_state_machine_alias_response": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "not_idempotent_description": {
+        "exception_typename": "ConflictException",
+        "exception_value": "An error occurred (ConflictException) when calling the CreateStateMachineAlias operation: Failed to create alias because an alias with the same name and a different routing configuration already exists."
+      },
+      "not_idempotent_routing_configuration": {
+        "exception_typename": "ConflictException",
+        "exception_value": "An error occurred (ConflictException) when calling the CreateStateMachineAlias operation: Failed to create alias because an alias with the same name and a different routing configuration already exists."
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_idempotent_create_alias": {
+    "recorded-date": "25-02-2025, 08:10:42",
+    "recorded-content": {
+      "create_state_machine_alias_response_attempt_0": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_state_machine_alias_response_attempt_1": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_state_machine_alias_response_different_name": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name-second",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_state_machine_aliases_response": {
+        "stateMachineAliases": [
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name-second"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_invalid_router_configs": {
+    "recorded-date": "25-02-2025, 08:10:59",
+    "recorded-content": {
+      "no_routing": {
+        "exception_typename": "ParamValidationError",
+        "exception_value": "Parameter validation failed:\nInvalid length for parameter routingConfiguration, value: 0, valid min length: 1"
+      },
+      "too_many_routing": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the CreateStateMachineAlias operation: 1 validation error detected: Value '[RoutingConfigurationListItem(stateMachineVersionArn=arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1, weight=50), RoutingConfigurationListItem(stateMachineVersionArn=arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2, weight=30), RoutingConfigurationListItem(stateMachineVersionArn=arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:3, weight=20)]' at 'routingConfiguration' failed to satisfy constraint: Member must have length less than or equal to 2"
+      },
+      "duplicate_routing": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the CreateStateMachineAlias operation: Routing configuration must contain distinct state machine version ARNs. Received: [arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1, arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1]"
+      },
+      "invalid_arn": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the CreateStateMachineAlias operation: Routing configuration must contain state machine version ARNs. Received: [arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>, arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2]"
+      },
+      "weight_too_large": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the CreateStateMachineAlias operation: 1 validation error detected: Value '101' at 'routingConfiguration.1.member.weight' failed to satisfy constraint: Member must have value less than or equal to 100"
+      },
+      "weight_too_small": {
+        "exception_typename": "ParamValidationError",
+        "exception_value": "Parameter validation failed:\nInvalid value for parameter routingConfiguration[0].weight, value: -1, valid min value: 0"
+      },
+      "sum_weights_less_than_100": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the CreateStateMachineAlias operation: Sum of routing configuration weights must equal 100. Received: [70, 29]"
+      },
+      "sum_weights_more_than_100": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the CreateStateMachineAlias operation: Sum of routing configuration weights must equal 100. Received: [70, 31]"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_invalid_name": {
+    "recorded-date": "25-02-2025, 08:11:18",
+    "recorded-content": {
+      "exception_for_name123": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the CreateStateMachineAlias operation: 1 validation error detected: Value '123' at 'name' failed to satisfy constraint: Member must satisfy regular expression pattern: ^(?=.*[a-zA-Z_\\-\\.])[a-zA-Z0-9_\\-\\.]+$"
+      },
+      "exception_for_name": {
+        "exception_typename": "ParamValidationError",
+        "exception_value": "Parameter validation failed:\nInvalid length for parameter name, value: 0, valid min length: 1"
+      },
+      "exception_for_nameAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the CreateStateMachineAlias operation: 1 validation error detected: Value 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' at 'name' failed to satisfy constraint: Member must have length less than or equal to 80"
+      },
+      "exception_for_nameINVALID ALIAS": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the CreateStateMachineAlias operation: 1 validation error detected: Value 'INVALID ALIAS' at 'name' failed to satisfy constraint: Member must satisfy regular expression pattern: ^(?=.*[a-zA-Z_\\-\\.])[a-zA-Z0-9_\\-\\.]+$"
+      },
+      "exception_for_name!INVALID": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the CreateStateMachineAlias operation: 1 validation error detected: Value '!INVALID' at 'name' failed to satisfy constraint: Member must satisfy regular expression pattern: ^(?=.*[a-zA-Z_\\-\\.])[a-zA-Z0-9_\\-\\.]+$"
+      },
+      "exception_for_nameALIAS@": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the CreateStateMachineAlias operation: 1 validation error detected: Value 'ALIAS@' at 'name' failed to satisfy constraint: Member must satisfy regular expression pattern: ^(?=.*[a-zA-Z_\\-\\.])[a-zA-Z0-9_\\-\\.]+$"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_lifecycle_create_delete_list": {
+    "recorded-date": "25-02-2025, 08:11:47",
+    "recorded-content": {
+      "list_state_machine_aliases_response_empty": {
+        "stateMachineAliases": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_state_machine_alias_response_num_0": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_base_name-0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_state_machine_aliases_response_after_creation_0": {
+        "stateMachineAliases": [
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_base_name-0"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_state_machine_alias_response_num_1": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_base_name-1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_state_machine_aliases_response_after_creation_1": {
+        "stateMachineAliases": [
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_base_name-0"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_base_name-1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_state_machine_alias_response_num_2": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_base_name-2",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_state_machine_aliases_response_after_creation_2": {
+        "stateMachineAliases": [
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_base_name-0"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_base_name-1"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_base_name-2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_state_machine_alias_response_0": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_state_machine_aliases_response_after_deletion_0": {
+        "stateMachineAliases": [
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_base_name-1"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_base_name-2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_state_machine_alias_response_1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_state_machine_aliases_response_after_deletion_1": {
+        "stateMachineAliases": [
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_base_name-2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_state_machine_alias_response_2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_state_machine_aliases_response_after_deletion_2": {
+        "stateMachineAliases": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_lifecycle_create_invoke_describe_list": {
+    "recorded-date": "25-02-2025, 08:12:16",
+    "recorded-content": {
+      "list_state_machine_aliases_response_empty": {
+        "stateMachineAliases": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_state_machine_alias_response": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "start_execution_response_through_alias": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_execution_response_through_alias": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "input": {},
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<ExecArnPart_0idx>",
+        "output": {
+          "Arg1": "argument1"
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "redriveCount": 0,
+        "redriveStatus": "NOT_REDRIVABLE",
+        "redriveStatusReason": "Execution is SUCCEEDED and cannot be redriven",
+        "startDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "start_execution_response_through_version_arn": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_1idx>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_execution_response_through_version_arn": {
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_1idx>",
+        "input": {},
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<ExecArnPart_1idx>",
+        "output": {
+          "Arg1": "argument1"
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "redriveCount": 0,
+        "redriveStatus": "NOT_REDRIVABLE",
+        "redriveStatusReason": "Execution is SUCCEEDED and cannot be redriven",
+        "startDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_executions_response": {
+        "executions": [
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_1idx>",
+            "name": "<ExecArnPart_1idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "RUNNING"
+          },
+          {
+            "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+            "name": "<ExecArnPart_0idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name",
+            "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_lifecycle_create_update_describe": {
+    "recorded-date": "25-02-2025, 08:12:31",
+    "recorded-content": {
+      "create_state_machine_alias_response": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_state_machine_alias_description_response": {
+        "updateDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_state_machine_alias_update_description_response": {
+        "creationDate": "datetime",
+        "description": "new description",
+        "name": "state_machine_alias_name",
+        "routingConfiguration": [
+          {
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "weight": 100
+          }
+        ],
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name",
+        "updateDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_state_machine_alias_routing_configuration_response": {
+        "updateDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_state_machine_alias_update_routing_configuration_response": {
+        "creationDate": "datetime",
+        "description": "new description",
+        "name": "state_machine_alias_name",
+        "routingConfiguration": [
+          {
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+            "weight": 100
+          }
+        ],
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name",
+        "updateDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_delete_version_with_alias": {
+    "recorded-date": "25-02-2025, 09:00:20",
+    "recorded-content": {
+      "create_state_machine_alias_response": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exception_delete_version_with_alias_reference": {
+        "exception_typename": "ConflictException",
+        "exception_value": "An error occurred (ConflictException) when calling the DeleteStateMachineVersion operation: Version to be deleted must not be referenced by an alias. Current list of aliases referencing this version: [state_machine_alias_name]"
+      },
+      "describe_state_machine_alias_response": {
+        "creationDate": "datetime",
+        "description": "create state machine alias description",
+        "name": "state_machine_alias_name",
+        "routingConfiguration": [
+          {
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2",
+            "weight": 100
+          }
+        ],
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name",
+        "updateDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_version_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

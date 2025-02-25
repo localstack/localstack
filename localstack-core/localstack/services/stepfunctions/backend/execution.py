@@ -103,6 +103,7 @@ class Execution:
     region_name: str
 
     state_machine: Final[StateMachineInstance]
+    state_machine_alias_arn: Final[Optional[Arn]]
     start_date: Final[Timestamp]
     input_data: Final[Optional[json]]
     input_details: Final[Optional[CloudWatchEventsExecutionDataDetails]]
@@ -136,6 +137,7 @@ class Execution:
         activity_store: dict[Arn, Activity],
         input_data: Optional[json] = None,
         trace_header: Optional[TraceHeader] = None,
+        state_machine_alias_arn: Optional[Arn] = None,
     ):
         self.name = name
         self.sm_type = sm_type
@@ -144,6 +146,7 @@ class Execution:
         self.account_id = account_id
         self.region_name = region_name
         self.state_machine = state_machine
+        self.state_machine_alias_arn = state_machine_alias_arn
         self.start_date = start_date
         self._cloud_watch_logging_session = cloud_watch_logging_session
         self.input_data = input_data
@@ -183,6 +186,8 @@ class Execution:
             describe_output["error"] = self.error
         if self.cause is not None:
             describe_output["cause"] = self.cause
+        if self.state_machine_alias_arn is not None:
+            describe_output["stateMachineAliasArn"] = self.state_machine_alias_arn
         return describe_output
 
     def to_describe_state_machine_for_execution_output(
@@ -231,6 +236,8 @@ class Execution:
         )
         if state_machine_version_arn is not None:
             item["stateMachineVersionArn"] = state_machine_version_arn
+        if self.state_machine_alias_arn is not None:
+            item["stateMachineAliasArn"] = self.state_machine_alias_arn
         return item
 
     def to_history_output(self) -> GetExecutionHistoryOutput:
