@@ -1,4 +1,5 @@
 import json
+import math
 import time
 
 import pytest
@@ -1608,7 +1609,7 @@ class TestSQSEventSourceMapping:
         cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
         _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
 
-        expected_invocations = -(batch_size // -2500)  # converts floor division to ceil
+        expected_invocations = math.ceil(batch_size / 2500)
         events = retry(
             check_expected_lambda_log_events_length,
             retries=10,

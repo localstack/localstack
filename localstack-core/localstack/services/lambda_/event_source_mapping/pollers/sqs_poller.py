@@ -160,7 +160,6 @@ class SqsPoller(Poller):
         messages = response.get("Messages", [])
         if not messages:
             # TODO: Consider this case triggering longer wait-times (with backoff) between poll_events calls in the outer-loop.
-            LOG.debug("Polled no events from %s", self.source_arn)
             return
 
         LOG.debug("Polled %d events from %s", len(messages), self.source_arn)
