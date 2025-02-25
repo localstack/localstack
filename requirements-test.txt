@@ -324,7 +324,7 @@ pytest==8.3.4
     #   pytest-rerunfailures
     #   pytest-split
     #   pytest-tinybird
-pytest-httpserver==1.1.2
+pytest-httpserver==1.1.1
     # via localstack-core (pyproject.toml)
 pytest-rerunfailures==15.0
     # via localstack-core (pyproject.toml)
