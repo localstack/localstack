@@ -20,22 +20,22 @@ apispec==6.8.1
     # via localstack-core
 argparse==1.4.0
     # via amazon-kclpy
-attrs==24.3.0
+attrs==25.1.0
     # via
     #   cattrs
     #   jsii
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.224
+aws-cdk-asset-awscli-v1==2.2.225
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==39.2.20
     # via aws-cdk-lib
-aws-cdk-lib==2.179.0
+aws-cdk-lib==2.180.0
     # via localstack-core (pyproject.toml)
-aws-sam-translator==1.94.0
+aws-sam-translator==1.95.0
     # via
     #   cfn-lint
     #   localstack-core
@@ -64,7 +64,7 @@ build==1.2.2.post1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cachetools==5.5.1
+cachetools==5.5.2
     # via
     #   airspeed-ext
     #   localstack-core
@@ -106,7 +106,7 @@ cryptography==44.0.1
     #   localstack-core (pyproject.toml)
     #   moto-ext
     #   pyopenssl
-decorator==5.1.1
+decorator==5.2.1
     # via jsonpath-rw
 deepdiff==8.2.0
     # via
@@ -182,7 +182,7 @@ joserfc==1.0.3
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core
-jsii==1.106.0
+jsii==1.108.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
@@ -330,7 +330,7 @@ pytest-rerunfailures==15.0
     # via localstack-core (pyproject.toml)
 pytest-split==0.10.0
     # via localstack-core (pyproject.toml)
-pytest-tinybird==0.3.0
+pytest-tinybird==0.4.0
     # via localstack-core (pyproject.toml)
 python-dateutil==2.9.0.post0
     # via
@@ -384,7 +384,7 @@ rich==13.9.4
     #   localstack-core (pyproject.toml)
 rolo==0.7.5
     # via localstack-core
-rpds-py==0.22.3
+rpds-py==0.23.1
     # via
     #   jsonschema
     #   referencing
