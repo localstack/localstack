@@ -24,6 +24,7 @@ from localstack.services.lambda_.event_source_mapping.pipe_utils import (
     get_internal_client,
 )
 from localstack.services.lambda_.event_source_mapping.pollers.poller import (
+    EmptyPollResultsException,
     Poller,
     get_batch_item_failures,
 )
@@ -157,6 +158,9 @@ class StreamPoller(Poller):
         get_records_response = self.get_records(shard_iterator)
         records = get_records_response["Records"]
         polled_events = self.transform_into_events(records, shard_id)
+        if not polled_events:
+            raise EmptyPollResultsException(service=self.event_source, source_arn=self.source_arn)
+
         # Check MaximumRecordAgeInSeconds
         if maximum_record_age_in_seconds := self.stream_parameters.get("MaximumRecordAgeInSeconds"):
             arrival_timestamp_of_last_event = polled_events[-1]["approximateArrivalTimestamp"]
