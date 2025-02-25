@@ -755,7 +755,7 @@ def _resolve_refs_recursively(
 
         # remove _aws_no_value_ from resulting references
         clean_list = []
-        for i in range(len(value)):
+        for item in value:
             temp_value = resolve_refs_recursively(
                 account_id,
                 region_name,
@@ -764,7 +764,7 @@ def _resolve_refs_recursively(
                 mappings,
                 conditions,
                 parameters,
-                value[i],
+                item,
             )
             if not (isinstance(temp_value, str) and temp_value == PLACEHOLDER_AWS_NO_VALUE):
                 clean_list.append(temp_value)
