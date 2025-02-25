@@ -2,8 +2,10 @@ import base64
 import codecs
 import datetime
 import hashlib
+import itertools
 import logging
 import re
+import time
 import zlib
 from enum import StrEnum
 from secrets import token_bytes
@@ -68,6 +70,7 @@ from localstack.services.s3.constants import (
 from localstack.services.s3.exceptions import InvalidRequest, MalformedXML
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn
+from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import (
     is_base64,
     to_bytes,
@@ -94,8 +97,6 @@ _s3_virtual_host_regex = re.compile(S3_VIRTUAL_HOSTNAME_REGEX)
 
 RFC1123 = "%a, %d %b %Y %H:%M:%S GMT"
 _gmt_zone_info = ZoneInfo("GMT")
-
-_version_id_safe_encode_translation = bytes.maketrans(b"+/", b"._")
 
 
 def s3_response_handler(chain: HandlerChain, context: RequestContext, response: Response):
@@ -1038,13 +1039,28 @@ def parse_post_object_tagging_xml(tagging: str) -> Optional[dict]:
 
 
 def generate_safe_version_id() -> str:
-    # the safe b64 encoding is inspired by the stdlib base64.urlsafe_b64encode
-    # and also using stdlib secrets.token_urlsafe, but with a different alphabet adapted for S3
-    # VersionId cannot have `-` in it, as it fails in XML
-    tok = token_bytes(24)
-    return (
-        base64.b64encode(tok)
-        .translate(_version_id_safe_encode_translation)
-        .rstrip(b"=")
-        .decode("ascii")
-    )
+    """
+    Generate a safe version id for XML rendering.
+    VersionId cannot have `-` in it, as it fails in XML
+    Combine an ever-increasing part in the 8 first characters, and a random element.
+    We need the sequence part in order to properly implement pagination around ListObjectVersions.
+    By prefixing the version-id with a global increasing number, we can sort the versions
+    :return: an S3 VersionId containing a timestamp part in the first 8 characters
+    """
+    tok = next(global_version_id_sequence()).to_bytes(length=6) + token_bytes(18)
+    return base64.b64encode(tok, altchars=b"._").rstrip(b"=").decode("ascii")
+
+
+@singleton_factory
+def global_version_id_sequence():
+    start = int(time.time() * 1000)
+    # itertools.count is thread safe over the GIL since its getAndIncrement operation is a single python bytecode op
+    return itertools.count(start)
+
+
+def is_version_older_than_other(version_id: str, other: str):
+    """
+    Compare the sequence part of a VersionId against the sequence part of a VersionIdMarker. Used for pagination
+    See `generate_safe_version_id`
+    """
+    return base64.b64decode(version_id, altchars=b"._") < base64.b64decode(other, altchars=b"._")

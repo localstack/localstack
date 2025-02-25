@@ -23,23 +23,23 @@ attrs==25.1.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-sam-translator==1.94.0
+aws-sam-translator==1.95.0
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.37.16
+awscli==1.37.21
     # via localstack-core (pyproject.toml)
-awscrt==0.23.9
+awscrt==0.23.10
     # via localstack-core
-boto3==1.36.16
+boto3==1.36.21
     # via
     #   amazon-kclpy
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-botocore==1.36.16
+botocore==1.36.21
     # via
     #   aws-xray-sdk
     #   awscli
@@ -51,7 +51,7 @@ build==1.2.2.post1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cachetools==5.5.1
+cachetools==5.5.2
     # via
     #   airspeed-ext
     #   localstack-core
@@ -64,7 +64,7 @@ certifi==2025.1.31
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.23.1
+cfn-lint==1.25.1
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -78,14 +78,14 @@ constantly==23.10.4
     # via localstack-twisted
 crontab==1.0.1
     # via localstack-core (pyproject.toml)
-cryptography==44.0.0
+cryptography==44.0.1
     # via
     #   joserfc
     #   localstack-core
     #   localstack-core (pyproject.toml)
     #   moto-ext
     #   pyopenssl
-decorator==5.1.1
+decorator==5.2.1
     # via jsonpath-rw
 dill==0.3.6
     # via
@@ -141,7 +141,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.0.2
+joserfc==1.0.3
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core (pyproject.toml)
@@ -188,7 +188,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.6.0
     # via openapi-core
-moto-ext==5.0.28.post1
+moto-ext==5.0.28.post6
     # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
@@ -229,7 +229,7 @@ priority==1.3.0
     # via
     #   hypercorn
     #   localstack-twisted
-psutil==6.1.1
+psutil==7.0.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -245,7 +245,7 @@ pydantic-core==2.27.2
     # via pydantic
 pygments==2.19.1
     # via rich
-pymongo==4.11
+pymongo==4.11.1
     # via localstack-core (pyproject.toml)
 pyopenssl==25.0.0
     # via
@@ -304,9 +304,9 @@ rich==13.9.4
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-rolo==0.7.4
+rolo==0.7.5
     # via localstack-core
-rpds-py==0.22.3
+rpds-py==0.23.1
     # via
     #   jsonschema
     #   referencing

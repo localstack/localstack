@@ -185,6 +185,9 @@
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_message_to_fifo_sqs[True]": {
     "last_validated_date": "2023-11-09T20:12:03+00:00"
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_message_to_fifo_sqs_ordering": {
+    "last_validated_date": "2025-02-19T01:29:14+00:00"
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[False]": {
     "last_validated_date": "2023-11-09T20:10:33+00:00"
   },
