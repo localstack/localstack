@@ -7,7 +7,7 @@ import pytest
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 
-from localstack.aws.api.lambda_ import Runtime
+from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
 from localstack.testing.aws.lambda_utils import (
     _await_event_source_mapping_enabled,
     _await_event_source_mapping_state,
@@ -70,6 +70,29 @@ def _snapshot_transformers(snapshot):
     ],
 )
 class TestKinesisSource:
+    @markers.aws.validated
+    def test_esm_with_not_existing_kinesis_stream(
+        self, aws_client, create_lambda_function, lambda_su_role
+    ):
+        function_name = f"simple-lambda-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+            timeout=5,
+        )
+        not_existing_stream_arn = (
+            "arn:aws:kinesis:us-east-1:000000000000:stream/test-foobar-5ee4d554"
+        )
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_event_source_mapping(
+                EventSourceArn=not_existing_stream_arn,
+                FunctionName=function_name,
+                StartingPosition="LATEST",
+            )
+        e.match(InvalidParameterValueException.code)
+
     @markers.aws.validated
     def test_create_kinesis_event_source_mapping(
         self,

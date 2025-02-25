@@ -9,6 +9,8 @@ import threading
 import time
 from typing import IO, Any, Optional, Tuple
 
+from botocore.exceptions import ClientError
+
 from localstack import config
 from localstack.aws.api import RequestContext, ServiceException, handler
 from localstack.aws.api.lambda_ import (
@@ -141,6 +143,8 @@ from localstack.aws.api.lambda_ import FunctionVersion as FunctionVersionApi
 from localstack.aws.api.lambda_ import ServiceException as LambdaServiceException
 from localstack.aws.connect import connect_to
 from localstack.aws.spec import load_service
+from localstack.services.dynamodbstreams.dynamodbstreams_api import table_name_from_stream_arn
+from localstack.services.dynamodbstreams.models import dynamodbstreams_stores
 from localstack.services.edge import ROUTER
 from localstack.services.lambda_ import api_utils
 from localstack.services.lambda_ import hooks as lambda_hooks
@@ -215,9 +219,12 @@ from localstack.services.lambda_.runtimes import (
 )
 from localstack.services.lambda_.urlrouter import FunctionUrlRouter
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.services.sqs.models import sqs_stores
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import (
     ArnData,
+    extract_account_id_from_arn,
+    extract_region_from_arn,
     extract_resource_from_arn,
     extract_service_from_arn,
     get_partition,
@@ -1934,6 +1941,44 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
                     Type="User",
                 )
+
+        def check_service_resource_exists(service, resource_arn):
+            if service in ["sqs", "sqs-fifo"]:
+                sqs_store = sqs_stores[context.account_id][context.region]
+                queue = sqs_store.queues.get(resource_arn)
+                if not queue:
+                    raise InvalidParameterValueException(
+                        "The resource that you specified for the EventSourceArn parameter doesn't exist.",
+                        Type="User",
+                    )
+            elif service in ["kinesis"]:
+                account_id = extract_account_id_from_arn(resource_arn)
+                region_name = extract_region_from_arn(resource_arn)
+                kinesis = connect_to(aws_access_key_id=account_id, region_name=region_name).kinesis
+                stream_name = resource_arn.split("/")[
+                    -1
+                ]  # TODO: there should be a better way to get the name from the arn
+                try:
+                    kinesis.describe_stream(StreamName=stream_name)
+                except ClientError as e:
+                    if e.response["Error"]["Code"] == "ResourceNotFoundException":
+                        raise InvalidParameterValueException(
+                            "The resource that you specified for the EventSourceArn parameter doesn't exist.",
+                            Type="User",
+                        )
+                    else:
+                        raise e
+            elif service == "dynamodb":
+                ddb_streams_store = dynamodbstreams_stores[context.account_id][context.region]
+                table_name = table_name_from_stream_arn(resource_arn)
+                stream_table = ddb_streams_store.ddb_streams.get(table_name)
+                if not stream_table or stream_table.get("StreamArn") != resource_arn:
+                    raise InvalidParameterValueException(
+                        "The resource that you specified for the EventSourceArn parameter doesn't exist.",
+                        Type="User",
+                    )
+
+        check_service_resource_exists(service, request["EventSourceArn"])
 
         if (filter_criteria := request.get("FilterCriteria")) is not None:
             for filter_ in filter_criteria.get("Filters", []):
