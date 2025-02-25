@@ -1115,10 +1115,16 @@ class TestSQSEventSourceMapping:
         queue_url = sqs_create_queue(QueueName=source_queue_name)
         queue_arn = sqs_get_queue_arn(queue_url)
 
+        for b in range(3):
+            aws_client.sqs.send_message_batch(
+                QueueUrl=queue_url,
+                Entries=[{"Id": f"{i}-{b}", "MessageBody": f"{i}-{b}-message"} for i in range(10)],
+            )
+
         create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
             EventSourceArn=queue_arn,
             FunctionName=function_name,
-            MaximumBatchingWindowInSeconds=10,
+            MaximumBatchingWindowInSeconds=1,
             BatchSize=20,
             ScalingConfig={
                 "MaximumConcurrency": 2
@@ -1128,12 +1134,6 @@ class TestSQSEventSourceMapping:
         cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
         snapshot.match("create-event-source-mapping-response", create_event_source_mapping_response)
         _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
-
-        for b in range(3):
-            aws_client.sqs.send_message_batch(
-                QueueUrl=queue_url,
-                Entries=[{"Id": f"{i}-{b}", "MessageBody": f"{i}-{b}-message"} for i in range(10)],
-            )
 
         batches = []
 
