@@ -709,3 +709,170 @@ class TestCaptureUpdateProcess:
         }
 
         capture_update_process(t1, t1, p1={"TopicName": name1}, p2={"TopicName": name2})
+
+    @markers.aws.validated
+    # @pytest.mark.skip(reason="WIP")
+    def test_mappings_with_static_fields(
+        self,
+        capture_update_process,
+    ):
+        name1 = "key1"
+        name2 = "key2"
+        t1 = {
+            "Mappings": {
+                "MyMap": {
+                    "MyKey": {
+                        name1: "MyTopicName",
+                        name2: "MyNewTopicName",
+                    },
+                },
+            },
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": {
+                            "Fn::FindInMap": [
+                                "MyMap",
+                                "MyKey",
+                                name1,
+                            ],
+                        },
+                    },
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::GetAtt": ["Foo", "TopicName"],
+                        },
+                    },
+                },
+            },
+        }
+        t2 = {
+            "Mappings": {
+                "MyMap": {
+                    "MyKey": {
+                        name1: f"MyTopicName{short_uid()}",
+                        name2: f"MyNewTopicName{short_uid()}",
+                    },
+                },
+            },
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": {
+                            "Fn::FindInMap": [
+                                "MyMap",
+                                "MyKey",
+                                name2,
+                            ],
+                        },
+                    },
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::GetAtt": ["Foo", "TopicName"],
+                        },
+                    },
+                },
+            },
+        }
+
+        capture_update_process(t1, t2)
+
+    @markers.aws.validated
+    # @pytest.mark.skip(reason="WIP")
+    def test_mappings_with_parameter_lookup(
+        self,
+        capture_update_process,
+    ):
+        name1 = "key1"
+        name2 = "key2"
+        t1 = {
+            "Parameters": {
+                "TopicName": {
+                    "Type": "String",
+                },
+            },
+            "Mappings": {
+                "MyMap": {
+                    "MyKey": {
+                        name1: "MyTopicName",
+                        name2: "MyNewTopicName",
+                    },
+                },
+            },
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": {
+                            "Fn::FindInMap": [
+                                "MyMap",
+                                "MyKey",
+                                {
+                                    "Ref": "TopicName",
+                                },
+                            ],
+                        },
+                    },
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::GetAtt": ["Foo", "TopicName"],
+                        },
+                    },
+                },
+            },
+        }
+
+        capture_update_process(t1, t1, p1={"TopicName": name1}, p2={"TopicName": name2})
+
+    @markers.aws.validated
+    # @pytest.mark.skip(reason="WIP")
+    def test_conditions(
+        self,
+        capture_update_process,
+    ):
+        t1 = {
+            "Parameters": {
+                "EnvironmentType": {
+                    "Type": "String",
+                }
+            },
+            "Conditions": {
+                "IsProduction": {
+                    "Fn::Equals": [
+                        {"Ref": "EnvironmentType"},
+                        "prod",
+                    ],
+                }
+            },
+            "Resources": {
+                "Bucket": {
+                    "Type": "AWS::S3::Bucket",
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "test",
+                    },
+                    "Condition": "IsProduction",
+                },
+            },
+        }
+
+        capture_update_process(
+            t1, t1, p1={"EnvironmentType": "not-prod"}, p2={"EnvironmentType": "prod"}
+        )
