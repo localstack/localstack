@@ -133,11 +133,7 @@ class SqsPoller(Poller):
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
         else:
-            raise EmptyPollResultsException(
-                "No results found in poll call to SQS",
-                service="sqs",
-                source_arn=self.source_arn,
-            )
+            raise EmptyPollResultsException(service="sqs", source_arn=self.source_arn)
 
     def handle_messages(self, messages):
         polled_events = transform_into_events(messages)

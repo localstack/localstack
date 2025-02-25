@@ -19,8 +19,9 @@ class EmptyPollResultsException(Exception):
     service: str
     source_arn: str
 
-    def __init__(self, *args, service: str = "", source_arn: str = ""):
-        super(EmptyPollResultsException, self).__init__(*args)
+    def __init__(self, service: str = "", source_arn: str = ""):
+        self.service = service
+        self.source_arn = source_arn
 
 
 class PipeStateReasonValues(PipeStateReason):

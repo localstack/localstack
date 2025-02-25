@@ -158,13 +158,12 @@ class EsmWorker:
                 poll_interval_duration = POLL_INTERVAL_SEC
             except EmptyPollResultsException as miss_ex:
                 # If the event source is empty, backoff
-                poll_miss_boff_duration = empty_boff.next_backoff()
-                LOG.debug(
-                    "The event source %s is empty. Backing off for for %s seconds until next request.",
-                    miss_ex.source_arn,
-                    poll_miss_boff_duration,
-                )
                 poll_interval_duration = empty_boff.next_backoff()
+                LOG.debug(
+                    "The event source %s is empty. Backing off for %s seconds until next request.",
+                    miss_ex.source_arn,
+                    poll_interval_duration,
+                )
             except Exception as e:
                 LOG.error(
                     "Error while polling messages for event source %s: %s",
