@@ -33,6 +33,7 @@ if TYPE_CHECKING:
     from mypy_boto3_codecommit import CodeCommitClient
     from mypy_boto3_codedeploy import CodeDeployClient
     from mypy_boto3_codepipeline import CodePipelineClient
+    from mypy_boto3_codestar_connections import CodeStarconnectionsClient
     from mypy_boto3_cognito_identity import CognitoIdentityClient
     from mypy_boto3_cognito_idp import CognitoIdentityProviderClient
     from mypy_boto3_dms import DatabaseMigrationServiceClient
@@ -140,6 +141,9 @@ class TypedServiceClientFactory(abc.ABC):
     codecommit: Union["CodeCommitClient", "MetadataRequestInjector[CodeCommitClient]"]
     codedeploy: Union["CodeDeployClient", "MetadataRequestInjector[CodeDeployClient]"]
     codepipeline: Union["CodePipelineClient", "MetadataRequestInjector[CodePipelineClient]"]
+    codestar_connections: Union[
+        "CodeStarconnectionsClient", "MetadataRequestInjector[CodeStarconnectionsClient]"
+    ]
     cognito_identity: Union[
         "CognitoIdentityClient", "MetadataRequestInjector[CognitoIdentityClient]"
     ]
