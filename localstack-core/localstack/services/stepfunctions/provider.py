@@ -191,7 +191,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     )
 
     _ALIAS_ARN_REGEX: Final[re.Pattern] = re.compile(
-        rf"{ARN_PARTITION_REGEX}:states:[a-z0-9-]+:[0-9]{{12}}:stateMarchine::[a-zA-Z0-9-_.]+:[a-zA-Z_\-\.][a-zA-Z0-9-_\.]{{0,80}}$"
+        rf"{ARN_PARTITION_REGEX}:states:[a-z0-9-]+:[0-9]{{12}}:stateMachine:[A-Za-z0-9_.-]+:[A-Za-z_.-]+[A-Za-z0-9_.-]{{0,80}}$"
     )
 
     _ALIAS_NAME_REGEX: Final[re.Pattern] = re.compile(r"^(?=.*[a-zA-Z_\-\.])[a-zA-Z0-9_\-\.]+$")
@@ -220,7 +220,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
     @staticmethod
     def _validate_state_machine_alias_arn(state_machine_alias_arn: Arn) -> None:
-        if not StepFunctionsProvider._ALIAS_NAME_REGEX.match(state_machine_alias_arn):
+        if not StepFunctionsProvider._ALIAS_ARN_REGEX.match(state_machine_alias_arn):
             raise InvalidArn(f"Invalid arn: '{state_machine_alias_arn}'")
 
     def _raise_state_machine_type_not_supported(self):
@@ -255,12 +255,18 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
     @staticmethod
     def _validate_state_machine_alias_name(name: CharacterRestrictedName) -> None:
-        if not StepFunctionsProvider._ALIAS_NAME_REGEX.fullmatch(name):
+        len_name = len(name)
+        if len_name > 80:
+            raise ValidationException(
+                f"1 validation error detected: Value '{name}' at 'name' failed to satisfy constraint: "
+                f"Member must have length less than or equal to 80"
+            )
+        if not StepFunctionsProvider._ALIAS_NAME_REGEX.match(name):
             raise ValidationException(
                 # TODO: explore more error cases in which more than one validation error may occur which results
                 #  in the counter below being greater than 1.
                 f"1 validation error detected: Value '{name}' at 'name' failed to satisfy constraint: "
-                f"Member must satisfy regular expression pattern: ^(?=.*[a-zA-Z_\\-\\.])[a-zA-Z0-9_\\-\\.]+"
+                f"Member must satisfy regular expression pattern: ^(?=.*[a-zA-Z_\\-\\.])[a-zA-Z0-9_\\-\\.]+$"
             )
 
     def _get_execution(self, context: RequestContext, execution_arn: Arn) -> Execution:
