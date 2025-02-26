@@ -75,6 +75,9 @@ class EsmWorker:
         function_version = get_function_version_from_arn(self.esm_config["FunctionArn"])
         self._state = lambda_stores[function_version.id.account][function_version.id.region]
 
+        # HACK: Flag used to check if a graceful shutdown was triggered.
+        self._graceful_shutdown_triggered = False
+
     @property
     def uuid(self) -> str:
         return self.esm_config["UUID"]
@@ -83,6 +86,7 @@ class EsmWorker:
         # Signal the worker's poller_loop thread to gracefully shutdown
         # TODO: Once ESM state is de-coupled from lambda store, re-think this approach.
         self._shutdown_event.set()
+        self._graceful_shutdown_triggered = True
 
     def create(self):
         if self.enabled:
@@ -166,7 +170,9 @@ class EsmWorker:
                     self.current_state = EsmState.DISABLED
                     self.state_transition_reason = self.user_state_reason
                 self.update_esm_state_in_store(EsmState.DISABLED)
-            else:
+            elif not self._graceful_shutdown_triggered:
+                # HACK: If we reach this state and a graceful shutdown was not triggered, log a warning to indicate
+                # an unexpected state.
                 LOG.warning(
                     "Invalid state %s for event source mapping %s.",
                     self.current_state,
