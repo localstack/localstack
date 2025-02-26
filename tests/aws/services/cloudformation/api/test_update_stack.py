@@ -872,3 +872,128 @@ class TestCaptureUpdateProcess:
         capture_update_process(
             t1, t1, p1={"EnvironmentType": "not-prod"}, p2={"EnvironmentType": "prod"}
         )
+
+    @markers.aws.validated
+    def test_sub_static(
+        self,
+        capture_update_process,
+    ):
+        t1 = {
+            "Parameters": {
+                "EnvironmentType": {
+                    "Type": "String",
+                }
+            },
+            "Resources": {
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "test",
+                    },
+                    "Condition": "IsProduction",
+                },
+            },
+        }
+
+        capture_update_process(
+            t1, t1, p1={"EnvironmentType": "not-prod"}, p2={"EnvironmentType": "prod"}
+        )
+
+    @markers.aws.validated
+    def test_unrelated_changes_update_propagation(
+        self,
+        capture_update_process,
+    ):
+        topic_name = f"MyTopic{short_uid()}"
+        t1 = {
+            "Resources": {
+                "Parameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": topic_name,
+                        "Description": "original",
+                    },
+                },
+                "Parameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                    },
+                },
+            },
+        }
+
+        t2 = {
+            "Resources": {
+                "Parameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": topic_name,
+                        "Description": "changed",
+                    },
+                },
+                "Parameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                    },
+                },
+            },
+        }
+        capture_update_process(t1, t2)
+
+    @markers.aws.validated
+    def test_unrelated_changes_requires_replacement(
+        self,
+        capture_update_process,
+    ):
+        parameter_name_1 = f"MyParameter{short_uid()}"
+        parameter_name_2 = f"MyParameter{short_uid()}"
+
+        t1 = {
+            "Resources": {
+                "Parameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": parameter_name_1,
+                        "Type": "String",
+                        "Value": "value",
+                    },
+                },
+                "Parameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                    },
+                },
+            },
+        }
+        t2 = {
+            "Resources": {
+                "Parameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": parameter_name_2,
+                        "Type": "String",
+                        "Value": "value",
+                    },
+                },
+                "Parameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                    },
+                },
+            },
+        }
+
+        capture_update_process(t1, t2)
+
+    # Test using Ref instead of GetAtt - does the nature of the intrinsic change the update behaviour?

@@ -17,6 +17,12 @@
   "tests/aws/services/cloudformation/api/test_update_stack.py::TestCaptureUpdateProcess::test_parameter_changes": {
     "last_validated_date": "2025-02-25T13:24:03+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::TestCaptureUpdateProcess::test_unrelated_changes_requires_replacement": {
+    "last_validated_date": "2025-02-26T09:42:26+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::TestCaptureUpdateProcess::test_unrelated_changes_update_propagation": {
+    "last_validated_date": "2025-02-26T09:25:56+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_update_stack.py::test_basic_update": {
     "last_validated_date": "2025-02-11T16:49:47+00:00"
   },
