@@ -81,22 +81,18 @@ class Metric(ABC):
 
     _name: str
 
+    def __init__(self, name: str):
+        if not name:
+            raise ValueError("Metric name must be non-empty string.")
+
+        self._name = name
+
     @property
     def name(self) -> str:
-        """
-        Retrieves the fully qualified metric name.
-        """
         return self._name
 
     @name.setter
     def name(self, value: str) -> None:
-        """
-        Validates and sets the full metric name.
-
-        :raises ValueError: If the name is empty or invalid.
-        """
-        if not value or value.strip() == "":
-            raise ValueError("Metric must have a valid name.")
         self._name = value
 
     @abstractmethod
@@ -153,9 +149,9 @@ class _CounterMetric(Metric, _Counter):
     _type: str
 
     def __init__(self, name: str, namespace: Optional[str] = ""):
-        super(_CounterMetric, self).__init__()
+        Metric.__init__(self, name=name)
+        _Counter.__init__(self)
 
-        self.name = name
         self._namespace = namespace.strip() if namespace else ""
         self._type = "counter"
         MetricRegistry().register(self)
@@ -191,8 +187,7 @@ class _LabeledCounterMetric(Metric):
     _counters_by_label_values: defaultdict[Tuple[Optional[Union[str, float]], ...], _Counter]
 
     def __init__(self, name: str, labels: List[str], namespace: Optional[str] = ""):
-        if not name:
-            raise ValueError("name must be non-empty string.")
+        super(_LabeledCounterMetric, self).__init__(name=name)
 
         if not labels:
             raise ValueError("At least one label is required; the labels list cannot be empty.")
@@ -203,7 +198,6 @@ class _LabeledCounterMetric(Metric):
         if len(labels) > 8:
             raise ValueError("A maximum of 8 labels are allowed.")
 
-        self.name = name
         self._namespace = namespace.strip() if namespace else ""
         self._type = "counter"
         self._labels = labels
