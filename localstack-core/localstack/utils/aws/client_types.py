@@ -272,6 +272,7 @@ class ServicePrincipal(str):
     apigateway = "apigateway"
     cloudformation = "cloudformation"
     dms = "dms"
+    edgelambda = "edgelambda"
     events = "events"
     firehose = "firehose"
     lambda_ = "lambda"
