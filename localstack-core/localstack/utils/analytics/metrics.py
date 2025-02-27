@@ -150,13 +150,12 @@ class _CounterMetric(Metric, _Counter):
     """
 
     _namespace: Optional[str]
-    _name: str
     _type: str
 
     def __init__(self, name: str, namespace: Optional[str] = ""):
         super(_CounterMetric, self).__init__()
 
-        self._name = name.strip()
+        self.name = name
         self._namespace = namespace.strip() if namespace else ""
         self._type = "counter"
         MetricRegistry().register(self)
@@ -172,7 +171,7 @@ class _CounterMetric(Metric, _Counter):
         return [
             {
                 "namespace": self._namespace,
-                "name": self._name,
+                "name": self.name,
                 "value": self._count,
                 "type": self._type,
             }
@@ -185,7 +184,6 @@ class _LabeledCounterMetric(Metric):
     """
 
     _namespace: Optional[str]
-    _name: str
     _type: str
     _unit: str
     _labels: list[str]
@@ -193,13 +191,16 @@ class _LabeledCounterMetric(Metric):
     _counters_by_label_values: defaultdict[Tuple[Optional[Union[str, float]], ...], _Counter]
 
     def __init__(self, name: str, labels: List[str], namespace: Optional[str] = ""):
+        if not name:
+            raise ValueError("name must be non-empty string.")
+
         if any(not label for label in labels):
             raise ValueError("Labels must be non-empty strings.")
 
         if len(labels) > 8:
             raise ValueError("A maximum of 8 labels are allowed.")
 
-        self._name = name.strip()
+        self.name = name
         self._namespace = namespace.strip() if namespace else ""
         self._type = "counter"
         self._labels = labels
@@ -245,7 +246,7 @@ class _LabeledCounterMetric(Metric):
             collected_metrics.append(
                 {
                     "namespace": self._namespace,
-                    "name": self._name,
+                    "name": self.name,
                     "value": counter.count,
                     "type": self._type,
                     **dict(zip(static_key_label_value, label_values)),
