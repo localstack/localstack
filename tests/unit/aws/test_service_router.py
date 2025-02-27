@@ -7,7 +7,8 @@ from botocore.awsrequest import AWSRequest, create_request_object
 from botocore.config import Config
 from botocore.model import OperationModel, ServiceModel, Shape, StructureShape
 
-from localstack.aws.protocol.service_router import determine_aws_service_model, get_service_catalog
+from localstack.aws.protocol.service_router import determine_aws_service_model
+from localstack.aws.spec import get_service_catalog
 from localstack.http import Request
 from localstack.utils.run import to_str
 

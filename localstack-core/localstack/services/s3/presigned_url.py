@@ -33,7 +33,7 @@ from localstack.aws.api.s3 import (
 )
 from localstack.aws.chain import HandlerChain
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
-from localstack.aws.protocol.service_router import get_service_catalog
+from localstack.aws.spec import get_service_catalog
 from localstack.http import Request, Response
 from localstack.http.request import get_raw_path
 from localstack.services.s3.constants import (
