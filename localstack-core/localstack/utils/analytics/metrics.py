@@ -91,10 +91,6 @@ class Metric(ABC):
     def name(self) -> str:
         return self._name
 
-    @name.setter
-    def name(self, value: str) -> None:
-        self._name = value
-
     @abstractmethod
     def collect(self) -> List[Dict[str, Union[str, int]]]:
         """
