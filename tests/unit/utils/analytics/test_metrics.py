@@ -126,6 +126,9 @@ def test_counter_raises_error_if_name_is_empty():
     with pytest.raises(ValueError, match="Metric name must be non-empty string."):
         Counter(name="")
 
+    with pytest.raises(ValueError, match="Metric name must be non-empty string."):
+        Counter(name="  ")
+
 
 def test_counter_raises_if_label_values_off():
     with pytest.raises(

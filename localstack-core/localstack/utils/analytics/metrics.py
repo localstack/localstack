@@ -82,7 +82,7 @@ class Metric(ABC):
     _name: str
 
     def __init__(self, name: str):
-        if not name:
+        if not name or name.strip() == "":
             raise ValueError("Metric name must be non-empty string.")
 
         self._name = name
