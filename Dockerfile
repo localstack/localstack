@@ -147,6 +147,9 @@ RUN --mount=type=cache,target=/root/.cache \
 RUN SETUPTOOLS_SCM_PRETEND_VERSION_FOR_LOCALSTACK_CORE=${LOCALSTACK_BUILD_VERSION} \
     make entrypoints
 
+# Generate service catalog cache in static libs dir
+RUN . .venv/bin/activate && python3 -m localstack.aws.spec
+
 # Install packages which should be shipped by default
 RUN --mount=type=cache,target=/root/.cache \
     --mount=type=cache,target=/var/lib/localstack/cache \
