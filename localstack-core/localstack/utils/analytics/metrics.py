@@ -155,8 +155,6 @@ class _CounterMetric(Metric, _Counter):
 
     def __init__(self, name: str, namespace: Optional[str] = ""):
         super(_CounterMetric, self).__init__()
-        if not name:
-            raise ValueError("Name is required and cannot be empty.")
 
         self._name = name.strip()
         self._namespace = namespace.strip() if namespace else ""
@@ -191,13 +189,10 @@ class _LabeledCounterMetric(Metric):
     _type: str
     _unit: str
     _labels: list[str]
-    _label_values: tuple[Optional[str], ...]
-    _counters_by_label_values: defaultdict[Tuple[str, ...], _Counter]
+    _label_values: Tuple[Optional[Union[str, float]], ...]
+    _counters_by_label_values: defaultdict[Tuple[Optional[Union[str, float]], ...], _Counter]
 
-    def __init__(self, name: str, labels: List[str] = list, namespace: Optional[str] = ""):
-        if not name:
-            raise ValueError("Name is required and cannot be empty.")
-
+    def __init__(self, name: str, labels: List[str], namespace: Optional[str] = ""):
         if any(not label for label in labels):
             raise ValueError("Labels must be non-empty strings.")
 
