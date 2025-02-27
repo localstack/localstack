@@ -194,6 +194,9 @@ class _LabeledCounterMetric(Metric):
         if not name:
             raise ValueError("name must be non-empty string.")
 
+        if not labels:
+            raise ValueError("At least one label is required; the labels list cannot be empty.")
+
         if any(not label for label in labels):
             raise ValueError("Labels must be non-empty strings.")
 
@@ -284,7 +287,7 @@ class Counter:
     def __new__(
         cls, name: str, namespace: Optional[str] = "", labels: Optional[List[str]] = None
     ) -> Union[_CounterMetric, _LabeledCounterMetric]:
-        if labels:
+        if labels is not None:
             return _LabeledCounterMetric(namespace=namespace, name=name, labels=labels)
         return _CounterMetric(namespace=namespace, name=name)
 
