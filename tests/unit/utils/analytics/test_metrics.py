@@ -123,11 +123,16 @@ def test_max_labels_limit():
 
 
 def test_counter_raises_error_if_name_is_empty():
-    with pytest.raises(ValueError, match="Name is required and cannot be empty."):
+    with pytest.raises(ValueError, match="Metric must have a valid name."):
         Counter(name="")
 
 
 def test_counter_raises_if_label_values_off():
+    with pytest.raises(
+        ValueError, match="At least one label is required; the labels list cannot be empty."
+    ):
+        Counter(name="test_counter", labels=[]).labels(l1="a")
+
     with pytest.raises(ValueError):
         Counter(name="test_counter", labels=["l1", "l2"]).labels(l1="a", non_existing="asdf")
 
