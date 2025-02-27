@@ -426,9 +426,9 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.9.7
+ruff==0.9.8
     # via localstack-core (pyproject.toml)
-s3transfer==0.11.2
+s3transfer==0.11.3
     # via
     #   awscli
     #   boto3

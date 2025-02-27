@@ -170,7 +170,7 @@ rpds-py==0.23.1
     # via
     #   jsonschema
     #   referencing
-s3transfer==0.11.2
+s3transfer==0.11.3
     # via boto3
 semver==3.0.4
     # via localstack-core (pyproject.toml)

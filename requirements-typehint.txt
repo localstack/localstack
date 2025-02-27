@@ -51,7 +51,7 @@ boto3==1.36.21
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.37.1
+boto3-stubs==1.37.2
     # via localstack-core (pyproject.toml)
 botocore==1.36.21
     # via
@@ -285,7 +285,7 @@ mypy-boto3-autoscaling==1.37.0
     # via boto3-stubs
 mypy-boto3-backup==1.37.0
     # via boto3-stubs
-mypy-boto3-batch==1.37.0
+mypy-boto3-batch==1.37.2
     # via boto3-stubs
 mypy-boto3-ce==1.37.0
     # via boto3-stubs
@@ -293,7 +293,7 @@ mypy-boto3-cloudcontrol==1.37.0
     # via boto3-stubs
 mypy-boto3-cloudformation==1.37.0
     # via boto3-stubs
-mypy-boto3-cloudfront==1.37.0
+mypy-boto3-cloudfront==1.37.2
     # via boto3-stubs
 mypy-boto3-cloudtrail==1.37.0
     # via boto3-stubs
@@ -321,7 +321,7 @@ mypy-boto3-dynamodb==1.37.0
     # via boto3-stubs
 mypy-boto3-dynamodbstreams==1.37.0
     # via boto3-stubs
-mypy-boto3-ec2==1.37.1
+mypy-boto3-ec2==1.37.2
     # via boto3-stubs
 mypy-boto3-ecr==1.37.0
     # via boto3-stubs
@@ -427,7 +427,7 @@ mypy-boto3-s3==1.37.0
     # via boto3-stubs
 mypy-boto3-s3control==1.37.0
     # via boto3-stubs
-mypy-boto3-sagemaker==1.37.0
+mypy-boto3-sagemaker==1.37.2
     # via boto3-stubs
 mypy-boto3-sagemaker-runtime==1.37.0
     # via boto3-stubs
@@ -632,9 +632,9 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core
-ruff==0.9.7
+ruff==0.9.8
     # via localstack-core
-s3transfer==0.11.2
+s3transfer==0.11.3
     # via
     #   awscli
     #   boto3
@@ -666,7 +666,7 @@ typeguard==2.13.3
     #   jsii
 types-awscrt==0.23.10
     # via botocore-stubs
-types-s3transfer==0.11.2
+types-s3transfer==0.11.3
     # via boto3-stubs
 typing-extensions==4.12.2
     # via
