@@ -123,7 +123,7 @@ def test_max_labels_limit():
 
 
 def test_counter_raises_error_if_name_is_empty():
-    with pytest.raises(ValueError, match="Metric must have a valid name."):
+    with pytest.raises(ValueError, match="Metric name must be non-empty string."):
         Counter(name="")
 
 
