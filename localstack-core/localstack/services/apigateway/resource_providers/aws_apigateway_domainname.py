@@ -105,6 +105,12 @@ class ApiGatewayDomainNameProvider(ResourceProvider[ApiGatewayDomainNameProperti
         model["DistributionDomainName"] = result.get("distributionDomainName") or result.get(
             "domainName"
         )
+        model["RegionalDomainName"] = (
+            result.get("regionalDomainName") or model["DistributionDomainName"]
+        )
+        model["RegionalHostedZoneId"] = (
+            result.get("regionalHostedZoneId") or model["DistributionHostedZoneId"]
+        )
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
