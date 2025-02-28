@@ -17,7 +17,7 @@ from localstack.aws.connect import (
     connect_to,
     dump_dto,
 )
-from localstack.aws.protocol.service_router import get_service_catalog
+from localstack.aws.spec import get_service_catalog
 from localstack.constants import APPLICATION_JSON, INTERNAL_AWS_ACCESS_KEY_ID
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.aws.client_types import ServicePrincipal
