@@ -202,7 +202,9 @@ class StreamPoller(Poller):
         attempts = 0
         error_payload = {}
 
-        boff = ExponentialBackoff(max_retries=attempts)
+        max_retries = self.stream_parameters.get("MaximumRetryAttempts", -1)
+        # NOTE: max_retries == 0 means exponential backoff is disabled
+        boff = ExponentialBackoff(max_retries=max_retries)
         while (
             not abort_condition
             and not self.max_retries_exceeded(attempts)
