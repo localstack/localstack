@@ -4559,5 +4559,22 @@
         }
       ]
     }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_esm_with_not_existing_sqs_queue": {
+    "recorded-date": "26-02-2025, 03:01:33",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Error occurred while ReceiveMessage. SQS Error Code: AWS.SimpleQueueService.NonExistentQueue. SQS Error Message: The specified queue does not exist."
+        },
+        "Type": "User",
+        "message": "Error occurred while ReceiveMessage. SQS Error Code: AWS.SimpleQueueService.NonExistentQueue. SQS Error Message: The specified queue does not exist.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
