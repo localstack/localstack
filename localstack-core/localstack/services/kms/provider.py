@@ -1282,7 +1282,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key.is_key_rotation_enabled = True
         if request.get("RotationPeriodInDays"):
             key.rotation_period_in_days = request.get("RotationPeriodInDays")
-        key.schedule_key_rotation()
+        key._update_key_rotation_date()
 
     @handler("ListKeyPolicies", expand=False)
     def list_key_policies(

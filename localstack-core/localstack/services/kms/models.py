@@ -574,7 +574,7 @@ class KmsKey:
             days=pending_window_in_days
         )
 
-    def schedule_key_rotation(self) -> None:
+    def _update_key_rotation_date(self) -> None:
         if not self.next_rotation_date or self.next_rotation_date < datetime.datetime.now():
             self.next_rotation_date = datetime.datetime.now() + datetime.timedelta(
                 days=self.rotation_period_in_days
