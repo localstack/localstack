@@ -143,14 +143,21 @@ def assert_queue_name(queue_name: str, fifo: bool = False):
             "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
         )
 
+def check_message_min_size(
+    message_body: str, message_attributes: MessageBodyAttributeMap
+):
+    print(f"check_message_size: message_body |{message_body}|")
+    if (
+        _message_body_size(message_body) == 0
+    ):
+        raise InvalidParameterValueException('The request must contain the parameter MessageBody.')
 
-def check_message_size(
+def check_message_max_size(
     message_body: str, message_attributes: MessageBodyAttributeMap, max_message_size: int
 ):
     # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html
     error = "One or more parameters are invalid. "
     error += f"Reason: Message must be shorter than {max_message_size} bytes."
-
     if (
         _message_body_size(message_body) + _message_attributes_size(message_attributes)
         > max_message_size
@@ -1199,7 +1206,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         message_deduplication_id: String = None,
         message_group_id: String = None,
     ) -> SqsMessage:
-        check_message_size(message_body, message_attributes, queue.maximum_message_size)
+        check_message_min_size(message_body, message_attributes)
+        check_message_max_size(message_body, message_attributes, queue.maximum_message_size)
         check_message_content(message_body)
         check_attributes(message_attributes)
         check_attributes(message_system_attributes)
