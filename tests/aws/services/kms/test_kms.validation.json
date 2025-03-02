@@ -167,6 +167,12 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-INVALID-some important message]": {
     "last_validated_date": "2024-04-11T15:54:16+00:00"
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_key_enable_rotation_status[180]": {
+    "last_validated_date": "2025-03-02T13:34:03+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_key_enable_rotation_status[90]": {
+    "last_validated_date": "2025-03-02T13:34:02+00:00"
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_rotation_status": {
     "last_validated_date": "2024-04-11T15:53:48+00:00"
   },
