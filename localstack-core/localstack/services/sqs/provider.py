@@ -145,7 +145,6 @@ def assert_queue_name(queue_name: str, fifo: bool = False):
 
 
 def check_message_min_size(message_body: str):
-    print(f"check_message_size: message_body |{message_body}|")
     if _message_body_size(message_body) == 0:
         raise InvalidParameterValueException("The request must contain the parameter MessageBody.")
 
