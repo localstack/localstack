@@ -19,6 +19,7 @@ from localstack.testing.aws.util import in_default_partition
 from localstack.testing.pytest import markers
 from localstack.utils.crypto import encrypt
 from localstack.utils.strings import short_uid, to_str
+from tests.aws.services.lambda_.event_source_mapping.conftest import snapshot
 
 
 @pytest.fixture(scope="class")
@@ -53,16 +54,16 @@ def _get_all_key_ids(kms_client):
 def _get_alias(kms_client, alias_name, key_id=None):
     next_token = None
     while True:
-        kwargs = {"nextToken": next_token} if next_token else {}
+        kwargs = {"Marker": next_token} if next_token else {}
         if key_id:
             kwargs["KeyId"] = key_id
         response = kms_client.list_aliases(**kwargs)
         for alias in response["Aliases"]:
             if alias["AliasName"] == alias_name:
                 return alias
-        if "nextToken" not in response:
+        if "NextMarker" not in response:
             break
-        next_token = response["nextToken"]
+        next_token = response["NextMarker"]
     return None
 
 
@@ -916,12 +917,20 @@ class TestKMS:
         assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is False
         aws_client.kms.enable_key_rotation(KeyId=key_id)
         assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is True
-        assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["RotationPeriodInDays"] == 365
         aws_client.kms.disable_key_rotation(KeyId=key_id)
         assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is False
-        aws_client.kms.enable_key_rotation(KeyId=key_id, RotationPeriodInDays=120)
-        assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is True
-        assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["RotationPeriodInDays"] == 120
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("rotation_period_in_days", [90,180])
+    def test_key_enable_rotation_status(self, kms_client_for_region, region_name, rotation_period_in_days, snapshot):
+        kms_client = kms_client_for_region(region_name)
+        alias_name = "alias/test-key"
+
+        key_id = _get_alias(kms_client=kms_client, alias_name=alias_name)["TargetKeyId"]
+        kms_client.enable_key_rotation(KeyId=key_id, RotationPeriodInDays=rotation_period_in_days)
+        result = kms_client.get_key_rotation_status(KeyId=key_id)
+
+        snapshot.match("match_status", result)
 
     @markers.aws.validated
     def test_create_list_delete_alias(self, kms_create_alias, aws_client):
@@ -1600,3 +1609,4 @@ class TestKMSGenerateKeys:
         with pytest.raises(ClientError) as e:
             aws_client.kms.decrypt(CiphertextBlob=result["PrivateKeyCiphertextBlob"], KeyId=key_id)
         snapshot.match("decrypt-without-encryption-context", e.value.response)
+
