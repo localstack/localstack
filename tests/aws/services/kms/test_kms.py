@@ -19,7 +19,6 @@ from localstack.testing.aws.util import in_default_partition
 from localstack.testing.pytest import markers
 from localstack.utils.crypto import encrypt
 from localstack.utils.strings import short_uid, to_str
-from tests.aws.services.lambda_.event_source_mapping.conftest import snapshot
 
 
 @pytest.fixture(scope="class")
@@ -922,15 +921,11 @@ class TestKMS:
 
     @markers.aws.validated
     @pytest.mark.parametrize("rotation_period_in_days", [90,180])
-    def test_key_enable_rotation_status(self, kms_client_for_region, region_name, rotation_period_in_days, snapshot):
-        kms_client = kms_client_for_region(region_name)
-        alias_name = "alias/test-key"
-
-        key_id = _get_alias(kms_client=kms_client, alias_name=alias_name)["TargetKeyId"]
-        kms_client.enable_key_rotation(KeyId=key_id, RotationPeriodInDays=rotation_period_in_days)
-        result = kms_client.get_key_rotation_status(KeyId=key_id)
-
-        snapshot.match("match_status", result)
+    def test_key_enable_rotation_status(self, kms_key, aws_client, kms_client_for_region, region_name, rotation_period_in_days, snapshot):
+        key_id = kms_key["KeyId"]
+        aws_client.kms.enable_key_rotation(KeyId=key_id, RotationPeriodInDays=rotation_period_in_days)
+        result = aws_client.kms.get_key_rotation_status(KeyId=key_id)
+        snapshot.match("match_response", result)
 
     @markers.aws.validated
     def test_create_list_delete_alias(self, kms_create_alias, aws_client):

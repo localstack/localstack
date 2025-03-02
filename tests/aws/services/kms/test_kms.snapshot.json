@@ -1787,10 +1787,10 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_enable_rotation_status[90]": {
     "recorded-date": "02-03-2025, 13:34:02",
     "recorded-content": {
-      "match_status": {
+      "match_response": {
         "KeyId": "<key-id:1>",
         "KeyRotationEnabled": true,
-        "NextRotationDate": "<datetime>",
+        "NextRotationDate": "datetime",
         "RotationPeriodInDays": 90,
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1802,10 +1802,10 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_enable_rotation_status[180]": {
     "recorded-date": "02-03-2025, 13:34:03",
     "recorded-content": {
-      "match_status": {
+      "match_response": {
         "KeyId": "<key-id:1>",
         "KeyRotationEnabled": true,
-        "NextRotationDate": "<datetime>",
+        "NextRotationDate": "datetime",
         "RotationPeriodInDays": 180,
         "ResponseMetadata": {
           "HTTPHeaders": {},
