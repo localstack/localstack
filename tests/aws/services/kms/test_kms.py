@@ -920,10 +920,20 @@ class TestKMS:
         assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is False
 
     @markers.aws.validated
-    @pytest.mark.parametrize("rotation_period_in_days", [90,180])
-    def test_key_enable_rotation_status(self, kms_key, aws_client, kms_client_for_region, region_name, rotation_period_in_days, snapshot):
+    @pytest.mark.parametrize("rotation_period_in_days", [90, 180])
+    def test_key_enable_rotation_status(
+        self,
+        kms_key,
+        aws_client,
+        kms_client_for_region,
+        region_name,
+        rotation_period_in_days,
+        snapshot,
+    ):
         key_id = kms_key["KeyId"]
-        aws_client.kms.enable_key_rotation(KeyId=key_id, RotationPeriodInDays=rotation_period_in_days)
+        aws_client.kms.enable_key_rotation(
+            KeyId=key_id, RotationPeriodInDays=rotation_period_in_days
+        )
         result = aws_client.kms.get_key_rotation_status(KeyId=key_id)
         snapshot.match("match_response", result)
 
@@ -1604,4 +1614,3 @@ class TestKMSGenerateKeys:
         with pytest.raises(ClientError) as e:
             aws_client.kms.decrypt(CiphertextBlob=result["PrivateKeyCiphertextBlob"], KeyId=key_id)
         snapshot.match("decrypt-without-encryption-context", e.value.response)
-
