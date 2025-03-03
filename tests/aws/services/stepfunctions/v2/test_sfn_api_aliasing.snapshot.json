@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_create_alias_single_router_config": {
-    "recorded-date": "25-02-2025, 08:09:58",
+    "recorded-date": "03-03-2025, 13:12:29",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -13,7 +13,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_with_state_machine_arn": {
-    "recorded-date": "25-02-2025, 08:10:13",
+    "recorded-date": "03-03-2025, 13:12:48",
     "recorded-content": {
       "exception": {
         "exception_typename": "ValidationException",
@@ -22,7 +22,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_not_idempotent": {
-    "recorded-date": "25-02-2025, 08:10:27",
+    "recorded-date": "03-03-2025, 13:13:02",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -43,7 +43,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_idempotent_create_alias": {
-    "recorded-date": "25-02-2025, 08:10:42",
+    "recorded-date": "03-03-2025, 13:13:16",
     "recorded-content": {
       "create_state_machine_alias_response_attempt_0": {
         "creationDate": "datetime",
@@ -88,7 +88,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_invalid_router_configs": {
-    "recorded-date": "25-02-2025, 08:10:59",
+    "recorded-date": "03-03-2025, 13:13:32",
     "recorded-content": {
       "no_routing": {
         "exception_typename": "ParamValidationError",
@@ -125,7 +125,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_invalid_name": {
-    "recorded-date": "25-02-2025, 08:11:18",
+    "recorded-date": "03-03-2025, 13:13:52",
     "recorded-content": {
       "exception_for_name123": {
         "exception_typename": "ValidationException",
@@ -154,7 +154,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_lifecycle_create_delete_list": {
-    "recorded-date": "25-02-2025, 08:11:47",
+    "recorded-date": "03-03-2025, 13:14:23",
     "recorded-content": {
       "list_state_machine_aliases_response_empty": {
         "stateMachineAliases": [],
@@ -291,7 +291,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_lifecycle_create_invoke_describe_list": {
-    "recorded-date": "25-02-2025, 08:12:16",
+    "recorded-date": "03-03-2025, 13:20:29",
     "recorded-content": {
       "list_state_machine_aliases_response_empty": {
         "stateMachineAliases": [],
@@ -386,7 +386,8 @@
             "startDate": "datetime",
             "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
             "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
-            "status": "RUNNING"
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
           },
           {
             "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
@@ -408,7 +409,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_lifecycle_create_update_describe": {
-    "recorded-date": "25-02-2025, 08:12:31",
+    "recorded-date": "03-03-2025, 13:15:57",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -456,7 +457,11 @@
         "routingConfiguration": [
           {
             "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
-            "weight": 100
+            "weight": 50
+          },
+          {
+            "stateMachineVersionArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:2",
+            "weight": 50
           }
         ],
         "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name",
@@ -469,7 +474,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_delete_version_with_alias": {
-    "recorded-date": "25-02-2025, 09:00:20",
+    "recorded-date": "03-03-2025, 13:16:42",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -501,6 +506,44 @@
         }
       },
       "delete_version_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_delete_revision_with_alias": {
+    "recorded-date": "03-03-2025, 13:34:23",
+    "recorded-content": {
+      "create_state_machine_alias_response": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_state_machine_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_delete_no_such_alias_arn": {
+    "recorded-date": "03-03-2025, 13:37:24",
+    "recorded-content": {
+      "create_state_machine_alias_response": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_state_machine_alias_response": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

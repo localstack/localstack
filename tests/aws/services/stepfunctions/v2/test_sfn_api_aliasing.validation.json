@@ -1,32 +1,38 @@
 {
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_create_alias_single_router_config": {
-    "last_validated_date": "2025-02-25T08:09:58+00:00"
+    "last_validated_date": "2025-03-03T13:12:29+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_lifecycle_create_delete_list": {
-    "last_validated_date": "2025-02-25T08:11:47+00:00"
+    "last_validated_date": "2025-03-03T13:14:23+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_lifecycle_create_invoke_describe_list": {
-    "last_validated_date": "2025-02-25T08:12:16+00:00"
+    "last_validated_date": "2025-03-03T13:20:29+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_lifecycle_create_update_describe": {
-    "last_validated_date": "2025-02-25T08:12:31+00:00"
+    "last_validated_date": "2025-03-03T13:15:57+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_delete_no_such_alias_arn": {
+    "last_validated_date": "2025-03-03T13:37:24+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_delete_revision_with_alias": {
+    "last_validated_date": "2025-03-03T13:34:23+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_delete_version_with_alias": {
-    "last_validated_date": "2025-02-25T09:00:20+00:00"
+    "last_validated_date": "2025-03-03T13:16:42+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_invalid_name": {
-    "last_validated_date": "2025-02-25T08:11:18+00:00"
+    "last_validated_date": "2025-03-03T13:13:52+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_invalid_router_configs": {
-    "last_validated_date": "2025-02-25T08:10:59+00:00"
+    "last_validated_date": "2025-03-03T13:13:32+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_not_idempotent": {
-    "last_validated_date": "2025-02-25T08:10:27+00:00"
+    "last_validated_date": "2025-03-03T13:13:02+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_with_state_machine_arn": {
-    "last_validated_date": "2025-02-25T08:10:13+00:00"
+    "last_validated_date": "2025-03-03T13:12:48+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_idempotent_create_alias": {
-    "last_validated_date": "2025-02-25T08:10:42+00:00"
+    "last_validated_date": "2025-03-03T13:13:16+00:00"
   }
 }
