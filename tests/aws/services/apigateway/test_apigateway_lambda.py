@@ -327,7 +327,6 @@ def test_put_integration_aws_proxy_uri(
         authorizationType="NONE",
     )
 
-    # f"arn:aws:apigateway:{region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
     default_params = {
         "restApiId": api_id,
         "resourceId": root_resource_id,
@@ -364,6 +363,13 @@ def test_put_integration_aws_proxy_uri(
             uri=f"arn:aws:apigateway:{region_name}:firehose:path/2015-03-31/functions/{lambda_arn}/invocations",
         )
     snapshot.match("put-integration-wrong-firehose", e.value.response)
+
+    with pytest.raises(ClientError) as e:
+        aws_client.apigateway.put_integration(
+            **default_params,
+            uri=f"arn:aws:apigateway:{region_name}:lambda:path/random/value/{lambda_arn}/invocations",
+        )
+    snapshot.match("put-integration-bad-lambda-arn", e.value.response)
 
 
 @markers.aws.validated

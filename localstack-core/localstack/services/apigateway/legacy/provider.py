@@ -1951,7 +1951,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             ):
                 raise BadRequestException("AWS ARN for integration must contain path or action")
 
-            if integration_type == IntegrationType.AWS_PROXY and parsed_arn["account"] != "lambda":
+            if integration_type == IntegrationType.AWS_PROXY and (
+                parsed_arn["account"] != "lambda"
+                or not parsed_arn["resource"].startswith("path/2015-03-31/functions/")
+            ):
                 # the Firehose message is misleading, this is not implemented in AWS
                 raise BadRequestException(
                     "Integrations of type 'AWS_PROXY' currently only supports "
