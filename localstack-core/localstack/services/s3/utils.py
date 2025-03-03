@@ -2,12 +2,14 @@ import base64
 import codecs
 import datetime
 import hashlib
+import itertools
 import logging
 import re
+import time
 import zlib
 from enum import StrEnum
 from secrets import token_bytes
-from typing import IO, Any, Dict, Literal, NamedTuple, Optional, Protocol, Tuple, Union
+from typing import Any, Dict, Literal, NamedTuple, Optional, Protocol, Tuple, Union
 from urllib import parse as urlparser
 from zoneinfo import ZoneInfo
 
@@ -54,12 +56,12 @@ from localstack.aws.api.s3 import Type as GranteeType
 from localstack.aws.chain import HandlerChain
 from localstack.aws.connect import connect_to
 from localstack.http import Response
+from localstack.services.s3 import checksums
 from localstack.services.s3.constants import (
     ALL_USERS_ACL_GRANTEE,
     AUTHENTICATED_USERS_ACL_GRANTEE,
     CHECKSUM_ALGORITHMS,
     LOG_DELIVERY_ACL_GRANTEE,
-    S3_CHUNK_SIZE,
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
     SIGNATURE_V2_PARAMS,
     SIGNATURE_V4_PARAMS,
@@ -68,11 +70,8 @@ from localstack.services.s3.constants import (
 from localstack.services.s3.exceptions import InvalidRequest, MalformedXML
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn
+from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import (
-    checksum_crc32,
-    checksum_crc32c,
-    hash_sha1,
-    hash_sha256,
     is_base64,
     to_bytes,
     to_str,
@@ -98,8 +97,6 @@ _s3_virtual_host_regex = re.compile(S3_VIRTUAL_HOSTNAME_REGEX)
 
 RFC1123 = "%a, %d %b %Y %H:%M:%S GMT"
 _gmt_zone_info = ZoneInfo("GMT")
-
-_version_id_safe_encode_translation = bytes.maketrans(b"+/", b"._")
 
 
 def s3_response_handler(chain: HandlerChain, context: RequestContext, response: Response):
@@ -225,6 +222,11 @@ def get_s3_checksum(algorithm) -> ChecksumHash:
 
             return CrtCrc32cChecksum()
 
+        case ChecksumAlgorithm.CRC64NVME:
+            from botocore.httpchecksum import CrtCrc64NvmeChecksum
+
+            return CrtCrc64NvmeChecksum()
+
         case ChecksumAlgorithm.SHA1:
             return hashlib.sha1(usedforsecurity=False)
 
@@ -249,6 +251,32 @@ class S3CRC32Checksum:
 
     def digest(self) -> bytes:
         return self.checksum.to_bytes(4, "big")
+
+
+class CombinedCrcHash:
+    def __init__(self, checksum_type: ChecksumAlgorithm):
+        match checksum_type:
+            case ChecksumAlgorithm.CRC32:
+                func = checksums.combine_crc32
+            case ChecksumAlgorithm.CRC32C:
+                func = checksums.combine_crc32c
+            case ChecksumAlgorithm.CRC64NVME:
+                func = checksums.combine_crc64_nvme
+            case _:
+                raise ValueError("You cannot combine SHA based checksums")
+
+        self.combine_function = func
+        self.checksum = b""
+
+    def combine(self, value: bytes, object_len: int):
+        if not self.checksum:
+            self.checksum = value
+            return
+
+        self.checksum = self.combine_function(self.checksum, value, object_len)
+
+    def digest(self):
+        return self.checksum
 
 
 class ObjectRange(NamedTuple):
@@ -385,40 +413,6 @@ def get_full_default_bucket_location(bucket_name: BucketName) -> str:
         return f"{config.get_protocol()}://{bucket_name}.s3.{host_definition.host_and_port()}/"
 
 
-def get_object_checksum_for_algorithm(checksum_algorithm: str, data: bytes) -> str:
-    match checksum_algorithm:
-        case ChecksumAlgorithm.CRC32:
-            return checksum_crc32(data)
-
-        case ChecksumAlgorithm.CRC32C:
-            return checksum_crc32c(data)
-
-        case ChecksumAlgorithm.SHA1:
-            return hash_sha1(data)
-
-        case ChecksumAlgorithm.SHA256:
-            return hash_sha256(data)
-
-        case _:
-            # TODO: check proper error? for now validated client side, need to check server response
-            raise InvalidRequest("The value specified in the x-amz-trailer header is not supported")
-
-
-def verify_checksum(checksum_algorithm: str, data: bytes, request: Dict):
-    # TODO: you don't have to specify the checksum algorithm
-    # you can use only the checksum-{algorithm-type} header
-    # https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html
-    key = f"Checksum{checksum_algorithm.upper()}"
-    # TODO: is there a message if the header is missing?
-    checksum = request.get(key)
-    calculated_checksum = get_object_checksum_for_algorithm(checksum_algorithm, data)
-
-    if calculated_checksum != checksum:
-        raise InvalidRequest(
-            f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
-        )
-
-
 def etag_to_base_64_content_md5(etag: ETag) -> str:
     """
     Convert an ETag, representing a MD5 hexdigest (might be quoted), to its base64 encoded representation
@@ -447,40 +441,6 @@ def base_64_content_md5_to_etag(content_md5: ContentMD5) -> str | None:
         return None
 
     return hex_digest
-
-
-def decode_aws_chunked_object(
-    stream: IO[bytes],
-    buffer: IO[bytes],
-    content_length: int,
-) -> IO[bytes]:
-    """
-    Decode the incoming stream encoded in `aws-chunked` format into the provided buffer
-    :param stream: the original stream to read, encoded in the `aws-chunked` format
-    :param buffer: the buffer where we set the decoded data
-    :param content_length: the total maximum length of the original stream, we stop decoding after that
-    :return: the provided buffer
-    """
-    buffer.seek(0)
-    buffer.truncate()
-    written = 0
-    while written < content_length:
-        line = stream.readline()
-        chunk_length = int(line.split(b";")[0], 16)
-
-        while chunk_length > 0:
-            amount = min(chunk_length, S3_CHUNK_SIZE)
-            data = stream.read(amount)
-            buffer.write(data)
-
-            real_amount = len(data)
-            chunk_length -= real_amount
-            written += real_amount
-
-        # remove trailing \r\n
-        stream.read(2)
-
-    return buffer
 
 
 def is_presigned_url_request(context: RequestContext) -> bool:
@@ -690,10 +650,10 @@ def validate_kms_key_id(kms_key: str, bucket: Any) -> None:
             if key["KeyMetadata"]["KeyState"] == "PendingDeletion":
                 raise CommonServiceException(
                     code="KMS.KMSInvalidStateException",
-                    message=f'{key["KeyMetadata"]["Arn"]} is pending deletion.',
+                    message=f"{key['KeyMetadata']['Arn']} is pending deletion.",
                 )
             raise CommonServiceException(
-                code="KMS.DisabledException", message=f'{key["KeyMetadata"]["Arn"]} is disabled.'
+                code="KMS.DisabledException", message=f"{key['KeyMetadata']['Arn']} is disabled."
             )
 
     except ClientError as e:
@@ -1079,13 +1039,28 @@ def parse_post_object_tagging_xml(tagging: str) -> Optional[dict]:
 
 
 def generate_safe_version_id() -> str:
-    # the safe b64 encoding is inspired by the stdlib base64.urlsafe_b64encode
-    # and also using stdlib secrets.token_urlsafe, but with a different alphabet adapted for S3
-    # VersionId cannot have `-` in it, as it fails in XML
-    tok = token_bytes(24)
-    return (
-        base64.b64encode(tok)
-        .translate(_version_id_safe_encode_translation)
-        .rstrip(b"=")
-        .decode("ascii")
-    )
+    """
+    Generate a safe version id for XML rendering.
+    VersionId cannot have `-` in it, as it fails in XML
+    Combine an ever-increasing part in the 8 first characters, and a random element.
+    We need the sequence part in order to properly implement pagination around ListObjectVersions.
+    By prefixing the version-id with a global increasing number, we can sort the versions
+    :return: an S3 VersionId containing a timestamp part in the first 8 characters
+    """
+    tok = next(global_version_id_sequence()).to_bytes(length=6) + token_bytes(18)
+    return base64.b64encode(tok, altchars=b"._").rstrip(b"=").decode("ascii")
+
+
+@singleton_factory
+def global_version_id_sequence():
+    start = int(time.time() * 1000)
+    # itertools.count is thread safe over the GIL since its getAndIncrement operation is a single python bytecode op
+    return itertools.count(start)
+
+
+def is_version_older_than_other(version_id: str, other: str):
+    """
+    Compare the sequence part of a VersionId against the sequence part of a VersionIdMarker. Used for pagination
+    See `generate_safe_version_id`
+    """
+    return base64.b64decode(version_id, altchars=b"._") < base64.b64decode(other, altchars=b"._")

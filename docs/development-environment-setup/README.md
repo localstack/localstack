@@ -33,6 +33,9 @@ The basic steps include:
 > [!NOTE]
 > This will install the required pip dependencies in a local Python 3 `venv` directory called `.venv` (your global Python packages will remain untouched).
 > Depending on your system, some `pip` modules may require additional native libs installed.
+
+> [!NOTE]
+> Consider running `make install-dev-types` to enable type hinting for efficient [integration tests](../testing/integration-tests/README.md) development.
 5. Start localstack in host mode using `make start`
 
 <div align="left">
@@ -84,11 +87,6 @@ LocalStack runs its own [DNS server](https://docs.localstack.cloud/user-guide/to
 #### Lambda
 
 * macOS users need to configure `LAMBDA_DEV_PORT_EXPOSE=1` such that the host can reach Lambda containers via IPv4 in bridge mode (see [#7367](https://github.com/localstack/localstack/pull/7367)).
-
-#### EVENT_RULE_ENGINE=java
-
-* Requires Java to execute to invoke the AWS [event-ruler](https://github.com/aws/event-ruler) using [JPype](https://github.com/jpype-project/jpype), a Python to Java bridge.
-* Set `JAVA_HOME` to a JDK installation. For example: `JAVA_HOME=/opt/homebrew/Cellar/openjdk/21.0.2`
 
 ### Changing our fork of moto
 

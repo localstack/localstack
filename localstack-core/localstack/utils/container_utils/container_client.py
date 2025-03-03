@@ -11,13 +11,24 @@ import tempfile
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from pathlib import Path
-from typing import Dict, List, Literal, NamedTuple, Optional, Protocol, Tuple, Union, get_args
+from typing import (
+    Dict,
+    List,
+    Literal,
+    NamedTuple,
+    Optional,
+    Protocol,
+    Tuple,
+    TypedDict,
+    Union,
+    get_args,
+)
 
 import dotenv
 
 from localstack import config
 from localstack.utils.collections import HashableList, ensure_list
-from localstack.utils.files import TMP_FILES, rm_rf, save_file
+from localstack.utils.files import TMP_FILES, chmod_r, rm_rf, save_file
 from localstack.utils.no_exit_argument_parser import NoExitArgumentParser
 from localstack.utils.strings import short_uid
 
@@ -33,6 +44,21 @@ class DockerContainerStatus(Enum):
     NON_EXISTENT = 0
     UP = 1
     PAUSED = 2
+
+
+class DockerContainerStats(TypedDict):
+    """Container usage statistics"""
+
+    Container: str
+    ID: str
+    Name: str
+    BlockIO: tuple[int, int]
+    CPUPerc: float
+    MemPerc: float
+    MemUsage: tuple[int, int]
+    NetIO: tuple[int, int]
+    PIDs: int
+    SDKStats: Optional[dict]
 
 
 class ContainerException(Exception):
@@ -450,7 +476,7 @@ class ContainerConfiguration:
     volumes: VolumeMappings = dataclasses.field(default_factory=VolumeMappings)
     ports: PortMappings = dataclasses.field(default_factory=PortMappings)
     exposed_ports: List[str] = dataclasses.field(default_factory=list)
-    entrypoint: Optional[str] = None
+    entrypoint: Optional[Union[List[str], str]] = None
     additional_flags: Optional[str] = None
     command: Optional[List[str]] = None
     env_vars: Dict[str, str] = dataclasses.field(default_factory=dict)
@@ -523,6 +549,10 @@ class ContainerClient(metaclass=ABCMeta):
     @abstractmethod
     def get_container_status(self, container_name: str) -> DockerContainerStatus:
         """Returns the status of the container with the given name"""
+        pass
+
+    def get_container_stats(self, container_name: str) -> DockerContainerStats:
+        """Returns the usage statistics of the container with the given name"""
         pass
 
     def get_networks(self, container_name: str) -> List[str]:
@@ -620,6 +650,27 @@ class ContainerClient(metaclass=ABCMeta):
     def is_container_running(self, container_name: str) -> bool:
         """Checks whether a container with a given name is currently running"""
         return container_name in self.get_running_container_names()
+
+    def create_file_in_container(
+        self,
+        container_name,
+        file_contents: bytes,
+        container_path: str,
+        chmod_mode: Optional[int] = None,
+    ) -> None:
+        """
+        Create a file in container with the provided content. Provide the 'chmod_mode' argument if you want the file to have specific permissions.
+        """
+        with tempfile.NamedTemporaryFile() as tmp:
+            tmp.write(file_contents)
+            tmp.flush()
+            if chmod_mode is not None:
+                chmod_r(tmp.name, chmod_mode)
+            self.copy_into_container(
+                container_name=container_name,
+                local_path=tmp.name,
+                container_path=container_path,
+            )
 
     @abstractmethod
     def copy_into_container(
@@ -861,7 +912,7 @@ class ContainerClient(metaclass=ABCMeta):
         image_name: str,
         *,
         name: Optional[str] = None,
-        entrypoint: Optional[str] = None,
+        entrypoint: Optional[Union[List[str], str]] = None,
         remove: bool = False,
         interactive: bool = False,
         tty: bool = False,

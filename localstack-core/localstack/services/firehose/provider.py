@@ -35,6 +35,7 @@ from localstack.aws.api.firehose import (
     DestinationDescription,
     DestinationDescriptionList,
     DestinationId,
+    DirectPutSourceConfiguration,
     ElasticsearchDestinationConfiguration,
     ElasticsearchDestinationDescription,
     ElasticsearchDestinationUpdate,
@@ -139,7 +140,7 @@ def _get_description_or_raise_not_found(
     delivery_stream_description = store.delivery_streams.get(delivery_stream_name)
     if not delivery_stream_description:
         raise ResourceNotFoundException(
-            f"Firehose {delivery_stream_name} under account {context.account_id} " f"not found."
+            f"Firehose {delivery_stream_name} under account {context.account_id} not found."
         )
     return delivery_stream_description
 
@@ -261,6 +262,7 @@ class FirehoseProvider(FirehoseApi):
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         delivery_stream_type: DeliveryStreamType = None,
+        direct_put_source_configuration: DirectPutSourceConfiguration = None,
         kinesis_stream_source_configuration: KinesisStreamSourceConfiguration = None,
         delivery_stream_encryption_configuration_input: DeliveryStreamEncryptionConfigurationInput = None,
         s3_destination_configuration: S3DestinationConfiguration = None,
@@ -278,7 +280,7 @@ class FirehoseProvider(FirehoseApi):
         database_source_configuration: DatabaseSourceConfiguration = None,
         **kwargs,
     ) -> CreateDeliveryStreamOutput:
-        # TODO add support for database_source_configuration
+        # TODO add support for database_source_configuration and direct_put_source_configuration
         store = self.get_store(context.account_id, context.region)
 
         destinations: DestinationDescriptionList = []
@@ -407,7 +409,7 @@ class FirehoseProvider(FirehoseApi):
         delivery_stream_description = store.delivery_streams.pop(delivery_stream_name, {})
         if not delivery_stream_description:
             raise ResourceNotFoundException(
-                f"Firehose {delivery_stream_name} under account {context.account_id} " f"not found."
+                f"Firehose {delivery_stream_name} under account {context.account_id} not found."
             )
 
         delivery_stream_arn = firehose_stream_arn(

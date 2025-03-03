@@ -1,0 +1,12 @@
+{
+  "StartAt": "pass",
+  "States": {
+    "pass": {
+      "Type": "Pass",
+      "Parameters": {
+        "value.$": "$$.Execution.Input.no_such_jsonpath",
+      },
+      "End": true
+    }
+  }
+}

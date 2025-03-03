@@ -1,0 +1,12 @@
+{
+  "StartAt": "IntrinsicEscape",
+  "States": {
+    "IntrinsicEscape": {
+      "Type": "Pass",
+      "Parameters": {
+        "parsed.$": "States.StringToJson('{\"text\":\"An \\\"escaped double quote\\\" here\"}')"
+      },
+      "End": true
+    }
+  }
+}

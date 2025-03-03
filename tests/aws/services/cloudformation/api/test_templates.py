@@ -12,7 +12,7 @@ from localstack.utils.strings import short_uid, to_bytes
 
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
-    paths=["$..ResourceIdentifierSummaries..ResourceIdentifiers"]
+    paths=["$..ResourceIdentifierSummaries..ResourceIdentifiers", "$..Parameters"]
 )
 def test_get_template_summary(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())

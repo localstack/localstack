@@ -23,6 +23,7 @@ BypassGovernanceRetention = bool
 CacheControl = str
 ChecksumCRC32 = str
 ChecksumCRC32C = str
+ChecksumCRC64NVME = str
 ChecksumSHA1 = str
 ChecksumSHA256 = str
 CloudFunction = str
@@ -227,17 +228,22 @@ class BucketLocationConstraint(StrEnum):
     ap_southeast_1 = "ap-southeast-1"
     ap_southeast_2 = "ap-southeast-2"
     ap_southeast_3 = "ap-southeast-3"
+    ap_southeast_4 = "ap-southeast-4"
+    ap_southeast_5 = "ap-southeast-5"
     ca_central_1 = "ca-central-1"
     cn_north_1 = "cn-north-1"
     cn_northwest_1 = "cn-northwest-1"
     EU = "EU"
     eu_central_1 = "eu-central-1"
+    eu_central_2 = "eu-central-2"
     eu_north_1 = "eu-north-1"
     eu_south_1 = "eu-south-1"
     eu_south_2 = "eu-south-2"
     eu_west_1 = "eu-west-1"
     eu_west_2 = "eu-west-2"
     eu_west_3 = "eu-west-3"
+    il_central_1 = "il-central-1"
+    me_central_1 = "me-central-1"
     me_south_1 = "me-south-1"
     sa_east_1 = "sa-east-1"
     us_east_2 = "us-east-2"
@@ -267,10 +273,16 @@ class ChecksumAlgorithm(StrEnum):
     CRC32C = "CRC32C"
     SHA1 = "SHA1"
     SHA256 = "SHA256"
+    CRC64NVME = "CRC64NVME"
 
 
 class ChecksumMode(StrEnum):
     ENABLED = "ENABLED"
+
+
+class ChecksumType(StrEnum):
+    COMPOSITE = "COMPOSITE"
+    FULL_OBJECT = "FULL_OBJECT"
 
 
 class CompressionType(StrEnum):
@@ -1278,8 +1290,10 @@ class CSVOutput(TypedDict, total=False):
 class Checksum(TypedDict, total=False):
     ChecksumCRC32: Optional[ChecksumCRC32]
     ChecksumCRC32C: Optional[ChecksumCRC32C]
+    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
     ChecksumSHA1: Optional[ChecksumSHA1]
     ChecksumSHA256: Optional[ChecksumSHA256]
+    ChecksumType: Optional[ChecksumType]
 
 
 ChecksumAlgorithmList = List[ChecksumAlgorithm]
@@ -1309,8 +1323,10 @@ class CompleteMultipartUploadOutput(TypedDict, total=False):
     ETag: Optional[ETag]
     ChecksumCRC32: Optional[ChecksumCRC32]
     ChecksumCRC32C: Optional[ChecksumCRC32C]
+    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
     ChecksumSHA1: Optional[ChecksumSHA1]
     ChecksumSHA256: Optional[ChecksumSHA256]
+    ChecksumType: Optional[ChecksumType]
     ServerSideEncryption: Optional[ServerSideEncryption]
     VersionId: Optional[ObjectVersionId]
     SSEKMSKeyId: Optional[SSEKMSKeyId]
@@ -1318,10 +1334,14 @@ class CompleteMultipartUploadOutput(TypedDict, total=False):
     RequestCharged: Optional[RequestCharged]
 
 
+MpuObjectSize = int
+
+
 class CompletedPart(TypedDict, total=False):
     ETag: Optional[ETag]
     ChecksumCRC32: Optional[ChecksumCRC32]
     ChecksumCRC32C: Optional[ChecksumCRC32C]
+    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
     ChecksumSHA1: Optional[ChecksumSHA1]
     ChecksumSHA256: Optional[ChecksumSHA256]
     PartNumber: Optional[PartNumber]
@@ -1341,8 +1361,11 @@ class CompleteMultipartUploadRequest(ServiceRequest):
     UploadId: MultipartUploadId
     ChecksumCRC32: Optional[ChecksumCRC32]
     ChecksumCRC32C: Optional[ChecksumCRC32C]
+    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
     ChecksumSHA1: Optional[ChecksumSHA1]
     ChecksumSHA256: Optional[ChecksumSHA256]
+    ChecksumType: Optional[ChecksumType]
+    MpuObjectSize: Optional[MpuObjectSize]
     RequestPayer: Optional[RequestPayer]
     ExpectedBucketOwner: Optional[AccountId]
     IfMatch: Optional[IfMatch]
@@ -1370,8 +1393,10 @@ LastModified = datetime
 class CopyObjectResult(TypedDict, total=False):
     ETag: Optional[ETag]
     LastModified: Optional[LastModified]
+    ChecksumType: Optional[ChecksumType]
     ChecksumCRC32: Optional[ChecksumCRC32]
     ChecksumCRC32C: Optional[ChecksumCRC32C]
+    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
     ChecksumSHA1: Optional[ChecksumSHA1]
     ChecksumSHA256: Optional[ChecksumSHA256]
 
@@ -1445,6 +1470,7 @@ class CopyPartResult(TypedDict, total=False):
     LastModified: Optional[LastModified]
     ChecksumCRC32: Optional[ChecksumCRC32]
     ChecksumCRC32C: Optional[ChecksumCRC32C]
+    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
     ChecksumSHA1: Optional[ChecksumSHA1]
     ChecksumSHA256: Optional[ChecksumSHA256]
 
@@ -1508,6 +1534,7 @@ class CreateMultipartUploadOutput(TypedDict, total=False):
     BucketKeyEnabled: Optional[BucketKeyEnabled]
     RequestCharged: Optional[RequestCharged]
     ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    ChecksumType: Optional[ChecksumType]
 
 
 class CreateMultipartUploadRequest(ServiceRequest):
@@ -1541,6 +1568,7 @@ class CreateMultipartUploadRequest(ServiceRequest):
     ObjectLockLegalHoldStatus: Optional[ObjectLockLegalHoldStatus]
     ExpectedBucketOwner: Optional[AccountId]
     ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    ChecksumType: Optional[ChecksumType]
 
 
 SessionExpiration = datetime
@@ -2271,6 +2299,7 @@ class ObjectPart(TypedDict, total=False):
     Size: Optional[Size]
     ChecksumCRC32: Optional[ChecksumCRC32]
     ChecksumCRC32C: Optional[ChecksumCRC32C]
+    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
     ChecksumSHA1: Optional[ChecksumSHA1]
     ChecksumSHA256: Optional[ChecksumSHA256]
 
@@ -2361,8 +2390,10 @@ class GetObjectOutput(TypedDict, total=False):
     ETag: Optional[ETag]
     ChecksumCRC32: Optional[ChecksumCRC32]
     ChecksumCRC32C: Optional[ChecksumCRC32C]
+    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
     ChecksumSHA1: Optional[ChecksumSHA1]
     ChecksumSHA256: Optional[ChecksumSHA256]
+    ChecksumType: Optional[ChecksumType]
     MissingMeta: Optional[MissingMeta]
     VersionId: Optional[ObjectVersionId]
     CacheControl: Optional[CacheControl]
@@ -2501,8 +2532,10 @@ class HeadObjectOutput(TypedDict, total=False):
     ContentLength: Optional[ContentLength]
     ChecksumCRC32: Optional[ChecksumCRC32]
     ChecksumCRC32C: Optional[ChecksumCRC32C]
+    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
     ChecksumSHA1: Optional[ChecksumSHA1]
     ChecksumSHA256: Optional[ChecksumSHA256]
+    ChecksumType: Optional[ChecksumType]
     ETag: Optional[ETag]
     MissingMeta: Optional[MissingMeta]
     VersionId: Optional[ObjectVersionId]
@@ -2511,6 +2544,7 @@ class HeadObjectOutput(TypedDict, total=False):
     ContentEncoding: Optional[ContentEncoding]
     ContentLanguage: Optional[ContentLanguage]
     ContentType: Optional[ContentType]
+    ContentRange: Optional[ContentRange]
     Expires: Optional[Expires]
     WebsiteRedirectLocation: Optional[WebsiteRedirectLocation]
     ServerSideEncryption: Optional[ServerSideEncryption]
@@ -2692,6 +2726,7 @@ class MultipartUpload(TypedDict, total=False):
     Owner: Optional[Owner]
     Initiator: Optional[Initiator]
     ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    ChecksumType: Optional[ChecksumType]
 
 
 MultipartUploadList = List[MultipartUpload]
@@ -2736,6 +2771,7 @@ class RestoreStatus(TypedDict, total=False):
 class ObjectVersion(TypedDict, total=False):
     ETag: Optional[ETag]
     ChecksumAlgorithm: Optional[ChecksumAlgorithmList]
+    ChecksumType: Optional[ChecksumType]
     Size: Optional[Size]
     StorageClass: Optional[ObjectVersionStorageClass]
     Key: Optional[ObjectKey]
@@ -2787,6 +2823,7 @@ class Object(TypedDict, total=False):
     LastModified: Optional[LastModified]
     ETag: Optional[ETag]
     ChecksumAlgorithm: Optional[ChecksumAlgorithmList]
+    ChecksumType: Optional[ChecksumType]
     Size: Optional[Size]
     StorageClass: Optional[ObjectStorageClass]
     Owner: Optional[Owner]
@@ -2861,6 +2898,7 @@ class Part(TypedDict, total=False):
     Size: Optional[Size]
     ChecksumCRC32: Optional[ChecksumCRC32]
     ChecksumCRC32C: Optional[ChecksumCRC32C]
+    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
     ChecksumSHA1: Optional[ChecksumSHA1]
     ChecksumSHA256: Optional[ChecksumSHA256]
 
@@ -2884,6 +2922,7 @@ class ListPartsOutput(TypedDict, total=False):
     StorageClass: Optional[StorageClass]
     RequestCharged: Optional[RequestCharged]
     ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    ChecksumType: Optional[ChecksumType]
 
 
 class ListPartsRequest(ServiceRequest):
@@ -3224,8 +3263,10 @@ class PutObjectOutput(TypedDict, total=False):
     ETag: Optional[ETag]
     ChecksumCRC32: Optional[ChecksumCRC32]
     ChecksumCRC32C: Optional[ChecksumCRC32C]
+    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
     ChecksumSHA1: Optional[ChecksumSHA1]
     ChecksumSHA256: Optional[ChecksumSHA256]
+    ChecksumType: Optional[ChecksumType]
     ServerSideEncryption: Optional[ServerSideEncryption]
     VersionId: Optional[ObjectVersionId]
     SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
@@ -3254,6 +3295,7 @@ class PutObjectRequest(ServiceRequest):
     ChecksumAlgorithm: Optional[ChecksumAlgorithm]
     ChecksumCRC32: Optional[ChecksumCRC32]
     ChecksumCRC32C: Optional[ChecksumCRC32C]
+    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
     ChecksumSHA1: Optional[ChecksumSHA1]
     ChecksumSHA256: Optional[ChecksumSHA256]
     Expires: Optional[Expires]
@@ -3446,6 +3488,7 @@ class UploadPartOutput(TypedDict, total=False):
     ETag: Optional[ETag]
     ChecksumCRC32: Optional[ChecksumCRC32]
     ChecksumCRC32C: Optional[ChecksumCRC32C]
+    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
     ChecksumSHA1: Optional[ChecksumSHA1]
     ChecksumSHA256: Optional[ChecksumSHA256]
     SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
@@ -3463,6 +3506,7 @@ class UploadPartRequest(ServiceRequest):
     ChecksumAlgorithm: Optional[ChecksumAlgorithm]
     ChecksumCRC32: Optional[ChecksumCRC32]
     ChecksumCRC32C: Optional[ChecksumCRC32C]
+    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
     ChecksumSHA1: Optional[ChecksumSHA1]
     ChecksumSHA256: Optional[ChecksumSHA256]
     Key: ObjectKey
@@ -3492,6 +3536,7 @@ class WriteGetObjectResponseRequest(ServiceRequest):
     ContentType: Optional[ContentType]
     ChecksumCRC32: Optional[ChecksumCRC32]
     ChecksumCRC32C: Optional[ChecksumCRC32C]
+    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
     ChecksumSHA1: Optional[ChecksumSHA1]
     ChecksumSHA256: Optional[ChecksumSHA256]
     DeleteMarker: Optional[DeleteMarker]
@@ -3574,8 +3619,11 @@ class S3Api:
         multipart_upload: CompletedMultipartUpload = None,
         checksum_crc32: ChecksumCRC32 = None,
         checksum_crc32_c: ChecksumCRC32C = None,
+        checksum_crc64_nvme: ChecksumCRC64NVME = None,
         checksum_sha1: ChecksumSHA1 = None,
         checksum_sha256: ChecksumSHA256 = None,
+        checksum_type: ChecksumType = None,
+        mpu_object_size: MpuObjectSize = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
         if_match: IfMatch = None,
@@ -3701,6 +3749,7 @@ class S3Api:
         object_lock_legal_hold_status: ObjectLockLegalHoldStatus = None,
         expected_bucket_owner: AccountId = None,
         checksum_algorithm: ChecksumAlgorithm = None,
+        checksum_type: ChecksumType = None,
         **kwargs,
     ) -> CreateMultipartUploadOutput:
         raise NotImplementedError
@@ -4747,6 +4796,7 @@ class S3Api:
         checksum_algorithm: ChecksumAlgorithm = None,
         checksum_crc32: ChecksumCRC32 = None,
         checksum_crc32_c: ChecksumCRC32C = None,
+        checksum_crc64_nvme: ChecksumCRC64NVME = None,
         checksum_sha1: ChecksumSHA1 = None,
         checksum_sha256: ChecksumSHA256 = None,
         expires: Expires = None,
@@ -4925,6 +4975,7 @@ class S3Api:
         checksum_algorithm: ChecksumAlgorithm = None,
         checksum_crc32: ChecksumCRC32 = None,
         checksum_crc32_c: ChecksumCRC32C = None,
+        checksum_crc64_nvme: ChecksumCRC64NVME = None,
         checksum_sha1: ChecksumSHA1 = None,
         checksum_sha256: ChecksumSHA256 = None,
         sse_customer_algorithm: SSECustomerAlgorithm = None,
@@ -4983,6 +5034,7 @@ class S3Api:
         content_type: ContentType = None,
         checksum_crc32: ChecksumCRC32 = None,
         checksum_crc32_c: ChecksumCRC32C = None,
+        checksum_crc64_nvme: ChecksumCRC64NVME = None,
         checksum_sha1: ChecksumSHA1 = None,
         checksum_sha256: ChecksumSHA256 = None,
         delete_marker: DeleteMarker = None,

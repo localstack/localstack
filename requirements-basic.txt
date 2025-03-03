@@ -6,17 +6,17 @@
 #
 build==1.2.2.post1
     # via localstack-core (pyproject.toml)
-cachetools==5.5.0
+cachetools==5.5.2
     # via localstack-core (pyproject.toml)
-certifi==2024.12.14
+certifi==2025.1.31
     # via requests
 cffi==1.17.1
     # via cryptography
-charset-normalizer==3.4.0
+charset-normalizer==3.4.1
     # via requests
 click==8.1.8
     # via localstack-core (pyproject.toml)
-cryptography==44.0.0
+cryptography==44.0.1
     # via localstack-core (pyproject.toml)
 dill==0.3.6
     # via localstack-core (pyproject.toml)
@@ -34,11 +34,11 @@ packaging==24.2
     # via build
 plux==1.12.1
     # via localstack-core (pyproject.toml)
-psutil==6.1.1
+psutil==7.0.0
     # via localstack-core (pyproject.toml)
 pycparser==2.22
     # via cffi
-pygments==2.18.0
+pygments==2.19.1
     # via rich
 pyproject-hooks==1.2.0
     # via build
@@ -50,7 +50,7 @@ requests==2.32.3
     # via localstack-core (pyproject.toml)
 rich==13.9.4
     # via localstack-core (pyproject.toml)
-semver==3.0.2
+semver==3.0.4
     # via localstack-core (pyproject.toml)
 tailer==0.4.1
     # via localstack-core (pyproject.toml)

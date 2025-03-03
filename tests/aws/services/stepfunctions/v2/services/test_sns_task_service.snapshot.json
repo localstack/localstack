@@ -1457,7 +1457,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_message_attributes[HelloWorld]": {
-    "recorded-date": "01-02-2024, 20:47:52",
+    "recorded-date": "27-01-2025, 07:07:04",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1510,6 +1510,10 @@
                   "my_attribute_no_2": {
                     "DataType": "String",
                     "StringValue": "World!"
+                  },
+                  "Version": {
+                    "DataType": "String",
+                    "StringValue": "string value literal"
                   }
                 },
                 "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
@@ -1679,6 +1683,10 @@
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
           "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>",
           "MessageAttributes": {
+            "Version": {
+              "Type": "String",
+              "Value": "string value literal"
+            },
             "my_attribute_no_2": {
               "Type": "String",
               "Value": "World!"
@@ -1693,7 +1701,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_message_attributes[\"HelloWorld\"]": {
-    "recorded-date": "01-02-2024, 20:48:07",
+    "recorded-date": "27-01-2025, 07:07:20",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1746,6 +1754,10 @@
                   "my_attribute_no_2": {
                     "DataType": "String",
                     "StringValue": "World!"
+                  },
+                  "Version": {
+                    "DataType": "String",
+                    "StringValue": "string value literal"
                   }
                 },
                 "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
@@ -1915,6 +1927,10 @@
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
           "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>",
           "MessageAttributes": {
+            "Version": {
+              "Type": "String",
+              "Value": "string value literal"
+            },
             "my_attribute_no_2": {
               "Type": "String",
               "Value": "World!"
@@ -1929,7 +1945,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_message_attributes[{}]": {
-    "recorded-date": "01-02-2024, 20:48:22",
+    "recorded-date": "27-01-2025, 07:07:36",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1982,6 +1998,10 @@
                   "my_attribute_no_2": {
                     "DataType": "String",
                     "StringValue": "World!"
+                  },
+                  "Version": {
+                    "DataType": "String",
+                    "StringValue": "string value literal"
                   }
                 },
                 "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
@@ -2151,6 +2171,10 @@
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
           "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>",
           "MessageAttributes": {
+            "Version": {
+              "Type": "String",
+              "Value": "string value literal"
+            },
             "my_attribute_no_2": {
               "Type": "String",
               "Value": "World!"
@@ -2165,7 +2189,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_message_attributes[message_value3]": {
-    "recorded-date": "01-02-2024, 20:48:37",
+    "recorded-date": "27-01-2025, 07:07:54",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2218,6 +2242,10 @@
                   "my_attribute_no_2": {
                     "DataType": "String",
                     "StringValue": "World!"
+                  },
+                  "Version": {
+                    "DataType": "String",
+                    "StringValue": "string value literal"
                   }
                 },
                 "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
@@ -2387,6 +2415,10 @@
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
           "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>",
           "MessageAttributes": {
+            "Version": {
+              "Type": "String",
+              "Value": "string value literal"
+            },
             "my_attribute_no_2": {
               "Type": "String",
               "Value": "World!"

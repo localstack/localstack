@@ -7,7 +7,7 @@ import re
 import threading
 import time
 from datetime import datetime
-from queue import Empty, PriorityQueue, Queue
+from queue import Empty
 from typing import Dict, Optional, Set
 
 from localstack import config
@@ -28,6 +28,7 @@ from localstack.services.sqs.exceptions import (
     InvalidParameterValueException,
     MissingRequiredParameterException,
 )
+from localstack.services.sqs.queue import InterruptiblePriorityQueue, InterruptibleQueue
 from localstack.services.sqs.utils import (
     decode_receipt_handle,
     encode_move_task_handle,
@@ -300,6 +301,9 @@ class SqsQueue:
         self.permissions = set()
         self.mutex = threading.RLock()
 
+    def shutdown(self):
+        pass
+
     def default_attributes(self) -> QueueAttributeMap:
         return {
             QueueAttributeName.ApproximateNumberOfMessages: lambda: str(
@@ -519,6 +523,8 @@ class SqsQueue:
         num_messages: int = 1,
         wait_time_seconds: int = None,
         visibility_timeout: int = None,
+        *,
+        poll_empty_queue: bool = False,
     ) -> ReceiveMessageResult:
         """
         Receive ``num_messages`` from the queue, and wait at max ``wait_time_seconds``. If a visibility
@@ -527,6 +533,7 @@ class SqsQueue:
         :param num_messages: the number of messages you want to get from the underlying queue
         :param wait_time_seconds: the number of seconds you want to wait
         :param visibility_timeout: an optional new visibility timeout
+        :param poll_empty_queue: whether to keep polling an empty queue until the duration ``wait_time_seconds`` has elapsed
         :return: a ReceiveMessageResult object that contains the result of the operation
         """
         raise NotImplementedError
@@ -719,12 +726,12 @@ class SqsQueue:
 
 
 class StandardQueue(SqsQueue):
-    visible: PriorityQueue[SqsMessage]
+    visible: InterruptiblePriorityQueue[SqsMessage]
     inflight: Set[SqsMessage]
 
     def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
         super().__init__(name, region, account_id, attributes, tags)
-        self.visible = PriorityQueue()
+        self.visible = InterruptiblePriorityQueue()
 
     def clear(self):
         with self.mutex:
@@ -734,6 +741,9 @@ class StandardQueue(SqsQueue):
     @property
     def approx_number_of_messages(self):
         return self.visible.qsize()
+
+    def shutdown(self):
+        self.visible.shutdown()
 
     def put(
         self,
@@ -791,6 +801,8 @@ class StandardQueue(SqsQueue):
         num_messages: int = 1,
         wait_time_seconds: int = None,
         visibility_timeout: int = None,
+        *,
+        poll_empty_queue: bool = False,
     ) -> ReceiveMessageResult:
         result = ReceiveMessageResult()
 
@@ -812,7 +824,8 @@ class StandardQueue(SqsQueue):
             # setting block to false guarantees that, if we've already waited before, we don't wait the
             # full time again in the next iteration if max_number_of_messages is set but there are no more
             # messages in the queue. see https://github.com/localstack/localstack/issues/5824
-            block = False
+            if not poll_empty_queue:
+                block = False
 
             timeout -= time.time() - start
             if timeout < 0:
@@ -937,7 +950,7 @@ class FifoQueue(SqsQueue):
     deduplication: Dict[str, SqsMessage]
     message_groups: dict[str, MessageGroup]
     inflight_groups: set[MessageGroup]
-    message_group_queue: Queue
+    message_group_queue: InterruptibleQueue
     deduplication_scope: str
 
     def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
@@ -946,7 +959,7 @@ class FifoQueue(SqsQueue):
 
         self.message_groups = {}
         self.inflight_groups = set()
-        self.message_group_queue = Queue()
+        self.message_group_queue = InterruptibleQueue()
 
         # SQS does not seem to change the deduplication behaviour of fifo queues if you
         # change to/from 'queue'/'messageGroup' scope after creation -> we need to set this on creation
@@ -958,6 +971,9 @@ class FifoQueue(SqsQueue):
         for message_group in self.message_groups.values():
             n += len(message_group.messages)
         return n
+
+    def shutdown(self):
+        self.message_group_queue.shutdown()
 
     def get_message_group(self, message_group_id: str) -> MessageGroup:
         """
@@ -1100,6 +1116,8 @@ class FifoQueue(SqsQueue):
         num_messages: int = 1,
         wait_time_seconds: int = None,
         visibility_timeout: int = None,
+        *,
+        poll_empty_queue: bool = False,
     ) -> ReceiveMessageResult:
         """
         Receive logic for FIFO queues is different from standard queues. See
@@ -1147,7 +1165,8 @@ class FifoQueue(SqsQueue):
 
             received_groups.add(group)
 
-            block = False
+            if not poll_empty_queue:
+                block = False
 
             # we lock the queue while accessing the groups to not get into races with re-queueing/deleting
             with self.mutex:

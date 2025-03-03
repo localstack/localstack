@@ -14,6 +14,7 @@ from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
+from localstack.aws.api.lambda_ import Runtime
 from localstack.services.events.v1.provider import _get_events_tmp_dir
 from localstack.testing.aws.eventbus_utils import allow_event_rule_to_sqs_queue
 from localstack.testing.aws.util import is_aws_cloud
@@ -21,19 +22,29 @@ from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
 from localstack.utils.strings import long_uid, short_uid
 from localstack.utils.sync import retry
+from localstack.utils.testutil import check_expected_lambda_log_events_length
 from tests.aws.services.events.helper_functions import (
     assert_valid_event,
     is_old_provider,
     is_v2_provider,
     sqs_collect_messages,
 )
+from tests.aws.services.lambda_.test_lambda import (
+    TEST_LAMBDA_PYTHON_ECHO,
+)
 
 EVENT_DETAIL = {"command": "update-account", "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"}}
+
 SPECIAL_EVENT_DETAIL = {
     "command": "update-account",
     "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"},
     "listsingle": ["HIGH"],
     "listmulti": ["ACTIVE", "INACTIVE"],
+}
+
+TEST_EVENT_DETAIL = {
+    "command": "update-account",
+    "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"},
 }
 
 TEST_EVENT_PATTERN = {
@@ -73,7 +84,7 @@ class TestEvents:
         entries = [
             {
                 "DetailType": TEST_EVENT_PATTERN_NO_SOURCE["detail-type"][0],
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
             },
         ]
         response = aws_client.events.put_events(Entries=entries)
@@ -121,7 +132,7 @@ class TestEvents:
         entries = [
             {
                 "Source": "some.source",
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
                 "DetailType": "",
             },
         ]
@@ -212,7 +223,7 @@ class TestEvents:
                 {
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
                     "EventBusName": bus_name,
                 }
             )
@@ -320,15 +331,15 @@ class TestEvents:
             ],
         )
 
-        assert (
-            target_response["FailedEntryCount"] == 0
-        ), f"Failed to add targets: {target_response.get('FailedEntries', [])}"
+        assert target_response["FailedEntryCount"] == 0, (
+            f"Failed to add targets: {target_response.get('FailedEntries', [])}"
+        )
 
         # Use the test constants for the event
         test_event = {
             "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
             "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
-            "Detail": json.dumps(EVENT_DETAIL),
+            "Detail": json.dumps(TEST_EVENT_DETAIL),
         }
 
         event_response = aws_client.events.put_events(Entries=[test_event])
@@ -343,20 +354,20 @@ class TestEvents:
             """Verify the message content matches what we sent."""
             body = json.loads(message["Body"])
 
-            assert (
-                body["source"] == TEST_EVENT_PATTERN_NO_DETAIL["source"][0]
-            ), f"Unexpected source: {body['source']}"
-            assert (
-                body["detail-type"] == TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0]
-            ), f"Unexpected detail-type: {body['detail-type']}"
+            assert body["source"] == TEST_EVENT_PATTERN_NO_DETAIL["source"][0], (
+                f"Unexpected source: {body['source']}"
+            )
+            assert body["detail-type"] == TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0], (
+                f"Unexpected detail-type: {body['detail-type']}"
+            )
 
             detail = body["detail"]  # detail is already parsed as dict
             assert isinstance(detail, dict), f"Detail should be a dict, got {type(detail)}"
-            assert detail == EVENT_DETAIL, f"Unexpected detail content: {detail}"
+            assert detail == TEST_EVENT_DETAIL, f"Unexpected detail content: {detail}"
 
-            assert (
-                body["id"] == original_event_id
-            ), f"Event ID mismatch. Expected {original_event_id}, got {body['id']}"
+            assert body["id"] == original_event_id, (
+                f"Event ID mismatch. Expected {original_event_id}, got {body['id']}"
+            )
 
             return body
 
@@ -419,7 +430,7 @@ class TestEvents:
         test_event = {
             "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
             "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
-            "Detail": json.dumps(EVENT_DETAIL),
+            "Detail": json.dumps(TEST_EVENT_DETAIL),
         }
 
         response = aws_client.events.put_events(Entries=[test_event])
@@ -483,20 +494,20 @@ class TestEvents:
 
         # Verify ISO8601 format: YYYY-MM-DDThh:mm:ssZ
         # Example: "2024-11-28T13:44:36Z"
-        assert re.match(
-            r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$", time_str
-        ), f"Time field '{time_str}' does not match ISO8601 format (YYYY-MM-DDThh:mm:ssZ)"
+        assert re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$", time_str), (
+            f"Time field '{time_str}' does not match ISO8601 format (YYYY-MM-DDThh:mm:ssZ)"
+        )
 
         # Verify we can parse it back to datetime
         datetime_obj = datetime.datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%SZ")
-        assert isinstance(
-            datetime_obj, datetime.datetime
-        ), f"Failed to parse time string '{time_str}' back to datetime object"
+        assert isinstance(datetime_obj, datetime.datetime), (
+            f"Failed to parse time string '{time_str}' back to datetime object"
+        )
 
         time_difference = abs((datetime_obj - timestamp.replace(microsecond=0)).total_seconds())
-        assert (
-            time_difference <= 60
-        ), f"Time in event '{time_str}' differs too much from sent time '{timestamp.isoformat()}'"
+        assert time_difference <= 60, (
+            f"Time in event '{time_str}' differs too much from sent time '{timestamp.isoformat()}'"
+        )
 
 
 class TestEventBus:
@@ -506,8 +517,9 @@ class TestEventBus:
         reason="V1 provider does not support this feature",
     )
     @pytest.mark.parametrize("regions", [["us-east-1"], ["us-east-1", "us-west-1", "eu-central-1"]])
+    @pytest.mark.parametrize("with_description", [True, False])
     def test_create_list_describe_delete_custom_event_buses(
-        self, aws_client_factory, regions, snapshot
+        self, with_description, aws_client_factory, regions, snapshot
     ):
         bus_name = f"test-bus-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
@@ -518,7 +530,8 @@ class TestEventBus:
             snapshot.add_transformer(snapshot.transform.regex(region, "<region>"))
             events = aws_client_factory(region_name=region).events
 
-            response = events.create_event_bus(Name=bus_name)
+            kwargs = {"Description": "test bus"} if with_description else {}
+            response = events.create_event_bus(Name=bus_name, **kwargs)
             snapshot.match(f"create-custom-event-bus-{region}", response)
 
             response = events.list_event_buses(NamePrefix=bus_name)
@@ -531,6 +544,7 @@ class TestEventBus:
         for region in regions:
             events = aws_client_factory(region_name=region).events
 
+            kwargs = {"Description": "test bus"} if with_description else {}
             response = events.delete_event_bus(Name=bus_name)
             snapshot.match(f"delete-custom-event-bus-{region}", response)
 
@@ -962,7 +976,7 @@ class TestEventBus:
                     "EventBusName": bus_name_one,
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
                 }
             ]
         )
@@ -1394,6 +1408,338 @@ class TestEventRule:
         response = aws_client.events.list_targets_by_rule(Rule=rule_name)
         snapshot.match("list-targets-after-update", response)
 
+    @markers.aws.validated
+    def test_process_to_multiple_matching_rules_different_targets(
+        self,
+        events_create_event_bus,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        events_put_rule,
+        aws_client,
+    ):
+        """two rules with each two sqs targets, all 4 queues should receive the event"""
+
+        custom_bus_name = f"test-bus-{short_uid()}"
+        events_create_event_bus(Name=custom_bus_name)
+
+        # create sqs queues targets
+        targets = {}
+        for i in range(4):
+            queue_url = sqs_create_queue()
+            queue_arn = sqs_get_queue_arn(queue_url)
+            targets[f"sqs_target_{i}"] = {"queue_url": queue_url, "queue_arn": queue_arn}
+
+        # create rules
+        rules = {}
+        for i in range(2):
+            rule_name = f"test-rule-{i}-{short_uid()}"
+            rule = events_put_rule(
+                Name=rule_name,
+                EventBusName=custom_bus_name,
+                EventPattern=json.dumps(TEST_EVENT_PATTERN_NO_DETAIL),
+                State="ENABLED",
+            )
+            rule_arn = rule["RuleArn"]
+            rules[f"rule_{i}"] = {"rule_name": rule_name, "rule_arn": rule_arn}
+
+        # attach targets to rule
+        combinations = [("0", ["0", "1"]), ("1", ["2", "3"])]
+        for rule_idx, targets_idxs in combinations:
+            rule_arn = rules[f"rule_{rule_idx}"]["rule_arn"]
+            for target_idx in targets_idxs:
+                queue_url = targets[f"sqs_target_{target_idx}"]["queue_url"]
+                queue_arn = targets[f"sqs_target_{target_idx}"]["queue_arn"]
+                allow_event_rule_to_sqs_queue(
+                    aws_client=aws_client,
+                    sqs_queue_url=queue_url,
+                    sqs_queue_arn=queue_arn,
+                    event_rule_arn=rule_arn,
+                )
+
+                aws_client.events.put_targets(
+                    Rule=rules[f"rule_{rule_idx}"]["rule_name"],
+                    EventBusName=custom_bus_name,
+                    Targets=[
+                        {"Id": f"test-target-{target_idx}-{short_uid()}", "Arn": queue_arn},
+                    ],
+                )
+
+        # put event
+        aws_client.events.put_events(
+            Entries=[
+                {
+                    "EventBusName": custom_bus_name,
+                    "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                    "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
+                }
+            ],
+        )
+
+        sqs_collect_messages(
+            aws_client, targets["sqs_target_0"]["queue_url"], expected_events_count=1
+        )
+        sqs_collect_messages(
+            aws_client, targets["sqs_target_1"]["queue_url"], expected_events_count=1
+        )
+        sqs_collect_messages(
+            aws_client, targets["sqs_target_2"]["queue_url"], expected_events_count=1
+        )
+        sqs_collect_messages(
+            aws_client, targets["sqs_target_3"]["queue_url"], expected_events_count=1
+        )
+
+    @markers.aws.validated
+    def test_process_to_multiple_matching_rules_single_target(
+        self,
+        create_lambda_function,
+        events_create_event_bus,
+        events_put_rule,
+        aws_client,
+        snapshot,
+    ):
+        """two rules with both the same lambda target, the lambda target should be invoked twice.
+        This will only work for certain targets, since e.g. sqs has message deduplication"""
+
+        bus_name = f"test-bus-{short_uid()}"
+        events_create_event_bus(Name=bus_name)
+
+        # create lambda target
+        function_name = f"lambda-func-{short_uid()}"
+        create_lambda_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+        )
+        lambda_function_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
+
+        # create rules
+        for i in range(2):
+            rule_name = f"test-rule-{i}-{short_uid()}"
+            rule = events_put_rule(
+                Name=rule_name,
+                EventBusName=bus_name,
+                EventPattern=json.dumps(TEST_EVENT_PATTERN_NO_DETAIL),
+                State="ENABLED",
+            )
+            rule_arn = rule["RuleArn"]
+
+            aws_client.lambda_.add_permission(
+                FunctionName=function_name,
+                StatementId=f"{rule_name}-Event",
+                Action="lambda:InvokeFunction",
+                Principal="events.amazonaws.com",
+                SourceArn=rule_arn,
+            )
+
+            target_id = f"test-target-{i}-{short_uid()}"
+            aws_client.events.put_targets(
+                Rule=rule_name,
+                EventBusName=bus_name,
+                Targets=[{"Id": target_id, "Arn": lambda_function_arn}],
+            )
+
+        # put event
+        aws_client.events.put_events(
+            Entries=[
+                {
+                    "EventBusName": bus_name,
+                    "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                    "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
+                }
+            ],
+        )
+
+        # check lambda invocation
+        events = retry(
+            check_expected_lambda_log_events_length,
+            retries=3,
+            sleep=1,
+            function_name=function_name,
+            expected_length=2,
+            logs_client=aws_client.logs,
+        )
+        snapshot.match("events", events)
+
+    @markers.aws.validated
+    def test_process_to_single_matching_rules_single_target(
+        self,
+        create_lambda_function,
+        events_create_event_bus,
+        events_put_rule,
+        aws_client,
+        snapshot,
+    ):
+        """Three rules with all the same lambda target, but different patterns as condition.
+        The lambda should onl be invoked by the rule matching the event pattern."""
+
+        bus_name = f"test-bus-{short_uid()}"
+        events_create_event_bus(Name=bus_name)
+
+        # create lambda target
+        function_name = f"lambda-func-{short_uid()}"
+        create_lambda_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+        )
+        lambda_function_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
+
+        # create rules
+        sources = ["source-one", "source-two", "source-three"]
+        for i, source in zip(range(3), sources):
+            rule_name = f"test-rule-{i}-{short_uid()}"
+            rule = events_put_rule(
+                Name=rule_name,
+                EventBusName=bus_name,
+                EventPattern=json.dumps({"source": [source]}),
+                State="ENABLED",
+            )
+            rule_arn = rule["RuleArn"]
+
+            aws_client.lambda_.add_permission(
+                FunctionName=function_name,
+                StatementId=f"{rule_name}-Event",
+                Action="lambda:InvokeFunction",
+                Principal="events.amazonaws.com",
+                SourceArn=rule_arn,
+            )
+
+            target_id = f"test-target-{i}-{short_uid()}"
+            aws_client.events.put_targets(
+                Rule=rule_name,
+                EventBusName=bus_name,
+                Targets=[{"Id": target_id, "Arn": lambda_function_arn}],
+            )
+
+        for i, source in zip(range(3), sources):
+            num_events = i + 1
+            aws_client.events.put_events(
+                Entries=[
+                    {
+                        "EventBusName": bus_name,
+                        "Source": source,
+                        "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                        "Detail": json.dumps(TEST_EVENT_DETAIL),
+                    }
+                ],
+            )
+
+            # check lambda invocation
+            events = retry(
+                check_expected_lambda_log_events_length,
+                retries=3,
+                sleep=1,
+                function_name=function_name,
+                expected_length=num_events,
+                logs_client=aws_client.logs,
+            )
+            snapshot.match(f"events-{source}", events)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    def test_process_pattern_to_single_matching_rules_single_target(
+        self,
+        create_lambda_function,
+        events_create_event_bus,
+        events_put_rule,
+        aws_client,
+        snapshot,
+    ):
+        """Three rules with all the same lambda target, but different patterns as condition.
+        The lambda should onl be invoked by the rule matching the event pattern."""
+
+        bus_name = f"test-bus-{short_uid()}"
+        events_create_event_bus(Name=bus_name)
+
+        # create lambda target
+        function_name = f"lambda-func-{short_uid()}"
+        create_lambda_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+        )
+        lambda_function_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
+
+        # create rules
+        input_path_map = {"detail": "$.detail"}
+        patterns = [
+            {"detail": {"payload": {"id": [{"exists": True}]}}},
+            {"detail": {"id": [{"exists": True}]}},
+        ]
+        input_transformers = [
+            {
+                "InputPathsMap": input_path_map,
+                "InputTemplate": '{"detail-payload-with-id": <detail>}',
+            },
+            {
+                "InputPathsMap": input_path_map,
+                "InputTemplate": '{"detail-with-id": <detail>}',
+            },
+        ]
+        for i, pattern, input_transformer in zip(range(2), patterns, input_transformers):
+            rule_name = f"test-rule-{i}-{short_uid()}"
+            rule = events_put_rule(
+                Name=rule_name,
+                EventBusName=bus_name,
+                EventPattern=json.dumps(pattern),
+                State="ENABLED",
+            )
+            rule_arn = rule["RuleArn"]
+
+            aws_client.lambda_.add_permission(
+                FunctionName=function_name,
+                StatementId=f"{rule_name}-Event",
+                Action="lambda:InvokeFunction",
+                Principal="events.amazonaws.com",
+                SourceArn=rule_arn,
+            )
+
+            target_id = f"test-target-{i}-{short_uid()}"
+            aws_client.events.put_targets(
+                Rule=rule_name,
+                EventBusName=bus_name,
+                Targets=[
+                    {
+                        "Id": target_id,
+                        "Arn": lambda_function_arn,
+                        "InputTransformer": input_transformer,
+                    }
+                ],
+            )
+
+        details = [
+            {"payload": {"id": "123"}},
+            {"id": "123"},
+        ]
+        for i, detail in zip(range(2), details):
+            num_events = i + 1
+            aws_client.events.put_events(
+                Entries=[
+                    {
+                        "EventBusName": bus_name,
+                        "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                        "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                        "Detail": json.dumps(detail),
+                    }
+                ],
+            )
+
+            # check lambda invocation
+            events = retry(
+                check_expected_lambda_log_events_length,
+                retries=3,
+                sleep=1,
+                function_name=function_name,
+                expected_length=num_events,
+                logs_client=aws_client.logs,
+            )
+            snapshot.match(f"events-{num_events}", events)
+
 
 class TestEventPattern:
     @markers.aws.validated
@@ -1626,3 +1972,173 @@ class TestEventTarget:
                 {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
             ],
         )
+
+    @markers.aws.validated
+    def test_put_multiple_targets_with_same_id_single_rule(
+        self, sqs_create_queue, sqs_get_queue_arn, events_put_rule, snapshot, aws_client
+    ):
+        """Targets attached to a rule must have unique IDs, but there is no validation for this.
+        The last target with the same ID will overwrite the previous one."""
+        rule_name = f"rule-{short_uid()}"
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        events_put_rule(
+            Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
+        )
+
+        target_id = f"test-With_valid.Characters-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
+            ],
+        )
+
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {
+                    "Id": target_id,
+                    "Arn": queue_arn,
+                    "InputPath": "$.notexisting",
+                },
+            ],
+        )
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(target_id, "target-id"),
+                snapshot.transform.regex(queue_arn, "target-arn"),
+            ]
+        )
+        response = aws_client.events.list_targets_by_rule(Rule=rule_name)
+        snapshot.match("list-targets", response)
+
+    @markers.aws.validated
+    def test_put_multiple_targets_with_same_id_across_different_rules(
+        self, sqs_create_queue, sqs_get_queue_arn, events_put_rule, snapshot, aws_client
+    ):
+        """Targets attached to different rules can have the same ID"""
+        rule_one_name = f"test-rule-one-{short_uid()}"
+        rule_two_name = f"test-rule-two-{short_uid()}"
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        events_put_rule(
+            Name=rule_one_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
+        )
+        events_put_rule(
+            Name=rule_two_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
+        )
+
+        target_id = f"test-With_valid.Characters-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_one_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
+            ],
+        )
+
+        aws_client.events.put_targets(
+            Rule=rule_two_name,
+            Targets=[
+                {
+                    "Id": target_id,
+                    "Arn": queue_arn,
+                    "InputPath": "$.notexisting",
+                },
+            ],
+        )
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(target_id, "target-id"),
+                snapshot.transform.regex(queue_arn, "target-arn"),
+            ]
+        )
+
+        response = aws_client.events.list_targets_by_rule(Rule=rule_one_name)
+        snapshot.match("list-targets-rule-one", response)
+
+        response = aws_client.events.list_targets_by_rule(Rule=rule_two_name)
+        snapshot.match("list-targets-rule-two", response)
+
+    @markers.aws.validated
+    def test_put_multiple_targets_with_same_arn_single_rule(
+        self, sqs_create_queue, sqs_get_queue_arn, events_put_rule, snapshot, aws_client
+    ):
+        """Targets attached to a rule can have the same ARN, but different IDs"""
+        rule_name = f"rule-{short_uid()}"
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        events_put_rule(
+            Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
+        )
+
+        target_id_one = f"test-With_valid.Characters-{short_uid()}"
+        target_id_two = f"test-With_valid.Characters-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {"Id": target_id_one, "Arn": queue_arn, "InputPath": "$.detail"},
+                {"Id": target_id_two, "Arn": queue_arn, "InputPath": "$.doesnotexist"},
+            ],
+        )
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(target_id_one, "target-id-one"),
+                snapshot.transform.regex(target_id_two, "target-id-two"),
+                snapshot.transform.regex(queue_arn, "target-arn"),
+            ]
+        )
+
+        response = aws_client.events.list_targets_by_rule(Rule=rule_name)
+        snapshot.match("list-targets", response)
+
+    @markers.aws.validated
+    def test_put_multiple_targets_with_same_arn_across_different_rules(
+        self, sqs_create_queue, sqs_get_queue_arn, events_put_rule, snapshot, aws_client
+    ):
+        """Targets attached to different rules can have the same ARN"""
+        rule_one_name = f"test-rule-one-{short_uid()}"
+        rule_two_name = f"test-rule-two-{short_uid()}"
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        events_put_rule(
+            Name=rule_one_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
+        )
+        events_put_rule(
+            Name=rule_two_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
+        )
+
+        target_id = f"test-With_valid.Characters-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_one_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
+            ],
+        )
+
+        aws_client.events.put_targets(
+            Rule=rule_two_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn, "InputPath": "$.doesnotexist"},
+            ],
+        )
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(target_id, "target-id"),
+                snapshot.transform.regex(queue_arn, "target-arn"),
+            ]
+        )
+
+        response = aws_client.events.list_targets_by_rule(Rule=rule_one_name)
+        snapshot.match("list-targets-rule-one", response)
+
+        response = aws_client.events.list_targets_by_rule(Rule=rule_two_name)
+        snapshot.match("list-targets-rule-two", response)

@@ -107,7 +107,35 @@ class TestStacksApi:
 
     @markers.aws.validated
     @pytest.mark.parametrize("fileformat", ["yaml", "json"])
-    def test_get_template(self, deploy_cfn_template, snapshot, fileformat, aws_client):
+    def test_get_template_using_create_stack(self, snapshot, fileformat, aws_client):
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+        stack_name = f"stack-{short_uid()}"
+        aws_client.cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=load_file(
+                os.path.join(
+                    os.path.dirname(__file__), f"../../../templates/sns_topic_template.{fileformat}"
+                )
+            ),
+        )
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_name)
+
+        template_original = aws_client.cloudformation.get_template(
+            StackName=stack_name, TemplateStage="Original"
+        )
+        snapshot.match("template_original", template_original)
+
+        template_processed = aws_client.cloudformation.get_template(
+            StackName=stack_name, TemplateStage="Processed"
+        )
+        snapshot.match("template_processed", template_processed)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("fileformat", ["yaml", "json"])
+    def test_get_template_using_changesets(
+        self, deploy_cfn_template, snapshot, fileformat, aws_client
+    ):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
 
         stack = deploy_cfn_template(
@@ -115,11 +143,6 @@ class TestStacksApi:
                 os.path.dirname(__file__), f"../../../templates/sns_topic_template.{fileformat}"
             )
         )
-        topic_name = stack.outputs["TopicName"]
-        snapshot.add_transformer(snapshot.transform.regex(topic_name, "<topic-name>"), priority=-1)
-
-        describe_stacks = aws_client.cloudformation.describe_stacks(StackName=stack.stack_id)
-        snapshot.match("describe_stacks", describe_stacks)
 
         template_original = aws_client.cloudformation.get_template(
             StackName=stack.stack_id, TemplateStage="Original"
@@ -1028,3 +1051,21 @@ def test_no_echo_parameter(snapshot, aws_client, deploy_cfn_template):
     snapshot.match("describe_updated_change_set_no_echo_false", change_sets)
     describe_stacks = aws_client.cloudformation.describe_stacks(StackName=stack_id)
     snapshot.match("describe_updated_stacks_no_echo_false", describe_stacks)
+
+
+@markers.aws.validated
+def test_stack_resource_not_found(deploy_cfn_template, aws_client, snapshot):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"
+        ),
+        parameters={"TopicName": f"topic{short_uid()}"},
+    )
+
+    with pytest.raises(botocore.exceptions.ClientError) as ex:
+        aws_client.cloudformation.describe_stack_resource(
+            StackName=stack.stack_name, LogicalResourceId="NonExistentResource"
+        )
+
+    snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "<stack-name>"))
+    snapshot.match("Error", ex.value.response)

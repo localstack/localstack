@@ -1,6 +1,7 @@
 import itertools
 import time
 from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import Dict, List, Literal, Optional, TypedDict, Union
 
 from localstack.aws.api.sns import (
@@ -37,9 +38,15 @@ def get_next_sequence_number():
     return next(global_sns_message_sequence())
 
 
+class SnsMessageType(StrEnum):
+    Notification = "Notification"
+    SubscriptionConfirmation = "SubscriptionConfirmation"
+    UnsubscribeConfirmation = "UnsubscribeConfirmation"
+
+
 @dataclass
 class SnsMessage:
-    type: str
+    type: SnsMessageType
     message: Union[
         str, Dict
     ]  # can be Dict if after being JSON decoded for validation if structure is `json`
@@ -75,7 +82,7 @@ class SnsMessage:
     @classmethod
     def from_batch_entry(cls, entry: PublishBatchRequestEntry, is_fifo=False) -> "SnsMessage":
         return cls(
-            type="Notification",
+            type=SnsMessageType.Notification,
             message=entry["Message"],
             subject=entry.get("Subject"),
             message_structure=entry.get("MessageStructure"),

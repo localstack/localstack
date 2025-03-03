@@ -60,6 +60,7 @@ CHECKSUM_ALGORITHMS: list[ChecksumAlgorithm] = [
     ChecksumAlgorithm.SHA256,
     ChecksumAlgorithm.CRC32,
     ChecksumAlgorithm.CRC32C,
+    ChecksumAlgorithm.CRC64NVME,
 ]
 
 # response header overrides the client may request

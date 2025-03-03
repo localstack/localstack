@@ -211,7 +211,7 @@ class CloudformationProvider(CloudformationApi):
         template_body = request.get("TemplateBody") or ""
         if len(template_body) > 51200:
             raise ValidationError(
-                f'1 validation error detected: Value \'{request["TemplateBody"]}\' at \'templateBody\' '
+                f"1 validation error detected: Value '{request['TemplateBody']}' at 'templateBody' "
                 "failed to satisfy constraint: Member must have length less than or equal to 51200"
             )
         api_utils.prepare_template_body(request)  # TODO: avoid mutating request directly
@@ -288,7 +288,7 @@ class CloudformationProvider(CloudformationApi):
         stack.set_resolved_stack_conditions(resolved_stack_conditions)
 
         stack.set_resolved_parameters(resolved_parameters)
-        stack.template_body = json.dumps(template)
+        stack.template_body = template_body
         state.stacks[stack.stack_id] = stack
         LOG.debug(
             'Creating stack "%s" with %s resources ...',
@@ -966,7 +966,15 @@ class CloudformationProvider(CloudformationApi):
         if not stack:
             return stack_not_found_error(stack_name)
 
-        details = stack.resource_status(logical_resource_id)
+        try:
+            details = stack.resource_status(logical_resource_id)
+        except Exception as e:
+            if "Unable to find details" in str(e):
+                raise ValidationError(
+                    f"Resource {logical_resource_id} does not exist for stack {stack_name}"
+                )
+            raise
+
         return DescribeStackResourceOutput(StackResourceDetail=details)
 
     @handler("DescribeStackResources")

@@ -12,7 +12,7 @@ from localstack.utils.http import ACCEPT, add_query_params_to_url, canonicalize_
 
 def test_canonicalize_headers():
     headers = {
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9," "*/*;q=0.8",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-encoding": "gzip, deflate, br",
         "Accept-language": "en-GB,en;q=0.9",
         "Host": "c2m48evwfk.execute-api.eu-west-1.amazonaws.com",
@@ -43,17 +43,17 @@ def test_add_query_params_to_url():
         {
             "uri": "http://localhost.localstack.cloud?foo=bar",
             "query_params": {"param": "122323"},
-            "expected": "http://localhost.localstack.cloud?foo=bar&param" "=122323",
+            "expected": "http://localhost.localstack.cloud?foo=bar&param=122323",
         },
         {
             "uri": "http://localhost.localstack.cloud/foo/bar",
             "query_params": {"param": "122323"},
-            "expected": "http://localhost.localstack.cloud/foo/bar?param" "=122323",
+            "expected": "http://localhost.localstack.cloud/foo/bar?param=122323",
         },
         {
             "uri": "http://localhost.localstack.cloud/foo/bar?foo=bar",
             "query_params": {"param": "122323"},
-            "expected": "http://localhost.localstack.cloud/foo/bar?foo=bar" "&param=122323",
+            "expected": "http://localhost.localstack.cloud/foo/bar?foo=bar&param=122323",
         },
         {
             "uri": "http://localhost.localstack.cloud?foo=bar",

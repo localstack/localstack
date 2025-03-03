@@ -29,7 +29,11 @@ if TYPE_CHECKING:
     from mypy_boto3_cloudfront import CloudFrontClient
     from mypy_boto3_cloudtrail import CloudTrailClient
     from mypy_boto3_cloudwatch import CloudWatchClient
+    from mypy_boto3_codebuild import CodeBuildClient
     from mypy_boto3_codecommit import CodeCommitClient
+    from mypy_boto3_codedeploy import CodeDeployClient
+    from mypy_boto3_codepipeline import CodePipelineClient
+    from mypy_boto3_codestar_connections import CodeStarconnectionsClient
     from mypy_boto3_cognito_identity import CognitoIdentityClient
     from mypy_boto3_cognito_idp import CognitoIdentityProviderClient
     from mypy_boto3_dms import DatabaseMigrationServiceClient
@@ -133,7 +137,13 @@ class TypedServiceClientFactory(abc.ABC):
     cloudfront: Union["CloudFrontClient", "MetadataRequestInjector[CloudFrontClient]"]
     cloudtrail: Union["CloudTrailClient", "MetadataRequestInjector[CloudTrailClient]"]
     cloudwatch: Union["CloudWatchClient", "MetadataRequestInjector[CloudWatchClient]"]
+    codebuild: Union["CodeBuildClient", "MetadataRequestInjector[CodeBuildClient]"]
     codecommit: Union["CodeCommitClient", "MetadataRequestInjector[CodeCommitClient]"]
+    codedeploy: Union["CodeDeployClient", "MetadataRequestInjector[CodeDeployClient]"]
+    codepipeline: Union["CodePipelineClient", "MetadataRequestInjector[CodePipelineClient]"]
+    codestar_connections: Union[
+        "CodeStarconnectionsClient", "MetadataRequestInjector[CodeStarconnectionsClient]"
+    ]
     cognito_identity: Union[
         "CognitoIdentityClient", "MetadataRequestInjector[CognitoIdentityClient]"
     ]
@@ -266,6 +276,7 @@ class ServicePrincipal(str):
     apigateway = "apigateway"
     cloudformation = "cloudformation"
     dms = "dms"
+    edgelambda = "edgelambda"
     events = "events"
     firehose = "firehose"
     lambda_ = "lambda"

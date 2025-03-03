@@ -451,6 +451,7 @@ class AllocationStrategy(StrEnum):
 
 class AllocationType(StrEnum):
     used = "used"
+    future = "future"
 
 
 class AllowedImagesSettingsDisabledState(StrEnum):
@@ -2221,6 +2222,14 @@ class InstanceType(StrEnum):
     i8g_16xlarge = "i8g.16xlarge"
     i8g_24xlarge = "i8g.24xlarge"
     i8g_metal_24xl = "i8g.metal-24xl"
+    u7i_6tb_112xlarge = "u7i-6tb.112xlarge"
+    u7i_8tb_112xlarge = "u7i-8tb.112xlarge"
+    u7inh_32tb_480xlarge = "u7inh-32tb.480xlarge"
+    p5e_48xlarge = "p5e.48xlarge"
+    p5en_48xlarge = "p5en.48xlarge"
+    f2_12xlarge = "f2.12xlarge"
+    f2_48xlarge = "f2.48xlarge"
+    trn2_48xlarge = "trn2.48xlarge"
 
 
 class InstanceTypeHypervisor(StrEnum):
@@ -6036,6 +6045,7 @@ class ClientVpnEndpoint(TypedDict, total=False):
     ClientConnectOptions: Optional[ClientConnectResponseOptions]
     SessionTimeoutHours: Optional[Integer]
     ClientLoginBannerOptions: Optional[ClientLoginBannerResponseOptions]
+    DisconnectOnSessionTimeout: Optional[Boolean]
 
 
 ClientVpnEndpointIdList = List[ClientVpnEndpointId]
@@ -6383,6 +6393,7 @@ class CreateClientVpnEndpointRequest(ServiceRequest):
     ClientConnectOptions: Optional[ClientConnectOptions]
     SessionTimeoutHours: Optional[Integer]
     ClientLoginBannerOptions: Optional[ClientLoginBannerOptions]
+    DisconnectOnSessionTimeout: Optional[Boolean]
 
 
 class CreateClientVpnEndpointResult(TypedDict, total=False):
@@ -13917,6 +13928,7 @@ class Snapshot(TypedDict, total=False):
     TransferType: Optional[TransferType]
     CompletionDurationMinutes: Optional[SnapshotCompletionDurationMinutesResponse]
     CompletionTime: Optional[MillisecondDateTime]
+    FullSnapshotSizeInBytes: Optional[Long]
     SnapshotId: Optional[String]
     VolumeId: Optional[String]
     State: Optional[SnapshotState]
@@ -17555,6 +17567,7 @@ class ModifyClientVpnEndpointRequest(ServiceRequest):
     ClientConnectOptions: Optional[ClientConnectOptions]
     SessionTimeoutHours: Optional[Integer]
     ClientLoginBannerOptions: Optional[ClientLoginBannerOptions]
+    DisconnectOnSessionTimeout: Optional[Boolean]
 
 
 class ModifyClientVpnEndpointResult(TypedDict, total=False):
@@ -20469,6 +20482,7 @@ class Ec2Api:
         client_connect_options: ClientConnectOptions = None,
         session_timeout_hours: Integer = None,
         client_login_banner_options: ClientLoginBannerOptions = None,
+        disconnect_on_session_timeout: Boolean = None,
         **kwargs,
     ) -> CreateClientVpnEndpointResult:
         raise NotImplementedError
@@ -25870,6 +25884,7 @@ class Ec2Api:
         client_connect_options: ClientConnectOptions = None,
         session_timeout_hours: Integer = None,
         client_login_banner_options: ClientLoginBannerOptions = None,
+        disconnect_on_session_timeout: Boolean = None,
         **kwargs,
     ) -> ModifyClientVpnEndpointResult:
         raise NotImplementedError

@@ -34,6 +34,7 @@ from ..header_utils import build_multi_value_headers
 from ..helpers import (
     get_lambda_function_arn_from_invocation_uri,
     get_source_arn,
+    mime_type_matches_binary_media_types,
     render_uri_with_stage_variables,
     validate_sub_dict_of_typed_dict,
 )
@@ -392,9 +393,20 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         response_headers = self._merge_lambda_response_headers(lambda_response)
         headers.update(response_headers)
 
+        # TODO: maybe centralize this flag inside the context, when we are also using it for other integration types
+        #  AWS_PROXY behaves a bit differently, but this could checked only once earlier
+        binary_response_accepted = mime_type_matches_binary_media_types(
+            mime_type=context.invocation_request["headers"].get("Accept"),
+            binary_media_types=context.deployment.rest_api.rest_api.get("binaryMediaTypes", []),
+        )
+        body = self._parse_body(
+            body=lambda_response.get("body"),
+            is_base64_encoded=binary_response_accepted and lambda_response.get("isBase64Encoded"),
+        )
+
         return EndpointResponse(
             headers=headers,
-            body=to_bytes(lambda_response.get("body") or ""),
+            body=body,
             status_code=int(lambda_response.get("statusCode") or 200),
         )
 
@@ -506,8 +518,12 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
         invocation_req: InvocationRequest = context.invocation_request
         integration_req: IntegrationRequest = context.integration_request
 
-        # TODO: binary support of APIGW
         body, is_b64_encoded = self._format_body(integration_req["body"])
+
+        if context.base_path:
+            path = context.context_variables["path"]
+        else:
+            path = invocation_req["path"]
 
         input_event = LambdaInputEvent(
             headers=self._format_headers(dict(integration_req["headers"])),
@@ -524,7 +540,7 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
             or None,
             pathParameters=invocation_req["path_parameters"] or None,
             httpMethod=invocation_req["http_method"],
-            path=invocation_req["path"],
+            path=path,
             resource=context.resource["path"],
         )
 
@@ -551,6 +567,19 @@ class RestApiAwsProxyIntegration(RestApiIntegration):
             return body.decode("utf-8"), False
         except UnicodeDecodeError:
             return to_str(base64.b64encode(body)), True
+
+    @staticmethod
+    def _parse_body(body: str | None, is_base64_encoded: bool) -> bytes:
+        if not body:
+            return b""
+
+        if is_base64_encoded:
+            try:
+                return base64.b64decode(body)
+            except Exception:
+                raise InternalServerError("Internal server error", status_code=500)
+
+        return to_bytes(body)
 
     @staticmethod
     def _merge_lambda_response_headers(lambda_response: LambdaProxyResponse) -> dict:

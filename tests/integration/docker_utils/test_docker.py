@@ -6,7 +6,7 @@ import os
 import re
 import textwrap
 import time
-from typing import NamedTuple, Type
+from typing import Callable, NamedTuple, Type
 
 import pytest
 from docker.models.containers import Container
@@ -20,6 +20,7 @@ from localstack.utils.container_utils.container_client import (
     AccessDenied,
     ContainerClient,
     ContainerException,
+    DockerContainerStats,
     DockerContainerStatus,
     DockerNotAvailable,
     LogConfig,
@@ -85,7 +86,7 @@ def create_container(docker_client: ContainerClient, create_network):
     """
     containers = []
 
-    def _create_container(image_name: str, **kwargs):
+    def _create_container(image_name: str, **kwargs) -> ContainerInfo:
         kwargs["name"] = kwargs.get("name", _random_container_name())
         cid = docker_client.create_container(image_name, **kwargs)
         cid = cid.strip()
@@ -186,6 +187,28 @@ class TestDockerClient:
 
         # it takes a while for it to be removed
         assert "foobar" in output
+
+    @pytest.mark.parametrize(
+        "entrypoint",
+        [
+            "echo",
+            ["echo"],
+        ],
+    )
+    def test_set_container_entrypoint(
+        self,
+        docker_client: ContainerClient,
+        create_container: Callable[..., ContainerInfo],
+        entrypoint: list[str] | str,
+    ):
+        info = create_container("alpine", entrypoint=entrypoint, command=["true"])
+        assert 1 == len(docker_client.list_containers(f"id={info.container_id}"))
+
+        # start the container
+        output, _ = docker_client.start_container(info.container_id, attach=True)
+        output = to_str(output).strip()
+
+        assert output == "true"
 
     @markers.skip_offline
     def test_create_container_non_existing_image(self, docker_client: ContainerClient):
@@ -756,6 +779,19 @@ class TestDockerClient:
             ],
         )
         assert "foo" in out.decode(config.DEFAULT_ENCODING)
+
+    def test_create_file_in_container(
+        self, tmpdir, docker_client: ContainerClient, create_container
+    ):
+        content = b"fancy content"
+        container_path = "/tmp/myfile.txt"
+
+        c = create_container("alpine", command=["cat", container_path])
+
+        docker_client.create_file_in_container(c.container_name, content, container_path)
+
+        output, _ = docker_client.start_container(c.container_id, attach=True)
+        assert output == content
 
     def test_get_network_non_existing_container(self, docker_client: ContainerClient):
         with pytest.raises(ContainerException):
@@ -1965,6 +2001,14 @@ class TestDockerLabels:
         assert len(containers) == 1
         container = containers[0]
         assert container["labels"] == labels
+
+    def test_get_container_stats(self, docker_client, create_container):
+        container = create_container("alpine", command=["sh", "-c", "while true; do sleep 1; done"])
+        docker_client.start_container(container.container_id)
+        stats: DockerContainerStats = docker_client.get_container_stats(container.container_id)
+        assert stats["Name"] == container.container_name
+        assert container.container_id.startswith(stats["ID"])
+        assert 0.0 <= stats["MemPerc"] <= 100.0
 
 
 def _pull_image_if_not_exists(docker_client: ContainerClient, image_name: str):

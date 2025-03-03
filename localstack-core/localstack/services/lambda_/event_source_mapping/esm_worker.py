@@ -5,12 +5,19 @@ from enum import StrEnum
 from localstack.aws.api.lambda_ import (
     EventSourceMappingConfiguration,
 )
-from localstack.services.lambda_.event_source_mapping.pollers.poller import Poller
+from localstack.services.lambda_.event_source_mapping.pollers.poller import (
+    EmptyPollResultsException,
+    Poller,
+)
 from localstack.services.lambda_.invocation.models import LambdaStore, lambda_stores
 from localstack.services.lambda_.provider_utils import get_function_version_from_arn
+from localstack.utils.backoff import ExponentialBackoff
 from localstack.utils.threads import FuncThread
 
 POLL_INTERVAL_SEC: float = 1
+MAX_BACKOFF_POLL_EMPTY_SEC: float = 10
+MAX_BACKOFF_POLL_ERROR_SEC: float = 60
+
 
 LOG = logging.getLogger(__name__)
 
@@ -75,9 +82,18 @@ class EsmWorker:
         function_version = get_function_version_from_arn(self.esm_config["FunctionArn"])
         self._state = lambda_stores[function_version.id.account][function_version.id.region]
 
+        # HACK: Flag used to check if a graceful shutdown was triggered.
+        self._graceful_shutdown_triggered = False
+
     @property
     def uuid(self) -> str:
         return self.esm_config["UUID"]
+
+    def stop_for_shutdown(self):
+        # Signal the worker's poller_loop thread to gracefully shutdown
+        # TODO: Once ESM state is de-coupled from lambda store, re-think this approach.
+        self._shutdown_event.set()
+        self._graceful_shutdown_triggered = True
 
     def create(self):
         if self.enabled:
@@ -128,13 +144,30 @@ class EsmWorker:
             self.update_esm_state_in_store(EsmState.ENABLED)
             self.state_transition_reason = self.user_state_reason
 
+        error_boff = ExponentialBackoff(initial_interval=2, max_interval=MAX_BACKOFF_POLL_ERROR_SEC)
+        empty_boff = ExponentialBackoff(initial_interval=1, max_interval=MAX_BACKOFF_POLL_EMPTY_SEC)
+
+        poll_interval_duration = POLL_INTERVAL_SEC
+
         while not self._shutdown_event.is_set():
             try:
-                self.poller.poll_events()
                 # TODO: update state transition reason?
-                # Wait for next short-polling interval
-                # MAYBE: read the poller interval from self.poller if we need the flexibility
-                self._shutdown_event.wait(POLL_INTERVAL_SEC)
+                self.poller.poll_events()
+
+                # If no exception encountered, reset the backoff
+                error_boff.reset()
+                empty_boff.reset()
+
+                # Set the poll frequency back to the default
+                poll_interval_duration = POLL_INTERVAL_SEC
+            except EmptyPollResultsException as miss_ex:
+                # If the event source is empty, backoff
+                poll_interval_duration = empty_boff.next_backoff()
+                LOG.debug(
+                    "The event source %s is empty. Backing off for %s seconds until next request.",
+                    miss_ex.source_arn,
+                    poll_interval_duration,
+                )
             except Exception as e:
                 LOG.error(
                     "Error while polling messages for event source %s: %s",
@@ -143,9 +176,10 @@ class EsmWorker:
                     e,
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
-                # TODO: implement some backoff here and stop poller upon continuous errors
                 # Wait some time between retries to avoid running into the problem right again
-                self._shutdown_event.wait(2)
+                poll_interval_duration = error_boff.next_backoff()
+            finally:
+                self._shutdown_event.wait(poll_interval_duration)
 
         # Optionally closes internal components of Poller. This is a no-op for unimplemented pollers.
         self.poller.close()
@@ -161,7 +195,9 @@ class EsmWorker:
                     self.current_state = EsmState.DISABLED
                     self.state_transition_reason = self.user_state_reason
                 self.update_esm_state_in_store(EsmState.DISABLED)
-            else:
+            elif not self._graceful_shutdown_triggered:
+                # HACK: If we reach this state and a graceful shutdown was not triggered, log a warning to indicate
+                # an unexpected state.
                 LOG.warning(
                     "Invalid state %s for event source mapping %s.",
                     self.current_state,

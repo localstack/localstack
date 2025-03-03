@@ -1,0 +1,18 @@
+{
+  "QueryLanguage": "JSONata",
+  "StartAt": "Pass",
+  "States": {
+    "Pass": {
+      "Type": "Pass",
+      "Assign": {
+        "var": "\""
+      },
+      "Next": "Check"
+    },
+    "Check": {
+      "Type": "Pass",
+      "Output": "{% $var = '\"' %}",
+      "End": true
+    }
+  }
+}

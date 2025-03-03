@@ -1,9 +1,10 @@
+import base64
 import logging
 from http import HTTPMethod
 
 from werkzeug.datastructures import Headers
 
-from localstack.aws.api.apigateway import Integration, IntegrationType
+from localstack.aws.api.apigateway import ContentHandlingStrategy, Integration, IntegrationType
 from localstack.constants import APPLICATION_JSON
 from localstack.http import Request, Response
 from localstack.utils.collections import merge_recursive
@@ -13,7 +14,7 @@ from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import IntegrationRequest, InvocationRequest, RestApiInvocationContext
 from ..gateway_response import InternalServerError, UnsupportedMediaTypeError
 from ..header_utils import drop_headers, set_default_headers
-from ..helpers import render_integration_uri
+from ..helpers import mime_type_matches_binary_media_types, render_integration_uri
 from ..parameters_mapping import ParametersMapper, RequestDataMapping
 from ..template_mapping import (
     ApiGatewayVtlTemplate,
@@ -116,8 +117,10 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
                 integration=integration, request=context.invocation_request
             )
 
+            converted_body = self.convert_body(context)
+
             body, request_override = self.render_request_template_mapping(
-                context=context, template=request_template
+                context=context, body=converted_body, template=request_template
             )
             # mutate the ContextVariables with the requestOverride result, as we copy the context when rendering the
             # template to avoid mutation on other fields
@@ -175,13 +178,18 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
     def render_request_template_mapping(
         self,
         context: RestApiInvocationContext,
+        body: str | bytes,
         template: str,
     ) -> tuple[bytes, ContextVarsRequestOverride]:
         request: InvocationRequest = context.invocation_request
-        body = request["body"]
 
         if not template:
-            return body, {}
+            return to_bytes(body), {}
+
+        try:
+            body_utf8 = to_str(body)
+        except UnicodeError:
+            raise InternalServerError("Internal server error")
 
         body, request_override = self._vtl_template.render_request(
             template=template,
@@ -189,7 +197,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
                 context=context.context_variables,
                 stageVariables=context.stage_variables or {},
                 input=MappingTemplateInput(
-                    body=to_str(body),
+                    body=body_utf8,
                     params=MappingTemplateParams(
                         path=request.get("path_parameters"),
                         querystring=request.get("query_string_parameters", {}),
@@ -234,6 +242,39 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
                 LOG.debug("Unknown passthrough behavior: '%s'", passthrough_behavior)
 
         return request_template
+
+    @staticmethod
+    def convert_body(context: RestApiInvocationContext) -> bytes | str:
+        """
+        https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-payload-encodings.html
+        https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-payload-encodings-workflow.html
+        :param context:
+        :return: the body, either as is, or converted depending on the table in the second link
+        """
+        request: InvocationRequest = context.invocation_request
+        body = request["body"]
+
+        is_binary_request = mime_type_matches_binary_media_types(
+            mime_type=request["headers"].get("Content-Type"),
+            binary_media_types=context.deployment.rest_api.rest_api.get("binaryMediaTypes", []),
+        )
+        content_handling = context.integration.get("contentHandling")
+        if is_binary_request:
+            if content_handling and content_handling == ContentHandlingStrategy.CONVERT_TO_TEXT:
+                body = base64.b64encode(body)
+            # if the content handling is not defined, or CONVERT_TO_BINARY, we do not touch the body and leave it as
+            # proper binary
+        else:
+            if not content_handling or content_handling == ContentHandlingStrategy.CONVERT_TO_TEXT:
+                body = body.decode(encoding="UTF-8", errors="replace")
+            else:
+                # it means we have CONVERT_TO_BINARY, so we need to try to decode the base64 string
+                try:
+                    body = base64.b64decode(body)
+                except ValueError:
+                    raise InternalServerError("Internal server error")
+
+        return body
 
     @staticmethod
     def _merge_http_proxy_query_string(

@@ -8,7 +8,7 @@ from localstack.testing.pytest.stepfunctions.utils import (
     create_and_record_execution,
     create_state_machine_with_iam_role,
 )
-from localstack.utils.strings import short_uid, to_str
+from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate as BT
 from tests.aws.services.stepfunctions.templates.services.services_templates import (
     ServicesTemplates as ST,
@@ -259,6 +259,9 @@ class TestTaskServiceAwsSdk:
         ["", "text data", b"", b"binary data", bytearray(b"byte array data")],
         ids=["empty_str", "str", "empty_binary", "binary", "bytearray"],
     )
+    # it seems the SFn internal client does not return the checksum values from the object yet, maybe it hasn't
+    #  been updated to parse those fields?
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumCrc32", "$..ChecksumType"])
     def test_s3_get_object(
         self,
         aws_client,
@@ -290,10 +293,11 @@ class TestTaskServiceAwsSdk:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            # The serialisation of json values cannot currently lead to an output that can match the ETag obtainable
-            # from through AWS SFN uploading to s3. This is true regardless of sorting or separator settings. Further
-            # investigation into AWS's behaviour is needed.
-            "$..ETag"
+            "$..ContentType",  # TODO: update the default ContentType
+            # it seems the SFn internal client does not return the checksum values from the object yet, maybe it hasn't
+            #  been updated to parse those fields?
+            "$..ChecksumCrc32",  # returned by LocalStack, casing issue
+            "$..ChecksumCRC32",  # returned by AWS
         ]
     )
     @pytest.mark.parametrize(
@@ -328,6 +332,5 @@ class TestTaskServiceAwsSdk:
             exec_input,
         )
         get_object_response = aws_client.s3.get_object(Bucket=bucket_name, Key=file_key)
-        body = get_object_response["Body"].read()
-        body_str = to_str(body)
-        sfn_snapshot.match("s3-object-content-body", body_str)
+
+        sfn_snapshot.match("get-s3-object", get_object_response)

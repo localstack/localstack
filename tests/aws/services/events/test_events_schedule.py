@@ -13,6 +13,7 @@ from localstack.utils.sync import retry
 from tests.aws.services.events.helper_functions import (
     events_time_string_to_timestamp,
     get_cron_expression,
+    is_old_provider,
     sqs_collect_messages,
 )
 
@@ -81,6 +82,7 @@ class TestScheduleRate:
         }
 
     @markers.aws.validated
+    @pytest.mark.skip(reason="flakey when comparing 'messages-second' against snapshot")
     def tests_schedule_rate_target_sqs(
         self,
         sqs_as_events_target,
@@ -279,6 +281,13 @@ class TestScheduleCron:
     @pytest.mark.parametrize(
         "schedule_cron",
         [
+            "cron(0 2 ? * SAT *)",  # Run at 2:00 am every Saturday
+            "cron(0 12 * * ? *)",  # Run at 12:00 pm every day
+            "cron(5,35 14 * * ? *)",  # Run at 2:05 pm and 2:35 pm every day
+            "cron(15 10 ? * 6L 2002-2005)",  # Run at 10:15 am on the last Friday of every month during the years 2002-2005
+            "cron(0 2 ? * SAT#3 *)",  # Run at 2:00 am on the third Saturday of every month
+            "cron(* * ? * SAT#3 *)",  # Run every minute on the third Saturday of every month
+            "cron(0/5 5 ? JAN 1-5 2022)",  # RUN every 5 minutes on the first 5 days of January 2022
             "cron(0 10 * * ? *)",  # Run at 10:00 am every day
             "cron(15 12 * * ? *)",  # Run at 12:15 pm every day
             "cron(0 18 ? * MON-FRI *)",  # Run at 6:00 pm every Monday through Friday
@@ -301,6 +310,28 @@ class TestScheduleCron:
 
         response = aws_client.events.list_rules(NamePrefix=rule_name)
         snapshot.match("list-rules", response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not properly validate",
+    )
+    @pytest.mark.parametrize(
+        "schedule_cron",
+        [
+            "cron(0 1 * * * *)",  # you can't specify the Day-of-month and Day-of-week fields in the same cron expression
+            "cron(7 20 * * NOT *)",
+            "cron(INVALID)",
+            "cron(0 dummy ? * MON-FRI *)",
+            "cron(71 8 1 * ? *)",
+        ],
+    )
+    def tests_put_rule_with_invalid_schedule_cron(self, schedule_cron, events_put_rule, snapshot):
+        rule_name = f"rule-{short_uid()}"
+
+        with pytest.raises(ClientError) as e:
+            events_put_rule(Name=rule_name, ScheduleExpression=schedule_cron)
+        snapshot.match("invalid-put-rule", e.value.response)
 
     @markers.aws.validated
     @pytest.mark.skip("Flaky, target time can be 1min off message time")

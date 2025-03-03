@@ -1,6 +1,6 @@
 {
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_without_source": {
-    "recorded-date": "09-12-2024, 10:35:56",
+    "recorded-date": "08-01-2025, 15:24:06",
     "recorded-content": {
       "put-events": {
         "Entries": [
@@ -18,7 +18,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_event_without_detail": {
-    "recorded-date": "09-12-2024, 10:35:56",
+    "recorded-date": "08-01-2025, 15:24:07",
     "recorded-content": {
       "put-events": {
         "Entries": [
@@ -36,7 +36,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_event_with_too_big_detail": {
-    "recorded-date": "09-12-2024, 10:35:57",
+    "recorded-date": "08-01-2025, 15:24:07",
     "recorded-content": {
       "put-events-too-big-detail-error": {
         "Error": {
@@ -51,7 +51,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_event_without_detail_type": {
-    "recorded-date": "09-12-2024, 10:35:57",
+    "recorded-date": "08-01-2025, 15:24:08",
     "recorded-content": {
       "put-events": {
         "Entries": [
@@ -69,7 +69,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_event_malformed_detail[STRING]": {
-    "recorded-date": "09-12-2024, 10:35:57",
+    "recorded-date": "08-01-2025, 15:24:08",
     "recorded-content": {
       "put-events": {
         "Entries": [
@@ -87,7 +87,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_event_malformed_detail[ARRAY]": {
-    "recorded-date": "09-12-2024, 10:35:58",
+    "recorded-date": "08-01-2025, 15:24:08",
     "recorded-content": {
       "put-events": {
         "Entries": [
@@ -105,7 +105,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_event_malformed_detail[MALFORMED_JSON]": {
-    "recorded-date": "09-12-2024, 10:35:58",
+    "recorded-date": "08-01-2025, 15:24:08",
     "recorded-content": {
       "put-events": {
         "Entries": [
@@ -123,7 +123,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_event_malformed_detail[SERIALIZED_STRING]": {
-    "recorded-date": "09-12-2024, 10:35:58",
+    "recorded-date": "08-01-2025, 15:24:08",
     "recorded-content": {
       "put-events": {
         "Entries": [
@@ -141,7 +141,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_time": {
-    "recorded-date": "09-12-2024, 10:36:00",
+    "recorded-date": "08-01-2025, 15:24:11",
     "recorded-content": {
       "messages": [
         {
@@ -202,7 +202,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_exceed_limit_ten_entries[custom]": {
-    "recorded-date": "09-12-2024, 10:36:02",
+    "recorded-date": "08-01-2025, 15:24:12",
     "recorded-content": {
       "put-events-exceed-limit-error": {
         "Error": {
@@ -217,7 +217,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_exceed_limit_ten_entries[default]": {
-    "recorded-date": "09-12-2024, 10:36:03",
+    "recorded-date": "08-01-2025, 15:24:13",
     "recorded-content": {
       "put-events-exceed-limit-error": {
         "Error": {
@@ -232,7 +232,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_create_connection_validations": {
-    "recorded-date": "13-12-2024, 10:54:30",
+    "recorded-date": "08-01-2025, 15:24:14",
     "recorded-content": {
       "create_connection_exc": {
         "Error": {
@@ -247,7 +247,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_response_entries_order": {
-    "recorded-date": "09-12-2024, 10:41:48",
+    "recorded-date": "08-01-2025, 15:34:46",
     "recorded-content": {
       "put-events-response": {
         "Entries": [
@@ -302,7 +302,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_target_delivery_failure": {
-    "recorded-date": "09-12-2024, 10:38:50",
+    "recorded-date": "08-01-2025, 15:27:00",
     "recorded-content": {
       "put-events-response": {
         "Entries": [
@@ -319,7 +319,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_time_field": {
-    "recorded-date": "09-12-2024, 10:38:51",
+    "recorded-date": "08-01-2025, 15:27:02",
     "recorded-content": {
       "put-events": {
         "Entries": [
@@ -355,8 +355,206 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions0]": {
-    "recorded-date": "09-12-2024, 10:38:53",
+  "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[True-regions0]": {
+    "recorded-date": "08-01-2025, 15:27:04",
+    "recorded-content": {
+      "create-custom-event-bus-us-east-1": {
+        "Description": "test bus",
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-create-us-east-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+            "CreationTime": "datetime",
+            "Description": "test bus",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-custom-event-bus-us-east-1": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "Description": "test bus",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-us-east-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-us-east-1": {
+        "EventBuses": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[True-regions1]": {
+    "recorded-date": "08-01-2025, 15:27:06",
+    "recorded-content": {
+      "create-custom-event-bus-us-east-1": {
+        "Description": "test bus",
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-create-us-east-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+            "CreationTime": "datetime",
+            "Description": "test bus",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-custom-event-bus-us-east-1": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "Description": "test bus",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-custom-event-bus-us-west-1": {
+        "Description": "test bus",
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-create-us-west-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+            "CreationTime": "datetime",
+            "Description": "test bus",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-custom-event-bus-us-west-1": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "Description": "test bus",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-custom-event-bus-eu-central-1": {
+        "Description": "test bus",
+        "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-create-eu-central-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+            "CreationTime": "datetime",
+            "Description": "test bus",
+            "LastModifiedTime": "datetime",
+            "Name": "<bus-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-custom-event-bus-eu-central-1": {
+        "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "Description": "test bus",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-us-east-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-us-east-1": {
+        "EventBuses": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-us-west-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-us-west-1": {
+        "EventBuses": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-eu-central-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-eu-central-1": {
+        "EventBuses": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[False-regions0]": {
+    "recorded-date": "08-01-2025, 15:27:07",
     "recorded-content": {
       "create-custom-event-bus-us-east-1": {
         "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
@@ -404,8 +602,8 @@
       }
     }
   },
-  "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions1]": {
-    "recorded-date": "09-12-2024, 10:38:55",
+  "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[False-regions1]": {
+    "recorded-date": "08-01-2025, 15:27:09",
     "recorded-content": {
       "create-custom-event-bus-us-east-1": {
         "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<bus-name>",
@@ -542,26 +740,26 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_multiple_event_buses_same_name": {
-    "recorded-date": "09-12-2024, 10:38:55",
+    "recorded-date": "08-01-2025, 15:27:09",
     "recorded-content": {
       "create-multiple-event-buses-same-name": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the CreateEventBus operation: Event bus <bus-name> already exists.') tblen=4>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_describe_delete_not_existing_event_bus": {
-    "recorded-date": "09-12-2024, 10:38:57",
+    "recorded-date": "08-01-2025, 15:27:10",
     "recorded-content": {
       "describe-not-existing-event-bus-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeEventBus operation: Event bus <bus-name> does not exist.') tblen=3>",
       "delete-not-existing-event-bus": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeEventBus operation: Event bus <bus-name> does not exist.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_delete_default_event_bus": {
-    "recorded-date": "09-12-2024, 10:38:57",
+    "recorded-date": "08-01-2025, 15:27:11",
     "recorded-content": {
       "delete-default-event-bus-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the DeleteEventBus operation: Cannot delete event bus default.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_list_event_buses_with_prefix": {
-    "recorded-date": "09-12-2024, 10:38:58",
+    "recorded-date": "08-01-2025, 15:27:12",
     "recorded-content": {
       "list-event-buses-prefix-complete-name": {
         "EventBuses": [
@@ -594,7 +792,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_list_event_buses_with_limit": {
-    "recorded-date": "09-12-2024, 10:39:00",
+    "recorded-date": "08-01-2025, 15:27:14",
     "recorded-content": {
       "list-event-buses-limit": {
         "EventBuses": [
@@ -652,7 +850,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[custom]": {
-    "recorded-date": "09-12-2024, 10:39:05",
+    "recorded-date": "08-01-2025, 15:27:19",
     "recorded-content": {
       "put-permission": {
         "ResponseMetadata": {
@@ -784,7 +982,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[default]": {
-    "recorded-date": "09-12-2024, 10:39:07",
+    "recorded-date": "08-01-2025, 15:27:22",
     "recorded-content": {
       "put-permission": {
         "ResponseMetadata": {
@@ -916,13 +1114,13 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission_non_existing_event_bus": {
-    "recorded-date": "09-12-2024, 10:39:07",
+    "recorded-date": "08-01-2025, 15:27:22",
     "recorded-content": {
       "remove-permission-non-existing-sid-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the PutPermission operation: Event bus <bus-name> does not exist.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission[custom]": {
-    "recorded-date": "09-12-2024, 10:39:09",
+    "recorded-date": "08-01-2025, 15:27:23",
     "recorded-content": {
       "remove-permission": {
         "ResponseMetadata": {
@@ -973,7 +1171,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission[default]": {
-    "recorded-date": "09-12-2024, 10:39:10",
+    "recorded-date": "08-01-2025, 15:27:25",
     "recorded-content": {
       "remove-permission": {
         "ResponseMetadata": {
@@ -1024,31 +1222,31 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[True-custom]": {
-    "recorded-date": "09-12-2024, 10:39:11",
+    "recorded-date": "08-01-2025, 15:27:25",
     "recorded-content": {
       "remove-permission-non-existing-sid-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the RemovePermission operation: Statement with the provided id does not exist.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[True-default]": {
-    "recorded-date": "09-12-2024, 10:39:12",
+    "recorded-date": "08-01-2025, 15:27:26",
     "recorded-content": {
       "remove-permission-non-existing-sid-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the RemovePermission operation: Statement with the provided id does not exist.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[False-custom]": {
-    "recorded-date": "09-12-2024, 10:39:13",
+    "recorded-date": "08-01-2025, 15:27:27",
     "recorded-content": {
       "remove-permission-non-existing-sid-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the RemovePermission operation: Statement with the provided id does not exist.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[False-default]": {
-    "recorded-date": "09-12-2024, 10:39:14",
+    "recorded-date": "08-01-2025, 15:27:28",
     "recorded-content": {
       "remove-permission-non-existing-sid-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the RemovePermission operation: Statement with the provided id does not exist.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_bus_to_bus[standard]": {
-    "recorded-date": "09-12-2024, 10:39:27",
+    "recorded-date": "08-01-2025, 15:27:41",
     "recorded-content": {
       "messages": [
         {
@@ -1077,7 +1275,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_bus_to_bus[domain]": {
-    "recorded-date": "09-12-2024, 10:39:42",
+    "recorded-date": "08-01-2025, 15:27:56",
     "recorded-content": {
       "messages": [
         {
@@ -1106,7 +1304,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_bus_to_bus[path]": {
-    "recorded-date": "09-12-2024, 10:39:57",
+    "recorded-date": "08-01-2025, 15:28:12",
     "recorded-content": {
       "messages": [
         {
@@ -1135,7 +1333,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_to_default_eventbus_for_custom_eventbus": {
-    "recorded-date": "09-12-2024, 10:40:25",
+    "recorded-date": "08-01-2025, 15:28:39",
     "recorded-content": {
       "create-custom-event-bus": {
         "EventBusArn": "arn:<partition>:events:<region>:111111111111:event-bus/<resource:1>",
@@ -1214,7 +1412,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_nonexistent_event_bus": {
-    "recorded-date": "09-12-2024, 10:44:29",
+    "recorded-date": "08-01-2025, 15:28:43",
     "recorded-content": {
       "put-events": {
         "Entries": [
@@ -1264,7 +1462,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_put_list_with_prefix_describe_delete_rule[custom]": {
-    "recorded-date": "09-12-2024, 10:40:45",
+    "recorded-date": "08-01-2025, 15:28:45",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
@@ -1340,7 +1538,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_put_list_with_prefix_describe_delete_rule[default]": {
-    "recorded-date": "09-12-2024, 10:40:47",
+    "recorded-date": "08-01-2025, 15:28:47",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
@@ -1416,7 +1614,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_put_multiple_rules_with_same_name": {
-    "recorded-date": "09-12-2024, 10:40:48",
+    "recorded-date": "08-01-2025, 15:28:48",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
@@ -1462,7 +1660,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_list_rule_with_limit": {
-    "recorded-date": "09-12-2024, 10:40:51",
+    "recorded-date": "08-01-2025, 15:28:51",
     "recorded-content": {
       "list-rules-limit": {
         "NextToken": "<next_token:1>",
@@ -1598,13 +1796,13 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_describe_nonexistent_rule": {
-    "recorded-date": "09-12-2024, 10:40:53",
+    "recorded-date": "08-01-2025, 15:28:53",
     "recorded-content": {
       "describe-not-existing-rule-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeRule operation: Rule <rule-name> does not exist on EventBus default.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_disable_re_enable_rule[custom]": {
-    "recorded-date": "09-12-2024, 10:40:54",
+    "recorded-date": "08-01-2025, 15:28:55",
     "recorded-content": {
       "disable-rule": {
         "ResponseMetadata": {
@@ -1669,7 +1867,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_disable_re_enable_rule[default]": {
-    "recorded-date": "09-12-2024, 10:40:56",
+    "recorded-date": "08-01-2025, 15:28:56",
     "recorded-content": {
       "disable-rule": {
         "ResponseMetadata": {
@@ -1734,13 +1932,13 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_delete_rule_with_targets": {
-    "recorded-date": "09-12-2024, 10:40:57",
+    "recorded-date": "08-01-2025, 15:28:57",
     "recorded-content": {
       "delete-rule-with-targets-error": "<ExceptionInfo ClientError(\"An error occurred (ValidationException) when calling the DeleteRule operation: Rule can't be deleted since it has targets.\") tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_update_rule_with_targets": {
-    "recorded-date": "09-12-2024, 10:40:59",
+    "recorded-date": "08-01-2025, 15:28:59",
     "recorded-content": {
       "list-targets": {
         "Targets": [
@@ -1775,8 +1973,190 @@
       }
     }
   },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_process_to_multiple_matching_rules_single_target": {
+    "recorded-date": "08-01-2025, 15:29:25",
+    "recorded-content": {
+      "events": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_process_to_single_matching_rules_single_target": {
+    "recorded-date": "08-01-2025, 15:30:04",
+    "recorded-content": {
+      "events-source-one": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "core.update-account-command",
+          "source": "source-one",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        }
+      ],
+      "events-source-two": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "core.update-account-command",
+          "source": "source-one",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:2>",
+          "detail-type": "core.update-account-command",
+          "source": "source-two",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        }
+      ],
+      "events-source-three": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "core.update-account-command",
+          "source": "source-one",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:2>",
+          "detail-type": "core.update-account-command",
+          "source": "source-two",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        },
+        {
+          "version": "0",
+          "id": "<uuid:3>",
+          "detail-type": "core.update-account-command",
+          "source": "source-three",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_process_pattern_to_single_matching_rules_single_target": {
+    "recorded-date": "08-01-2025, 15:30:26",
+    "recorded-content": {
+      "events-1": [
+        {
+          "detail-payload-with-id": {
+            "payload": {
+              "id": "123"
+            }
+          }
+        }
+      ],
+      "events-2": [
+        {
+          "detail-payload-with-id": {
+            "payload": {
+              "id": "123"
+            }
+          }
+        },
+        {
+          "detail-with-id": {
+            "id": "123"
+          }
+        }
+      ]
+    }
+  },
   "tests/aws/services/events/test_events.py::TestEventPattern::test_put_events_pattern_with_values_in_array": {
-    "recorded-date": "09-12-2024, 10:41:07",
+    "recorded-date": "08-01-2025, 15:30:36",
     "recorded-content": {
       "messages": [
         {
@@ -1812,7 +2192,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventPattern::test_put_events_pattern_nested": {
-    "recorded-date": "09-12-2024, 10:41:20",
+    "recorded-date": "08-01-2025, 15:30:49",
     "recorded-content": {
       "messages": [
         {
@@ -1831,7 +2211,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_put_list_remove_target[custom]": {
-    "recorded-date": "09-12-2024, 10:41:22",
+    "recorded-date": "08-01-2025, 15:30:51",
     "recorded-content": {
       "put-target": {
         "FailedEntries": [],
@@ -1871,7 +2251,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_put_list_remove_target[default]": {
-    "recorded-date": "09-12-2024, 10:41:24",
+    "recorded-date": "08-01-2025, 15:30:53",
     "recorded-content": {
       "put-target": {
         "FailedEntries": [],
@@ -1911,13 +2291,13 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_add_exceed_fife_targets_per_rule": {
-    "recorded-date": "09-12-2024, 10:41:25",
+    "recorded-date": "08-01-2025, 15:30:54",
     "recorded-content": {
       "put-targets-client-error": "<ExceptionInfo LimitExceededException('An error occurred (LimitExceededException) when calling the PutTargets operation: The requested resource exceeds the maximum number allowed.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_list_target_by_rule_limit": {
-    "recorded-date": "09-12-2024, 10:41:27",
+    "recorded-date": "08-01-2025, 15:30:56",
     "recorded-content": {
       "list-targets-limit": {
         "NextToken": "<next_token:1>",
@@ -1959,7 +2339,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_put_target_id_validation": {
-    "recorded-date": "09-12-2024, 10:41:30",
+    "recorded-date": "08-01-2025, 15:30:58",
     "recorded-content": {
       "put-targets-invalid-id-error": {
         "Error": {
@@ -1979,6 +2359,109 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_put_multiple_targets_with_same_id_single_rule": {
+    "recorded-date": "08-01-2025, 15:31:00",
+    "recorded-content": {
+      "list-targets": {
+        "Targets": [
+          {
+            "Arn": "target-arn",
+            "Id": "target-id",
+            "InputPath": "$.notexisting"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_put_multiple_targets_with_same_id_across_different_rules": {
+    "recorded-date": "08-01-2025, 15:31:01",
+    "recorded-content": {
+      "list-targets-rule-one": {
+        "Targets": [
+          {
+            "Arn": "target-arn",
+            "Id": "target-id",
+            "InputPath": "$.detail"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-targets-rule-two": {
+        "Targets": [
+          {
+            "Arn": "target-arn",
+            "Id": "target-id",
+            "InputPath": "$.notexisting"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_put_multiple_targets_with_same_arn_single_rule": {
+    "recorded-date": "08-01-2025, 15:31:03",
+    "recorded-content": {
+      "list-targets": {
+        "Targets": [
+          {
+            "Arn": "target-arn",
+            "Id": "target-id-one",
+            "InputPath": "$.detail"
+          },
+          {
+            "Arn": "target-arn",
+            "Id": "target-id-two",
+            "InputPath": "$.doesnotexist"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_put_multiple_targets_with_same_arn_across_different_rules": {
+    "recorded-date": "08-01-2025, 15:31:05",
+    "recorded-content": {
+      "list-targets-rule-one": {
+        "Targets": [
+          {
+            "Arn": "target-arn",
+            "Id": "target-id",
+            "InputPath": "$.detail"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-targets-rule-two": {
+        "Targets": [
+          {
+            "Arn": "target-arn",
+            "Id": "target-id",
+            "InputPath": "$.doesnotexist"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

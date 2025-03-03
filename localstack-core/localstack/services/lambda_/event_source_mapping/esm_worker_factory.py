@@ -32,7 +32,10 @@ from localstack.services.lambda_.event_source_mapping.pipe_utils import (
 from localstack.services.lambda_.event_source_mapping.pollers.dynamodb_poller import DynamoDBPoller
 from localstack.services.lambda_.event_source_mapping.pollers.kinesis_poller import KinesisPoller
 from localstack.services.lambda_.event_source_mapping.pollers.poller import Poller
-from localstack.services.lambda_.event_source_mapping.pollers.sqs_poller import SqsPoller
+from localstack.services.lambda_.event_source_mapping.pollers.sqs_poller import (
+    DEFAULT_MAX_WAIT_TIME_SECONDS,
+    SqsPoller,
+)
 from localstack.services.lambda_.event_source_mapping.senders.lambda_sender import LambdaSender
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.client_types import ServicePrincipal
@@ -111,6 +114,24 @@ class EsmWorkerFactory:
                 role_arn=self.function_role_arn,
                 service_principal=ServicePrincipal.lambda_,
                 source_arn=self.esm_config["FunctionArn"],
+                client_config=botocore.config.Config(
+                    retries={"total_max_attempts": 1},  # Disable retries
+                    read_timeout=max(
+                        self.esm_config.get(
+                            "MaximumBatchingWindowInSeconds", DEFAULT_MAX_WAIT_TIME_SECONDS
+                        ),
+                        60,
+                    )
+                    + 5,  # Extend read timeout (with 5s buffer) for long-polling
+                    # Setting tcp_keepalive to true allows the boto client to keep
+                    # a long-running TCP connection when making calls to the gateway.
+                    # This ensures long-poll calls do not prematurely have their socket
+                    # connection marked as stale if no data is transferred for a given
+                    # period of time hence preventing premature drops or resets of the
+                    # connection.
+                    # See https://aws.amazon.com/blogs/networking-and-content-delivery/implementing-long-running-tcp-connections-within-vpc-networking/
+                    tcp_keepalive=True,
+                ),
             )
 
         filter_criteria = self.esm_config.get("FilterCriteria", {"Filters": []})
@@ -152,6 +173,7 @@ class EsmWorkerFactory:
                 ),
             )
             poller = KinesisPoller(
+                esm_uuid=self.esm_config["UUID"],
                 source_arn=source_arn,
                 source_parameters=source_parameters,
                 source_client=source_client,
@@ -179,6 +201,7 @@ class EsmWorkerFactory:
                 ),
             )
             poller = DynamoDBPoller(
+                esm_uuid=self.esm_config["UUID"],
                 source_arn=source_arn,
                 source_parameters=source_parameters,
                 source_client=source_client,

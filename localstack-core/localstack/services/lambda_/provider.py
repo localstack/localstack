@@ -147,6 +147,7 @@ from localstack.services.lambda_ import hooks as lambda_hooks
 from localstack.services.lambda_.api_utils import (
     ARCHITECTURES,
     STATEMENT_ID_REGEX,
+    SUBNET_ID_REGEX,
     function_locators_from_arn,
 )
 from localstack.services.lambda_.event_source_mapping.esm_config_factory import (
@@ -201,6 +202,7 @@ from localstack.services.lambda_.invocation.runtime_executor import get_runtime_
 from localstack.services.lambda_.lambda_utils import HINT_LOG
 from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
 from localstack.services.lambda_.provider_utils import (
+    LambdaLayerVersionIdentifier,
     get_function_version,
     get_function_version_from_arn,
 )
@@ -381,6 +383,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         get_runtime_executor().validate_environment()
 
     def on_before_stop(self) -> None:
+        for esm_worker in self.esm_workers.values():
+            esm_worker.stop_for_shutdown()
+
         # TODO: should probably unregister routes?
         self.lambda_service.stop()
         # Attempt to signal to the Lambda Debug Mode session object to stop.
@@ -464,9 +469,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             return resolved_fn.versions[resolved_qualifier].config.revision_id
 
     def _resolve_vpc_id(self, account_id: str, region_name: str, subnet_id: str) -> str:
-        return connect_to(
-            aws_access_key_id=account_id, region_name=region_name
-        ).ec2.describe_subnets(SubnetIds=[subnet_id])["Subnets"][0]["VpcId"]
+        ec2_client = connect_to(aws_access_key_id=account_id, region_name=region_name).ec2
+        try:
+            return ec2_client.describe_subnets(SubnetIds=[subnet_id])["Subnets"][0]["VpcId"]
+        except ec2_client.exceptions.ClientError as e:
+            code = e.response["Error"]["Code"]
+            message = e.response["Error"]["Message"]
+            raise InvalidParameterValueException(
+                f"Error occurred while DescribeSubnets. EC2 Error Code: {code}. EC2 Error Message: {message}",
+                Type="User",
+            )
 
     def _build_vpc_config(
         self,
@@ -481,8 +493,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if subnet_ids is not None and len(subnet_ids) == 0:
             return VpcConfig(vpc_id="", security_group_ids=[], subnet_ids=[])
 
+        subnet_id = subnet_ids[0]
+        if not bool(SUBNET_ID_REGEX.match(subnet_id)):
+            raise ValidationException(
+                f"1 validation error detected: Value '[{subnet_id}]' at 'vpcConfig.subnetIds' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 1024, Member must have length greater than or equal to 0, Member must satisfy regular expression pattern: ^subnet-[0-9a-z]*$]"
+            )
+
         return VpcConfig(
-            vpc_id=self._resolve_vpc_id(account_id, region_name, subnet_ids[0]),
+            vpc_id=self._resolve_vpc_id(account_id, region_name, subnet_id),
             security_group_ids=vpc_config.get("SecurityGroupIds", []),
             subnet_ids=subnet_ids,
         )
@@ -3524,8 +3542,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         layer = state.layers[layer_name]
         with layer.next_version_lock:
-            next_version = layer.next_version
-            layer.next_version += 1
+            next_version = LambdaLayerVersionIdentifier(
+                account_id=account, region=region, layer_name=layer_name
+            ).generate(next_version=layer.next_version)
+            # When creating a layer with user defined layer version, it is possible that we
+            # create layer versions out of order.
+            # ie. a user could replicate layer v2 then layer v1. It is important to always keep the maximum possible
+            # value for next layer to avoid overwriting existing versions
+            if layer.next_version <= next_version:
+                # We don't need to update layer.next_version if the created version is lower than the "next in line"
+                layer.next_version = max(next_version, layer.next_version) + 1
 
         # creating a new layer
         if content.get("ZipFile"):

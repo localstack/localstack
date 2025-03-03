@@ -12,6 +12,7 @@ from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tc
 from localstack.utils.functions import run_safe
 from localstack.utils.net import wait_for_port_closed
 from localstack.utils.objects import singleton_factory
+from localstack.utils.platform import Arch, get_arch
 from localstack.utils.run import FuncThread, run
 from localstack.utils.serving import Server
 from localstack.utils.sync import retry, synchronized
@@ -142,9 +143,16 @@ class DynamodbServer(Server):
     def library_path(self) -> str:
         return f"{dynamodblocal_package.get_installed_dir()}/DynamoDBLocal_lib"
 
+    def _get_java_vm_options(self) -> list[str]:
+        # Workaround for JVM SIGILL crash on Apple Silicon M4
+        # See https://bugs.openjdk.org/browse/JDK-8345296
+        # To be removed after Java is bumped to 17.0.15+ and 21.0.7+
+        return ["-XX:UseSVE=0"] if Arch.arm64 == get_arch() else []
+
     def _create_shell_command(self) -> list[str]:
         cmd = [
             "java",
+            *self._get_java_vm_options(),
             "-Xmx%s" % self.heap_size,
             f"-javaagent:{dynamodblocal_package.get_installer().get_ddb_agent_jar_path()}",
             f"-Djava.library.path={self.library_path}",

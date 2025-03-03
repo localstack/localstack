@@ -1,7 +1,7 @@
 #
 # base: Stage which installs necessary runtime dependencies (OS packages, etc.)
 #
-FROM python:3.11.11-slim-bookworm@sha256:370c586a6ffc8c619e6d652f81c094b34b14b8f2fb9251f092de23f16e299b78 AS base
+FROM python:3.11.11-slim-bookworm@sha256:42420f737ba91d509fc60d5ed65ed0492678a90c561e1fa08786ae8ba8b52eda AS base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -153,6 +153,7 @@ RUN --mount=type=cache,target=/root/.cache \
     source .venv/bin/activate && \
     python -m localstack.cli.lpm install \
       lambda-runtime \
+      jpype-jsonata \
       dynamodb-local && \
     chown -R localstack:localstack /usr/lib/localstack && \
     chmod -R 777 /usr/lib/localstack
@@ -166,7 +167,7 @@ RUN echo /usr/lib/localstack/python-packages/lib/python3.11/site-packages > loca
 # expose edge service, external service ports, and debugpy
 EXPOSE 4566 4510-4559 5678
 
-HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=5s CMD .venv/bin/localstack status services --format=json
+HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=10s CMD .venv/bin/localstack status services --format=json
 
 # default volume directory
 VOLUME /var/lib/localstack

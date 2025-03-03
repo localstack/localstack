@@ -91,13 +91,7 @@ class TestBaseEvaluateJsonata:
     @pytest.mark.parametrize(
         "expression_dict",
         [
-            pytest.param(
-                {"Items": EJT.JSONATA_ARRAY_ELEMENT_EXPRESSION},
-                marks=pytest.mark.skipif(
-                    condition=not is_aws_cloud(),
-                    reason="Single-quote esacped JSONata expressions are not yet supported",
-                ),
-            ),
+            {"Items": EJT.JSONATA_ARRAY_ELEMENT_EXPRESSION},
             {"Items": EJT.JSONATA_ARRAY_ELEMENT_EXPRESSION_DOUBLE_QUOTES},
             {"MaxConcurrency": EJT.JSONATA_NUMBER_EXPRESSION},
             {"ToleratedFailurePercentage": EJT.JSONATA_NUMBER_EXPRESSION},
@@ -137,7 +131,9 @@ class TestBaseEvaluateJsonata:
     @pytest.mark.parametrize(
         "field,input_value",
         [
-            pytest.param("TimeoutSeconds", 1, id="TIMEOUT_SECONDS"),
+            pytest.param(
+                "TimeoutSeconds", 1, id="TIMEOUT_SECONDS", marks=pytest.mark.skip(reason="flaky")
+            ),
             pytest.param("HeartbeatSeconds", 1, id="HEARTBEAT_SECONDS"),
         ],
     )

@@ -25,6 +25,10 @@ class StateTaskServiceUnsupported(StateTaskServiceCallback):
     def __init__(self):
         super().__init__(supported_integration_patterns=_SUPPORTED_INTEGRATION_PATTERNS)
 
+    def _validate_service_integration_is_supported(self):
+        # Attempts to execute any derivation; logging this incident on creation.
+        self._log_unsupported_warning()
+
     def _log_unsupported_warning(self):
         # Logs that the optimised service integration is not supported,
         # however the request is being forwarded to the service.

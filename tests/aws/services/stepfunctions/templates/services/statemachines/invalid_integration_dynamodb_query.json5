@@ -1,0 +1,20 @@
+{
+  "StartAt": "Query",
+  "States": {
+    "Query": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:query",
+      "ResultPath": "$.queryItemOutput",
+      "Parameters": {
+        "TableName.$": "$.TableName",
+        "KeyConditionExpression": "id = :id",
+        "ExpressionAttributeValues": {
+          ":id": {
+            "S.$": "$.Item.id.S"
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

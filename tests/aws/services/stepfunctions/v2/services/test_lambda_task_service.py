@@ -3,7 +3,7 @@ import json
 import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
-from localstack.aws.api.lambda_ import LogType
+from localstack.aws.api.lambda_ import LogType, Runtime
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import (
@@ -36,7 +36,7 @@ class TestTaskServiceLambda:
         create_lambda_function(
             func_name=function_name,
             handler_file=ST.LAMBDA_ID_FUNCTION,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
 
@@ -66,7 +66,7 @@ class TestTaskServiceLambda:
         create_lambda_function(
             func_name=function_name,
             handler_file=ST.LAMBDA_RETURN_BYTES_STR,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
 
@@ -99,7 +99,7 @@ class TestTaskServiceLambda:
         create_lambda_function(
             func_name=function_name,
             handler_file=ST.LAMBDA_ID_FUNCTION,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
         sfn_snapshot.add_transformer(
@@ -147,7 +147,7 @@ class TestTaskServiceLambda:
         create_lambda_function(
             func_name=function_name,
             handler_file=ST.LAMBDA_ID_FUNCTION,
-            runtime="python3.9",
+            runtime=Runtime.python3_12,
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
         sfn_snapshot.add_transformer(

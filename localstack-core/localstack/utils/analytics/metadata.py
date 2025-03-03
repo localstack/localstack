@@ -6,7 +6,7 @@ from typing import Optional
 
 from localstack import config
 from localstack.constants import VERSION
-from localstack.runtime import hooks
+from localstack.runtime import get_current_runtime, hooks
 from localstack.utils.bootstrap import Container
 from localstack.utils.files import rm_rf
 from localstack.utils.functions import call_safe
@@ -29,6 +29,8 @@ class ClientMetadata:
     is_ci: bool
     is_docker: bool
     is_testing: bool
+    product: str
+    edition: str
 
     def __repr__(self):
         d = dataclasses.asdict(self)
@@ -60,6 +62,8 @@ def read_client_metadata() -> ClientMetadata:
         is_ci=os.getenv("CI") is not None,
         is_docker=config.is_in_docker,
         is_testing=config.is_local_test_mode(),
+        product=get_localstack_product(),
+        edition=os.getenv("LOCALSTACK_TELEMETRY_EDITION") or get_localstack_edition(),
     )
 
 
@@ -119,6 +123,18 @@ def get_localstack_edition() -> str:
 
     # Return the base name of the version file, or unknown if no file is found
     return version_file.removesuffix("-version").removeprefix(".") if version_file else "unknown"
+
+
+def get_localstack_product() -> str:
+    """
+    Returns the telemetry product name from the env var, runtime, or "unknown".
+    """
+    try:
+        runtime_product = get_current_runtime().components.name
+    except ValueError:
+        runtime_product = None
+
+    return os.getenv("LOCALSTACK_TELEMETRY_PRODUCT") or runtime_product or "unknown"
 
 
 def is_license_activated() -> bool:

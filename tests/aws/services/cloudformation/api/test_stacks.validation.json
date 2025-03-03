@@ -11,6 +11,18 @@
   "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template[yaml]": {
     "last_validated_date": "2022-08-11T08:55:10+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template_using_changesets[json]": {
+    "last_validated_date": "2025-01-02T19:09:40+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template_using_changesets[yaml]": {
+    "last_validated_date": "2025-01-02T19:08:41+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template_using_create_stack[json]": {
+    "last_validated_date": "2025-01-02T19:11:20+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template_using_create_stack[yaml]": {
+    "last_validated_date": "2025-01-02T19:11:14+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_list_events_after_deployment": {
     "last_validated_date": "2022-10-05T11:33:55+00:00"
   },
@@ -106,6 +118,9 @@
   },
   "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order[C-B-A]": {
     "last_validated_date": "2024-05-29T11:45:50+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_resource_not_found": {
+    "last_validated_date": "2025-01-29T09:08:15+00:00"
   },
   "tests/aws/services/cloudformation/api/test_stacks.py::test_update_termination_protection": {
     "last_validated_date": "2023-01-04T15:23:22+00:00"

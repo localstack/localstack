@@ -94,7 +94,7 @@ python -m pytest --log-cli-level=INFO tests/integration
 You can further specify the file and test class you want to run in the test path:
 
 ```bash
-TEST_PATH="tests/integration/docker/test_docker.py::TestDockerClient" make test
+TEST_PATH="tests/integration/docker_utils/test_docker.py::TestDockerClient" make test
 ```
 
 ### Test against a running LocalStack instance
@@ -118,7 +118,7 @@ Ideally every integration is tested against real AWS. To run the integration tes
 6.  Go to the newly created user under `IAM/Users`, go to the `Security Credentials` tab, and click on **Create access key** within the `Access Keys` section.
 7.  Pick the **Local code** option and check the **I understand the above recommendation and want to proceed to create an access key** box.
 8.  Click on **Create access key** and copy the Access Key ID and the Secret access key immediately.
-9.  Run `aws configure —-profile ls-sandbox` and enter the Access Key ID, and the Secret access key when prompted.
+9.  Run `aws configure --profile ls-sandbox` and enter the Access Key ID, and the Secret access key when prompted.
 10.  Verify that the profile is set up correctly by running: `aws sts get-caller-identity --profile ls-sandbox`.
 
 Here is how `~/.aws/credentials` should look like:

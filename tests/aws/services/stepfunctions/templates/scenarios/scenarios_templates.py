@@ -61,6 +61,9 @@ class ScenariosTemplate(TemplateLoader):
     MAP_STATE_CONFIG_DISTRIBUTED_ITEM_SELECTOR: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_config_distributed_item_selector.json5"
     )
+    MAP_STATE_CONFIG_DISTRIBUTED_ITEMS_PATH_FROM_PREVIOUS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_config_distributed_items_path_from_previous.json5"
+    )
     MAP_STATE_CONFIG_DISTRIBUTED_ITEM_SELECTOR_PARAMETERS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_config_distributed_item_selector_parameters.json5"
     )
@@ -111,6 +114,9 @@ class ScenariosTemplate(TemplateLoader):
     )
     MAP_ITEM_READER_BASE_JSON_MAX_ITEMS_JSONATA: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_item_reader_base_json_max_items_jsonata.json5"
+    )
+    MAP_ITEM_READER_BASE_JSON_WITH_ITEMS_PATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_item_reader_base_json_with_items_path.json5"
     )
     MAP_ITEM_BATCHER_BASE_JSON_MAX_PER_BATCH_JSONATA: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_item_batcher_base_max_per_batch_jsonata.json5"
@@ -200,6 +206,9 @@ class ScenariosTemplate(TemplateLoader):
     CHOICE_STATE_SINGLETON_COMPOSITE_JSONATA: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/choice_state_singleton_composite_jsonata.json5"
     )
+    CHOICE_STATE_SINGLETON_COMPOSITE_LITERAL_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/choice_state_singleton_composite_literal_string_jsonata.json5"
+    )
     CHOICE_STATE_AWS_SCENARIO: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/choice_state_aws_scenario.json5"
     )
@@ -246,4 +255,47 @@ class ScenariosTemplate(TemplateLoader):
     )
     RAISE_FAILURE_CAUSE_JSONATA: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/fail_cause_jsonata.json5"
+    )
+
+    INVALID_JSONPATH_IN_ERRORPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_errorpath.json5"
+    )
+    INVALID_JSONPATH_IN_CAUSEPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_causepath.json5"
+    )
+    INVALID_JSONPATH_IN_STRING_EXPR_JSONPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_string_expr_jsonpath.json5"
+    )
+    INVALID_JSONPATH_IN_STRING_EXPR_CONTEXTPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_string_expr_contextpath.json5"
+    )
+    INVALID_JSONPATH_IN_HEARTBEATSECONDSPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_heartbeatsecondspath.json5"
+    )
+    INVALID_JSONPATH_IN_TIMEOUTSECONDSPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_timeoutsecondspath.json5"
+    )
+    INVALID_JSONPATH_IN_INPUTPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_inputpath.json5"
+    )
+    INVALID_JSONPATH_IN_OUTPUTPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/invalid_jsonpath_in_outputpath.json5"
+    )
+    ESCAPE_SEQUENCES_STRING_LITERALS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/escape_sequences_string_literals.json5"
+    )
+    ESCAPE_SEQUENCES_JSONPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/escape_sequences_jsonpath.json5"
+    )
+    ESCAPE_SEQUENCES_JSONATA_COMPARISON_OUTPUT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/escape_sequences_jsonata_comparison_output.json5"
+    )
+    ESCAPE_SEQUENCES_JSONATA_COMPARISON_ASSIGN: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/escape_sequences_jsonata_comparison_assign.json5"
+    )
+    ESCAPE_SEQUENCES_ILLEGAL_INTRINSIC_FUNCTION: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/escape_sequences_illegal_intrinsic_function.json5"
+    )
+    ESCAPE_SEQUENCES_ILLEGAL_INTRINSIC_FUNCTION_2: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/escape_sequences_illegal_intrinsic_function_2.json5"
     )

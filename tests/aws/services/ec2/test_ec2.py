@@ -590,9 +590,9 @@ class TestEc2Integrations:
                 }
             ],
         )
-        assert (
-            security_group["GroupId"] == custom_id
-        ), f"Security group ID does not match custom ID: {security_group}"
+        assert security_group["GroupId"] == custom_id, (
+            f"Security group ID does not match custom ID: {security_group}"
+        )
 
         # Check if the custom ID is present in the describe_security_groups response as well
         security_groups: dict = aws_client.ec2.describe_security_groups(
@@ -831,3 +831,10 @@ def test_create_specific_vpc_id(account_id, region_name, create_vpc, set_resourc
 
     vpc = create_vpc(cidr_block=cidr_block)
     assert vpc["Vpc"]["VpcId"] == f"vpc-{custom_id}"
+
+
+@markers.aws.validated
+def test_raise_create_volume_without_size(snapshot, aws_client):
+    with pytest.raises(ClientError) as e:
+        aws_client.ec2.create_volume(AvailabilityZone="eu-central-1a")
+    snapshot.match("request-missing-size", e.value.response)

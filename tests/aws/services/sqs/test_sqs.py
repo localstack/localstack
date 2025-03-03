@@ -250,6 +250,51 @@ class TestSqsProvider:
         snapshot.match("send_max_number_of_messages", e.value.response)
 
     @markers.aws.validated
+    def test_receive_empty_queue(self, sqs_queue, snapshot, aws_sqs_client):
+        queue_url = sqs_queue
+
+        empty_short_poll_resp = aws_sqs_client.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=1
+        )
+        snapshot.match("empty_short_poll_resp", empty_short_poll_resp)
+
+        empty_long_poll_resp = aws_sqs_client.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=1, WaitTimeSeconds=1
+        )
+        snapshot.match("empty_long_poll_resp", empty_long_poll_resp)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
+    def test_send_receive_wait_time_seconds(self, sqs_queue, snapshot, aws_sqs_client):
+        queue_url = sqs_queue
+        send_result_1 = aws_sqs_client.send_message(QueueUrl=queue_url, MessageBody="message")
+        assert send_result_1["MessageId"]
+
+        send_result_2 = aws_sqs_client.send_message(QueueUrl=queue_url, MessageBody="message")
+        assert send_result_2["MessageId"]
+
+        MAX_WAIT_TIME_SECONDS = 20
+        with pytest.raises(ClientError) as e:
+            aws_sqs_client.receive_message(
+                QueueUrl=queue_url, WaitTimeSeconds=MAX_WAIT_TIME_SECONDS + 1
+            )
+        snapshot.match("recieve_message_error_too_large", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=-1)
+        snapshot.match("recieve_message_error_too_small", e.value.response)
+
+        empty_short_poll_by_default_resp = aws_sqs_client.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=1
+        )
+        snapshot.match("empty_short_poll_by_default_resp", empty_short_poll_by_default_resp)
+
+        empty_short_poll_explicit_resp = aws_sqs_client.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=1, WaitTimeSeconds=0
+        )
+        snapshot.match("empty_short_poll_explicit_resp", empty_short_poll_explicit_resp)
+
+    @markers.aws.validated
     def test_receive_message_attributes_timestamp_types(self, sqs_queue, aws_sqs_client):
         aws_sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="message")
 
@@ -562,9 +607,9 @@ class TestSqsProvider:
         took = time.time() - then
         assert took < 2  # should take much less than 5 seconds
 
-        assert (
-            len(response.get("Messages", [])) >= 1
-        ), f"unexpected number of messages in {response}"
+        assert len(response.get("Messages", [])) >= 1, (
+            f"unexpected number of messages in {response}"
+        )
 
     @markers.aws.validated
     def test_wait_time_seconds_waits_correctly(self, sqs_queue, aws_sqs_client):
@@ -574,9 +619,9 @@ class TestSqsProvider:
         Timer(1, _send_message).start()  # send message asynchronously after 1 second
         response = aws_sqs_client.receive_message(QueueUrl=sqs_queue, WaitTimeSeconds=10)
 
-        assert (
-            len(response.get("Messages", [])) == 1
-        ), f"unexpected number of messages in response {response}"
+        assert len(response.get("Messages", [])) == 1, (
+            f"unexpected number of messages in response {response}"
+        )
 
     @markers.aws.validated
     def test_wait_time_seconds_queue_attribute_waits_correctly(
@@ -594,9 +639,9 @@ class TestSqsProvider:
         Timer(1, _send_message).start()  # send message asynchronously after 1 second
         response = aws_sqs_client.receive_message(QueueUrl=queue_url)
 
-        assert (
-            len(response.get("Messages", [])) == 1
-        ), f"unexpected number of messages in response {response}"
+        assert len(response.get("Messages", [])) == 1, (
+            f"unexpected number of messages in response {response}"
+        )
 
     @markers.aws.validated
     def test_create_queue_with_default_attributes_is_idempotent(self, sqs_create_queue):
@@ -992,9 +1037,9 @@ class TestSqsProvider:
         assert "Messages" in result
         message_receipt_1 = result["Messages"][0]
 
-        assert (
-            message_receipt_0["ReceiptHandle"] != message_receipt_1["ReceiptHandle"]
-        ), "receipt handles should be different"
+        assert message_receipt_0["ReceiptHandle"] != message_receipt_1["ReceiptHandle"], (
+            "receipt handles should be different"
+        )
 
     @markers.aws.validated
     def test_receive_terminate_visibility_timeout(self, sqs_queue, aws_sqs_client):
@@ -1010,9 +1055,9 @@ class TestSqsProvider:
         assert "Messages" in result
         message_receipt_1 = result["Messages"][0]
 
-        assert (
-            message_receipt_0["ReceiptHandle"] != message_receipt_1["ReceiptHandle"]
-        ), "receipt handles should be different"
+        assert message_receipt_0["ReceiptHandle"] != message_receipt_1["ReceiptHandle"], (
+            "receipt handles should be different"
+        )
 
         # TODO: check if this is correct (whether receive with VisibilityTimeout = 0 is permanent)
         result = aws_sqs_client.receive_message(QueueUrl=queue_url)
@@ -1035,7 +1080,9 @@ class TestSqsProvider:
             )
             assert aws_sqs_client.receive_message(QueueUrl=queue_url).get("Messages", []) == []
 
-        messages = aws_sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)["Messages"]
+        messages = aws_sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5).get(
+            "Messages", []
+        )
         assert messages[0]["Body"] == "test"
         assert len(messages) == 1
 
@@ -1316,9 +1363,9 @@ class TestSqsProvider:
             messages.extend(response.get("Messages", []))
             return len(messages)
 
-        assert poll_condition(
-            lambda: collect_messages() >= 9, timeout=10
-        ), f"gave up waiting messages, got {len(messages)} from 9"
+        assert poll_condition(lambda: collect_messages() >= 9, timeout=10), (
+            f"gave up waiting messages, got {len(messages)} from 9"
+        )
 
         bodies = {message["Body"] for message in messages}
         assert bodies == {"0", "1", "2", "3", "4", "5", "6", "7", "8"}
@@ -2287,7 +2334,7 @@ class TestSqsProvider:
         while len(result_recv) < message_count and i < message_count:
             result = aws_sqs_client.receive_message(
                 QueueUrl=queue_url, MaxNumberOfMessages=message_count
-            )["Messages"]
+            ).get("Messages", [])
             if result:
                 result_recv.extend(result)
                 i += 1
@@ -2877,9 +2924,9 @@ class TestSqsProvider:
 
         # check the DLQ
         dlq_receive_response = aws_sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
-        assert (
-            len(dlq_receive_response["Messages"]) == 1
-        ), f"invalid number of messages in DLQ response {dlq_receive_response}"
+        assert len(dlq_receive_response["Messages"]) == 1, (
+            f"invalid number of messages in DLQ response {dlq_receive_response}"
+        )
         message_1 = dlq_receive_response["Messages"][0]
         assert message_1["MessageId"] == message_id_1
         assert message_1["Body"] == "foobar"

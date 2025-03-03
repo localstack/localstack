@@ -44,3 +44,7 @@ PATH_STRATEGY_URL_REGEX = r"[^:]+:\d{4,5}\/queue\/(?P<region_name>[a-z0-9-]{1,})
 LEGACY_STRATEGY_URL_REGEX = (
     r"[^:]+:\d{4,5}\/(?P<account_id>\d{12})\/(?P<queue_name>[a-zA-Z0-9_-]+(.fifo)?)$"
 )
+
+# HTTP headers used to override internal SQS ReceiveMessage
+HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT = "x-localstack-sqs-override-message-count"
+HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS = "x-localstack-sqs-override-wait-time-seconds"

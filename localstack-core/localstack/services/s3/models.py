@@ -13,12 +13,14 @@ from localstack.aws.api.s3 import (
     AccountId,
     AnalyticsConfiguration,
     AnalyticsId,
+    BadDigest,
     BucketAccelerateStatus,
     BucketKeyEnabled,
     BucketName,
     BucketRegion,
     BucketVersioningStatus,
     ChecksumAlgorithm,
+    ChecksumType,
     CompletedPartList,
     CORSConfiguration,
     DefaultRetention,
@@ -60,6 +62,7 @@ from localstack.aws.api.s3 import (
     SSECustomerKeyMD5,
     SSEKMSKeyId,
     StorageClass,
+    TransitionDefaultMinimumObjectSize,
     WebsiteConfiguration,
     WebsiteRedirectLocation,
 )
@@ -70,7 +73,7 @@ from localstack.services.s3.constants import (
     S3_UPLOAD_PART_MIN_SIZE,
 )
 from localstack.services.s3.exceptions import InvalidRequest
-from localstack.services.s3.utils import get_s3_checksum, rfc_1123_datetime
+from localstack.services.s3.utils import CombinedCrcHash, get_s3_checksum, rfc_1123_datetime
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -96,6 +99,7 @@ class S3Bucket:
     objects: Union["KeyStore", "VersionedKeyStore"]
     versioning_status: BucketVersioningStatus | None
     lifecycle_rules: Optional[LifecycleRules]
+    transition_default_minimum_object_size: Optional[TransitionDefaultMinimumObjectSize]
     policy: Optional[Policy]
     website_configuration: Optional[WebsiteConfiguration]
     acl: AccessControlPolicy
@@ -143,6 +147,7 @@ class S3Bucket:
         self.logging = {}
         self.cors_rules = None
         self.lifecycle_rules = None
+        self.transition_default_minimum_object_size = None
         self.website_configuration = None
         self.policy = None
         self.accelerate_status = None
@@ -259,6 +264,7 @@ class S3Object:
     sse_key_hash: Optional[SSECustomerKeyMD5]
     checksum_algorithm: ChecksumAlgorithm
     checksum_value: str
+    checksum_type: ChecksumType
     lock_mode: Optional[ObjectLockMode | ObjectLockRetentionMode]
     lock_legal_status: Optional[ObjectLockLegalHoldStatus]
     lock_until: Optional[datetime]
@@ -282,6 +288,7 @@ class S3Object:
         expiration: Optional[Expiration] = None,
         checksum_algorithm: Optional[ChecksumAlgorithm] = None,
         checksum_value: Optional[str] = None,
+        checksum_type: Optional[ChecksumType] = ChecksumType.FULL_OBJECT,
         encryption: Optional[ServerSideEncryption] = None,
         kms_key_id: Optional[SSEKMSKeyId] = None,
         sse_key_hash: Optional[SSECustomerKeyMD5] = None,
@@ -305,6 +312,7 @@ class S3Object:
         self.expires = expires
         self.checksum_algorithm = checksum_algorithm
         self.checksum_value = checksum_value
+        self.checksum_type = checksum_type
         self.encryption = encryption
         self.kms_key_id = kms_key_id
         self.bucket_key_enabled = bucket_key_enabled
@@ -420,6 +428,7 @@ class S3Multipart:
     object: S3Object
     upload_id: MultipartUploadId
     checksum_value: Optional[str]
+    checksum_type: Optional[ChecksumType]
     initiated: datetime
     precondition: bool
 
@@ -430,6 +439,7 @@ class S3Multipart:
         expires: Optional[datetime] = None,
         expiration: Optional[datetime] = None,  # come from lifecycle
         checksum_algorithm: Optional[ChecksumAlgorithm] = None,
+        checksum_type: Optional[ChecksumType] = None,
         encryption: Optional[ServerSideEncryption] = None,  # inherit bucket
         kms_key_id: Optional[SSEKMSKeyId] = None,  # inherit bucket
         bucket_key_enabled: bool = False,  # inherit bucket
@@ -452,6 +462,7 @@ class S3Multipart:
         self.initiator = initiator
         self.tagging = tagging
         self.checksum_value = None
+        self.checksum_type = checksum_type
         self.precondition = precondition
         self.object = S3Object(
             key=key,
@@ -461,6 +472,7 @@ class S3Multipart:
             expires=expires,
             expiration=expiration,
             checksum_algorithm=checksum_algorithm,
+            checksum_type=checksum_type,
             encryption=encryption,
             kms_key_id=kms_key_id,
             bucket_key_enabled=bucket_key_enabled,
@@ -473,16 +485,21 @@ class S3Multipart:
             owner=owner,
         )
 
-    def complete_multipart(self, parts: CompletedPartList):
+    def complete_multipart(
+        self, parts: CompletedPartList, mpu_size: int = None, validation_checksum: str = None
+    ):
         last_part_index = len(parts) - 1
-        # TODO: this part is currently not implemented, time permitting
         object_etag = hashlib.md5(usedforsecurity=False)
         has_checksum = self.object.checksum_algorithm is not None
         checksum_hash = None
         if has_checksum:
-            checksum_hash = get_s3_checksum(self.object.checksum_algorithm)
+            if self.object.checksum_type == ChecksumType.COMPOSITE:
+                checksum_hash = get_s3_checksum(self.object.checksum_algorithm)
+            else:
+                checksum_hash = CombinedCrcHash(self.object.checksum_algorithm)
 
         pos = 0
+        parts_map = {}
         for index, part in enumerate(parts):
             part_number = part["PartNumber"]
             part_etag = part["ETag"].strip('"')
@@ -494,7 +511,9 @@ class S3Multipart:
                 or (not has_checksum and any(k.startswith("Checksum") for k in part))
             ):
                 raise InvalidPart(
-                    "One or more of the specified parts could not be found.  The part may not have been uploaded, or the specified entity tag may not match the part's entity tag.",
+                    "One or more of the specified parts could not be found.  "
+                    "The part may not have been uploaded, "
+                    "or the specified entity tag may not match the part's entity tag.",
                     ETag=part_etag,
                     PartNumber=part_number,
                     UploadId=self.id,
@@ -503,10 +522,21 @@ class S3Multipart:
             if has_checksum:
                 checksum_key = f"Checksum{self.object.checksum_algorithm.upper()}"
                 if not (part_checksum := part.get(checksum_key)):
-                    raise InvalidRequest(
-                        f"The upload was created using a {self.object.checksum_algorithm.lower()} checksum. The complete request must include the checksum for each part. It was missing for part {part_number} in the request."
-                    )
-                if part_checksum != s3_part.checksum_value:
+                    if self.checksum_type == ChecksumType.COMPOSITE:
+                        # weird case, they still try to validate a different checksum type than the multipart
+                        for field in part:
+                            if field.startswith("Checksum"):
+                                algo = field.removeprefix("Checksum").lower()
+                                raise BadDigest(
+                                    f"The {algo} you specified for part {part_number} did not match what we received."
+                                )
+
+                        raise InvalidRequest(
+                            f"The upload was created using a {self.object.checksum_algorithm.lower()} checksum. "
+                            f"The complete request must include the checksum for each part. "
+                            f"It was missing for part {part_number} in the request."
+                        )
+                elif part_checksum != s3_part.checksum_value:
                     raise InvalidPart(
                         "One or more of the specified parts could not be found.  The part may not have been uploaded, or the specified entity tag may not match the part's entity tag.",
                         ETag=part_etag,
@@ -514,7 +544,11 @@ class S3Multipart:
                         UploadId=self.id,
                     )
 
-                checksum_hash.update(base64.b64decode(part_checksum))
+                part_checksum_value = base64.b64decode(s3_part.checksum_value)
+                if self.checksum_type == ChecksumType.COMPOSITE:
+                    checksum_hash.update(part_checksum_value)
+                else:
+                    checksum_hash.combine(part_checksum_value, s3_part.size)
 
             elif any(k.startswith("Checksum") for k in part):
                 raise InvalidPart(
@@ -535,18 +569,34 @@ class S3Multipart:
 
             object_etag.update(bytes.fromhex(s3_part.etag))
             # keep track of the parts size, as it can be queried afterward on the object as a Range
-            self.object.parts[part_number] = (pos, s3_part.size)
+            parts_map[part_number] = (pos, s3_part.size)
             pos += s3_part.size
 
-        multipart_etag = f"{object_etag.hexdigest()}-{len(parts)}"
-        self.object.etag = multipart_etag
+        if mpu_size and mpu_size != pos:
+            raise InvalidRequest(
+                f"The provided 'x-amz-mp-object-size' header value {mpu_size} "
+                f"does not match what was computed: {pos}"
+            )
+
         if has_checksum:
-            checksum_value = f"{base64.b64encode(checksum_hash.digest()).decode()}-{len(parts)}"
+            checksum_value = base64.b64encode(checksum_hash.digest()).decode()
+            if self.checksum_type == ChecksumType.COMPOSITE:
+                checksum_value = f"{checksum_value}-{len(parts)}"
+
+            elif self.checksum_type == ChecksumType.FULL_OBJECT:
+                if validation_checksum != checksum_value:
+                    raise BadDigest(
+                        f"The {self.object.checksum_algorithm.lower()} you specified did not match the calculated checksum."
+                    )
+
             self.checksum_value = checksum_value
             self.object.checksum_value = checksum_value
 
+        multipart_etag = f"{object_etag.hexdigest()}-{len(parts)}"
+        self.object.etag = multipart_etag
+        self.object.parts = parts_map
 
-# TODO: use SynchronizedDefaultDict to prevent updates during iteration?
+
 class KeyStore:
     """
     Object representing an S3 Un-versioned Bucket's Key Store. An object is mapped by a key, and you can simply

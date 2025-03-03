@@ -5,14 +5,9 @@ from botocore.exceptions import ClientError, UnknownServiceError
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
 from localstack.aws.protocol.service_router import get_service_catalog
+from localstack.services.stepfunctions.asl.component.common.error_name.error_name import ErrorName
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
-)
-from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
-    StatesErrorName,
-)
-from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
-    StatesErrorNameType,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
     StateCredentials,
@@ -24,7 +19,6 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
 )
-from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
@@ -43,8 +37,9 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
     def __init__(self):
         super().__init__(supported_integration_patterns=_SUPPORTED_INTEGRATION_PATTERNS)
 
-    def from_state_props(self, state_props: StateProps) -> None:
-        super().from_state_props(state_props=state_props)
+    def _validate_service_integration_is_supported(self):
+        # As no aws-sdk support catalog is available, allow invalid aws-sdk integration to fail at runtime.
+        pass
 
     def _get_sfn_resource_type(self) -> str:
         return f"{self.resource.service_name}:{self.resource.api_name}"
@@ -90,7 +85,7 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
     def _get_task_failure_event(self, env: Environment, error: str, cause: str) -> FailureEvent:
         return FailureEvent(
             env=env,
-            error_name=StatesErrorName(typ=StatesErrorNameType.StatesTaskFailed),
+            error_name=ErrorName(error_name=error),
             event_type=HistoryEventType.TaskFailed,
             event_details=EventDetails(
                 taskFailedEventDetails=TaskFailedEventDetails(
@@ -115,7 +110,7 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
             ]
             if "HostId" in ex.response["ResponseMetadata"]:
                 cause_details.append(
-                    f'Extended Request ID: {ex.response["ResponseMetadata"]["HostId"]}'
+                    f"Extended Request ID: {ex.response['ResponseMetadata']['HostId']}"
                 )
 
             cause: str = f"{error_message} ({', '.join(cause_details)})"

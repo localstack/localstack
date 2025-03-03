@@ -22,7 +22,7 @@ from localstack.utils.testutil import check_expected_lambda_log_events_length
 from tests.aws.scenario.kinesis_firehose.conftest import get_all_expected_messages_from_s3
 from tests.aws.services.events.helper_functions import is_old_provider, sqs_collect_messages
 from tests.aws.services.events.test_api_destinations_and_connection import API_DESTINATION_AUTHS
-from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTERN
+from tests.aws.services.events.test_events import TEST_EVENT_DETAIL, TEST_EVENT_PATTERN
 from tests.aws.services.firehose.helper_functions import get_firehose_iam_documents
 from tests.aws.services.kinesis.helper_functions import get_shard_iterator
 from tests.aws.services.lambda_.test_lambda import (
@@ -40,7 +40,7 @@ from tests.aws.services.lambda_.test_lambda import (
 
 
 class TestEventsTargetApiDestination:
-    # TODO validate against AWS
+    # TODO validate against AWS & use common fixtures
     @markers.aws.only_localstack
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
@@ -122,7 +122,9 @@ class TestEventsTargetApiDestination:
         # create rule and target
         rule_name = f"r-{short_uid()}"
         target_id = f"target-{short_uid()}"
-        pattern = json.dumps({"source": ["source-123"], "detail-type": ["type-123"]})
+        pattern = json.dumps(
+            {"source": ["source-123"], "detail-type": ["type-123"]}
+        )  # TODO use standard defined event and pattern
         aws_client.events.put_rule(Name=rule_name, EventPattern=pattern)
         aws_client.events.put_targets(
             Rule=rule_name,
@@ -533,7 +535,7 @@ class TestEventsTargetCloudWatchLogs:
             "EventBusName": event_bus_name,
             "Source": TEST_EVENT_PATTERN["source"][0],
             "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-            "Detail": json.dumps(EVENT_DETAIL),
+            "Detail": json.dumps(TEST_EVENT_DETAIL),
         }
         put_events_response = aws_client.events.put_events(Entries=[event_entry])
         snapshot.match("put_events_response", put_events_response)
@@ -657,7 +659,7 @@ class TestEventsTargetEvents:
                 {
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
                     "EventBusName": event_bus_name_source,
                 }
             ],
@@ -782,7 +784,7 @@ class TestEventsTargetFirehose:
                         "EventBusName": event_bus_name,
                         "Source": TEST_EVENT_PATTERN["source"][0],
                         "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                        "Detail": json.dumps(EVENT_DETAIL),
+                        "Detail": json.dumps(TEST_EVENT_DETAIL),
                     }
                 ]
             )
@@ -895,7 +897,7 @@ class TestEventsTargetKinesis:
                     "EventBusName": event_bus_name,
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
                 }
             ]
         )
@@ -959,7 +961,7 @@ class TestEventsTargetLambda:
                     "EventBusName": bus_name,
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
                 }
             ]
         )
@@ -1247,7 +1249,7 @@ class TestEventsTargetSns:
                     "EventBusName": event_bus_name,
                     "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
+                    "Detail": json.dumps(TEST_EVENT_DETAIL),
                 }
             ]
         )
@@ -1277,7 +1279,7 @@ class TestEventsTargetSqs:
             {
                 "Source": TEST_EVENT_PATTERN["source"][0],
                 "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                "Detail": json.dumps(EVENT_DETAIL),
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
             }
         ]
         message = put_events_with_filter_to_sqs(

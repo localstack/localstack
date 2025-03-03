@@ -11,10 +11,20 @@ import requests
 from botocore.client import BaseClient
 
 from localstack import config
-from localstack.aws.api.events import Arn, InputTransformer, RuleName, Target, TargetInputPath
+from localstack.aws.api.events import (
+    Arn,
+    InputTransformer,
+    RuleName,
+    Target,
+    TargetInputPath,
+)
 from localstack.aws.connect import connect_to
-from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
-from localstack.services.events.target_helper import send_event_to_api_destination
+from localstack.services.events.api_destination import add_api_destination_authorization
+from localstack.services.events.models import (
+    FormattedEvent,
+    TransformedEvent,
+    ValidationException,
+)
 from localstack.services.events.utils import (
     event_time_to_time_string,
     get_trace_header_encoded_region_account,
@@ -31,6 +41,9 @@ from localstack.utils.aws.arns import (
     sqs_queue_url_for_arn,
 )
 from localstack.utils.aws.client_types import ServicePrincipal
+from localstack.utils.aws.message_forwarding import (
+    add_target_http_parameters,
+)
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_bytes
 from localstack.utils.time import now_utc
@@ -128,8 +141,8 @@ class TargetSender(ABC):
     rule_name: RuleName
     service: str
 
-    region: str
-    account_id: str
+    region: str  # region of the event bus
+    account_id: str  # region of the event bus
     target_region: str
     target_account_id: str
     _client: BaseClient | None
@@ -159,6 +172,18 @@ class TargetSender(ABC):
     @property
     def arn(self):
         return self.target["Arn"]
+
+    @property
+    def target_id(self):
+        return self.target["Id"]
+
+    @property
+    def unique_id(self):
+        """Necessary to distinguish between targets with the same ARN but for different rules.
+        The unique_id is a combination of the rule ARN and the Target Id.
+        This is necessary since input path and input transformer can be different for the same target ARN,
+        attached to different rules."""
+        return f"{self.rule_arn}-{self.target_id}"
 
     @property
     def client(self):
@@ -263,7 +288,7 @@ class TargetSender(ABC):
         return predefined_template_replacements
 
 
-TargetSenderDict = dict[Arn, TargetSender]
+TargetSenderDict = dict[str, TargetSender]  # rule_arn-target_id as global unique id
 
 # Target Senders are ordered alphabetically by service name
 
@@ -422,10 +447,6 @@ class EventsTargetSender(TargetSender):
     def send_event(self, event):
         # TODO add validation and tests for eventbridge to eventbridge requires Detail, DetailType, and Source
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/events/client/put_events.html
-        target_arn = self.target["Arn"]
-        if ":api-destination/" in target_arn or ":destination/" in target_arn:
-            send_event_to_api_destination(target_arn, event, self.target.get("HttpParameters"))
-            return
         source = self._get_source(event)
         detail_type = self._get_detail_type(event)
         detail = event.get("detail", event)
@@ -462,6 +483,52 @@ class EventsTargetSender(TargetSender):
             return resources
         else:
             return []
+
+
+class EventsApiDestinationTargetSender(TargetSender):
+    def send_event(self, event):
+        """Send an event to an EventBridge API destination
+        See https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-destinations.html"""
+        target_arn = self.target["Arn"]
+        target_region = extract_region_from_arn(target_arn)
+        target_account_id = extract_account_id_from_arn(target_arn)
+        api_destination_name = target_arn.split(":")[-1].split("/")[1]
+
+        events_client = connect_to(
+            aws_access_key_id=target_account_id, region_name=target_region
+        ).events
+        destination = events_client.describe_api_destination(Name=api_destination_name)
+
+        # get destination endpoint details
+        method = destination.get("HttpMethod", "GET")
+        endpoint = destination.get("InvocationEndpoint")
+        state = destination.get("ApiDestinationState") or "ACTIVE"
+
+        LOG.debug(
+            'Calling EventBridge API destination (state "%s"): %s %s', state, method, endpoint
+        )
+        headers = {
+            # default headers AWS sends with every api destination call
+            "User-Agent": "Amazon/EventBridge/ApiDestinations",
+            "Content-Type": "application/json; charset=utf-8",
+            "Range": "bytes=0-1048575",
+            "Accept-Encoding": "gzip,deflate",
+            "Connection": "close",
+        }
+
+        endpoint = add_api_destination_authorization(destination, headers, event)
+        if http_parameters := self.target.get("HttpParameters"):
+            endpoint = add_target_http_parameters(http_parameters, endpoint, headers, event)
+
+        result = requests.request(
+            method=method, url=endpoint, data=json.dumps(event or {}), headers=headers
+        )
+        if result.status_code >= 400:
+            LOG.debug(
+                "Received code %s forwarding events: %s %s", result.status_code, method, endpoint
+            )
+            if result.status_code == 429 or 500 <= result.status_code <= 600:
+                pass  # TODO: retry logic (only retry on 429 and 5xx response status)
 
 
 class FirehoseTargetSender(TargetSender):
@@ -605,6 +672,7 @@ class TargetSenderFactory:
         "batch": BatchTargetSender,
         "ecs": ECSTargetSender,
         "events": EventsTargetSender,
+        "events_api_destination": EventsApiDestinationTargetSender,
         "firehose": FirehoseTargetSender,
         "kinesis": KinesisTargetSender,
         "lambda": LambdaTargetSender,
@@ -633,7 +701,10 @@ class TargetSenderFactory:
         cls.target_map[service_name] = sender_class
 
     def get_target_sender(self) -> TargetSender:
-        service = extract_service_from_arn(self.target["Arn"])
+        target_arn = self.target["Arn"]
+        service = extract_service_from_arn(target_arn)
+        if ":api-destination/" in target_arn or ":destination/" in target_arn:
+            service = "events_api_destination"
         if service in self.target_map:
             target_sender_class = self.target_map[service]
         else:

@@ -1,10 +1,14 @@
 {
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_list_objects_with_prefix[]": {
-    "recorded-date": "15-11-2023, 12:42:39",
+    "recorded-date": "21-01-2025, 18:14:22",
     "recorded-content": {
       "list-objects": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test/foo/bar/123",
             "LastModified": "datetime",
@@ -30,7 +34,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_list_objects_with_prefix[/]": {
-    "recorded-date": "15-11-2023, 12:42:41",
+    "recorded-date": "21-01-2025, 18:14:24",
     "recorded-content": {
       "list-objects": {
         "CommonPrefixes": [
@@ -53,11 +57,15 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_list_objects_with_prefix[%2F]": {
-    "recorded-date": "15-11-2023, 12:42:43",
+    "recorded-date": "21-01-2025, 18:14:26",
     "recorded-content": {
       "list-objects": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test/foo/bar/123",
             "LastModified": "datetime",
@@ -97,11 +105,15 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_list_objects_next_marker": {
-    "recorded-date": "12-11-2023, 01:53:38",
+    "recorded-date": "21-01-2025, 18:14:29",
     "recorded-content": {
       "list-objects-all": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "<key:1>",
             "LastModified": "datetime",
@@ -113,6 +125,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "<key:2>",
             "LastModified": "datetime",
@@ -124,6 +140,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "<key:3>",
             "LastModified": "datetime",
@@ -149,6 +169,10 @@
       "list-objects-max-1": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "<key:1>",
             "LastModified": "datetime",
@@ -176,6 +200,10 @@
       "list-objects-rest": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "<key:2>",
             "LastModified": "datetime",
@@ -201,6 +229,10 @@
       "list-objects-marker-empty": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "<key:1>",
             "LastModified": "datetime",
@@ -226,7 +258,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_s3_list_objects_empty_marker": {
-    "recorded-date": "12-11-2023, 01:53:40",
+    "recorded-date": "21-01-2025, 18:14:31",
     "recorded-content": {
       "list-objects": {
         "EncodingType": "url",
@@ -243,11 +275,15 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_with_prefix": {
-    "recorded-date": "12-11-2023, 01:53:43",
+    "recorded-date": "21-01-2025, 18:14:40",
     "recorded-content": {
       "list-objects-v2-1": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test/bar/foo/123",
             "LastModified": "datetime",
@@ -255,6 +291,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test/foo/bar/123",
             "LastModified": "datetime",
@@ -262,6 +302,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test/foo/bar/456",
             "LastModified": "datetime",
@@ -283,6 +327,10 @@
       "list-objects-v2-2": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test/foo/bar/123",
             "LastModified": "datetime",
@@ -290,6 +338,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test/foo/bar/456",
             "LastModified": "datetime",
@@ -311,6 +363,10 @@
       "list-objects-v2-3": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test/foo/bar/123",
             "LastModified": "datetime",
@@ -318,6 +374,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test/foo/bar/456",
             "LastModified": "datetime",
@@ -340,6 +400,8 @@
         "ListBucketResult": {
           "Contents": [
             {
+              "ChecksumAlgorithm": "CRC32",
+              "ChecksumType": "FULL_OBJECT",
               "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
               "Key": "test/foo/bar/123",
               "LastModified": "date",
@@ -347,6 +409,8 @@
               "StorageClass": "STANDARD"
             },
             {
+              "ChecksumAlgorithm": "CRC32",
+              "ChecksumType": "FULL_OBJECT",
               "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
               "Key": "test/foo/bar/456",
               "LastModified": "date",
@@ -364,7 +428,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_with_prefix_and_delimiter": {
-    "recorded-date": "12-11-2023, 01:53:46",
+    "recorded-date": "21-01-2025, 18:14:43",
     "recorded-content": {
       "list-objects-v2-1": {
         "CommonPrefixes": [
@@ -445,11 +509,15 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_continuation_start_after": {
-    "recorded-date": "12-11-2023, 01:53:51",
+    "recorded-date": "21-01-2025, 18:14:48",
     "recorded-content": {
       "list-objects-v2-max-5": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_0",
             "LastModified": "datetime",
@@ -457,6 +525,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_1",
             "LastModified": "datetime",
@@ -464,6 +536,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_10",
             "LastModified": "datetime",
@@ -471,6 +547,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_11",
             "LastModified": "datetime",
@@ -478,6 +558,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_2",
             "LastModified": "datetime",
@@ -500,6 +584,10 @@
       "list-objects-v2-rest": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_3",
             "LastModified": "datetime",
@@ -507,6 +595,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_4",
             "LastModified": "datetime",
@@ -514,6 +606,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_5",
             "LastModified": "datetime",
@@ -521,6 +617,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_6",
             "LastModified": "datetime",
@@ -528,6 +628,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_7",
             "LastModified": "datetime",
@@ -535,6 +639,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_8",
             "LastModified": "datetime",
@@ -542,6 +650,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_9",
             "LastModified": "datetime",
@@ -564,6 +676,10 @@
       "list-objects-start-after": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_8",
             "LastModified": "datetime",
@@ -571,6 +687,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_9",
             "LastModified": "datetime",
@@ -593,6 +713,10 @@
       "list-objects-start-after-token": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_3",
             "LastModified": "datetime",
@@ -600,6 +724,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_4",
             "LastModified": "datetime",
@@ -607,6 +735,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_5",
             "LastModified": "datetime",
@@ -614,6 +746,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_6",
             "LastModified": "datetime",
@@ -621,6 +757,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_7",
             "LastModified": "datetime",
@@ -628,6 +768,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_8",
             "LastModified": "datetime",
@@ -635,6 +779,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "test_9",
             "LastModified": "datetime",
@@ -668,11 +816,15 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_continuation_common_prefixes": {
-    "recorded-date": "12-11-2023, 01:53:55",
+    "recorded-date": "21-01-2025, 18:14:51",
     "recorded-content": {
       "list-objects-v2-all-keys": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "folder/aSubfolder/subFile1",
             "LastModified": "datetime",
@@ -680,6 +832,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "folder/aSubfolder/subFile2",
             "LastModified": "datetime",
@@ -687,6 +843,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "folder/file1",
             "LastModified": "datetime",
@@ -694,6 +854,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "folder/file2",
             "LastModified": "datetime",
@@ -734,6 +898,10 @@
       "list-objects-v2-next-1": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "folder/file1",
             "LastModified": "datetime",
@@ -758,6 +926,10 @@
       "list-objects-v2-end": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "folder/file2",
             "LastModified": "datetime",
@@ -781,7 +953,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectVersions::test_list_objects_versions_markers": {
-    "recorded-date": "12-11-2023, 01:54:00",
+    "recorded-date": "21-01-2025, 18:14:56",
     "recorded-content": {
       "version-order": {
         "Versions": [
@@ -856,6 +1028,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"d4ca1ed7571e2e7b1f1c375bd50fa220\"",
             "IsLatest": true,
             "Key": "test_0",
@@ -869,6 +1045,10 @@
             "VersionId": "<version-id:8>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"db3ec040e20dfc657dab510aeab74759\"",
             "IsLatest": false,
             "Key": "test_0",
@@ -882,6 +1062,10 @@
             "VersionId": "<version-id:1>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"d4ca1ed7571e2e7b1f1c375bd50fa220\"",
             "IsLatest": true,
             "Key": "test_1",
@@ -895,6 +1079,10 @@
             "VersionId": "<version-id:9>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"db3ec040e20dfc657dab510aeab74759\"",
             "IsLatest": false,
             "Key": "test_1",
@@ -908,6 +1096,10 @@
             "VersionId": "<version-id:2>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"d4ca1ed7571e2e7b1f1c375bd50fa220\"",
             "IsLatest": false,
             "Key": "test_2",
@@ -921,6 +1113,10 @@
             "VersionId": "<version-id:4>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"db3ec040e20dfc657dab510aeab74759\"",
             "IsLatest": false,
             "Key": "test_2",
@@ -973,6 +1169,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"d4ca1ed7571e2e7b1f1c375bd50fa220\"",
             "IsLatest": true,
             "Key": "test_0",
@@ -986,6 +1186,10 @@
             "VersionId": "<version-id:8>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"db3ec040e20dfc657dab510aeab74759\"",
             "IsLatest": false,
             "Key": "test_0",
@@ -999,6 +1203,10 @@
             "VersionId": "<version-id:1>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"d4ca1ed7571e2e7b1f1c375bd50fa220\"",
             "IsLatest": true,
             "Key": "test_1",
@@ -1081,6 +1289,10 @@
         "VersionIdMarker": "<version-id:6>",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"db3ec040e20dfc657dab510aeab74759\"",
             "IsLatest": false,
             "Key": "test_1",
@@ -1109,6 +1321,10 @@
         "VersionIdMarker": "<version-id:4>",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"db3ec040e20dfc657dab510aeab74759\"",
             "IsLatest": false,
             "Key": "test_2",
@@ -1139,6 +1355,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"d4ca1ed7571e2e7b1f1c375bd50fa220\"",
             "IsLatest": true,
             "Key": "test_0",
@@ -1160,7 +1380,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectVersions::test_list_object_versions_pagination_common_prefixes": {
-    "recorded-date": "12-11-2023, 02:37:48",
+    "recorded-date": "21-01-2025, 18:14:59",
     "recorded-content": {
       "list-object-versions-all-keys": {
         "EncodingType": "url",
@@ -1172,6 +1392,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "IsLatest": true,
             "Key": "folder/aSubfolder/subFile1",
@@ -1185,6 +1409,10 @@
             "VersionId": "<version-id:1>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "IsLatest": true,
             "Key": "folder/aSubfolder/subFile2",
@@ -1198,6 +1426,10 @@
             "VersionId": "<version-id:2>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "IsLatest": true,
             "Key": "folder/file1",
@@ -1211,6 +1443,10 @@
             "VersionId": "<version-id:3>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "IsLatest": true,
             "Key": "folder/file2",
@@ -1262,6 +1498,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "IsLatest": true,
             "Key": "folder/file1",
@@ -1291,6 +1531,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "IsLatest": true,
             "Key": "folder/file2",
@@ -1322,6 +1566,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "IsLatest": true,
             "Key": "folder/file1",
@@ -1343,7 +1591,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectVersions::test_list_objects_versions_with_prefix": {
-    "recorded-date": "12-11-2023, 01:54:10",
+    "recorded-date": "21-01-2025, 18:15:03",
     "recorded-content": {
       "list-object-version-1": {
         "CommonPrefixes": [
@@ -1361,6 +1609,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"c978d4a128605d97d7c5b1bd17250efd\"",
             "IsLatest": true,
             "Key": "dir/test",
@@ -1374,6 +1626,10 @@
             "VersionId": "<version-id:1>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"dbe906ced633d4580318b1cc37ce1ca4\"",
             "IsLatest": false,
             "Key": "dir/test",
@@ -1422,6 +1678,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"c978d4a128605d97d7c5b1bd17250efd\"",
             "IsLatest": true,
             "Key": "dir/test",
@@ -1435,6 +1695,10 @@
             "VersionId": "<version-id:1>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"dbe906ced633d4580318b1cc37ce1ca4\"",
             "IsLatest": false,
             "Key": "dir/test",
@@ -1483,6 +1747,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"56a8b2485f9683f70ea3316e6fa46be1\"",
             "IsLatest": true,
             "Key": "dir/subdir/test2",
@@ -1496,6 +1764,10 @@
             "VersionId": "<version-id:3>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"eafcff1b58415aa1e09ab4891ca2fa8a\"",
             "IsLatest": false,
             "Key": "dir/subdir/test2",
@@ -1525,6 +1797,10 @@
         "VersionIdMarker": "",
         "Versions": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"56a8b2485f9683f70ea3316e6fa46be1\"",
             "IsLatest": true,
             "Key": "dir/subdir/test2",
@@ -1538,6 +1814,10 @@
             "VersionId": "<version-id:3>"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"eafcff1b58415aa1e09ab4891ca2fa8a\"",
             "IsLatest": false,
             "Key": "dir/subdir/test2",
@@ -1573,7 +1853,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListMultipartUploads::test_list_multiparts_next_marker": {
-    "recorded-date": "12-11-2023, 01:54:14",
+    "recorded-date": "21-01-2025, 18:15:10",
     "recorded-content": {
       "list-multiparts-empty": {
         "Bucket": "<bucket:1>",
@@ -1923,7 +2203,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListMultipartUploads::test_list_multiparts_with_prefix_and_delimiter": {
-    "recorded-date": "12-11-2023, 01:54:17",
+    "recorded-date": "21-01-2025, 18:15:12",
     "recorded-content": {
       "list-multiparts-1": {
         "Bucket": "<bucket:1>",
@@ -2036,7 +2316,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListParts::test_list_parts_pagination": {
-    "recorded-date": "12-11-2023, 01:54:20",
+    "recorded-date": "21-01-2025, 18:15:18",
     "recorded-content": {
       "list-parts-empty": {
         "Bucket": "bucket",
@@ -2181,11 +2461,15 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_list_objects_marker_common_prefixes": {
-    "recorded-date": "12-11-2023, 02:32:53",
+    "recorded-date": "21-01-2025, 18:14:33",
     "recorded-content": {
       "list-objects-all-keys": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "folder/aSubfolder/subFile1",
             "LastModified": "datetime",
@@ -2197,6 +2481,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "folder/aSubfolder/subFile2",
             "LastModified": "datetime",
@@ -2208,6 +2496,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "folder/file1",
             "LastModified": "datetime",
@@ -2219,6 +2511,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "folder/file2",
             "LastModified": "datetime",
@@ -2263,6 +2559,10 @@
       "list-objects-next-1": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "folder/file1",
             "LastModified": "datetime",
@@ -2290,6 +2590,10 @@
       "list-objects-end": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "folder/file2",
             "LastModified": "datetime",
@@ -2316,6 +2620,10 @@
       "list-objects-manual-first-file": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
             "Key": "folder/file1",
             "LastModified": "datetime",
@@ -2343,7 +2651,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListMultipartUploads::test_list_multipart_uploads_marker_common_prefixes": {
-    "recorded-date": "12-11-2023, 02:24:32",
+    "recorded-date": "21-01-2025, 18:15:14",
     "recorded-content": {
       "list-multiparts-start": {
         "Bucket": "<bucket:1>",
@@ -2430,7 +2738,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListParts::test_list_parts_empty_part_number_marker": {
-    "recorded-date": "11-11-2023, 00:20:09",
+    "recorded-date": "21-01-2025, 18:15:20",
     "recorded-content": {
       "list-parts-empty-marker": {
         "Bucket": "bucket",
@@ -2487,6 +2795,290 @@
         ],
         "StorageClass": "STANDARD",
         "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectVersions::test_list_objects_versions_with_prefix_only_and_pagination": {
+    "recorded-date": "13-02-2025, 03:52:21",
+    "recorded-content": {
+      "list-object-version-prefix-full": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "prefix",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": true,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:2>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:3>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:4>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:5>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-version-prefix-page-1": {
+        "EncodingType": "url",
+        "IsTruncated": true,
+        "KeyMarker": "",
+        "MaxKeys": 3,
+        "Name": "<bucket-name:1>",
+        "NextKeyMarker": "prefixed_key",
+        "NextVersionIdMarker": "<version-id:3>",
+        "Prefix": "prefix",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": true,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:2>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-version-prefix-key-marker-only": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "prefixed_key",
+        "MaxKeys": 4,
+        "Name": "<bucket-name:1>",
+        "Prefix": "prefix",
+        "VersionIdMarker": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-version-prefix-page-2": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "prefixed_key",
+        "MaxKeys": 5,
+        "Name": "<bucket-name:1>",
+        "Prefix": "prefix",
+        "VersionIdMarker": "<version-id:3>",
+        "Versions": [
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:4>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:5>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-version-prefix-page-2-after-delete": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "prefixed_key",
+        "MaxKeys": 5,
+        "Name": "<bucket-name:1>",
+        "Prefix": "prefix",
+        "VersionIdMarker": "<version-id:3>",
+        "Versions": [
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": true,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:4>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "IsLatest": false,
+            "Key": "prefixed_key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 0,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:5>"
+          }
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

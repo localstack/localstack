@@ -40,5 +40,11 @@
   },
   "tests/aws/services/stepfunctions/v2/outputdecl/test_output.py::TestArgumentsBase::test_base_task_lambda[BASE_TASK_LAMBDA]": {
     "last_validated_date": "2024-11-04T14:15:16+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/outputdecl/test_output.py::TestArgumentsBase::test_output_in_choice[CONDITION_FALSE]": {
+    "last_validated_date": "2024-12-27T14:50:22+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/outputdecl/test_output.py::TestArgumentsBase::test_output_in_choice[CONDITION_TRUE]": {
+    "last_validated_date": "2024-12-27T14:50:08+00:00"
   }
 }

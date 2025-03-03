@@ -1,6 +1,7 @@
 import json
 import math
 import time
+from datetime import datetime
 
 import pytest
 from botocore.exceptions import ClientError
@@ -12,11 +13,12 @@ from localstack.testing.aws.lambda_utils import (
     _await_dynamodb_table_active,
     _await_event_source_mapping_enabled,
     _get_lambda_invocation_events,
+    esm_lambda_permission,
     lambda_role,
-    s3_lambda_permission,
 )
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.utils.aws.arns import s3_bucket_arn
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
@@ -113,7 +115,7 @@ class TestDynamoDBEventSourceMapping:
             RoleName=role,
             PolicyName=policy_name,
             RoleDefinition=lambda_role,
-            PolicyDefinition=s3_lambda_permission,
+            PolicyDefinition=esm_lambda_permission,
         )
 
         create_lambda_function(
@@ -345,7 +347,7 @@ class TestDynamoDBEventSourceMapping:
         list_esm = aws_client.lambda_.list_event_source_mappings(EventSourceArn=latest_stream_arn)
         snapshot.match("list_event_source_mapping_result", list_esm)
 
-    # FIXME UpdateTable is not returning a TableID
+    # TODO re-record snapshot, now TableId is returned but new WarmThroughput property is not
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..TableDescription.TableId",
@@ -401,7 +403,7 @@ class TestDynamoDBEventSourceMapping:
             RoleName=role,
             PolicyName=policy_name,
             RoleDefinition=lambda_role,
-            PolicyDefinition=s3_lambda_permission,
+            PolicyDefinition=esm_lambda_permission,
         )
 
         create_lambda_function(
@@ -460,7 +462,7 @@ class TestDynamoDBEventSourceMapping:
 
         snapshot.match("failure_sns_message", failure_sns_message)
 
-    # FIXME UpdateTable is not returning a TableID
+    # TODO re-record snapshot, now TableId is returned but new WarmThroughput property is not
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..TableDescription.TableId",
@@ -493,7 +495,7 @@ class TestDynamoDBEventSourceMapping:
             RoleName=role,
             PolicyName=policy_name,
             RoleDefinition=lambda_role,
-            PolicyDefinition=s3_lambda_permission,
+            PolicyDefinition=esm_lambda_permission,
         )
 
         create_lambda_function(
@@ -545,6 +547,121 @@ class TestDynamoDBEventSourceMapping:
         sleep = 15 if is_aws_cloud() else 5
         messages = retry(verify_failure_received, retries=15, sleep=sleep, sleep_before=5)
         snapshot.match("destination_queue_messages", messages)
+
+    # FIXME UpdateTable is not returning a WarmThroughput property
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..TableDescription.WarmThroughput",
+            "$..requestContext.requestId",  # TODO there is an extra uuid in the snapshot when run in CI on itest-ddb-v2-provider step, need to look why
+        ],
+    )
+    @markers.aws.validated
+    def test_dynamodb_event_source_mapping_with_s3_on_failure_destination(
+        self,
+        s3_bucket,
+        create_lambda_function,
+        aws_client,
+        cleanups,
+        dynamodb_create_table,
+        create_iam_role_with_policy,
+        region_name,
+        snapshot,
+    ):
+        # set up s3, lambda, dynamdodb
+
+        function_name = f"lambda_func-{short_uid()}"
+        role = f"test-lambda-role-{short_uid()}"
+        policy_name = f"test-lambda-policy-{short_uid()}"
+        table_name = f"test-table-{short_uid()}"
+        partition_key = "my_partition_key"
+        item = {partition_key: {"S": "hello world"}}
+
+        bucket_name = s3_bucket
+        bucket_arn = s3_bucket_arn(bucket_name, region=region_name)
+
+        role_arn = create_iam_role_with_policy(
+            RoleName=role,
+            PolicyName=policy_name,
+            RoleDefinition=lambda_role,
+            PolicyDefinition=esm_lambda_permission,
+        )
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=role_arn,
+        )
+
+        create_table_response = dynamodb_create_table(
+            table_name=table_name, partition_key=partition_key
+        )
+        _await_dynamodb_table_active(aws_client.dynamodb, table_name)
+        snapshot.match("create_table_response", create_table_response)
+
+        update_table_response = aws_client.dynamodb.update_table(
+            TableName=table_name,
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
+        )
+        snapshot.match("update_table_response", update_table_response)
+        stream_arn = update_table_response["TableDescription"]["LatestStreamArn"]
+
+        # create event source mapping
+
+        destination_config = {"OnFailure": {"Destination": bucket_arn}}
+
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            FunctionName=function_name,
+            BatchSize=1,
+            StartingPosition="TRIM_HORIZON",
+            EventSourceArn=stream_arn,
+            MaximumBatchingWindowInSeconds=1,
+            MaximumRetryAttempts=1,
+            DestinationConfig=destination_config,
+        )
+        cleanups.append(
+            lambda: aws_client.lambda_.delete_event_source_mapping(UUID=event_source_mapping_uuid)
+        )
+        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
+        event_source_mapping_uuid = create_event_source_mapping_response["UUID"]
+        _await_event_source_mapping_enabled(aws_client.lambda_, event_source_mapping_uuid)
+
+        # trigger ESM source
+
+        aws_client.dynamodb.put_item(TableName=table_name, Item=item)
+
+        # add snapshot transformers
+
+        snapshot.add_transformer(snapshot.transform.regex(r"shardId-.*", "<dynamodb-shard-id>"))
+
+        # verify failure record data
+
+        def get_invocation_record():
+            list_objects_response = aws_client.s3.list_objects_v2(Bucket=bucket_name)
+            bucket_objects = list_objects_response["Contents"]
+            assert len(bucket_objects) == 1
+            object_key = bucket_objects[0]["Key"]
+
+            invocation_record = aws_client.s3.get_object(
+                Bucket=bucket_name,
+                Key=object_key,
+            )
+            return invocation_record, object_key
+
+        sleep = 15 if is_aws_cloud() else 5
+        s3_invocation_record, s3_object_key = retry(
+            get_invocation_record, retries=15, sleep=sleep, sleep_before=5
+        )
+
+        record_body = json.loads(s3_invocation_record["Body"].read().decode("utf-8"))
+        snapshot.match("record_body", record_body)
+
+        failure_datetime = datetime.fromisoformat(record_body["timestamp"])
+        timestamp = failure_datetime.strftime("%Y-%m-%dT%H.%M.%S")
+        year_month_day = failure_datetime.strftime("%Y/%m/%d")
+        assert s3_object_key.startswith(
+            f"aws/lambda/{event_source_mapping_uuid}/{record_body['DDBStreamBatchInfo']['shardId']}/{year_month_day}/{timestamp}"
+        )  # there is a random UUID at the end of object key, checking that the key starts with deterministic values
 
     # TODO: consider re-designing this test case because it currently does negative testing for the second event,
     #  which can be unreliable due to undetermined waiting times (i.e., retries). For reliable testing, we need
@@ -841,7 +958,7 @@ class TestDynamoDBEventSourceMapping:
             RoleName=role,
             PolicyName=policy_name,
             RoleDefinition=lambda_role,
-            PolicyDefinition=s3_lambda_permission,
+            PolicyDefinition=esm_lambda_permission,
         )
 
         create_lambda_function(

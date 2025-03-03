@@ -170,7 +170,8 @@ class TestS3NotificationsToEventBridge:
             assert len(messages) == 4
 
         retries = 10 if is_aws_cloud() else 5
-        retry(_receive_messages, retries=retries, sleep=0.1)
+        sleep_time = 1 if is_aws_cloud() else 0.1
+        retry(_receive_messages, retries=retries, sleep=sleep_time)
         messages.sort(key=lambda x: (x["detail-type"], x["time"]))
         snapshot.match("messages", {"messages": messages})
 
@@ -226,7 +227,8 @@ class TestS3NotificationsToEventBridge:
             assert len(messages) == 2
 
         retries = 20 if is_aws_cloud() else 5
-        retry(_receive_messages, retries=retries, sleep=0.1)
+        sleep_time = 1 if is_aws_cloud() else 0.1
+        retry(_receive_messages, retries=retries, sleep=sleep_time)
         messages.sort(key=lambda x: x["time"])
         snapshot.match("messages", {"messages": messages})
 
@@ -319,7 +321,7 @@ class TestS3NotificationsToEventBridge:
             )
             return messages
 
-        retries = 10 if is_aws_cloud() else 5
+        retries = 15 if is_aws_cloud() else 5
         retry(_receive_messages, retries=retries, expected=4)
         snapshot.match("message-versioning-active", messages)
         messages.clear()

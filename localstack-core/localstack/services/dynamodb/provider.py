@@ -687,6 +687,33 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             )
             table_description["TableClassSummary"] = {"TableClass": table_class}
 
+        if "GlobalSecondaryIndexes" in table_description:
+            gsis = copy.deepcopy(table_description["GlobalSecondaryIndexes"])
+            # update the different values, as DynamoDB-local v2 has a regression around GSI and does not return anything
+            # anymore
+            for gsi in gsis:
+                index_name = gsi.get("IndexName", "")
+                gsi.update(
+                    {
+                        "IndexArn": f"{table_arn}/index/{index_name}",
+                        "IndexSizeBytes": 0,
+                        "IndexStatus": "ACTIVE",
+                        "ItemCount": 0,
+                    }
+                )
+                gsi_provisioned_throughput = gsi.setdefault("ProvisionedThroughput", {})
+                gsi_provisioned_throughput["NumberOfDecreasesToday"] = 0
+
+                if billing_mode == BillingMode.PAY_PER_REQUEST:
+                    gsi_provisioned_throughput["ReadCapacityUnits"] = 0
+                    gsi_provisioned_throughput["WriteCapacityUnits"] = 0
+
+            table_description["GlobalSecondaryIndexes"] = gsis
+
+        if "ProvisionedThroughput" in table_description:
+            if "NumberOfDecreasesToday" not in table_description["ProvisionedThroughput"]:
+                table_description["ProvisionedThroughput"]["NumberOfDecreasesToday"] = 0
+
         tags = table_definitions.pop("Tags", [])
         if tags:
             get_store(context.account_id, context.region).TABLE_TAGS[table_arn] = {
@@ -764,6 +791,17 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 table_description["TableClassSummary"] = {
                     "TableClass": table_definitions["TableClass"]
                 }
+
+        if "GlobalSecondaryIndexes" in table_description:
+            for gsi in table_description["GlobalSecondaryIndexes"]:
+                default_values = {
+                    "NumberOfDecreasesToday": 0,
+                    "ReadCapacityUnits": 0,
+                    "WriteCapacityUnits": 0,
+                }
+                # even if the billing mode is PAY_PER_REQUEST, AWS returns the Read and Write Capacity Units
+                # Terraform depends on this parity for update operations
+                gsi["ProvisionedThroughput"] = default_values | gsi.get("ProvisionedThroughput", {})
 
         return DescribeTableOutput(
             Table=select_from_typed_dict(TableDescription, table_description)

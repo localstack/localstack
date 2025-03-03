@@ -203,6 +203,12 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_posting_to_fifo_requires_deduplicationid_group_id[sqs_query]": {
     "last_validated_date": "2024-04-30T13:34:22+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_empty_queue[sqs]": {
+    "last_validated_date": "2025-02-10T13:18:17+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_empty_queue[sqs_query]": {
+    "last_validated_date": "2025-02-10T13:18:20+00:00"
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_attribute_names_filters[sqs]": {
     "last_validated_date": "2024-06-04T11:54:31+00:00"
   },
@@ -323,6 +329,12 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_message_multiple_queues": {
     "last_validated_date": "2024-04-30T13:40:05+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_wait_time_seconds[sqs]": {
+    "last_validated_date": "2025-02-10T13:22:29+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_wait_time_seconds[sqs_query]": {
+    "last_validated_date": "2025-02-10T13:22:32+00:00"
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_empty_redrive_policy[sqs]": {
     "last_validated_date": "2024-08-20T14:14:08+00:00"
   },
@@ -394,6 +406,12 @@
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_too_many_entries_in_batch_request[sqs_query]": {
     "last_validated_date": "2024-04-30T13:33:40+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_wait_time_seconds_waits_correctly[sqs]": {
+    "last_validated_date": "2025-01-23T13:57:19+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_wait_time_seconds_waits_correctly[sqs_query]": {
+    "last_validated_date": "2025-01-23T13:57:30+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsQueryApi::test_send_message_via_queue_url_with_json_protocol": {
     "last_validated_date": "2024-04-30T13:35:11+00:00"

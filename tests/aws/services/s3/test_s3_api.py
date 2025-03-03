@@ -487,7 +487,7 @@ class TestS3Multipart:
     # TODO: write a validated test for UploadPartCopy preconditions
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..PartNumberMarker"])  # TODO: invetigate this
+    @markers.snapshot.skip_snapshot_verify(paths=["$..PartNumberMarker"])  # TODO: investigate this
     def test_upload_part_copy_range(self, aws_client, s3_bucket, snapshot):
         snapshot.add_transformer(
             [

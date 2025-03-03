@@ -40,6 +40,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.items.items import (
     Items,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.distributed_iteration_component import (
+    DistributedIterationComponent,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.distributed_item_processor import (
     DistributedItemProcessor,
     DistributedItemProcessorEvalInput,
@@ -176,8 +179,13 @@ class StateMap(ExecutionState):
         frame.stack = copy.deepcopy(env.stack)
 
         try:
-            if self.items_path:
-                self.items_path.eval(env=env)
+            # ItemsPath in DistributedMap states is only used if a JSONinput is passed from the previous state.
+            if (
+                not isinstance(self.iteration_component, DistributedIterationComponent)
+                or self.item_reader is None
+            ):
+                if self.items_path:
+                    self.items_path.eval(env=env)
 
             if self.items:
                 self.items.eval(env=env)

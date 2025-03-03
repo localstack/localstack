@@ -4290,5 +4290,174 @@
         }
       ]
     }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping_with_s3_on_failure_destination": {
+    "recorded-date": "03-01-2025, 16:42:26",
+    "recorded-content": {
+      "create_table_response": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_table_response": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST",
+            "LastUpdateToPayPerRequestDateTime": "<datetime>"
+          },
+          "CreationDateTime": "<datetime>",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+          "LatestStreamLabel": "<resource:2>",
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "StreamSpecification": {
+            "StreamEnabled": true,
+            "StreamViewType": "NEW_IMAGE"
+          },
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "UPDATING",
+          "WarmThroughput": {
+            "ReadUnitsPerSecond": 12000,
+            "Status": "ACTIVE",
+            "WriteUnitsPerSecond": 4000
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_event_source_mapping_response": {
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:<partition>:s3:::<resource:3>"
+          }
+        },
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:4>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "record_body": {
+        "DDBStreamBatchInfo": {
+          "approximateArrivalOfFirstRecord": "<timestamp:2022-07-13T13:48:01Z>",
+          "approximateArrivalOfLastRecord": "<timestamp:2022-07-13T13:48:01Z>",
+          "batchSize": 1,
+          "endSequenceNumber": "<sequence-number:1>",
+          "shardId": "<shard-id:1>",
+          "startSequenceNumber": "<sequence-number:1>",
+          "streamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+        },
+        "payload": {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "NewImage": {
+                  "my_partition_key": {
+                    "S": "hello world"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 54,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+            }
+          ]
+        },
+        "requestContext": {
+          "approximateInvokeCount": 2,
+          "condition": "RetryAttemptsExhausted",
+          "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:4>",
+          "requestId": "<uuid:3>"
+        },
+        "responseContext": {
+          "executedVersion": "$LATEST",
+          "functionError": "Unhandled",
+          "statusCode": 200
+        },
+        "timestamp": "<timestamp:2022-07-13T13:48:01.000Z>",
+        "version": "1.0"
+      }
+    }
   }
 }

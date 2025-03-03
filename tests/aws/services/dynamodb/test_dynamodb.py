@@ -2338,3 +2338,66 @@ class TestDynamoDB:
 
         retry(lambda: _get_records_amount(1), sleep=1, retries=3)
         snapshot.match("get-records", {"Records": records})
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("billing_mode", ["PAY_PER_REQUEST", "PROVISIONED"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # LS returns those and not AWS, probably because no changes happened there yet
+            "$..ProvisionedThroughput.LastDecreaseDateTime",
+            "$..ProvisionedThroughput.LastIncreaseDateTime",
+            "$..TableDescription.BillingModeSummary.LastUpdateToPayPerRequestDateTime",
+        ]
+    )
+    def test_gsi_with_billing_mode(
+        self, aws_client, dynamodb_create_table_with_parameters, snapshot, billing_mode
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("TableName"),
+                snapshot.transform.key_value(
+                    "TableStatus", reference_replacement=False, value_replacement="<table-status>"
+                ),
+                snapshot.transform.key_value(
+                    "IndexStatus", reference_replacement=False, value_replacement="<index-status>"
+                ),
+            ]
+        )
+
+        table_name = f"test-table-{short_uid()}"
+        create_table_kwargs = {}
+        global_secondary_index = {
+            "IndexName": "TransactionRecordID",
+            "KeySchema": [
+                {"AttributeName": "TRID", "KeyType": "HASH"},
+            ],
+            "Projection": {"ProjectionType": "ALL"},
+        }
+
+        if billing_mode == "PROVISIONED":
+            create_table_kwargs["ProvisionedThroughput"] = {
+                "ReadCapacityUnits": 5,
+                "WriteCapacityUnits": 5,
+            }
+            global_secondary_index["ProvisionedThroughput"] = {
+                "ReadCapacityUnits": 1,
+                "WriteCapacityUnits": 1,
+            }
+
+        create_table = dynamodb_create_table_with_parameters(
+            TableName=table_name,
+            KeySchema=[
+                {"AttributeName": "TID", "KeyType": "HASH"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "TID", "AttributeType": "S"},
+                {"AttributeName": "TRID", "AttributeType": "S"},
+            ],
+            GlobalSecondaryIndexes=[global_secondary_index],
+            BillingMode=billing_mode,
+            **create_table_kwargs,
+        )
+        snapshot.match("create-table-with-gsi", create_table)
+
+        describe_table = aws_client.dynamodb.describe_table(TableName=table_name)
+        snapshot.match("describe-table", describe_table)
