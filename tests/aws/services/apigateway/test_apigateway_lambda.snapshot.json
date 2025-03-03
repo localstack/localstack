@@ -1795,5 +1795,54 @@
         "content": ""
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_lambda.py::test_put_integration_aws_proxy_uri": {
+    "recorded-date": "03-03-2025, 12:39:42",
+    "recorded-content": {
+      "put-integration-lambda-uri": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "AWS ARN for integration must contain path or action"
+        },
+        "message": "AWS ARN for integration must contain path or action",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-integration-wrong-arn": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid ARN specified in the request"
+        },
+        "message": "Invalid ARN specified in the request",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-integration-wrong-type": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "AWS ARN for integration must contain path or action"
+        },
+        "message": "AWS ARN for integration must contain path or action",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-integration-wrong-firehose": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Integrations of type 'AWS_PROXY' currently only supports Lambda function and Firehose stream invocations."
+        },
+        "message": "Integrations of type 'AWS_PROXY' currently only supports Lambda function and Firehose stream invocations.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

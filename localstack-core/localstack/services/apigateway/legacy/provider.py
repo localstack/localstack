@@ -122,7 +122,7 @@ from localstack.services.apigateway.patches import apply_patches
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.aws.arns import get_partition
+from localstack.utils.aws.arns import InvalidArnException, get_partition, parse_arn
 from localstack.utils.collections import (
     DelSafeDict,
     PaginatedList,
@@ -1937,13 +1937,27 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 f"Member must satisfy enum value set: [HTTP, MOCK, AWS_PROXY, HTTP_PROXY, AWS]",
             )
 
-        elif integration_type == IntegrationType.AWS_PROXY:
-            integration_uri = request.get("uri") or ""
-            if ":lambda:" not in integration_uri and ":firehose:" not in integration_uri:
+        elif integration_type in (IntegrationType.AWS_PROXY, IntegrationType.AWS):
+            if not (integration_uri := request.get("uri") or "").startswith("arn:"):
+                raise BadRequestException("Invalid ARN specified in the request")
+
+            try:
+                parsed_arn = parse_arn(integration_uri)
+            except InvalidArnException:
+                raise BadRequestException("Invalid ARN specified in the request")
+
+            if not any(
+                parsed_arn["resource"].startswith(action_type) for action_type in ("path", "action")
+            ):
+                raise BadRequestException("AWS ARN for integration must contain path or action")
+
+            if integration_type == IntegrationType.AWS_PROXY and parsed_arn["account"] != "lambda":
+                # the Firehose message is misleading, this is not implemented in AWS
                 raise BadRequestException(
                     "Integrations of type 'AWS_PROXY' currently only supports "
                     "Lambda function and Firehose stream invocations."
                 )
+
         moto_rest_api = get_moto_rest_api(context=context, rest_api_id=request.get("restApiId"))
         resource = moto_rest_api.resources.get(request.get("resourceId"))
         if not resource:
