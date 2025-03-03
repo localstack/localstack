@@ -34,5 +34,8 @@
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_idempotent_create_alias": {
     "last_validated_date": "2025-03-03T13:13:16+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_update_no_such_alias_arn": {
+    "last_validated_date": "2025-03-03T15:00:26+00:00"
   }
 }

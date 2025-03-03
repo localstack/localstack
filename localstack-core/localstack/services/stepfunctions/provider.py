@@ -1292,8 +1292,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         store = self.get_store(context=context)
         alias = store.aliases.get(state_machine_alias_arn)
         if alias is None:
-            # TODO: test the exact behaviour in case of update for some non-existent alias arn.
-            self._raise_state_machine_does_not_exist(state_machine_arn=state_machine_alias_arn)
+            raise ResourceNotFound("Request references a resource that does not exist.")
 
         alias.update(description=description, routing_configuration_list=routing_configuration)
         return UpdateStateMachineAliasOutput(updateDate=alias.update_date)

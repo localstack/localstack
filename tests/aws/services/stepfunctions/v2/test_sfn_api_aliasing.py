@@ -585,6 +585,78 @@ class TestSfnApiAliasing:
             )
 
     @markers.aws.validated
+    def test_update_no_such_alias_arn(
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        create_state_machine_alias,
+        sfn_snapshot,
+        aws_client,
+    ):
+        sfn_client = aws_client.stepfunctions
+
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
+        sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
+
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+
+        state_machine_name = f"state_machine_{short_uid()}"
+        create_state_machine_response = create_state_machine(
+            target_aws_client=aws_client,
+            name=state_machine_name,
+            definition=json.dumps(definition),
+            roleArn=sfn_role_arn,
+            publish=True,
+        )
+        sfn_snapshot.add_transformer(
+            sfn_snapshot.transform.sfn_sm_create_arn(create_state_machine_response, 0)
+        )
+        state_machine_arn = create_state_machine_response["stateMachineArn"]
+        state_machine_version_arn = create_state_machine_response["stateMachineVersionArn"]
+
+        state_machine_alias_name = f"AliasName-{short_uid()}"
+        sfn_snapshot.add_transformer(
+            RegexTransformer(state_machine_alias_name, "state_machine_alias_name")
+        )
+
+        create_state_machine_alias_response = create_state_machine_alias(
+            target_aws_client=aws_client,
+            description="create state machine alias description",
+            name=state_machine_alias_name,
+            routingConfiguration=[
+                RoutingConfigurationListItem(
+                    stateMachineVersionArn=state_machine_version_arn, weight=100
+                )
+            ],
+        )
+        sfn_snapshot.match(
+            "create_state_machine_alias_response", create_state_machine_alias_response
+        )
+        state_machine_alias_arn = create_state_machine_alias_response["stateMachineAliasArn"]
+        await_state_machine_alias_is_created(
+            stepfunctions_client=sfn_client,
+            state_machine_arn=state_machine_arn,
+            state_machine_alias_arn=state_machine_alias_arn,
+        )
+
+        sfn_client.delete_state_machine_alias(stateMachineAliasArn=state_machine_alias_arn)
+        await_state_machine_alias_is_deleted(
+            stepfunctions_client=sfn_client,
+            state_machine_arn=state_machine_arn,
+            state_machine_alias_arn=state_machine_alias_arn,
+        )
+
+        with pytest.raises(Exception) as exc:
+            sfn_client.update_state_machine_alias(
+                stateMachineAliasArn=state_machine_alias_arn,
+                description="Updated state machine alias description",
+            )
+        sfn_snapshot.match(
+            "update_no_such_alias_arn",
+            {"exception_typename": exc.typename, "exception_value": exc.value},
+        )
+
+    @markers.aws.validated
     def test_base_lifecycle_create_invoke_describe_list(
         self,
         create_state_machine_iam_role,

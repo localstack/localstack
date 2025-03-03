@@ -550,5 +550,22 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_update_no_such_alias_arn": {
+    "recorded-date": "03-03-2025, 15:00:26",
+    "recorded-content": {
+      "create_state_machine_alias_response": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_no_such_alias_arn": {
+        "exception_typename": "ResourceNotFound",
+        "exception_value": "An error occurred (ResourceNotFound) when calling the UpdateStateMachineAlias operation: Request references a resource that does not exist."
+      }
+    }
   }
 }
