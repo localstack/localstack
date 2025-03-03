@@ -1,0 +1,36 @@
+{
+  "QueryLanguage": "JSONata",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Pass",
+      "Assign": {
+        "ItemsVar": ["Item1", "Item2"]
+      },
+      "Next": "MapIterateState"
+    },
+    "MapIterateState": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "Items": "{% $ItemsVar %}",
+      "ItemSelector": {
+        "map_item_value": "{% $states.context.Map.Item.Value %}",
+        "var_sample": "{% $ItemsVar %}",
+        "string_literal": "string literal"
+      },
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "Pass",
+        "States": {
+          "Pass": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}
