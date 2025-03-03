@@ -3,6 +3,7 @@ from __future__ import annotations
 import abc
 import copy
 import json
+import logging
 from typing import Any, Final, Optional, Union
 
 from botocore.model import ListShape, OperationModel, Shape, StringShape, StructureShape
@@ -39,11 +40,14 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task import (
     StateTask,
 )
+from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.quotas import is_within_size_quota
 from localstack.utils.strings import camel_to_snake_case, snake_to_camel_case, to_bytes, to_str
+
+LOG = logging.getLogger(__name__)
 
 
 class StateTaskService(StateTask, abc.ABC):
@@ -53,6 +57,20 @@ class StateTaskService(StateTask, abc.ABC):
         "sfn": "stepfunctions",
         "states": "stepfunctions",
     }
+
+    def from_state_props(self, state_props: StateProps) -> None:
+        super().from_state_props(state_props=state_props)
+        # Validate the service integration is supported on program creation.
+        self._validate_service_integration_is_supported()
+
+    def _validate_service_integration_is_supported(self):
+        # Validate the service integration is supported.
+        supported_parameters = self._get_supported_parameters()
+        if supported_parameters is None:
+            raise ValueError(
+                f"The resource provided {self.resource.resource_arn} not recognized. "
+                "The value is not a valid resource ARN, or the resource is not available in this region."
+            )
 
     def _get_sfn_resource(self) -> str:
         return self.resource.api_action
@@ -110,6 +128,13 @@ class StateTaskService(StateTask, abc.ABC):
         return boto_request_value
 
     def _to_boto_request(self, parameters: dict, structure_shape: StructureShape) -> None:
+        if not isinstance(structure_shape, StructureShape):
+            LOG.warning(
+                "Step Functions could not normalise the request for integration '%s' due to the unexpected request template value of type '%s'",
+                self.resource.resource_arn,
+                type(structure_shape),
+            )
+            return
         shape_members = structure_shape.members
         norm_member_binds: dict[str, tuple[str, StructureShape]] = {
             camel_to_snake_case(member_key): (member_key, member_value)
@@ -146,6 +171,14 @@ class StateTaskService(StateTask, abc.ABC):
 
     def _from_boto_response(self, response: Any, structure_shape: StructureShape) -> None:
         if not isinstance(response, dict):
+            return
+
+        if not isinstance(structure_shape, StructureShape):
+            LOG.warning(
+                "Step Functions could not normalise the response of integration '%s' due to the unexpected request template value of type '%s'",
+                self.resource.resource_arn,
+                type(structure_shape),
+            )
             return
 
         shape_members = structure_shape.members

@@ -12,6 +12,8 @@ class InterruptibleQueue(Queue):
 
     def get(self, block=True, timeout=None):
         with self.not_empty:
+            if self.is_shutdown:
+                raise Empty
             if not block:
                 if not self._qsize():
                     raise Empty

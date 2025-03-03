@@ -36,6 +36,23 @@ _SUPPORTED_INTEGRATION_PATTERNS: Final[set[ResourceCondition]] = {
     ResourceCondition.Sync,
 }
 
+_SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
+    "startjobrun": {
+        "JobName",
+        "JobRunQueuingEnabled",
+        "JobRunId",
+        "Arguments",
+        "AllocatedCapacity",
+        "Timeout",
+        "MaxCapacity",
+        "SecurityConfiguration",
+        "NotificationProperty",
+        "WorkerType",
+        "NumberOfWorkers",
+        "ExecutionClass",
+    }
+}
+
 # Set of JobRunState value that indicate the JobRun had terminated in an abnormal state.
 _JOB_RUN_STATE_ABNORMAL_TERMINAL_VALUE: Final[set[str]] = {"FAILED", "TIMEOUT", "ERROR"}
 
@@ -63,6 +80,9 @@ _API_ACTION_HANDLER_BUILDER_TYPE = Callable[
 class StateTaskServiceGlue(StateTaskServiceCallback):
     def __init__(self):
         super().__init__(supported_integration_patterns=_SUPPORTED_INTEGRATION_PATTERNS)
+
+    def _get_supported_parameters(self) -> Optional[set[str]]:
+        return _SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     def _get_api_action_handler(self) -> _API_ACTION_HANDLER_TYPE:
         api_action = self._get_boto_service_action()

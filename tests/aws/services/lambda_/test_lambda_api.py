@@ -1265,6 +1265,112 @@ class TestLambdaFunction:
         )
 
     @markers.aws.validated
+    def test_invalid_vpc_config_subnet(
+        self, create_lambda_function, lambda_su_role, snapshot, aws_client, cleanups
+    ):
+        """
+        Test invalid "VpcConfig.SubnetIds" Property on the Lambda Function
+        """
+        non_existent_subnet_id = f"subnet-{short_uid()}"
+        wrong_format_subnet_id = f"bad-format-{short_uid()}"
+
+        # AWS validates the Security Group first, so we need a valid one to test SubnetsIds
+        security_groups = aws_client.ec2.describe_security_groups(MaxResults=5)["SecurityGroups"]
+        security_group_id = security_groups[0]["GroupId"]
+
+        snapshot.add_transformer(snapshot.transform.regex(non_existent_subnet_id, "<subnet_id_1>"))
+        snapshot.add_transformer(snapshot.transform.regex(wrong_format_subnet_id, "<subnet_id_2>"))
+
+        zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName=f"fn-{short_uid()}",
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+                VpcConfig={
+                    "SubnetIds": [non_existent_subnet_id],
+                    "SecurityGroupIds": [security_group_id],
+                },
+            )
+
+        snapshot.match("create-response-non-existent-subnet-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName=f"fn-{short_uid()}",
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+                VpcConfig={
+                    "SubnetIds": [wrong_format_subnet_id],
+                    "SecurityGroupIds": [security_group_id],
+                },
+            )
+
+        snapshot.match("create-response-invalid-format-subnet-id", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(reason="Not yet implemented", condition=not is_aws_cloud())
+    def test_invalid_vpc_config_security_group(
+        self, create_lambda_function, lambda_su_role, snapshot, aws_client, cleanups
+    ):
+        """
+        Test invalid "VpcConfig.SecurityGroupIds" Property on the Lambda Function
+        """
+        # TODO: maybe add validation of security group id, not currently validated in LocalStack
+        non_existent_sg_id = f"sg-{short_uid()}"
+        wrong_format_sg_id = f"bad-format-{short_uid()}"
+        # this way, we assert that SecurityGroups existence is validated before SubnetIds
+        subnet_id = f"subnet-{short_uid()}"
+
+        snapshot.add_transformer(
+            snapshot.transform.regex(non_existent_sg_id, "<security_group_id_1>")
+        )
+        snapshot.add_transformer(
+            snapshot.transform.regex(wrong_format_sg_id, "<security_group_id_2>")
+        )
+
+        zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName=f"fn-{short_uid()}",
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+                VpcConfig={
+                    "SubnetIds": [subnet_id],
+                    "SecurityGroupIds": [non_existent_sg_id],
+                },
+            )
+
+        snapshot.match("create-response-non-existent-security-group", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName=f"fn-{short_uid()}",
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+                VpcConfig={
+                    "SubnetIds": [subnet_id],
+                    "SecurityGroupIds": [wrong_format_sg_id],
+                },
+            )
+
+        snapshot.match("create-response-invalid-format-security-group", e.value.response)
+
+    @markers.aws.validated
     def test_invalid_invoke(self, aws_client, snapshot):
         region_name = aws_client.lambda_.meta.region_name
         with pytest.raises(aws_client.lambda_.exceptions.ClientError) as e:

@@ -1,13 +1,13 @@
 {
-  "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_put_get_item": {
-    "recorded-date": "27-07-2023, 19:08:09",
+  "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_base_integrations[DYNAMODB_PUT_GET_ITEM]": {
+    "recorded-date": "03-02-2025, 16:31:26",
     "recorded-content": {
       "get_execution_history": {
         "events": [
           {
             "executionStartedEventDetails": {
               "input": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -19,6 +19,12 @@
                 "Key": {
                   "id": {
                     "S": "id1"
+                  }
+                },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
                   }
                 }
               },
@@ -37,7 +43,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -49,6 +55,12 @@
                 "Key": {
                   "id": {
                     "S": "id1"
+                  }
+                },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
                   }
                 }
               },
@@ -65,7 +77,7 @@
             "previousEventId": 2,
             "taskScheduledEventDetails": {
               "parameters": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -105,12 +117,8 @@
                     "Connection": [
                       "keep-alive"
                     ],
-                    "x-amzn-RequestId": [
-                      "TLCAI02ODBM4QVBRE5EBQRGV7RVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                    ],
-                    "x-amz-crc32": [
-                      "2745614147"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "x-amz-crc32": "x-amz-crc32",
                     "Content-Length": [
                       "2"
                     ],
@@ -125,13 +133,13 @@
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "Server": "Server",
-                    "x-amz-crc32": "2745614147",
-                    "x-amzn-RequestId": "TLCAI02ODBM4QVBRE5EBQRGV7RVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "x-amz-crc32": "x-amz-crc32",
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "TLCAI02ODBM4QVBRE5EBQRGV7RVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  "RequestId": "RequestId"
                 }
               },
               "outputDetails": {
@@ -149,7 +157,7 @@
             "stateExitedEventDetails": {
               "name": "PutItem",
               "output": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -163,6 +171,12 @@
                     "S": "id1"
                   }
                 },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                },
                 "putItemOutput": {
                   "SdkHttpMetadata": {
                     "AllHttpHeaders": {
@@ -172,12 +186,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "TLCAI02ODBM4QVBRE5EBQRGV7RVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "2745614147"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "2"
                       ],
@@ -192,13 +202,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "2745614147",
-                      "x-amzn-RequestId": "TLCAI02ODBM4QVBRE5EBQRGV7RVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "TLCAI02ODBM4QVBRE5EBQRGV7RVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 }
               },
@@ -214,7 +224,7 @@
             "previousEventId": 6,
             "stateEnteredEventDetails": {
               "input": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -228,6 +238,12 @@
                     "S": "id1"
                   }
                 },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                },
                 "putItemOutput": {
                   "SdkHttpMetadata": {
                     "AllHttpHeaders": {
@@ -237,12 +253,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "TLCAI02ODBM4QVBRE5EBQRGV7RVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "2745614147"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "2"
                       ],
@@ -257,13 +269,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "2745614147",
-                      "x-amzn-RequestId": "TLCAI02ODBM4QVBRE5EBQRGV7RVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "TLCAI02ODBM4QVBRE5EBQRGV7RVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 }
               },
@@ -280,7 +292,7 @@
             "previousEventId": 7,
             "taskScheduledEventDetails": {
               "parameters": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Key": {
                   "id": {
                     "S": "id1"
@@ -325,12 +337,8 @@
                     "Connection": [
                       "keep-alive"
                     ],
-                    "x-amzn-RequestId": [
-                      "6RJS4OVKV3U8S5B4TQ5EUM58CJVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                    ],
-                    "x-amz-crc32": [
-                      "1813032717"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "x-amz-crc32": "x-amz-crc32",
                     "Content-Length": [
                       "53"
                     ],
@@ -345,13 +353,13 @@
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "Server": "Server",
-                    "x-amz-crc32": "1813032717",
-                    "x-amzn-RequestId": "6RJS4OVKV3U8S5B4TQ5EUM58CJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "x-amz-crc32": "x-amz-crc32",
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "6RJS4OVKV3U8S5B4TQ5EUM58CJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  "RequestId": "RequestId"
                 }
               },
               "outputDetails": {
@@ -369,7 +377,7 @@
             "stateExitedEventDetails": {
               "name": "GetItem",
               "output": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -383,6 +391,12 @@
                     "S": "id1"
                   }
                 },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                },
                 "putItemOutput": {
                   "SdkHttpMetadata": {
                     "AllHttpHeaders": {
@@ -392,12 +406,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "TLCAI02ODBM4QVBRE5EBQRGV7RVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "2745614147"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "2"
                       ],
@@ -412,13 +422,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "2745614147",
-                      "x-amzn-RequestId": "TLCAI02ODBM4QVBRE5EBQRGV7RVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "TLCAI02ODBM4QVBRE5EBQRGV7RVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 },
                 "getItemOutput": {
@@ -438,12 +448,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "6RJS4OVKV3U8S5B4TQ5EUM58CJVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "1813032717"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "53"
                       ],
@@ -458,13 +464,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "1813032717",
-                      "x-amzn-RequestId": "6RJS4OVKV3U8S5B4TQ5EUM58CJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "6RJS4OVKV3U8S5B4TQ5EUM58CJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 }
               },
@@ -478,7 +484,7 @@
           {
             "executionSucceededEventDetails": {
               "output": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -492,6 +498,12 @@
                     "S": "id1"
                   }
                 },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                },
                 "putItemOutput": {
                   "SdkHttpMetadata": {
                     "AllHttpHeaders": {
@@ -501,12 +513,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "TLCAI02ODBM4QVBRE5EBQRGV7RVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "2745614147"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "2"
                       ],
@@ -521,13 +529,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "2745614147",
-                      "x-amzn-RequestId": "TLCAI02ODBM4QVBRE5EBQRGV7RVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "TLCAI02ODBM4QVBRE5EBQRGV7RVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 },
                 "getItemOutput": {
@@ -547,12 +555,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "6RJS4OVKV3U8S5B4TQ5EUM58CJVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "1813032717"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "53"
                       ],
@@ -567,13 +571,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "1813032717",
-                      "x-amzn-RequestId": "6RJS4OVKV3U8S5B4TQ5EUM58CJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "6RJS4OVKV3U8S5B4TQ5EUM58CJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 }
               },
@@ -594,15 +598,15 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_put_delete_item": {
-    "recorded-date": "27-07-2023, 19:08:33",
+  "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_base_integrations[DYNAMODB_PUT_DELETE_ITEM]": {
+    "recorded-date": "03-02-2025, 16:31:51",
     "recorded-content": {
       "get_execution_history": {
         "events": [
           {
             "executionStartedEventDetails": {
               "input": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -614,6 +618,12 @@
                 "Key": {
                   "id": {
                     "S": "id1"
+                  }
+                },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
                   }
                 }
               },
@@ -632,7 +642,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -644,6 +654,12 @@
                 "Key": {
                   "id": {
                     "S": "id1"
+                  }
+                },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
                   }
                 }
               },
@@ -660,7 +676,7 @@
             "previousEventId": 2,
             "taskScheduledEventDetails": {
               "parameters": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -700,12 +716,8 @@
                     "Connection": [
                       "keep-alive"
                     ],
-                    "x-amzn-RequestId": [
-                      "9G7MGUNQPE8VF541V6FHTTOD5JVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                    ],
-                    "x-amz-crc32": [
-                      "2745614147"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "x-amz-crc32": "x-amz-crc32",
                     "Content-Length": [
                       "2"
                     ],
@@ -720,13 +732,13 @@
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "Server": "Server",
-                    "x-amz-crc32": "2745614147",
-                    "x-amzn-RequestId": "9G7MGUNQPE8VF541V6FHTTOD5JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "x-amz-crc32": "x-amz-crc32",
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "9G7MGUNQPE8VF541V6FHTTOD5JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  "RequestId": "RequestId"
                 }
               },
               "outputDetails": {
@@ -744,7 +756,7 @@
             "stateExitedEventDetails": {
               "name": "PutItem",
               "output": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -758,6 +770,12 @@
                     "S": "id1"
                   }
                 },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                },
                 "putItemOutput": {
                   "SdkHttpMetadata": {
                     "AllHttpHeaders": {
@@ -767,12 +785,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "9G7MGUNQPE8VF541V6FHTTOD5JVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "2745614147"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "2"
                       ],
@@ -787,13 +801,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "2745614147",
-                      "x-amzn-RequestId": "9G7MGUNQPE8VF541V6FHTTOD5JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "9G7MGUNQPE8VF541V6FHTTOD5JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 }
               },
@@ -809,7 +823,7 @@
             "previousEventId": 6,
             "stateEnteredEventDetails": {
               "input": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -823,6 +837,12 @@
                     "S": "id1"
                   }
                 },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                },
                 "putItemOutput": {
                   "SdkHttpMetadata": {
                     "AllHttpHeaders": {
@@ -832,12 +852,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "9G7MGUNQPE8VF541V6FHTTOD5JVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "2745614147"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "2"
                       ],
@@ -852,13 +868,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "2745614147",
-                      "x-amzn-RequestId": "9G7MGUNQPE8VF541V6FHTTOD5JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "9G7MGUNQPE8VF541V6FHTTOD5JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 }
               },
@@ -875,7 +891,7 @@
             "previousEventId": 7,
             "taskScheduledEventDetails": {
               "parameters": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Key": {
                   "id": {
                     "S": "id1"
@@ -912,12 +928,8 @@
                     "Connection": [
                       "keep-alive"
                     ],
-                    "x-amzn-RequestId": [
-                      "9JEL61JFE4IESN78O964TCVG5VVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                    ],
-                    "x-amz-crc32": [
-                      "2745614147"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "x-amz-crc32": "x-amz-crc32",
                     "Content-Length": [
                       "2"
                     ],
@@ -932,13 +944,13 @@
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "Server": "Server",
-                    "x-amz-crc32": "2745614147",
-                    "x-amzn-RequestId": "9JEL61JFE4IESN78O964TCVG5VVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "x-amz-crc32": "x-amz-crc32",
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "9JEL61JFE4IESN78O964TCVG5VVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  "RequestId": "RequestId"
                 }
               },
               "outputDetails": {
@@ -956,7 +968,7 @@
             "stateExitedEventDetails": {
               "name": "DeleteItem",
               "output": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -970,6 +982,12 @@
                     "S": "id1"
                   }
                 },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                },
                 "putItemOutput": {
                   "SdkHttpMetadata": {
                     "AllHttpHeaders": {
@@ -979,12 +997,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "9G7MGUNQPE8VF541V6FHTTOD5JVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "2745614147"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "2"
                       ],
@@ -999,13 +1013,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "2745614147",
-                      "x-amzn-RequestId": "9G7MGUNQPE8VF541V6FHTTOD5JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "9G7MGUNQPE8VF541V6FHTTOD5JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 },
                 "deleteItemOutput": {
@@ -1017,12 +1031,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "9JEL61JFE4IESN78O964TCVG5VVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "2745614147"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "2"
                       ],
@@ -1037,13 +1047,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "2745614147",
-                      "x-amzn-RequestId": "9JEL61JFE4IESN78O964TCVG5VVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "9JEL61JFE4IESN78O964TCVG5VVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 }
               },
@@ -1057,7 +1067,7 @@
           {
             "executionSucceededEventDetails": {
               "output": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -1071,6 +1081,12 @@
                     "S": "id1"
                   }
                 },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                },
                 "putItemOutput": {
                   "SdkHttpMetadata": {
                     "AllHttpHeaders": {
@@ -1080,12 +1096,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "9G7MGUNQPE8VF541V6FHTTOD5JVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "2745614147"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "2"
                       ],
@@ -1100,13 +1112,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "2745614147",
-                      "x-amzn-RequestId": "9G7MGUNQPE8VF541V6FHTTOD5JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "9G7MGUNQPE8VF541V6FHTTOD5JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 },
                 "deleteItemOutput": {
@@ -1118,12 +1130,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "9JEL61JFE4IESN78O964TCVG5VVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "2745614147"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "2"
                       ],
@@ -1138,13 +1146,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "2745614147",
-                      "x-amzn-RequestId": "9JEL61JFE4IESN78O964TCVG5VVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "9JEL61JFE4IESN78O964TCVG5VVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 }
               },
@@ -1165,15 +1173,15 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_put_update_get_item": {
-    "recorded-date": "27-07-2023, 19:09:00",
+  "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_base_integrations[DYNAMODB_PUT_UPDATE_GET_ITEM]": {
+    "recorded-date": "03-02-2025, 16:34:47",
     "recorded-content": {
       "get_execution_history": {
         "events": [
           {
             "executionStartedEventDetails": {
               "input": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -1209,7 +1217,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -1243,7 +1251,7 @@
             "previousEventId": 2,
             "taskScheduledEventDetails": {
               "parameters": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -1283,12 +1291,8 @@
                     "Connection": [
                       "keep-alive"
                     ],
-                    "x-amzn-RequestId": [
-                      "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                    ],
-                    "x-amz-crc32": [
-                      "2745614147"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "x-amz-crc32": "x-amz-crc32",
                     "Content-Length": [
                       "2"
                     ],
@@ -1303,13 +1307,13 @@
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "Server": "Server",
-                    "x-amz-crc32": "2745614147",
-                    "x-amzn-RequestId": "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "x-amz-crc32": "x-amz-crc32",
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  "RequestId": "RequestId"
                 }
               },
               "outputDetails": {
@@ -1327,7 +1331,7 @@
             "stateExitedEventDetails": {
               "name": "PutItem",
               "output": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -1356,12 +1360,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "2745614147"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "2"
                       ],
@@ -1376,13 +1376,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "2745614147",
-                      "x-amzn-RequestId": "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 }
               },
@@ -1398,7 +1398,7 @@
             "previousEventId": 6,
             "stateEnteredEventDetails": {
               "input": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -1427,12 +1427,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "2745614147"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "2"
                       ],
@@ -1447,13 +1443,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "2745614147",
-                      "x-amzn-RequestId": "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 }
               },
@@ -1471,7 +1467,7 @@
             "taskScheduledEventDetails": {
               "parameters": {
                 "ReturnValues": "UPDATED_NEW",
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "UpdateExpression": "set S=:r",
                 "Key": {
                   "id": {
@@ -1519,12 +1515,8 @@
                     "Connection": [
                       "keep-alive"
                     ],
-                    "x-amzn-RequestId": [
-                      "FMELMIEAQ5RL2JEARATGSS78BVVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                    ],
-                    "x-amz-crc32": [
-                      "739724371"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "x-amz-crc32": "x-amz-crc32",
                     "Content-Length": [
                       "46"
                     ],
@@ -1539,13 +1531,13 @@
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "Server": "Server",
-                    "x-amz-crc32": "739724371",
-                    "x-amzn-RequestId": "FMELMIEAQ5RL2JEARATGSS78BVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "x-amz-crc32": "x-amz-crc32",
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "FMELMIEAQ5RL2JEARATGSS78BVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  "RequestId": "RequestId"
                 }
               },
               "outputDetails": {
@@ -1563,7 +1555,7 @@
             "stateExitedEventDetails": {
               "name": "UpdateItem",
               "output": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -1592,12 +1584,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "2745614147"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "2"
                       ],
@@ -1612,13 +1600,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "2745614147",
-                      "x-amzn-RequestId": "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 },
                 "updateItemOutput": {
@@ -1635,12 +1623,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "FMELMIEAQ5RL2JEARATGSS78BVVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "739724371"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "46"
                       ],
@@ -1655,13 +1639,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "739724371",
-                      "x-amzn-RequestId": "FMELMIEAQ5RL2JEARATGSS78BVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "FMELMIEAQ5RL2JEARATGSS78BVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 }
               },
@@ -1677,7 +1661,7 @@
             "previousEventId": 11,
             "stateEnteredEventDetails": {
               "input": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -1706,12 +1690,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "2745614147"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "2"
                       ],
@@ -1726,13 +1706,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "2745614147",
-                      "x-amzn-RequestId": "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 },
                 "updateItemOutput": {
@@ -1749,12 +1729,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "FMELMIEAQ5RL2JEARATGSS78BVVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "739724371"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "46"
                       ],
@@ -1769,13 +1745,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "739724371",
-                      "x-amzn-RequestId": "FMELMIEAQ5RL2JEARATGSS78BVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "FMELMIEAQ5RL2JEARATGSS78BVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 }
               },
@@ -1792,7 +1768,7 @@
             "previousEventId": 12,
             "taskScheduledEventDetails": {
               "parameters": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Key": {
                   "id": {
                     "S": "id1"
@@ -1840,12 +1816,8 @@
                     "Connection": [
                       "keep-alive"
                     ],
-                    "x-amzn-RequestId": [
-                      "9ISDHLITF12TP4KRDQPQSEFIT3VV4KQNSO5AEMVJF66Q9ASUAAJG"
-                    ],
-                    "x-amz-crc32": [
-                      "2465835545"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "x-amz-crc32": "x-amz-crc32",
                     "Content-Length": [
                       "83"
                     ],
@@ -1860,13 +1832,13 @@
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "Server": "Server",
-                    "x-amz-crc32": "2465835545",
-                    "x-amzn-RequestId": "9ISDHLITF12TP4KRDQPQSEFIT3VV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "x-amz-crc32": "x-amz-crc32",
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "9ISDHLITF12TP4KRDQPQSEFIT3VV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  "RequestId": "RequestId"
                 }
               },
               "outputDetails": {
@@ -1884,7 +1856,7 @@
             "stateExitedEventDetails": {
               "name": "GetItem",
               "output": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -1913,12 +1885,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "2745614147"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "2"
                       ],
@@ -1933,13 +1901,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "2745614147",
-                      "x-amzn-RequestId": "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 },
                 "updateItemOutput": {
@@ -1956,12 +1924,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "FMELMIEAQ5RL2JEARATGSS78BVVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "739724371"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "46"
                       ],
@@ -1976,13 +1940,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "739724371",
-                      "x-amzn-RequestId": "FMELMIEAQ5RL2JEARATGSS78BVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "FMELMIEAQ5RL2JEARATGSS78BVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 },
                 "getItemOutput": {
@@ -2005,12 +1969,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "9ISDHLITF12TP4KRDQPQSEFIT3VV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "2465835545"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "83"
                       ],
@@ -2025,13 +1985,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "2465835545",
-                      "x-amzn-RequestId": "9ISDHLITF12TP4KRDQPQSEFIT3VV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "9ISDHLITF12TP4KRDQPQSEFIT3VV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 }
               },
@@ -2045,7 +2005,7 @@
           {
             "executionSucceededEventDetails": {
               "output": {
-                "TableName": "<test-table>",
+                "TableName": "table-name",
                 "Item": {
                   "data": {
                     "S": "HelloWorld"
@@ -2074,12 +2034,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "2745614147"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "2"
                       ],
@@ -2094,13 +2050,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "2745614147",
-                      "x-amzn-RequestId": "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "LH9OOF5CA0K11O6TRP9TRBVR7JVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 },
                 "updateItemOutput": {
@@ -2117,12 +2073,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "FMELMIEAQ5RL2JEARATGSS78BVVV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "739724371"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "46"
                       ],
@@ -2137,13 +2089,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "739724371",
-                      "x-amzn-RequestId": "FMELMIEAQ5RL2JEARATGSS78BVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "FMELMIEAQ5RL2JEARATGSS78BVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 },
                 "getItemOutput": {
@@ -2166,12 +2118,8 @@
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": [
-                        "9ISDHLITF12TP4KRDQPQSEFIT3VV4KQNSO5AEMVJF66Q9ASUAAJG"
-                      ],
-                      "x-amz-crc32": [
-                        "2465835545"
-                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "83"
                       ],
@@ -2186,13 +2134,13 @@
                       "Content-Type": "application/x-amz-json-1.0",
                       "Date": "date",
                       "Server": "Server",
-                      "x-amz-crc32": "2465835545",
-                      "x-amzn-RequestId": "9ISDHLITF12TP4KRDQPQSEFIT3VV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
                     },
                     "HttpStatusCode": 200
                   },
                   "SdkResponseMetadata": {
-                    "RequestId": "9ISDHLITF12TP4KRDQPQSEFIT3VV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    "RequestId": "RequestId"
                   }
                 }
               },
@@ -2202,6 +2150,531 @@
             },
             "id": 17,
             "previousEventId": 16,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_invalid_integration": {
+    "recorded-date": "03-02-2025, 16:35:03",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidDefinition",
+        "exception_value": "An error occurred (InvalidDefinition) when calling the CreateStateMachine operation: Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: The resource provided arn:<partition>:states:::dynamodb:query is not recognized. The value is not a valid resource ARN, or the resource is not available in this region. at /States/Query/Resource'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_base_integrations[DYNAMODB_PUT_QUERY]": {
+    "recorded-date": "05-02-2025, 09:50:00",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TableName": "table-name",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TableName": "table-name",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "PutItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TableName": "table-name",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "region": "<region>",
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "Server": [
+                      "Server"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "x-amz-crc32": "x-amz-crc32",
+                    "Content-Length": [
+                      "2"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "2",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "Server": "Server",
+                    "x-amz-crc32": "x-amz-crc32",
+                    "x-amzn-RequestId": "x-amzn-RequestId"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "PutItem",
+              "output": {
+                "TableName": "table-name",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": "date",
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "date",
+                      "Server": "Server",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "RequestId"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TableName": "table-name",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": "date",
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "date",
+                      "Server": "Server",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "RequestId"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "QueryItems"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "KeyConditionExpression": "id = :id",
+                "ExpressionAttributeValues": {
+                  ":id": {
+                    "S": "id1"
+                  }
+                },
+                "TableName": "table-name"
+              },
+              "region": "<region>",
+              "resource": "query",
+              "resourceType": "aws-sdk:dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "taskStartedEventDetails": {
+              "resource": "query",
+              "resourceType": "aws-sdk:dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Count": 1,
+                "Items": [
+                  {
+                    "data": {
+                      "S": "HelloWorld"
+                    },
+                    "id": {
+                      "S": "id1"
+                    }
+                  }
+                ],
+                "ScannedCount": 1
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "query",
+              "resourceType": "aws-sdk:dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateExitedEventDetails": {
+              "name": "QueryItems",
+              "output": {
+                "TableName": "table-name",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": "date",
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "date",
+                      "Server": "Server",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "RequestId"
+                  }
+                },
+                "queryOutput": {
+                  "Count": 1,
+                  "Items": [
+                    {
+                      "data": {
+                        "S": "HelloWorld"
+                      },
+                      "id": {
+                        "S": "id1"
+                      }
+                    }
+                  ],
+                  "ScannedCount": 1
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "TableName": "table-name",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": "date",
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "date",
+                      "Server": "Server",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "RequestId"
+                  }
+                },
+                "queryOutput": {
+                  "Count": 1,
+                  "Items": [
+                    {
+                      "data": {
+                        "S": "HelloWorld"
+                      },
+                      "id": {
+                        "S": "id1"
+                      }
+                    }
+                  ],
+                  "ScannedCount": 1
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 12,
+            "previousEventId": 11,
             "timestamp": "timestamp",
             "type": "ExecutionSucceeded"
           }

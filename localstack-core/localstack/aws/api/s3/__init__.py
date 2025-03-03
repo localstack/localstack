@@ -228,17 +228,22 @@ class BucketLocationConstraint(StrEnum):
     ap_southeast_1 = "ap-southeast-1"
     ap_southeast_2 = "ap-southeast-2"
     ap_southeast_3 = "ap-southeast-3"
+    ap_southeast_4 = "ap-southeast-4"
+    ap_southeast_5 = "ap-southeast-5"
     ca_central_1 = "ca-central-1"
     cn_north_1 = "cn-north-1"
     cn_northwest_1 = "cn-northwest-1"
     EU = "EU"
     eu_central_1 = "eu-central-1"
+    eu_central_2 = "eu-central-2"
     eu_north_1 = "eu-north-1"
     eu_south_1 = "eu-south-1"
     eu_south_2 = "eu-south-2"
     eu_west_1 = "eu-west-1"
     eu_west_2 = "eu-west-2"
     eu_west_3 = "eu-west-3"
+    il_central_1 = "il-central-1"
+    me_central_1 = "me-central-1"
     me_south_1 = "me-south-1"
     sa_east_1 = "sa-east-1"
     us_east_2 = "us-east-2"
@@ -2539,6 +2544,7 @@ class HeadObjectOutput(TypedDict, total=False):
     ContentEncoding: Optional[ContentEncoding]
     ContentLanguage: Optional[ContentLanguage]
     ContentType: Optional[ContentType]
+    ContentRange: Optional[ContentRange]
     Expires: Optional[Expires]
     WebsiteRedirectLocation: Optional[WebsiteRedirectLocation]
     ServerSideEncryption: Optional[ServerSideEncryption]

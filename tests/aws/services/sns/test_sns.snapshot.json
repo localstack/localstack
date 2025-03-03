@@ -5078,5 +5078,9 @@
         ]
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_message_to_fifo_sqs_ordering": {
+    "recorded-date": "19-02-2025, 01:29:15",
+    "recorded-content": {}
   }
 }

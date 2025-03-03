@@ -523,6 +523,8 @@ class SqsQueue:
         num_messages: int = 1,
         wait_time_seconds: int = None,
         visibility_timeout: int = None,
+        *,
+        poll_empty_queue: bool = False,
     ) -> ReceiveMessageResult:
         """
         Receive ``num_messages`` from the queue, and wait at max ``wait_time_seconds``. If a visibility
@@ -531,6 +533,7 @@ class SqsQueue:
         :param num_messages: the number of messages you want to get from the underlying queue
         :param wait_time_seconds: the number of seconds you want to wait
         :param visibility_timeout: an optional new visibility timeout
+        :param poll_empty_queue: whether to keep polling an empty queue until the duration ``wait_time_seconds`` has elapsed
         :return: a ReceiveMessageResult object that contains the result of the operation
         """
         raise NotImplementedError
@@ -798,6 +801,8 @@ class StandardQueue(SqsQueue):
         num_messages: int = 1,
         wait_time_seconds: int = None,
         visibility_timeout: int = None,
+        *,
+        poll_empty_queue: bool = False,
     ) -> ReceiveMessageResult:
         result = ReceiveMessageResult()
 
@@ -819,7 +824,8 @@ class StandardQueue(SqsQueue):
             # setting block to false guarantees that, if we've already waited before, we don't wait the
             # full time again in the next iteration if max_number_of_messages is set but there are no more
             # messages in the queue. see https://github.com/localstack/localstack/issues/5824
-            block = False
+            if not poll_empty_queue:
+                block = False
 
             timeout -= time.time() - start
             if timeout < 0:
@@ -1110,6 +1116,8 @@ class FifoQueue(SqsQueue):
         num_messages: int = 1,
         wait_time_seconds: int = None,
         visibility_timeout: int = None,
+        *,
+        poll_empty_queue: bool = False,
     ) -> ReceiveMessageResult:
         """
         Receive logic for FIFO queues is different from standard queues. See
@@ -1157,7 +1165,8 @@ class FifoQueue(SqsQueue):
 
             received_groups.add(group)
 
-            block = False
+            if not poll_empty_queue:
+                block = False
 
             # we lock the queue while accessing the groups to not get into races with re-queueing/deleting
             with self.mutex:

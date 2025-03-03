@@ -29,13 +29,16 @@ ClientToken = str
 ConfigurationSchema = str
 ConnectionArn = str
 Description = str
+DetectionReason = str
 DisableRollback = bool
 DriftedStackInstancesCount = int
+EnableStackCreation = bool
 EnableTerminationProtection = bool
 ErrorCode = str
 ErrorMessage = str
 EventId = str
 ExecutionRoleName = str
+ExecutionStatusReason = str
 ExportName = str
 ExportValue = str
 FailedStackInstancesCount = int
@@ -143,6 +146,9 @@ StackPolicyBody = str
 StackPolicyDuringUpdateBody = str
 StackPolicyDuringUpdateURL = str
 StackPolicyURL = str
+StackRefactorId = str
+StackRefactorResourceIdentifier = str
+StackRefactorStatusReason = str
 StackSetARN = str
 StackSetId = str
 StackSetName = str
@@ -506,6 +512,12 @@ class ResourceStatus(StrEnum):
     IMPORT_ROLLBACK_IN_PROGRESS = "IMPORT_ROLLBACK_IN_PROGRESS"
     IMPORT_ROLLBACK_FAILED = "IMPORT_ROLLBACK_FAILED"
     IMPORT_ROLLBACK_COMPLETE = "IMPORT_ROLLBACK_COMPLETE"
+    EXPORT_FAILED = "EXPORT_FAILED"
+    EXPORT_COMPLETE = "EXPORT_COMPLETE"
+    EXPORT_IN_PROGRESS = "EXPORT_IN_PROGRESS"
+    EXPORT_ROLLBACK_IN_PROGRESS = "EXPORT_ROLLBACK_IN_PROGRESS"
+    EXPORT_ROLLBACK_FAILED = "EXPORT_ROLLBACK_FAILED"
+    EXPORT_ROLLBACK_COMPLETE = "EXPORT_ROLLBACK_COMPLETE"
     UPDATE_ROLLBACK_IN_PROGRESS = "UPDATE_ROLLBACK_IN_PROGRESS"
     UPDATE_ROLLBACK_COMPLETE = "UPDATE_ROLLBACK_COMPLETE"
     UPDATE_ROLLBACK_FAILED = "UPDATE_ROLLBACK_FAILED"
@@ -548,6 +560,42 @@ class StackInstanceStatus(StrEnum):
     CURRENT = "CURRENT"
     OUTDATED = "OUTDATED"
     INOPERABLE = "INOPERABLE"
+
+
+class StackRefactorActionEntity(StrEnum):
+    RESOURCE = "RESOURCE"
+    STACK = "STACK"
+
+
+class StackRefactorActionType(StrEnum):
+    MOVE = "MOVE"
+    CREATE = "CREATE"
+
+
+class StackRefactorDetection(StrEnum):
+    AUTO = "AUTO"
+    MANUAL = "MANUAL"
+
+
+class StackRefactorExecutionStatus(StrEnum):
+    UNAVAILABLE = "UNAVAILABLE"
+    AVAILABLE = "AVAILABLE"
+    OBSOLETE = "OBSOLETE"
+    EXECUTE_IN_PROGRESS = "EXECUTE_IN_PROGRESS"
+    EXECUTE_COMPLETE = "EXECUTE_COMPLETE"
+    EXECUTE_FAILED = "EXECUTE_FAILED"
+    ROLLBACK_IN_PROGRESS = "ROLLBACK_IN_PROGRESS"
+    ROLLBACK_COMPLETE = "ROLLBACK_COMPLETE"
+    ROLLBACK_FAILED = "ROLLBACK_FAILED"
+
+
+class StackRefactorStatus(StrEnum):
+    CREATE_IN_PROGRESS = "CREATE_IN_PROGRESS"
+    CREATE_COMPLETE = "CREATE_COMPLETE"
+    CREATE_FAILED = "CREATE_FAILED"
+    DELETE_IN_PROGRESS = "DELETE_IN_PROGRESS"
+    DELETE_COMPLETE = "DELETE_COMPLETE"
+    DELETE_FAILED = "DELETE_FAILED"
 
 
 class StackResourceDriftStatus(StrEnum):
@@ -793,6 +841,12 @@ class StackInstanceNotFoundException(ServiceException):
 
 class StackNotFoundException(ServiceException):
     code: str = "StackNotFoundException"
+    sender_fault: bool = True
+    status_code: int = 404
+
+
+class StackRefactorNotFoundException(ServiceException):
+    code: str = "StackRefactorNotFoundException"
     sender_fault: bool = True
     status_code: int = 404
 
@@ -1206,6 +1260,39 @@ class CreateStackOutput(TypedDict, total=False):
     StackId: Optional[StackId]
 
 
+class StackDefinition(TypedDict, total=False):
+    StackName: Optional[StackName]
+    TemplateBody: Optional[TemplateBody]
+    TemplateURL: Optional[TemplateURL]
+
+
+StackDefinitions = List[StackDefinition]
+
+
+class ResourceLocation(TypedDict, total=False):
+    StackName: StackName
+    LogicalResourceId: LogicalResourceId
+
+
+class ResourceMapping(TypedDict, total=False):
+    Source: ResourceLocation
+    Destination: ResourceLocation
+
+
+ResourceMappings = List[ResourceMapping]
+
+
+class CreateStackRefactorInput(ServiceRequest):
+    Description: Optional[Description]
+    EnableStackCreation: Optional[EnableStackCreation]
+    ResourceMappings: Optional[ResourceMappings]
+    StackDefinitions: StackDefinitions
+
+
+class CreateStackRefactorOutput(TypedDict, total=False):
+    StackRefactorId: StackRefactorId
+
+
 class ManagedExecution(TypedDict, total=False):
     Active: Optional[ManagedExecutionNullable]
 
@@ -1536,6 +1623,23 @@ class StackInstance(TypedDict, total=False):
 
 class DescribeStackInstanceOutput(TypedDict, total=False):
     StackInstance: Optional[StackInstance]
+
+
+class DescribeStackRefactorInput(ServiceRequest):
+    StackRefactorId: StackRefactorId
+
+
+StackIds = List[StackId]
+
+
+class DescribeStackRefactorOutput(TypedDict, total=False):
+    Description: Optional[Description]
+    StackRefactorId: Optional[StackRefactorId]
+    StackIds: Optional[StackIds]
+    ExecutionStatus: Optional[StackRefactorExecutionStatus]
+    ExecutionStatusReason: Optional[ExecutionStatusReason]
+    Status: Optional[StackRefactorStatus]
+    StatusReason: Optional[StackRefactorStatusReason]
 
 
 StackResourceDriftStatusFilters = List[StackResourceDriftStatus]
@@ -1888,6 +1992,10 @@ class ExecuteChangeSetOutput(TypedDict, total=False):
     pass
 
 
+class ExecuteStackRefactorInput(ServiceRequest):
+    StackRefactorId: StackRefactorId
+
+
 class Export(TypedDict, total=False):
     ExportingStackId: Optional[StackId]
     Name: Optional[ExportName]
@@ -2224,6 +2332,63 @@ StackInstanceSummaries = List[StackInstanceSummary]
 
 class ListStackInstancesOutput(TypedDict, total=False):
     Summaries: Optional[StackInstanceSummaries]
+    NextToken: Optional[NextToken]
+
+
+class ListStackRefactorActionsInput(ServiceRequest):
+    StackRefactorId: StackRefactorId
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[MaxResults]
+
+
+StackRefactorUntagResources = List[TagKey]
+StackRefactorTagResources = List[Tag]
+
+
+class StackRefactorAction(TypedDict, total=False):
+    Action: Optional[StackRefactorActionType]
+    Entity: Optional[StackRefactorActionEntity]
+    PhysicalResourceId: Optional[PhysicalResourceId]
+    ResourceIdentifier: Optional[StackRefactorResourceIdentifier]
+    Description: Optional[Description]
+    Detection: Optional[StackRefactorDetection]
+    DetectionReason: Optional[DetectionReason]
+    TagResources: Optional[StackRefactorTagResources]
+    UntagResources: Optional[StackRefactorUntagResources]
+    ResourceMapping: Optional[ResourceMapping]
+
+
+StackRefactorActions = List[StackRefactorAction]
+
+
+class ListStackRefactorActionsOutput(TypedDict, total=False):
+    StackRefactorActions: StackRefactorActions
+    NextToken: Optional[NextToken]
+
+
+StackRefactorExecutionStatusFilter = List[StackRefactorExecutionStatus]
+
+
+class ListStackRefactorsInput(ServiceRequest):
+    ExecutionStatusFilter: Optional[StackRefactorExecutionStatusFilter]
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[MaxResults]
+
+
+class StackRefactorSummary(TypedDict, total=False):
+    StackRefactorId: Optional[StackRefactorId]
+    Description: Optional[Description]
+    ExecutionStatus: Optional[StackRefactorExecutionStatus]
+    ExecutionStatusReason: Optional[ExecutionStatusReason]
+    Status: Optional[StackRefactorStatus]
+    StatusReason: Optional[StackRefactorStatusReason]
+
+
+StackRefactorSummaries = List[StackRefactorSummary]
+
+
+class ListStackRefactorsOutput(TypedDict, total=False):
+    StackRefactorSummaries: StackRefactorSummaries
     NextToken: Optional[NextToken]
 
 
@@ -2847,6 +3012,18 @@ class CloudformationApi:
     ) -> CreateStackInstancesOutput:
         raise NotImplementedError
 
+    @handler("CreateStackRefactor")
+    def create_stack_refactor(
+        self,
+        context: RequestContext,
+        stack_definitions: StackDefinitions,
+        description: Description = None,
+        enable_stack_creation: EnableStackCreation = None,
+        resource_mappings: ResourceMappings = None,
+        **kwargs,
+    ) -> CreateStackRefactorOutput:
+        raise NotImplementedError
+
     @handler("CreateStackSet")
     def create_stack_set(
         self,
@@ -3025,6 +3202,12 @@ class CloudformationApi:
     ) -> DescribeStackInstanceOutput:
         raise NotImplementedError
 
+    @handler("DescribeStackRefactor")
+    def describe_stack_refactor(
+        self, context: RequestContext, stack_refactor_id: StackRefactorId, **kwargs
+    ) -> DescribeStackRefactorOutput:
+        raise NotImplementedError
+
     @handler("DescribeStackResource")
     def describe_stack_resource(
         self,
@@ -3155,6 +3338,12 @@ class CloudformationApi:
         retain_except_on_create: RetainExceptOnCreate = None,
         **kwargs,
     ) -> ExecuteChangeSetOutput:
+        raise NotImplementedError
+
+    @handler("ExecuteStackRefactor")
+    def execute_stack_refactor(
+        self, context: RequestContext, stack_refactor_id: StackRefactorId, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("GetGeneratedTemplate")
@@ -3326,6 +3515,28 @@ class CloudformationApi:
         call_as: CallAs = None,
         **kwargs,
     ) -> ListStackInstancesOutput:
+        raise NotImplementedError
+
+    @handler("ListStackRefactorActions")
+    def list_stack_refactor_actions(
+        self,
+        context: RequestContext,
+        stack_refactor_id: StackRefactorId,
+        next_token: NextToken = None,
+        max_results: MaxResults = None,
+        **kwargs,
+    ) -> ListStackRefactorActionsOutput:
+        raise NotImplementedError
+
+    @handler("ListStackRefactors")
+    def list_stack_refactors(
+        self,
+        context: RequestContext,
+        execution_status_filter: StackRefactorExecutionStatusFilter = None,
+        next_token: NextToken = None,
+        max_results: MaxResults = None,
+        **kwargs,
+    ) -> ListStackRefactorsOutput:
         raise NotImplementedError
 
     @handler("ListStackResources")

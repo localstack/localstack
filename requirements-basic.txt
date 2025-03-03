@@ -6,7 +6,7 @@
 #
 build==1.2.2.post1
     # via localstack-core (pyproject.toml)
-cachetools==5.5.1
+cachetools==5.5.2
     # via localstack-core (pyproject.toml)
 certifi==2025.1.31
     # via requests
@@ -16,7 +16,7 @@ charset-normalizer==3.4.1
     # via requests
 click==8.1.8
     # via localstack-core (pyproject.toml)
-cryptography==44.0.0
+cryptography==44.0.1
     # via localstack-core (pyproject.toml)
 dill==0.3.6
     # via localstack-core (pyproject.toml)
@@ -34,7 +34,7 @@ packaging==24.2
     # via build
 plux==1.12.1
     # via localstack-core (pyproject.toml)
-psutil==6.1.1
+psutil==7.0.0
     # via localstack-core (pyproject.toml)
 pycparser==2.22
     # via cffi
