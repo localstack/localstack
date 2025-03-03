@@ -20,7 +20,7 @@ botocore==1.36.21
     #   s3transfer
 build==1.2.2.post1
     # via localstack-core (pyproject.toml)
-cachetools==5.5.1
+cachetools==5.5.2
     # via localstack-core (pyproject.toml)
 cbor2==5.6.5
     # via localstack-core (pyproject.toml)
@@ -166,11 +166,11 @@ rich==13.9.4
     # via localstack-core (pyproject.toml)
 rolo==0.7.5
     # via localstack-core (pyproject.toml)
-rpds-py==0.22.3
+rpds-py==0.23.1
     # via
     #   jsonschema
     #   referencing
-s3transfer==0.11.2
+s3transfer==0.11.3
     # via boto3
 semver==3.0.4
     # via localstack-core (pyproject.toml)

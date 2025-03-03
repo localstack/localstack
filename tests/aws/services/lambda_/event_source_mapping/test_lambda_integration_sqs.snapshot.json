@@ -240,7 +240,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::test_report_batch_item_failures": {
-    "recorded-date": "12-10-2024, 13:34:15",
+    "recorded-date": "03-03-2025, 11:31:17",
     "recorded-content": {
       "get_destination_queue_url": {
         "QueueUrl": "<queue-url:1>",
@@ -2033,7 +2033,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_batching_reserved_concurrency": {
-    "recorded-date": "29-11-2024, 13:29:56",
+    "recorded-date": "25-02-2025, 16:35:01",
     "recorded-content": {
       "put_concurrency_resp": {
         "ReservedConcurrentExecutions": 2,
@@ -2049,7 +2049,7 @@
         "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "<datetime>",
-        "MaximumBatchingWindowInSeconds": 10,
+        "MaximumBatchingWindowInSeconds": 1,
         "ScalingConfig": {
           "MaximumConcurrency": 2
         },

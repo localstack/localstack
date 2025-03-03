@@ -15,6 +15,15 @@ from localstack.utils.aws.arns import parse_arn
 from localstack.utils.event_matcher import matches_event
 
 
+class EmptyPollResultsException(Exception):
+    service: str
+    source_arn: str
+
+    def __init__(self, service: str = "", source_arn: str = ""):
+        self.service = service
+        self.source_arn = source_arn
+
+
 class PipeStateReasonValues(PipeStateReason):
     USER_INITIATED = "USER_INITIATED"
     NO_RECORDS_PROCESSED = "No records processed"

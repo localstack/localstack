@@ -147,6 +147,7 @@ from localstack.services.lambda_ import hooks as lambda_hooks
 from localstack.services.lambda_.api_utils import (
     ARCHITECTURES,
     STATEMENT_ID_REGEX,
+    SUBNET_ID_REGEX,
     function_locators_from_arn,
 )
 from localstack.services.lambda_.event_source_mapping.esm_config_factory import (
@@ -468,9 +469,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             return resolved_fn.versions[resolved_qualifier].config.revision_id
 
     def _resolve_vpc_id(self, account_id: str, region_name: str, subnet_id: str) -> str:
-        return connect_to(
-            aws_access_key_id=account_id, region_name=region_name
-        ).ec2.describe_subnets(SubnetIds=[subnet_id])["Subnets"][0]["VpcId"]
+        ec2_client = connect_to(aws_access_key_id=account_id, region_name=region_name).ec2
+        try:
+            return ec2_client.describe_subnets(SubnetIds=[subnet_id])["Subnets"][0]["VpcId"]
+        except ec2_client.exceptions.ClientError as e:
+            code = e.response["Error"]["Code"]
+            message = e.response["Error"]["Message"]
+            raise InvalidParameterValueException(
+                f"Error occurred while DescribeSubnets. EC2 Error Code: {code}. EC2 Error Message: {message}",
+                Type="User",
+            )
 
     def _build_vpc_config(
         self,
@@ -485,8 +493,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if subnet_ids is not None and len(subnet_ids) == 0:
             return VpcConfig(vpc_id="", security_group_ids=[], subnet_ids=[])
 
+        subnet_id = subnet_ids[0]
+        if not bool(SUBNET_ID_REGEX.match(subnet_id)):
+            raise ValidationException(
+                f"1 validation error detected: Value '[{subnet_id}]' at 'vpcConfig.subnetIds' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 1024, Member must have length greater than or equal to 0, Member must satisfy regular expression pattern: ^subnet-[0-9a-z]*$]"
+            )
+
         return VpcConfig(
-            vpc_id=self._resolve_vpc_id(account_id, region_name, subnet_ids[0]),
+            vpc_id=self._resolve_vpc_id(account_id, region_name, subnet_id),
             security_group_ids=vpc_config.get("SecurityGroupIds", []),
             subnet_ids=subnet_ids,
         )

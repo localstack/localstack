@@ -398,19 +398,18 @@ def _resolve_refs_recursively(
                     join_values,
                 )
 
-            join_values = [
-                resolve_refs_recursively(
-                    account_id,
-                    region_name,
-                    stack_name,
-                    resources,
-                    mappings,
-                    conditions,
-                    parameters,
-                    v,
-                )
-                for v in join_values
-            ]
+            # resolve reference in the items list
+            assert isinstance(join_values, list)
+            join_values = resolve_refs_recursively(
+                account_id,
+                region_name,
+                stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters,
+                join_values,
+            )
 
             none_values = [v for v in join_values if v is None]
             if none_values:
@@ -420,9 +419,7 @@ def _resolve_refs_recursively(
                 raise Exception(
                     f"Cannot resolve CF Fn::Join {value} due to null values: {join_values}"
                 )
-            return value[keys_list[0]][0].join(
-                [str(v) for v in join_values if v != "__aws_no_value__"]
-            )
+            return value[keys_list[0]][0].join([str(v) for v in join_values])
 
         if stripped_fn_lower == "sub":
             item_to_sub = value[keys_list[0]]
@@ -756,8 +753,10 @@ def _resolve_refs_recursively(
                     {inner_list[0]: inner_list[1]},
                 )
 
-        for i in range(len(value)):
-            value[i] = resolve_refs_recursively(
+        # remove _aws_no_value_ from resulting references
+        clean_list = []
+        for item in value:
+            temp_value = resolve_refs_recursively(
                 account_id,
                 region_name,
                 stack_name,
@@ -765,8 +764,11 @@ def _resolve_refs_recursively(
                 mappings,
                 conditions,
                 parameters,
-                value[i],
+                item,
             )
+            if not (isinstance(temp_value, str) and temp_value == PLACEHOLDER_AWS_NO_VALUE):
+                clean_list.append(temp_value)
+        value = clean_list
 
     return value
 

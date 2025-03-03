@@ -1,4 +1,5 @@
 import json
+import math
 import time
 
 import pytest
@@ -388,7 +389,6 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
     snapshot.match("messages", messages)
 
 
-# TODO: flaky against AWS
 @markers.aws.validated
 def test_report_batch_item_failures(
     create_lambda_function,
@@ -411,10 +411,18 @@ def test_report_batch_item_failures(
         "get_destination_queue_url", aws_client.sqs.get_queue_url(QueueName=destination_queue_name)
     )
 
-    # timeout in seconds, used for both the lambda and the queue visibility timeout.
-    # increase to 10 if testing against AWS fails.
-    retry_timeout = 8
+    # If an SQS queue is not receiving a lot of traffic, Lambda can take up to 20s between invocations.
+    # See AWS docs https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html.
+    retry_timeout = 6
+    visibility_timeout = 8
     retries = 2
+
+    # AWS recommends a visibility timeout should be x6 a Lambda's retry timeout. To ensure a short test
+    # runtime, we just want to ensure messages are re-queued a couple of seconda after any potential timeouts.
+    # See https://docs.aws.amazon.com/lambda/latest/dg/services-sqs-configure.html#events-sqs-queueconfig
+    assert visibility_timeout > retry_timeout, (
+        "A lambda needs to finish processing prior to re-queuing invisible messages"
+    )
 
     # set up lambda function
     function_name = f"failing-lambda-{short_uid()}"
@@ -423,7 +431,7 @@ def test_report_batch_item_failures(
         handler_file=LAMBDA_SQS_BATCH_ITEM_FAILURE_FILE,
         runtime=Runtime.python3_12,
         role=lambda_su_role,
-        timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
+        timeout=retry_timeout,
         envvars={"DESTINATION_QUEUE_URL": destination_url},
     )
 
@@ -440,7 +448,7 @@ def test_report_batch_item_failures(
         Attributes={
             "FifoQueue": "true",
             # the visibility timeout is implicitly also the time between retries
-            "VisibilityTimeout": str(retry_timeout),
+            "VisibilityTimeout": str(visibility_timeout),
             "RedrivePolicy": json.dumps(
                 {"deadLetterTargetArn": event_dlq_arn, "maxReceiveCount": retries}
             ),
@@ -520,8 +528,14 @@ def test_report_batch_item_failures(
     assert "Messages" not in dlq_messages or dlq_messages["Messages"] == []
 
     # now wait for the second invocation result which is expected to have processed message 2 and 3
+    # Since we are re-queuing twice, with a visiblity timeout of 8s, this should instead be waiting for 20s => 8s x 2 retries (+ 4s margin).
+    # See AWS docs: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ReceiveMessage.html#API_ReceiveMessage_RequestSyntax
+    second_timeout_with_margin = (visibility_timeout * 2) + 4
+    assert second_timeout_with_margin <= 20, (
+        "An SQS ReceiveMessage operation cannot wait for more than 20s"
+    )
     second_invocation = aws_client.sqs.receive_message(
-        QueueUrl=destination_url, WaitTimeSeconds=retry_timeout + 2, MaxNumberOfMessages=1
+        QueueUrl=destination_url, WaitTimeSeconds=second_timeout_with_margin, MaxNumberOfMessages=1
     )
     assert "Messages" in second_invocation
     # hack to make snapshot work
@@ -1077,9 +1091,6 @@ class TestSQSEventSourceMapping:
         events = retry(get_msg_from_q, retries=15, sleep=5)
         snapshot.match("Records", events)
 
-    # FIXME: this fails due to ESM not correctly collecting and sending batches
-    # where size exceeds 10 messages.
-    @markers.snapshot.skip_snapshot_verify(paths=["$..total_batches_received"])
     @markers.aws.validated
     def test_sqs_event_source_mapping_batching_reserved_concurrency(
         self,
@@ -1117,10 +1128,16 @@ class TestSQSEventSourceMapping:
         queue_url = sqs_create_queue(QueueName=source_queue_name)
         queue_arn = sqs_get_queue_arn(queue_url)
 
+        for b in range(3):
+            aws_client.sqs.send_message_batch(
+                QueueUrl=queue_url,
+                Entries=[{"Id": f"{i}-{b}", "MessageBody": f"{i}-{b}-message"} for i in range(10)],
+            )
+
         create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
             EventSourceArn=queue_arn,
             FunctionName=function_name,
-            MaximumBatchingWindowInSeconds=10,
+            MaximumBatchingWindowInSeconds=1,
             BatchSize=20,
             ScalingConfig={
                 "MaximumConcurrency": 2
@@ -1130,12 +1147,6 @@ class TestSQSEventSourceMapping:
         cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
         snapshot.match("create-event-source-mapping-response", create_event_source_mapping_response)
         _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
-
-        for b in range(3):
-            aws_client.sqs.send_message_batch(
-                QueueUrl=queue_url,
-                Entries=[{"Id": f"{i}-{b}", "MessageBody": f"{i}-{b}-message"} for i in range(10)],
-            )
 
         batches = []
 
@@ -1566,13 +1577,7 @@ class TestSQSEventSourceMapping:
             20,
             100,
             1_000,
-            pytest.param(
-                10_000,
-                marks=pytest.mark.skip(
-                    reason="Flushing based on payload sizes not yet implemented so large payloads are causing issues."
-                ),
-                id="10000",
-            ),
+            10_000,
         ],
     )
     @markers.aws.only_localstack
@@ -1617,9 +1622,64 @@ class TestSQSEventSourceMapping:
         cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
         _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
 
+        expected_invocations = math.ceil(batch_size / 2500)
         events = retry(
             check_expected_lambda_log_events_length,
             retries=10,
+            sleep=1,
+            function_name=function_name,
+            expected_length=expected_invocations,
+            logs_client=aws_client.logs,
+        )
+
+        assert sum(len(event.get("Records", [])) for event in events) == batch_size
+
+        rs = aws_client.sqs.receive_message(QueueUrl=queue_url)
+        assert rs.get("Messages", []) == []
+
+    @markers.aws.only_localstack
+    def test_sqs_event_source_mapping_batching_window_size_override(
+        self,
+        create_lambda_function,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        lambda_su_role,
+        cleanups,
+        aws_client,
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        queue_name = f"queue-{short_uid()}"
+        mapping_uuid = None
+
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            EventSourceArn=queue_arn,
+            FunctionName=function_name,
+            MaximumBatchingWindowInSeconds=30,
+            BatchSize=10_000,
+        )
+        mapping_uuid = create_event_source_mapping_response["UUID"]
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
+        _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
+
+        # Send 4 messages and delay their arrival by 5, 10, 15, and 25 seconds respectively
+        for s in [5, 10, 15, 25]:
+            aws_client.sqs.send_message(
+                QueueUrl=queue_url,
+                MessageBody=json.dumps({"delayed": f"{s}"}),
+            )
+
+        events = retry(
+            check_expected_lambda_log_events_length,
+            retries=60,
             sleep=1,
             function_name=function_name,
             expected_length=1,
@@ -1627,7 +1687,7 @@ class TestSQSEventSourceMapping:
         )
 
         assert len(events) == 1
-        assert len(events[0].get("Records", [])) == batch_size
+        assert len(events[0].get("Records", [])) == 4
 
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url)
         assert rs.get("Messages", []) == []
