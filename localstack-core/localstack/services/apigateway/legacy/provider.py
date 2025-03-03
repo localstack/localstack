@@ -1963,6 +1963,15 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     "Lambda function and Firehose stream invocations."
                 )
 
+        moto_rest_api = get_moto_rest_api(context=context, rest_api_id=request.get("restApiId"))
+        resource = moto_rest_api.resources.get(request.get("resourceId"))
+        if not resource:
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        method = resource.resource_methods.get(request.get("httpMethod"))
+        if not method:
+            raise NotFoundException("Invalid Method identifier specified")
+
         # TODO: if the IntegrationType is AWS, `credentials` is mandatory
         moto_request = copy.copy(request)
         moto_request.setdefault("passthroughBehavior", "WHEN_NO_MATCH")
