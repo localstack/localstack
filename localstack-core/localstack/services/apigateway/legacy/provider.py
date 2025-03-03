@@ -1938,6 +1938,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             )
 
         elif integration_type in (IntegrationType.AWS_PROXY, IntegrationType.AWS):
+            if not request.get("integrationHttpMethod"):
+                raise BadRequestException("Enumeration value for HttpMethod must be non-empty")
             if not (integration_uri := request.get("uri") or "").startswith("arn:"):
                 raise BadRequestException("Invalid ARN specified in the request")
 
@@ -1960,15 +1962,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     "Integrations of type 'AWS_PROXY' currently only supports "
                     "Lambda function and Firehose stream invocations."
                 )
-
-        moto_rest_api = get_moto_rest_api(context=context, rest_api_id=request.get("restApiId"))
-        resource = moto_rest_api.resources.get(request.get("resourceId"))
-        if not resource:
-            raise NotFoundException("Invalid Resource identifier specified")
-
-        method = resource.resource_methods.get(request.get("httpMethod"))
-        if not method:
-            raise NotFoundException("Invalid Method identifier specified")
 
         # TODO: if the IntegrationType is AWS, `credentials` is mandatory
         moto_request = copy.copy(request)
