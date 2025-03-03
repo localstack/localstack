@@ -1,0 +1,86 @@
+name: 🐞 Bug
+description: File a bug/issue
+title: "bug: <title>"
+labels: ["type: bug", "status: triage needed"]
+body:
+- type: markdown
+  attributes:
+    value: |
+      Thanks for taking the time to fill out this bug! If you need real-time help, join us in the [community Slack](https://localstack-community.slack.com).
+- type: checkboxes
+  attributes:
+    label: Is there an existing issue for this?
+    description: Please search to see if an issue already exists for the bug you encountered.
+    options:
+    - label: I have searched the existing issues
+      required: true
+- type: textarea
+  attributes:
+    label: Current Behavior
+    description: A concise description of what you're experiencing.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Expected Behavior
+    description: A concise description of what you expected to happen.
+  validations:
+    required: false
+- type: dropdown
+  attributes:
+    label: How are you starting LocalStack?
+    options:
+      - With a docker-compose file
+      - With a `docker run` command
+      - With the `localstack` script
+      - Custom (please describe below)
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Steps To Reproduce
+    description: Steps to reproduce the behavior.
+    value: |
+      #### How are you starting localstack (e.g., `bin/localstack` command, arguments, or `docker-compose.yml`)
+
+          docker run localstack/localstack
+
+      #### Client commands (e.g., AWS SDK code snippet, or sequence of "awslocal" commands)
+
+          awslocal s3 mb s3://mybucket
+
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Environment
+    description: |
+      examples:
+        - **OS**: Ubuntu 20.04
+        - **LocalStack**:
+          You can find this information in the logs when starting localstack
+
+          LocalStack version: 3.4.1.dev
+          LocalStack Docker image sha: sha256:f02ab8ef73f66b0ab26bb3d24a165e1066a714355f79a42bf8aa1a336d5722e7
+          LocalStack build date: 2024-05-14
+          LocalStack build git hash: ecd7dc879
+
+    value: |
+        - OS:
+        - LocalStack:
+          LocalStack version:
+          LocalStack Docker image sha:
+          LocalStack build date:
+          LocalStack build git hash:
+    render: markdown
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: Anything else?
+    description: |
+      Links? References? Anything that will give us more context about the issue you are encountering!
+
+      Tip: You can attach images or log files by clicking this area to highlight it and then dragging files in.
+  validations:
+    required: false

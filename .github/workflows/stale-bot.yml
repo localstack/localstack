@@ -1,0 +1,12 @@
+name: Triage Stale Issues
+
+on:
+  schedule:
+  - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  sync-with-project:
+    uses: localstack/meta/.github/workflows/stale-bot.yml@main
+    secrets:
+      github-token: ${{ secrets.PRO_ACCESS_TOKEN }}

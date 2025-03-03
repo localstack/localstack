@@ -1,0 +1,121 @@
+name: CLI Tests
+on:
+  workflow_dispatch:
+    inputs:
+      PYTEST_LOGLEVEL:
+        type: choice
+        description: Loglevel for PyTest
+        options:
+        - DEBUG
+        - INFO
+        - WARNING
+        - ERROR
+        - CRITICAL
+        default: WARNING
+  pull_request:
+    paths:
+      - '**'
+      - '!.github/**'
+      - '.github/workflows/tests-cli.yml'
+      - '!docs/**'
+      - '!scripts/**'
+      - '!.dockerignore'
+      - '!.git-blame-ignore-revs'
+      - '!CODE_OF_CONDUCT.md'
+      - '!CODEOWNERS'
+      - '!CONTRIBUTING.md'
+      - '!docker-compose.yml'
+      - '!docker-compose-pro.yml'
+      - '!Dockerfile*'
+      - '!LICENSE.txt'
+      - '!README.md'
+    branches:
+      - master
+      - release/*
+  push:
+    paths:
+      - '**'
+      - '!.github/**'
+      - '.github/workflows/tests-cli.yml'
+      - '!docs/**'
+      - '!scripts/**'
+      - '!.dockerignore'
+      - '!.git-blame-ignore-revs'
+      - '!CODE_OF_CONDUCT.md'
+      - '!CODEOWNERS'
+      - '!CONTRIBUTING.md'
+      - '!docker-compose.yml'
+      - '!docker-compose-pro.yml'
+      - '!Dockerfile*'
+      - '!LICENSE.txt'
+      - '!README.md'
+    branches:
+      - master
+      - release/*
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  # Configure PyTest log level
+  PYTEST_LOGLEVEL: "${{ inputs.PYTEST_LOGLEVEL || 'WARNING' }}"
+  # Set non-job-specific environment variables for pytest-tinybird
+  TINYBIRD_URL: https://api.tinybird.co
+  TINYBIRD_DATASOURCE: community_tests_cli
+  TINYBIRD_TOKEN: ${{ secrets.TINYBIRD_CI_TOKEN }}
+  CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+  CI_COMMIT_SHA: ${{ github.sha }}
+  CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
+  # report to tinybird if executed on master
+  TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
+
+permissions:
+  contents: read # checkout the repository
+
+jobs:
+  cli-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.9", "3.10", "3.11", "3.12", "3.13" ]
+    timeout-minutes: 10
+    env:
+      # Set job-specific environment variables for pytest-tinybird
+      CI_JOB_NAME: ${{ github.job }}-${{ matrix.python-version }}
+      CI_JOB_ID: ${{ github.job }}-${{ matrix.python-version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install CLI test dependencies
+        run: |
+          make venv
+          source .venv/bin/activate
+          pip install -e .
+          pip install pytest pytest-tinybird
+      - name: Run CLI tests
+        env:
+          PYTEST_ADDOPTS: "${{ env.TINYBIRD_PYTEST_ARGS }}-p no:localstack.testing.pytest.fixtures -p no:localstack_snapshot.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:localstack.testing.pytest.validation_tracking -p no:localstack.testing.pytest.path_filter -p no:tests.fixtures -p no:localstack.testing.pytest.stepfunctions.fixtures -s"
+          TEST_PATH: "tests/cli/"
+        run: make test
+
+  push-to-tinybird:
+    if: always() && github.ref == 'refs/heads/master' && github.repository == 'localstack/localstack'
+    runs-on: ubuntu-latest
+    needs: cli-tests
+    permissions:
+      actions: read
+    steps:
+      - name: Push to Tinybird
+        uses: localstack/tinybird-workflow-push@v3
+        with:
+          workflow_id: "tests_cli"
+          tinybird_token: ${{ secrets.TINYBIRD_CI_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tinybird_datasource: "ci_workflows"

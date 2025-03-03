@@ -1,0 +1,35 @@
+version: 2
+updates:
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "silv-io"
+      - "alexrashed"
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "eclipse-temurin"
+        update-types: ["version-update:semver-major"]
+    labels:
+      - "area: dependencies"
+      - "semver: patch"
+    groups:
+      docker-base-images:
+        patterns:
+          - "*"
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "silv-io"
+      - "alexrashed"
+    labels:
+      - "area: dependencies"
+      - "semver: patch"
+    groups:
+      github-actions:
+        patterns:
+          - "*"

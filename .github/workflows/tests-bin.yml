@@ -1,0 +1,61 @@
+name: Helper Script Tests
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'bin/docker-helper.sh'
+      - '.github/workflows/tests-bin.yml'
+      - 'tests/bin/*.bats'
+    branches:
+      - master
+      - release/*
+  push:
+    paths:
+      - 'bin/docker-helper.sh'
+      - '.github/workflows/tests-bin.yml'
+      - 'tests/bin/*.bats'
+    branches:
+      - master
+      - release/*
+
+jobs:
+  script-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup BATS
+        run: |
+          git clone https://github.com/bats-core/bats-core.git "$HOME"/bats-core
+          cd "$HOME"/bats-core
+          sudo ./install.sh /usr/local
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install helper script dependencies
+        run: pip install --upgrade setuptools setuptools_scm
+
+      - name: Run bats tests
+        run: |
+          bats --report-formatter junit -r tests/bin/ --output .
+          mv report.xml tests-junit-base.xml
+
+      - name: Archive Test Results
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: test-results-tests-bin
+          path: tests-junit-*.xml
+          retention-days: 30
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: success() || failure()
+        with:
+          files: tests-junit-*.xml
+          check_name: "Helper Script Tests"
+          action_fail_on_inconclusive: true

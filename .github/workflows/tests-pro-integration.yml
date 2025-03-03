@@ -1,0 +1,416 @@
+name: Community Integration Tests against Pro
+on:
+  workflow_call:
+    inputs:
+      disableCaching:
+        description: 'Disable Caching'
+        required: false
+        type: boolean
+        default: false
+      disableTestSelection:
+        description: 'Disable Test Selection'
+        required: false
+        type: boolean
+        default: false
+      targetRef:
+        description: 'LocalStack Pro Ref'
+        required: false
+        type: string
+      PYTEST_LOGLEVEL:
+        type: string
+        description: Loglevel for PyTest
+        default: WARNING
+  workflow_dispatch:
+    inputs:
+      disableCaching:
+        description: 'Disable Caching'
+        required: false
+        type: boolean
+        default: false
+      disableTestSelection:
+        description: 'Disable Test Selection'
+        required: false
+        type: boolean
+        default: false
+      targetRef:
+        description: 'LocalStack Pro Ref'
+        required: false
+        type: string
+      PYTEST_LOGLEVEL:
+        type: choice
+        description: Loglevel for PyTest
+        options:
+        - DEBUG
+        - INFO
+        - WARNING
+        - ERROR
+        - CRITICAL
+        default: WARNING
+  pull_request:
+    paths:
+      - '**'
+      - '!.github/**'
+      - '.github/workflows/tests-pro-integration.yml'
+      - '!docs/**'
+      - '!scripts/**'
+      - './scripts/build_common_test_functions.sh'
+      - '!.dockerignore'
+      - '!.git-blame-ignore-revs'
+      - '!CODE_OF_CONDUCT.md'
+      - '!CODEOWNERS'
+      - '!CONTRIBUTING.md'
+      - '!docker-compose.yml'
+      - '!docker-compose-pro.yml'
+      - '!Dockerfile*'
+      - '!LICENSE.txt'
+      - '!README.md'
+    branches:
+      - master
+      - 'v[0-9]+'
+      - release/*
+  schedule:
+    - cron: '15 4 * * *'  # run once a day at 4:15 AM UTC
+  push:
+    paths:
+      - '**'
+      - '!.github/**'
+      - '.github/workflows/tests-pro-integration.yml'
+      - '!docs/**'
+      - '!scripts/**'
+      - './scripts/build_common_test_functions.sh'
+      - '!.dockerignore'
+      - '!.git-blame-ignore-revs'
+      - '!CODE_OF_CONDUCT.md'
+      - '!CODEOWNERS'
+      - '!CONTRIBUTING.md'
+      - '!docker-compose.yml'
+      - '!docker-compose-pro.yml'
+      - '!Dockerfile*'
+      - '!LICENSE.txt'
+      - '!README.md'
+    branches:
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  # Configure PyTest log level
+  PYTEST_LOGLEVEL: "${{ inputs.PYTEST_LOGLEVEL || 'WARNING' }}"
+  # Set non-job-specific environment variables for pytest-tinybird
+  TINYBIRD_URL: https://api.tinybird.co
+  TINYBIRD_DATASOURCE: community_tests_pro_integration
+  TINYBIRD_TOKEN: ${{ secrets.TINYBIRD_CI_TOKEN }}
+  CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+  CI_COMMIT_SHA: ${{ github.sha }}
+  CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
+  # report to tinybird if executed on master on community AND pro (targetRef not set)
+  TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && inputs.targetRef == '' && '--report-to-tinybird ' || '' }}"
+  # enable test selection if  not running on master and test selection is not explicitly disabled
+  TESTSELECTION_PYTEST_ARGS: "${{ !inputs.disableTestSelection && '--path-filter=../../localstack/target/testselection/test-selection.txt ' || '' }}"
+
+jobs:
+  test-pro:
+    name: "Community Integration Tests against Pro"
+    # If this is triggered by a pull_request, make sure the PR head repo name is the same as the target repo name
+    # (i.e. do not execute job for workflows coming from forks)
+    if: >-
+      (
+        github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      matrix:
+        group: [ 1, 2 ]
+      fail-fast: false
+    env:
+      # Set job-specific environment variables for pytest-tinybird
+      CI_JOB_NAME: ${{ github.job }}
+      CI_JOB_ID: ${{ github.job }}
+    steps:
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          # don't perform all optimizations to decrease action execution time
+          large-packages: false
+          docker-images: false
+
+      - name: Checkout Community
+        uses: actions/checkout@v4
+        with:
+          path: localstack
+          fetch-depth: 0  # we need the additional commits to figure out the merge base for test selection
+
+      - name: "Determine Companion Ref"
+        id: determine-companion-ref
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PRO_ACCESS_TOKEN }}
+          result-encoding: string
+          script: |
+            if (context.payload.inputs && context.payload.inputs.targetRef) {
+              console.log("Using manually set target reference: ", context.payload.inputs.targetRef)
+              return context.payload.inputs.targetRef
+            }
+
+            const DEFAULT_REF = "refs/heads/master"
+
+            async function isCompanionRefExisting(refName) {
+              try {
+                // strip the leading "refs/" for the API call
+                const apiRef = refName.substr(5)
+                console.log("Checking if companion repo has ref: ", apiRef)
+                await github.rest.git.getRef({owner: "localstack", repo: "localstack-ext", ref: apiRef})
+                return true
+              } catch (error) {
+                  if (error.status == 404) {
+                    return false
+                  } else {
+                    // another (unexpected) error occurred, raise the error
+                    throw new Error(`Fetching companion refs failed: ${error}`)
+                  }
+              }
+            }
+
+            let ref = context.ref
+            let baseRef = null
+            if (context.payload.pull_request) {
+              // pull requests have their own refs (f.e. 'refs/pull/1/merge')
+              // use the PR head ref instead
+              ref = `refs/heads/${context.payload.pull_request.head.ref}`
+              baseRef = `refs/heads/${context.payload.pull_request.base.ref}`
+            }
+
+            if (ref == DEFAULT_REF) {
+              console.log("Current ref is default ref. Using the same for ext repo: ", DEFAULT_REF)
+              return DEFAULT_REF
+            }
+
+            if (await isCompanionRefExisting(ref)) {
+              console.log("Using companion ref in ext repo: ", ref)
+              return ref
+            } else if (baseRef && baseRef != DEFAULT_REF && (await isCompanionRefExisting(baseRef))) {
+              console.log("Using PR base companion ref in ext repo: ", baseRef)
+              return baseRef
+            }
+
+            // the companion repo does not have a companion ref, use the default
+            console.log("Ext repo does not have a companion ref. Using default: ", DEFAULT_REF)
+            return DEFAULT_REF
+
+      - name: Checkout Pro
+        uses: actions/checkout@v4
+        with:
+          repository: localstack/localstack-ext
+          ref: ${{steps.determine-companion-ref.outputs.result}}
+          token: ${{ secrets.PRO_ACCESS_TOKEN }}
+          path: localstack-ext
+
+      - name: Set up Python 3.11
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node 18.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 0.13.7
+
+      - name: Install OS packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --allow-downgrades libsnappy-dev jq libvirt-dev
+
+      - name: Cache Ext Dependencies (venv)
+        if: inputs.disableCaching != true
+        uses: actions/cache@v4
+        with:
+          path: |
+            localstack-ext/.venv
+          # include the matrix group (to re-use the venv)
+          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/localstack-pro-core/requirements-test.txt') }}-${{steps.determine-companion-ref.outputs.result}}
+          restore-keys: |
+            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/localstack-pro-core/requirements-test.txt') }}-refs/heads/master
+
+      - name: Cache Ext Dependencies (libs)
+        if: inputs.disableCaching != true
+        uses: actions/cache@v4
+        with:
+          path: |
+            localstack/localstack-core/.filesystem/var/lib/localstack
+          # include the matrix group (to re-use the var-libs used in the specific test group)
+          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-libs-${{ hashFiles('**/packages.py', '**/packages/*') }}-${{steps.determine-companion-ref.outputs.result}}-group-${{ matrix.group }}
+          restore-keys: |
+            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-libs-${{ hashFiles('**/packages.py', '**/packages/*') }}-refs/heads/master-group-${{ matrix.group }}
+
+      - name: Restore Lambda common runtime packages
+        id: cached-lambda-common-restore
+        if: inputs.disableCaching != true
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            localstack/tests/aws/services/lambda_/functions/common
+          key: community-it-${{ runner.os }}-${{ runner.arch }}-lambda-common-${{ hashFiles('localstack/tests/aws/services/lambda_/functions/common/**/src/*', 'localstack/tests/aws/services/lambda_/functions/common/**/Makefile') }}
+
+      - name: Prebuild lambda common packages
+        working-directory: localstack
+        run: ./scripts/build_common_test_functions.sh `pwd`/tests/aws/services/lambda_/functions/common
+
+      - name: Save Lambda common runtime packages
+        if: inputs.disableCaching != true
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            localstack/tests/aws/services/lambda_/functions/common
+          key: ${{ steps.cached-lambda-common-restore.outputs.cache-primary-key }}
+
+      - name: Install Python Dependencies for Pro
+        working-directory: localstack-ext
+        run: make install-ci
+
+      - name: Link Community into Pro venv
+        working-directory: localstack-ext
+        run: |
+          source .venv/bin/activate
+          pip install -e ../localstack[runtime,test]
+
+      - name: Create Community Entrypoints
+        working-directory: localstack
+        # Entrypoints need to be generated _after_ the community edition has been linked into the venv
+        run: |
+          VENV_DIR="../localstack-ext/.venv" make entrypoints
+          ../localstack-ext/.venv/bin/python -m plux show
+
+      - name: Create Pro Entrypoints
+        working-directory: localstack-ext
+        # Entrypoints need to be generated _after_ the community edition has been linked into the venv
+        run: |
+          make entrypoints
+          cd localstack-pro-core
+          ../.venv/bin/python -m plux show
+
+      - name: Test Pro Startup
+        env:
+          DEBUG: 1
+          DNS_ADDRESS: 0
+          LOCALSTACK_AUTH_TOKEN: "test"
+        working-directory: localstack-ext
+        run: |
+          source .venv/bin/activate
+          bin/test_localstack_pro.sh
+
+      - name: Determine Test Selection
+        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
+        working-directory: localstack
+        run: |
+          if [ -z "${{ github.event.pull_request.base.sha }}" ]; then
+            echo "Do test selection based on Push event"
+          else
+            echo "Do test selection based on Pull Request event"
+            SCRIPT_OPTS="--base-commit-sha ${{ github.event.pull_request.base.sha }} --head-commit-sha ${{ github.event.pull_request.head.sha }}"
+          fi
+          . ../localstack-ext/.venv/bin/activate
+          python -m localstack.testing.testselection.scripts.generate_test_selection $(pwd) target/testselection/test-selection.txt $SCRIPT_OPTS || (mkdir -p target/testselection && echo "SENTINEL_ALL_TESTS" >> target/testselection/test-selection.txt)
+          echo "Resulting Test Selection file:"
+          cat target/testselection/test-selection.txt
+
+      - name: Run Community Integration Tests
+        env:
+          # add the GitHub API token to avoid rate limit issues
+          GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEBUG: 1
+          DISABLE_BOTO_RETRIES: 1
+          DNS_ADDRESS: 0
+          LAMBDA_EXECUTOR: "local"
+          LOCALSTACK_AUTH_TOKEN: "test"
+          AWS_SECRET_ACCESS_KEY: "test"
+          AWS_ACCESS_KEY_ID: "test"
+          AWS_DEFAULT_REGION: "us-east-1"
+          JUNIT_REPORTS_FILE: "pytest-junit-community-${{ matrix.group }}.xml"
+          TEST_PATH: "../../localstack/tests/aws/"  # TODO: run tests in tests/integration
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }}--splits ${{ strategy.job-total }} --group ${{ matrix.group }} --durations-path ../../localstack/.test_durations --store-durations"
+        working-directory: localstack-ext
+        run: |
+          # Remove the host tmp folder (might contain remnant files with different permissions)
+          sudo rm -rf ../localstack/localstack-core/.filesystem/var/lib/localstack/tmp
+          make test
+
+      - name: Archive Test Durations
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: pytest-split-durations-community-${{ matrix.group }}
+          path: |
+            localstack/.test_durations
+          retention-days: 5
+
+      - name: Archive Test Results
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: test-results-community-${{ matrix.group }}
+          path: |
+            localstack-ext/localstack-pro-core/pytest-junit-community-${{ matrix.group }}.xml
+          retention-days: 30
+
+  publish-pro-test-results:
+    name: "Publish Community Tests against Pro Results"
+    needs: test-pro
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: read
+      issues: read
+    # If this is triggered by a pull_request, make sure the PR head repo name is the same as the target repo name
+    # (i.e. do not execute job for workflows coming from forks)
+    if: >-
+      (success() || failure()) && (
+        github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
+    steps:
+      - name: Download Artifacts 1
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results-community-1
+
+      - name: Download Artifacts 2
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results-community-2
+
+      - name: Publish Community Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: "pytest-junit-community-*.xml"
+          check_name: "LocalStack Community integration with Pro"
+          action_fail_on_inconclusive: true
+
+  push-to-tinybird:
+    if: always() && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    needs: publish-pro-test-results
+    steps:
+      - name: Push to Tinybird
+        uses: localstack/tinybird-workflow-push@v3
+        with:
+          workflow_id: "tests_pro_integration"
+          tinybird_token: ${{ secrets.TINYBIRD_CI_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tinybird_datasource: "ci_workflows"

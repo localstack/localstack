@@ -1,0 +1,17 @@
+name: Enforce no major on master
+
+on:
+  pull_request_target:
+    types: [labeled, unlabeled, opened, edited, synchronize]
+    # only enforce for PRs targeting the master branch
+    branches:
+    - master
+
+jobs:
+  enforce-no-major:
+    permissions:
+      issues: write
+      pull-requests: write
+    uses: localstack/meta/.github/workflows/pr-enforce-no-major.yml@main
+    secrets:
+      github-token: ${{ secrets.PRO_ACCESS_TOKEN }}

@@ -1,0 +1,90 @@
+name: Podman Docker Client Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      PYTEST_LOGLEVEL:
+        type: choice
+        description: Loglevel for PyTest
+        options:
+        - DEBUG
+        - INFO
+        - WARNING
+        - ERROR
+        - CRITICAL
+        default: WARNING
+
+env:
+  # Configure PyTest log level
+  PYTEST_LOGLEVEL: "${{ inputs.PYTEST_LOGLEVEL || 'WARNING' }}"
+  # Set non-job-specific environment variables for pytest-tinybird
+  TINYBIRD_URL: https://api.tinybird.co
+  TINYBIRD_DATASOURCE: community_tests_podman
+  TINYBIRD_TOKEN: ${{ secrets.TINYBIRD_CI_TOKEN }}
+  CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+  CI_COMMIT_SHA: ${{ github.sha }}
+  CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
+  # report to tinybird if executed on master
+  TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
+
+jobs:
+  podman-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Set job-specific environment variables for pytest-tinybird
+      CI_JOB_NAME: ${{ github.job }}
+      CI_JOB_ID: ${{ github.job }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install podman and test dependencies
+        run: |
+          make install-test &
+
+          # install podman
+          sudo apt update
+          sudo apt install -y podman
+          podman ps
+          podman system info
+
+          # disable Docker, to ensure the tests are running against Podman only
+          docker ps
+          sudo mv /var/run/docker.sock /var/run/docker.sock.bk
+          docker ps && exit 1
+          dockerCmd=$(which docker)
+          sudo mv $dockerCmd $dockerCmd".bk"
+
+          # wait for async installation process to finish
+          wait
+
+      - name: Run Podman Docker client tests
+        env:
+          DOCKER_CMD: "podman"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}"
+          TEST_PATH: "tests/integration/docker_utils"
+          DEBUG: "1"
+        run: |
+          # determine path of podman socket
+          podmanSocket=$(podman system info --format json | jq -r '.host.remoteSocket.path')
+          echo "Running tests against local podman socket $podmanSocket"
+          DOCKER_HOST=$podmanSocket make test
+
+  push-to-tinybird:
+    if: always() && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    needs: podman-tests
+    steps:
+      - name: Push to Tinybird
+        uses: localstack/tinybird-workflow-push@v3
+        with:
+          workflow_id: "tests_podman"
+          tinybird_token: ${{ secrets.TINYBIRD_CI_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tinybird_datasource: "ci_workflows"

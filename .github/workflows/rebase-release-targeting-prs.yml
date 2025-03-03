@@ -1,0 +1,21 @@
+name: Rebase PRs targeting Release Branches
+on:
+  push:
+    branches:
+    - 'release/*'
+jobs:
+  rebase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine base ref
+        id: determine-base-ref
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            // remove the ref prefx "refs/heads/"
+            return context.payload.ref.substr(11)
+      - uses: peter-evans/rebase@v3
+        with:
+          token: ${{ secrets.PRO_ACCESS_TOKEN }}
+          base: ${{steps.determine-base-ref.outputs.result}}

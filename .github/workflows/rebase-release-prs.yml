@@ -1,0 +1,35 @@
+name: Rebase Release PRs
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 5 * * MON-FRI
+jobs:
+  find-release-branches:
+    runs-on: ubuntu-latest
+    name: "find release branches"
+    steps:
+    - name: find release branches
+      id: find-release-branches
+      uses: actions/github-script@v7
+      with:
+        script: |
+          // find all refs in the repo starting with "release/"
+          const refs = await github.rest.git.listMatchingRefs({owner: "localstack", repo: "localstack", ref: "heads/release/"})
+          // extract the ref name of every ref entry in the data field of the response
+          // remove the "refs/heads/" prefix and add the organization prefix for the rebase action
+          // f.e. ["localstack:release/v1.3", "localstack:release/v2"]
+          return refs.data.map(ref => "localstack:" + ref.ref.substring(11))
+    outputs:
+      matrix: ${{ steps.find-release-branches.outputs.result }}
+  rebase:
+    runs-on: ubuntu-latest
+    needs: "find-release-branches"
+    strategy:
+      matrix:
+        head: ${{ fromJson(needs.find-release-branches.outputs.matrix) }}
+    steps:
+      - uses: peter-evans/rebase@v3
+        with:
+          token: ${{ secrets.PRO_ACCESS_TOKEN }}
+          head: ${{ matrix.head }}
+          base: master
