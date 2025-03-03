@@ -13,6 +13,7 @@ from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
+from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
 from localstack.utils.testutil import upload_file_to_bucket
 
@@ -482,12 +483,6 @@ def test_diff_after_update(deploy_cfn_template, aws_client, snapshot):
 class TestCaptureUpdateProcess:
     @pytest.fixture
     def capture_update_process(self, aws_client, snapshot, cleanups, capture_per_resource_events):
-        def try_do(f, *args, **kwargs):
-            try:
-                f(*args, **kwargs)
-            except Exception as e:
-                print(f"Error executing function: {e}")
-
         stack_name = f"stack-{short_uid()}"
         change_set_name = f"cs-{short_uid()}"
 
@@ -521,8 +516,9 @@ class TestCaptureUpdateProcess:
                 ChangeSetName=change_set_id
             )
             cleanups.append(
-                lambda: try_do(
-                    aws_client.cloudformation.delete_change_set, ChangeSetName=change_set_id
+                lambda: call_safe(
+                    aws_client.cloudformation.delete_change_set,
+                    kwargs=dict(ChangeSetName=change_set_id),
                 )
             )
 
@@ -545,7 +541,9 @@ class TestCaptureUpdateProcess:
 
             # ensure stack deletion
             cleanups.append(
-                lambda: try_do(aws_client.cloudformation.delete_stack(StackName=stack_id))
+                lambda: call_safe(
+                    aws_client.cloudformation.delete_stack, kwargs=dict(StackName=stack_id)
+                )
             )
 
             describe = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0]
