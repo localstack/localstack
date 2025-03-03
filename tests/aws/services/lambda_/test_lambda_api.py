@@ -5689,7 +5689,7 @@ class TestLambdaEventSourceMappings:
     def test_create_event_source_validation(
         self, create_lambda_function, lambda_su_role, dynamodb_create_table, snapshot, aws_client
     ):
-        """missing required field for DynamoDb stream event source mapping"""
+        """missing & invalid required field for DynamoDb stream event source mapping"""
         function_name = f"function-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -5699,6 +5699,8 @@ class TestLambdaEventSourceMappings:
         )
 
         table_name = f"table-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(table_name, "<table-name>"))
+
         dynamodb_create_table(table_name=table_name, partition_key="id")
         _await_dynamodb_table_active(aws_client.dynamodb, table_name)
         update_table_response = aws_client.dynamodb.update_table(
@@ -5706,14 +5708,75 @@ class TestLambdaEventSourceMappings:
             StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
         )
         stream_arn = update_table_response["TableDescription"]["LatestStreamArn"]
+        snapshot.add_transformer(
+            snapshot.transform.regex(
+                update_table_response["TableDescription"]["LatestStreamLabel"], "<stream-name>"
+            )
+        )
 
         with pytest.raises(ClientError) as e:
             aws_client.lambda_.create_event_source_mapping(
                 FunctionName=function_name, EventSourceArn=stream_arn
             )
+        snapshot.match("no_starting_position", e.value.response)
 
-        response = e.value.response
-        snapshot.match("error", response)
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_event_source_mapping(
+                FunctionName=function_name, EventSourceArn=stream_arn, StartingPosition="invalid"
+            )
+        snapshot.match("invalid_starting_position", e.value.response)
+
+        # AT_TIMESTAMP is not supported for DynamoDBStreams
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_event_source_mapping(
+                FunctionName=function_name,
+                EventSourceArn=stream_arn,
+                StartingPosition="AT_TIMESTAMP",
+                StartingPositionTimestamp="1741010802",
+            )
+        snapshot.match("incompatible_starting_position", e.value.response)
+
+    @markers.aws.validated
+    def test_create_event_source_validation_kinesis(
+        self,
+        create_lambda_function,
+        lambda_su_role,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        snapshot,
+        aws_client,
+    ):
+        """missing & invalid required field for Kinesis stream event source mapping"""
+
+        snapshot.add_transformer(snapshot.transform.kinesis_api())
+
+        function_name = f"function-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
+
+        stream_name = f"stream-{short_uid()}"
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        wait_for_stream_ready(stream_name)
+
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_event_source_mapping(
+                FunctionName=function_name, EventSourceArn=stream_arn
+            )
+        snapshot.match("no_starting_position", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_event_source_mapping(
+                FunctionName=function_name, EventSourceArn=stream_arn, StartingPosition="invalid"
+            )
+        snapshot.match("invalid_starting_position", e.value.response)
 
     @markers.aws.validated
     def test_create_event_filter_criteria_validation(
