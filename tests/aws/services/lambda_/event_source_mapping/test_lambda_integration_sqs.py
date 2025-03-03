@@ -57,6 +57,30 @@ def _snapshot_transformers(snapshot):
 
 
 @markers.aws.validated
+def test_esm_with_not_existing_sqs_queue(
+    aws_client, account_id, region_name, create_lambda_function, lambda_su_role, snapshot
+):
+    function_name = f"simple-lambda-{short_uid()}"
+    create_lambda_function(
+        func_name=function_name,
+        handler_file=LAMBDA_SQS_INTEGRATION_FILE,
+        runtime=Runtime.python3_12,
+        role=lambda_su_role,
+        timeout=5,
+    )
+    not_existing_queue_arn = (
+        f"arn:aws:sqs:{region_name}:{account_id}:not-existing-queue-{short_uid()}"
+    )
+    with pytest.raises(ClientError) as e:
+        aws_client.lambda_.create_event_source_mapping(
+            EventSourceArn=not_existing_queue_arn,
+            FunctionName=function_name,
+            BatchSize=1,
+        )
+    snapshot.match("error", e.value.response)
+
+
+@markers.aws.validated
 def test_failing_lambda_retries_after_visibility_timeout(
     create_lambda_function,
     sqs_create_queue,

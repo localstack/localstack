@@ -71,6 +71,29 @@ def _snapshot_transformers(snapshot):
 )
 class TestKinesisSource:
     @markers.aws.validated
+    def test_esm_with_not_existing_kinesis_stream(
+        self, aws_client, create_lambda_function, lambda_su_role, snapshot, account_id, region_name
+    ):
+        function_name = f"simple-lambda-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+            timeout=5,
+        )
+        not_existing_stream_arn = (
+            f"arn:aws:kinesis:{region_name}:{account_id}:stream/test-foobar-81ded7e8"
+        )
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_event_source_mapping(
+                EventSourceArn=not_existing_stream_arn,
+                FunctionName=function_name,
+                StartingPosition="LATEST",
+            )
+        snapshot.match("error", e.value.response)
+
+    @markers.aws.validated
     def test_create_kinesis_event_source_mapping(
         self,
         create_lambda_function,
