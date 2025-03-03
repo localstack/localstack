@@ -530,7 +530,7 @@ def test_report_batch_item_failures(
     # now wait for the second invocation result which is expected to have processed message 2 and 3
     # Since we are re-queuing twice, with a visiblity timeout of 8s, this should instead be waiting for 20s => 8s x 2 retries (+ 4s margin).
     # See AWS docs: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ReceiveMessage.html#API_ReceiveMessage_RequestSyntax
-    second_timeout_with_margin = (visibility_timeout * 2) + 2
+    second_timeout_with_margin = (visibility_timeout * 2) + 4
     assert second_timeout_with_margin <= 20, (
         "An SQS ReceiveMessage operation cannot wait for more than 20s"
     )
