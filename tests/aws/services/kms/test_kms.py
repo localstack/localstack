@@ -57,7 +57,7 @@ def _get_all_key_ids(kms_client):
 def _get_alias(kms_client, alias_name, key_id=None):
     next_token = None
     while True:
-        kwargs = {"Marker": next_token} if next_token else {}
+        kwargs = {"nextToken": next_token} if next_token else {}
         if key_id:
             kwargs["KeyId"] = key_id
         response = kms_client.list_aliases(**kwargs)
