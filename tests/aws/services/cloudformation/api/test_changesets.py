@@ -1211,3 +1211,64 @@ class TestChangeSetDiff:
             value1 = short_uid()
             value2 = short_uid()
             capture_stack_diff(t1, t1, p1={"ParameterValue": value1}, p2={"ParameterValue": value2})
+
+    class TestTwoResources:
+        def test_static_change(self, capture_stack_diff):
+            t1 = {
+                "Resources": {
+                    "Parameter1": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": "first",
+                        },
+                    },
+                    "Parameter2": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                        },
+                    },
+                },
+            }
+            t2 = {
+                "Resources": {
+                    "Parameter1": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": "second",
+                        },
+                    },
+                    "Parameter2": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                        },
+                    },
+                },
+            }
+            capture_stack_diff(t1, t2)
+
+        def test_dynamic_change(self, capture_stack_diff):
+            t1 = {
+                "Parameters": {
+                    "ParameterValue": {
+                        "Type": "String",
+                    },
+                },
+                "Resources": {
+                    "Parameter": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Ref": "ParameterValue"},
+                        },
+                    },
+                },
+            }
+            value1 = short_uid()
+            value2 = short_uid()
+            capture_stack_diff(t1, t1, p1={"ParameterValue": value1}, p2={"ParameterValue": value2})
