@@ -271,7 +271,7 @@ def build_service_index_cache(file_path: str) -> ServiceCatalogIndex:
     """
     Creates a new ServiceCatalogIndex and stores it into the given file_path.
 
-    :param file_path: the path to pickle to
+    :param file_path: the path to store the file to
     :return: the created ServiceCatalogIndex
     """
     return save_service_index_cache(LazyServiceCatalogIndex(), file_path)
@@ -279,27 +279,27 @@ def build_service_index_cache(file_path: str) -> ServiceCatalogIndex:
 
 def load_service_index_cache(file: str) -> ServiceCatalogIndex:
     """
-    Loads from the given file the pickled ServiceCatalogIndex.
+    Loads from the given file the stored ServiceCatalogIndex.
 
     :param file: the file to load from
     :return: the loaded ServiceCatalogIndex
     """
-    import pickle
+    import dill
 
     with open(file, "rb") as fd:
-        return pickle.load(fd)
+        return dill.load(fd)
 
 
 def save_service_index_cache(index: LazyServiceCatalogIndex, file_path: str) -> ServiceCatalogIndex:
     """
-    Creates from the given LazyServiceCatalogIndex a ``ServiceCatalogIndex`, pickles its contents into the given file,
+    Creates from the given LazyServiceCatalogIndex a ``ServiceCatalogIndex`, stores its contents into the given file,
     and then returns the newly created index.
 
     :param index: the LazyServiceCatalogIndex to store the index from.
-    :param file_path: the path to pickle to
+    :param file_path: the path to store the binary index cache file to
     :return: the created ServiceCatalogIndex
     """
-    import pickle
+    import dill
 
     cache = ServiceCatalogIndex(
         service_names=index.service_names,
@@ -309,14 +309,15 @@ def save_service_index_cache(index: LazyServiceCatalogIndex, file_path: str) -> 
         target_prefix_index=index.target_prefix_index,
     )
     with open(file_path, "wb") as fd:
-        pickle.dump(cache, fd)
+        # use dill (instead of plain pickle) to avoid issues when serializing the pickle from __main__
+        dill.dump(cache, fd)
     return cache
 
 
 def _get_catalog_filename():
     ls_ver = VERSION.replace(".", "_")
     botocore_ver = botocore.__version__.replace(".", "_")
-    return f"service-catalog-{ls_ver}-{botocore_ver}.pickle"
+    return f"service-catalog-{ls_ver}-{botocore_ver}.dill"
 
 
 @singleton_factory
