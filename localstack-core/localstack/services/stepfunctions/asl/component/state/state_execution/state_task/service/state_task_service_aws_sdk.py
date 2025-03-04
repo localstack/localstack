@@ -4,7 +4,7 @@ from typing import Final
 from botocore.exceptions import ClientError, UnknownServiceError
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
-from localstack.aws.protocol.service_router import get_service_catalog
+from localstack.aws.spec import get_service_catalog
 from localstack.services.stepfunctions.asl.component.common.error_name.error_name import ErrorName
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,

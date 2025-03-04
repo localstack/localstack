@@ -2,14 +2,20 @@ import dataclasses
 import json
 import logging
 import os
+import sys
 from collections import defaultdict
 from functools import cached_property, lru_cache
 from typing import Dict, Generator, List, Literal, NamedTuple, Optional, Tuple
 
+import botocore
 import jsonpatch
 from botocore.exceptions import UnknownServiceError
 from botocore.loaders import Loader, instance_cache
 from botocore.model import OperationModel, ServiceModel
+
+from localstack import config
+from localstack.constants import VERSION
+from localstack.utils.objects import singleton_factory
 
 LOG = logging.getLogger(__name__)
 
@@ -265,7 +271,7 @@ def build_service_index_cache(file_path: str) -> ServiceCatalogIndex:
     """
     Creates a new ServiceCatalogIndex and stores it into the given file_path.
 
-    :param file_path: the path to pickle to
+    :param file_path: the path to store the file to
     :return: the created ServiceCatalogIndex
     """
     return save_service_index_cache(LazyServiceCatalogIndex(), file_path)
@@ -273,27 +279,27 @@ def build_service_index_cache(file_path: str) -> ServiceCatalogIndex:
 
 def load_service_index_cache(file: str) -> ServiceCatalogIndex:
     """
-    Loads from the given file the pickled ServiceCatalogIndex.
+    Loads from the given file the stored ServiceCatalogIndex.
 
     :param file: the file to load from
     :return: the loaded ServiceCatalogIndex
     """
-    import pickle
+    import dill
 
     with open(file, "rb") as fd:
-        return pickle.load(fd)
+        return dill.load(fd)
 
 
 def save_service_index_cache(index: LazyServiceCatalogIndex, file_path: str) -> ServiceCatalogIndex:
     """
-    Creates from the given LazyServiceCatalogIndex a ``ServiceCatalogIndex`, pickles its contents into the given file,
+    Creates from the given LazyServiceCatalogIndex a ``ServiceCatalogIndex`, stores its contents into the given file,
     and then returns the newly created index.
 
     :param index: the LazyServiceCatalogIndex to store the index from.
-    :param file_path: the path to pickle to
+    :param file_path: the path to store the binary index cache file to
     :return: the created ServiceCatalogIndex
     """
-    import pickle
+    import dill
 
     cache = ServiceCatalogIndex(
         service_names=index.service_names,
@@ -303,5 +309,61 @@ def save_service_index_cache(index: LazyServiceCatalogIndex, file_path: str) -> 
         target_prefix_index=index.target_prefix_index,
     )
     with open(file_path, "wb") as fd:
-        pickle.dump(cache, fd)
+        # use dill (instead of plain pickle) to avoid issues when serializing the pickle from __main__
+        dill.dump(cache, fd)
     return cache
+
+
+def _get_catalog_filename():
+    ls_ver = VERSION.replace(".", "_")
+    botocore_ver = botocore.__version__.replace(".", "_")
+    return f"service-catalog-{ls_ver}-{botocore_ver}.dill"
+
+
+@singleton_factory
+def get_service_catalog() -> ServiceCatalog:
+    """Loads the ServiceCatalog (which contains all the service specs), and potentially re-uses a cached index."""
+
+    try:
+        catalog_file_name = _get_catalog_filename()
+        static_catalog_file = os.path.join(config.dirs.static_libs, catalog_file_name)
+
+        # try to load or load/build/save the service catalog index from the static libs
+        index = None
+        if os.path.exists(static_catalog_file):
+            # load the service catalog from the static libs dir / built at build time
+            LOG.debug("loading service catalog index cache file %s", static_catalog_file)
+            index = load_service_index_cache(static_catalog_file)
+        elif os.path.isdir(config.dirs.cache):
+            cache_catalog_file = os.path.join(config.dirs.cache, catalog_file_name)
+            if os.path.exists(cache_catalog_file):
+                LOG.debug("loading service catalog index cache file %s", cache_catalog_file)
+                index = load_service_index_cache(cache_catalog_file)
+            else:
+                LOG.debug("building service catalog index cache file %s", cache_catalog_file)
+                index = build_service_index_cache(cache_catalog_file)
+        return ServiceCatalog(index)
+    except Exception:
+        LOG.exception(
+            "error while processing service catalog index cache, falling back to lazy-loaded index"
+        )
+        return ServiceCatalog()
+
+
+def main():
+    catalog_file_name = _get_catalog_filename()
+    static_catalog_file = os.path.join(config.dirs.static_libs, catalog_file_name)
+
+    if os.path.exists(static_catalog_file):
+        LOG.error(
+            "service catalog index cache file (%s) already there. aborting!", static_catalog_file
+        )
+        return 1
+
+    # load the service catalog from the static libs dir / built at build time
+    LOG.debug("building service catalog index cache file %s", static_catalog_file)
+    build_service_index_cache(static_catalog_file)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
