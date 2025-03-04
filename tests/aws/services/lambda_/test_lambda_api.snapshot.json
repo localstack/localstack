@@ -12368,15 +12368,37 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_create_event_source_validation": {
-    "recorded-date": "10-04-2024, 09:22:02",
+    "recorded-date": "03-03-2025, 17:07:45",
     "recorded-content": {
-      "error": {
+      "no_starting_position": {
         "Error": {
           "Code": "InvalidParameterValueException",
           "Message": "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null."
         },
         "Type": "User",
         "message": "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid_starting_position": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'invalid' at 'startingPosition' failed to satisfy constraint: Member must satisfy enum value set: [LATEST, AT_TIMESTAMP, TRIM_HORIZON]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "incompatible_starting_position": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Unsupported starting position for arn type: arn:<partition>:dynamodb:<region>:111111111111:table/<table-name>/stream/<stream-name>"
+        },
+        "Type": "User",
+        "message": "Unsupported starting position for arn type: arn:<partition>:dynamodb:<region>:111111111111:table/<table-name>/stream/<stream-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -22305,6 +22327,33 @@
         "Error": {
           "Code": "ValidationException",
           "Message": "1 validation error detected: Value '[<security_group_id_2>]' at 'vpcConfig.securityGroupIds' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 1024, Member must have length greater than or equal to 0, Member must satisfy regular expression pattern: ^sg-[0-9a-zA-Z]*$]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_create_event_source_validation_kinesis": {
+    "recorded-date": "03-03-2025, 16:49:40",
+    "recorded-content": {
+      "no_starting_position": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null."
+        },
+        "Type": "User",
+        "message": "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid_starting_position": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'invalid' at 'startingPosition' failed to satisfy constraint: Member must satisfy enum value set: [LATEST, AT_TIMESTAMP, TRIM_HORIZON]"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

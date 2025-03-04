@@ -141,6 +141,10 @@ from localstack.aws.api.lambda_ import (
 )
 from localstack.aws.api.lambda_ import FunctionVersion as FunctionVersionApi
 from localstack.aws.api.lambda_ import ServiceException as LambdaServiceException
+from localstack.aws.api.pipes import (
+    DynamoDBStreamStartPosition,
+    KinesisStreamStartPosition,
+)
 from localstack.aws.connect import connect_to
 from localstack.aws.spec import load_service
 from localstack.services.edge import ROUTER
@@ -1973,11 +1977,28 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             service = extract_service_from_arn(request["EventSourceArn"])
 
         batch_size = api_utils.validate_and_set_batch_size(service, request.get("BatchSize"))
-        if service in ["dynamodb", "kinesis"] and "StartingPosition" not in request:
-            raise InvalidParameterValueException(
-                "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null.",
-                Type="User",
-            )
+        if service in ["dynamodb", "kinesis"]:
+            starting_position = request.get("StartingPosition")
+            if not starting_position:
+                raise InvalidParameterValueException(
+                    "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null.",
+                    Type="User",
+                )
+
+            if starting_position not in KinesisStreamStartPosition.__members__:
+                raise ValidationException(
+                    f"1 validation error detected: Value '{starting_position}' at 'startingPosition' failed to satisfy constraint: Member must satisfy enum value set: [LATEST, AT_TIMESTAMP, TRIM_HORIZON]"
+                )
+            # AT_TIMESTAMP is not allowed for DynamoDB Streams
+            elif (
+                service == "dynamodb"
+                and starting_position not in DynamoDBStreamStartPosition.__members__
+            ):
+                raise InvalidParameterValueException(
+                    f"Unsupported starting position for arn type: {request['EventSourceArn']}",
+                    Type="User",
+                )
+
         if service in ["sqs", "sqs-fifo"]:
             if batch_size > 10 and request.get("MaximumBatchingWindowInSeconds", 0) == 0:
                 raise InvalidParameterValueException(
