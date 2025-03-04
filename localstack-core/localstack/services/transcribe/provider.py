@@ -30,6 +30,7 @@ from localstack.aws.api.transcribe import (
     TranscriptionJobSummary,
 )
 from localstack.aws.connect import connect_to
+from localstack.constants import ARTIFACTS_REPO
 from localstack.packages.ffmpeg import ffmpeg_package
 from localstack.services.s3.utils import (
     get_bucket_and_key_from_presign_url,
@@ -43,6 +44,10 @@ from localstack.utils.run import run
 from localstack.utils.threads import start_thread
 
 LOG = logging.getLogger(__name__)
+
+VOSK_MODEL_ARTIFACTS_URL = (
+    f"{ARTIFACTS_REPO}/raw/a1f6e430de71d383bc7477f130da052f8686deec/vosk/models/"
+)
 
 # Map of language codes to language models
 LANGUAGE_MODELS = {
@@ -235,11 +240,26 @@ class TranscribeProvider(TranscribeApi):
 
             LOG.debug("Downloading language model: %s", model_path.name)
 
+            def _try_download(url: str):
+                try:
+                    download(url + str(model_path.name) + ".zip", model_zip_path, verify_ssl=False)
+                except Exception as e:
+                    LOG.error("Download failed from %s: %s", url, e)
+                    return False
+                return True
+
             from vosk import MODEL_PRE_URL  # noqa
 
-            download(
-                MODEL_PRE_URL + str(model_path.name) + ".zip", model_zip_path, verify_ssl=False
-            )
+            download_urls = [VOSK_MODEL_ARTIFACTS_URL, MODEL_PRE_URL]
+
+            for url in download_urls:
+                if _try_download(url):
+                    # Download the models from the localstack artifacts if present else download from the Vosk URL
+                    LOG.info("Successfully downloaded model from %s", url)
+                    break
+                else:
+                    LOG.error("Failed to download model from %s", url)
+                    return
 
             LOG.debug("Extracting language model: %s", model_path.name)
             with ZipFile(model_zip_path, "r") as model_ref:
