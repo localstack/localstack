@@ -56,6 +56,7 @@ def _get_all_key_ids(kms_client):
 
 def _get_alias(kms_client, alias_name, key_id=None):
     next_token = None
+    # TODO potential bug on pagination on "nextToken" attribute key
     while True:
         kwargs = {"nextToken": next_token} if next_token else {}
         if key_id:
@@ -1096,6 +1097,22 @@ class TestKMS:
         assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is True
         aws_client.kms.disable_key_rotation(KeyId=key_id)
         assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is False
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("rotation_period_in_days", [90, 180])
+    def test_key_enable_rotation_status(
+        self,
+        kms_key,
+        aws_client,
+        rotation_period_in_days,
+        snapshot,
+    ):
+        key_id = kms_key["KeyId"]
+        aws_client.kms.enable_key_rotation(
+            KeyId=key_id, RotationPeriodInDays=rotation_period_in_days
+        )
+        result = aws_client.kms.get_key_rotation_status(KeyId=key_id)
+        snapshot.match("match_response", result)
 
     @markers.aws.validated
     def test_create_list_delete_alias(self, kms_create_alias, aws_client):

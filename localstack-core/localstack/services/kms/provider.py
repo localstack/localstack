@@ -32,6 +32,7 @@ from localstack.aws.api.kms import (
     DisableKeyRequest,
     DisableKeyRotationRequest,
     EnableKeyRequest,
+    EnableKeyRotationRequest,
     EncryptionAlgorithmSpec,
     EncryptionContextType,
     EncryptResponse,
@@ -1253,7 +1254,12 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # We do not model that here, though.
         account_id, region_name, key_id = self._parse_key_id(request["KeyId"], context)
         key = self._get_kms_key(account_id, region_name, key_id, any_key_state_allowed=True)
-        return GetKeyRotationStatusResponse(KeyRotationEnabled=key.is_key_rotation_enabled)
+        return GetKeyRotationStatusResponse(
+            KeyId=key_id,
+            KeyRotationEnabled=key.is_key_rotation_enabled,
+            NextRotationDate=key.next_rotation_date,
+            RotationPeriodInDays=key.rotation_period_in_days,
+        )
 
     @handler("DisableKeyRotation", expand=False)
     def disable_key_rotation(
@@ -1267,13 +1273,16 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
     @handler("EnableKeyRotation", expand=False)
     def enable_key_rotation(
-        self, context: RequestContext, request: DisableKeyRotationRequest
+        self, context: RequestContext, request: EnableKeyRotationRequest
     ) -> None:
         # https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html
         # "If the KMS key has imported key material or is in a custom key store: UnsupportedOperationException."
         # We do not model that here, though.
         key = self._get_kms_key(context.account_id, context.region, request.get("KeyId"))
         key.is_key_rotation_enabled = True
+        if request.get("RotationPeriodInDays"):
+            key.rotation_period_in_days = request.get("RotationPeriodInDays")
+        key._update_key_rotation_date()
 
     @handler("ListKeyPolicies", expand=False)
     def list_key_policies(
