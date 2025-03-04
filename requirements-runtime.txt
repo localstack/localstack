@@ -64,7 +64,7 @@ certifi==2025.1.31
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.26.1
+cfn-lint==1.27.0
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -78,7 +78,7 @@ constantly==23.10.4
     # via localstack-twisted
 crontab==1.0.1
     # via localstack-core (pyproject.toml)
-cryptography==44.0.1
+cryptography==44.0.2
     # via
     #   joserfc
     #   localstack-core
@@ -91,7 +91,7 @@ dill==0.3.6
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-dnslib==0.9.25
+dnslib==0.9.26
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -141,7 +141,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.0.3
+joserfc==1.0.4
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core (pyproject.toml)
@@ -245,7 +245,7 @@ pydantic-core==2.27.2
     # via pydantic
 pygments==2.19.1
     # via rich
-pymongo==4.11.1
+pymongo==4.11.2
     # via localstack-core (pyproject.toml)
 pyopenssl==25.0.0
     # via
