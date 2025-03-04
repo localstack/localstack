@@ -479,6 +479,7 @@ def test_diff_after_update(deploy_cfn_template, aws_client, snapshot):
     assert describe_stack_response["Stacks"][0]["StackStatus"] == "UPDATE_COMPLETE"
 
 
+# TODO: this should really live in `test_change_set.py`
 @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Not implemented yet")
 class TestCaptureUpdateProcess:
     @pytest.fixture
