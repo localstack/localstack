@@ -479,8 +479,8 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::test_static_change": {
-    "recorded-date": "04-03-2025, 13:59:01",
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestSingleResource::test_static_change": {
+    "recorded-date": "04-03-2025, 14:36:53",
     "recorded-content": {
       "changes": [
         {
@@ -510,8 +510,8 @@
       ]
     }
   },
-  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::test_dynamic_change": {
-    "recorded-date": "04-03-2025, 14:27:45",
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestSingleResource::test_dynamic_change": {
+    "recorded-date": "04-03-2025, 14:36:53",
     "recorded-content": {
       "changes": [
         {
