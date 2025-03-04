@@ -918,8 +918,10 @@ class Preprocessor(ASLParserVisitor):
         )
 
     def visitItem_selector_decl(self, ctx: ASLParser.Item_selector_declContext) -> ItemSelector:
-        payload_tmpl: PayloadTmpl = self.visit(ctx.payload_tmpl_decl())
-        return ItemSelector(payload_tmpl=payload_tmpl)
+        template_value_object = self.visitAssign_template_value_object(
+            ctx=ctx.assign_template_value_object()
+        )
+        return ItemSelector(template_value_object=template_value_object)
 
     def visitItem_reader_decl(self, ctx: ASLParser.Item_reader_declContext) -> ItemReader:
         props = StateProps()

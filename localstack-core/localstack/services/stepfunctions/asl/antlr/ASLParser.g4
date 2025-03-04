@@ -299,7 +299,7 @@ iterator_decl: ITERATOR COLON LBRACE iterator_decl_item (COMMA iterator_decl_ite
 
 iterator_decl_item: startat_decl | states_decl | comment_decl | processor_config_decl;
 
-item_selector_decl: ITEMSELECTOR COLON payload_tmpl_decl;
+item_selector_decl: ITEMSELECTOR COLON assign_template_value_object;
 
 item_reader_decl: ITEMREADER COLON LBRACE items_reader_field (COMMA items_reader_field)* RBRACE;
 

@@ -27847,5 +27847,1981 @@
         "exception_value": "An error occurred (InvalidDefinition) when calling the CreateStateMachine operation: Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: The value for the field 'parsed.$' must be a valid JSONPath or a valid intrinsic function call at /States/IntrinsicEscape/Parameters'"
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_item_selector[MAP_STATE_ITEM_SELECTOR]": {
+    "recorded-date": "03-03-2025, 16:07:53",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "StartState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "StartState",
+              "output": {
+                "detail": {
+                  "delivery-partner": "UQS",
+                  "shipped": [
+                    {
+                      "prod": "R31",
+                      "dest-code": 9511,
+                      "quantity": 1344
+                    },
+                    {
+                      "prod": "S39",
+                      "dest-code": 9511,
+                      "quantity": 40
+                    },
+                    {
+                      "prod": "R31",
+                      "dest-code": 9833,
+                      "quantity": 12
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9860,
+                      "quantity": 887
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9511,
+                      "quantity": 1220
+                    }
+                  ]
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "detail": {
+                  "delivery-partner": "UQS",
+                  "shipped": [
+                    {
+                      "prod": "R31",
+                      "dest-code": 9511,
+                      "quantity": 1344
+                    },
+                    {
+                      "prod": "S39",
+                      "dest-code": 9511,
+                      "quantity": 40
+                    },
+                    {
+                      "prod": "R31",
+                      "dest-code": 9833,
+                      "quantity": 12
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9860,
+                      "quantity": 887
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9511,
+                      "quantity": 1220
+                    }
+                  ]
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 5,
+            "mapStateStartedEventDetails": {
+              "length": 5
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 6,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "MapState"
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "constant_value": "HelloWorld",
+                "iteration_input_value": {
+                  "prod": "R31",
+                  "dest-code": 9511,
+                  "quantity": 1344
+                },
+                "from_input_constant": "UQS",
+                "iteration_index": 0,
+                "original_input": {
+                  "delivery-partner": "UQS",
+                  "shipped": [
+                    {
+                      "prod": "R31",
+                      "dest-code": 9511,
+                      "quantity": 1344
+                    },
+                    {
+                      "prod": "S39",
+                      "dest-code": 9511,
+                      "quantity": 40
+                    },
+                    {
+                      "prod": "R31",
+                      "dest-code": 9833,
+                      "quantity": 12
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9860,
+                      "quantity": 887
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9511,
+                      "quantity": 1220
+                    }
+                  ]
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleItem"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "HandleItem",
+              "output": {
+                "constant_value": "HelloWorld",
+                "iteration_input_value": {
+                  "prod": "R31",
+                  "dest-code": 9511,
+                  "quantity": 1344
+                },
+                "from_input_constant": "UQS",
+                "iteration_index": 0,
+                "original_input": {
+                  "delivery-partner": "UQS",
+                  "shipped": [
+                    {
+                      "prod": "R31",
+                      "dest-code": 9511,
+                      "quantity": 1344
+                    },
+                    {
+                      "prod": "S39",
+                      "dest-code": 9511,
+                      "quantity": 40
+                    },
+                    {
+                      "prod": "R31",
+                      "dest-code": 9833,
+                      "quantity": 12
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9860,
+                      "quantity": 887
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9511,
+                      "quantity": 1220
+                    }
+                  ]
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 9,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "MapState"
+            },
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 10,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "MapState"
+            },
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateEnteredEventDetails": {
+              "input": {
+                "constant_value": "HelloWorld",
+                "iteration_input_value": {
+                  "prod": "S39",
+                  "dest-code": 9511,
+                  "quantity": 40
+                },
+                "from_input_constant": "UQS",
+                "iteration_index": 1,
+                "original_input": {
+                  "delivery-partner": "UQS",
+                  "shipped": [
+                    {
+                      "prod": "R31",
+                      "dest-code": 9511,
+                      "quantity": 1344
+                    },
+                    {
+                      "prod": "S39",
+                      "dest-code": 9511,
+                      "quantity": 40
+                    },
+                    {
+                      "prod": "R31",
+                      "dest-code": 9833,
+                      "quantity": 12
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9860,
+                      "quantity": 887
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9511,
+                      "quantity": 1220
+                    }
+                  ]
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleItem"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "stateExitedEventDetails": {
+              "name": "HandleItem",
+              "output": {
+                "constant_value": "HelloWorld",
+                "iteration_input_value": {
+                  "prod": "S39",
+                  "dest-code": 9511,
+                  "quantity": 40
+                },
+                "from_input_constant": "UQS",
+                "iteration_index": 1,
+                "original_input": {
+                  "delivery-partner": "UQS",
+                  "shipped": [
+                    {
+                      "prod": "R31",
+                      "dest-code": 9511,
+                      "quantity": 1344
+                    },
+                    {
+                      "prod": "S39",
+                      "dest-code": 9511,
+                      "quantity": 40
+                    },
+                    {
+                      "prod": "R31",
+                      "dest-code": 9833,
+                      "quantity": 12
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9860,
+                      "quantity": 887
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9511,
+                      "quantity": 1220
+                    }
+                  ]
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 13,
+            "mapIterationSucceededEventDetails": {
+              "index": 1,
+              "name": "MapState"
+            },
+            "previousEventId": 12,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 14,
+            "mapIterationStartedEventDetails": {
+              "index": 2,
+              "name": "MapState"
+            },
+            "previousEventId": 12,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "stateEnteredEventDetails": {
+              "input": {
+                "constant_value": "HelloWorld",
+                "iteration_input_value": {
+                  "prod": "R31",
+                  "dest-code": 9833,
+                  "quantity": 12
+                },
+                "from_input_constant": "UQS",
+                "iteration_index": 2,
+                "original_input": {
+                  "delivery-partner": "UQS",
+                  "shipped": [
+                    {
+                      "prod": "R31",
+                      "dest-code": 9511,
+                      "quantity": 1344
+                    },
+                    {
+                      "prod": "S39",
+                      "dest-code": 9511,
+                      "quantity": 40
+                    },
+                    {
+                      "prod": "R31",
+                      "dest-code": 9833,
+                      "quantity": 12
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9860,
+                      "quantity": 887
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9511,
+                      "quantity": 1220
+                    }
+                  ]
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleItem"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 16,
+            "previousEventId": 15,
+            "stateExitedEventDetails": {
+              "name": "HandleItem",
+              "output": {
+                "constant_value": "HelloWorld",
+                "iteration_input_value": {
+                  "prod": "R31",
+                  "dest-code": 9833,
+                  "quantity": 12
+                },
+                "from_input_constant": "UQS",
+                "iteration_index": 2,
+                "original_input": {
+                  "delivery-partner": "UQS",
+                  "shipped": [
+                    {
+                      "prod": "R31",
+                      "dest-code": 9511,
+                      "quantity": 1344
+                    },
+                    {
+                      "prod": "S39",
+                      "dest-code": 9511,
+                      "quantity": 40
+                    },
+                    {
+                      "prod": "R31",
+                      "dest-code": 9833,
+                      "quantity": 12
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9860,
+                      "quantity": 887
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9511,
+                      "quantity": 1220
+                    }
+                  ]
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 17,
+            "mapIterationSucceededEventDetails": {
+              "index": 2,
+              "name": "MapState"
+            },
+            "previousEventId": 16,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 18,
+            "mapIterationStartedEventDetails": {
+              "index": 3,
+              "name": "MapState"
+            },
+            "previousEventId": 16,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 19,
+            "previousEventId": 18,
+            "stateEnteredEventDetails": {
+              "input": {
+                "constant_value": "HelloWorld",
+                "iteration_input_value": {
+                  "prod": "R40",
+                  "dest-code": 9860,
+                  "quantity": 887
+                },
+                "from_input_constant": "UQS",
+                "iteration_index": 3,
+                "original_input": {
+                  "delivery-partner": "UQS",
+                  "shipped": [
+                    {
+                      "prod": "R31",
+                      "dest-code": 9511,
+                      "quantity": 1344
+                    },
+                    {
+                      "prod": "S39",
+                      "dest-code": 9511,
+                      "quantity": 40
+                    },
+                    {
+                      "prod": "R31",
+                      "dest-code": 9833,
+                      "quantity": 12
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9860,
+                      "quantity": 887
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9511,
+                      "quantity": 1220
+                    }
+                  ]
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleItem"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 20,
+            "previousEventId": 19,
+            "stateExitedEventDetails": {
+              "name": "HandleItem",
+              "output": {
+                "constant_value": "HelloWorld",
+                "iteration_input_value": {
+                  "prod": "R40",
+                  "dest-code": 9860,
+                  "quantity": 887
+                },
+                "from_input_constant": "UQS",
+                "iteration_index": 3,
+                "original_input": {
+                  "delivery-partner": "UQS",
+                  "shipped": [
+                    {
+                      "prod": "R31",
+                      "dest-code": 9511,
+                      "quantity": 1344
+                    },
+                    {
+                      "prod": "S39",
+                      "dest-code": 9511,
+                      "quantity": 40
+                    },
+                    {
+                      "prod": "R31",
+                      "dest-code": 9833,
+                      "quantity": 12
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9860,
+                      "quantity": 887
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9511,
+                      "quantity": 1220
+                    }
+                  ]
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 21,
+            "mapIterationSucceededEventDetails": {
+              "index": 3,
+              "name": "MapState"
+            },
+            "previousEventId": 20,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 22,
+            "mapIterationStartedEventDetails": {
+              "index": 4,
+              "name": "MapState"
+            },
+            "previousEventId": 20,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 23,
+            "previousEventId": 22,
+            "stateEnteredEventDetails": {
+              "input": {
+                "constant_value": "HelloWorld",
+                "iteration_input_value": {
+                  "prod": "R40",
+                  "dest-code": 9511,
+                  "quantity": 1220
+                },
+                "from_input_constant": "UQS",
+                "iteration_index": 4,
+                "original_input": {
+                  "delivery-partner": "UQS",
+                  "shipped": [
+                    {
+                      "prod": "R31",
+                      "dest-code": 9511,
+                      "quantity": 1344
+                    },
+                    {
+                      "prod": "S39",
+                      "dest-code": 9511,
+                      "quantity": 40
+                    },
+                    {
+                      "prod": "R31",
+                      "dest-code": 9833,
+                      "quantity": 12
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9860,
+                      "quantity": 887
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9511,
+                      "quantity": 1220
+                    }
+                  ]
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleItem"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 24,
+            "previousEventId": 23,
+            "stateExitedEventDetails": {
+              "name": "HandleItem",
+              "output": {
+                "constant_value": "HelloWorld",
+                "iteration_input_value": {
+                  "prod": "R40",
+                  "dest-code": 9511,
+                  "quantity": 1220
+                },
+                "from_input_constant": "UQS",
+                "iteration_index": 4,
+                "original_input": {
+                  "delivery-partner": "UQS",
+                  "shipped": [
+                    {
+                      "prod": "R31",
+                      "dest-code": 9511,
+                      "quantity": 1344
+                    },
+                    {
+                      "prod": "S39",
+                      "dest-code": 9511,
+                      "quantity": 40
+                    },
+                    {
+                      "prod": "R31",
+                      "dest-code": 9833,
+                      "quantity": 12
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9860,
+                      "quantity": 887
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9511,
+                      "quantity": 1220
+                    }
+                  ]
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 25,
+            "mapIterationSucceededEventDetails": {
+              "index": 4,
+              "name": "MapState"
+            },
+            "previousEventId": 24,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 26,
+            "previousEventId": 25,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 27,
+            "previousEventId": 25,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": {
+                "detail": {
+                  "delivery-partner": "UQS",
+                  "shipped": [
+                    {
+                      "prod": "R31",
+                      "dest-code": 9511,
+                      "quantity": 1344
+                    },
+                    {
+                      "prod": "S39",
+                      "dest-code": 9511,
+                      "quantity": 40
+                    },
+                    {
+                      "prod": "R31",
+                      "dest-code": 9833,
+                      "quantity": 12
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9860,
+                      "quantity": 887
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9511,
+                      "quantity": 1220
+                    }
+                  ],
+                  "shipped_output": [
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "R31",
+                        "dest-code": 9511,
+                        "quantity": 1344
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 0,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "S39",
+                        "dest-code": 9511,
+                        "quantity": 40
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 1,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "R31",
+                        "dest-code": 9833,
+                        "quantity": 12
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 2,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "R40",
+                        "dest-code": 9860,
+                        "quantity": 887
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 3,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "R40",
+                        "dest-code": 9511,
+                        "quantity": 1220
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 4,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 28,
+            "previousEventId": 27,
+            "stateEnteredEventDetails": {
+              "input": {
+                "detail": {
+                  "delivery-partner": "UQS",
+                  "shipped": [
+                    {
+                      "prod": "R31",
+                      "dest-code": 9511,
+                      "quantity": 1344
+                    },
+                    {
+                      "prod": "S39",
+                      "dest-code": 9511,
+                      "quantity": 40
+                    },
+                    {
+                      "prod": "R31",
+                      "dest-code": 9833,
+                      "quantity": 12
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9860,
+                      "quantity": 887
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9511,
+                      "quantity": 1220
+                    }
+                  ],
+                  "shipped_output": [
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "R31",
+                        "dest-code": 9511,
+                        "quantity": 1344
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 0,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "S39",
+                        "dest-code": 9511,
+                        "quantity": 40
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 1,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "R31",
+                        "dest-code": 9833,
+                        "quantity": 12
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 2,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "R40",
+                        "dest-code": 9860,
+                        "quantity": 887
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 3,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "R40",
+                        "dest-code": 9511,
+                        "quantity": 1220
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 4,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Final"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 29,
+            "previousEventId": 28,
+            "stateExitedEventDetails": {
+              "name": "Final",
+              "output": {
+                "detail": {
+                  "delivery-partner": "UQS",
+                  "shipped": [
+                    {
+                      "prod": "R31",
+                      "dest-code": 9511,
+                      "quantity": 1344
+                    },
+                    {
+                      "prod": "S39",
+                      "dest-code": 9511,
+                      "quantity": 40
+                    },
+                    {
+                      "prod": "R31",
+                      "dest-code": 9833,
+                      "quantity": 12
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9860,
+                      "quantity": 887
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9511,
+                      "quantity": 1220
+                    }
+                  ],
+                  "shipped_output": [
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "R31",
+                        "dest-code": 9511,
+                        "quantity": 1344
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 0,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "S39",
+                        "dest-code": 9511,
+                        "quantity": 40
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 1,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "R31",
+                        "dest-code": 9833,
+                        "quantity": 12
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 2,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "R40",
+                        "dest-code": 9860,
+                        "quantity": 887
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 3,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "R40",
+                        "dest-code": 9511,
+                        "quantity": 1220
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 4,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "detail": {
+                  "delivery-partner": "UQS",
+                  "shipped": [
+                    {
+                      "prod": "R31",
+                      "dest-code": 9511,
+                      "quantity": 1344
+                    },
+                    {
+                      "prod": "S39",
+                      "dest-code": 9511,
+                      "quantity": 40
+                    },
+                    {
+                      "prod": "R31",
+                      "dest-code": 9833,
+                      "quantity": 12
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9860,
+                      "quantity": 887
+                    },
+                    {
+                      "prod": "R40",
+                      "dest-code": 9511,
+                      "quantity": 1220
+                    }
+                  ],
+                  "shipped_output": [
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "R31",
+                        "dest-code": 9511,
+                        "quantity": 1344
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 0,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "S39",
+                        "dest-code": 9511,
+                        "quantity": 40
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 1,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "R31",
+                        "dest-code": 9833,
+                        "quantity": 12
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 2,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "R40",
+                        "dest-code": 9860,
+                        "quantity": 887
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 3,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "constant_value": "HelloWorld",
+                      "iteration_input_value": {
+                        "prod": "R40",
+                        "dest-code": 9511,
+                        "quantity": 1220
+                      },
+                      "from_input_constant": "UQS",
+                      "iteration_index": 4,
+                      "original_input": {
+                        "delivery-partner": "UQS",
+                        "shipped": [
+                          {
+                            "prod": "R31",
+                            "dest-code": 9511,
+                            "quantity": 1344
+                          },
+                          {
+                            "prod": "S39",
+                            "dest-code": 9511,
+                            "quantity": 40
+                          },
+                          {
+                            "prod": "R31",
+                            "dest-code": 9833,
+                            "quantity": 12
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9860,
+                            "quantity": 887
+                          },
+                          {
+                            "prod": "R40",
+                            "dest-code": 9511,
+                            "quantity": 1220
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 30,
+            "previousEventId": 29,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_item_selector[MAP_STATE_ITEM_SELECTOR_JSONATA]": {
+    "recorded-date": "03-03-2025, 16:08:13",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "assignedVariables": {
+                "ItemsVar": "[\"Item1\",\"Item2\"]"
+              },
+              "assignedVariablesDetails": {
+                "truncated": false
+              },
+              "name": "Start",
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapIterateState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 5,
+            "mapStateStartedEventDetails": {
+              "length": 2
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 6,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "MapIterateState"
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "map_item_value": "Item1",
+                "var_sample": [
+                  "Item1",
+                  "Item2"
+                ],
+                "string_literal": "string literal"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "Pass",
+              "output": {
+                "map_item_value": "Item1",
+                "var_sample": [
+                  "Item1",
+                  "Item2"
+                ],
+                "string_literal": "string literal"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 9,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "MapIterateState"
+            },
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 10,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "MapIterateState"
+            },
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateEnteredEventDetails": {
+              "input": {
+                "map_item_value": "Item2",
+                "var_sample": [
+                  "Item1",
+                  "Item2"
+                ],
+                "string_literal": "string literal"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "stateExitedEventDetails": {
+              "name": "Pass",
+              "output": {
+                "map_item_value": "Item2",
+                "var_sample": [
+                  "Item1",
+                  "Item2"
+                ],
+                "string_literal": "string literal"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 13,
+            "mapIterationSucceededEventDetails": {
+              "index": 1,
+              "name": "MapIterateState"
+            },
+            "previousEventId": 12,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 14,
+            "previousEventId": 13,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 15,
+            "previousEventId": 13,
+            "stateExitedEventDetails": {
+              "name": "MapIterateState",
+              "output": "[{\"map_item_value\":\"Item1\",\"var_sample\":[\"Item1\",\"Item2\"],\"string_literal\":\"string literal\"},{\"map_item_value\":\"Item2\",\"var_sample\":[\"Item1\",\"Item2\"],\"string_literal\":\"string literal\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"map_item_value\":\"Item1\",\"var_sample\":[\"Item1\",\"Item2\"],\"string_literal\":\"string literal\"},{\"map_item_value\":\"Item2\",\"var_sample\":[\"Item1\",\"Item2\"],\"string_literal\":\"string literal\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 16,
+            "previousEventId": 15,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
