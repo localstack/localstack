@@ -13,7 +13,14 @@ from cryptography.hazmat.primitives import hashes, hmac, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
-from localstack.services.kms.models import IV_LEN, Ciphertext, _serialize_ciphertext_blob
+from localstack.aws.api.kms import MessageType, SigningAlgorithmSpec
+from localstack.services.kms.models import (
+    IV_LEN,
+    Ciphertext,
+    construct_sign_verify_hasher,
+    construct_sign_verify_padding,
+    serialize_ciphertext_blob,
+)
 from localstack.services.kms.utils import get_hash_algorithm
 from localstack.testing.aws.util import in_default_partition
 from localstack.testing.pytest import markers
@@ -338,7 +345,7 @@ class TestKMS:
         # Generate expected cipher text
         iv = os.urandom(IV_LEN)
         ciphertext, tag = encrypt(custom_key_material, message, iv, b"")
-        expected_ciphertext_blob = _serialize_ciphertext_blob(
+        expected_ciphertext_blob = serialize_ciphertext_blob(
             ciphertext=Ciphertext(key_id=key_id, iv=iv, ciphertext=ciphertext, tag=tag)
         )
 
@@ -683,6 +690,25 @@ class TestKMS:
         )
         snapshot.match("verification", verification)
         assert verification["SignatureValid"]
+
+        # Ensure signatures can be verified using the public key and specific params
+        public_key_resp = aws_client.kms.get_public_key(KeyId=key_id)["PublicKey"]
+        public_key = load_der_public_key(public_key_resp)
+        signing_algo = SigningAlgorithmSpec(sign_algo)
+
+        def _construct_args(message_type):
+            hasher, wrapped_hasher = construct_sign_verify_hasher(signing_algo, message_type)
+            if signing_algo.startswith("ECDSA"):
+                return {"signature_algorithm": ec.ECDSA(algorithm=wrapped_hasher)}
+            else:
+                padding = construct_sign_verify_padding(signing_algo, hasher)
+                return {"algorithm": wrapped_hasher, "padding": padding}
+
+        raw_args = _construct_args(MessageType.RAW)
+        public_key.verify(signature=signature["Signature"], data=plaintext, **raw_args)
+
+        digest_args = _construct_args(MessageType.DIGEST)
+        public_key.verify(signature=signature["Signature"], data=digest, **digest_args)
 
         # Ensure pre-hashed messages can be signed and verified
         signature = aws_client.kms.sign(MessageType="DIGEST", Message=digest, **kwargs)
