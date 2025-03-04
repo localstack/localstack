@@ -606,5 +606,71 @@
         }
       ]
     }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestTwoResources::test_dynamic_change": {
+    "recorded-date": "04-03-2025, 15:02:36",
+    "recorded-content": {
+      "changes": [
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "Parameter1",
+            "PhysicalResourceId": "<physical-resource-id:1>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Static",
+                "ChangeSource": "ParameterReference",
+                "CausingEntity": "ParameterValue"
+              },
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "DirectModification"
+              }
+            ]
+          }
+        },
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "Parameter2",
+            "PhysicalResourceId": "<physical-resource-id:2>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "ResourceAttribute",
+                "CausingEntity": "Parameter1.Value"
+              }
+            ]
+          }
+        }
+      ]
+    }
   }
 }

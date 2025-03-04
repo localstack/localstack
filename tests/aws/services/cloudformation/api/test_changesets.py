@@ -1268,11 +1268,18 @@ class TestChangeSetDiff:
                     },
                 },
                 "Resources": {
-                    "Parameter": {
+                    "Parameter1": {
                         "Type": "AWS::SSM::Parameter",
                         "Properties": {
                             "Type": "String",
                             "Value": {"Ref": "ParameterValue"},
+                        },
+                    },
+                    "Parameter2": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
                         },
                     },
                 },
