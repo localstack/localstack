@@ -1,6 +1,7 @@
 import json
 import os.path
 
+import botocore
 import pytest
 from botocore.exceptions import ClientError
 
@@ -11,6 +12,7 @@ from localstack.testing.aws.cloudformation_utils import (
 )
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.fixtures import StackDeployError
 from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, wait_until
@@ -1153,9 +1155,15 @@ class TestChangeSetDiff:
             )
             stack_id = change_set_details["StackId"]
             change_set_id = change_set_details["Id"]
-            aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
-                ChangeSetName=change_set_id
-            )
+            try:
+                aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+                    ChangeSetName=change_set_id
+                )
+            except botocore.exceptions.WaiterError as e:
+                raise StackDeployError(
+                    aws_client.cloudformation.describe_change_set(ChangeSetName=change_set_id),
+                    [],
+                ) from e
 
             describe_change_set_2 = aws_client.cloudformation.describe_change_set(
                 ChangeSetName=change_set_id,
