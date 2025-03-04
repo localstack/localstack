@@ -1103,8 +1103,6 @@ class TestKMS:
         self,
         kms_key,
         aws_client,
-        kms_client_for_region,
-        region_name,
         rotation_period_in_days,
         snapshot,
     ):
