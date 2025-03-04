@@ -816,5 +816,66 @@
         }
       ]
     }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestThreeResources::test_root_change": {
+    "recorded-date": "04-03-2025, 16:17:23",
+    "recorded-content": {
+      "changes": [
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "Parameter1",
+            "PhysicalResourceId": "<physical-resource-id:1>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never",
+                  "Path": "/Properties/Value",
+                  "BeforeValue": "c410a95f",
+                  "AfterValue": "59d95066",
+                  "AttributeChangeType": "Modify"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "DirectModification"
+              },
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never",
+                  "Path": "/Properties/Value",
+                  "BeforeValue": "c410a95f",
+                  "AfterValue": "59d95066",
+                  "AttributeChangeType": "Modify"
+                },
+                "Evaluation": "Static",
+                "ChangeSource": "ParameterReference",
+                "CausingEntity": "ParameterValue"
+              }
+            ],
+            "BeforeContext": {
+              "Properties": {
+                "Value": "c410a95f",
+                "Type": "String"
+              }
+            },
+            "AfterContext": {
+              "Properties": {
+                "Value": "59d95066",
+                "Type": "String"
+              }
+            }
+          }
+        }
+      ]
+    }
   }
 }

@@ -17,6 +17,9 @@
   "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestSingleResource::test_static_change[True]": {
     "last_validated_date": "2025-03-04T15:21:29+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestThreeResources::test_root_change": {
+    "last_validated_date": "2025-03-04T16:17:23+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestTwoResources::test_dynamic_change": {
     "last_validated_date": "2025-03-04T16:11:10+00:00"
   },

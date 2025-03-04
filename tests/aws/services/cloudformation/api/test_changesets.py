@@ -1344,3 +1344,39 @@ class TestChangeSetDiff:
             value1 = short_uid()
             value2 = short_uid()
             capture_stack_diff(t1, t1, p1={"ParameterValue": value1}, p2={"ParameterValue": value2})
+
+    class TestThreeResources:
+        def test_root_change(self, capture_stack_diff):
+            t1 = {
+                "Parameters": {
+                    "ParameterValue": {
+                        "Type": "String",
+                    },
+                },
+                "Resources": {
+                    "Parameter1": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Ref": "ParameterValue"},
+                        },
+                    },
+                    "Parameter2": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                        },
+                    },
+                    "Parameter3": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["Parameter2", "Value"]},
+                        },
+                    },
+                },
+            }
+            value1 = short_uid()
+            value2 = short_uid()
+            capture_stack_diff(t1, t1, p1={"ParameterValue": value1}, p2={"ParameterValue": value2})
