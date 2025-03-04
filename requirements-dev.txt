@@ -27,13 +27,13 @@ attrs==25.1.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.225
+aws-cdk-asset-awscli-v1==2.2.226
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==39.2.20
     # via aws-cdk-lib
-aws-cdk-lib==2.181.0
+aws-cdk-lib==2.181.1
     # via localstack-core
 aws-sam-translator==1.95.0
     # via
@@ -57,7 +57,6 @@ botocore==1.36.21
     #   awscli
     #   boto3
     #   localstack-core
-    #   localstack-snapshot
     #   moto-ext
     #   s3transfer
 build==1.2.2.post1
@@ -83,7 +82,7 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.26.1
+cfn-lint==1.27.0
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -105,7 +104,7 @@ coveralls==4.0.1
     # via localstack-core (pyproject.toml)
 crontab==1.0.1
     # via localstack-core
-cryptography==44.0.1
+cryptography==44.0.2
     # via
     #   joserfc
     #   localstack-core
@@ -126,7 +125,7 @@ dill==0.3.6
     #   localstack-core (pyproject.toml)
 distlib==0.3.9
     # via virtualenv
-dnslib==0.9.25
+dnslib==0.9.26
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -194,7 +193,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.0.3
+joserfc==1.0.4
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core
@@ -237,7 +236,7 @@ jsonschema-specifications==2024.10.1
     #   openapi-schema-validator
 lazy-object-proxy==1.10.0
     # via openapi-spec-validator
-localstack-snapshot==0.1.1
+localstack-snapshot==0.2.0
     # via localstack-core
 localstack-twisted==24.3.0
     # via localstack-core
@@ -338,7 +337,7 @@ pydantic-core==2.27.2
     # via pydantic
 pygments==2.19.1
     # via rich
-pymongo==4.11.1
+pymongo==4.11.2
     # via localstack-core
 pyopenssl==25.0.0
     # via
@@ -350,7 +349,7 @@ pyparsing==3.2.1
     # via moto-ext
 pyproject-hooks==1.2.0
     # via build
-pytest==8.3.4
+pytest==8.3.5
     # via
     #   localstack-core
     #   pytest-rerunfailures
@@ -426,7 +425,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.9.8
+ruff==0.9.9
     # via localstack-core (pyproject.toml)
 s3transfer==0.11.3
     # via

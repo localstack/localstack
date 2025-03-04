@@ -16,11 +16,11 @@ charset-normalizer==3.4.1
     # via requests
 click==8.1.8
     # via localstack-core (pyproject.toml)
-cryptography==44.0.1
+cryptography==44.0.2
     # via localstack-core (pyproject.toml)
 dill==0.3.6
     # via localstack-core (pyproject.toml)
-dnslib==0.9.25
+dnslib==0.9.26
     # via localstack-core (pyproject.toml)
 dnspython==2.7.0
     # via localstack-core (pyproject.toml)

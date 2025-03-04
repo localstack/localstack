@@ -34,13 +34,13 @@ click==8.1.8
     # via localstack-core (pyproject.toml)
 constantly==23.10.4
     # via localstack-twisted
-cryptography==44.0.1
+cryptography==44.0.2
     # via
     #   localstack-core (pyproject.toml)
     #   pyopenssl
 dill==0.3.6
     # via localstack-core (pyproject.toml)
-dnslib==0.9.25
+dnslib==0.9.26
     # via localstack-core (pyproject.toml)
 dnspython==2.7.0
     # via localstack-core (pyproject.toml)
