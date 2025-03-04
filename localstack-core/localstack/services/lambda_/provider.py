@@ -1892,11 +1892,17 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         )
         if service in ["sqs", "sqs-fifo"]:
             try:
-                source_client.get_queue_attributes(QueueUrl=arn["resource"])
+                # AWS uses `GetQueueAttributes` internally to verify the queue existence, but we need the `QueueUrl`
+                # which is not given directly. We build out a dummy `QueueUrl` which can be parsed by SQS to return
+                # the right value
+                queue_name = arn["resource"].split("/")[-1]
+                queue_url = f"http://sqs.{arn['region']}.domain/{arn['account']}/{queue_name}"
+                source_client.get_queue_attributes(QueueUrl=queue_url)
             except ClientError as e:
-                if e.response["Error"]["Code"] == "AWS.SimpleQueueService.NonExistentQueue":
+                error_code = e.response["Error"]["Code"]
+                if error_code == "AWS.SimpleQueueService.NonExistentQueue":
                     raise InvalidParameterValueException(
-                        f"Error occurred while ReceiveMessage. SQS Error Code: {e.response['Error']['Code']}. SQS Error Message: {e.response['Error']['Message']}",
+                        f"Error occurred while ReceiveMessage. SQS Error Code: {error_code}. SQS Error Message: {e.response['Error']['Message']}",
                         Type="User",
                     )
                 raise e
