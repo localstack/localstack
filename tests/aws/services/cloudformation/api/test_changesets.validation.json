@@ -35,6 +35,9 @@
   "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestTwoResources::test_dynamic_change_unrelated_property[True]": {
     "last_validated_date": "2025-03-04T15:23:19+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestTwoResources::test_dynamic_change_unrelated_property_not_create_only": {
+    "last_validated_date": "2025-03-04T16:15:03+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestTwoResources::test_static_change": {
     "last_validated_date": "2025-03-04T16:10:55+00:00"
   },

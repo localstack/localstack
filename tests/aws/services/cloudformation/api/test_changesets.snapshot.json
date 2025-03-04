@@ -755,5 +755,66 @@
         }
       ]
     }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestTwoResources::test_dynamic_change_unrelated_property_not_create_only": {
+    "recorded-date": "04-03-2025, 16:15:04",
+    "recorded-content": {
+      "changes": [
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "Parameter1",
+            "PhysicalResourceId": "<physical-resource-id:1>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never",
+                  "Path": "/Properties/Value",
+                  "BeforeValue": "515aedd3",
+                  "AfterValue": "74d481ac",
+                  "AttributeChangeType": "Modify"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "DirectModification"
+              },
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never",
+                  "Path": "/Properties/Value",
+                  "BeforeValue": "515aedd3",
+                  "AfterValue": "74d481ac",
+                  "AttributeChangeType": "Modify"
+                },
+                "Evaluation": "Static",
+                "ChangeSource": "ParameterReference",
+                "CausingEntity": "ParameterValue"
+              }
+            ],
+            "BeforeContext": {
+              "Properties": {
+                "Value": "515aedd3",
+                "Type": "String"
+              }
+            },
+            "AfterContext": {
+              "Properties": {
+                "Value": "74d481ac",
+                "Type": "String"
+              }
+            }
+          }
+        }
+      ]
+    }
   }
 }
