@@ -1167,6 +1167,7 @@ class TestChangeSetDiff:
 
             describe_change_set_2 = aws_client.cloudformation.describe_change_set(
                 ChangeSetName=change_set_id,
+                IncludePropertyValues=True,
             )
 
             snapshot.match("changes", describe_change_set_2["Changes"])
