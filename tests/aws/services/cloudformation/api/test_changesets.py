@@ -1189,3 +1189,24 @@ class TestChangeSetDiff:
             },
         }
         capture_stack_diff(t1, t2)
+
+    def test_dynamic_change(self, capture_stack_diff):
+        t1 = {
+            "Parameters": {
+                "ParameterValue": {
+                    "Type": "String",
+                },
+            },
+            "Resources": {
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Ref": "ParameterValue"},
+                    },
+                },
+            },
+        }
+        value1 = short_uid()
+        value2 = short_uid()
+        capture_stack_diff(t1, t1, p1={"ParameterValue": value1}, p2={"ParameterValue": value2})

@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::test_dynamic_change": {
+    "last_validated_date": "2025-03-04T14:27:44+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::test_static_change": {
     "last_validated_date": "2025-03-04T13:59:01+00:00"
   },

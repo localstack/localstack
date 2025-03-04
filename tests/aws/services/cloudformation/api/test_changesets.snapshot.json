@@ -509,5 +509,46 @@
         }
       ]
     }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::test_dynamic_change": {
+    "recorded-date": "04-03-2025, 14:27:45",
+    "recorded-content": {
+      "changes": [
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "<physical-resource-id:1>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Static",
+                "ChangeSource": "ParameterReference",
+                "CausingEntity": "ParameterValue"
+              },
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "DirectModification"
+              }
+            ]
+          }
+        }
+      ]
+    }
   }
 }
