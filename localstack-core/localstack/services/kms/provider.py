@@ -92,6 +92,8 @@ from localstack.aws.api.kms import (
     ReEncryptResponse,
     ReplicateKeyRequest,
     ReplicateKeyResponse,
+    RotateKeyOnDemandRequest,
+    RotateKeyOnDemandResponse,
     ScheduleKeyDeletionRequest,
     ScheduleKeyDeletionResponse,
     SignRequest,
@@ -1333,6 +1335,26 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         )
         kwargs = {"NextMarker": next_token, "Truncated": True} if next_token else {}
         return ListResourceTagsResponse(Tags=page, **kwargs)
+
+    @handler("RotateKeyOnDemand", expand=False)
+    def rotate_key_on_demand(
+        self, context: RequestContext, request: RotateKeyOnDemandRequest
+    ) -> RotateKeyOnDemandResponse:
+        account_id, region_name, key_id = self._parse_key_id(request["KeyId"], context)
+        key = self._get_kms_key(account_id, region_name, key_id, any_key_state_allowed=True)
+
+        if key.metadata["KeySpec"] != KeySpec.SYMMETRIC_DEFAULT:
+            raise UnsupportedOperationException(
+                "On-demand key rotation is supported only on symmetric encryption KMS keys"
+            )
+
+        print(f"Before: {key.crypto_key.key_material}")
+        key.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
+        print(f"After: {key.crypto_key.key_material}")
+
+        return RotateKeyOnDemandResponse(
+            KeyId=key_id,
+        )
 
     @handler("TagResource", expand=False)
     def tag_resource(self, context: RequestContext, request: TagResourceRequest) -> None:
