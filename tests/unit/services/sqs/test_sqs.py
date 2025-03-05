@@ -44,18 +44,31 @@ def test_parse_max_receive_count_string_in_redrive_policy():
     assert queue.max_receive_count == 5
 
 
-def test_except_check_message_size():
+def test_except_check_message_max_size():
     message_attributes = {"k": {"DataType": "String", "StringValue": "x"}}
     message_attributes_size = len("k") + len("String") + len("x")
     message_body = "a" * (DEFAULT_MAXIMUM_MESSAGE_SIZE - message_attributes_size + 1)
     with pytest.raises(localstack.services.sqs.exceptions.InvalidParameterValueException):
-        provider.check_message_size(message_body, message_attributes, DEFAULT_MAXIMUM_MESSAGE_SIZE)
+        provider.check_message_max_size(
+            message_body, message_attributes, DEFAULT_MAXIMUM_MESSAGE_SIZE
+        )
 
 
-def test_check_message_size():
+def test_check_message_max_size():
     message_body = "a"
     message_attributes = {"k": {"DataType": "String", "StringValue": "x"}}
-    provider.check_message_size(message_body, message_attributes, DEFAULT_MAXIMUM_MESSAGE_SIZE)
+    provider.check_message_max_size(message_body, message_attributes, DEFAULT_MAXIMUM_MESSAGE_SIZE)
+
+
+def test_except_check_message_min_size():
+    message_body = ""
+    with pytest.raises(localstack.services.sqs.exceptions.MissingRequiredParameterException):
+        provider.check_message_min_size(message_body)
+
+
+def test_check_message_min_size():
+    message_body = "a"
+    provider.check_message_min_size(message_body)
 
 
 def test_parse_queue_url_valid():
