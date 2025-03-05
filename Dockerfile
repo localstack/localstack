@@ -170,7 +170,7 @@ RUN echo /usr/lib/localstack/python-packages/lib/python3.11/site-packages > loca
 # expose edge service, external service ports, and debugpy
 EXPOSE 4566 4510-4559 5678
 
-HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=10s CMD /usr/lib/localstack/.venv/bin/localstack status services --format=json
+HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=10s CMD /opt/code/localstack/.venv/bin/localstack status services --format=json
 
 # default volume directory
 VOLUME /var/lib/localstack
