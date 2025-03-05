@@ -237,6 +237,14 @@ class TestSqsProvider:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
+    def test_send_empty_message(self, sqs_queue, snapshot, aws_sqs_client):
+        with pytest.raises(ClientError) as e:
+            aws_sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="")
+
+        snapshot.match("send_empty_message", e.value.response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
     def test_send_receive_max_number_of_messages(self, sqs_queue, snapshot, aws_sqs_client):
         queue_url = sqs_queue
         send_result = aws_sqs_client.send_message(QueueUrl=queue_url, MessageBody="message")

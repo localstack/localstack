@@ -3806,5 +3806,39 @@
         }
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_empty_message[sqs]": {
+    "recorded-date": "05-03-2025, 19:25:09",
+    "recorded-content": {
+      "send_empty_message": {
+        "Error": {
+          "Code": "MissingParameter",
+          "Message": "The request must contain the parameter MessageBody.",
+          "QueryErrorCode": "MissingRequiredParameterException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_empty_message[sqs_query]": {
+    "recorded-date": "05-03-2025, 19:25:09",
+    "recorded-content": {
+      "send_empty_message": {
+        "Error": {
+          "Code": "MissingParameter",
+          "Detail": null,
+          "Message": "The request must contain the parameter MessageBody.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
