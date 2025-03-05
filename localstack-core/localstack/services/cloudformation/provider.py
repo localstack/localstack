@@ -85,7 +85,7 @@ from localstack.aws.api.cloudformation import (
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import parameters as param_resolver
-from localstack.services.cloudformation.engine import template_deployer, template_preparer
+from localstack.services.cloudformation.engine import template_preparer
 from localstack.services.cloudformation.engine.entities import (
     Stack,
     StackChangeSet,
@@ -98,6 +98,11 @@ from localstack.services.cloudformation.engine.resource_ordering import (
     order_resources,
 )
 from localstack.services.cloudformation.engine.template_deployer import (
+    template_deployer_factory,
+)
+
+# TODO: shared implementation
+from localstack.services.cloudformation.engine.template_deployer.v1 import (
     NoStackUpdates,
 )
 from localstack.services.cloudformation.engine.template_utils import resolve_stack_conditions
@@ -175,6 +180,9 @@ class InternalFailure(CommonServiceException):
 
 
 class CloudformationProvider(CloudformationApi):
+    def __init__(self):
+        self.deployer_cls = template_deployer_factory()
+
     def _stack_status_is_active(self, stack_status: str) -> bool:
         return stack_status not in [StackStatus.DELETE_COMPLETE]
 
@@ -295,7 +303,7 @@ class CloudformationProvider(CloudformationApi):
             stack.stack_name,
             len(stack.template_resources),
         )
-        deployer = template_deployer.TemplateDeployer(context.account_id, context.region, stack)
+        deployer = self.deployer_cls(context.account_id, context.region, stack)
         try:
             deployer.deploy_stack()
         except Exception as e:
@@ -321,7 +329,7 @@ class CloudformationProvider(CloudformationApi):
         if not stack:
             # aws will silently ignore invalid stack names - we should do the same
             return
-        deployer = template_deployer.TemplateDeployer(context.account_id, context.region, stack)
+        deployer = self.deployer_cls(context.account_id, context.region, stack)
         deployer.delete_stack()
 
     @handler("UpdateStack", expand=False)
@@ -399,7 +407,7 @@ class CloudformationProvider(CloudformationApi):
         # update the template
         stack.template_original = template
 
-        deployer = template_deployer.TemplateDeployer(context.account_id, context.region, stack)
+        deployer = self.deployer_cls(context.account_id, context.region, stack)
         # TODO: there shouldn't be a "new" stack on update
         new_stack = Stack(
             context.account_id, context.region, request, template, request["TemplateBody"]
@@ -748,9 +756,7 @@ class CloudformationProvider(CloudformationApi):
         except NoResourceInStack as e:
             raise ValidationError(str(e)) from e
 
-        deployer = template_deployer.TemplateDeployer(
-            context.account_id, context.region, change_set
-        )
+        deployer = self.deployer_cls(context.account_id, context.region, change_set)
         changes = deployer.construct_changes(
             stack,
             change_set,
@@ -881,9 +887,7 @@ class CloudformationProvider(CloudformationApi):
             stack_name,
             len(change_set.template_resources),
         )
-        deployer = template_deployer.TemplateDeployer(
-            context.account_id, context.region, change_set.stack
-        )
+        deployer = self.deployer_cls(context.account_id, context.region, change_set.stack)
         try:
             deployer.apply_change_set(change_set)
             change_set.stack.metadata["ChangeSetId"] = change_set.change_set_id
@@ -1154,9 +1158,7 @@ class CloudformationProvider(CloudformationApi):
         # TODO: add a check for remaining stack instances
 
         for instance in stack_set[0].stack_instances:
-            deployer = template_deployer.TemplateDeployer(
-                context.account_id, context.region, instance.stack
-            )
+            deployer = self.deployer_cls(context.account_id, context.region, instance.stack)
             deployer.delete_stack()
         return DeleteStackSetOutput()
 
