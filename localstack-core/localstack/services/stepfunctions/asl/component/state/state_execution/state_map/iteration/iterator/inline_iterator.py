@@ -13,6 +13,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iterator.iterator_decl import (
     IteratorDecl,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.job import (
+    JobPool,
+)
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 LOG = logging.getLogger(__name__)
@@ -25,13 +28,15 @@ class InlineIteratorEvalInput(InlineIterationComponentEvalInput):
 class InlineIterator(InlineIterationComponent):
     _eval_input: Optional[InlineIteratorEvalInput]
 
-    def _create_worker(self, env: Environment) -> InlineIteratorWorker:
+    def _create_worker(
+        self, env: Environment, eval_input: InlineIteratorEvalInput, job_pool: JobPool
+    ) -> InlineIteratorWorker:
         return InlineIteratorWorker(
-            work_name=self._eval_input.state_name,
-            job_pool=self._job_pool,
+            work_name=eval_input.state_name,
+            job_pool=job_pool,
             env=env,
-            parameters=self._eval_input.parameters,
-            item_selector=self._eval_input.item_selector,
+            parameters=eval_input.parameters,
+            item_selector=eval_input.item_selector,
         )
 
     @classmethod

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from localstack.services.stepfunctions.asl.component.common.comment import Comment
 from localstack.services.stepfunctions.asl.component.common.flow.start_at import StartAt
@@ -17,6 +16,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.processor_config import (
     ProcessorConfig,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.job import (
+    JobPool,
+)
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.parse.typed_props import TypedProps
 
@@ -28,8 +30,6 @@ class InlineItemProcessorEvalInput(InlineIterationComponentEvalInput):
 
 
 class InlineItemProcessor(InlineIterationComponent):
-    _eval_input: Optional[InlineItemProcessorEvalInput]
-
     @classmethod
     def from_props(cls, props: TypedProps) -> InlineItemProcessor:
         if not props.get(States):
@@ -45,11 +45,13 @@ class InlineItemProcessor(InlineIterationComponent):
         )
         return item_processor
 
-    def _create_worker(self, env: Environment) -> InlineItemProcessorWorker:
+    def _create_worker(
+        self, env: Environment, eval_input: InlineItemProcessorEvalInput, job_pool: JobPool
+    ) -> InlineItemProcessorWorker:
         return InlineItemProcessorWorker(
-            work_name=self._eval_input.state_name,
-            job_pool=self._job_pool,
+            work_name=eval_input.state_name,
+            job_pool=job_pool,
             env=env,
-            item_selector=self._eval_input.item_selector,
-            parameters=self._eval_input.parameters,
+            item_selector=eval_input.item_selector,
+            parameters=eval_input.parameters,
         )
