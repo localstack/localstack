@@ -1100,11 +1100,16 @@ class TestKMS:
 
     @markers.aws.validated
     def test_rotate_key_on_demand_succeeds_given_symmetric_key(self, kms_key, aws_client):
-        raise NotImplementedError
+        key_id = kms_key["KeyId"]
+        response = aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+        assert response["KeyId"] == key_id
 
     @markers.aws.validated
-    def test_rotate_key_on_demand_returns_error_given_non_symmetric_key(self, kms_key, aws_client):
-        raise NotImplementedError
+    def test_rotate_key_on_demand_returns_error_given_non_symmetric_key(self, kms_create_key, aws_client):
+        key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="RSA_4096")["KeyId"]
+        with pytest.raises(ClientError) as exc:
+            aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+        assert exc.match("UnsupportedOperationException")
 
     @markers.aws.validated
     @pytest.mark.parametrize("rotation_period_in_days", [90, 180])
