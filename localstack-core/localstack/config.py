@@ -1166,6 +1166,9 @@ CFN_PER_RESOURCE_TIMEOUT = int(os.environ.get("CFN_PER_RESOURCE_TIMEOUT") or 300
 # EXPERIMENTAL
 CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES = is_env_not_false("CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES")
 
+# New version of the CFn template deployer with improved support for updates
+CFN_ENGINE_V2 = is_env_true("CFN_ENGINE_V2")
+
 # bind address of local DNS server
 DNS_ADDRESS = os.environ.get("DNS_ADDRESS") or "0.0.0.0"
 # port of the local DNS server
@@ -1223,6 +1226,7 @@ CONFIG_ENV_VARS = [
     "BOTO_WAITER_DELAY",
     "BOTO_WAITER_MAX_ATTEMPTS",
     "BUCKET_MARKER_LOCAL",
+    "CFN_ENGINE_V2",
     "CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES",
     "CFN_PER_RESOURCE_TIMEOUT",
     "CFN_STRING_REPLACEMENT_DENY_LIST",
