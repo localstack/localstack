@@ -33,6 +33,9 @@ ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
 # Artifacts endpoint
 ASSETS_ENDPOINT = "https://assets.localstack.cloud"
 
+# Hugging Face endpoint for localstack
+HUGGING_FACE_ENDPOINT = "https://huggingface.co/localstack"
+
 # host to bind to when starting the services
 BIND_HOST = "0.0.0.0"
 
