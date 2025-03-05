@@ -236,9 +236,12 @@ class TestSqsProvider:
         assert message["MD5OfBody"] == send_result["MD5OfMessageBody"]
 
     @markers.aws.validated
-    def test_send_empty_message(self, sqs_queue, aws_sqs_client):
-        with pytest.raises(ClientError):
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
+    def test_send_empty_message(self, sqs_queue, snapshot, aws_sqs_client):
+        with pytest.raises(ClientError) as e:
             aws_sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="")
+
+        snapshot.match("send_empty_message", e.value.response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])

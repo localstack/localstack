@@ -81,7 +81,10 @@ from localstack.services.sqs.constants import (
     HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT,
     HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS,
 )
-from localstack.services.sqs.exceptions import InvalidParameterValueException
+from localstack.services.sqs.exceptions import (
+    InvalidParameterValueException,
+    MissingRequiredParameterException,
+)
 from localstack.services.sqs.models import (
     FifoQueue,
     MessageMoveTask,
@@ -146,7 +149,9 @@ def assert_queue_name(queue_name: str, fifo: bool = False):
 
 def check_message_min_size(message_body: str):
     if _message_body_size(message_body) == 0:
-        raise InvalidParameterValueException("The request must contain the parameter MessageBody.")
+        raise MissingRequiredParameterException(
+            "The request must contain the parameter MessageBody."
+        )
 
 
 def check_message_max_size(
