@@ -11,6 +11,7 @@ from localstack_snapshot.snapshots.transformer import (
 )
 
 from localstack.aws.api.stepfunctions import (
+    Arn,
     CloudWatchLogsLogGroup,
     CreateStateMachineOutput,
     Definition,
@@ -45,6 +46,51 @@ def await_no_state_machines_listed(stepfunctions_client):
 
     success = poll_condition(
         condition=_is_empty_state_machine_list,
+        timeout=_DELETION_TIMEOUT_SECS,
+        interval=1,
+    )
+    if not success:
+        LOG.warning("Timed out whilst awaiting for listing to be empty.")
+
+
+def _is_state_machine_alias_listed(
+    stepfunctions_client, state_machine_arn: Arn, state_machine_alias_arn: Arn
+):
+    list_state_machine_aliases_list = stepfunctions_client.list_state_machine_aliases(
+        stateMachineArn=state_machine_arn
+    )
+    state_machine_aliases = list_state_machine_aliases_list["stateMachineAliases"]
+    for state_machine_alias in state_machine_aliases:
+        if state_machine_alias["stateMachineAliasArn"] == state_machine_alias_arn:
+            return True
+    return False
+
+
+def await_state_machine_alias_is_created(
+    stepfunctions_client, state_machine_arn: Arn, state_machine_alias_arn: Arn
+):
+    success = poll_condition(
+        condition=lambda: _is_state_machine_alias_listed(
+            stepfunctions_client=stepfunctions_client,
+            state_machine_arn=state_machine_arn,
+            state_machine_alias_arn=state_machine_alias_arn,
+        ),
+        timeout=_DELETION_TIMEOUT_SECS,
+        interval=1,
+    )
+    if not success:
+        LOG.warning("Timed out whilst awaiting for listing to be empty.")
+
+
+def await_state_machine_alias_is_deleted(
+    stepfunctions_client, state_machine_arn: Arn, state_machine_alias_arn: Arn
+):
+    success = poll_condition(
+        condition=lambda: not _is_state_machine_alias_listed(
+            stepfunctions_client=stepfunctions_client,
+            state_machine_arn=state_machine_arn,
+            state_machine_alias_arn=state_machine_alias_arn,
+        ),
         timeout=_DELETION_TIMEOUT_SECS,
         interval=1,
     )
