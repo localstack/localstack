@@ -264,6 +264,8 @@ class StateMap(ExecutionState):
                 label=label,
             )
             env.map_run_record_pool_manager.add(map_run_record)
+            # Choose the distributed input type depending on whether the definition
+            # asks for the legacy Iterator component or an ItemProcessor
             if isinstance(self.iteration_component, DistributedIterator):
                 distributed_eval_input_class = DistributedIteratorEvalInput
             elif isinstance(self.iteration_component, DistributedItemProcessor):
