@@ -67,7 +67,6 @@ LANGUAGE_MODELS = {
     LanguageCode.pl_PL: "vosk-model-small-pl-0.22",
     LanguageCode.pt_BR: "vosk-model-small-pt-0.3",
     LanguageCode.ru_RU: "vosk-model-small-ru-0.4",
-    LanguageCode.sv_SE: "vosk-model-small-sv-rhasspy-0.15",
     LanguageCode.te_IN: "vosk-model-small-te-0.42",
     LanguageCode.tr_TR: "vosk-model-small-tr-0.3",
     LanguageCode.uk_UA: "vosk-model-small-uk-v3-nano",
