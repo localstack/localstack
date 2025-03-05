@@ -1099,6 +1099,14 @@ class TestKMS:
         assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is False
 
     @markers.aws.validated
+    def test_rotate_key_on_demand_succeeds_given_symmetric_key(self, kms_key, aws_client):
+        raise NotImplementedError
+
+    @markers.aws.validated
+    def test_rotate_key_on_demand_returns_error_given_non_symmetric_key(self, kms_key, aws_client):
+        raise NotImplementedError
+
+    @markers.aws.validated
     @pytest.mark.parametrize("rotation_period_in_days", [90, 180])
     def test_key_enable_rotation_status(
         self,
