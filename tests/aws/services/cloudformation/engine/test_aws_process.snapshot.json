@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/cloudformation/engine/test_aws_process.py::test_template_parsing_or_invalid_schema": {
+    "recorded-date": "31-01-2025, 22:35:17",
+    "recorded-content": {
+      "deploy-error": "An error occurred (ValidationError) when calling the CreateChangeSet operation: Template format error: YAML not well-formed. (line 3, column 5)"
+    }
+  }
+}
