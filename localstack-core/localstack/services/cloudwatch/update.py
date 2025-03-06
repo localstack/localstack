@@ -5,6 +5,9 @@ import enum
 from itertools import zip_longest
 from typing import Any, Final, Generator, Optional
 
+from localstack.aws.api.cloudformation import ChangeAction, ResourceChange
+from localstack.utils.strings import camel_to_snake_case
+
 
 class ChangeType(enum.Enum):
     UNCHANGED = "Unchanged"
@@ -69,15 +72,19 @@ class NodeResources(ChangeSetNode):
 
 class NodeResource(ChangeSetNode):
     name: Final[str]
-    typ: Final[ChangeSetTerminal]
+    type_: Final[ChangeSetTerminal]
     properties: Final[NodeProperties]
 
     def __init__(
-        self, change_type: ChangeType, name: str, typ: ChangeSetTerminal, properties: NodeProperties
+        self,
+        change_type: ChangeType,
+        name: str,
+        type_: ChangeSetTerminal,
+        properties: NodeProperties,
     ):
         super().__init__(change_type=change_type)
         self.name = name
-        self.typ = typ
+        self.type_ = type_
         self.properties = properties
 
 
@@ -290,7 +297,7 @@ class ChangeSetModeler:
             change_type=change_type,
             name=resource_name,
             # TODO: investigate behaviour with type changes, for now this is filler code.
-            typ=TerminalValueUnchanged(value="TODO!"),
+            type_=TerminalValueUnchanged(value="TODO!"),
             properties=properties,
         )
 
@@ -314,7 +321,7 @@ class ChangeSetModeler:
                 change_type = ChangeType.MODIFIED
         return NodeResources(change_type=change_type, resources=resources)
 
-    def model(self, before_template: dict, after_template: dict) -> ChangeSetEntity:
+    def model(self, before_template: dict, after_template: dict) -> NodeTemplate:
         # TODO: visit other child types
         before_resources, after_resources = self._sample_from(
             ResourcesKey, before_template, after_template
@@ -366,165 +373,244 @@ class ChangeSetModeler:
         return not isinstance(before, NoSuchValue) and isinstance(after, NoSuchValue)
 
 
-# class ChangeSetModelVisitor(abc.ABC):
-#    def visit(self, change_set_entity: ChangeSetEntity):
-#        type_str = change_set_entity.__class__.__name__
-#        type_str = camel_to_snake_case(type_str).lower()
-#        visit_function_name = f"visit_{type_str}"
-#        visit_function = getattr(self, visit_function_name)
-#        return visit_function(change_set_entity)
-#
-#    def visit_children(self, change_set_entity: ChangeSetEntity):
-#        children = change_set_entity.get_children()
-#        for child in children:
-#            self.visit(child)
-#
-#    def visit_template_node(self, template_node: TemplateNode):
-#        self.visit_children(template_node)
-#
-#    def visit_resources_node(self, resources_node: NodeResources):
-#        self.visit_children(resources_node)
-#
-#    def visit_resource_node(self, resource_node: NodeResource):
-#        self.visit_children(resource_node)
-#
-#    def visit_properties_node(self, properties_node: NodeProperties):
-#        self.visit_children(properties_node)
-#
-#    def visit_object_node(self, object_node: ObjectNode):
-#        self.visit_children(object_node)
-#
-#    def visit_update_value(self, update_value: UpdateValue):
-#        self.visit_children(update_value)
-#
-#    def visit_add_value(self, add_value: AddValue):
-#        self.visit_children(add_value)
-#
-#    def visit_delete_value(self, delete_value: DeleteValue):
-#        self.visit_children(delete_value)
-#
-#    def visit_unchanged_value(self, unchanged_value: UnchangedValue):
-#        self.visit_children(unchanged_value)
-#
-#
-# class ChangeSetDescribeUnit(abc.ABC):
-#    context: Optional[Any]
-#
-#    def __init__(self, context: Optional[Any]):
-#        self.context = context
-#
-#
-# class ChangeSetDescribeUnitAddition(ChangeSetDescribeUnit):
-#    pass
-#
-#
-# class ChangeSetDescribeUnitDeletion(ChangeSetDescribeUnit):
-#    pass
-#
-#
-# class ChangeSetDescribeUnitUnchanged(ChangeSetDescribeUnit):
-#    pass
-#
-#
-# class ChangeSetDescribeUnitUpdate(ChangeSetDescribeUnit):
-#    after_context: Optional[Any]
-#
-#    def __init__(self, context: Optional[Any], after_context: Optional[Any]):
-#        super().__init__(context=context)
-#        self.after_context = after_context
-#
-#
-# class ChangeSetDescribeVisitor(ChangeSetModelVisitor):
-#    # TODO: expand to other change types?
-#    changes: list[ResourceChange] = list()
-#
-#    def __init__(self):
-#        self.changes = list()
-#
-#    def visit(self, change_set_entity: ChangeSetEntity) -> ChangeSetDescribeUnit:
-#        return super().visit(change_set_entity=change_set_entity)
-#
-#    def visit_update_value(self, update_value: UpdateValue) -> ChangeSetDescribeUnit:
-#        return ChangeSetDescribeUnitUpdate(
-#            context=update_value.before, after_context=update_value.after
-#        )
-#
-#    def visit_add_value(self, add_value: AddValue) -> ChangeSetDescribeUnit:
-#        return ChangeSetDescribeUnitAddition(context=add_value.value)
-#
-#    def visit_unchanged_value(
-#        self, unchanged_value: UnchangedValue
-#    ) -> ChangeSetDescribeUnitUnchanged:
-#        return ChangeSetDescribeUnitUnchanged(context=unchanged_value.value)
-#
-#    def visit_object_node(self, object_node: ObjectNode) -> ChangeSetDescribeUnit:
-#        before_context = dict()
-#        after_context = dict()
-#        for name, change_set_update in object_node.bindings.items():
-#            describe_unit: ChangeSetDescribeUnit = self.visit(change_set_entity=change_set_update)
-#            if isinstance(describe_unit, ChangeSetDescribeUnitUpdate):
-#                before_context[name] = describe_unit.context
-#                after_context[name] = describe_unit.after_context
-#            elif isinstance(describe_unit, ChangeSetDescribeUnitAddition):
-#                after_context[name] = describe_unit.context
-#            elif isinstance(describe_unit, ChangeSetDescribeUnitDeletion):
-#                before_context[name] = describe_unit.context
-#            elif isinstance(describe_unit, ChangeSetDescribeUnitUnchanged):
-#                before_context[name] = describe_unit.context
-#                after_context[name] = describe_unit.context
-#
-#        # TODO: compute the priority of multiple change natures properly instead
-#        if any((lambda d: isinstance(d, ChangeSetDescribeUnitUpdate), before_context.values())):
-#            return ChangeSetDescribeUnitUpdate(context=before_context, after_context=after_context)
-#        elif all(
-#            map(lambda d: isinstance(d, ChangeSetDescribeUnitAddition), before_context.values())
-#        ):
-#            return ChangeSetDescribeUnitAddition(context=after_context)
-#        elif all(
-#            map(lambda d: isinstance(d, ChangeSetDescribeUnitUnchanged), before_context.values())
-#        ):
-#            return ChangeSetDescribeUnitUnchanged(context=before_context)
-#        return ChangeSetDescribeUnitUpdate(context=before_context, after_context=after_context)
-#
-#    def visit_properties_node(self, properties_node: NodeProperties) -> ChangeSetDescribeUnit:
-#        # TODO: fix properties nesting to be like resources and resource
-#        describe_unit: ChangeSetDescribeUnit = self.visit_object_node(
-#            ObjectNode(properties_node.properties)
-#        )
-#        if isinstance(describe_unit, ChangeSetDescribeUnitUpdate):
-#            return ChangeSetDescribeUnitUpdate(
-#                context={"Properties": describe_unit.context},
-#                after_context={"Properties": describe_unit.after_context},
-#            )
-#        elif isinstance(describe_unit, ChangeSetDescribeUnitAddition):
-#            return ChangeSetDescribeUnitAddition(
-#                context={"Properties": describe_unit.context},
-#            )
-#        # TODO: add support for delete, unchanged..
-#
-#    def visit_resource_node(self, resource_node: NodeResource) -> ChangeSetDescribeUnit:
-#        return self.visit_properties_node(resource_node.properties)
-#
-#    def visit_resources_node(self, resources_node: NodeResources) -> ChangeSetDescribeUnit:
-#        for resource_node in resources_node.resources:
-#            describe_unit = self.visit_resource_node(resource_node=resource_node)
-#            if isinstance(describe_unit, ChangeSetDescribeUnitUpdate):
-#                self.changes.append(
-#                    ResourceChange(
-#                        Action=ChangeAction.Modify,
-#                        BeforeContext=describe_unit.context,
-#                        AfterContext=describe_unit.after_context,
-#                        # TODO: add other props
-#                    )
-#                )
-#            elif isinstance(describe_unit, ChangeSetDescribeUnitAddition):
-#                self.changes.append(
-#                    ResourceChange(
-#                        Action=ChangeAction.Add,
-#                        AfterContext=describe_unit.context,
-#                        # TODO: add other props
-#                    )
-#                )
-#
-#        # TODO: pass info upstream
-#        return None
+class ChangeSetModelVisitor(abc.ABC):
+    # TODO: this class should be auto generated.
+
+    # TODO: add visitors for abstract classes so shared logic can be implemented
+    #  just once in classes extending this.
+
+    def visit(self, change_set_entity: ChangeSetEntity):
+        # TODO: speed up this lookup logic
+        type_str = change_set_entity.__class__.__name__
+        type_str = camel_to_snake_case(type_str).lower()
+        visit_function_name = f"visit_{type_str}"
+        visit_function = getattr(self, visit_function_name)
+        return visit_function(change_set_entity)
+
+    def visit_children(self, change_set_entity: ChangeSetEntity):
+        children = change_set_entity.get_children()
+        for child in children:
+            self.visit(child)
+
+    def visit_node_template(self, node_template: NodeTemplate):
+        self.visit_children(node_template)
+
+    def visit_node_resources(self, node_resources: NodeResources):
+        self.visit_children(node_resources)
+
+    def visit_node_resource(self, node_resource: NodeResource):
+        self.visit_children(node_resource)
+
+    def visit_node_properties(self, node_properties: NodeProperties):
+        self.visit_children(node_properties)
+
+    def visit_node_property(self, node_property: NodeProperty):
+        self.visit_children(node_property)
+
+    def visit_node_object(self, node_object: NodeObject):
+        self.visit_children(node_object)
+
+    def visit_node_array(self, node_array: NodeArray):
+        self.visit_children(node_array)
+
+    def visit_terminal_value_modified(self, terminal_value_modified: TerminalValueModified):
+        self.visit_children(terminal_value_modified)
+
+    def visit_terminal_value_created(self, terminal_value_created: TerminalValueCreated):
+        self.visit_children(terminal_value_created)
+
+    def visit_terminal_value_removed(self, terminal_value_removed: TerminalValueRemoved):
+        self.visit_children(terminal_value_removed)
+
+    def visit_terminal_value_unchanged(self, terminal_value_unchanged: TerminalValueUnchanged):
+        self.visit_children(terminal_value_unchanged)
+
+
+class ChangeSetDescribeUnit(abc.ABC):
+    context: Optional[Any]
+
+    def __init__(self, context: Optional[Any]):
+        self.context = context
+
+
+class ChangeSetDescribeUnitAddition(ChangeSetDescribeUnit):
+    pass
+
+
+class ChangeSetDescribeUnitDeletion(ChangeSetDescribeUnit):
+    pass
+
+
+# TODO: unchanged can probably be pruned from the evaluation and be an empty value?
+class ChangeSetDescribeUnitUnchanged(ChangeSetDescribeUnit):
+    pass
+
+
+class ChangeSetDescribeUnitUpdate(ChangeSetDescribeUnit):
+    after_context: Optional[Any]
+
+    def __init__(self, context: Optional[Any], after_context: Optional[Any]):
+        super().__init__(context=context)
+        self.after_context = after_context
+
+
+class ChangeSetDescribeVisitor(ChangeSetModelVisitor):
+    # TODO: expand to other change types?
+    changes: list[ResourceChange] = list()
+
+    def __init__(self):
+        self.changes = list()
+
+    def visit(self, change_set_entity: ChangeSetEntity) -> ChangeSetDescribeUnit:
+        # Overridden for the return type hints.
+        return super().visit(change_set_entity=change_set_entity)
+
+    def visit_terminal_value_modified(
+        self, terminal_value_modified: TerminalValueModified
+    ) -> ChangeSetDescribeUnitUpdate:
+        return ChangeSetDescribeUnitUpdate(
+            context=terminal_value_modified.value,
+            after_context=terminal_value_modified.modified_value,
+        )
+
+    def visit_terminal_value_created(
+        self, terminal_value_created: TerminalValueCreated
+    ) -> ChangeSetDescribeUnitAddition:
+        return ChangeSetDescribeUnitAddition(context=terminal_value_created.value)
+
+    def visit_terminal_value_removed(
+        self, terminal_value_removed: TerminalValueRemoved
+    ) -> ChangeSetDescribeUnitDeletion:
+        return ChangeSetDescribeUnitDeletion(context=terminal_value_removed.value)
+
+    def visit_terminal_value_unchanged(
+        self, terminal_value_unchanged: TerminalValueUnchanged
+    ) -> ChangeSetDescribeUnitUnchanged:
+        return ChangeSetDescribeUnitUnchanged(context=terminal_value_unchanged.value)
+
+    def visit_node_object(self, node_object: NodeObject) -> ChangeSetDescribeUnit:
+        before_context = dict()
+        after_context = dict()
+        for name, change_set_update in node_object.bindings.items():
+            describe_unit: ChangeSetDescribeUnit = self.visit(change_set_entity=change_set_update)
+            if isinstance(describe_unit, ChangeSetDescribeUnitUpdate):
+                before_context[name] = describe_unit.context
+                after_context[name] = describe_unit.after_context
+            elif isinstance(describe_unit, ChangeSetDescribeUnitAddition):
+                after_context[name] = describe_unit.context
+            elif isinstance(describe_unit, ChangeSetDescribeUnitDeletion):
+                before_context[name] = describe_unit.context
+            elif isinstance(describe_unit, ChangeSetDescribeUnitUnchanged):
+                before_context[name] = describe_unit.context
+                after_context[name] = describe_unit.context
+            # Note: block is exhaustive about ChangeSetDescribeUnit
+        match node_object.change_type:
+            case ChangeType.MODIFIED:
+                return ChangeSetDescribeUnitUpdate(
+                    context=before_context, after_context=after_context
+                )
+            case ChangeType.CREATED:
+                return ChangeSetDescribeUnitAddition(context=after_context)
+            case ChangeType.UNCHANGED:
+                return ChangeSetDescribeUnitUnchanged(context=before_context)
+            case ChangeType.REMOVED:
+                return ChangeSetDescribeUnitDeletion(context=before_context)
+            case unsupported:
+                # Note: match block is exhaustive about ChangeSet.
+                raise RuntimeError(f"Unsupported ChangeType: '{unsupported}'")
+
+    def visit_node_array(self, node_array: NodeArray) -> ChangeSetDescribeUnit:
+        # TODO: is it worth chasing this duplication with visit_node_object?
+        before_context = list()
+        after_context = list()
+        for change_set_entity in node_array.array:
+            describe_unit: ChangeSetDescribeUnit = self.visit(change_set_entity=change_set_entity)
+            if isinstance(describe_unit, ChangeSetDescribeUnitUpdate):
+                before_context.append(describe_unit.context)
+                after_context.append(describe_unit.after_context)
+            elif isinstance(describe_unit, ChangeSetDescribeUnitAddition):
+                after_context.append(describe_unit.context)
+            elif isinstance(describe_unit, ChangeSetDescribeUnitDeletion):
+                before_context.append(describe_unit.context)
+            elif isinstance(describe_unit, ChangeSetDescribeUnitUnchanged):
+                before_context.append(describe_unit.context)
+                after_context.append(describe_unit.context)
+        # Note: block is exhaustive about ChangeSetDescribeUnit
+        match node_array.change_type:
+            case ChangeType.MODIFIED:
+                return ChangeSetDescribeUnitUpdate(
+                    context=before_context, after_context=after_context
+                )
+            case ChangeType.CREATED:
+                return ChangeSetDescribeUnitAddition(context=after_context)
+            case ChangeType.UNCHANGED:
+                return ChangeSetDescribeUnitUnchanged(context=before_context)
+            case ChangeType.REMOVED:
+                return ChangeSetDescribeUnitDeletion(context=before_context)
+            case unsupported:
+                # Note: match block is exhaustive about ChangeSet.
+                raise RuntimeError(f"Unsupported ChangeType: '{unsupported}'")
+
+    def visit_node_properties(self, node_properties: NodeProperties) -> ChangeSetDescribeUnit:
+        before_context: dict[str, Any] = dict()
+        after_context: dict[str, Any] = dict()
+        for node_property in node_properties.properties:
+            if node_property.change_type == ChangeType.UNCHANGED:
+                continue
+            describe_unit = self.visit(node_property.value)
+            property_name = node_property.name
+            # TODO: duplication
+            if isinstance(describe_unit, ChangeSetDescribeUnitUpdate):
+                before_context[property_name] = describe_unit.context
+                after_context[property_name] = describe_unit.after_context
+            elif isinstance(describe_unit, ChangeSetDescribeUnitAddition):
+                after_context[property_name] = describe_unit.context
+            elif isinstance(describe_unit, ChangeSetDescribeUnitDeletion):
+                before_context[property_name] = describe_unit.context
+            elif isinstance(describe_unit, ChangeSetDescribeUnitUnchanged):
+                before_context[property_name] = describe_unit.context
+                after_context[property_name] = describe_unit.context
+        before_context = {PropertiesKey: before_context}
+        after_context = {PropertiesKey: after_context}
+        match node_properties.change_type:
+            case ChangeType.MODIFIED:
+                return ChangeSetDescribeUnitUpdate(
+                    context=before_context, after_context=after_context
+                )
+            case ChangeType.CREATED:
+                return ChangeSetDescribeUnitAddition(context=after_context)
+            case ChangeType.UNCHANGED:
+                return ChangeSetDescribeUnitUnchanged(context=before_context)
+            case ChangeType.REMOVED:
+                return ChangeSetDescribeUnitDeletion(context=before_context)
+            case unsupported:
+                # Note: match block is exhaustive about ChangeSet.
+                raise RuntimeError(f"Unsupported ChangeType: '{unsupported}'")
+
+    def visit_node_resource(self, node_resource: NodeResource) -> ChangeSetDescribeUnit:
+        # TODO: It seems like all unit changes should have before and after, look at the
+        #  duplication in change type deductions.
+        describe_unit = self.visit_node_properties(node_resource.properties)
+        resource_change = ResourceChange()
+        resource_change["LogicalResourceId"] = node_resource.name
+        if isinstance(describe_unit, ChangeSetDescribeUnitUpdate):
+            resource_change["BeforeContext"] = describe_unit.context
+            resource_change["AfterContext"] = describe_unit.after_context
+        elif isinstance(describe_unit, ChangeSetDescribeUnitAddition):
+            resource_change["AfterContext"] = describe_unit.context
+        elif isinstance(describe_unit, ChangeSetDescribeUnitDeletion):
+            resource_change["BeforeContext"] = describe_unit.context
+        elif isinstance(describe_unit, ChangeSetDescribeUnitUnchanged):
+            resource_change["BeforeContext"] = describe_unit.context
+        match node_resource.change_type:
+            case ChangeType.CREATED:
+                resource_change["Action"] = ChangeAction.Add
+                self.changes.append(resource_change)
+            case ChangeType.REMOVED:
+                resource_change["Action"] = ChangeAction.Remove
+                self.changes.append(resource_change)
+            case ChangeType.MODIFIED:
+                resource_change["Action"] = ChangeAction.Modify
+                self.changes.append(resource_change)
+        # TODO
+        return None

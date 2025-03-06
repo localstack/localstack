@@ -1,6 +1,9 @@
+import json
 
 from localstack.services.cloudwatch.update import (
+    ChangeSetDescribeVisitor,
     ChangeSetModeler,
+    NodeTemplate,
 )
 
 
@@ -53,9 +56,11 @@ class TestCFNUpdatePlayground:
             },
         }
 
-        change_set_entity = ChangeSetModeler().model(before_template=t1, after_template=t2)
-        print(change_set_entity)
+        node_template: NodeTemplate = ChangeSetModeler().model(
+            before_template=t1, after_template=t2
+        )
+        print(node_template)
 
-        # change_set_describer = ChangeSetDescribeVisitor()
-        # change_set_describer.visit(change_set_entity)
-        # print(json.dumps(change_set_describer.changes, indent=4))
+        change_set_describer = ChangeSetDescribeVisitor()
+        change_set_describer.visit(node_template)
+        print(json.dumps(change_set_describer.changes, indent=4))
