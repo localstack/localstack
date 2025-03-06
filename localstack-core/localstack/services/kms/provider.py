@@ -1343,6 +1343,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         account_id, region_name, key_id = self._parse_key_id(request["KeyId"], context)
         key = self._get_kms_key(account_id, region_name, key_id, any_key_state_allowed=True)
 
+        if key.metadata["KeyState"] == KeyState.Disabled:
+            raise DisabledException("On-demand key rotation cannot be performed on a disabled key")
         if key.metadata["KeySpec"] != KeySpec.SYMMETRIC_DEFAULT:
             raise UnsupportedOperationException(
                 "On-demand key rotation is supported only on symmetric encryption KMS keys"

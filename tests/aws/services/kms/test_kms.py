@@ -1147,10 +1147,32 @@ class TestKMS:
         )
 
     @markers.aws.validated
+    def test_rotate_key_on_demand_raises_error_given_key_is_disabled(
+        self, kms_create_key, aws_client
+    ):
+        key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="RSA_4096")["KeyId"]
+        aws_client.kms.disable_key(KeyId=key_id)
+
+        with pytest.raises(ClientError) as exc:
+            aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+        assert exc.match("DisabledException")
+
+    @markers.aws.validated
+    def test_rotate_key_on_demand_raises_error_given_key_that_does_not_exist(
+        self, kms_create_key, aws_client
+    ):
+        key_id = "1234abcd-12ab-34cd-56ef-1234567890ab"
+
+        with pytest.raises(ClientError) as exc:
+            aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+        assert exc.match("NotFoundException")
+
+    @markers.aws.validated
     def test_rotate_key_on_demand_raises_error_given_non_symmetric_key(
         self, kms_create_key, aws_client
     ):
         key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="RSA_4096")["KeyId"]
+
         with pytest.raises(ClientError) as exc:
             aws_client.kms.rotate_key_on_demand(KeyId=key_id)
         assert exc.match("UnsupportedOperationException")
@@ -1160,6 +1182,7 @@ class TestKMS:
         self, kms_create_key, aws_client
     ):
         key_id = kms_create_key(Origin="EXTERNAL")["KeyId"]
+
         with pytest.raises(ClientError) as exc:
             aws_client.kms.rotate_key_on_demand(KeyId=key_id)
         assert exc.match("UnsupportedOperationException")
