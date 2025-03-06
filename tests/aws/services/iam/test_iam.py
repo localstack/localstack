@@ -869,8 +869,8 @@ class TestIAMServiceSpecificCredentials:
     @pytest.fixture(autouse=True)
     def register_snapshot_transformers(self, snapshot):
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.key_value_length("ServicePassword"))
-        snapshot.add_transformer(snapshot.transform.key_value_length("ServiceSpecificCredentialId"))
+        snapshot.add_transformer(snapshot.transform.key_value("ServicePassword"))
+        snapshot.add_transformer(snapshot.transform.key_value("ServiceSpecificCredentialId"))
 
     @pytest.fixture
     def create_service_specific_credential(self, aws_client):

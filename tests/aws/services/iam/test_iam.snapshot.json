@@ -565,7 +565,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_service_specific_credential_lifecycle[codecommit.amazonaws.com]": {
-    "recorded-date": "06-03-2025, 14:28:04",
+    "recorded-date": "06-03-2025, 16:58:34",
     "recorded-content": {
       "create-user-response": {
         "User": {
@@ -584,8 +584,8 @@
         "ServiceSpecificCredential": {
           "CreateDate": "<datetime>",
           "ServiceName": "codecommit.amazonaws.com",
-          "ServicePassword": "<service-password(60):1>",
-          "ServiceSpecificCredentialId": "<service-specific-credential-id(21):1>",
+          "ServicePassword": "<service-password:1>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
           "ServiceUserName": "<user-name:1>-at-111111111111",
           "Status": "Active",
           "UserName": "<user-name:1>"
@@ -600,7 +600,7 @@
           {
             "CreateDate": "<datetime>",
             "ServiceName": "codecommit.amazonaws.com",
-            "ServiceSpecificCredentialId": "<service-specific-credential-id(21):1>",
+            "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
             "ServiceUserName": "<user-name:1>-at-111111111111",
             "Status": "Active",
             "UserName": "<user-name:1>"
@@ -622,7 +622,7 @@
           {
             "CreateDate": "<datetime>",
             "ServiceName": "codecommit.amazonaws.com",
-            "ServiceSpecificCredentialId": "<service-specific-credential-id(21):1>",
+            "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
             "ServiceUserName": "<user-name:1>-at-111111111111",
             "Status": "Inactive",
             "UserName": "<user-name:1>"
@@ -637,8 +637,8 @@
         "ServiceSpecificCredential": {
           "CreateDate": "<datetime>",
           "ServiceName": "codecommit.amazonaws.com",
-          "ServicePassword": "<service-password(60):2>",
-          "ServiceSpecificCredentialId": "<service-specific-credential-id(21):1>",
+          "ServicePassword": "<service-password:2>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
           "ServiceUserName": "<user-name:1>-at-111111111111",
           "Status": "Inactive",
           "UserName": "<user-name:1>"
@@ -657,7 +657,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_service_specific_credential_lifecycle[cassandra.amazonaws.com]": {
-    "recorded-date": "06-03-2025, 14:28:06",
+    "recorded-date": "06-03-2025, 16:58:36",
     "recorded-content": {
       "create-user-response": {
         "User": {
@@ -676,8 +676,8 @@
         "ServiceSpecificCredential": {
           "CreateDate": "<datetime>",
           "ServiceName": "cassandra.amazonaws.com",
-          "ServicePassword": "<service-password(60):1>",
-          "ServiceSpecificCredentialId": "<service-specific-credential-id(21):1>",
+          "ServicePassword": "<service-password:1>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
           "ServiceUserName": "<user-name:1>-at-111111111111",
           "Status": "Active",
           "UserName": "<user-name:1>"
@@ -692,7 +692,7 @@
           {
             "CreateDate": "<datetime>",
             "ServiceName": "cassandra.amazonaws.com",
-            "ServiceSpecificCredentialId": "<service-specific-credential-id(21):1>",
+            "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
             "ServiceUserName": "<user-name:1>-at-111111111111",
             "Status": "Active",
             "UserName": "<user-name:1>"
@@ -714,7 +714,7 @@
           {
             "CreateDate": "<datetime>",
             "ServiceName": "cassandra.amazonaws.com",
-            "ServiceSpecificCredentialId": "<service-specific-credential-id(21):1>",
+            "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
             "ServiceUserName": "<user-name:1>-at-111111111111",
             "Status": "Inactive",
             "UserName": "<user-name:1>"
@@ -729,8 +729,8 @@
         "ServiceSpecificCredential": {
           "CreateDate": "<datetime>",
           "ServiceName": "cassandra.amazonaws.com",
-          "ServicePassword": "<service-password(60):2>",
-          "ServiceSpecificCredentialId": "<service-specific-credential-id(21):1>",
+          "ServicePassword": "<service-password:2>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
           "ServiceUserName": "<user-name:1>-at-111111111111",
           "Status": "Inactive",
           "UserName": "<user-name:1>"
@@ -765,7 +765,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_create_service_specific_credential_invalid_user": {
-    "recorded-date": "06-03-2025, 14:27:10",
+    "recorded-date": "06-03-2025, 16:58:36",
     "recorded-content": {
       "invalid-user-name-exception": {
         "Error": {
@@ -792,7 +792,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_create_service_specific_credential_invalid_service": {
-    "recorded-date": "06-03-2025, 14:27:11",
+    "recorded-date": "06-03-2025, 16:58:38",
     "recorded-content": {
       "create-user-response": {
         "User": {
@@ -843,7 +843,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_list_service_specific_credential_different_service": {
-    "recorded-date": "06-03-2025, 14:27:13",
+    "recorded-date": "06-03-2025, 16:58:39",
     "recorded-content": {
       "create-user-response": {
         "User": {
@@ -873,8 +873,8 @@
         "ServiceSpecificCredential": {
           "CreateDate": "<datetime>",
           "ServiceName": "codecommit.amazonaws.com",
-          "ServicePassword": "<service-password(60):1>",
-          "ServiceSpecificCredentialId": "<service-specific-credential-id(21):1>",
+          "ServicePassword": "<service-password:1>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
           "ServiceUserName": "<user-name:1>-at-111111111111",
           "Status": "Active",
           "UserName": "<user-name:1>"
@@ -894,7 +894,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_delete_user_after_service_credential_created": {
-    "recorded-date": "06-03-2025, 14:27:14",
+    "recorded-date": "06-03-2025, 16:58:41",
     "recorded-content": {
       "create-user-response": {
         "User": {
@@ -913,8 +913,8 @@
         "ServiceSpecificCredential": {
           "CreateDate": "<datetime>",
           "ServiceName": "codecommit.amazonaws.com",
-          "ServicePassword": "<service-password(60):1>",
-          "ServiceSpecificCredentialId": "<service-specific-credential-id(21):1>",
+          "ServicePassword": "<service-password:1>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
           "ServiceUserName": "<user-name:1>-at-111111111111",
           "Status": "Active",
           "UserName": "<user-name:1>"
@@ -938,7 +938,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_user_match_id_mismatch[totally-wrong-credential-id-with-hyphens]": {
-    "recorded-date": "06-03-2025, 14:27:18",
+    "recorded-date": "06-03-2025, 16:58:45",
     "recorded-content": {
       "create-user-response": {
         "User": {
@@ -957,8 +957,8 @@
         "ServiceSpecificCredential": {
           "CreateDate": "<datetime>",
           "ServiceName": "codecommit.amazonaws.com",
-          "ServicePassword": "<service-password(60):1>",
-          "ServiceSpecificCredentialId": "<service-specific-credential-id(21):1>",
+          "ServicePassword": "<service-password:1>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
           "ServiceUserName": "<user-name:1>-at-111111111111",
           "Status": "Active",
           "UserName": "<user-name:1>"
@@ -1004,7 +1004,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_user_match_id_mismatch[satisfiesregexbutstillinvalid]": {
-    "recorded-date": "06-03-2025, 14:27:20",
+    "recorded-date": "06-03-2025, 16:58:47",
     "recorded-content": {
       "create-user-response": {
         "User": {
@@ -1023,8 +1023,8 @@
         "ServiceSpecificCredential": {
           "CreateDate": "<datetime>",
           "ServiceName": "codecommit.amazonaws.com",
-          "ServicePassword": "<service-password(60):1>",
-          "ServiceSpecificCredentialId": "<service-specific-credential-id(21):1>",
+          "ServicePassword": "<service-password:1>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
           "ServiceUserName": "<user-name:1>-at-111111111111",
           "Status": "Active",
           "UserName": "<user-name:1>"
@@ -1070,7 +1070,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_id_match_user_mismatch": {
-    "recorded-date": "06-03-2025, 14:27:16",
+    "recorded-date": "06-03-2025, 16:58:43",
     "recorded-content": {
       "create-user-response": {
         "User": {
@@ -1089,8 +1089,8 @@
         "ServiceSpecificCredential": {
           "CreateDate": "<datetime>",
           "ServiceName": "codecommit.amazonaws.com",
-          "ServicePassword": "<service-password(60):1>",
-          "ServiceSpecificCredentialId": "<service-specific-credential-id(21):1>",
+          "ServicePassword": "<service-password:1>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
           "ServiceUserName": "<user-name:1>-at-111111111111",
           "Status": "Active",
           "UserName": "<user-name:1>"
@@ -1136,7 +1136,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_invalid_update_parameters": {
-    "recorded-date": "06-03-2025, 16:38:50",
+    "recorded-date": "06-03-2025, 16:58:49",
     "recorded-content": {
       "create-user-response": {
         "User": {
@@ -1155,8 +1155,8 @@
         "ServiceSpecificCredential": {
           "CreateDate": "<datetime>",
           "ServiceName": "codecommit.amazonaws.com",
-          "ServicePassword": "<service-password(60):1>",
-          "ServiceSpecificCredentialId": "<service-specific-credential-id(21):1>",
+          "ServicePassword": "<service-password:1>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
           "ServiceUserName": "<user-name:1>-at-111111111111",
           "Status": "Active",
           "UserName": "<user-name:1>"
