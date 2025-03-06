@@ -1,7 +1,5 @@
-import json
 
 from localstack.services.cloudwatch.update import (
-    ChangeSetDescribeVisitor,
     ChangeSetModeler,
 )
 
@@ -22,7 +20,7 @@ class TestCFNUpdatePlayground:
                     "Type": "AWS::SSM::Parameter",
                     "Properties": {
                         "Type": "String",
-                        # "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                        "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
                     },
                 },
             },
@@ -42,23 +40,22 @@ class TestCFNUpdatePlayground:
                     "Properties": {
                         "Type": "String",
                         "Name": "Added parameter 2 name",
-                        # "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
-                        # "Value": {"Fn::GetAtt": ["Parameter1", "Name"]},
+                        "Value": {"Fn::GetAtt": ["I changed this to Parameter3", "Value"]},
                     },
                 },
-                # "Parameter3": {
-                #     "Type": "AWS::SSM::Parameter",
-                #     "Properties": {
-                #         "Type": "String",
-                #         # "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
-                #     },
-                # },
+                "Parameter3": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                    },
+                },
             },
         }
 
         change_set_entity = ChangeSetModeler().model(before_template=t1, after_template=t2)
         print(change_set_entity)
 
-        change_set_describer = ChangeSetDescribeVisitor()
-        change_set_describer.visit(change_set_entity)
-        print(json.dumps(change_set_describer.changes, indent=4))
+        # change_set_describer = ChangeSetDescribeVisitor()
+        # change_set_describer.visit(change_set_entity)
+        # print(json.dumps(change_set_describer.changes, indent=4))
