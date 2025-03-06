@@ -1099,9 +1099,7 @@ class TestKMS:
         assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is False
 
     @markers.aws.validated
-    def test_rotate_key_on_demand_modifies_key_material(
-        self, kms_create_key, aws_client
-    ):
+    def test_rotate_key_on_demand_modifies_key_material(self, kms_create_key, aws_client):
         key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")["KeyId"]
         message = b"test message 123 !%$@ 1234567890"
 
