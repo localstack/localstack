@@ -1348,9 +1348,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                 "On-demand key rotation is supported only on symmetric encryption KMS keys"
             )
 
-        print(f"Before: {key.crypto_key.key_material}")
         key.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
-        print(f"After: {key.crypto_key.key_material}")
 
         return RotateKeyOnDemandResponse(
             KeyId=key_id,
