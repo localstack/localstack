@@ -1,7 +1,11 @@
+import inspect
 import json
+import logging
+import random
 import re
+import string
 from datetime import datetime
-from typing import Dict, List
+from typing import Any, Dict, List, TypeVar
 from urllib.parse import quote
 
 from moto.iam.models import (
@@ -10,6 +14,8 @@ from moto.iam.models import (
     iam_backends,
 )
 from moto.iam.models import Role as MotoRole
+from moto.iam.models import User as MotoUser
+from moto.iam.utils import generate_access_key_id_from_account_id
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.iam import (
@@ -20,7 +26,9 @@ from localstack.aws.api.iam import (
     CreateRoleRequest,
     CreateRoleResponse,
     CreateServiceLinkedRoleResponse,
+    CreateServiceSpecificCredentialResponse,
     CreateUserResponse,
+    DeleteConflictException,
     DeleteServiceLinkedRoleResponse,
     DeletionTaskIdType,
     DeletionTaskStatusType,
@@ -31,13 +39,17 @@ from localstack.aws.api.iam import (
     InvalidInputException,
     ListInstanceProfileTagsResponse,
     ListRolesResponse,
+    ListServiceSpecificCredentialsResponse,
     MalformedPolicyDocumentException,
     NoSuchEntityException,
     PolicyEvaluationDecisionType,
+    ResetServiceSpecificCredentialResponse,
     ResourceHandlingOptionType,
     ResourceNameListType,
     ResourceNameType,
     Role,
+    ServiceSpecificCredential,
+    ServiceSpecificCredentialMetadata,
     SimulatePolicyResponse,
     SimulationPolicyListType,
     Tag,
@@ -54,6 +66,9 @@ from localstack.aws.api.iam import (
     policyDocumentType,
     roleDescriptionType,
     roleNameType,
+    serviceName,
+    serviceSpecificCredentialId,
+    statusType,
     tagKeyListType,
     tagListType,
     userNameType,
@@ -65,10 +80,21 @@ from localstack.services.moto import call_moto
 from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
 from localstack.utils.common import short_uid
 
+LOG = logging.getLogger(__name__)
+
 SERVICE_LINKED_ROLE_PATH_PREFIX = "/aws-service-role"
 
-
 POLICY_ARN_REGEX = re.compile(r"arn:[^:]+:iam::(?:\d{12}|aws):policy/.*")
+
+CREDENTIAL_ID_REGEX = re.compile(r"^\w+$")
+
+T = TypeVar("T")
+
+
+class ValidationError(CommonServiceException):
+    def __init__(self, validation_errors: list[str]):
+        message = f"{len(validation_errors)} validation error{'s' if len(validation_errors) > 1 else ''} detected: {'; '.join(validation_errors)}"
+        super().__init__("ValidationError", message, 400, True)
 
 
 def get_iam_backend(context: RequestContext) -> IAMBackend:
@@ -407,6 +433,20 @@ class IamProvider(IamApi):
 
         return response
 
+    def delete_user(
+        self, context: RequestContext, user_name: existingUserNameType, **kwargs
+    ) -> None:
+        moto_user = get_iam_backend(context).users.get(user_name)
+        if moto_user and moto_user.service_specific_credentials:
+            LOG.info(
+                "Cannot delete user '%s' because service specific credentials are still present.",
+                user_name,
+            )
+            raise DeleteConflictException(
+                "Cannot delete entity, must remove referenced objects first."
+            )
+        return call_moto(context=context)
+
     def attach_role_policy(
         self, context: RequestContext, role_name: roleNameType, policy_arn: arnType, **kwargs
     ) -> None:
@@ -420,3 +460,170 @@ class IamProvider(IamApi):
         if not POLICY_ARN_REGEX.match(policy_arn):
             raise InvalidInputException(f"ARN {policy_arn} is not valid.")
         return call_moto(context=context)
+
+    # ------------------------------ Service specific credentials ------------------------------ #
+
+    def _get_user_or_raise_error(self, user_name: str, context: RequestContext) -> MotoUser:
+        """
+        Return the moto user from the store, or raise the proper exception if no user can be found.
+        :param user_name: Username to find
+        :param context: Request context
+        :return: A moto user object
+        """
+        moto_user = get_iam_backend(context).users.get(user_name)
+        if not moto_user:
+            raise NoSuchEntityException(f"The user with name {user_name} cannot be found.")
+        return moto_user
+
+    def _validate_service_name(self, service_name: str) -> None:
+        """
+        Validate if the service provided is supported.
+        :param service_name: Service name to check
+        """
+        if service_name not in ["codecommit.amazonaws.com", "cassandra.amazonaws.com"]:
+            raise NoSuchEntityException(
+                f"No such service {service_name} is supported for Service Specific Credentials"
+            )
+
+    def _validate_credential_id(self, credential_id: str) -> None:
+        """
+        Validate if the credential id is correctly formed.
+        :param credential_id: Credential ID to check
+        """
+        if not CREDENTIAL_ID_REGEX.match(credential_id):
+            raise ValidationError(
+                [
+                    "Value at 'serviceSpecificCredentialId' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\w]+"
+                ]
+            )
+
+    def _generate_service_password(self):
+        password_charset = string.ascii_letters + string.digits + "+/"
+        # password always ends in = for some reason - but it is not base64
+        return "".join(random.choices(password_charset, k=59)) + "="
+
+    def _generate_credential_id(self, context: RequestContext):
+        return generate_access_key_id_from_account_id(
+            context.account_id, prefix="ACCA", total_length=21
+        )
+
+    def _new_service_specific_credential(
+        self, user_name: str, service_name: str, context: RequestContext
+    ) -> ServiceSpecificCredential:
+        password = self._generate_service_password()
+        credential_id = self._generate_credential_id(context)
+        return ServiceSpecificCredential(
+            CreateDate=datetime.now(),
+            ServiceName=service_name,
+            ServiceUserName=f"{user_name}-at-{context.account_id}",
+            ServicePassword=password,
+            ServiceSpecificCredentialId=credential_id,
+            UserName=user_name,
+            Status=statusType.Active,
+        )
+
+    def create_service_specific_credential(
+        self, context: RequestContext, user_name: userNameType, service_name: serviceName, **kwargs
+    ) -> CreateServiceSpecificCredentialResponse:
+        moto_user = self._get_user_or_raise_error(user_name, context)
+        self._validate_service_name(service_name)
+        credential = self._new_service_specific_credential(user_name, service_name, context)
+        moto_user.service_specific_credentials.append(credential)
+        return CreateServiceSpecificCredentialResponse(ServiceSpecificCredential=credential)
+
+    def build_dict_with_only_defined_keys(
+        self, data: dict[str, Any], typed_dict_type: type[T]
+    ) -> T:
+        """
+        Builds a dict with only the defined keys from a given typed dict.
+        Filtering is only present on the first level.
+
+        :param data: Dict to filter.
+        :param typed_dict_type: TypedDict subtype containing the attributes allowed to be present in the return value
+        :return: shallow copy of the data only containing the keys defined on typed_dict_type
+        """
+        key_set = inspect.get_annotations(typed_dict_type).keys()
+        return {k: v for k, v in data.items() if k in key_set}
+
+    def list_service_specific_credentials(
+        self,
+        context: RequestContext,
+        user_name: userNameType = None,
+        service_name: serviceName = None,
+        **kwargs,
+    ) -> ListServiceSpecificCredentialsResponse:
+        moto_user = self._get_user_or_raise_error(user_name, context)
+        self._validate_service_name(service_name)
+        result = [
+            self.build_dict_with_only_defined_keys(creds, ServiceSpecificCredentialMetadata)
+            for creds in moto_user.service_specific_credentials
+            if creds["ServiceName"] == service_name
+        ]
+        return ListServiceSpecificCredentialsResponse(ServiceSpecificCredentials=result)
+
+    def _find_credential_in_user_by_id(
+        self, user_name: str, credential_id: str, context: RequestContext
+    ) -> ServiceSpecificCredential:
+        moto_user = self._get_user_or_raise_error(user_name, context)
+        self._validate_credential_id(credential_id)
+        matching_credentials = [
+            cred
+            for cred in moto_user.service_specific_credentials
+            if cred["ServiceSpecificCredentialId"] == credential_id
+        ]
+        if not matching_credentials:
+            raise NoSuchEntityException(f"No such credential {credential_id} exists")
+        return matching_credentials[0]
+
+    def update_service_specific_credential(
+        self,
+        context: RequestContext,
+        service_specific_credential_id: serviceSpecificCredentialId,
+        status: statusType,
+        user_name: userNameType = None,
+        **kwargs,
+    ) -> None:
+        # validate status
+        if status not in statusType:
+            raise ValidationError(
+                [
+                    "Value at 'status' failed to satisfy constraint: Member must satisfy enum value set"
+                ]
+            )
+
+        credential = self._find_credential_in_user_by_id(
+            user_name, service_specific_credential_id, context
+        )
+        credential["Status"] = status
+
+    def reset_service_specific_credential(
+        self,
+        context: RequestContext,
+        service_specific_credential_id: serviceSpecificCredentialId,
+        user_name: userNameType = None,
+        **kwargs,
+    ) -> ResetServiceSpecificCredentialResponse:
+        credential = self._find_credential_in_user_by_id(
+            user_name, service_specific_credential_id, context
+        )
+        credential["ServicePassword"] = self._generate_service_password()
+        return ResetServiceSpecificCredentialResponse(ServiceSpecificCredential=credential)
+
+    def delete_service_specific_credential(
+        self,
+        context: RequestContext,
+        service_specific_credential_id: serviceSpecificCredentialId,
+        user_name: userNameType = None,
+        **kwargs,
+    ) -> None:
+        moto_user = self._get_user_or_raise_error(user_name, context)
+        credentials = self._find_credential_in_user_by_id(
+            user_name, service_specific_credential_id, context
+        )
+        try:
+            moto_user.service_specific_credentials.remove(credentials)
+        # just in case of race conditions
+        except ValueError:
+            raise NoSuchEntityException(
+                f"No such credential {service_specific_credential_id} exists"
+            )

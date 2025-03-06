@@ -1,4 +1,5 @@
 import json
+import logging
 from urllib.parse import quote_plus
 
 import pytest
@@ -11,6 +12,8 @@ from localstack.testing.pytest import markers
 from localstack.utils.aws.arns import get_partition
 from localstack.utils.common import short_uid
 from localstack.utils.strings import long_uid
+
+LOG = logging.getLogger(__name__)
 
 GET_USER_POLICY_DOC = """{
     "Version": "2012-10-17",
@@ -223,13 +226,14 @@ class TestIAMIntegrations:
         assert ctx.value.response["Error"]["Code"] == "NoSuchEntity"
 
     @markers.aws.validated
-    def test_delete_non_existent_policy_returns_no_such_entity(self, aws_client):
-        non_existent_policy_arn = "arn:aws:iam::000000000000:policy/non-existent-policy"
+    def test_delete_non_existent_policy_returns_no_such_entity(
+        self, aws_client, snapshot, account_id
+    ):
+        non_existent_policy_arn = f"arn:aws:iam::{account_id}:policy/non-existent-policy"
 
-        with pytest.raises(ClientError) as ctx:
+        with pytest.raises(ClientError) as e:
             aws_client.iam.delete_policy(PolicyArn=non_existent_policy_arn)
-        assert ctx.typename == "NoSuchEntityException"
-        assert ctx.value.response["Error"]["Code"] == "NoSuchEntity"
+        snapshot.match("delete-non-existent-policy-exc", e.value.response)
 
     @markers.aws.validated
     def test_recreate_iam_role(self, aws_client, create_role):
@@ -859,3 +863,344 @@ class TestIAMPolicyEncoding:
             GroupName=group_name, PolicyName=policy_name
         )
         snapshot.match("get-policy-response", get_policy_response)
+
+
+class TestIAMServiceSpecificCredentials:
+    @pytest.fixture(autouse=True)
+    def register_snapshot_transformers(self, snapshot):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+        snapshot.add_transformer(snapshot.transform.key_value_length("ServicePassword"))
+        snapshot.add_transformer(snapshot.transform.key_value_length("ServiceSpecificCredentialId"))
+
+    @pytest.fixture
+    def create_service_specific_credential(self, aws_client):
+        username_id_pairs = []
+
+        def _create_service_specific_credential(*args, **kwargs):
+            response = aws_client.iam.create_service_specific_credential(*args, **kwargs)
+            username_id_pairs.append(
+                (
+                    response["ServiceSpecificCredential"]["ServiceSpecificCredentialId"],
+                    response["ServiceSpecificCredential"]["UserName"],
+                )
+            )
+            return response
+
+        yield _create_service_specific_credential
+
+        for credential_id, user_name in username_id_pairs:
+            try:
+                aws_client.iam.delete_service_specific_credential(
+                    ServiceSpecificCredentialId=credential_id, UserName=user_name
+                )
+            except Exception:
+                LOG.debug(
+                    "Unable to delete service specific credential '%s' for user name '%s'",
+                    credential_id,
+                    user_name,
+                )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "service_name", ["codecommit.amazonaws.com", "cassandra.amazonaws.com"]
+    )
+    def test_service_specific_credential_lifecycle(
+        self, aws_client, create_user, snapshot, service_name
+    ):
+        """Test the lifecycle of service specific credentials."""
+        user_name = f"user-{short_uid()}"
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user-response", create_user_response)
+
+        # create
+        create_service_specific_credential_response = (
+            aws_client.iam.create_service_specific_credential(
+                UserName=user_name, ServiceName=service_name
+            )
+        )
+        snapshot.match(
+            "create-service-specific-credential-response",
+            create_service_specific_credential_response,
+        )
+        credential_id = create_service_specific_credential_response["ServiceSpecificCredential"][
+            "ServiceSpecificCredentialId"
+        ]
+
+        # list
+        list_service_specific_credentials_response = (
+            aws_client.iam.list_service_specific_credentials(
+                UserName=user_name, ServiceName=service_name
+            )
+        )
+        snapshot.match(
+            "list-service-specific-credentials-response-before-update",
+            list_service_specific_credentials_response,
+        )
+
+        # update
+        update_service_specific_credential_response = (
+            aws_client.iam.update_service_specific_credential(
+                UserName=user_name, ServiceSpecificCredentialId=credential_id, Status="Inactive"
+            )
+        )
+        snapshot.match(
+            "update-service-specific-credential-response",
+            update_service_specific_credential_response,
+        )
+
+        # list after update
+        list_service_specific_credentials_response = (
+            aws_client.iam.list_service_specific_credentials(
+                UserName=user_name, ServiceName=service_name
+            )
+        )
+        snapshot.match(
+            "list-service-specific-credentials-response-after-update",
+            list_service_specific_credentials_response,
+        )
+
+        # reset
+        reset_service_specific_credential_response = (
+            aws_client.iam.reset_service_specific_credential(
+                UserName=user_name, ServiceSpecificCredentialId=credential_id
+            )
+        )
+        snapshot.match(
+            "reset-service-specific-credential-response", reset_service_specific_credential_response
+        )
+
+        # delete
+        delete_service_specific_credential_response = (
+            aws_client.iam.delete_service_specific_credential(
+                ServiceSpecificCredentialId=credential_id, UserName=user_name
+            )
+        )
+        snapshot.match(
+            "delete-service-specific-credentials-response",
+            delete_service_specific_credential_response,
+        )
+
+    @markers.aws.validated
+    def test_create_service_specific_credential_invalid_user(self, aws_client, snapshot):
+        """Use invalid users for the create operation"""
+        user_name = "non-existent-user"
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_service_specific_credential(
+                UserName=user_name, ServiceName="codecommit.amazonaws.com"
+            )
+        snapshot.match("invalid-user-name-exception", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_service_specific_credential(
+                UserName=user_name, ServiceName="nonexistentservice.amazonaws.com"
+            )
+        snapshot.match("invalid-user-and-service-exception", e.value.response)
+
+    @markers.aws.validated
+    def test_create_service_specific_credential_invalid_service(
+        self, aws_client, create_user, snapshot
+    ):
+        """Test different scenarios of invalid service names passed to the create operation"""
+        user_name = f"user-{short_uid()}"
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user-response", create_user_response)
+
+        # a bogus service which does not exist on AWS
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_service_specific_credential(
+                UserName=user_name, ServiceName="nonexistentservice.amazonaws.com"
+            )
+        snapshot.match("invalid-service-exception", e.value.response)
+
+        # a random string not even ending in amazonaws.com
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_service_specific_credential(
+                UserName=user_name, ServiceName="o3on3n3onosneo"
+            )
+        snapshot.match("invalid-service-completely-malformed-exception", e.value.response)
+
+        # existing service, which is not supported by service specific credentials
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_service_specific_credential(
+                UserName=user_name, ServiceName="lambda.amazonaws.com"
+            )
+        snapshot.match("invalid-service-existing-but-unsupported-exception", e.value.response)
+
+    @markers.aws.validated
+    def test_list_service_specific_credential_different_service(
+        self, aws_client, create_user, snapshot, create_service_specific_credential
+    ):
+        """Test different scenarios of invalid or wrong service names passed to the list operation"""
+        user_name = f"user-{short_uid()}"
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user-response", create_user_response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.list_service_specific_credentials(
+                UserName=user_name, ServiceName="nonexistentservice.amazonaws.com"
+            )
+        snapshot.match("list-service-specific-credentials-invalid-service", e.value.response)
+
+        # Create a proper credential for codecommit
+        create_service_specific_credential_response = (
+            aws_client.iam.create_service_specific_credential(
+                UserName=user_name, ServiceName="codecommit.amazonaws.com"
+            )
+        )
+        snapshot.match(
+            "create-service-specific-credential-response",
+            create_service_specific_credential_response,
+        )
+
+        # List credentials for cassandra
+        list_service_specific_credentials_response = (
+            aws_client.iam.list_service_specific_credentials(
+                UserName=user_name, ServiceName="cassandra.amazonaws.com"
+            )
+        )
+        snapshot.match(
+            "list-service-specific-credentials-response-wrong-service",
+            list_service_specific_credentials_response,
+        )
+
+    @markers.aws.validated
+    def test_delete_user_after_service_credential_created(
+        self, aws_client, create_user, snapshot, create_service_specific_credential
+    ):
+        """Try deleting a user with active service credentials"""
+        user_name = f"user-{short_uid()}"
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user-response", create_user_response)
+
+        # Create a credential
+        create_service_specific_credential_response = create_service_specific_credential(
+            UserName=user_name, ServiceName="codecommit.amazonaws.com"
+        )
+        snapshot.match(
+            "create-service-specific-credential-response",
+            create_service_specific_credential_response,
+        )
+
+        # delete user
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.delete_user(UserName=user_name)
+        snapshot.match("delete-user-existing-credential", e.value.response)
+
+    @markers.aws.validated
+    def test_id_match_user_mismatch(
+        self, aws_client, create_user, snapshot, create_service_specific_credential
+    ):
+        """Test operations with valid ids, but invalid users"""
+        user_name = f"user-{short_uid()}"
+        wrong_user_name = "wrong-user-name"
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user-response", create_user_response)
+
+        create_service_specific_credential_response = create_service_specific_credential(
+            UserName=user_name, ServiceName="codecommit.amazonaws.com"
+        )
+        snapshot.match(
+            "create-service-specific-credential-response",
+            create_service_specific_credential_response,
+        )
+        credential_id = create_service_specific_credential_response["ServiceSpecificCredential"][
+            "ServiceSpecificCredentialId"
+        ]
+
+        # update
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.update_service_specific_credential(
+                UserName=wrong_user_name,
+                ServiceSpecificCredentialId=credential_id,
+                Status="Inactive",
+            )
+        snapshot.match("update-wrong-user-name", e.value.response)
+
+        # reset
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.reset_service_specific_credential(
+                UserName=wrong_user_name, ServiceSpecificCredentialId=credential_id
+            )
+        snapshot.match("reset-wrong-user-name", e.value.response)
+
+        # delete
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.delete_service_specific_credential(
+                UserName=wrong_user_name, ServiceSpecificCredentialId=credential_id
+            )
+        snapshot.match("delete-wrong-user-name", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "wrong_credential_id",
+        ["totally-wrong-credential-id-with-hyphens", "satisfiesregexbutstillinvalid"],
+    )
+    def test_user_match_id_mismatch(
+        self,
+        aws_client,
+        create_user,
+        snapshot,
+        create_service_specific_credential,
+        wrong_credential_id,
+    ):
+        """Test operations with valid usernames, but invalid ids"""
+        user_name = f"user-{short_uid()}"
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user-response", create_user_response)
+
+        create_service_specific_credential_response = create_service_specific_credential(
+            UserName=user_name, ServiceName="codecommit.amazonaws.com"
+        )
+        snapshot.match(
+            "create-service-specific-credential-response",
+            create_service_specific_credential_response,
+        )
+
+        # update
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.update_service_specific_credential(
+                UserName=user_name,
+                ServiceSpecificCredentialId=wrong_credential_id,
+                Status="Inactive",
+            )
+        snapshot.match("update-wrong-id", e.value.response)
+
+        # reset
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.reset_service_specific_credential(
+                UserName=user_name, ServiceSpecificCredentialId=wrong_credential_id
+            )
+        snapshot.match("reset-wrong-id", e.value.response)
+
+        # delete
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.delete_service_specific_credential(
+                UserName=user_name, ServiceSpecificCredentialId=wrong_credential_id
+            )
+        snapshot.match("delete-wrong-id", e.value.response)
+
+    @markers.aws.validated
+    def test_invalid_update_parameters(
+        self, aws_client, create_user, snapshot, create_service_specific_credential
+    ):
+        """Try updating a service specific credential with invalid values"""
+        user_name = f"user-{short_uid()}"
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user-response", create_user_response)
+
+        create_service_specific_credential_response = create_service_specific_credential(
+            UserName=user_name, ServiceName="codecommit.amazonaws.com"
+        )
+        snapshot.match(
+            "create-service-specific-credential-response",
+            create_service_specific_credential_response,
+        )
+        credential_id = create_service_specific_credential_response["ServiceSpecificCredential"][
+            "ServiceSpecificCredentialId"
+        ]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.update_service_specific_credential(
+                ServiceSpecificCredentialId=credential_id, Status="Invalid"
+            )
+        snapshot.match("update-invalid-status", e.value.response)
