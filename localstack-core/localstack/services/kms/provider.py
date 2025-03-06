@@ -1347,6 +1347,10 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             raise UnsupportedOperationException(
                 "On-demand key rotation is supported only on symmetric encryption KMS keys"
             )
+        if key.metadata["Origin"] == OriginType.EXTERNAL:
+            raise UnsupportedOperationException(
+                "On-demand key rotation is not supported for keys with imported key material"
+            )
 
         key.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
 

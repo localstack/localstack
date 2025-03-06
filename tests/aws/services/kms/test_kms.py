@@ -1147,10 +1147,19 @@ class TestKMS:
         )
 
     @markers.aws.validated
-    def test_rotate_key_on_demand_returns_error_given_non_symmetric_key(
+    def test_rotate_key_on_demand_raises_error_given_non_symmetric_key(
         self, kms_create_key, aws_client
     ):
         key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="RSA_4096")["KeyId"]
+        with pytest.raises(ClientError) as exc:
+            aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+        assert exc.match("UnsupportedOperationException")
+
+    @markers.aws.validated
+    def test_rotate_key_on_demand_raises_error_given_key_with_imported_key_material(
+        self, kms_create_key, aws_client
+    ):
+        key_id = kms_create_key(Origin="EXTERNAL")["KeyId"]
         with pytest.raises(ClientError) as exc:
             aws_client.kms.rotate_key_on_demand(KeyId=key_id)
         assert exc.match("UnsupportedOperationException")
