@@ -1,3 +1,4 @@
+import copy
 import json
 import os.path
 
@@ -1380,3 +1381,58 @@ class TestChangeSetDiff:
             value1 = short_uid()
             value2 = short_uid()
             capture_stack_diff(t1, t1, p1={"ParameterValue": value1}, p2={"ParameterValue": value2})
+
+        @pytest.mark.parametrize("resource_id", ["A", "B", "C", "D", "E"])
+        def test_middle_change(self, capture_stack_diff, resource_id):
+            """
+            Given:
+              A
+             /\
+             B C
+             | |
+             D E
+
+            update a property of resource `resource_id`
+            """
+            root_value = short_uid()
+            new_value = short_uid()
+            base_template = {
+                "Resources": {
+                    "A": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": root_value,
+                        },
+                    },
+                    "B": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {"Type": "String", "Value": {"Fn::GetAtt": ["A", "Value"]}},
+                    },
+                    "C": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["A", "Value"]},
+                        },
+                    },
+                    "D": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["B", "Value"]},
+                        },
+                    },
+                    "E": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["C", "Value"]},
+                        },
+                    },
+                },
+            }
+            new_template = copy.deepcopy(base_template)
+            new_template["Resources"][resource_id]["Properties"]["Value"] = new_value
+            assert new_template != base_template
+            capture_stack_diff(base_template, new_template)

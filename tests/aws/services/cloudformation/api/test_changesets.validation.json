@@ -17,6 +17,21 @@
   "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestSingleResource::test_static_change[True]": {
     "last_validated_date": "2025-03-04T15:21:29+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestThreeResources::test_middle_change[A]": {
+    "last_validated_date": "2025-03-06T13:26:19+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestThreeResources::test_middle_change[B]": {
+    "last_validated_date": "2025-03-06T13:26:36+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestThreeResources::test_middle_change[C]": {
+    "last_validated_date": "2025-03-06T13:26:52+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestThreeResources::test_middle_change[D]": {
+    "last_validated_date": "2025-03-06T13:27:09+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestThreeResources::test_middle_change[E]": {
+    "last_validated_date": "2025-03-06T13:27:26+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestThreeResources::test_root_change": {
     "last_validated_date": "2025-03-04T17:08:22+00:00"
   },
