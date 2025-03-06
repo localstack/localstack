@@ -40,7 +40,6 @@ class RestApiGateway(Gateway):
         self.response_handlers.extend(
             [
                 handlers.response_enricher,
-                handlers.cors_response_enricher,
                 handlers.usage_counter,
                 # add composite response handlers?
             ]
