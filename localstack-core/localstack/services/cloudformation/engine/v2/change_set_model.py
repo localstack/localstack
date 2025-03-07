@@ -5,8 +5,8 @@ import enum
 from itertools import zip_longest
 from typing import Any, Final, Generator, Optional
 
-from localstack.aws.api.cloudformation import ChangeAction, ResourceChange
-from localstack.utils.strings import camel_to_snake_case
+# TODO: throughout this file, naming doesn't seem to be
+#  well standardized "Update/Modified/Add/Added/...".
 
 
 class ChangeType(enum.Enum):
@@ -160,9 +160,45 @@ ResourcesKey: Final[str] = "Resources"
 PropertiesKey: Final[str] = "Properties"
 
 
-class ChangeSetModeler:
+class ChangeSetModel:
+    # TODO: should this instead be generalised to work on "Stack" objects instead of just "Template"s?
+
     # TODO: fix type hints in the modeler class, the use of Optional[...] is incorrect, it should reflect
     #  that the type could be NoSuchValue, like Maybe[innertype] === innertype | NoSuchValue
+
+    # TODO: can probably improve the typehints to use CFN's 'language' eg. dict -> Template|Properties, etc.
+
+    # TODO: typechecks for key-value pairs?
+
+    _before_template: Final[dict]
+    _after_template: Final[dict]
+    _node_template: Final[NodeTemplate]
+
+    def __init__(self, before_template: dict, after_template: dict):
+        self._before_template = before_template
+        self._after_template = after_template
+        self._node_template = self._model(
+            before_template=before_template, after_template=after_template
+        )
+
+    def get_update_model(self) -> NodeTemplate:
+        # TODO: rethink naming of this for outer utils
+        return self._node_template
+
+    # TODO: figure out when and which intrinsic functions are evaluated when.
+    # TODO: dependency evaluation logic needs implementing, this should probably be done in a second pass about the changeset.
+    #
+    #    def _visit_intrinsic_function_fn_get_att(self, before_arguments: Any, after_arguments: Any) -> TerminalValue:
+    #        pass
+    #
+    #    def _visit_intrinsic_function(self, function_name: str, before_arguments: Any, after_arguments: Any) -> TerminalValue:
+    #        reflection_key = function_name.replace("::", "")
+    #        reflection_key = camel_to_snake_case(reflection_key)
+    #        visit_function_name = f"visit_intrinsic_function_{reflection_key}"
+    #        visit_function = getattr(self, visit_function_name)
+    #        # TODO: check and raise unsupported?
+    #        return visit_function(before_arguments, after_arguments)
+
     def _visit_terminal_value(  # noqa
         self, before_value: Optional[Any], after_value: Optional[Any]
     ) -> TerminalValue:
@@ -227,13 +263,6 @@ class ChangeSetModeler:
             return value
         # Case: update to new type.
         else:
-            # TODO: this is a type divergence at this depth, investigate how CFN handles this,
-            #  we might need to introduce a NodeDivergence(before, after), or move the change_type
-            #  to reusable (node and terminal) link classes?
-            # raise NotImplementedError()
-
-            # TODO: arguably, once a divergence is found, this is a terminal state for the update
-            #  graph, as a value is changed.
             return TerminalValueModified(value=before_value, modified_value=after_value)
 
     def _visit_property(
@@ -321,7 +350,7 @@ class ChangeSetModeler:
                 change_type = ChangeType.MODIFIED
         return NodeResources(change_type=change_type, resources=resources)
 
-    def model(self, before_template: dict, after_template: dict) -> NodeTemplate:
+    def _model(self, before_template: dict, after_template: dict) -> NodeTemplate:
         # TODO: visit other child types
         before_resources, after_resources = self._sample_from(
             ResourcesKey, before_template, after_template
@@ -364,6 +393,12 @@ class ChangeSetModeler:
     def _is_array(value: Any) -> bool:
         return isinstance(value, list)
 
+    #    @staticmethod
+    #    def _is_intrinsic_function(function_name: str) -> bool:
+    #        # TODO export set
+    #        # TODO check for scope? are intrinsic function strong or soft string literals?
+    #        return function_name in {"Fn:GetAtt"}
+
     @staticmethod
     def _is_created(before: Any | NoSuchValue, after: Any | NoSuchValue) -> bool:
         return isinstance(before, NoSuchValue) and not isinstance(after, NoSuchValue)
@@ -371,246 +406,3 @@ class ChangeSetModeler:
     @staticmethod
     def _is_removed(before: Any | NoSuchValue, after: Any | NoSuchValue) -> bool:
         return not isinstance(before, NoSuchValue) and isinstance(after, NoSuchValue)
-
-
-class ChangeSetModelVisitor(abc.ABC):
-    # TODO: this class should be auto generated.
-
-    # TODO: add visitors for abstract classes so shared logic can be implemented
-    #  just once in classes extending this.
-
-    def visit(self, change_set_entity: ChangeSetEntity):
-        # TODO: speed up this lookup logic
-        type_str = change_set_entity.__class__.__name__
-        type_str = camel_to_snake_case(type_str).lower()
-        visit_function_name = f"visit_{type_str}"
-        visit_function = getattr(self, visit_function_name)
-        return visit_function(change_set_entity)
-
-    def visit_children(self, change_set_entity: ChangeSetEntity):
-        children = change_set_entity.get_children()
-        for child in children:
-            self.visit(child)
-
-    def visit_node_template(self, node_template: NodeTemplate):
-        self.visit_children(node_template)
-
-    def visit_node_resources(self, node_resources: NodeResources):
-        self.visit_children(node_resources)
-
-    def visit_node_resource(self, node_resource: NodeResource):
-        self.visit_children(node_resource)
-
-    def visit_node_properties(self, node_properties: NodeProperties):
-        self.visit_children(node_properties)
-
-    def visit_node_property(self, node_property: NodeProperty):
-        self.visit_children(node_property)
-
-    def visit_node_object(self, node_object: NodeObject):
-        self.visit_children(node_object)
-
-    def visit_node_array(self, node_array: NodeArray):
-        self.visit_children(node_array)
-
-    def visit_terminal_value_modified(self, terminal_value_modified: TerminalValueModified):
-        self.visit_children(terminal_value_modified)
-
-    def visit_terminal_value_created(self, terminal_value_created: TerminalValueCreated):
-        self.visit_children(terminal_value_created)
-
-    def visit_terminal_value_removed(self, terminal_value_removed: TerminalValueRemoved):
-        self.visit_children(terminal_value_removed)
-
-    def visit_terminal_value_unchanged(self, terminal_value_unchanged: TerminalValueUnchanged):
-        self.visit_children(terminal_value_unchanged)
-
-
-class ChangeSetDescribeUnit(abc.ABC):
-    context: Optional[Any]
-
-    def __init__(self, context: Optional[Any]):
-        self.context = context
-
-
-class ChangeSetDescribeUnitAddition(ChangeSetDescribeUnit):
-    pass
-
-
-class ChangeSetDescribeUnitDeletion(ChangeSetDescribeUnit):
-    pass
-
-
-# TODO: unchanged can probably be pruned from the evaluation and be an empty value?
-class ChangeSetDescribeUnitUnchanged(ChangeSetDescribeUnit):
-    pass
-
-
-class ChangeSetDescribeUnitUpdate(ChangeSetDescribeUnit):
-    after_context: Optional[Any]
-
-    def __init__(self, context: Optional[Any], after_context: Optional[Any]):
-        super().__init__(context=context)
-        self.after_context = after_context
-
-
-class ChangeSetDescribeVisitor(ChangeSetModelVisitor):
-    # TODO: expand to other change types?
-    changes: list[ResourceChange] = list()
-
-    def __init__(self):
-        self.changes = list()
-
-    def visit(self, change_set_entity: ChangeSetEntity) -> ChangeSetDescribeUnit:
-        # Overridden for the return type hints.
-        return super().visit(change_set_entity=change_set_entity)
-
-    def visit_terminal_value_modified(
-        self, terminal_value_modified: TerminalValueModified
-    ) -> ChangeSetDescribeUnitUpdate:
-        return ChangeSetDescribeUnitUpdate(
-            context=terminal_value_modified.value,
-            after_context=terminal_value_modified.modified_value,
-        )
-
-    def visit_terminal_value_created(
-        self, terminal_value_created: TerminalValueCreated
-    ) -> ChangeSetDescribeUnitAddition:
-        return ChangeSetDescribeUnitAddition(context=terminal_value_created.value)
-
-    def visit_terminal_value_removed(
-        self, terminal_value_removed: TerminalValueRemoved
-    ) -> ChangeSetDescribeUnitDeletion:
-        return ChangeSetDescribeUnitDeletion(context=terminal_value_removed.value)
-
-    def visit_terminal_value_unchanged(
-        self, terminal_value_unchanged: TerminalValueUnchanged
-    ) -> ChangeSetDescribeUnitUnchanged:
-        return ChangeSetDescribeUnitUnchanged(context=terminal_value_unchanged.value)
-
-    def visit_node_object(self, node_object: NodeObject) -> ChangeSetDescribeUnit:
-        before_context = dict()
-        after_context = dict()
-        for name, change_set_update in node_object.bindings.items():
-            describe_unit: ChangeSetDescribeUnit = self.visit(change_set_entity=change_set_update)
-            if isinstance(describe_unit, ChangeSetDescribeUnitUpdate):
-                before_context[name] = describe_unit.context
-                after_context[name] = describe_unit.after_context
-            elif isinstance(describe_unit, ChangeSetDescribeUnitAddition):
-                after_context[name] = describe_unit.context
-            elif isinstance(describe_unit, ChangeSetDescribeUnitDeletion):
-                before_context[name] = describe_unit.context
-            elif isinstance(describe_unit, ChangeSetDescribeUnitUnchanged):
-                before_context[name] = describe_unit.context
-                after_context[name] = describe_unit.context
-            # Note: block is exhaustive about ChangeSetDescribeUnit
-        match node_object.change_type:
-            case ChangeType.MODIFIED:
-                return ChangeSetDescribeUnitUpdate(
-                    context=before_context, after_context=after_context
-                )
-            case ChangeType.CREATED:
-                return ChangeSetDescribeUnitAddition(context=after_context)
-            case ChangeType.UNCHANGED:
-                return ChangeSetDescribeUnitUnchanged(context=before_context)
-            case ChangeType.REMOVED:
-                return ChangeSetDescribeUnitDeletion(context=before_context)
-            case unsupported:
-                # Note: match block is exhaustive about ChangeSet.
-                raise RuntimeError(f"Unsupported ChangeType: '{unsupported}'")
-
-    def visit_node_array(self, node_array: NodeArray) -> ChangeSetDescribeUnit:
-        # TODO: is it worth chasing this duplication with visit_node_object?
-        before_context = list()
-        after_context = list()
-        for change_set_entity in node_array.array:
-            describe_unit: ChangeSetDescribeUnit = self.visit(change_set_entity=change_set_entity)
-            if isinstance(describe_unit, ChangeSetDescribeUnitUpdate):
-                before_context.append(describe_unit.context)
-                after_context.append(describe_unit.after_context)
-            elif isinstance(describe_unit, ChangeSetDescribeUnitAddition):
-                after_context.append(describe_unit.context)
-            elif isinstance(describe_unit, ChangeSetDescribeUnitDeletion):
-                before_context.append(describe_unit.context)
-            elif isinstance(describe_unit, ChangeSetDescribeUnitUnchanged):
-                before_context.append(describe_unit.context)
-                after_context.append(describe_unit.context)
-        # Note: block is exhaustive about ChangeSetDescribeUnit
-        match node_array.change_type:
-            case ChangeType.MODIFIED:
-                return ChangeSetDescribeUnitUpdate(
-                    context=before_context, after_context=after_context
-                )
-            case ChangeType.CREATED:
-                return ChangeSetDescribeUnitAddition(context=after_context)
-            case ChangeType.UNCHANGED:
-                return ChangeSetDescribeUnitUnchanged(context=before_context)
-            case ChangeType.REMOVED:
-                return ChangeSetDescribeUnitDeletion(context=before_context)
-            case unsupported:
-                # Note: match block is exhaustive about ChangeSet.
-                raise RuntimeError(f"Unsupported ChangeType: '{unsupported}'")
-
-    def visit_node_properties(self, node_properties: NodeProperties) -> ChangeSetDescribeUnit:
-        before_context: dict[str, Any] = dict()
-        after_context: dict[str, Any] = dict()
-        for node_property in node_properties.properties:
-            if node_property.change_type == ChangeType.UNCHANGED:
-                continue
-            describe_unit = self.visit(node_property.value)
-            property_name = node_property.name
-            # TODO: duplication
-            if isinstance(describe_unit, ChangeSetDescribeUnitUpdate):
-                before_context[property_name] = describe_unit.context
-                after_context[property_name] = describe_unit.after_context
-            elif isinstance(describe_unit, ChangeSetDescribeUnitAddition):
-                after_context[property_name] = describe_unit.context
-            elif isinstance(describe_unit, ChangeSetDescribeUnitDeletion):
-                before_context[property_name] = describe_unit.context
-            elif isinstance(describe_unit, ChangeSetDescribeUnitUnchanged):
-                before_context[property_name] = describe_unit.context
-                after_context[property_name] = describe_unit.context
-        before_context = {PropertiesKey: before_context}
-        after_context = {PropertiesKey: after_context}
-        match node_properties.change_type:
-            case ChangeType.MODIFIED:
-                return ChangeSetDescribeUnitUpdate(
-                    context=before_context, after_context=after_context
-                )
-            case ChangeType.CREATED:
-                return ChangeSetDescribeUnitAddition(context=after_context)
-            case ChangeType.UNCHANGED:
-                return ChangeSetDescribeUnitUnchanged(context=before_context)
-            case ChangeType.REMOVED:
-                return ChangeSetDescribeUnitDeletion(context=before_context)
-            case unsupported:
-                # Note: match block is exhaustive about ChangeSet.
-                raise RuntimeError(f"Unsupported ChangeType: '{unsupported}'")
-
-    def visit_node_resource(self, node_resource: NodeResource) -> ChangeSetDescribeUnit:
-        # TODO: It seems like all unit changes should have before and after, look at the
-        #  duplication in change type deductions.
-        describe_unit = self.visit_node_properties(node_resource.properties)
-        resource_change = ResourceChange()
-        resource_change["LogicalResourceId"] = node_resource.name
-        if isinstance(describe_unit, ChangeSetDescribeUnitUpdate):
-            resource_change["BeforeContext"] = describe_unit.context
-            resource_change["AfterContext"] = describe_unit.after_context
-        elif isinstance(describe_unit, ChangeSetDescribeUnitAddition):
-            resource_change["AfterContext"] = describe_unit.context
-        elif isinstance(describe_unit, ChangeSetDescribeUnitDeletion):
-            resource_change["BeforeContext"] = describe_unit.context
-        elif isinstance(describe_unit, ChangeSetDescribeUnitUnchanged):
-            resource_change["BeforeContext"] = describe_unit.context
-        match node_resource.change_type:
-            case ChangeType.CREATED:
-                resource_change["Action"] = ChangeAction.Add
-                self.changes.append(resource_change)
-            case ChangeType.REMOVED:
-                resource_change["Action"] = ChangeAction.Remove
-                self.changes.append(resource_change)
-            case ChangeType.MODIFIED:
-                resource_change["Action"] = ChangeAction.Modify
-                self.changes.append(resource_change)
-        # TODO
-        return None

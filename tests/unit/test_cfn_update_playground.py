@@ -1,9 +1,11 @@
 import json
 
-from localstack.services.cloudformation.engine.playground_update import (
-    ChangeSetDescribeVisitor,
-    ChangeSetModeler,
+from localstack.services.cloudformation.engine.v2.change_set_model import (
+    ChangeSetModel,
     NodeTemplate,
+)
+from localstack.services.cloudformation.engine.v2.change_set_model_describer import (
+    ChangeSetModelDescriber,
 )
 
 
@@ -44,8 +46,8 @@ class TestCFNUpdatePlayground:
                         "Type": "String",
                         "Name": "Added parameter 2 name",  # added value
                         "Value": {
-                            "Fn::GetAtt": ["I changed this to Parameter3", "Value"]
-                        },  # added value in array args
+                            "Fn::GetAtt": ["Parameter3", "Value"]  # updated value in array args
+                        },
                     },
                 },
                 "Parameter3": {  # added (resource)
@@ -58,11 +60,11 @@ class TestCFNUpdatePlayground:
             },
         }
 
-        node_template: NodeTemplate = ChangeSetModeler().model(
-            before_template=t1, after_template=t2
-        )
-        print(node_template)
+        change_set_model = ChangeSetModel(before_template=t1, after_template=t2)
+        update_model: NodeTemplate = change_set_model.get_update_model()
 
-        change_set_describer = ChangeSetDescribeVisitor()
-        change_set_describer.visit(node_template)
+        print(update_model)
+
+        change_set_describer = ChangeSetModelDescriber()
+        change_set_describer.visit(update_model)
         print(json.dumps(change_set_describer.changes, indent=4))
