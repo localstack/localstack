@@ -575,6 +575,17 @@ class IamProvider(IamApi):
             raise NoSuchEntityException(f"No such credential {credential_id} exists")
         return matching_credentials[0]
 
+    def _validate_status(self, status: str):
+        # validate status
+        try:
+            statusType(status)
+        except ValueError:
+            raise ValidationError(
+                [
+                    "Value at 'status' failed to satisfy constraint: Member must satisfy enum value set"
+                ]
+            )
+
     def update_service_specific_credential(
         self,
         context: RequestContext,
@@ -583,13 +594,7 @@ class IamProvider(IamApi):
         user_name: userNameType = None,
         **kwargs,
     ) -> None:
-        # validate status
-        if status not in statusType:
-            raise ValidationError(
-                [
-                    "Value at 'status' failed to satisfy constraint: Member must satisfy enum value set"
-                ]
-            )
+        self._validate_status(status)
 
         credential = self._find_credential_in_user_by_id(
             user_name, service_specific_credential_id, context
