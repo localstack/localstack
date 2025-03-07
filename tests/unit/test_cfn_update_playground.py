@@ -67,4 +67,5 @@ class TestCFNUpdatePlayground:
 
         change_set_describer = ChangeSetModelDescriber()
         change_set_describer.visit(update_model)
-        print(json.dumps(change_set_describer.changes, indent=4))
+        resource_changes = change_set_describer.resource_changes
+        print(json.dumps(resource_changes, indent=4))

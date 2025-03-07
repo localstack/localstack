@@ -11,6 +11,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeObject,
     NodeProperties,
     NodeResource,
+    NodeResources,
     TerminalValueCreated,
     TerminalValueModified,
     TerminalValueRemoved,
@@ -22,121 +23,79 @@ from localstack.services.cloudformation.engine.v2.change_set_model_visitor impor
 
 
 class DescribeUnit(abc.ABC):
-    context: Optional[Any]
+    before_context: Optional[Any] = None
+    after_context: Optional[Any] = None
 
-    def __init__(self, context: Optional[Any]):
-        self.context = context
-
-
-class Created(DescribeUnit):
-    pass
-
-
-class Removed(DescribeUnit):
-    pass
-
-
-# TODO: unchanged can probably be pruned from the evaluation and be an empty value?
-class Unchanged(DescribeUnit):
-    pass
-
-
-class Modified(DescribeUnit):
-    after_context: Optional[Any]
-
-    def __init__(self, context: Optional[Any], after_context: Optional[Any]):
-        super().__init__(context=context)
+    def __init__(self, before_context: Optional[Any] = None, after_context: Optional[Any] = None):
+        self.before_context = before_context
         self.after_context = after_context
 
 
 class ChangeSetModelDescriber(ChangeSetModelVisitor):
-    # TODO: expand to other change types?
-    changes: list[ResourceChange] = list()
+    resource_changes: list[ResourceChange] = list()
 
     def __init__(self):
-        self.changes = list()
+        self.resource_changes = list()
 
     def visit(self, change_set_entity: ChangeSetEntity) -> DescribeUnit:
-        # Overridden for the return type hints.
+        # Overridden for the return type-hints.
         return super().visit(change_set_entity=change_set_entity)
 
     def visit_terminal_value_modified(
         self, terminal_value_modified: TerminalValueModified
-    ) -> Modified:
-        return Modified(
-            context=terminal_value_modified.value,
+    ) -> DescribeUnit:
+        return DescribeUnit(
+            before_context=terminal_value_modified.value,
             after_context=terminal_value_modified.modified_value,
         )
 
-    def visit_terminal_value_created(self, terminal_value_created: TerminalValueCreated) -> Created:
-        return Created(context=terminal_value_created.value)
+    def visit_terminal_value_created(
+        self, terminal_value_created: TerminalValueCreated
+    ) -> DescribeUnit:
+        return DescribeUnit(before_context=terminal_value_created.value)
 
-    def visit_terminal_value_removed(self, terminal_value_removed: TerminalValueRemoved) -> Removed:
-        return Removed(context=terminal_value_removed.value)
+    def visit_terminal_value_removed(
+        self, terminal_value_removed: TerminalValueRemoved
+    ) -> DescribeUnit:
+        return DescribeUnit(before_context=terminal_value_removed.value)
 
     def visit_terminal_value_unchanged(
         self, terminal_value_unchanged: TerminalValueUnchanged
-    ) -> Unchanged:
-        return Unchanged(context=terminal_value_unchanged.value)
+    ) -> DescribeUnit:
+        return DescribeUnit(before_context=terminal_value_unchanged.value)
 
     def visit_node_object(self, node_object: NodeObject) -> DescribeUnit:
         before_context = dict()
         after_context = dict()
-        for name, change_set_update in node_object.bindings.items():
-            describe_unit: DescribeUnit = self.visit(change_set_entity=change_set_update)
-            if isinstance(describe_unit, Modified):
-                before_context[name] = describe_unit.context
-                after_context[name] = describe_unit.after_context
-            elif isinstance(describe_unit, Created):
-                after_context[name] = describe_unit.context
-            elif isinstance(describe_unit, Removed):
-                before_context[name] = describe_unit.context
-            elif isinstance(describe_unit, Unchanged):
-                before_context[name] = describe_unit.context
-                after_context[name] = describe_unit.context
-            # Note: block is exhaustive about ChangeSetDescribeUnit
-        match node_object.change_type:
-            case ChangeType.MODIFIED:
-                return Modified(context=before_context, after_context=after_context)
-            case ChangeType.CREATED:
-                return Created(context=after_context)
-            case ChangeType.UNCHANGED:
-                return Unchanged(context=before_context)
-            case ChangeType.REMOVED:
-                return Removed(context=before_context)
-            case unsupported:
-                # Note: match block is exhaustive about ChangeSet.
-                raise RuntimeError(f"Unsupported ChangeType: '{unsupported}'")
+        for name, change_set_entity in node_object.bindings.items():
+            describe_unit: DescribeUnit = self.visit(change_set_entity=change_set_entity)
+            match change_set_entity.change_type:
+                case ChangeType.MODIFIED:
+                    before_context[name] = describe_unit.before_context
+                    after_context[name] = describe_unit.after_context
+                case ChangeType.CREATED:
+                    after_context[name] = describe_unit.before_context
+                case ChangeType.REMOVED:
+                    before_context[name] = describe_unit.before_context
+        return DescribeUnit(before_context=before_context, after_context=after_context)
 
     def visit_node_array(self, node_array: NodeArray) -> DescribeUnit:
-        # TODO: is it worth chasing this duplication with visit_node_object?
         before_context = list()
         after_context = list()
         for change_set_entity in node_array.array:
             describe_unit: DescribeUnit = self.visit(change_set_entity=change_set_entity)
-            if isinstance(describe_unit, Modified):
-                before_context.append(describe_unit.context)
-                after_context.append(describe_unit.after_context)
-            elif isinstance(describe_unit, Created):
-                after_context.append(describe_unit.context)
-            elif isinstance(describe_unit, Removed):
-                before_context.append(describe_unit.context)
-            elif isinstance(describe_unit, Unchanged):
-                before_context.append(describe_unit.context)
-                after_context.append(describe_unit.context)
-        # Note: block is exhaustive about ChangeSetDescribeUnit
-        match node_array.change_type:
-            case ChangeType.MODIFIED:
-                return Modified(context=before_context, after_context=after_context)
-            case ChangeType.CREATED:
-                return Created(context=after_context)
-            case ChangeType.UNCHANGED:
-                return Unchanged(context=before_context)
-            case ChangeType.REMOVED:
-                return Removed(context=before_context)
-            case unsupported:
-                # Note: match block is exhaustive about ChangeSet.
-                raise RuntimeError(f"Unsupported ChangeType: '{unsupported}'")
+            match change_set_entity.change_type:
+                case ChangeType.MODIFIED:
+                    before_context.append(describe_unit.before_context)
+                    after_context.append(describe_unit.after_context)
+                case ChangeType.CREATED:
+                    after_context.append(describe_unit.before_context)
+                case ChangeType.REMOVED:
+                    before_context.append(describe_unit.before_context)
+                case ChangeType.UNCHANGED:
+                    before_context.append(describe_unit.before_context)
+                    after_context.append(describe_unit.before_context)
+        return DescribeUnit(before_context=before_context, after_context=after_context)
 
     def visit_node_properties(self, node_properties: NodeProperties) -> DescribeUnit:
         before_context: dict[str, Any] = dict()
@@ -146,57 +105,45 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
                 continue
             describe_unit = self.visit(node_property.value)
             property_name = node_property.name
-            # TODO: duplication
-            if isinstance(describe_unit, Modified):
-                before_context[property_name] = describe_unit.context
-                after_context[property_name] = describe_unit.after_context
-            elif isinstance(describe_unit, Created):
-                after_context[property_name] = describe_unit.context
-            elif isinstance(describe_unit, Removed):
-                before_context[property_name] = describe_unit.context
-            elif isinstance(describe_unit, Unchanged):
-                before_context[property_name] = describe_unit.context
-                after_context[property_name] = describe_unit.context
+            match node_property.change_type:
+                case ChangeType.MODIFIED:
+                    before_context[property_name] = describe_unit.before_context
+                    after_context[property_name] = describe_unit.after_context
+                case ChangeType.CREATED:
+                    after_context[property_name] = describe_unit.before_context
+                case ChangeType.REMOVED:
+                    before_context[property_name] = describe_unit.before_context
         # TODO: this object can probably be well-typed instead of a free dict(?)
         before_context = {"Properties": before_context}
         after_context = {"Properties": after_context}
-        match node_properties.change_type:
-            case ChangeType.MODIFIED:
-                return Modified(context=before_context, after_context=after_context)
-            case ChangeType.CREATED:
-                return Created(context=after_context)
-            case ChangeType.UNCHANGED:
-                return Unchanged(context=before_context)
-            case ChangeType.REMOVED:
-                return Removed(context=before_context)
-            case unsupported:
-                # Note: match block is exhaustive about ChangeSet.
-                raise RuntimeError(f"Unsupported ChangeType: '{unsupported}'")
+        return DescribeUnit(before_context=before_context, after_context=after_context)
 
     def visit_node_resource(self, node_resource: NodeResource) -> DescribeUnit:
-        # TODO: It seems like all unit changes should have before and after, look at the
-        #  duplication in change type deductions.
-        describe_unit = self.visit_node_properties(node_resource.properties)
         resource_change = ResourceChange()
         resource_change["LogicalResourceId"] = node_resource.name
-        if isinstance(describe_unit, Modified):
-            resource_change["BeforeContext"] = describe_unit.context
-            resource_change["AfterContext"] = describe_unit.after_context
-        elif isinstance(describe_unit, Created):
-            resource_change["AfterContext"] = describe_unit.context
-        elif isinstance(describe_unit, Removed):
-            resource_change["BeforeContext"] = describe_unit.context
-        elif isinstance(describe_unit, Unchanged):
-            resource_change["BeforeContext"] = describe_unit.context
-        match node_resource.change_type:
-            case ChangeType.CREATED:
-                resource_change["Action"] = ChangeAction.Add
-                self.changes.append(resource_change)
-            case ChangeType.REMOVED:
-                resource_change["Action"] = ChangeAction.Remove
-                self.changes.append(resource_change)
+
+        properties_describe_unit = self.visit_node_properties(node_resource.properties)
+        # TODO: this should be about the resource itself, fix this in the change set modeler.
+        match node_resource.properties.change_type:
             case ChangeType.MODIFIED:
                 resource_change["Action"] = ChangeAction.Modify
-                self.changes.append(resource_change)
+                resource_change["BeforeContext"] = properties_describe_unit.before_context
+                resource_change["AfterContext"] = properties_describe_unit.after_context
+            case ChangeType.CREATED:
+                resource_change["Action"] = ChangeAction.Add
+                resource_change["AfterContext"] = properties_describe_unit.before_context
+            case ChangeType.REMOVED:
+                resource_change["Action"] = ChangeAction.Remove
+                resource_change["BeforeContext"] = properties_describe_unit.before_context
+
+        self.resource_changes.append(resource_change)
+
+        # TODO
+        return None
+
+    def visit_node_resources(self, node_resources: NodeResources) -> DescribeUnit:
+        for node_resource in node_resources.resources:
+            if node_resource.change_type != ChangeType.UNCHANGED:
+                self.visit_node_resource(node_resource=node_resource)
         # TODO
         return None
