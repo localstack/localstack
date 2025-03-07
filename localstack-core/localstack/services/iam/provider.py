@@ -466,6 +466,7 @@ class IamProvider(IamApi):
     def _get_user_or_raise_error(self, user_name: str, context: RequestContext) -> MotoUser:
         """
         Return the moto user from the store, or raise the proper exception if no user can be found.
+
         :param user_name: Username to find
         :param context: Request context
         :return: A moto user object
@@ -478,6 +479,7 @@ class IamProvider(IamApi):
     def _validate_service_name(self, service_name: str) -> None:
         """
         Validate if the service provided is supported.
+
         :param service_name: Service name to check
         """
         if service_name not in ["codecommit.amazonaws.com", "cassandra.amazonaws.com"]:
@@ -488,6 +490,7 @@ class IamProvider(IamApi):
     def _validate_credential_id(self, credential_id: str) -> None:
         """
         Validate if the credential id is correctly formed.
+
         :param credential_id: Credential ID to check
         """
         if not CREDENTIAL_ID_REGEX.match(credential_id):
@@ -498,11 +501,24 @@ class IamProvider(IamApi):
             )
 
     def _generate_service_password(self):
+        """
+        Generate a new service password for a service specific credential.
+
+        :return: 60 letter password ending in `=`
+        """
         password_charset = string.ascii_letters + string.digits + "+/"
         # password always ends in = for some reason - but it is not base64
         return "".join(random.choices(password_charset, k=59)) + "="
 
     def _generate_credential_id(self, context: RequestContext):
+        """
+        Generate a credential ID.
+        Credentials have a similar structure as access key ids, and also contain the account id encoded in them.
+        Example: `ACCAQAAAAAAAPBAFQJI5W` for account `000000000000`
+
+        :param context: Request context (to extract account id)
+        :return: New credential id.
+        """
         return generate_access_key_id_from_account_id(
             context.account_id, prefix="ACCA", total_length=21
         )
@@ -510,6 +526,14 @@ class IamProvider(IamApi):
     def _new_service_specific_credential(
         self, user_name: str, service_name: str, context: RequestContext
     ) -> ServiceSpecificCredential:
+        """
+        Create a new service specific credential for the given username and service.
+
+        :param user_name: Username the credential will be assigned to.
+        :param service_name: Service the credential will be used for.
+        :param context: Request context, used to extract the account id.
+        :return: New ServiceSpecificCredential
+        """
         password = self._generate_service_password()
         credential_id = self._generate_credential_id(context)
         return ServiceSpecificCredential(
@@ -522,14 +546,44 @@ class IamProvider(IamApi):
             Status=statusType.Active,
         )
 
-    def create_service_specific_credential(
-        self, context: RequestContext, user_name: userNameType, service_name: serviceName, **kwargs
-    ) -> CreateServiceSpecificCredentialResponse:
+    def _find_credential_in_user_by_id(
+        self, user_name: str, credential_id: str, context: RequestContext
+    ) -> ServiceSpecificCredential:
+        """
+        Find a credential by a given username and id.
+        Raises errors if the user or credential is not found.
+
+        :param user_name: Username of the user the credential is assigned to.
+        :param credential_id: Credential ID to check
+        :param context: Request context (used to determine account and region)
+        :return: Service specific credential
+        """
         moto_user = self._get_user_or_raise_error(user_name, context)
-        self._validate_service_name(service_name)
-        credential = self._new_service_specific_credential(user_name, service_name, context)
-        moto_user.service_specific_credentials.append(credential)
-        return CreateServiceSpecificCredentialResponse(ServiceSpecificCredential=credential)
+        self._validate_credential_id(credential_id)
+        matching_credentials = [
+            cred
+            for cred in moto_user.service_specific_credentials
+            if cred["ServiceSpecificCredentialId"] == credential_id
+        ]
+        if not matching_credentials:
+            raise NoSuchEntityException(f"No such credential {credential_id} exists")
+        return matching_credentials[0]
+
+    def _validate_status(self, status: str):
+        """
+        Validate if the status has an accepted value.
+        Raises a ValidationError if the status is invalid.
+
+        :param status: Status to check
+        """
+        try:
+            statusType(status)
+        except ValueError:
+            raise ValidationError(
+                [
+                    "Value at 'status' failed to satisfy constraint: Member must satisfy enum value set"
+                ]
+            )
 
     def build_dict_with_only_defined_keys(
         self, data: dict[str, Any], typed_dict_type: type[T]
@@ -544,6 +598,15 @@ class IamProvider(IamApi):
         """
         key_set = inspect.get_annotations(typed_dict_type).keys()
         return {k: v for k, v in data.items() if k in key_set}
+
+    def create_service_specific_credential(
+        self, context: RequestContext, user_name: userNameType, service_name: serviceName, **kwargs
+    ) -> CreateServiceSpecificCredentialResponse:
+        moto_user = self._get_user_or_raise_error(user_name, context)
+        self._validate_service_name(service_name)
+        credential = self._new_service_specific_credential(user_name, service_name, context)
+        moto_user.service_specific_credentials.append(credential)
+        return CreateServiceSpecificCredentialResponse(ServiceSpecificCredential=credential)
 
     def list_service_specific_credentials(
         self,
@@ -560,31 +623,6 @@ class IamProvider(IamApi):
             if creds["ServiceName"] == service_name
         ]
         return ListServiceSpecificCredentialsResponse(ServiceSpecificCredentials=result)
-
-    def _find_credential_in_user_by_id(
-        self, user_name: str, credential_id: str, context: RequestContext
-    ) -> ServiceSpecificCredential:
-        moto_user = self._get_user_or_raise_error(user_name, context)
-        self._validate_credential_id(credential_id)
-        matching_credentials = [
-            cred
-            for cred in moto_user.service_specific_credentials
-            if cred["ServiceSpecificCredentialId"] == credential_id
-        ]
-        if not matching_credentials:
-            raise NoSuchEntityException(f"No such credential {credential_id} exists")
-        return matching_credentials[0]
-
-    def _validate_status(self, status: str):
-        # validate status
-        try:
-            statusType(status)
-        except ValueError:
-            raise ValidationError(
-                [
-                    "Value at 'status' failed to satisfy constraint: Member must satisfy enum value set"
-                ]
-            )
 
     def update_service_specific_credential(
         self,
