@@ -12,6 +12,9 @@ from localstack.services.stepfunctions.asl.component.program.states import State
 
 
 class IterationComponent(EvalComponent, abc.ABC):
+    # Ensure no member variables are used to keep track of the state of
+    # iteration components: the evaluation must be stateless as for all
+    # EvalComponents to ensure they can be reused or used concurrently.
     _query_language: Final[QueryLanguage]
     _start_at: Final[StartAt]
     _states: Final[States]

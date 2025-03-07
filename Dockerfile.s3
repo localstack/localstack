@@ -93,6 +93,9 @@ RUN --mount=type=cache,target=/root/.cache \
 RUN SETUPTOOLS_SCM_PRETEND_VERSION_FOR_LOCALSTACK_CORE=${LOCALSTACK_BUILD_VERSION} \
     make entrypoints
 
+# Generate service catalog cache in static libs dir
+RUN . .venv/bin/activate && python3 -m localstack.aws.spec
+
 # link the python package installer virtual environments into the localstack venv
 RUN echo /var/lib/localstack/lib/python-packages/lib/python3.11/site-packages > localstack-var-python-packages-venv.pth && \
     mv localstack-var-python-packages-venv.pth .venv/lib/python*/site-packages/
@@ -102,7 +105,7 @@ RUN echo /usr/lib/localstack/python-packages/lib/python3.11/site-packages > loca
 # expose edge service and debugpy
 EXPOSE 4566 5678
 
-HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=10s CMD .venv/bin/localstack status services --format=json
+HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=10s CMD /opt/code/localstack/.venv/bin/localstack status services --format=json
 
 # default volume directory
 VOLUME /var/lib/localstack

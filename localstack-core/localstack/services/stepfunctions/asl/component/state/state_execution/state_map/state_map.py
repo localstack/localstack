@@ -57,6 +57,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.item_processor_factory import (
     from_item_processor_decl,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.map_run_record import (
+    MapRunRecord,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iteration_component import (
     IterationComponent,
 )
@@ -241,18 +244,6 @@ class StateMap(ExecutionState):
                 parameters=self.parameters,
                 item_selector=self.item_selector,
             )
-        elif isinstance(self.iteration_component, DistributedIterator):
-            eval_input = DistributedIteratorEvalInput(
-                state_name=self.name,
-                max_concurrency=max_concurrency_num,
-                input_items=input_items,
-                parameters=self.parameters,
-                item_selector=self.item_selector,
-                item_reader=self.item_reader,
-                tolerated_failure_count=tolerated_failure_count,
-                tolerated_failure_percentage=tolerated_failure_percentage,
-                label=label,
-            )
         elif isinstance(self.iteration_component, InlineItemProcessor):
             eval_input = InlineItemProcessorEvalInput(
                 state_name=self.name,
@@ -261,21 +252,39 @@ class StateMap(ExecutionState):
                 item_selector=self.item_selector,
                 parameters=self.parameters,
             )
-        elif isinstance(self.iteration_component, DistributedItemProcessor):
-            eval_input = DistributedItemProcessorEvalInput(
-                state_name=self.name,
+        else:
+            map_run_record = MapRunRecord(
+                state_machine_arn=env.states.context_object.context_object_data["StateMachine"][
+                    "Id"
+                ],
+                execution_arn=env.states.context_object.context_object_data["Execution"]["Id"],
                 max_concurrency=max_concurrency_num,
-                input_items=input_items,
-                item_reader=self.item_reader,
-                item_selector=self.item_selector,
-                parameters=self.parameters,
                 tolerated_failure_count=tolerated_failure_count,
                 tolerated_failure_percentage=tolerated_failure_percentage,
                 label=label,
             )
-        else:
-            raise RuntimeError(
-                f"Unknown iteration component of type '{type(self.iteration_component)}' '{self.iteration_component}'."
+            env.map_run_record_pool_manager.add(map_run_record)
+            # Choose the distributed input type depending on whether the definition
+            # asks for the legacy Iterator component or an ItemProcessor
+            if isinstance(self.iteration_component, DistributedIterator):
+                distributed_eval_input_class = DistributedIteratorEvalInput
+            elif isinstance(self.iteration_component, DistributedItemProcessor):
+                distributed_eval_input_class = DistributedItemProcessorEvalInput
+            else:
+                raise RuntimeError(
+                    f"Unknown iteration component of type '{type(self.iteration_component)}' '{self.iteration_component}'."
+                )
+            eval_input = distributed_eval_input_class(
+                state_name=self.name,
+                max_concurrency=max_concurrency_num,
+                input_items=input_items,
+                parameters=self.parameters,
+                item_selector=self.item_selector,
+                item_reader=self.item_reader,
+                tolerated_failure_count=tolerated_failure_count,
+                tolerated_failure_percentage=tolerated_failure_percentage,
+                label=label,
+                map_run_record=map_run_record,
             )
 
         env.stack.append(eval_input)

@@ -1376,6 +1376,38 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..events[8].previousEventId"])
+    def test_map_state_nested_config_distributed_no_max_max_concurrency(
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        create_lambda_function,
+        sfn_snapshot,
+    ):
+        function_name = f"lambda_func_{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=SerT.LAMBDA_ID_FUNCTION,
+            runtime=Runtime.python3_12,
+        )
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
+
+        template = ST.load_sfn_template(ST.MAP_STATE_NESTED_CONFIG_DISTRIBUTED_NO_MAX_CONCURRENCY)
+        definition = json.dumps(template)
+        definition = definition.replace("__tbd__", function_name)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client,
+            create_state_machine_iam_role,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
     def test_map_state_result_writer(
         self,
         aws_client,
