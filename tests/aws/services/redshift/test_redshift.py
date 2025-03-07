@@ -7,6 +7,8 @@ from localstack.utils.sync import retry
 
 
 class TestRedshift:
+    # only runs in Docker when run against Pro (since it needs postgres on the system)
+    @markers.only_in_docker
     @markers.aws.validated
     def test_create_clusters(self, aws_client):
         # create
