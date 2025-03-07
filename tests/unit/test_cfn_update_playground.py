@@ -1,6 +1,6 @@
 import json
 
-from localstack.services.cloudwatch.update import (
+from localstack.services.cloudformation.engine.playground_update import (
     ChangeSetDescribeVisitor,
     ChangeSetModeler,
     NodeTemplate,
@@ -35,18 +35,18 @@ class TestCFNUpdatePlayground:
                     "Properties": {
                         "Name": "Parameter1",
                         "Type": "String",
-                        "Value": "this is the new value",
+                        "Value": "this is the new value",  # update value
                     },
                 },
                 "Parameter2": {
                     "Type": "AWS::SSM::Parameter",
                     "Properties": {
                         "Type": "String",
-                        "Name": "Added parameter 2 name",
-                        "Value": {"Fn::GetAtt": ["I changed this to Parameter3", "Value"]},
+                        "Name": "Added parameter 2 name",  # added value
+                        "Value": {"Fn::GetAtt": ["I changed this to Parameter3", "Value"]},  # added value in array args
                     },
                 },
-                "Parameter3": {
+                "Parameter3": {  # added (resource)
                     "Type": "AWS::SSM::Parameter",
                     "Properties": {
                         "Type": "String",
