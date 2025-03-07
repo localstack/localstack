@@ -1,5 +1,8 @@
+import copy
+import json
 import os.path
 
+import botocore
 import pytest
 from botocore.exceptions import ClientError
 
@@ -10,6 +13,8 @@ from localstack.testing.aws.cloudformation_utils import (
 )
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.fixtures import StackDeployError
+from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, wait_until
 from tests.aws.services.cloudformation.api.test_stacks import (
@@ -1075,3 +1080,359 @@ def test_describe_change_set_with_similarly_named_stacks(deploy_cfn_template, aw
         )["ChangeSetId"]
         == response["Id"]
     )
+
+
+@markers.aws.validated
+# @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Not implemented yet")
+class TestChangeSetDiff:
+    """
+    Test the propagation of changes through different resources
+    """
+
+    @pytest.fixture
+    def capture_stack_diff(self, aws_client, snapshot, cleanups):
+        """
+        Fixture to deploy a stack (via change set), then create a new change set with a
+        (potentially) new stack, and use the CFn API to assert parity
+        """
+
+        stack_name = f"stack-{short_uid()}"
+        change_set_name = f"cs-{short_uid()}"
+
+        def inner(t1: dict | str, t2: dict | str, p1: dict | None = None, p2: dict | None = None):
+            snapshot.add_transformer(snapshot.transform.key_value("PhysicalResourceId"))
+
+            if isinstance(t1, dict):
+                t1 = json.dumps(t1)
+            elif isinstance(t1, str):
+                with open(t1) as infile:
+                    t1 = infile.read()
+            if isinstance(t2, dict):
+                t2 = json.dumps(t2)
+            elif isinstance(t2, str):
+                with open(t2) as infile:
+                    t2 = infile.read()
+
+            p1 = p1 or {}
+            p2 = p2 or {}
+
+            # deploy original stack
+            change_set_details = aws_client.cloudformation.create_change_set(
+                StackName=stack_name,
+                ChangeSetName=change_set_name,
+                TemplateBody=t1,
+                ChangeSetType="CREATE",
+                Parameters=[{"ParameterKey": k, "ParameterValue": v} for (k, v) in p1.items()],
+            )
+            stack_id = change_set_details["StackId"]
+            change_set_id = change_set_details["Id"]
+            aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+                ChangeSetName=change_set_id
+            )
+            cleanups.append(
+                lambda: call_safe(
+                    aws_client.cloudformation.delete_change_set,
+                    kwargs=dict(ChangeSetName=change_set_id),
+                )
+            )
+
+            aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
+            aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_id)
+
+            # ensure stack deletion
+            cleanups.append(
+                lambda: call_safe(
+                    aws_client.cloudformation.delete_stack, kwargs=dict(StackName=stack_id)
+                )
+            )
+
+            # update stack
+            change_set_details = aws_client.cloudformation.create_change_set(
+                StackName=stack_name,
+                ChangeSetName=change_set_name,
+                TemplateBody=t2,
+                ChangeSetType="UPDATE",
+                Parameters=[{"ParameterKey": k, "ParameterValue": v} for (k, v) in p2.items()],
+            )
+            stack_id = change_set_details["StackId"]
+            change_set_id = change_set_details["Id"]
+            try:
+                aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+                    ChangeSetName=change_set_id
+                )
+            except botocore.exceptions.WaiterError as e:
+                raise StackDeployError(
+                    aws_client.cloudformation.describe_change_set(ChangeSetName=change_set_id),
+                    [],
+                ) from e
+
+            describe_change_set_2 = aws_client.cloudformation.describe_change_set(
+                ChangeSetName=change_set_id,
+                IncludePropertyValues=False,
+            )
+
+            snapshot.match("changes", describe_change_set_2["Changes"])
+
+        yield inner
+
+    class TestSingleResource:
+        def test_static_change(self, capture_stack_diff):
+            t1 = {
+                "Resources": {
+                    "Parameter": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": "first",
+                        },
+                    },
+                },
+            }
+            t2 = {
+                "Resources": {
+                    "Parameter": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": "second",
+                        },
+                    },
+                },
+            }
+            capture_stack_diff(t1, t2)
+
+        def test_dynamic_change(self, capture_stack_diff):
+            t1 = {
+                "Parameters": {
+                    "ParameterValue": {
+                        "Type": "String",
+                    },
+                },
+                "Resources": {
+                    "Parameter": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Ref": "ParameterValue"},
+                        },
+                    },
+                },
+            }
+            value1 = short_uid()
+            value2 = short_uid()
+            capture_stack_diff(t1, t1, p1={"ParameterValue": value1}, p2={"ParameterValue": value2})
+
+    class TestTwoResources:
+        def test_static_change(self, capture_stack_diff):
+            t1 = {
+                "Resources": {
+                    "Parameter1": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": "first",
+                        },
+                    },
+                    "Parameter2": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                        },
+                    },
+                },
+            }
+            t2 = {
+                "Resources": {
+                    "Parameter1": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": "second",
+                        },
+                    },
+                    "Parameter2": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                        },
+                    },
+                },
+            }
+            capture_stack_diff(t1, t2)
+
+        def test_dynamic_change(self, capture_stack_diff):
+            t1 = {
+                "Parameters": {
+                    "ParameterValue": {
+                        "Type": "String",
+                    },
+                },
+                "Resources": {
+                    "Parameter1": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Ref": "ParameterValue"},
+                        },
+                    },
+                    "Parameter2": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                        },
+                    },
+                },
+            }
+            value1 = short_uid()
+            value2 = short_uid()
+            capture_stack_diff(t1, t1, p1={"ParameterValue": value1}, p2={"ParameterValue": value2})
+
+        def test_dynamic_change_unrelated_property(self, capture_stack_diff):
+            t1 = {
+                "Parameters": {
+                    "ParameterValue": {
+                        "Type": "String",
+                    },
+                },
+                "Resources": {
+                    "Parameter1": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Ref": "ParameterValue"},
+                        },
+                    },
+                    "Parameter2": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["Parameter1", "Name"]},
+                        },
+                    },
+                },
+            }
+            value1 = short_uid()
+            value2 = short_uid()
+            capture_stack_diff(t1, t1, p1={"ParameterValue": value1}, p2={"ParameterValue": value2})
+
+        def test_dynamic_change_unrelated_property_not_create_only(self, capture_stack_diff):
+            t1 = {
+                "Parameters": {
+                    "ParameterValue": {
+                        "Type": "String",
+                    },
+                },
+                "Resources": {
+                    "Parameter1": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Ref": "ParameterValue"},
+                        },
+                    },
+                    "Parameter2": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["Parameter1", "Type"]},
+                        },
+                    },
+                },
+            }
+            value1 = short_uid()
+            value2 = short_uid()
+            capture_stack_diff(t1, t1, p1={"ParameterValue": value1}, p2={"ParameterValue": value2})
+
+    class TestThreeResources:
+        def test_root_change(self, capture_stack_diff):
+            t1 = {
+                "Parameters": {
+                    "ParameterValue": {
+                        "Type": "String",
+                    },
+                },
+                "Resources": {
+                    "Parameter1": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Ref": "ParameterValue"},
+                        },
+                    },
+                    "Parameter2": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                        },
+                    },
+                    "Parameter3": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["Parameter2", "Value"]},
+                        },
+                    },
+                },
+            }
+            value1 = short_uid()
+            value2 = short_uid()
+            capture_stack_diff(t1, t1, p1={"ParameterValue": value1}, p2={"ParameterValue": value2})
+
+        @pytest.mark.parametrize("resource_id", ["A", "B", "C", "D", "E"])
+        def test_middle_change(self, capture_stack_diff, resource_id):
+            """
+            Given:
+              A
+             /\
+             B C
+             | |
+             D E
+
+            update a property of resource `resource_id`
+            """
+            root_value = short_uid()
+            new_value = short_uid()
+            base_template = {
+                "Resources": {
+                    "A": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": root_value,
+                        },
+                    },
+                    "B": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {"Type": "String", "Value": {"Fn::GetAtt": ["A", "Value"]}},
+                    },
+                    "C": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["A", "Value"]},
+                        },
+                    },
+                    "D": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["B", "Value"]},
+                        },
+                    },
+                    "E": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["C", "Value"]},
+                        },
+                    },
+                },
+            }
+            new_template = copy.deepcopy(base_template)
+            new_template["Resources"][resource_id]["Properties"]["Value"] = new_value
+            assert new_template != base_template
+            capture_stack_diff(base_template, new_template)

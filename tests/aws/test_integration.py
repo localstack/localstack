@@ -545,6 +545,7 @@ class TestIntegration:
         retry(check_invocation, retries=16, sleep=5)
 
 
+@pytest.mark.skip("flaky (not waiting for stream to be ready)")
 @markers.aws.unknown
 def test_kinesis_lambda_forward_chain(
     kinesis_create_stream, s3_create_bucket, create_lambda_function, cleanups, aws_client

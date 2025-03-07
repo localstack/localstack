@@ -1,6 +1,6 @@
 {
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping": {
-    "recorded-date": "12-10-2024, 10:55:29",
+    "recorded-date": "22-02-2025, 03:03:03",
     "recorded-content": {
       "create-table-result": {
         "TableDescription": {
@@ -4457,6 +4457,23 @@
         },
         "timestamp": "<timestamp:2022-07-13T13:48:01.000Z>",
         "version": "1.0"
+      }
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_esm_with_not_existing_dynamodb_stream": {
+    "recorded-date": "26-02-2025, 03:08:09",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Stream not found: arn:<partition>:dynamodb:<region>:111111111111:table/test-table-4a53f4e8/stream/2025-02-22T03:03:25.490"
+        },
+        "Type": "User",
+        "message": "Stream not found: arn:<partition>:dynamodb:<region>:111111111111:table/test-table-4a53f4e8/stream/2025-02-22T03:03:25.490",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
       }
     }
   }

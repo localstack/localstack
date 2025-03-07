@@ -13,6 +13,7 @@ from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
+from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
 from localstack.utils.testutil import upload_file_to_bucket
 
@@ -478,15 +479,18 @@ def test_diff_after_update(deploy_cfn_template, aws_client, snapshot):
     assert describe_stack_response["Stacks"][0]["StackStatus"] == "UPDATE_COMPLETE"
 
 
+# TODO: this should really live in `test_change_set.py`
 @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Not implemented yet")
 class TestCaptureUpdateProcess:
     @pytest.fixture
     def capture_update_process(self, aws_client, snapshot, cleanups, capture_per_resource_events):
-        def try_do(f, *args, **kwargs):
-            try:
-                f(*args, **kwargs)
-            except Exception as e:
-                print(f"Error executing function: {e}")
+        """
+        Fixture to deploy a new stack (via creating and executing a change set), then updating the
+        stack with a second template (via creating and executing a change set).
+        """
+
+        # TODO(srw): this fixture captures a lot in the snapshots, and will not be useful when assessing parity in the short
+        #  term, however it is useful to capture the information unitl we have a more accurate update process
 
         stack_name = f"stack-{short_uid()}"
         change_set_name = f"cs-{short_uid()}"
@@ -521,8 +525,9 @@ class TestCaptureUpdateProcess:
                 ChangeSetName=change_set_id
             )
             cleanups.append(
-                lambda: try_do(
-                    aws_client.cloudformation.delete_change_set, ChangeSetName=change_set_id
+                lambda: call_safe(
+                    aws_client.cloudformation.delete_change_set,
+                    kwargs=dict(ChangeSetName=change_set_id),
                 )
             )
 
@@ -545,7 +550,9 @@ class TestCaptureUpdateProcess:
 
             # ensure stack deletion
             cleanups.append(
-                lambda: try_do(aws_client.cloudformation.delete_stack(StackName=stack_id))
+                lambda: call_safe(
+                    aws_client.cloudformation.delete_stack, kwargs=dict(StackName=stack_id)
+                )
             )
 
             describe = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0]
@@ -602,6 +609,14 @@ class TestCaptureUpdateProcess:
         self,
         capture_update_process,
     ):
+        """
+        Update a stack with a static change (i.e. in the text of the template).
+
+        Conclusions:
+        - A static change in the template that's not invoking an intrinsic function
+            (`Ref`, `Fn::GetAtt` etc.) is resolved by the deployment engine synchronously
+            during the `create_change_set` invocation
+        """
         name1 = f"topic-1-{short_uid()}"
         name2 = f"topic-2-{short_uid()}"
         t1 = {
@@ -632,6 +647,18 @@ class TestCaptureUpdateProcess:
         self,
         capture_update_process,
     ):
+        """
+        Update a stack with two resources:
+        - A is changed statically
+        - B refers to the changed value of A via an intrinsic function
+
+        Conclusions:
+        - The value of B on creation is "known after apply" even though the resolved
+          property value is known statically
+        - The nature of the change to B is "known after apply"
+        - The CloudFormation engine does not resolve intrinsic function calls when determining the
+            nature of the update
+        """
         name1 = f"topic-1-{short_uid()}"
         name2 = f"topic-2-{short_uid()}"
         t1 = {
@@ -680,6 +707,18 @@ class TestCaptureUpdateProcess:
         self,
         capture_update_process,
     ):
+        """
+        Update a stack with two resources:
+        - A is changed via a template parameter
+        - B refers to the changed value of A via an intrinsic function
+
+        Conclusions:
+        - The value of B on creation is "known after apply" even though the resolved
+          property value is known statically
+        - The nature of the change to B is "known after apply"
+        - The CloudFormation engine does not resolve intrinsic function calls when determining the
+            nature of the update
+        """
         name1 = f"topic-1-{short_uid()}"
         name2 = f"topic-2-{short_uid()}"
         t1 = {
@@ -714,6 +753,17 @@ class TestCaptureUpdateProcess:
         self,
         capture_update_process,
     ):
+        """
+        Update a stack with two resources:
+        - A is changed via looking up a static value in a mapping
+        - B refers to the changed value of A via an intrinsic function
+
+        Conclusions:
+        - On first deploy the contents of the map is resolved completely
+        - The nature of the change to B is "known after apply"
+        - The CloudFormation engine does not resolve intrinsic function calls when determining the
+            nature of the update
+        """
         name1 = "key1"
         name2 = "key2"
         t1 = {
@@ -790,6 +840,15 @@ class TestCaptureUpdateProcess:
         self,
         capture_update_process,
     ):
+        """
+        Update a stack with two resources:
+        - A is changed via looking up a static value in a mapping but the key comes from
+          a template parameter
+        - B refers to the changed value of A via an intrinsic function
+
+        Conclusions:
+        - The same conclusions as `test_mappings_with_static_fields`
+        """
         name1 = "key1"
         name2 = "key2"
         t1 = {
@@ -840,6 +899,12 @@ class TestCaptureUpdateProcess:
         self,
         capture_update_process,
     ):
+        """
+        Toggle a resource from present to not present via a condition
+
+        Conclusions:
+        - Adding the second resource creates an `Add` resource change
+        """
         t1 = {
             "Parameters": {
                 "EnvironmentType": {
@@ -874,37 +939,17 @@ class TestCaptureUpdateProcess:
         )
 
     @markers.aws.validated
-    def test_sub_static(
-        self,
-        capture_update_process,
-    ):
-        t1 = {
-            "Parameters": {
-                "EnvironmentType": {
-                    "Type": "String",
-                }
-            },
-            "Resources": {
-                "Parameter": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {
-                        "Type": "String",
-                        "Value": "test",
-                    },
-                    "Condition": "IsProduction",
-                },
-            },
-        }
-
-        capture_update_process(
-            t1, t1, p1={"EnvironmentType": "not-prod"}, p2={"EnvironmentType": "prod"}
-        )
-
-    @markers.aws.validated
     def test_unrelated_changes_update_propagation(
         self,
         capture_update_process,
     ):
+        """
+        - Resource B depends on resource A which is updated, but the referenced parameter does not
+          change
+
+        Conclusions:
+        - No update to resource B
+        """
         topic_name = f"MyTopic{short_uid()}"
         t1 = {
             "Resources": {
@@ -952,6 +997,13 @@ class TestCaptureUpdateProcess:
         self,
         capture_update_process,
     ):
+        """
+        - Resource B depends on resource A which is updated, but the referenced parameter does not
+          change, however resource A requires replacement
+
+        Conclusions:
+        - Resource B is updated
+        """
         parameter_name_1 = f"MyParameter{short_uid()}"
         parameter_name_2 = f"MyParameter{short_uid()}"
 

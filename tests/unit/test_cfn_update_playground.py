@@ -43,7 +43,9 @@ class TestCFNUpdatePlayground:
                     "Properties": {
                         "Type": "String",
                         "Name": "Added parameter 2 name",  # added value
-                        "Value": {"Fn::GetAtt": ["I changed this to Parameter3", "Value"]},  # added value in array args
+                        "Value": {
+                            "Fn::GetAtt": ["I changed this to Parameter3", "Value"]
+                        },  # added value in array args
                     },
                 },
                 "Parameter3": {  # added (resource)

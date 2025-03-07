@@ -3509,7 +3509,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_put_integration_response_validation": {
-    "recorded-date": "21-08-2024, 15:09:28",
+    "recorded-date": "03-03-2025, 14:27:24",
     "recorded-content": {
       "put-integration-wrong-method": {
         "Error": {

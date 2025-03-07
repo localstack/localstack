@@ -4916,7 +4916,7 @@
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
             },
-            "Type": "Resourfe"
+            "Type": "Resource"
           },
           {
             "ResourceChange": {

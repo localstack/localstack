@@ -293,6 +293,86 @@ def test_lambda_aws_proxy_integration(
 
 
 @markers.aws.validated
+def test_put_integration_aws_proxy_uri(
+    aws_client,
+    create_rest_apigw,
+    create_lambda_function,
+    create_role_with_policy,
+    snapshot,
+    region_name,
+):
+    api_id, _, root_resource_id = create_rest_apigw(
+        name=f"test-api-{short_uid()}",
+        description="APIGW test PutIntegration AWS_PROXY URI",
+    )
+    function_name = f"function-{short_uid()}"
+
+    # create lambda
+    create_function_response = create_lambda_function(
+        func_name=function_name,
+        handler_file=TEST_LAMBDA_AWS_PROXY,
+        handler="lambda_aws_proxy.handler",
+        runtime=Runtime.python3_12,
+    )
+    # create invocation role
+    _, role_arn = create_role_with_policy(
+        "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
+    )
+    lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
+
+    aws_client.apigateway.put_method(
+        restApiId=api_id,
+        resourceId=root_resource_id,
+        httpMethod="ANY",
+        authorizationType="NONE",
+    )
+
+    default_params = {
+        "restApiId": api_id,
+        "resourceId": root_resource_id,
+        "httpMethod": "ANY",
+        "type": "AWS_PROXY",
+        "integrationHttpMethod": "POST",
+        "credentials": role_arn,
+    }
+
+    with pytest.raises(ClientError) as e:
+        aws_client.apigateway.put_integration(
+            **default_params,
+            uri=lambda_arn,
+        )
+    snapshot.match("put-integration-lambda-uri", e.value.response)
+
+    with pytest.raises(ClientError) as e:
+        aws_client.apigateway.put_integration(
+            **default_params,
+            uri=f"bad-arn:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
+        )
+    snapshot.match("put-integration-wrong-arn", e.value.response)
+
+    with pytest.raises(ClientError) as e:
+        aws_client.apigateway.put_integration(
+            **default_params,
+            uri=f"arn:aws:apigateway:{region_name}:lambda:test/2015-03-31/functions/{lambda_arn}/invocations",
+        )
+    snapshot.match("put-integration-wrong-type", e.value.response)
+
+    with pytest.raises(ClientError) as e:
+        aws_client.apigateway.put_integration(
+            **default_params,
+            uri=f"arn:aws:apigateway:{region_name}:firehose:path/2015-03-31/functions/{lambda_arn}/invocations",
+        )
+    snapshot.match("put-integration-wrong-firehose", e.value.response)
+
+    with pytest.raises(ClientError) as e:
+        aws_client.apigateway.put_integration(
+            **default_params,
+            uri=f"arn:aws:apigateway:{region_name}:lambda:path/random/value/{lambda_arn}/invocations",
+        )
+    snapshot.match("put-integration-bad-lambda-arn", e.value.response)
+
+
+@markers.aws.validated
 def test_lambda_aws_proxy_integration_non_post_method(
     create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot, aws_client
 ):
