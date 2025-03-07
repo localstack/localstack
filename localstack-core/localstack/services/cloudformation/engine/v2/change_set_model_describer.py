@@ -122,6 +122,12 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         resource_change = ResourceChange()
         resource_change["LogicalResourceId"] = node_resource.name
 
+        # TODO: investigate effects on type changes
+        type_describe_unit = self.visit(node_resource.type_)
+        resource_change["ResourceType"] = (
+            type_describe_unit.before_context or type_describe_unit.after_context
+        )
+
         properties_describe_unit = self.visit_node_properties(node_resource.properties)
         # TODO: this should be about the resource itself, fix this in the change set modeler.
         match node_resource.properties.change_type:

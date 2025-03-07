@@ -326,7 +326,7 @@ class ChangeSetModel:
             change_type=change_type,
             name=resource_name,
             # TODO: investigate behaviour with type changes, for now this is filler code.
-            type_=TerminalValueUnchanged(value="TODO!"),
+            type_=TerminalValueUnchanged(value="<Type>"),
             properties=properties,
         )
 

@@ -62,7 +62,6 @@ class TestCFNUpdatePlayground:
 
         change_set_model = ChangeSetModel(before_template=t1, after_template=t2)
         update_model: NodeTemplate = change_set_model.get_update_model()
-
         print(update_model)
 
         change_set_describer = ChangeSetModelDescriber()
