@@ -587,6 +587,14 @@ class CloudformationProvider(CloudformationApi):
     ) -> CreateChangeSetOutput:
         state = get_cloudformation_store(context.account_id, context.region)
 
+        # parse template
+        # validate CFn schema
+        # resolve SSM parameters
+        # resolve conditions
+        # resolve supplied parameter overrides
+        # perform mapping lookups
+        # check for circular references
+
         change_set_type = request.get("ChangeSetType", "UPDATE")
         stack_name = request.get("StackName")
         change_set_name = request.get("ChangeSetName")
