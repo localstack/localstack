@@ -36,7 +36,6 @@ from localstack.aws.api.iam import (
     GetServiceLinkedRoleDeletionStatusResponse,
     GetUserResponse,
     IamApi,
-    InvalidInputException,
     ListInstanceProfileTagsResponse,
     ListRolesResponse,
     ListServiceSpecificCredentialsResponse,
@@ -92,9 +91,14 @@ T = TypeVar("T")
 
 
 class ValidationError(CommonServiceException):
+    def __init__(self, message: str):
+        super().__init__("ValidationError", message, 400, True)
+
+
+class ValidationListError(ValidationError):
     def __init__(self, validation_errors: list[str]):
         message = f"{len(validation_errors)} validation error{'s' if len(validation_errors) > 1 else ''} detected: {'; '.join(validation_errors)}"
-        super().__init__("ValidationError", message, 400, True)
+        super().__init__(message)
 
 
 def get_iam_backend(context: RequestContext) -> IAMBackend:
@@ -451,14 +455,14 @@ class IamProvider(IamApi):
         self, context: RequestContext, role_name: roleNameType, policy_arn: arnType, **kwargs
     ) -> None:
         if not POLICY_ARN_REGEX.match(policy_arn):
-            raise InvalidInputException(f"ARN {policy_arn} is not valid.")
+            raise ValidationError("Invalid ARN:  Could not be parsed!")
         return call_moto(context=context)
 
     def attach_user_policy(
         self, context: RequestContext, user_name: userNameType, policy_arn: arnType, **kwargs
     ) -> None:
         if not POLICY_ARN_REGEX.match(policy_arn):
-            raise InvalidInputException(f"ARN {policy_arn} is not valid.")
+            raise ValidationError("Invalid ARN:  Could not be parsed!")
         return call_moto(context=context)
 
     # ------------------------------ Service specific credentials ------------------------------ #
@@ -494,7 +498,7 @@ class IamProvider(IamApi):
         :param credential_id: Credential ID to check
         """
         if not CREDENTIAL_ID_REGEX.match(credential_id):
-            raise ValidationError(
+            raise ValidationListError(
                 [
                     "Value at 'serviceSpecificCredentialId' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\w]+"
                 ]
@@ -579,7 +583,7 @@ class IamProvider(IamApi):
         try:
             statusType(status)
         except ValueError:
-            raise ValidationError(
+            raise ValidationListError(
                 [
                     "Value at 'status' failed to satisfy constraint: Member must satisfy enum value set"
                 ]
