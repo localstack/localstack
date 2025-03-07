@@ -1,10 +1,12 @@
 import logging
+from functools import lru_cache
 from typing import NamedTuple, Optional, Set
 
 from botocore.model import ServiceModel
-from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.exceptions import NotFound, RequestEntityTooLarge
 from werkzeug.http import parse_dict_header
 
+from localstack.aws.protocol.op_router import RestServiceOperationRouter
 from localstack.aws.spec import (
     ServiceCatalog,
     ServiceModelIdentifier,
@@ -13,8 +15,6 @@ from localstack.aws.spec import (
 from localstack.http import Request
 from localstack.services.s3.utils import uses_host_addressing
 from localstack.services.sqs.utils import is_sqs_queue_url
-from localstack.utils.strings import to_bytes
-from localstack.utils.urls import hostname_from_url
 
 LOG = logging.getLogger(__name__)
 
@@ -141,12 +141,6 @@ def custom_host_addressing_rules(host: str) -> Optional[ServiceModelIdentifier]:
 
     Some services are added through a patch in ext.
     """
-
-    # a note on ``.execute-api.`` and why it shouldn't be added as a check here: ``.execute-api.`` was previously
-    # mapped distinctly to ``apigateway``, but this assumption is too strong, since the URL can be apigw v1, v2,
-    # or apigw management api. so in short, simply based on the host header, it's not possible to unambiguously
-    # associate a specific apigw service to the request.
-
     if ".lambda-url." in host:
         return ServiceModelIdentifier("lambda")
 
@@ -166,96 +160,23 @@ def custom_path_addressing_rules(path: str) -> Optional[ServiceModelIdentifier]:
         return ServiceModelIdentifier("lambda")
 
 
-well_known_path_prefixes = (
-    "/_aws",
-    "/_localstack",
-    "/_pods",
-    "/_extension",
-)
+@lru_cache(maxsize=1)
+def _get_s3_op_router(services: ServiceCatalog = None) -> RestServiceOperationRouter:
+    service = (services or get_service_catalog()).get("s3")
+    return RestServiceOperationRouter(service)
 
 
-def legacy_rules(request: Request) -> Optional[ServiceModelIdentifier]:
-    """
-    *Legacy* rules which migrate routing logic which will become obsolete with the ASF Gateway.
-    All rules which are implemented here should be migrated to the new router once these services are migrated to ASF.
-
-    TODO: These custom rules should become obsolete by migrating these to use the http/router.py
-    """
-
-    path = request.path
-    method = request.method
-    host = hostname_from_url(request.host)
-
-    if ".lambda-url." in host:
-        return ServiceModelIdentifier("lambda")
-
-    # DynamoDB shell URLs
-    if path.startswith("/shell") or path.startswith("/dynamodb/shell"):
-        return ServiceModelIdentifier("dynamodb")
-
-    # TODO Remove once fallback to S3 is disabled (after S3 ASF and Cors rework)
-    # necessary for correct handling of cors for internal endpoints
-    for prefix in well_known_path_prefixes:
-        if path.startswith(prefix):
-            return None
-
-    # TODO The remaining rules here are special S3 rules - needs to be discussed how these should be handled.
-    #      Some are similar to other rules and not that greedy, others are nearly general fallbacks.
-    stripped = path.strip("/")
-    if method in ["GET", "HEAD"] and stripped:
-        # assume that this is an S3 GET request with URL path `/<bucket>/<key ...>`
-        return ServiceModelIdentifier("s3")
-
-    # detect S3 URLs
-    if stripped and "/" not in stripped:
-        if method == "PUT":
-            # assume that this is an S3 PUT bucket request with URL path `/<bucket>`
-            return ServiceModelIdentifier("s3")
-        if method == "POST" and "key" in request.values:
-            # assume that this is an S3 POST request with form parameters or multipart form in the body
-            return ServiceModelIdentifier("s3")
-
-    # detect S3 requests sent from aws-cli using --no-sign-request option
-    if "aws-cli/" in str(request.user_agent):
-        return ServiceModelIdentifier("s3")
-
-    # detect S3 pre-signed URLs (v2 and v4)
-    values = request.values
-    if any(
-        value in values
-        for value in [
-            "AWSAccessKeyId",
-            "Signature",
-            "X-Amz-Algorithm",
-            "X-Amz-Credential",
-            "X-Amz-Date",
-            "X-Amz-Expires",
-            "X-Amz-SignedHeaders",
-            "X-Amz-Signature",
-        ]
-    ):
-        return ServiceModelIdentifier("s3")
-
-    # S3 delete object requests
-    if method == "POST" and "delete" in values:
-        data_bytes = to_bytes(request.data)
-        if b"<Delete" in data_bytes and b"<Key>" in data_bytes:
-            return ServiceModelIdentifier("s3")
-
-    # Put Object API can have multiple keys
-    if stripped.count("/") >= 1 and method == "PUT":
-        # assume that this is an S3 PUT bucket object request with URL path `/<bucket>/object`
-        # or `/<bucket>/object/object1/+`
-        return ServiceModelIdentifier("s3")
-
-    # detect S3 requests with "AWS id:key" Auth headers
-    auth_header = request.headers.get("Authorization") or ""
-    if auth_header.startswith("AWS "):
-        return ServiceModelIdentifier("s3")
-
+def s3_fallback(
+    request: Request, services: ServiceCatalog = None
+) -> Optional[ServiceModelIdentifier]:
     if uses_host_addressing(request.headers):
-        # Note: This needs to be the last rule (and therefore is not in the host rules), since it is incredibly greedy
         return ServiceModelIdentifier("s3")
+
+    try:
+        _get_s3_op_router(services).match(request)
+        return ServiceModelIdentifier("s3")
+    except NotFound:
+        return None
 
 
 def resolve_conflicts(
@@ -420,10 +341,11 @@ def determine_aws_service_model(
     if resolved_conflict:
         return services.get(*resolved_conflict)
 
-    # 7. check the legacy rules in the end
-    legacy_match = legacy_rules(request)
-    if legacy_match:
-        return services.get(*legacy_match)
+    # 7. check if the request is S3 in the end, if nothing else indicated it (un-signed requests)
+    #  the S3 pre-processor should already assign the service to most of S3 requests
+    is_s3 = s3_fallback(request)
+    if is_s3:
+        return services.get(*is_s3)
 
     if signing_name:
         return services.get(name=signing_name)
