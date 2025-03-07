@@ -27,6 +27,8 @@ from localstack.aws.api.ec2 import (
     CreateFlowLogsResult,
     CreateLaunchTemplateRequest,
     CreateLaunchTemplateResult,
+    CreateSubnetCidrReservationRequest,
+    CreateSubnetCidrReservationResult,
     CreateSubnetRequest,
     CreateSubnetResult,
     CreateTransitGatewayRequest,
@@ -301,6 +303,16 @@ class Ec2Provider(Ec2Api, ABC, ServiceLifecycleHook):
         value = {"HostnameType": host_type}
         backend.modify_subnet_attribute(subnet_id, attr_name, value)
         return response
+
+    @handler("CreateSubnetCidrReservation", expand=False)
+    def create_subnet_cidr_reservation(
+        self, context: RequestContext, request: CreateSubnetCidrReservationRequest
+    ) -> CreateSubnetCidrReservationResult:
+        backend = get_ec2_backend(context.account_id, context.region)
+        subnet_id = request["SubnetId"]
+        cidr_block = request["CidrBlock"]
+        reservation = backend.reserve_cidr_block(subnet_id, cidr_block)
+        return CreateSubnetCidrReservationResult(Reservation=reservation)
 
     @handler("RevokeSecurityGroupEgress", expand=False)
     def revoke_security_group_egress(

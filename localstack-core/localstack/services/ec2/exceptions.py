@@ -78,3 +78,11 @@ class InvalidVpcDuplicateCustomIdError(CommonServiceException):
             code="InvalidVpc.DuplicateCustomId",
             message=f"VPC with custom id '{custom_id}' already exists",
         )
+
+
+class CidrBlockReservationError(CommonServiceException):
+    def __init__(self, message):
+        super().__init__(
+            code="CidrBlockReservationError",
+            message=message,
+        )
