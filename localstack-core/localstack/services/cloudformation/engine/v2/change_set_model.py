@@ -5,9 +5,6 @@ import enum
 from itertools import zip_longest
 from typing import Any, Final, Generator, Optional
 
-# TODO: throughout this file, naming doesn't seem to be
-#  well standardized "Update/Modified/Add/Added/...".
-
 
 class ChangeType(enum.Enum):
     UNCHANGED = "Unchanged"
