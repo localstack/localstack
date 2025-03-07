@@ -694,12 +694,7 @@ class CloudformationProvider(CloudformationApi):
             old_parameters=old_parameters,
         )
 
-        # TODO: remove this when fixing Stack.resources and transformation order
-        #   currently we need to create a stack with existing resources + parameters so that resolve refs recursively in here will work.
-        #   The correct way to do it would be at a later stage anyway just like a normal intrinsic function
-        req_params_copy = clone_stack_params(req_params)
-        temp_stack = Stack(context.account_id, context.region, req_params_copy, template)
-        temp_stack.set_resolved_parameters(resolved_parameters)
+        mappings = template.get("Mappings", {})
 
         # TODO: everything below should be async
         # apply template transformations
@@ -707,9 +702,9 @@ class CloudformationProvider(CloudformationApi):
             context.account_id,
             context.region,
             template,
-            stack_name=temp_stack.stack_name,
-            resources=temp_stack.resources,
-            mappings=temp_stack.mappings,
+            stack_name=req_params["StackName"],
+            resources=template["Resources"],
+            mappings=mappings,
             conditions={},  # TODO: we don't have any resolved conditions yet at this point but we need the conditions because of the samtranslator...
             resolved_parameters=resolved_parameters,
         )
@@ -733,7 +728,7 @@ class CloudformationProvider(CloudformationApi):
             region_name=context.region,
             conditions=raw_conditions,
             parameters=resolved_parameters,
-            mappings=temp_stack.mappings,
+            mappings=mappings,
             stack_name=stack_name,
         )
         change_set.set_resolved_stack_conditions(resolved_stack_conditions)
