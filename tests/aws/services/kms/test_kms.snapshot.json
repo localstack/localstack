@@ -2048,7 +2048,7 @@
       }
     }
   },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_disabled_preserves_automatic_rotation_schedule": {
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_disabled_preserves_automatic_rotation_schedule_attributes": {
     "recorded-date": "08-03-2025, 09:25:31",
     "recorded-content": {
       "rotate-on-demand-response": {
@@ -2069,7 +2069,7 @@
       }
     }
   },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_enabled_preserves_automatic_rotation_schedule": {
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_enabled_preserves_automatic_rotation_schedule_attributes": {
     "recorded-date": "08-03-2025, 09:25:51",
     "recorded-content": {
       "rotate-on-demand-response": {

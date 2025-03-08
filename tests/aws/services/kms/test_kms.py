@@ -1121,7 +1121,7 @@ class TestKMS:
         assert ciphertext_before != ciphertext_after
 
     @markers.aws.validated
-    def test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_disabled_preserves_automatic_rotation_schedule(
+    def test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_disabled_preserves_automatic_rotation_schedule_attributes(
         self, kms_key, aws_client, snapshot
     ):
         key_id = kms_key["KeyId"]
@@ -1139,7 +1139,7 @@ class TestKMS:
         snapshot.match("rotation-status-response-after-rotation", rotation_status_response_after)
 
     @markers.aws.validated
-    def test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_enabled_preserves_automatic_rotation_schedule(
+    def test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_enabled_preserves_automatic_rotation_schedule_attributes(
         self, kms_key, aws_client, snapshot
     ):
         key_id = kms_key["KeyId"]
