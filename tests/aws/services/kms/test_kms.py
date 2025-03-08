@@ -1099,7 +1099,7 @@ class TestKMS:
         assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is False
 
     @markers.aws.validated
-    def test_rotate_key_on_demand_modifies_key_material(self, kms_create_key, aws_client):
+    def test_rotate_key_on_demand_modifies_key_material(self, kms_create_key, aws_client, snapshot):
         key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")["KeyId"]
         message = b"test message 123 !%$@ 1234567890"
 
@@ -1110,7 +1110,7 @@ class TestKMS:
         )["CiphertextBlob"]
 
         rotate_on_demand_response = aws_client.kms.rotate_key_on_demand(KeyId=key_id)
-        assert rotate_on_demand_response["KeyId"] == key_id
+        snapshot.match("rotate-on-demand-response", rotate_on_demand_response)
 
         ciphertext_after = aws_client.kms.encrypt(
             KeyId=key_id,
@@ -1122,29 +1122,25 @@ class TestKMS:
 
     @markers.aws.validated
     def test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_disabled_preserves_automatic_rotation_schedule(
-        self, kms_key, aws_client
+        self, kms_key, aws_client, snapshot
     ):
         key_id = kms_key["KeyId"]
 
         rotation_status_response_before = aws_client.kms.get_key_rotation_status(KeyId=key_id)
 
         rotate_on_demand_response = aws_client.kms.rotate_key_on_demand(KeyId=key_id)
-        assert rotate_on_demand_response["KeyId"] == key_id
+        snapshot.match("rotate-on-demand-response", rotate_on_demand_response)
 
         rotation_status_response_after = aws_client.kms.get_key_rotation_status(KeyId=key_id)
         assert (
             rotation_status_response_after["KeyRotationEnabled"]
             == rotation_status_response_before["KeyRotationEnabled"]
         )
-        assert "NextRotationDate" not in rotation_status_response_after
-        assert (
-            rotation_status_response_after["RotationPeriodInDays"]
-            == rotation_status_response_before["RotationPeriodInDays"]
-        )
+        snapshot.match("rotation-status-response-after-rotation", rotation_status_response_after)
 
     @markers.aws.validated
     def test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_enabled_preserves_automatic_rotation_schedule(
-        self, kms_key, aws_client
+        self, kms_key, aws_client, snapshot
     ):
         key_id = kms_key["KeyId"]
 
@@ -1152,7 +1148,7 @@ class TestKMS:
         rotation_status_response_before = aws_client.kms.get_key_rotation_status(KeyId=key_id)
 
         rotate_on_demand_response = aws_client.kms.rotate_key_on_demand(KeyId=key_id)
-        assert rotate_on_demand_response["KeyId"] == key_id
+        snapshot.match("rotate-on-demand-response", rotate_on_demand_response)
 
         rotation_status_response_after = aws_client.kms.get_key_rotation_status(KeyId=key_id)
         assert (
@@ -1167,47 +1163,48 @@ class TestKMS:
             rotation_status_response_after["RotationPeriodInDays"]
             == rotation_status_response_before["RotationPeriodInDays"]
         )
+        snapshot.match("rotation-status-response-after-rotation", rotation_status_response_after)
 
     @markers.aws.validated
     def test_rotate_key_on_demand_raises_error_given_key_is_disabled(
-        self, kms_create_key, aws_client
+        self, kms_create_key, aws_client, snapshot
     ):
         key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="RSA_4096")["KeyId"]
         aws_client.kms.disable_key(KeyId=key_id)
 
-        with pytest.raises(ClientError) as exc:
+        with pytest.raises(ClientError) as e:
             aws_client.kms.rotate_key_on_demand(KeyId=key_id)
-        assert exc.match("DisabledException")
+        snapshot.match("error-response", e.value.response)
 
     @markers.aws.validated
     def test_rotate_key_on_demand_raises_error_given_key_that_does_not_exist(
-        self, kms_create_key, aws_client
+        self, kms_create_key, aws_client, snapshot
     ):
         key_id = "1234abcd-12ab-34cd-56ef-1234567890ab"
 
-        with pytest.raises(ClientError) as exc:
+        with pytest.raises(ClientError) as e:
             aws_client.kms.rotate_key_on_demand(KeyId=key_id)
-        assert exc.match("NotFoundException")
+        snapshot.match("error-response", e.value.response)
 
     @markers.aws.validated
     def test_rotate_key_on_demand_raises_error_given_non_symmetric_key(
-        self, kms_create_key, aws_client
+        self, kms_create_key, aws_client, snapshot
     ):
         key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="RSA_4096")["KeyId"]
 
-        with pytest.raises(ClientError) as exc:
+        with pytest.raises(ClientError) as e:
             aws_client.kms.rotate_key_on_demand(KeyId=key_id)
-        assert exc.match("UnsupportedOperationException")
+        snapshot.match("error-response", e.value.response)
 
     @markers.aws.validated
     def test_rotate_key_on_demand_raises_error_given_key_with_imported_key_material(
-        self, kms_create_key, aws_client
+        self, kms_create_key, aws_client, snapshot
     ):
         key_id = kms_create_key(Origin="EXTERNAL")["KeyId"]
 
-        with pytest.raises(ClientError) as exc:
+        with pytest.raises(ClientError) as e:
             aws_client.kms.rotate_key_on_demand(KeyId=key_id)
-        assert exc.match("UnsupportedOperationException")
+        snapshot.match("error-response", e.value.response)
 
     @markers.aws.validated
     @pytest.mark.parametrize("rotation_period_in_days", [90, 180])

@@ -1260,7 +1260,10 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             KeyId=key_id,
             KeyRotationEnabled=key.is_key_rotation_enabled,
             NextRotationDate=key.next_rotation_date,
-            RotationPeriodInDays=key.rotation_period_in_days,
+            OnDemandRotationStartDate=key.on_demand_rotation_start_date,
+            RotationPeriodInDays=key.rotation_period_in_days
+            if key.is_key_rotation_enabled
+            else None,
         )
 
     @handler("DisableKeyRotation", expand=False)
@@ -1344,17 +1347,16 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key = self._get_kms_key(account_id, region_name, key_id, any_key_state_allowed=True)
 
         if key.metadata["KeyState"] == KeyState.Disabled:
-            raise DisabledException("On-demand key rotation cannot be performed on a disabled key")
+            raise DisabledException(f"{key.metadata['Arn']} is disabled.")
         if key.metadata["KeySpec"] != KeySpec.SYMMETRIC_DEFAULT:
-            raise UnsupportedOperationException(
-                "On-demand key rotation is supported only on symmetric encryption KMS keys"
-            )
+            raise UnsupportedOperationException()
         if key.metadata["Origin"] == OriginType.EXTERNAL:
             raise UnsupportedOperationException(
-                "On-demand key rotation is not supported for keys with imported key material"
+                f"{key.metadata['Arn']} origin is EXTERNAL which is not valid for this operation."
             )
 
         key.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
+        key._update_on_demand_rotation_start_date()
 
         return RotateKeyOnDemandResponse(
             KeyId=key_id,

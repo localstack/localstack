@@ -249,6 +249,7 @@ class KmsKey:
     is_key_rotation_enabled: bool
     rotation_period_in_days: int
     next_rotation_date: datetime.datetime
+    on_demand_rotation_start_date: datetime.datetime
 
     def __init__(
         self,
@@ -284,6 +285,7 @@ class KmsKey:
         self.crypto_key = KmsCryptoKey(self.metadata.get("KeySpec"), custom_key_material)
         self.rotation_period_in_days = 365
         self.next_rotation_date = None
+        self.on_demand_rotation_start_date = None
 
     def calculate_and_set_arn(self, account_id, region):
         self.metadata["Arn"] = kms_key_arn(self.metadata.get("KeyId"), account_id, region)
@@ -596,6 +598,9 @@ class KmsKey:
             self.next_rotation_date = datetime.datetime.now() + datetime.timedelta(
                 days=self.rotation_period_in_days
             )
+
+    def _update_on_demand_rotation_start_date(self) -> None:
+        self.on_demand_rotation_start_date = datetime.datetime.now()
 
     # An example of how the whole policy should look like:
     # https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-overview.html
