@@ -7,6 +7,7 @@ from moto.iam.models import (
     IAMBackend,
     InlinePolicy,
     Policy,
+    User,
 )
 from moto.iam.models import Role as MotoRole
 from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS
@@ -151,3 +152,13 @@ def apply_iam_patches():
         if not config.PARITY_AWS_ACCESS_KEY_ID:
             prefix = "L" + prefix[1:]
         fn(self, user_name, prefix, account_id, status, **kwargs)
+
+    @patch(User.__init__)
+    def user__init__(
+        fn,
+        self,
+        *args,
+        **kwargs,
+    ):
+        fn(self, *args, **kwargs)
+        self.service_specific_credentials = []

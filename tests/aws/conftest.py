@@ -125,7 +125,6 @@ def snapshot(request, _snapshot_session: SnapshotSession, account_id, region_nam
         "tests/aws/services/cloudformation",
         "tests/aws/services/dynamodb",
         "tests/aws/services/events",
-        "tests/aws/services/iam",
         "tests/aws/services/kinesis",
         "tests/aws/services/kms",
         "tests/aws/services/lambda_",
