@@ -129,15 +129,14 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         )
 
         properties_describe_unit = self.visit_node_properties(node_resource.properties)
-        # TODO: this should be about the resource itself, fix this in the change set modeler.
-        match node_resource.properties.change_type:
+        match node_resource.change_type:
             case ChangeType.MODIFIED:
                 resource_change["Action"] = ChangeAction.Modify
                 resource_change["BeforeContext"] = properties_describe_unit.before_context
                 resource_change["AfterContext"] = properties_describe_unit.after_context
             case ChangeType.CREATED:
                 resource_change["Action"] = ChangeAction.Add
-                resource_change["AfterContext"] = properties_describe_unit.before_context
+                resource_change["AfterContext"] = properties_describe_unit.after_context
             case ChangeType.REMOVED:
                 resource_change["Action"] = ChangeAction.Remove
                 resource_change["BeforeContext"] = properties_describe_unit.before_context

@@ -305,7 +305,13 @@ class ChangeSetModel:
     def _visit_resource(
         self, resource_name: str, before_resource: Maybe[dict], after_resource: Maybe[dict]
     ) -> NodeResource:
-        # TODO: fix add/delete/unchanged logic, needs minor rework of node types being update informants
+        if self._is_created(before=before_resource, after=after_resource):
+            change_type = ChangeType.CREATED
+        elif self._is_removed(before=before_resource, after=after_resource):
+            change_type = ChangeType.REMOVED
+        else:
+            change_type = ChangeType.UNCHANGED
+
         before_properties, after_properties = self._sample_from(
             PropertiesKey, before_resource, after_resource
         )
@@ -313,11 +319,8 @@ class ChangeSetModel:
             before_properties=before_properties, after_properties=after_properties
         )
 
-        change_type = properties.change_type
-        if isinstance(before_resource, NothingType) and after_resource:
-            change_type = ChangeType.CREATED
-        elif before_resource and isinstance(after_resource, NothingType):
-            change_type = ChangeType.REMOVED
+        if change_type == ChangeType.UNCHANGED and properties.change_type != ChangeType.UNCHANGED:
+            change_type = ChangeType.MODIFIED
 
         return NodeResource(
             change_type=change_type,
