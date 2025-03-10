@@ -52,7 +52,7 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
     def visit_terminal_value_created(
         self, terminal_value_created: TerminalValueCreated
     ) -> DescribeUnit:
-        return DescribeUnit(before_context=terminal_value_created.value)
+        return DescribeUnit(after_context=terminal_value_created.value)
 
     def visit_terminal_value_removed(
         self, terminal_value_removed: TerminalValueRemoved
@@ -74,7 +74,7 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
                     before_context[name] = describe_unit.before_context
                     after_context[name] = describe_unit.after_context
                 case ChangeType.CREATED:
-                    after_context[name] = describe_unit.before_context
+                    after_context[name] = describe_unit.after_context
                 case ChangeType.REMOVED:
                     before_context[name] = describe_unit.before_context
         return DescribeUnit(before_context=before_context, after_context=after_context)
@@ -89,7 +89,7 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
                     before_context.append(describe_unit.before_context)
                     after_context.append(describe_unit.after_context)
                 case ChangeType.CREATED:
-                    after_context.append(describe_unit.before_context)
+                    after_context.append(describe_unit.after_context)
                 case ChangeType.REMOVED:
                     before_context.append(describe_unit.before_context)
                 case ChangeType.UNCHANGED:
@@ -110,7 +110,7 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
                     before_context[property_name] = describe_unit.before_context
                     after_context[property_name] = describe_unit.after_context
                 case ChangeType.CREATED:
-                    after_context[property_name] = describe_unit.before_context
+                    after_context[property_name] = describe_unit.after_context
                 case ChangeType.REMOVED:
                     before_context[property_name] = describe_unit.before_context
         # TODO: this object can probably be well-typed instead of a free dict(?)
