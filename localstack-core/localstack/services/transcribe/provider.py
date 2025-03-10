@@ -46,6 +46,7 @@ from localstack.utils.threads import start_thread
 
 LOG = logging.getLogger(__name__)
 
+VOSK_MODELS_URL = f"{HUGGING_FACE_ENDPOINT}/vosk-models/resolve/main/"
 
 # Map of language codes to Vosk language models
 # See https://docs.aws.amazon.com/transcribe/latest/dg/supported-languages.html
@@ -78,8 +79,6 @@ LANGUAGE_MODELS = {
 }
 
 LANGUAGE_MODEL_DIR = Path(config.dirs.cache) / "vosk"
-
-VOSK_MODELS_URL = f"{HUGGING_FACE_ENDPOINT}/vosk-models/resolve/main/"
 
 # List of ffmpeg format names that correspond the supported formats by AWS
 # See https://docs.aws.amazon.com/transcribe/latest/dg/how-input.html
