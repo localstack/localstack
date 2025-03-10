@@ -1167,7 +1167,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                     state_machine_revision := state_machines.get(state_machine_version.source_arn)
                 ) is None or not isinstance(state_machine_revision, StateMachineRevision):
                     continue
-                state_machine_revision.aliases.remove(alias)
+                state_machine_revision.aliases.discard(alias)
         return DeleteStateMachineOutput()
 
     def delete_state_machine_version(
@@ -1184,15 +1184,19 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         if (
             state_machine_revision := state_machines.get(state_machine_version.source_arn)
         ) and isinstance(state_machine_revision, StateMachineRevision):
+            referencing_alias_names: list[str] = list()
             for alias in state_machine_revision.aliases:
                 if alias.is_router_for(state_machine_version_arn=state_machine_version_arn):
-                    raise ConflictException(
-                        "Version to be deleted must not be referenced by an alias. "
-                        f"Current list of aliases referencing this version: [{alias.name}]"
-                    )
+                    referencing_alias_names.append(alias.name)
+            if referencing_alias_names:
+                referencing_alias_names_list_body = ", ".join(referencing_alias_names)
+                raise ConflictException(
+                    "Version to be deleted must not be referenced by an alias. "
+                    f"Current list of aliases referencing this version: [{referencing_alias_names_list_body}]"
+                )
             state_machine_revision.delete_version(state_machine_version_arn)
 
-        state_machines.pop(state_machine_version.arn)
+        state_machines.pop(state_machine_version.arn, None)
         return DeleteStateMachineVersionOutput()
 
     def stop_execution(
