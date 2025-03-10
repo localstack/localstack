@@ -103,6 +103,10 @@ class Execution:
     region_name: str
 
     state_machine: Final[StateMachineInstance]
+    state_machine_arn: Final[Arn]
+    state_machine_version_arn: Final[Optional[Arn]]
+    state_machine_alias_arn: Final[Optional[Arn]]
+
     start_date: Final[Timestamp]
     input_data: Final[Optional[json]]
     input_details: Final[Optional[CloudWatchEventsExecutionDataDetails]]
@@ -136,6 +140,7 @@ class Execution:
         activity_store: dict[Arn, Activity],
         input_data: Optional[json] = None,
         trace_header: Optional[TraceHeader] = None,
+        state_machine_alias_arn: Optional[Arn] = None,
     ):
         self.name = name
         self.sm_type = sm_type
@@ -144,6 +149,13 @@ class Execution:
         self.account_id = account_id
         self.region_name = region_name
         self.state_machine = state_machine
+        if isinstance(state_machine, StateMachineVersion):
+            self.state_machine_arn = state_machine.source_arn
+            self.state_machine_version_arn = state_machine.arn
+        else:
+            self.state_machine_arn = state_machine.arn
+            self.state_machine_version_arn = None
+        self.state_machine_alias_arn = state_machine_alias_arn
         self.start_date = start_date
         self._cloud_watch_logging_session = cloud_watch_logging_session
         self.input_data = input_data
@@ -167,7 +179,7 @@ class Execution:
     def to_describe_output(self) -> DescribeExecutionOutput:
         describe_output = DescribeExecutionOutput(
             executionArn=self.exec_arn,
-            stateMachineArn=self.state_machine.arn,
+            stateMachineArn=self.state_machine_arn,
             name=self.name,
             status=self.exec_status,
             startDate=self.start_date,
@@ -183,6 +195,10 @@ class Execution:
             describe_output["error"] = self.error
         if self.cause is not None:
             describe_output["cause"] = self.cause
+        if self.state_machine_version_arn is not None:
+            describe_output["stateMachineVersionArn"] = self.state_machine_version_arn
+        if self.state_machine_alias_arn is not None:
+            describe_output["stateMachineAliasArn"] = self.state_machine_alias_arn
         return describe_output
 
     def to_describe_state_machine_for_execution_output(
@@ -231,6 +247,8 @@ class Execution:
         )
         if state_machine_version_arn is not None:
             item["stateMachineVersionArn"] = state_machine_version_arn
+        if self.state_machine_alias_arn is not None:
+            item["stateMachineAliasArn"] = self.state_machine_alias_arn
         return item
 
     def to_history_output(self) -> GetExecutionHistoryOutput:

@@ -9,18 +9,23 @@ from typing import Final, Optional
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.stepfunctions import (
     ActivityDoesNotExist,
+    AliasDescription,
     Arn,
+    CharacterRestrictedName,
     ConflictException,
     CreateActivityOutput,
+    CreateStateMachineAliasOutput,
     CreateStateMachineInput,
     CreateStateMachineOutput,
     Definition,
     DeleteActivityOutput,
+    DeleteStateMachineAliasOutput,
     DeleteStateMachineOutput,
     DeleteStateMachineVersionOutput,
     DescribeActivityOutput,
     DescribeExecutionOutput,
     DescribeMapRunOutput,
+    DescribeStateMachineAliasOutput,
     DescribeStateMachineForExecutionOutput,
     DescribeStateMachineOutput,
     EncryptionConfiguration,
@@ -43,6 +48,7 @@ from localstack.aws.api.stepfunctions import (
     ListExecutionsOutput,
     ListExecutionsPageToken,
     ListMapRunsOutput,
+    ListStateMachineAliasesOutput,
     ListStateMachinesOutput,
     ListStateMachineVersionsOutput,
     ListTagsForResourceOutput,
@@ -60,6 +66,7 @@ from localstack.aws.api.stepfunctions import (
     RevealSecrets,
     ReverseOrder,
     RevisionId,
+    RoutingConfigurationList,
     SendTaskFailureOutput,
     SendTaskHeartbeatOutput,
     SendTaskSuccessOutput,
@@ -68,6 +75,7 @@ from localstack.aws.api.stepfunctions import (
     SensitiveError,
     StartExecutionOutput,
     StartSyncExecutionOutput,
+    StateMachineAliasList,
     StateMachineAlreadyExists,
     StateMachineDoesNotExist,
     StateMachineList,
@@ -88,6 +96,7 @@ from localstack.aws.api.stepfunctions import (
     TracingConfiguration,
     UntagResourceOutput,
     UpdateMapRunOutput,
+    UpdateStateMachineAliasOutput,
     UpdateStateMachineOutput,
     ValidateStateMachineDefinitionDiagnostic,
     ValidateStateMachineDefinitionDiagnosticList,
@@ -129,6 +138,7 @@ from localstack.services.stepfunctions.asl.static_analyser.usage_metrics_static_
     UsageMetricsStaticAnalyser,
 )
 from localstack.services.stepfunctions.backend.activity import Activity, ActivityTask
+from localstack.services.stepfunctions.backend.alias import Alias
 from localstack.services.stepfunctions.backend.execution import Execution, SyncExecution
 from localstack.services.stepfunctions.backend.state_machine import (
     StateMachineInstance,
@@ -170,7 +180,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         visitor.visit(sfn_stores)
 
     _STATE_MACHINE_ARN_REGEX: Final[re.Pattern] = re.compile(
-        rf"{ARN_PARTITION_REGEX}:states:[a-z0-9-]+:[0-9]{{12}}:stateMachine:[a-zA-Z0-9-_.]+(:\d+)?$"
+        rf"{ARN_PARTITION_REGEX}:states:[a-z0-9-]+:[0-9]{{12}}:stateMachine:[a-zA-Z0-9-_.]+(:\d+)?(:[a-zA-Z0-9-_.]+)*$"
     )
 
     _STATE_MACHINE_EXECUTION_ARN_REGEX: Final[re.Pattern] = re.compile(
@@ -180,6 +190,12 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     _ACTIVITY_ARN_REGEX: Final[re.Pattern] = re.compile(
         rf"{ARN_PARTITION_REGEX}:states:[a-z0-9-]+:[0-9]{{12}}:activity:[a-zA-Z0-9-_\.]{{1,80}}$"
     )
+
+    _ALIAS_ARN_REGEX: Final[re.Pattern] = re.compile(
+        rf"{ARN_PARTITION_REGEX}:states:[a-z0-9-]+:[0-9]{{12}}:stateMachine:[A-Za-z0-9_.-]+:[A-Za-z_.-]+[A-Za-z0-9_.-]{{0,80}}$"
+    )
+
+    _ALIAS_NAME_REGEX: Final[re.Pattern] = re.compile(r"^(?=.*[a-zA-Z_\-\.])[a-zA-Z0-9_\-\.]+$")
 
     @staticmethod
     def _validate_state_machine_arn(state_machine_arn: str) -> None:
@@ -202,6 +218,11 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         # TODO: InvalidArn exception message do not communicate which part of the ARN is incorrect.
         if not StepFunctionsProvider._ACTIVITY_ARN_REGEX.match(activity_arn):
             raise InvalidArn(f"Invalid arn: '{activity_arn}'")
+
+    @staticmethod
+    def _validate_state_machine_alias_arn(state_machine_alias_arn: Arn) -> None:
+        if not StepFunctionsProvider._ALIAS_ARN_REGEX.match(state_machine_alias_arn):
+            raise InvalidArn(f"Invalid arn: '{state_machine_alias_arn}'")
 
     def _raise_state_machine_type_not_supported(self):
         raise StateMachineTypeNotSupported(
@@ -232,6 +253,22 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         for char in name:
             if char in invalid_chars:
                 raise InvalidName(f"Invalid Name: '{name}'")
+
+    @staticmethod
+    def _validate_state_machine_alias_name(name: CharacterRestrictedName) -> None:
+        len_name = len(name)
+        if len_name > 80:
+            raise ValidationException(
+                f"1 validation error detected: Value '{name}' at 'name' failed to satisfy constraint: "
+                f"Member must have length less than or equal to 80"
+            )
+        if not StepFunctionsProvider._ALIAS_NAME_REGEX.match(name):
+            raise ValidationException(
+                # TODO: explore more error cases in which more than one validation error may occur which results
+                #  in the counter below being greater than 1.
+                f"1 validation error detected: Value '{name}' at 'name' failed to satisfy constraint: "
+                f"Member must satisfy regular expression pattern: ^(?=.*[a-zA-Z_\\-\\.])[a-zA-Z0-9_\\-\\.]+$"
+            )
 
     def _get_execution(self, context: RequestContext, execution_arn: Arn) -> Execution:
         execution: Optional[Execution] = self.get_store(context).executions.get(execution_arn)
@@ -489,6 +526,149 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
         return create_output
 
+    def _validate_state_machine_alias_routing_configuration(
+        self, context: RequestContext, routing_configuration_list: RoutingConfigurationList
+    ) -> None:
+        # TODO: to match AWS's approach best validation exceptions could be
+        #  built in a process decoupled from the provider.
+
+        routing_configuration_list_len = len(routing_configuration_list)
+        if not (1 <= routing_configuration_list_len <= 2):
+            # Replicate the object string dump format:
+            # [RoutingConfigurationListItem(stateMachineVersionArn=arn_no_quotes, weight=int), ...]
+            routing_configuration_serialization_parts = []
+            for routing_configuration in routing_configuration_list:
+                routing_configuration_serialization_parts.append(
+                    "".join(
+                        [
+                            "RoutingConfigurationListItem(stateMachineVersionArn=",
+                            routing_configuration["stateMachineVersionArn"],
+                            ", weight=",
+                            str(routing_configuration["weight"]),
+                            ")",
+                        ]
+                    )
+                )
+            routing_configuration_serialization_list = (
+                f"[{', '.join(routing_configuration_serialization_parts)}]"
+            )
+            raise ValidationException(
+                f"1 validation error detected: Value '{routing_configuration_serialization_list}' "
+                "at 'routingConfiguration' failed to "
+                "satisfy constraint: Member must have length less than or equal to 2"
+            )
+
+        routing_configuration_arn_list = [
+            routing_configuration["stateMachineVersionArn"]
+            for routing_configuration in routing_configuration_list
+        ]
+        if len(set(routing_configuration_arn_list)) < routing_configuration_list_len:
+            arn_list_string = f"[{', '.join(routing_configuration_arn_list)}]"
+            raise ValidationException(
+                "Routing configuration must contain distinct state machine version ARNs. "
+                f"Received: {arn_list_string}"
+            )
+
+        routing_weights = [
+            routing_configuration["weight"] for routing_configuration in routing_configuration_list
+        ]
+        for i, weight in enumerate(routing_weights):
+            # TODO: check for weight type.
+            if weight < 0:
+                raise ValidationException(
+                    f"Invalid value for parameter routingConfiguration[{i + 1}].weight, value: {weight}, valid min value: 0"
+                )
+            if weight > 100:
+                raise ValidationException(
+                    f"1 validation error detected: Value '{weight}' at 'routingConfiguration.{i + 1}.member.weight' "
+                    "failed to satisfy constraint: Member must have value less than or equal to 100"
+                )
+        routing_weights_sum = sum(routing_weights)
+        if not routing_weights_sum == 100:
+            raise ValidationException(
+                f"Sum of routing configuration weights must equal 100. Received: {json.dumps(routing_weights)}"
+            )
+
+        store = self.get_store(context=context)
+        state_machines = store.state_machines
+
+        first_routing_qualified_arn = routing_configuration_arn_list[0]
+        shared_state_machine_revision_arn = self._get_state_machine_arn_from_qualified_arn(
+            qualified_arn=first_routing_qualified_arn
+        )
+        for routing_configuration_arn in routing_configuration_arn_list:
+            maybe_state_machine_version = state_machines.get(routing_configuration_arn)
+            if not isinstance(maybe_state_machine_version, StateMachineVersion):
+                arn_list_string = f"[{', '.join(routing_configuration_arn_list)}]"
+                raise ValidationException(
+                    f"Routing configuration must contain state machine version ARNs. Received: {arn_list_string}"
+                )
+            state_machine_revision_arn = self._get_state_machine_arn_from_qualified_arn(
+                qualified_arn=routing_configuration_arn
+            )
+            if state_machine_revision_arn != shared_state_machine_revision_arn:
+                raise ValidationException("TODO")
+
+    @staticmethod
+    def _get_state_machine_arn_from_qualified_arn(qualified_arn: Arn) -> Arn:
+        last_colon_index = qualified_arn.rfind(":")
+        base_arn = qualified_arn[:last_colon_index]
+        return base_arn
+
+    def create_state_machine_alias(
+        self,
+        context: RequestContext,
+        name: CharacterRestrictedName,
+        routing_configuration: RoutingConfigurationList,
+        description: AliasDescription = None,
+        **kwargs,
+    ) -> CreateStateMachineAliasOutput:
+        # Validate the inputs.
+        self._validate_state_machine_alias_name(name=name)
+        self._validate_state_machine_alias_routing_configuration(
+            context=context, routing_configuration_list=routing_configuration
+        )
+
+        # Determine the state machine arn this alias maps to,
+        # do so unsafely as validation already took place before initialisation.
+        first_routing_qualified_arn = routing_configuration[0]["stateMachineVersionArn"]
+        state_machine_revision_arn = self._get_state_machine_arn_from_qualified_arn(
+            qualified_arn=first_routing_qualified_arn
+        )
+        alias = Alias(
+            state_machine_arn=state_machine_revision_arn,
+            name=name,
+            description=description,
+            routing_configuration_list=routing_configuration,
+        )
+        state_machine_alias_arn = alias.state_machine_alias_arn
+
+        store = self.get_store(context=context)
+
+        aliases = store.aliases
+        if maybe_idempotent_alias := aliases.get(state_machine_alias_arn):
+            if alias.is_idempotent(maybe_idempotent_alias):
+                return CreateStateMachineAliasOutput(
+                    stateMachineAliasArn=state_machine_alias_arn, creationDate=alias.create_date
+                )
+            else:
+                # CreateStateMachineAlias is an idempotent API. Idempotent requests won’t create duplicate resources.
+                raise ConflictException(
+                    "Failed to create alias because an alias with the same name and a "
+                    "different routing configuration already exists."
+                )
+        aliases[state_machine_alias_arn] = alias
+
+        state_machine_revision = store.state_machines.get(state_machine_revision_arn)
+        if not isinstance(state_machine_revision, StateMachineRevision):
+            # The state machine was deleted but not the version referenced in this context.
+            raise RuntimeError(f"No state machine revision for arn '{state_machine_revision_arn}'")
+        state_machine_revision.aliases.add(alias)
+
+        return CreateStateMachineAliasOutput(
+            stateMachineAliasArn=state_machine_alias_arn, creationDate=alias.create_date
+        )
+
     def describe_state_machine(
         self,
         context: RequestContext,
@@ -501,6 +681,19 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         if state_machine is None:
             self._raise_state_machine_does_not_exist(state_machine_arn)
         return state_machine.describe()
+
+    def describe_state_machine_alias(
+        self, context: RequestContext, state_machine_alias_arn: Arn, **kwargs
+    ) -> DescribeStateMachineAliasOutput:
+        self._validate_state_machine_alias_arn(state_machine_alias_arn=state_machine_alias_arn)
+        alias: Optional[Alias] = self.get_store(context=context).aliases.get(
+            state_machine_alias_arn
+        )
+        if alias is None:
+            # TODO: assemble the correct exception
+            raise ValidationException()
+        description = alias.to_description()
+        return description
 
     def describe_state_machine_for_execution(
         self,
@@ -585,9 +778,14 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> StartExecutionOutput:
         self._validate_state_machine_arn(state_machine_arn)
-        unsafe_state_machine: Optional[StateMachineInstance] = self.get_store(
-            context
-        ).state_machines.get(state_machine_arn)
+
+        store = self.get_store(context=context)
+
+        alias: Optional[Alias] = store.aliases.get(state_machine_arn)
+        alias_sample_state_machine_version_arn = alias.sample() if alias is not None else None
+        unsafe_state_machine: Optional[StateMachineInstance] = store.state_machines.get(
+            alias_sample_state_machine_version_arn or state_machine_arn
+        )
         if not unsafe_state_machine:
             self._raise_state_machine_does_not_exist(state_machine_arn)
 
@@ -614,7 +812,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             # Exhaustive check on STANDARD and EXPRESS type, validated on creation.
             exec_arn = stepfunctions_express_execution_arn(normalised_state_machine_arn, exec_name)
 
-        if execution := self.get_store(context).executions.get(exec_arn):
+        if execution := store.executions.get(exec_arn):
             # Return already running execution if name and input match
             existing_execution = self._idempotent_start_execution(
                 execution=execution,
@@ -642,6 +840,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             account_id=context.account_id,
             region_name=context.region,
             state_machine=state_machine_clone,
+            state_machine_alias_arn=alias.state_machine_alias_arn if alias is not None else None,
             start_date=datetime.datetime.now(tz=datetime.timezone.utc),
             cloud_watch_logging_session=cloud_watch_logging_session,
             input_data=input_data,
@@ -649,7 +848,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             activity_store=self.get_store(context).activities,
         )
 
-        self.get_store(context).executions[exec_arn] = execution
+        store.executions[exec_arn] = execution
 
         execution.start()
         return execution.to_start_output()
@@ -741,9 +940,10 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
     @staticmethod
     def _list_execution_filter(
-        ex: Execution, state_machine_arn: str | None, status_filter: str | None
+        ex: Execution, state_machine_arn: str, status_filter: Optional[str]
     ) -> bool:
-        if state_machine_arn and ex.state_machine.arn != state_machine_arn:
+        state_machine_reference_arn_set = {ex.state_machine_arn, ex.state_machine_version_arn}
+        if state_machine_arn not in state_machine_reference_arn_set:
             return False
 
         if not status_filter:
@@ -849,6 +1049,28 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
         return ListStateMachinesOutput(stateMachines=page, nextToken=token_for_next_page)
 
+    def list_state_machine_aliases(
+        self,
+        context: RequestContext,
+        state_machine_arn: Arn,
+        next_token: PageToken = None,
+        max_results: PageSize = None,
+        **kwargs,
+    ) -> ListStateMachineAliasesOutput:
+        # TODO: add pagination support.
+        self._validate_state_machine_arn(state_machine_arn)
+        state_machines = self.get_store(context).state_machines
+        state_machine_revision = state_machines.get(state_machine_arn)
+        if not isinstance(state_machine_revision, StateMachineRevision):
+            raise InvalidArn(f"Invalid arn: {state_machine_arn}")
+
+        state_machine_aliases: StateMachineAliasList = list()
+        for alias in state_machine_revision.aliases:
+            state_machine_aliases.append(alias.to_item())
+        state_machine_aliases.sort(key=lambda item: item["creationDate"])
+
+        return ListStateMachineAliasesOutput(stateMachineAliases=state_machine_aliases)
+
     def list_state_machine_versions(
         self,
         context: RequestContext,
@@ -927,18 +1149,54 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                 state_machines.pop(version_arn, None)
         return DeleteStateMachineOutput()
 
+    def delete_state_machine_alias(
+        self, context: RequestContext, state_machine_alias_arn: Arn, **kwargs
+    ) -> DeleteStateMachineAliasOutput:
+        self._validate_state_machine_alias_arn(state_machine_alias_arn=state_machine_alias_arn)
+        store = self.get_store(context=context)
+        aliases = store.aliases
+        if (alias := aliases.pop(state_machine_alias_arn, None)) is not None:
+            state_machines = store.state_machines
+            for routing_configuration in alias.get_routing_configuration_list():
+                state_machine_version_arn = routing_configuration["stateMachineVersionArn"]
+                if (
+                    state_machine_version := state_machines.get(state_machine_version_arn)
+                ) is None or not isinstance(state_machine_version, StateMachineVersion):
+                    continue
+                if (
+                    state_machine_revision := state_machines.get(state_machine_version.source_arn)
+                ) is None or not isinstance(state_machine_revision, StateMachineRevision):
+                    continue
+                state_machine_revision.aliases.discard(alias)
+        return DeleteStateMachineOutput()
+
     def delete_state_machine_version(
         self, context: RequestContext, state_machine_version_arn: LongArn, **kwargs
     ) -> DeleteStateMachineVersionOutput:
         self._validate_state_machine_arn(state_machine_version_arn)
         state_machines = self.get_store(context).state_machines
-        state_machine_version = state_machines.get(state_machine_version_arn)
-        if isinstance(state_machine_version, StateMachineVersion):
-            state_machines.pop(state_machine_version.arn)
-            state_machine_revision = state_machines.get(state_machine_version.source_arn)
-            if isinstance(state_machine_revision, StateMachineRevision):
-                state_machine_revision.delete_version(state_machine_version_arn)
 
+        if not (
+            state_machine_version := state_machines.get(state_machine_version_arn)
+        ) or not isinstance(state_machine_version, StateMachineVersion):
+            return DeleteStateMachineVersionOutput()
+
+        if (
+            state_machine_revision := state_machines.get(state_machine_version.source_arn)
+        ) and isinstance(state_machine_revision, StateMachineRevision):
+            referencing_alias_names: list[str] = list()
+            for alias in state_machine_revision.aliases:
+                if alias.is_router_for(state_machine_version_arn=state_machine_version_arn):
+                    referencing_alias_names.append(alias.name)
+            if referencing_alias_names:
+                referencing_alias_names_list_body = ", ".join(referencing_alias_names)
+                raise ConflictException(
+                    "Version to be deleted must not be referenced by an alias. "
+                    f"Current list of aliases referencing this version: [{referencing_alias_names_list_body}]"
+                )
+            state_machine_revision.delete_version(state_machine_version_arn)
+
+        state_machines.pop(state_machine_version.arn, None)
         return DeleteStateMachineVersionOutput()
 
     def stop_execution(
@@ -1017,6 +1275,31 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         if version_arn is not None:
             update_output["stateMachineVersionArn"] = version_arn
         return update_output
+
+    def update_state_machine_alias(
+        self,
+        context: RequestContext,
+        state_machine_alias_arn: Arn,
+        description: AliasDescription = None,
+        routing_configuration: RoutingConfigurationList = None,
+        **kwargs,
+    ) -> UpdateStateMachineAliasOutput:
+        self._validate_state_machine_alias_arn(state_machine_alias_arn=state_machine_alias_arn)
+        if not any([description, routing_configuration]):
+            raise MissingRequiredParameter(
+                "Either the description or the RoutingConfiguration must be specified"
+            )
+        if routing_configuration is not None:
+            self._validate_state_machine_alias_routing_configuration(
+                context=context, routing_configuration_list=routing_configuration
+            )
+        store = self.get_store(context=context)
+        alias = store.aliases.get(state_machine_alias_arn)
+        if alias is None:
+            raise ResourceNotFound("Request references a resource that does not exist.")
+
+        alias.update(description=description, routing_configuration_list=routing_configuration)
+        return UpdateStateMachineAliasOutput(updateDate=alias.update_date)
 
     def publish_state_machine_version(
         self,
