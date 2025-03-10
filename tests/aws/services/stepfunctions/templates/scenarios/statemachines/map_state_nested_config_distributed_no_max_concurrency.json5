@@ -1,0 +1,79 @@
+{
+  "StartAt": "InputValue",
+  "States": {
+    "InputValue": {
+      "Type": "Pass",
+      "Result": {
+        "outerJobs": [
+          {
+            "innerJobs": [0, 1, 2, 3, 4]
+          },
+          {
+            "innerJobs": [0, 1, 2, 3, 4]
+          },
+          {
+            "innerJobs": [0, 1, 2, 3, 4]
+          },
+          {
+            "innerJobs": [0, 1, 2, 3, 4]
+          },
+        ]
+      },
+      "Next": "OuterMap"
+    },
+    "OuterMap": {
+      "Type": "Map",
+      "ResultPath": null,
+      "Next": "FinalState",
+      "ItemsPath": "$.outerJobs",
+      "ItemSelector": {
+        "innerJobs.$": "$$.Map.Item.Value.innerJobs"
+      },
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "InnerMap",
+        "States": {
+          "InnerMap": {
+            "Type": "Map",
+            "ResultPath": null,
+            "End": true,
+            "ItemsPath": "$.innerJobs",
+            "ItemSelector": {
+              "job.$": "$$.Map.Item.Value"
+            },
+            "ItemProcessor": {
+              "ProcessorConfig": {
+                "Mode": "DISTRIBUTED",
+                "ExecutionType": "STANDARD"
+              },
+              "StartAt": "ProcessJob",
+              "States": {
+                "ProcessJob": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::lambda:invoke",
+                  "Parameters": {
+                    "FunctionName": "__tbd__",
+                    "Payload": {
+                      "job.$": "$.job"
+                    }
+                  },
+                  "End": true
+                }
+              }
+            },
+            "MaxConcurrency": 9
+          }
+        }
+      },
+      "MaxConcurrency": 50
+    },
+    "FinalState": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}
+

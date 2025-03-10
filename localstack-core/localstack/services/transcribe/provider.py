@@ -31,6 +31,7 @@ from localstack.aws.api.transcribe import (
     TranscriptionJobSummary,
 )
 from localstack.aws.connect import connect_to
+from localstack.constants import HUGGING_FACE_ENDPOINT
 from localstack.packages.ffmpeg import ffmpeg_package
 from localstack.services.s3.utils import (
     get_bucket_and_key_from_presign_url,
@@ -44,6 +45,7 @@ from localstack.utils.run import run
 from localstack.utils.threads import start_thread
 
 LOG = logging.getLogger(__name__)
+
 
 # Map of language codes to Vosk language models
 # See https://docs.aws.amazon.com/transcribe/latest/dg/supported-languages.html
@@ -76,6 +78,8 @@ LANGUAGE_MODELS = {
 }
 
 LANGUAGE_MODEL_DIR = Path(config.dirs.cache) / "vosk"
+
+VOSK_MODELS_URL = f"{HUGGING_FACE_ENDPOINT}/vosk-models/resolve/main/"
 
 # List of ffmpeg format names that correspond the supported formats by AWS
 # See https://docs.aws.amazon.com/transcribe/latest/dg/how-input.html
@@ -248,9 +252,15 @@ class TranscribeProvider(TranscribeApi):
 
             from vosk import MODEL_PRE_URL  # noqa
 
-            download(
-                MODEL_PRE_URL + str(model_path.name) + ".zip", model_zip_path, verify_ssl=False
-            )
+            download_urls = [MODEL_PRE_URL, VOSK_MODELS_URL]
+
+            for url in download_urls:
+                try:
+                    download(url + str(model_path.name) + ".zip", model_zip_path, verify_ssl=False)
+                except Exception as e:
+                    LOG.warning("Failed to download model from %s: %s", url, e)
+                    continue
+                break
 
             LOG.debug("Extracting language model: %s", model_path.name)
             with ZipFile(model_zip_path, "r") as model_ref:
