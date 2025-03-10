@@ -3,7 +3,33 @@ from __future__ import annotations
 import abc
 import enum
 from itertools import zip_longest
-from typing import Any, Final, Generator, Optional
+from typing import Any, Final, Generator, Optional, Union
+
+from typing_extensions import TypeVar
+
+T = TypeVar("T")
+
+
+class NothingType:
+    """A sentinel that denotes 'no value' (distinct from None)."""
+
+    _singleton = None
+    __slots__ = ()
+
+    def __new__(cls):
+        if cls._singleton is None:
+            cls._singleton = super().__new__(cls)
+        return cls._singleton
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self) -> str:
+        return "Nothing"
+
+
+Maybe = Union[T, NothingType]
+Nothing = NothingType()
 
 
 class ChangeType(enum.Enum):
@@ -150,9 +176,6 @@ class TerminalValueUnchanged(TerminalValue):
         super().__init__(change_type=ChangeType.UNCHANGED, value=value)
 
 
-class NoSuchValue: ...
-
-
 ResourcesKey: Final[str] = "Resources"
 PropertiesKey: Final[str] = "Properties"
 
@@ -160,20 +183,17 @@ PropertiesKey: Final[str] = "Properties"
 class ChangeSetModel:
     # TODO: should this instead be generalised to work on "Stack" objects instead of just "Template"s?
 
-    # TODO: fix type hints in the modeler class, the use of Optional[...] is incorrect, it should reflect
-    #  that the type could be NoSuchValue, like Maybe[innertype] === innertype | NoSuchValue
-
     # TODO: can probably improve the typehints to use CFN's 'language' eg. dict -> Template|Properties, etc.
 
     # TODO: typechecks for key-value pairs?
 
-    _before_template: Final[dict]
-    _after_template: Final[dict]
+    _before_template: Final[Maybe[dict]]
+    _after_template: Final[Maybe[dict]]
     _node_template: Final[NodeTemplate]
 
-    def __init__(self, before_template: dict, after_template: dict):
-        self._before_template = before_template
-        self._after_template = after_template
+    def __init__(self, before_template: Optional[dict], after_template: Optional[dict]):
+        self._before_template = before_template or Nothing
+        self._after_template = after_template or Nothing
         self._node_template = self._model(
             before_template=before_template, after_template=after_template
         )
@@ -182,22 +202,8 @@ class ChangeSetModel:
         # TODO: rethink naming of this for outer utils
         return self._node_template
 
-    # TODO: figure out when and which intrinsic functions are evaluated when.
-    # TODO: dependency evaluation logic needs implementing, this should probably be done in a second pass about the changeset.
-    #
-    #    def _visit_intrinsic_function_fn_get_att(self, before_arguments: Any, after_arguments: Any) -> TerminalValue:
-    #        pass
-    #
-    #    def _visit_intrinsic_function(self, function_name: str, before_arguments: Any, after_arguments: Any) -> TerminalValue:
-    #        reflection_key = function_name.replace("::", "")
-    #        reflection_key = camel_to_snake_case(reflection_key)
-    #        visit_function_name = f"visit_intrinsic_function_{reflection_key}"
-    #        visit_function = getattr(self, visit_function_name)
-    #        # TODO: check and raise unsupported?
-    #        return visit_function(before_arguments, after_arguments)
-
     def _visit_terminal_value(  # noqa
-        self, before_value: Optional[Any], after_value: Optional[Any]
+        self, before_value: Maybe[Any], after_value: Maybe[Any]
     ) -> TerminalValue:
         if self._is_created(before=before_value, after=after_value):
             return TerminalValueCreated(value=after_value)
@@ -207,21 +213,17 @@ class ChangeSetModel:
             return TerminalValueUnchanged(value=before_value)
         return TerminalValueModified(value=before_value, modified_value=after_value)
 
-    def _visit_array(self, before_array: Optional[list], after_array: Optional[list]) -> NodeArray:
+    def _visit_array(self, before_array: Maybe[list], after_array: Maybe[list]) -> NodeArray:
         change_type = ChangeType.UNCHANGED
         array: list[ChangeSetEntity] = list()
-        for before_value, after_value in zip_longest(
-            before_array, after_array, fillvalue=NoSuchValue()
-        ):
+        for before_value, after_value in zip_longest(before_array, after_array, fillvalue=Nothing):
             value = self._visit_value(before_value=before_value, after_value=after_value)
             array.append(value)
             if value.change_type != ChangeType.UNCHANGED:
                 change_type = ChangeType.MODIFIED
         return NodeArray(change_type=change_type, array=array)
 
-    def _visit_object(
-        self, before_object: Optional[dict], after_object: Optional[dict]
-    ) -> NodeObject:
+    def _visit_object(self, before_object: Maybe[dict], after_object: Maybe[dict]) -> NodeObject:
         change_type = ChangeType.UNCHANGED
         binding_names = self._keys_of(before_object, after_object)
         bindings: dict[str, ChangeSetEntity] = dict()
@@ -234,9 +236,7 @@ class ChangeSetModel:
                 change_type = ChangeType.MODIFIED
         return NodeObject(change_type=change_type, bindings=bindings)
 
-    def _visit_value(
-        self, before_value: Optional[Any], after_value: Optional[Any]
-    ) -> ChangeSetEntity:
+    def _visit_value(self, before_value: Maybe[Any], after_value: Maybe[Any]) -> ChangeSetEntity:
         before_type = type(before_value)
         after_type = type(after_value)
 
@@ -263,7 +263,7 @@ class ChangeSetModel:
             return TerminalValueModified(value=before_value, modified_value=after_value)
 
     def _visit_property(
-        self, property_name: str, before_property: Optional[Any], after_property: Optional[Any]
+        self, property_name: str, before_property: Maybe[Any], after_property: Maybe[Any]
     ) -> NodeProperty:
         if self._is_created(before=before_property, after=after_property):
             return NodeProperty(
@@ -281,7 +281,7 @@ class ChangeSetModel:
         return NodeProperty(change_type=value.change_type, name=property_name, value=value)
 
     def _visit_properties(
-        self, before_properties: Optional[dict], after_properties: Optional[dict]
+        self, before_properties: Maybe[dict], after_properties: Maybe[dict]
     ) -> NodeProperties:
         # TODO: double check we are sure not to have this be a NodeObject
         property_names: set[str] = self._keys_of(before_properties, after_properties)
@@ -303,7 +303,7 @@ class ChangeSetModel:
         return NodeProperties(change_type=change_type, properties=properties)
 
     def _visit_resource(
-        self, resource_name: str, before_resource: Optional[dict], after_resource: Optional[dict]
+        self, resource_name: str, before_resource: Maybe[dict], after_resource: Maybe[dict]
     ) -> NodeResource:
         # TODO: fix add/delete/unchanged logic, needs minor rework of node types being update informants
         before_properties, after_properties = self._sample_from(
@@ -314,9 +314,9 @@ class ChangeSetModel:
         )
 
         change_type = properties.change_type
-        if isinstance(before_resource, NoSuchValue) and after_resource:
+        if isinstance(before_resource, NothingType) and after_resource:
             change_type = ChangeType.CREATED
-        elif before_resource and isinstance(after_resource, NoSuchValue):
+        elif before_resource and isinstance(after_resource, NothingType):
             change_type = ChangeType.REMOVED
 
         return NodeResource(
@@ -327,7 +327,9 @@ class ChangeSetModel:
             properties=properties,
         )
 
-    def _visit_resources(self, before_resources: dict, after_resources: dict) -> NodeResources:
+    def _visit_resources(
+        self, before_resources: Maybe[dict], after_resources: Maybe[dict]
+    ) -> NodeResources:
         # TODO: investigate type changes behavior.
         change_type = ChangeType.UNCHANGED
         resources: list[NodeResource] = list()
@@ -347,7 +349,7 @@ class ChangeSetModel:
                 change_type = ChangeType.MODIFIED
         return NodeResources(change_type=change_type, resources=resources)
 
-    def _model(self, before_template: dict, after_template: dict) -> NodeTemplate:
+    def _model(self, before_template: Maybe[dict], after_template: Maybe[dict]) -> NodeTemplate:
         # TODO: visit other child types
         before_resources, after_resources = self._sample_from(
             ResourcesKey, before_template, after_template
@@ -359,18 +361,18 @@ class ChangeSetModel:
         return NodeTemplate(change_type=resources.change_type, resources=resources)
 
     @staticmethod
-    def _sample_from(key: str, *objects: dict | NoSuchValue) -> Any | NoSuchValue:
+    def _sample_from(key: str, *objects: Maybe[dict]) -> Maybe[Any]:
         results = list()
         for obj in objects:
             # TODO: raise errors if not dict
-            if not isinstance(obj, NoSuchValue):
-                results.append(obj.get(key, NoSuchValue()))
+            if not isinstance(obj, NothingType):
+                results.append(obj.get(key, Nothing))
             else:
                 results.append(obj)
         return results[0] if len(objects) == 1 else tuple(results)
 
     @staticmethod
-    def _keys_of(*objects: dict | NoSuchValue) -> set[str]:
+    def _keys_of(*objects: Maybe[dict]) -> set[str]:
         keys: set[str] = set()
         for obj in objects:
             # TODO: raise errors if not dict
@@ -390,16 +392,10 @@ class ChangeSetModel:
     def _is_array(value: Any) -> bool:
         return isinstance(value, list)
 
-    #    @staticmethod
-    #    def _is_intrinsic_function(function_name: str) -> bool:
-    #        # TODO export set
-    #        # TODO check for scope? are intrinsic function strong or soft string literals?
-    #        return function_name in {"Fn:GetAtt"}
+    @staticmethod
+    def _is_created(before: Maybe[Any], after: Maybe[Any]) -> bool:
+        return isinstance(before, NothingType) and not isinstance(after, NothingType)
 
     @staticmethod
-    def _is_created(before: Any | NoSuchValue, after: Any | NoSuchValue) -> bool:
-        return isinstance(before, NoSuchValue) and not isinstance(after, NoSuchValue)
-
-    @staticmethod
-    def _is_removed(before: Any | NoSuchValue, after: Any | NoSuchValue) -> bool:
-        return not isinstance(before, NoSuchValue) and isinstance(after, NoSuchValue)
+    def _is_removed(before: Maybe[Any], after: Maybe[Any]) -> bool:
+        return not isinstance(before, NothingType) and isinstance(after, NothingType)
