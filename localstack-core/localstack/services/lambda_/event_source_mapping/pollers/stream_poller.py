@@ -145,9 +145,14 @@ class StreamPoller(Poller):
             self.iterator_over_shards = iter(self.shards.items())
             current_shard_tuple = next(self.iterator_over_shards, None)
 
+        # TODO Better handling when shards are initialised and the iterator returns nothing
+        if not current_shard_tuple:
+            raise PipeInternalError(
+                "Failed to retrieve any shards for stream polling despite initialization."
+            )
+
         try:
             self.poll_events_from_shard(*current_shard_tuple)
-        # TODO: implement exponential back-off for errors in general
         except PipeInternalError:
             # TODO: standardize logging
             # Ignore and wait for the next polling interval, which will do retry
@@ -156,10 +161,11 @@ class StreamPoller(Poller):
     def poll_events_from_shard(self, shard_id: str, shard_iterator: str):
         abort_condition = None
         get_records_response = self.get_records(shard_iterator)
-        records = get_records_response["Records"]
+        records = get_records_response.get("Records", [])
+        if not records:
+            raise EmptyPollResultsException(service=self.event_source(), source_arn=self.source_arn)
+
         polled_events = self.transform_into_events(records, shard_id)
-        if not polled_events:
-            raise EmptyPollResultsException(service=self.event_source, source_arn=self.source_arn)
 
         # Check MaximumRecordAgeInSeconds
         if maximum_record_age_in_seconds := self.stream_parameters.get("MaximumRecordAgeInSeconds"):
@@ -324,7 +330,7 @@ class StreamPoller(Poller):
                         "Invalid ShardId in ShardIterator for %s. Re-initializing shards.",
                         self.source_arn,
                     )
-                    self.initialize_shards()
+                    self.shards = self.initialize_shards()
                 else:
                     LOG.warning(
                         "Source stream %s does not exist: %s",
@@ -338,10 +344,10 @@ class StreamPoller(Poller):
                     shard_iterator,
                     self.source_arn,
                 )
-                self.initialize_shards()
+                self.shards = self.initialize_shards()
             else:
                 LOG.debug("ClientError during get_records for stream %s: %s", self.source_arn, e)
-                raise PipeInternalError from e
+            raise PipeInternalError from e
 
     def send_events_to_dlq(self, shard_id, events, context) -> None:
         dlq_arn = self.stream_parameters.get("DeadLetterConfig", {}).get("Arn")
