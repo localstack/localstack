@@ -15,6 +15,7 @@ from localstack.aws.api.transcribe import (
     BadRequestException,
     ConflictException,
     GetTranscriptionJobResponse,
+    LanguageCode,
     ListTranscriptionJobsResponse,
     MaxResults,
     MediaFormat,
@@ -47,24 +48,34 @@ LOG = logging.getLogger(__name__)
 
 VOSK_MODELS_URL = f"{HUGGING_FACE_ENDPOINT}/vosk-models/resolve/main/"
 
-# Map of language codes to language models
+# Map of language codes to Vosk language models
+# See https://docs.aws.amazon.com/transcribe/latest/dg/supported-languages.html
 LANGUAGE_MODELS = {
-    "en-IN": "vosk-model-small-en-in-0.4",
-    "en-US": "vosk-model-small-en-us-0.15",
-    "en-GB": "vosk-model-small-en-gb-0.15",
-    "fr-FR": "vosk-model-small-fr-0.22",
-    "de-DE": "vosk-model-small-de-0.15",
-    "es-ES": "vosk-model-small-es-0.22",
-    "it-IT": "vosk-model-small-it-0.4",
-    "pt-BR": "vosk-model-small-pt-0.3",
-    "ru-RU": "vosk-model-small-ru-0.4",
-    "nl-NL": "vosk-model-small-nl-0.22",
-    "tr-TR": "vosk-model-small-tr-0.3",
-    "hi-IN": "vosk-model-small-hi-0.22",
-    "ja-JP": "vosk-model-small-ja-0.22",
-    "fa-IR": "vosk-model-small-fa-0.5",
-    "vi-VN": "vosk-model-small-vn-0.3",
-    "zh-CN": "vosk-model-small-cn-0.3",
+    LanguageCode.ca_ES: "vosk-model-small-ca-0.4",
+    LanguageCode.cs_CZ: "vosk-model-small-cs-0.4-rhasspy",
+    LanguageCode.en_GB: "vosk-model-small-en-gb-0.15",
+    LanguageCode.en_IN: "vosk-model-small-en-in-0.4",
+    LanguageCode.en_US: "vosk-model-small-en-us-0.15",
+    LanguageCode.fa_IR: "vosk-model-small-fa-0.42",
+    LanguageCode.fr_FR: "vosk-model-small-fr-0.22",
+    LanguageCode.de_DE: "vosk-model-small-de-0.15",
+    LanguageCode.es_ES: "vosk-model-small-es-0.42",
+    LanguageCode.gu_IN: "vosk-model-small-gu-0.42",
+    LanguageCode.hi_IN: "vosk-model-small-hi-0.22",
+    LanguageCode.it_IT: "vosk-model-small-it-0.22",
+    LanguageCode.ja_JP: "vosk-model-small-ja-0.22",
+    LanguageCode.kk_KZ: "vosk-model-small-kz-0.15",
+    LanguageCode.ko_KR: "vosk-model-small-ko-0.22",
+    LanguageCode.nl_NL: "vosk-model-small-nl-0.22",
+    LanguageCode.pl_PL: "vosk-model-small-pl-0.22",
+    LanguageCode.pt_BR: "vosk-model-small-pt-0.3",
+    LanguageCode.ru_RU: "vosk-model-small-ru-0.22",
+    LanguageCode.te_IN: "vosk-model-small-te-0.42",
+    LanguageCode.tr_TR: "vosk-model-small-tr-0.3",
+    LanguageCode.uk_UA: "vosk-model-small-uk-v3-nano",
+    LanguageCode.uz_UZ: "vosk-model-small-uz-0.22",
+    LanguageCode.vi_VN: "vosk-model-small-vn-0.4",
+    LanguageCode.zh_CN: "vosk-model-small-cn-0.22",
 }
 
 LANGUAGE_MODEL_DIR = Path(config.dirs.cache) / "vosk"
