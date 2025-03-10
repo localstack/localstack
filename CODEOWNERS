@@ -248,6 +248,6 @@
 /tests/aws/services/sts/ @pinzon @dfangl
 
 # transcribe
-/localstack-core/localstack/aws/api/transcribe/ @sannya-singal @ackdav
-/localstack-core/localstack/services/transcribe/ @sannya-singal @ackdav
-/tests/aws/services/transcribe/ @sannya-singal @ackdav
+/localstack-core/localstack/aws/api/transcribe/ @sannya-singal
+/localstack-core/localstack/services/transcribe/ @sannya-singal
+/tests/aws/services/transcribe/ @sannya-singal
