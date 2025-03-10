@@ -587,13 +587,20 @@ class CloudformationProvider(CloudformationApi):
     ) -> CreateChangeSetOutput:
         state = get_cloudformation_store(context.account_id, context.region)
 
-        req_params = request
-        change_set_type = req_params.get("ChangeSetType", "UPDATE")
-        stack_name = req_params.get("StackName")
-        change_set_name = req_params.get("ChangeSetName")
-        template_body = req_params.get("TemplateBody")
+        # parse template
+        # validate CFn schema
+        # resolve SSM parameters
+        # resolve conditions
+        # resolve supplied parameter overrides
+        # perform mapping lookups
+        # check for circular references
+
+        change_set_type = request.get("ChangeSetType", "UPDATE")
+        stack_name = request.get("StackName")
+        change_set_name = request.get("ChangeSetName")
+        template_body = request.get("TemplateBody")
         # s3 or secretsmanager url
-        template_url = req_params.get("TemplateURL")
+        template_url = request.get("TemplateURL")
 
         # validate and resolve template
         if template_body and template_url:
@@ -607,15 +614,15 @@ class CloudformationProvider(CloudformationApi):
             )  # TODO: check proper message
 
         api_utils.prepare_template_body(
-            req_params
+            request
         )  # TODO: function has too many unclear responsibilities
         if not template_body:
-            template_body = req_params[
+            template_body = request[
                 "TemplateBody"
             ]  # should then have been set by prepare_template_body
-        template = template_preparer.parse_template(req_params["TemplateBody"])
+        template = template_preparer.parse_template(request["TemplateBody"])
 
-        del req_params["TemplateBody"]  # TODO: stop mutating req_params
+        del request["TemplateBody"]  # TODO: stop mutating request
         template["StackName"] = stack_name
         # TODO: validate with AWS what this is actually doing?
         template["ChangeSetName"] = change_set_name
@@ -638,11 +645,11 @@ class CloudformationProvider(CloudformationApi):
             if not active_stack_candidates and change_set_type == ChangeSetType.CREATE:
                 empty_stack_template = dict(template)
                 empty_stack_template["Resources"] = {}
-                req_params_copy = clone_stack_params(req_params)
+                request_copy = clone_stack_params(request)
                 stack = Stack(
                     context.account_id,
                     context.region,
-                    req_params_copy,
+                    request_copy,
                     empty_stack_template,
                     template_body=template_body,
                 )
@@ -694,12 +701,7 @@ class CloudformationProvider(CloudformationApi):
             old_parameters=old_parameters,
         )
 
-        # TODO: remove this when fixing Stack.resources and transformation order
-        #   currently we need to create a stack with existing resources + parameters so that resolve refs recursively in here will work.
-        #   The correct way to do it would be at a later stage anyway just like a normal intrinsic function
-        req_params_copy = clone_stack_params(req_params)
-        temp_stack = Stack(context.account_id, context.region, req_params_copy, template)
-        temp_stack.set_resolved_parameters(resolved_parameters)
+        mappings = template.get("Mappings", {})
 
         # TODO: everything below should be async
         # apply template transformations
@@ -707,9 +709,9 @@ class CloudformationProvider(CloudformationApi):
             context.account_id,
             context.region,
             template,
-            stack_name=temp_stack.stack_name,
-            resources=temp_stack.resources,
-            mappings=temp_stack.mappings,
+            stack_name=request["StackName"],
+            resources=template["Resources"],
+            mappings=mappings,
             conditions={},  # TODO: we don't have any resolved conditions yet at this point but we need the conditions because of the samtranslator...
             resolved_parameters=resolved_parameters,
         )
@@ -720,7 +722,7 @@ class CloudformationProvider(CloudformationApi):
 
         # create change set for the stack and apply changes
         change_set = StackChangeSet(
-            context.account_id, context.region, stack, req_params, transformed_template
+            context.account_id, context.region, stack, request, transformed_template
         )
         # only set parameters for the changeset, then switch to stack on execute_change_set
         change_set.set_resolved_parameters(resolved_parameters)
@@ -733,7 +735,7 @@ class CloudformationProvider(CloudformationApi):
             region_name=context.region,
             conditions=raw_conditions,
             parameters=resolved_parameters,
-            mappings=temp_stack.mappings,
+            mappings=mappings,
             stack_name=stack_name,
         )
         change_set.set_resolved_stack_conditions(resolved_stack_conditions)
