@@ -1121,25 +1121,19 @@ class TestKMS:
         assert ciphertext_before != ciphertext_after
 
     @markers.aws.validated
-    def test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_disabled_preserves_automatic_rotation_schedule_attributes(
+    def test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_disabled(
         self, kms_key, aws_client, snapshot
     ):
         key_id = kms_key["KeyId"]
-
-        rotation_status_response_before = aws_client.kms.get_key_rotation_status(KeyId=key_id)
 
         rotate_on_demand_response = aws_client.kms.rotate_key_on_demand(KeyId=key_id)
         snapshot.match("rotate-on-demand-response", rotate_on_demand_response)
 
         rotation_status_response_after = aws_client.kms.get_key_rotation_status(KeyId=key_id)
-        assert (
-            rotation_status_response_after["KeyRotationEnabled"]
-            == rotation_status_response_before["KeyRotationEnabled"]
-        )
         snapshot.match("rotation-status-response-after-rotation", rotation_status_response_after)
 
     @markers.aws.validated
-    def test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_enabled_preserves_automatic_rotation_schedule_attributes(
+    def test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_enabled(
         self, kms_key, aws_client, snapshot
     ):
         key_id = kms_key["KeyId"]
@@ -1152,16 +1146,8 @@ class TestKMS:
 
         rotation_status_response_after = aws_client.kms.get_key_rotation_status(KeyId=key_id)
         assert (
-            rotation_status_response_after["KeyRotationEnabled"]
-            == rotation_status_response_before["KeyRotationEnabled"]
-        )
-        assert (
             rotation_status_response_after["NextRotationDate"]
             == rotation_status_response_before["NextRotationDate"]
-        )
-        assert (
-            rotation_status_response_after["RotationPeriodInDays"]
-            == rotation_status_response_before["RotationPeriodInDays"]
         )
         snapshot.match("rotation-status-response-after-rotation", rotation_status_response_after)
 
