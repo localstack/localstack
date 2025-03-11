@@ -164,7 +164,7 @@ class EsmWorker:
                 # If the event source is empty, backoff
                 poll_interval_duration = empty_boff.next_backoff()
                 LOG.debug(
-                    "The event source %s is empty. Backing off for %s seconds until next request.",
+                    "The event source %s is empty. Backing off for %.2d seconds until next request.",
                     miss_ex.source_arn,
                     poll_interval_duration,
                 )

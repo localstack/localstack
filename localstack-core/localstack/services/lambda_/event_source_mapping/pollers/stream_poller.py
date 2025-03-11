@@ -163,6 +163,7 @@ class StreamPoller(Poller):
         get_records_response = self.get_records(shard_iterator)
         records = get_records_response.get("Records", [])
         if not records:
+            self.shards[shard_id] = get_records_response["NextShardIterator"]
             raise EmptyPollResultsException(service=self.event_source(), source_arn=self.source_arn)
 
         polled_events = self.transform_into_events(records, shard_id)
