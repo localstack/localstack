@@ -1450,7 +1450,7 @@ class TestDeployProcess:
 
     class TestCreateChangeSetSync:
         @pytest.fixture
-        def evaluate_template(self, aws_client: ServiceLevelClientFactory, snapshot):
+        def evaluate_template(self, cleanups, aws_client: ServiceLevelClientFactory, snapshot):
             def inner(template: Any, parameters: dict | None = None):
                 parameters = parameters or {}
                 stack_name = f"stack-{short_uid()}"
@@ -1460,7 +1460,7 @@ class TestDeployProcess:
                     template = json.dumps(template)
 
                 with pytest.raises(ClientError) as exc_info:
-                    aws_client.cloudformation.create_change_set(
+                    change_set = aws_client.cloudformation.create_change_set(
                         StackName=stack_name,
                         ChangeSetName=change_set_name,
                         TemplateBody=template,
@@ -1470,9 +1470,92 @@ class TestDeployProcess:
                             for (k, v) in parameters.items()
                         ],
                     )
+                    # in case the change set is created correctly, clean up
+                    cleanups.append(
+                        lambda: aws_client.cloudformation.delete_change_set(
+                            ChangeSetName=change_set["Id"]
+                        )
+                    )
                 snapshot.match("client-error", exc_info.value.response)
 
             return inner
+
+        @pytest.mark.parametrize(
+            "template",
+            [
+                # the resource references an invalid condition, but the condition
+                # references an invalid mapping
+                pytest.param(
+                    {
+                        "Mappings": {
+                            "MyMap": {
+                                "Foo": {
+                                    "Key": "value",
+                                },
+                            },
+                        },
+                        "Conditions": {
+                            "MyCondition": {
+                                "Fn::Equals": [
+                                    {"Fn::FindInMap": ["MyMap2", "Foo", "Key"]},
+                                    "value",
+                                ],
+                            },
+                        },
+                        "Resources": {
+                            "MyParameter": {
+                                "Type": "AWS::SSM::Parameter",
+                                "Condition": "MyCondition2",
+                                "Properties": {
+                                    "Type": "String",
+                                    "Value": "foo",
+                                },
+                            },
+                        },
+                    },
+                    id="resource-condition,condition-mapping",
+                ),
+                # the resource references the invalid condition and invalid map
+                pytest.param(
+                    {
+                        "Mappings": {
+                            "MyMap": {
+                                "Foo": {
+                                    "Key": "value",
+                                },
+                            },
+                        },
+                        "Conditions": {
+                            "MyCondition": {
+                                "Fn::Equals": [
+                                    "value",
+                                    "value",
+                                ],
+                            },
+                        },
+                        "Resources": {
+                            "MyParameter": {
+                                "Type": "AWS::SSM::Parameter",
+                                "Condition": "MyCondition2",
+                                "Properties": {
+                                    "Type": "String",
+                                    "Value": {
+                                        "Fn::FindInMap": [
+                                            "MyMap2",
+                                            "Foo",
+                                            "Key",
+                                        ],
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    id="resource-condition,resource-mapping",
+                ),
+            ],
+        )
+        def test_mappings_vs_conditions(self, template, evaluate_template):
+            evaluate_template(template)
 
         @pytest.mark.skip(
             reason="Invalid assumption: macros cause what was a sync process to be async"

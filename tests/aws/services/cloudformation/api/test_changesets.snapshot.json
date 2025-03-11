@@ -1208,5 +1208,37 @@
   "tests/aws/services/cloudformation/api/test_changesets.py::TestDeployProcess::TestCreateChangeSetAsync::test_invalid_macro_missing_ssm_parameter": {
     "recorded-date": "11-03-2025, 12:41:15",
     "recorded-content": {}
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestDeployProcess::TestCreateChangeSetSync::test_mappings_vs_conditions[resource-condition,condition-mapping]": {
+    "recorded-date": "11-03-2025, 13:32:07",
+    "recorded-content": {
+      "client-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template error: Mapping named 'MyMap2' is not present in the 'Mappings' section of template.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestDeployProcess::TestCreateChangeSetSync::test_mappings_vs_conditions[resource-condition,resource-mapping]": {
+    "recorded-date": "11-03-2025, 13:32:07",
+    "recorded-content": {
+      "client-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Condition MyCondition2 is not defined.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
