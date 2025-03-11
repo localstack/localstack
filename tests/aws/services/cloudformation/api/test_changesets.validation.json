@@ -71,6 +71,12 @@
   "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::test_static_change": {
     "last_validated_date": "2025-03-04T13:59:01+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestDeployProcess::TestCreateChangeSetAsync::test_invalid_macro": {
+    "last_validated_date": "2025-03-07T21:43:34+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestDeployProcess::TestCreateChangeSetAsync::test_invalid_macro_bad_conditions": {
+    "last_validated_date": "2025-03-07T21:48:46+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_create_change_set_update_without_parameters": {
     "last_validated_date": "2022-05-31T07:32:02+00:00"
   },

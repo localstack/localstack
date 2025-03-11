@@ -1,11 +1,13 @@
 import copy
 import json
 import os.path
+from typing import Any
 
 import botocore
 import pytest
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, WaiterError
 
+from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.aws.cloudformation_utils import (
     load_template_file,
     load_template_raw,
@@ -1436,3 +1438,121 @@ class TestChangeSetDiff:
             new_template["Resources"][resource_id]["Properties"]["Value"] = new_value
             assert new_template != base_template
             capture_stack_diff(base_template, new_template)
+
+
+@markers.aws.validated
+@pytest.mark.skipif(condition=not is_aws_cloud(), reason="Not implemented yet")
+class TestDeployProcess:
+    """
+    Collection of tests of templates that have two errors in them to help us
+    determine the deployment steps CloudFormation does during the deploy process
+    """
+
+    class TestCreateChangeSetSync:
+        @pytest.fixture
+        def evaluate_template(self, aws_client: ServiceLevelClientFactory, snapshot):
+            def inner(template: Any, parameters: dict | None = None):
+                parameters = parameters or {}
+                stack_name = f"stack-{short_uid()}"
+                change_set_name = f"cs-{short_uid()}"
+
+                if isinstance(template, (dict, list, tuple)):
+                    template = json.dumps(template)
+
+                with pytest.raises(ClientError) as exc_info:
+                    aws_client.cloudformation.create_change_set(
+                        StackName=stack_name,
+                        ChangeSetName=change_set_name,
+                        TemplateBody=template,
+                        ChangeSetType="CREATE",
+                        Parameters=[
+                            {"ParameterKey": k, "ParameterValue": v}
+                            for (k, v) in parameters.items()
+                        ],
+                    )
+                snapshot.match("client-error", exc_info.value.response)
+
+            return inner
+
+        @pytest.mark.skip(
+            reason="Invalid assumption: macros cause what was a sync process to be async"
+        )
+        def test_invalid_macro_bad_conditions(self, evaluate_template):
+            template = {
+                "Transform": ["MyMacro"],
+                "Conditions": {
+                    "MyCondition": {
+                        "Fn::Equals": [
+                            "a",
+                            "a",
+                        ],
+                    },
+                },
+                "Resources": {
+                    "MyParameter": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Condition": "MyCondition2",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": "Foo",
+                        },
+                    },
+                },
+            }
+            evaluate_template(template)
+
+    class TestCreateChangeSetAsync:
+        @pytest.fixture
+        def evaluate_template(self, aws_client: ServiceLevelClientFactory, snapshot):
+            def inner(template: Any, parameters: dict | None = None):
+                parameters = parameters or {}
+                stack_name = f"stack-{short_uid()}"
+                change_set_name = f"cs-{short_uid()}"
+
+                if isinstance(template, (dict, list, tuple)):
+                    template = json.dumps(template)
+
+                create_change_set_response = aws_client.cloudformation.create_change_set(
+                    StackName=stack_name,
+                    ChangeSetName=change_set_name,
+                    TemplateBody=template,
+                    ChangeSetType="CREATE",
+                    Parameters=[
+                        {"ParameterKey": k, "ParameterValue": v} for (k, v) in parameters.items()
+                    ],
+                )
+                with pytest.raises(WaiterError) as exc_info:
+                    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+                        ChangeSetName=create_change_set_response["Id"]
+                    )
+                snapshot.match("client-error", exc_info.value.response)
+
+            return inner
+
+        @pytest.mark.skip(
+            reason="Invalid assumption: macros cause what was a sync process to be async"
+        )
+        def test_invalid_macro_missing_ssm_parameter(self, evaluate_template):
+            parameter_name = f"parameter-{short_uid()}"
+            # TODO: assert the parameter does not exist
+            template = {
+                "Transform": ["MyMacro"],
+                "Parameters": {
+                    "MyParameter": {
+                        "Type": "AWS::SSM::Parameter::Value<String>",
+                    },
+                },
+                "Resources": {
+                    "MyParameter": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Ref": "MyParameter"},
+                        },
+                    },
+                },
+            }
+            evaluate_template(template, parameters={"MyParameter": parameter_name})
+
+    class TestExecuteChangeSetAsync:
+        pass

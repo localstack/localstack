@@ -1200,5 +1200,13 @@
         }
       ]
     }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestDeployProcess::TestCreateChangeSetSync::test_invalid_macro_bad_conditions": {
+    "recorded-date": "11-03-2025, 12:39:00",
+    "recorded-content": {}
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestDeployProcess::TestCreateChangeSetAsync::test_invalid_macro_missing_ssm_parameter": {
+    "recorded-date": "11-03-2025, 12:41:15",
+    "recorded-content": {}
   }
 }
