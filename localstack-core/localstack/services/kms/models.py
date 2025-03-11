@@ -810,8 +810,5 @@ class KmsStore(BaseStore):
     # maps import tokens to import data
     imports: Dict[str, KeyImportState] = LocalAttribute(default=dict)
 
-    # tracks on demand rotation for every key
-    on_demand_rotations: Dict[str, datetime.datetime] = LocalAttribute(default=dict)
-
 
 kms_stores = AccountRegionBundle("kms", KmsStore)
