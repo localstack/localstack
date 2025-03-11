@@ -7,6 +7,8 @@ from typing import Any, Final, Generator, Optional, Union
 
 from typing_extensions import TypeVar
 
+from localstack.utils.strings import camel_to_snake_case
+
 T = TypeVar("T")
 
 
@@ -129,6 +131,18 @@ class NodeProperty(ChangeSetNode):
         self.value = value
 
 
+class NodeIntrinsicFunction(ChangeSetNode):
+    intrinsic_function: Final[str]
+    arguments: Final[ChangeSetEntity]
+
+    def __init__(
+        self, change_type: ChangeType, intrinsic_function: str, arguments: ChangeSetEntity
+    ):
+        super().__init__(change_type=change_type)
+        self.intrinsic_function = intrinsic_function
+        self.arguments = arguments
+
+
 class NodeObject(ChangeSetNode):
     bindings: Final[dict[str, ChangeSetEntity]]
 
@@ -178,6 +192,10 @@ class TerminalValueUnchanged(TerminalValue):
 
 ResourcesKey: Final[str] = "Resources"
 PropertiesKey: Final[str] = "Properties"
+TypeKey: Final[str] = "Type"
+# TODO: expand intrinsic functions set.
+FnGetAttKey: Final[str] = "Fn::GetAtt"
+INTRINSIC_FUNCTIONS: Final[set[str]] = {FnGetAttKey}
 
 
 class ChangeSetModel:
@@ -189,11 +207,13 @@ class ChangeSetModel:
 
     _before_template: Final[Maybe[dict]]
     _after_template: Final[Maybe[dict]]
+    _visited_resources: Final[dict[str, NodeResource]]
     _node_template: Final[NodeTemplate]
 
     def __init__(self, before_template: Optional[dict], after_template: Optional[dict]):
         self._before_template = before_template or Nothing
         self._after_template = after_template or Nothing
+        self._visited_resources = dict()
         self._node_template = self._model(
             before_template=before_template, after_template=after_template
         )
@@ -202,7 +222,7 @@ class ChangeSetModel:
         # TODO: rethink naming of this for outer utils
         return self._node_template
 
-    def _visit_terminal_value(  # noqa
+    def _visit_terminal_value(
         self, before_value: Maybe[Any], after_value: Maybe[Any]
     ) -> TerminalValue:
         if self._is_created(before=before_value, after=after_value):
@@ -212,6 +232,63 @@ class ChangeSetModel:
         if before_value == after_value:
             return TerminalValueUnchanged(value=before_value)
         return TerminalValueModified(value=before_value, modified_value=after_value)
+
+    def _visit_intrinsic_function(
+        self, intrinsic_function: str, before_arguments: Maybe[Any], after_arguments: Maybe[Any]
+    ) -> NodeIntrinsicFunction:
+        arguments = self._visit_value(before_value=before_arguments, after_value=after_arguments)
+
+        if self._is_created(before=before_arguments, after=after_arguments):
+            change_type = ChangeType.CREATED
+        elif self._is_removed(before=before_arguments, after=after_arguments):
+            change_type = ChangeType.REMOVED
+        else:
+            function_name = intrinsic_function.replace("::", "_")
+            function_name = camel_to_snake_case(function_name)
+            visit_function_name = f"_resolve_intrinsic_function_{function_name}"
+            visit_function = getattr(self, visit_function_name)
+            change_type = visit_function(arguments)
+
+        return NodeIntrinsicFunction(
+            change_type=change_type, intrinsic_function=intrinsic_function, arguments=arguments
+        )
+
+    def _resolve_intrinsic_function_fn_get_att(self, arguments: ChangeSetEntity) -> ChangeType:
+        # TODO: add support for nested intrinsic functions.
+        # TODO: validate arguments structure properly.
+        if not isinstance(arguments, NodeArray) or not arguments.array:
+            raise RuntimeError()
+        logical_name_of_resource_entity = arguments.array[0]
+        if not isinstance(logical_name_of_resource_entity, TerminalValue):
+            raise RuntimeError()
+        logical_name_of_resource: str = logical_name_of_resource_entity.value
+        if not isinstance(logical_name_of_resource, str):
+            raise RuntimeError()
+
+        node_resource: NodeResource = self._retrieve_or_visit_resource(
+            resource_name=logical_name_of_resource
+        )
+        # TODO: should this check for deletion of resource, if so what error should be raised?
+
+        # TODO: check attributeName too? It seems like this is not necessary as the whole resource is marked as
+        #  modified even if the one field changed.
+        if node_resource.change_type != ChangeType.UNCHANGED:
+            return ChangeType.MODIFIED
+
+        return ChangeType.UNCHANGED
+
+    def _retrieve_or_visit_resource(self, resource_name: str) -> NodeResource:
+        before_resources, after_resources = self._sample_from(
+            ResourcesKey, self._before_template, self._after_template
+        )
+        before_resource, after_resource = self._sample_from(
+            resource_name, before_resources, after_resources
+        )
+        return self._visit_resource(
+            resource_name=resource_name,
+            before_resource=before_resource,
+            after_resource=after_resource,
+        )
 
     def _visit_array(self, before_array: Maybe[list], after_array: Maybe[list]) -> NodeArray:
         change_type = ChangeType.UNCHANGED
@@ -228,9 +305,15 @@ class ChangeSetModel:
         binding_names = self._keys_of(before_object, after_object)
         bindings: dict[str, ChangeSetEntity] = dict()
         for binding_name in binding_names:
-            # TODO: check the binding names for intrinsic functions and redirect.
             before_value, after_value = self._sample_from(binding_name, before_object, after_object)
-            value = self._visit_value(before_value=before_value, after_value=after_value)
+            if self._is_intrinsic_function_name(function_name=binding_name):
+                value = self._visit_intrinsic_function(
+                    intrinsic_function=binding_name,
+                    before_arguments=before_value,
+                    after_arguments=after_value,
+                )
+            else:
+                value = self._visit_value(before_value=before_value, after_value=after_value)
             bindings[binding_name] = value
             if value.change_type != ChangeType.UNCHANGED:
                 change_type = ChangeType.MODIFIED
@@ -305,12 +388,19 @@ class ChangeSetModel:
     def _visit_resource(
         self, resource_name: str, before_resource: Maybe[dict], after_resource: Maybe[dict]
     ) -> NodeResource:
+        node_resource = self._visited_resources.get(resource_name)
+        if node_resource is not None:
+            return node_resource
+
         if self._is_created(before=before_resource, after=after_resource):
             change_type = ChangeType.CREATED
         elif self._is_removed(before=before_resource, after=after_resource):
             change_type = ChangeType.REMOVED
         else:
             change_type = ChangeType.UNCHANGED
+
+        # TODO: investigate behaviour with type changes, for now this is filler code.
+        type_str = self._sample_from(TypeKey, before_resource)
 
         before_properties, after_properties = self._sample_from(
             PropertiesKey, before_resource, after_resource
@@ -322,13 +412,14 @@ class ChangeSetModel:
         if change_type == ChangeType.UNCHANGED and properties.change_type != ChangeType.UNCHANGED:
             change_type = ChangeType.MODIFIED
 
-        return NodeResource(
+        node_resource = NodeResource(
             change_type=change_type,
             name=resource_name,
-            # TODO: investigate behaviour with type changes, for now this is filler code.
-            type_=TerminalValueUnchanged(value="<Type>"),
+            type_=TerminalValueUnchanged(value=type_str),
             properties=properties,
         )
+        self._visited_resources[resource_name] = node_resource
+        return node_resource
 
     def _visit_resources(
         self, before_resources: Maybe[dict], after_resources: Maybe[dict]
@@ -362,6 +453,12 @@ class ChangeSetModel:
         )
         # TODO: what is a change type for templates?
         return NodeTemplate(change_type=resources.change_type, resources=resources)
+
+    @staticmethod
+    def _is_intrinsic_function_name(function_name: str) -> bool:
+        # TODO: expand vocabulary.
+        # TODO: are intrinsic functions soft keywords?
+        return function_name in INTRINSIC_FUNCTIONS
 
     @staticmethod
     def _sample_from(key: str, *objects: Maybe[dict]) -> Maybe[Any]:

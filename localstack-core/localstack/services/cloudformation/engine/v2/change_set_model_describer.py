@@ -1,17 +1,20 @@
 from __future__ import annotations
 
 import abc
-from typing import Any, Optional
+from typing import Any, Final, Optional
 
 from localstack.aws.api.cloudformation import ChangeAction, ResourceChange
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetEntity,
     ChangeType,
     NodeArray,
+    NodeIntrinsicFunction,
     NodeObject,
     NodeProperties,
+    NodeProperty,
     NodeResource,
-    NodeResources,
+    NodeTemplate,
+    TerminalValue,
     TerminalValueCreated,
     TerminalValueModified,
     TerminalValueRemoved,
@@ -20,6 +23,8 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
 from localstack.services.cloudformation.engine.v2.change_set_model_visitor import (
     ChangeSetModelVisitor,
 )
+
+CHANGESET_KNOWN_AFTER_APPLY: Final[str] = "{{changeSet:KNOWN_AFTER_APPLY}}"
 
 
 class DescribeUnit(abc.ABC):
@@ -32,10 +37,17 @@ class DescribeUnit(abc.ABC):
 
 
 class ChangeSetModelDescriber(ChangeSetModelVisitor):
-    resource_changes: list[ResourceChange] = list()
+    _node_template: Final[NodeTemplate]
+    _resource_changes: Final[list[ResourceChange]]
 
-    def __init__(self):
-        self.resource_changes = list()
+    def __init__(self, node_template: NodeTemplate):
+        self._node_template = node_template
+        self._resource_changes = list()
+        self.visit(self._node_template)
+
+    def get_resource_changes(self) -> list[ResourceChange]:
+        # TODO return 'list[Change]' instead.
+        return self._resource_changes
 
     def visit(self, change_set_entity: ChangeSetEntity) -> DescribeUnit:
         # Overridden for the return type-hints.
@@ -62,9 +74,19 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
     def visit_terminal_value_unchanged(
         self, terminal_value_unchanged: TerminalValueUnchanged
     ) -> DescribeUnit:
-        return DescribeUnit(before_context=terminal_value_unchanged.value)
+        return DescribeUnit(
+            before_context=terminal_value_unchanged.value,
+            after_context=terminal_value_unchanged.value,
+        )
 
     def visit_node_object(self, node_object: NodeObject) -> DescribeUnit:
+        # TODO: improve check syntax
+        if len(node_object.bindings) == 1:
+            binding_values = list(node_object.bindings.values())
+            unique_value = binding_values[0]
+            if isinstance(unique_value, NodeIntrinsicFunction):
+                return self.visit(unique_value)
+
         before_context = dict()
         after_context = dict()
         for name, change_set_entity in node_object.bindings.items():
@@ -77,7 +99,58 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
                     after_context[name] = describe_unit.after_context
                 case ChangeType.REMOVED:
                     before_context[name] = describe_unit.before_context
+                case ChangeType.UNCHANGED:
+                    before_context[name] = describe_unit.before_context
+                    after_context[name] = describe_unit.after_context
         return DescribeUnit(before_context=before_context, after_context=after_context)
+
+    @staticmethod
+    def _get_node_resource_for(resource_name: str, node_template: NodeTemplate) -> NodeResource:
+        # TODO: this could be improved with hashmap lookups if the Node contained bindings and not lists.
+        for node_resource in node_template.resources.resources:
+            if node_resource.name == resource_name:
+                return node_resource
+        # TODO
+        raise RuntimeError()
+
+    @staticmethod
+    def _get_node_property_for(property_name: str, node_resource: NodeResource) -> NodeProperty:
+        # TODO: this could be improved with hashmap lookups if the Node contained bindings and not lists.
+        for node_property in node_resource.properties.properties:
+            if node_property.name == property_name:
+                return node_property
+        # TODO
+        raise RuntimeError()
+
+    def visit_node_intrinsic_function_fn_get_att(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> DescribeUnit:
+        arguments_unit = self.visit(node_intrinsic_function.arguments)
+        # TODO: validate the return value according to the spec.
+        before_argument_list = arguments_unit.before_context
+        before_logical_name_of_resource = before_argument_list[0]
+        before_attribute_name = before_argument_list[1]
+        before_node_resource = self._get_node_resource_for(
+            resource_name=before_logical_name_of_resource, node_template=self._node_template
+        )
+        node_property: TerminalValue = self._get_node_property_for(
+            property_name=before_attribute_name, node_resource=before_node_resource
+        )
+        before_attribute_value = node_property.value.value
+
+        match node_intrinsic_function.change_type:
+            case ChangeType.MODIFIED:
+                return DescribeUnit(
+                    before_context=before_attribute_value, after_context=CHANGESET_KNOWN_AFTER_APPLY
+                )
+            case ChangeType.CREATED:
+                return DescribeUnit(after_context=CHANGESET_KNOWN_AFTER_APPLY)
+            case ChangeType.REMOVED:
+                return DescribeUnit(before_context=before_attribute_value)
+        # Unchanged
+        return DescribeUnit(
+            before_context=before_attribute_value, after_context=before_attribute_value
+        )
 
     def visit_node_array(self, node_array: NodeArray) -> DescribeUnit:
         before_context = list()
@@ -141,14 +214,14 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
                 resource_change["Action"] = ChangeAction.Remove
                 resource_change["BeforeContext"] = properties_describe_unit.before_context
 
-        self.resource_changes.append(resource_change)
+        self._resource_changes.append(resource_change)
 
         # TODO
         return None
 
-    def visit_node_resources(self, node_resources: NodeResources) -> DescribeUnit:
-        for node_resource in node_resources.resources:
-            if node_resource.change_type != ChangeType.UNCHANGED:
-                self.visit_node_resource(node_resource=node_resource)
-        # TODO
-        return None
+    # def visit_node_resources(self, node_resources: NodeResources) -> DescribeUnit:
+    # for node_resource in node_resources.resources:
+    #    if node_resource.change_type != ChangeType.UNCHANGED:
+    #        self.visit_node_resource(node_resource=node_resource)
+    # TODO
+    # return None
