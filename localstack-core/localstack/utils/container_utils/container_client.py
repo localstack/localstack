@@ -448,6 +448,12 @@ class VolumeMappings:
     def __repr__(self):
         return self.mappings.__repr__()
 
+    def __len__(self):
+        return len(self.mappings)
+
+    def __getitem__(self, item: int):
+        return self.mappings[item]
+
 
 VolumeType = Literal["bind", "volume"]
 
