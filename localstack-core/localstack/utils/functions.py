@@ -70,7 +70,7 @@ def prevent_stack_overflow(match_parameters=False):
 
                 # construct dict of arguments the original function has been called with
                 sig = inspect.signature(wrapped)
-                this_call_args = dict(zip(sig.parameters.keys(), args))
+                this_call_args = dict(zip(sig.parameters.keys(), args, strict=False))
                 this_call_args.update(kwargs)
 
                 return prev_call_args == this_call_args

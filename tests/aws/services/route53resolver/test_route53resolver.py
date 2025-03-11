@@ -818,7 +818,7 @@ class TestRoute53Resolver:
         priorities = [1, 2, 3, 4]
         actions = [Action.ALLOW, Action.ALERT, Action.ALERT, Action.ALLOW]
 
-        for action, priority in zip(actions, priorities):
+        for action, priority in zip(actions, priorities, strict=False):
             domain_list_response = aws_client.route53resolver.create_firewall_domain_list(
                 Name=f"fw-domain-list-{short_uid()}"
             )

@@ -1588,7 +1588,7 @@ class TestEventRule:
 
         # create rules
         sources = ["source-one", "source-two", "source-three"]
-        for i, source in zip(range(3), sources):
+        for i, source in zip(range(3), sources, strict=False):
             rule_name = f"test-rule-{i}-{short_uid()}"
             rule = events_put_rule(
                 Name=rule_name,
@@ -1613,7 +1613,7 @@ class TestEventRule:
                 Targets=[{"Id": target_id, "Arn": lambda_function_arn}],
             )
 
-        for i, source in zip(range(3), sources):
+        for i, source in zip(range(3), sources, strict=False):
             num_events = i + 1
             aws_client.events.put_events(
                 Entries=[
@@ -1681,7 +1681,9 @@ class TestEventRule:
                 "InputTemplate": '{"detail-with-id": <detail>}',
             },
         ]
-        for i, pattern, input_transformer in zip(range(2), patterns, input_transformers):
+        for i, pattern, input_transformer in zip(
+            range(2), patterns, input_transformers, strict=False
+        ):
             rule_name = f"test-rule-{i}-{short_uid()}"
             rule = events_put_rule(
                 Name=rule_name,
@@ -1716,7 +1718,7 @@ class TestEventRule:
             {"payload": {"id": "123"}},
             {"id": "123"},
         ]
-        for i, detail in zip(range(2), details):
+        for i, detail in zip(range(2), details, strict=False):
             num_events = i + 1
             aws_client.events.put_events(
                 Entries=[
