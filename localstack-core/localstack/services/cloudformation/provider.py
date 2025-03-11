@@ -391,7 +391,11 @@ class CloudformationProvider(CloudformationApi):
         deployer = template_deployer.TemplateDeployer(context.account_id, context.region, stack)
         # TODO: there shouldn't be a "new" stack on update
         new_stack = Stack(
-            context.account_id, context.region, request, template, request["TemplateBody"]
+            context.account_id,
+            context.region,
+            request,
+            template,
+            template_body,
         )
         new_stack.set_resolved_parameters(resolved_parameters)
         stack.set_resolved_parameters(resolved_parameters)
