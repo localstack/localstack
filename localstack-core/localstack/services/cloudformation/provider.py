@@ -207,15 +207,13 @@ class CloudformationProvider(CloudformationApi):
         if active_stack_candidates:
             raise AlreadyExistsException(f"Stack [{stack_name}] already exists")
 
-        template_body = request.get("TemplateBody") or ""
+        template_body = api_utils.extract_template_body(request)
         if len(template_body) > 51200:
             raise ValidationError(
                 f"1 validation error detected: Value '{request['TemplateBody']}' at 'templateBody' "
                 "failed to satisfy constraint: Member must have length less than or equal to 51200"
             )
-        api_utils.prepare_template_body(request)  # TODO: avoid mutating request directly
-
-        template = template_preparer.parse_template(request["TemplateBody"])
+        template = template_preparer.parse_template(template_body)
 
         stack_name = template["StackName"] = request.get("StackName")
         if api_utils.validate_stack_name(stack_name) is False:
@@ -330,8 +328,8 @@ class CloudformationProvider(CloudformationApi):
         if not stack:
             return not_found_error(f'Unable to update non-existing stack "{stack_name}"')
 
-        api_utils.prepare_template_body(request)
-        template = template_preparer.parse_template(request["TemplateBody"])
+        template_body = api_utils.extract_template_body(request)
+        template = template_preparer.parse_template(template_body)
 
         if (
             "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", [])
@@ -530,8 +528,8 @@ class CloudformationProvider(CloudformationApi):
                 return stack_not_found_error(stack_name)
             template = stack.template
         else:
-            api_utils.prepare_template_body(request)
-            template = template_preparer.parse_template(request["TemplateBody"])
+            template_body = api_utils.extract_template_body(request)
+            template = template_preparer.parse_template(template_body)
             request["StackName"] = "tmp-stack"
             stack = Stack(context.account_id, context.region, request, template)
 
@@ -584,6 +582,11 @@ class CloudformationProvider(CloudformationApi):
 
         # fetch template
         template_body = api_utils.extract_template_body(request)
+        if len(template_body) > 51200:
+            raise ValidationError(
+                f"1 validation error detected: Value '{request['TemplateBody']}' at 'templateBody' "
+                "failed to satisfy constraint: Member must have length less than or equal to 51200"
+            )
         # parse template
         template = template_preparer.parse_template(template_body)
         # validate CFn schema
@@ -991,8 +994,8 @@ class CloudformationProvider(CloudformationApi):
     ) -> ValidateTemplateOutput:
         try:
             # TODO implement actual validation logic
-            template_body = api_utils.get_template_body(request)
-            valid_template = json.loads(template_preparer.template_to_json(template_body))
+            template_body = api_utils.extract_template_body(request)
+            valid_template = template_preparer.parse_template(template_body)
 
             parameters = [
                 TemplateParameter(
