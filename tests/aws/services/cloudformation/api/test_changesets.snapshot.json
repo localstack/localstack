@@ -166,16 +166,36 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_describe_change_set_nonexisting": {
-    "recorded-date": "11-08-2022, 13:22:01",
+    "recorded-date": "11-03-2025, 19:12:57",
     "recorded-content": {
       "exception": "An error occurred (ValidationError) when calling the DescribeChangeSet operation: Stack [somestack] does not exist"
     }
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_delete_change_set_exception": {
-    "recorded-date": "11-08-2022, 14:07:38",
+    "recorded-date": "11-03-2025, 19:13:48",
     "recorded-content": {
-      "e1": "<ExceptionInfo ClientError('An error occurred (ValidationError) when calling the DeleteChangeSet operation: Stack [nostack] does not exist') tblen=3>",
-      "e2": "<ExceptionInfo ClientError('An error occurred (ValidationError) when calling the DeleteChangeSet operation: StackName must be specified if ChangeSetName is not specified as an ARN.') tblen=3>"
+      "e1": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Stack [nostack] does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "e2": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "StackName must be specified if ChangeSetName is not specified as an ARN.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_name_conflicts": {

@@ -1,12 +1,12 @@
 {
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_archive_error_duplicate[custom]": {
-    "last_validated_date": "2024-05-17T16:15:53+00:00"
+    "last_validated_date": "2025-03-11T19:46:53+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_archive_error_duplicate[default]": {
-    "last_validated_date": "2024-05-17T16:15:51+00:00"
+    "last_validated_date": "2025-03-11T19:46:51+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_archive_error_unknown_event_bus": {
-    "last_validated_date": "2024-05-17T15:15:32+00:00"
+    "last_validated_date": "2025-03-11T19:45:47+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_list_describe_update_delete_archive[custom]": {
     "last_validated_date": "2024-05-17T15:15:32+00:00"
@@ -15,13 +15,13 @@
     "last_validated_date": "2024-05-17T15:15:31+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_delete_archive_error_unknown_archive": {
-    "last_validated_date": "2024-05-17T16:46:11+00:00"
+    "last_validated_date": "2025-03-11T19:49:18+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_describe_archive_error_unknown_archive": {
-    "last_validated_date": "2024-05-17T16:19:03+00:00"
+    "last_validated_date": "2025-03-11T19:47:23+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_error_unknown_source_arn": {
-    "last_validated_date": "2024-05-17T16:34:48+00:00"
+    "last_validated_date": "2025-03-11T19:47:46+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_state_enabled[custom]": {
     "last_validated_date": "2024-05-17T16:51:14+00:00"
@@ -60,10 +60,10 @@
     "last_validated_date": "2024-05-17T16:32:51+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_update_archive_error_unknown_archive": {
-    "last_validated_date": "2024-05-17T16:44:35+00:00"
+    "last_validated_date": "2025-03-11T19:49:00+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_describe_replay_error_unknown_replay": {
-    "last_validated_date": "2024-05-22T15:20:45+00:00"
+    "last_validated_date": "2025-03-11T19:55:20+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_list_replay_with_limit": {
     "last_validated_date": "2024-05-22T13:43:13+00:00"
@@ -81,24 +81,24 @@
     "last_validated_date": "2024-05-27T13:17:56+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_duplicate_different_archive": {
-    "last_validated_date": "2024-05-27T10:41:42+00:00"
+    "last_validated_date": "2025-03-11T19:57:07+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_duplicate_name_same_archive": {
-    "last_validated_date": "2024-05-22T15:15:36+00:00"
+    "last_validated_date": "2025-03-11T19:54:57+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_invalid_end_time[0]": {
-    "last_validated_date": "2024-05-22T15:17:36+00:00"
+    "last_validated_date": "2025-03-11T19:55:05+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_invalid_end_time[10]": {
-    "last_validated_date": "2024-05-22T15:17:38+00:00"
+    "last_validated_date": "2025-03-11T19:55:07+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_unknown_archive": {
-    "last_validated_date": "2024-05-22T15:09:07+00:00"
+    "last_validated_date": "2025-03-11T19:55:13+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_unknown_event_bus": {
-    "last_validated_date": "2024-05-22T12:49:01+00:00"
+    "last_validated_date": "2025-03-11T19:50:55+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::tests_concurrency_error_too_many_active_replays": {
-    "last_validated_date": "2024-05-22T15:34:28+00:00"
+    "last_validated_date": "2025-03-11T19:55:54+00:00"
   }
 }
