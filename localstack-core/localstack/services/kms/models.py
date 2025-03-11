@@ -284,6 +284,7 @@ class KmsKey:
         self.crypto_key = KmsCryptoKey(self.metadata.get("KeySpec"), custom_key_material)
         self.rotation_period_in_days = 365
         self.next_rotation_date = None
+        self.on_demand_rotation_start_date = None
 
     def calculate_and_set_arn(self, account_id, region):
         self.metadata["Arn"] = kms_key_arn(self.metadata.get("KeyId"), account_id, region)
@@ -694,7 +695,19 @@ class KmsKey:
             return request_key_usage or "ENCRYPT_DECRYPT"
 
     def rotate_key_on_demand(self):
+        self.on_demand_rotation_start_date = datetime.datetime.now()
         self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
+
+    def on_demand_rotation_in_progress(self):
+        if self.on_demand_rotation_start_date is None:
+            return False
+
+        if datetime.datetime.now() < self.on_demand_rotation_start_date + datetime.timedelta(
+            seconds=2.5
+        ):
+            return True
+        else:
+            return False
 
 
 class KmsGrant:
