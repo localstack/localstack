@@ -49,7 +49,8 @@ def _decorated_updates_inspection_data(method, inspection_data_key: InspectionDa
     def wrapper(env: TestStateEnvironment, *args, **kwargs):
         method(env, *args, **kwargs)
         result = to_json_str(env.stack[-1])
-        env.inspection_data[inspection_data_key.value] = result  # noqa: we know that the here value is a supported inspection data field by design.
+        # We know that the enum value used here corresponds to a supported inspection data field by design.
+        env.inspection_data[inspection_data_key.value] = result  # noqa
 
     return wrapper
 
@@ -57,12 +58,16 @@ def _decorated_updates_inspection_data(method, inspection_data_key: InspectionDa
 def _decorate_state_field(state_field: CommonStateField) -> None:
     if isinstance(state_field, ExecutionState):
         state_field._eval_execution = _decorated_updates_inspection_data(
-            method=state_field._eval_execution,  # noqa: as part of the decoration we access this protected member.
+            # As part of the decoration process, we intentionally access this protected member
+            # to facilitate the decorator's functionality.
+            method=state_field._eval_execution,  # noqa
             inspection_data_key=InspectionDataKey.RESULT,
         )
     elif isinstance(state_field, StateChoice):
         state_field._eval_body = _decorated_updated_choice_inspection_data(
-            method=state_field._eval_body  # noqa: as part of the decoration we access this protected member.
+            # As part of the decoration process, we intentionally access this protected member
+            # to facilitate the decorator's functionality.
+            method=state_field._eval_body  # noqa
         )
 
 
