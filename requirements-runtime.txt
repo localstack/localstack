@@ -135,7 +135,7 @@ incremental==24.7.2
     # via localstack-twisted
 isodate==0.7.2
     # via openapi-core
-jinja2==3.1.5
+jinja2==3.1.6
     # via moto-ext
 jmespath==1.0.1
     # via
