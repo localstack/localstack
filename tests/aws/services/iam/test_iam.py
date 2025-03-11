@@ -1204,3 +1204,44 @@ class TestIAMServiceSpecificCredentials:
                 ServiceSpecificCredentialId=credential_id, Status="Invalid"
             )
         snapshot.match("update-invalid-status", e.value.response)
+
+class TestIAMServiceRoles:
+    @pytest.fixture
+    def create_service_linked_role(self, aws_client):
+        role_names = []
+
+        def _create_service_linked_role(*args, **kwargs):
+            response = aws_client.iam.create_service_linked_role(
+                AWSServiceName="batch.amazonaws.com"
+            )
+            role_names.append(response["Role"]["RoleName"])
+            return response
+
+        yield _create_service_linked_role
+        for role_name in role_names:
+            try:
+                aws_client.iam.delete_service_linked_role(RoleName=role_name)
+            except Exception as e:
+                LOG.debug("Error while deleting service linked role '%s': %s", role_name, e)
+
+    @pytest.fixture(autouse=True)
+    def snapshot_transformers(self, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("RoleId"))
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "service_name",
+        [
+            "batch.amazonaws.com",
+        ],
+    )
+    def test_service_role_lifecycle(self, aws_client, snapshot, create_service_linked_role):
+        response = create_service_linked_role(AWSServiceName="batch.amazonaws.com")
+        snapshot.match("create-response", response)
+        role_name = response["Role"]["RoleName"]
+
+        response = aws_client.iam.list_role_policies(RoleName=role_name)
+        snapshot.match("inline-role-policies", response)
+
+        response = aws_client.iam.list_attached_role_policies(RoleName=role_name)
+        snapshot.match("attached-role-policies", response)
