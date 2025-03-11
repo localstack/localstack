@@ -1178,9 +1178,9 @@ class TestKMS:
 
     @markers.aws.validated
     def test_rotate_key_on_demand_raises_error_given_key_is_disabled(
-        self, kms_create_key, aws_client, snapshot
+        self, kms_key, aws_client, snapshot
     ):
-        key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="RSA_4096")["KeyId"]
+        key_id = kms_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="RSA_4096")["KeyId"]
         aws_client.kms.disable_key(KeyId=key_id)
 
         with pytest.raises(ClientError) as e:
