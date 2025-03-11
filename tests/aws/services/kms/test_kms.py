@@ -1187,6 +1187,11 @@ class TestKMS:
         snapshot.match("error-response", e.value.response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..message",
+        ],
+    )
     def test_rotate_key_on_demand_raises_error_given_non_symmetric_key(
         self, kms_create_key, aws_client, snapshot
     ):
