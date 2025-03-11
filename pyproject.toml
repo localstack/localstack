@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "localstack-core"
 authors = [
-        { name = "LocalStack Contributors", email = "info@localstack.cloud" }
+    { name = "LocalStack Contributors", email = "info@localstack.cloud" }
 ]
 description = "The core library and runtime of LocalStack"
 requires-python = ">=3.9"
@@ -149,10 +149,10 @@ script-files = [
     "bin/localstack.bat",
     "bin/localstack-supervisor",
 ]
-package-dir = { "" = "localstack-core"}
+package-dir = { "" = "localstack-core" }
 
 [tool.setuptools.dynamic]
-readme = { file = ["README.md"], content-type = "text/markdown"}
+readme = { file = ["README.md"], content-type = "text/markdown" }
 
 [tool.setuptools.packages.find]
 where = ["localstack-core/"]
@@ -174,8 +174,8 @@ exclude = ["tests*"]
 ]
 
 [tool.ruff]
-# Always generate Python 3.9-compatible code.
-target-version = "py39"
+# Generate code compatible with version defined in .python-version
+target-version = "py311"
 line-length = 100
 src = ["localstack-core", "tests"]
 exclude = [
@@ -190,7 +190,18 @@ exclude = [
     "localstack-core/.filesystem",
     ".git",
     "localstack-core/localstack/services/stepfunctions/asl/antlr/runtime"
-    ]
+]
+
+[tool.ruff.per-file-target-version]
+# Only allow minimum version for code used in the CLI
+"localstack-core/localstack/cli/**" = "py39"
+"localstack-core/localstack/packages/**" = "py39"
+"localstack-core/localstack/config.py" = "py39"
+"localstack-core/localstack/constants.py" = "py39"
+"localstack-core/localstack/utils/analytics/**" = "py39"
+"localstack-core/localstack/utils/bootstrap.py" = "py39"
+"localstack-core/localstack/utils/json.py" = "py39"
+
 
 [tool.ruff.lint]
 ignore = [
