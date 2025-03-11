@@ -199,7 +199,7 @@ exclude = [
 "localstack-core/localstack/config.py" = "py39"
 "localstack-core/localstack/constants.py" = "py39"
 "localstack-core/localstack/utils/analytics/**" = "py39"
-"localstack/utils/bootstrap.py" = "py39"
+"localstack-core/localstack/utils/bootstrap.py" = "py39"
 "localstack-core/localstack/utils/json.py" = "py39"
 
 
