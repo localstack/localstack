@@ -43,7 +43,10 @@ def get_remote_template_body(url: str) -> str:
     response = run_safe(lambda: safe_requests.get(url, verify=False))
     # check error codes, and code 301 - fixes https://github.com/localstack/localstack/issues/1884
     status_code = 0 if response is None else response.status_code
-    if response is None or status_code == 301 or status_code >= 400:
+    if 200 <= status_code < 300:
+        # request was ok
+        return response.text
+    elif response is None or status_code == 301 or status_code >= 400:
         # check if this is an S3 URL, then get the file directly from there
         url = convert_s3_to_local_url(url)
         if is_local_service_url(url):
