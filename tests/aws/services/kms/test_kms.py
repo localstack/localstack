@@ -1178,7 +1178,7 @@ class TestKMS:
 
     @markers.aws.validated
     def test_rotate_key_on_demand_raises_error_given_key_that_does_not_exist(
-        self, kms_create_key, aws_client, snapshot
+        self, aws_client, snapshot
     ):
         key_id = "1234abcd-12ab-34cd-56ef-1234567890ab"
 
