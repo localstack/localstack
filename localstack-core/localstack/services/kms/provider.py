@@ -1343,6 +1343,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return ListResourceTagsResponse(Tags=page, **kwargs)
 
     @handler("RotateKeyOnDemand", expand=False)
+    # TODO: keep trak of key rotations as AWS does and return them in the ListKeyRotations operation
     def rotate_key_on_demand(
         self, context: RequestContext, request: RotateKeyOnDemandRequest
     ) -> RotateKeyOnDemandResponse:
