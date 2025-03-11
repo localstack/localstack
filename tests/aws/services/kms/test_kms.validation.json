@@ -224,14 +224,8 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_disabled": {
     "last_validated_date": "2025-03-11T16:48:10+00:00"
   },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_disabled_preserves_automatic_rotation_schedule_attributes": {
-    "last_validated_date": "2025-03-08T09:25:30+00:00"
-  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_enabled": {
     "last_validated_date": "2025-03-11T16:48:26+00:00"
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_enabled_preserves_automatic_rotation_schedule_attributes": {
-    "last_validated_date": "2025-03-08T09:25:51+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_schedule_and_cancel_key_deletion": {
     "last_validated_date": "2024-04-11T15:52:36+00:00"
