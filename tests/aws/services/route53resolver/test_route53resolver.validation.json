@@ -30,7 +30,7 @@
     "last_validated_date": "2023-09-08T06:42:35+00:00"
   },
   "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_disassociate_non_existent_association": {
-    "last_validated_date": "2023-09-08T08:22:56+00:00"
+    "last_validated_date": "2025-03-11T17:07:33+00:00"
   },
   "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_list_firewall_domain_lists": {
     "last_validated_date": "2023-09-01T08:05:46+00:00"
