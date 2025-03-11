@@ -56,7 +56,8 @@ class LambdaVersionManager:
         self,
         function_arn: str,
         function_version: FunctionVersion,
-        function: Function,
+        # HACK allowing None for Lambda@Edge; only used in invoke for get_invocation_lease
+        function: Function | None,
         counting_service: CountingService,
         assignment_service: AssignmentService,
     ):
