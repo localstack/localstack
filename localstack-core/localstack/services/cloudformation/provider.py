@@ -105,7 +105,6 @@ from localstack.services.cloudformation.engine.transformers import (
     FailedTransformationException,
 )
 from localstack.services.cloudformation.engine.validations import (
-    DEFAULT_TEMPLATE_VALIDATIONS,
     ValidationError,
 )
 from localstack.services.cloudformation.resource_provider import (
@@ -269,10 +268,6 @@ class CloudformationProvider(CloudformationApi):
             state.stacks[stack.stack_id] = stack
             return CreateStackOutput(StackId=stack.stack_id)
 
-        # perform basic static analysis on the template
-        for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
-            validation_fn(template)
-
         stack = Stack(context.account_id, context.region, request, template)
 
         # resolve conditions
@@ -391,10 +386,6 @@ class CloudformationProvider(CloudformationApi):
             )
             stack.set_stack_status("ROLLBACK_COMPLETE")
             return CreateStackOutput(StackId=stack.stack_id)
-
-        # perform basic static analysis on the template
-        for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
-            validation_fn(template)
 
         # update the template
         stack.template_original = template
@@ -587,46 +578,17 @@ class CloudformationProvider(CloudformationApi):
     ) -> CreateChangeSetOutput:
         state = get_cloudformation_store(context.account_id, context.region)
 
-        # parse template
-        # validate CFn schema
-        # resolve SSM parameters
-        # resolve conditions
-        # resolve supplied parameter overrides
-        # perform mapping lookups
-        # check for circular references
-
         change_set_type = request.get("ChangeSetType", "UPDATE")
         stack_name = request.get("StackName")
         change_set_name = request.get("ChangeSetName")
-        template_body = request.get("TemplateBody")
-        # s3 or secretsmanager url
-        template_url = request.get("TemplateURL")
 
-        # validate and resolve template
-        if template_body and template_url:
-            raise ValidationError(
-                "Specify exactly one of 'TemplateBody' or 'TemplateUrl'"
-            )  # TODO: check proper message
-
-        if not template_body and not template_url:
-            raise ValidationError(
-                "Specify exactly one of 'TemplateBody' or 'TemplateUrl'"
-            )  # TODO: check proper message
-
-        api_utils.prepare_template_body(
-            request
-        )  # TODO: function has too many unclear responsibilities
-        if not template_body:
-            template_body = request[
-                "TemplateBody"
-            ]  # should then have been set by prepare_template_body
-        template = template_preparer.parse_template(request["TemplateBody"])
-
-        del request["TemplateBody"]  # TODO: stop mutating request
-        template["StackName"] = stack_name
-        # TODO: validate with AWS what this is actually doing?
-        template["ChangeSetName"] = change_set_name
-
+        # fetch template
+        template_body = api_utils.extract_template_body(request)
+        # parse template
+        template = template_preparer.parse_template(template_body)
+        # validate CFn schema
+        # TODO
+        # INTERNAL: fetch previous stack if present
         # this is intentionally not in a util yet. Let's first see how the different operations deal with these before generalizing
         # handle ARN stack_name here (not valid for initial CREATE, since stack doesn't exist yet)
         if ARN_STACK_REGEX.match(stack_name):
@@ -661,6 +623,7 @@ class CloudformationProvider(CloudformationApi):
                 stack = active_stack_candidates[0]
 
         # TODO: test if rollback status is allowed as well
+        # TODO: merge this with stack finding above
         if (
             change_set_type == ChangeSetType.CREATE
             and stack.status != StackStatus.REVIEW_IN_PROGRESS
@@ -669,6 +632,8 @@ class CloudformationProvider(CloudformationApi):
                 f"Stack [{stack_name}] already exists and cannot be created again with the changeSet [{change_set_name}]."
             )
 
+        # resolve SSM parameters
+        # resolve parameters
         old_parameters: dict[str, Parameter] = {}
         match change_set_type:
             case ChangeSetType.UPDATE:
@@ -688,7 +653,7 @@ class CloudformationProvider(CloudformationApi):
                 )
                 raise ValidationError(msg)
 
-        # resolve parameters
+        # resolve supplied parameter overrides
         new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(
             request.get("Parameters")
         )
@@ -701,7 +666,23 @@ class CloudformationProvider(CloudformationApi):
             old_parameters=old_parameters,
         )
 
+        # resolve conditions
+        raw_conditions = template.get("Conditions", {})
         mappings = template.get("Mappings", {})
+        resolved_stack_conditions = resolve_stack_conditions(
+            account_id=context.account_id,
+            region_name=context.region,
+            conditions=raw_conditions,
+            parameters=resolved_parameters,
+            mappings=mappings,
+            stack_name=stack_name,
+        )
+
+        # perform mapping lookups
+        # TODO
+
+        # check for circular references
+        # TODO
 
         # TODO: everything below should be async
         # apply template transformations
@@ -716,29 +697,14 @@ class CloudformationProvider(CloudformationApi):
             resolved_parameters=resolved_parameters,
         )
 
-        # perform basic static analysis on the template
-        for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
-            validation_fn(template)
-
         # create change set for the stack and apply changes
         change_set = StackChangeSet(
             context.account_id, context.region, stack, request, transformed_template
         )
         # only set parameters for the changeset, then switch to stack on execute_change_set
         change_set.set_resolved_parameters(resolved_parameters)
-        change_set.template_body = template_body
-
-        # TODO: evaluate conditions
-        raw_conditions = transformed_template.get("Conditions", {})
-        resolved_stack_conditions = resolve_stack_conditions(
-            account_id=context.account_id,
-            region_name=context.region,
-            conditions=raw_conditions,
-            parameters=resolved_parameters,
-            mappings=mappings,
-            stack_name=stack_name,
-        )
         change_set.set_resolved_stack_conditions(resolved_stack_conditions)
+        change_set.template_body = template_body
 
         # a bit gross but use the template ordering to validate missing resources
         try:
