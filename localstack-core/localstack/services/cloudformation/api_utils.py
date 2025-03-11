@@ -38,24 +38,6 @@ def extract_template_body(request: dict) -> str:
             "Specify exactly one of 'TemplateBody' or 'TemplateUrl'"
         )  # TODO: check proper message
 
-    # we know the template url must be set as we have
-
-
-def prepare_template_body(req_data: dict) -> str | bytes | None:  # TODO: mutating and returning
-    template_url = req_data.get("TemplateURL")
-    if template_url:
-        req_data["TemplateURL"] = convert_s3_to_local_url(template_url)
-    url = req_data.get("TemplateURL", "")
-    if is_local_service_url(url):
-        modified_template_body = get_template_body(req_data)
-        if modified_template_body:
-            req_data.pop("TemplateURL", None)
-            req_data["TemplateBody"] = modified_template_body
-    modified_template_body = get_template_body(req_data)
-    if modified_template_body:
-        req_data["TemplateBody"] = modified_template_body
-    return modified_template_body
-
 
 def get_remote_template_body(url: str) -> str:
     response = run_safe(lambda: safe_requests.get(url, verify=False))
@@ -85,37 +67,6 @@ def get_remote_template_body(url: str) -> str:
             url,
             status_code,
         )
-
-
-def get_template_body(req_data: dict) -> str:
-    body = req_data.get("TemplateBody")
-    if body:
-        return body
-    url = req_data.get("TemplateURL")
-    if url:
-        response = run_safe(lambda: safe_requests.get(url, verify=False))
-        # check error codes, and code 301 - fixes https://github.com/localstack/localstack/issues/1884
-        status_code = 0 if response is None else response.status_code
-        if response is None or status_code == 301 or status_code >= 400:
-            # check if this is an S3 URL, then get the file directly from there
-            url = convert_s3_to_local_url(url)
-            if is_local_service_url(url):
-                parsed_path = urlparse(url).path.lstrip("/")
-                parts = parsed_path.partition("/")
-                client = connect_to().s3
-                LOG.debug(
-                    "Download CloudFormation template content from local S3: %s - %s",
-                    parts[0],
-                    parts[2],
-                )
-                result = client.get_object(Bucket=parts[0], Key=parts[2])
-                body = to_str(result["Body"].read())
-                return body
-            raise Exception(
-                "Unable to fetch template body (code %s) from URL %s" % (status_code, url)
-            )
-        return to_str(response.content)
-    raise Exception("Unable to get template body from input: %s" % req_data)
 
 
 def is_local_service_url(url: str) -> bool:
