@@ -249,7 +249,6 @@ class KmsKey:
     is_key_rotation_enabled: bool
     rotation_period_in_days: int
     next_rotation_date: datetime.datetime
-    on_demand_rotation_start_date: datetime.datetime
 
     def __init__(
         self,
@@ -599,9 +598,6 @@ class KmsKey:
                 days=self.rotation_period_in_days
             )
 
-    def _update_on_demand_rotation_start_date(self) -> None:
-        self.on_demand_rotation_start_date = datetime.datetime.now()
-
     # An example of how the whole policy should look like:
     # https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-overview.html
     # The default statement is here:
@@ -697,6 +693,9 @@ class KmsKey:
                 return request_key_usage
         else:
             return request_key_usage or "ENCRYPT_DECRYPT"
+
+    def rotate_key_on_demand(self):
+        self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
 
 
 class KmsGrant:
@@ -798,6 +797,9 @@ class KmsStore(BaseStore):
 
     # maps import tokens to import data
     imports: Dict[str, KeyImportState] = LocalAttribute(default=dict)
+
+    # tracks on demand rotation for every key
+    on_demand_rotations: Dict[str, datetime.datetime] = LocalAttribute(default=dict)
 
 
 kms_stores = AccountRegionBundle("kms", KmsStore)

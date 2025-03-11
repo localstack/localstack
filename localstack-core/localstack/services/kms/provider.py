@@ -371,6 +371,30 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def _is_rsa_spec(key_spec: str) -> bool:
         return key_spec in [KeySpec.RSA_2048, KeySpec.RSA_3072, KeySpec.RSA_4096]
 
+    @staticmethod
+    def _track_on_demand_rotation(account_id: str, region_name: str, key_id: str):
+        store = kms_stores[account_id][region_name]
+        store.on_demand_rotations[key_id] = datetime.datetime.now()
+
+    @staticmethod
+    def _on_demand_rotation_in_progress(account_id: str, region_name: str, key_id: str):
+        store = kms_stores[account_id][region_name]
+
+        if key_id not in store.on_demand_rotations:
+            return False
+
+        if datetime.datetime.now() < store.on_demand_rotations[key_id] + datetime.timedelta(
+            seconds=2.5
+        ):
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def _on_demand_rotation_timestamp(account_id: str, region_name: str, key_id: str):
+        store = kms_stores[account_id][region_name]
+        return store.on_demand_rotations[key_id]
+
     #
     # Operation Handlers
     #
@@ -1264,8 +1288,11 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         )
         if key.is_key_rotation_enabled:
             response["RotationPeriodInDays"] = key.rotation_period_in_days
-        if key.on_demand_rotation_start_date is not None:
-            response["OnDemandRotationStartDate"] = key.on_demand_rotation_start_date
+        # We are simulating that on demand rotation is executed asynchronously and this we return only return `OnDemandRotationStartDate` while it's "in progress"
+        if self._on_demand_rotation_in_progress(account_id, region_name, key_id):
+            response["OnDemandRotationStartDate"] = self._on_demand_rotation_timestamp(
+                account_id, region_name, key_id
+            )
 
         return response
 
@@ -1359,8 +1386,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                 f"{key.metadata['Arn']} origin is EXTERNAL which is not valid for this operation."
             )
 
-        key.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
-        key._update_on_demand_rotation_start_date()
+        key.rotate_key_on_demand()
+        self._track_on_demand_rotation(account_id, region_name, key_id)
 
         return RotateKeyOnDemandResponse(
             KeyId=key_id,

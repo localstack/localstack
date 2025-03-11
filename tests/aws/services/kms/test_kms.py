@@ -19,6 +19,7 @@ from localstack.testing.aws.util import in_default_partition
 from localstack.testing.pytest import markers
 from localstack.utils.crypto import encrypt
 from localstack.utils.strings import short_uid, to_str
+from localstack.utils.sync import poll_condition
 
 
 def create_tags(**kwargs):
@@ -1121,6 +1122,28 @@ class TestKMS:
         assert ciphertext_before != ciphertext_after
 
     @markers.aws.validated
+    def test_rotate_key_on_demand_should_return_rotation_start_date_only_while_its_in_progress(
+        self, kms_key, aws_client, snapshot
+    ):
+        key_id = kms_key["KeyId"]
+
+        rotate_on_demand_response = aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+        snapshot.match("rotate-on-demand-response", rotate_on_demand_response)
+
+        snapshot.match(
+            "rotation-status-response-after-rotation",
+            aws_client.kms.get_key_rotation_status(KeyId=key_id),
+        )
+
+        def _assert_on_demand_rotation_date_not_present():
+            response = aws_client.kms.get_key_rotation_status(KeyId=key_id)
+            return "OnDemandRotationStartDate" not in response
+
+        assert poll_condition(
+            condition=_assert_on_demand_rotation_date_not_present, timeout=10, interval=1
+        )
+
+    @markers.aws.validated
     def test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_disabled(
         self, kms_key, aws_client, snapshot
     ):
@@ -1129,8 +1152,8 @@ class TestKMS:
         rotate_on_demand_response = aws_client.kms.rotate_key_on_demand(KeyId=key_id)
         snapshot.match("rotate-on-demand-response", rotate_on_demand_response)
 
-        rotation_status_response_after = aws_client.kms.get_key_rotation_status(KeyId=key_id)
-        snapshot.match("rotation-status-response-after-rotation", rotation_status_response_after)
+        rotation_status_response = aws_client.kms.get_key_rotation_status(KeyId=key_id)
+        snapshot.match("rotation-status-response-after-rotation", rotation_status_response)
 
     @markers.aws.validated
     def test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_enabled(
@@ -1149,7 +1172,9 @@ class TestKMS:
             rotation_status_response_after["NextRotationDate"]
             == rotation_status_response_before["NextRotationDate"]
         )
-        snapshot.match("rotation-status-response-after-rotation", rotation_status_response_after)
+
+        rotation_status_response = aws_client.kms.get_key_rotation_status(KeyId=key_id)
+        snapshot.match("rotation-status-response-after-rotation", rotation_status_response)
 
     @markers.aws.validated
     def test_rotate_key_on_demand_raises_error_given_key_is_disabled(
