@@ -92,6 +92,9 @@
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiResource::test_update_resource_behaviour": {
     "last_validated_date": "2024-04-15T17:29:08+00:00"
   },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_create_rest_api_with_binary_media_types": {
+    "last_validated_date": "2025-03-11T22:32:34+00:00"
+  },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_create_rest_api_with_optional_params": {
     "last_validated_date": "2024-04-15T15:10:32+00:00"
   },
