@@ -633,7 +633,7 @@ class CloudformationProvider(CloudformationApi):
             )
 
         # resolve SSM parameters
-        # resolve parameters
+        # resolve supplied parameters
         old_parameters: dict[str, Parameter] = {}
         match change_set_type:
             case ChangeSetType.UPDATE:
@@ -667,6 +667,9 @@ class CloudformationProvider(CloudformationApi):
         )
 
         # resolve conditions
+        # TODO: on AWS this step is between resolving SSM parameters and resolving template
+        #  parameters, however the code above does both in one function so until we split this apart
+        #  we shall break with parity
         raw_conditions = template.get("Conditions", {})
         mappings = template.get("Mappings", {})
         resolved_stack_conditions = resolve_stack_conditions(
