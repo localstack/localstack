@@ -570,7 +570,7 @@ class TestRoute53Resolver:
             aws_client.route53resolver.disassociate_resolver_rule(
                 ResolverRuleId="rslvr-123", VPCId="vpc-123"
             )
-        snapshot.match("resource_not_found_res", resource_not_found)
+        snapshot.match("resource_not_found_res", resource_not_found.value.response)
 
     @markers.snapshot.skip_snapshot_verify(
         paths=[
