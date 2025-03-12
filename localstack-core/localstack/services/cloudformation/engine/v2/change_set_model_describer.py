@@ -13,7 +13,9 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeProperties,
     NodeProperty,
     NodeResource,
+    NodeResources,
     NodeTemplate,
+    PropertiesKey,
     TerminalValue,
     TerminalValueCreated,
     TerminalValueModified,
@@ -101,7 +103,7 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
                     before_context[name] = describe_unit.before_context
                 case ChangeType.UNCHANGED:
                     before_context[name] = describe_unit.before_context
-                    after_context[name] = describe_unit.after_context
+                    after_context[name] = describe_unit.before_context
         return DescribeUnit(before_context=before_context, after_context=after_context)
 
     @staticmethod
@@ -136,21 +138,22 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         node_property: TerminalValue = self._get_node_property_for(
             property_name=before_attribute_name, node_resource=before_node_resource
         )
-        before_attribute_value = node_property.value.value
+
+        before_context = node_property.value.value
+        if node_property.change_type != ChangeType.UNCHANGED:
+            after_context = CHANGESET_KNOWN_AFTER_APPLY
+        else:
+            after_context = node_property.value.value
 
         match node_intrinsic_function.change_type:
             case ChangeType.MODIFIED:
-                return DescribeUnit(
-                    before_context=before_attribute_value, after_context=CHANGESET_KNOWN_AFTER_APPLY
-                )
+                return DescribeUnit(before_context=before_context, after_context=after_context)
             case ChangeType.CREATED:
-                return DescribeUnit(after_context=CHANGESET_KNOWN_AFTER_APPLY)
+                return DescribeUnit(after_context=after_context)
             case ChangeType.REMOVED:
-                return DescribeUnit(before_context=before_attribute_value)
+                return DescribeUnit(before_context=before_context)
         # Unchanged
-        return DescribeUnit(
-            before_context=before_attribute_value, after_context=before_attribute_value
-        )
+        return DescribeUnit(before_context=before_context, after_context=after_context)
 
     def visit_node_array(self, node_array: NodeArray) -> DescribeUnit:
         before_context = list()
@@ -174,8 +177,6 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         before_context: dict[str, Any] = dict()
         after_context: dict[str, Any] = dict()
         for node_property in node_properties.properties:
-            if node_property.change_type == ChangeType.UNCHANGED:
-                continue
             describe_unit = self.visit(node_property.value)
             property_name = node_property.name
             match node_property.change_type:
@@ -186,9 +187,13 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
                     after_context[property_name] = describe_unit.after_context
                 case ChangeType.REMOVED:
                     before_context[property_name] = describe_unit.before_context
+                case ChangeType.UNCHANGED:
+                    if node_properties.change_type != ChangeType.UNCHANGED:
+                        before_context[property_name] = describe_unit.before_context
+                        after_context[property_name] = describe_unit.before_context
         # TODO: this object can probably be well-typed instead of a free dict(?)
-        before_context = {"Properties": before_context}
-        after_context = {"Properties": after_context}
+        before_context = {PropertiesKey: before_context}
+        after_context = {PropertiesKey: after_context}
         return DescribeUnit(before_context=before_context, after_context=after_context)
 
     def visit_node_resource(self, node_resource: NodeResource) -> DescribeUnit:
@@ -219,9 +224,9 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         # TODO
         return None
 
-    # def visit_node_resources(self, node_resources: NodeResources) -> DescribeUnit:
-    # for node_resource in node_resources.resources:
-    #    if node_resource.change_type != ChangeType.UNCHANGED:
-    #        self.visit_node_resource(node_resource=node_resource)
-    # TODO
-    # return None
+    def visit_node_resources(self, node_resources: NodeResources) -> DescribeUnit:
+        for node_resource in node_resources.resources:
+            if node_resource.change_type != ChangeType.UNCHANGED:
+                self.visit_node_resource(node_resource=node_resource)
+        # TODO
+        return None

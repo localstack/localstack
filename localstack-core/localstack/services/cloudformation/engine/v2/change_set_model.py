@@ -207,6 +207,7 @@ class ChangeSetModel:
 
     _before_template: Final[Maybe[dict]]
     _after_template: Final[Maybe[dict]]
+    # TODO: generalise this lookup for other goto visitable types such as parameters and conditions
     _visited_resources: Final[dict[str, NodeResource]]
     _node_template: Final[NodeTemplate]
 
@@ -261,19 +262,28 @@ class ChangeSetModel:
         logical_name_of_resource_entity = arguments.array[0]
         if not isinstance(logical_name_of_resource_entity, TerminalValue):
             raise RuntimeError()
+        # TODO: sample new value if there is one!
         logical_name_of_resource: str = logical_name_of_resource_entity.value
         if not isinstance(logical_name_of_resource, str):
             raise RuntimeError()
-
         node_resource: NodeResource = self._retrieve_or_visit_resource(
             resource_name=logical_name_of_resource
         )
-        # TODO: should this check for deletion of resource, if so what error should be raised?
 
-        # TODO: check attributeName too? It seems like this is not necessary as the whole resource is marked as
-        #  modified even if the one field changed.
-        if node_resource.change_type != ChangeType.UNCHANGED:
-            return ChangeType.MODIFIED
+        # TODO: should this check for deletion of resource, if so what error should be raised?
+        node_property_attribute_name = arguments.array[1]
+        # TODO: validate what this entity is, may be another function.
+        if not isinstance(node_property_attribute_name, TerminalValue):
+            # TODO: add support for other types here
+            raise RuntimeError()
+        if isinstance(node_property_attribute_name, TerminalValueModified):
+            attribute_name = node_property_attribute_name.modified_value
+        else:
+            attribute_name = node_property_attribute_name.value
+
+        for node_property in node_resource.properties.properties:
+            if node_property.name == attribute_name:
+                return node_property.change_type
 
         return ChangeType.UNCHANGED
 

@@ -175,6 +175,8 @@ class TestChangeSetDescribeDetails:
                         "Description": "original",
                     }
                 },
+                "LogicalResourceId": "Parameter1",
+                "ResourceType": "AWS::SSM::Parameter",
             }
         ]
         assert resource_changes == target
