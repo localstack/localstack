@@ -31,9 +31,18 @@
     "recorded-content": {}
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::tests_put_rule_with_schedule_custom_event_bus": {
-    "recorded-date": "14-05-2024, 11:38:21",
+    "recorded-date": "11-03-2025, 19:05:36",
     "recorded-content": {
-      "put-rule-with-custom-event-bus-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the PutRule operation: ScheduleExpression is supported only on the default event bus.') tblen=3>"
+      "put-rule-with-custom-event-bus-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "ScheduleExpression is supported only on the default event bus."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::tests_schedule_rate_target_sqs": {

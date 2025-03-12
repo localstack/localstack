@@ -148,27 +148,63 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_archive_error_unknown_event_bus": {
-    "recorded-date": "17-05-2024, 15:15:32",
+    "recorded-date": "11-03-2025, 19:45:47",
     "recorded-content": {
-      "create-archive-unknown-event-bus-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the CreateArchive operation: Event bus <event-bus-name> does not exist.') tblen=3>"
+      "create-archive-unknown-event-bus-error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Event bus <event-bus-name> does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_archive_error_duplicate[default]": {
-    "recorded-date": "17-05-2024, 16:15:51",
+    "recorded-date": "11-03-2025, 19:46:51",
     "recorded-content": {
-      "create-archive-duplicate-error": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the CreateArchive operation: Archive <archive-name> already exists.') tblen=3>"
+      "create-archive-duplicate-error": {
+        "Error": {
+          "Code": "ResourceAlreadyExistsException",
+          "Message": "Archive <archive-name> already exists."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_archive_error_duplicate[custom]": {
-    "recorded-date": "17-05-2024, 16:15:53",
+    "recorded-date": "11-03-2025, 19:46:53",
     "recorded-content": {
-      "create-archive-duplicate-error": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the CreateArchive operation: Archive <archive-name> already exists.') tblen=3>"
+      "create-archive-duplicate-error": {
+        "Error": {
+          "Code": "ResourceAlreadyExistsException",
+          "Message": "Archive <archive-name> already exists."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_describe_archive_error_unknown_archive": {
-    "recorded-date": "17-05-2024, 16:19:03",
+    "recorded-date": "11-03-2025, 19:47:23",
     "recorded-content": {
-      "describe-archive-unknown-archive-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeArchive operation: Archive <archive-name> does not exist.') tblen=3>"
+      "describe-archive-unknown-archive-error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Archive <archive-name> does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_name_prefix[default]": {
@@ -308,21 +344,48 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_error_unknown_source_arn": {
-    "recorded-date": "17-05-2024, 16:34:48",
+    "recorded-date": "11-03-2025, 19:47:46",
     "recorded-content": {
-      "list-archives-unknown-event-bus-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the ListArchives operation: Event bus <event-bus-name> does not exist.') tblen=3>"
+      "list-archives-unknown-event-bus-error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Event bus <event-bus-name> does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_update_archive_error_unknown_archive": {
-    "recorded-date": "17-05-2024, 16:44:35",
+    "recorded-date": "11-03-2025, 19:49:00",
     "recorded-content": {
-      "update-archive-unknown-archive-error": "<ExceptionInfo InternalException('An error occurred (InternalException) when calling the UpdateArchive operation (reached max retries: 4): Service encountered unexpected problem. Please try again.') tblen=3>"
+      "update-archive-unknown-archive-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "At least one of EventPattern, RetentionDays or Description must be provided."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_delete_archive_error_unknown_archive": {
-    "recorded-date": "17-05-2024, 16:46:11",
+    "recorded-date": "11-03-2025, 19:49:18",
     "recorded-content": {
-      "delete-archive-unknown-archive-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DeleteArchive operation: Archive <archive-name> does not exist.') tblen=3>"
+      "delete-archive-unknown-archive-error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Archive <archive-name> does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_state_enabled[default]": {
@@ -862,10 +925,28 @@
     "recorded-content": {}
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_unknown_event_bus": {
-    "recorded-date": "22-05-2024, 12:49:01",
+    "recorded-date": "11-03-2025, 19:50:55",
     "recorded-content": {
-      "start-replay-unknown-event-bus-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the StartReplay operation: Event bus <event-bus-name> does not exist.') tblen=3>",
-      "start-replay-wrong-event-bus-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the StartReplay operation: Parameter Destination.Arn is not valid. Reason: Cross event bus replay is not permitted.') tblen=3>"
+      "start-replay-unknown-event-bus-error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Event bus <event-bus-name> does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "start-replay-wrong-event-bus-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Parameter Destination.Arn is not valid. Reason: Cross event bus replay is not permitted."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_list_replays_with_prefix": {
@@ -984,39 +1065,93 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_unknown_archive": {
-    "recorded-date": "22-05-2024, 15:09:07",
+    "recorded-date": "11-03-2025, 19:55:13",
     "recorded-content": {
-      "start-replay-unknown-archive-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the StartReplay operation: Parameter EventSourceArn is not valid. Reason: Archive <archive-name> does not exist.') tblen=3>"
+      "start-replay-unknown-archive-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Parameter EventSourceArn is not valid. Reason: Archive <archive-name> does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_duplicate_name_same_archive": {
-    "recorded-date": "22-05-2024, 15:15:36",
+    "recorded-date": "11-03-2025, 19:54:57",
     "recorded-content": {
-      "start-replay-duplicate-error": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the StartReplay operation: Replay <replay-name> already exists.') tblen=3>"
+      "start-replay-duplicate-error": {
+        "Error": {
+          "Code": "ResourceAlreadyExistsException",
+          "Message": "Replay <replay-name> already exists."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_invalid_end_time[0]": {
-    "recorded-date": "22-05-2024, 15:17:36",
+    "recorded-date": "11-03-2025, 19:55:05",
     "recorded-content": {
-      "start-replay-invalid-end-time-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the StartReplay operation: Parameter EventEndTime is not valid. Reason: EventStartTime must be before EventEndTime.') tblen=3>"
+      "start-replay-invalid-end-time-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Parameter EventEndTime is not valid. Reason: EventStartTime must be before EventEndTime."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_invalid_end_time[10]": {
-    "recorded-date": "22-05-2024, 15:17:38",
+    "recorded-date": "11-03-2025, 19:55:07",
     "recorded-content": {
-      "start-replay-invalid-end-time-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the StartReplay operation: Parameter EventEndTime is not valid. Reason: EventStartTime must be before EventEndTime.') tblen=3>"
+      "start-replay-invalid-end-time-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Parameter EventEndTime is not valid. Reason: EventStartTime must be before EventEndTime."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_describe_replay_error_unknown_replay": {
-    "recorded-date": "22-05-2024, 15:20:45",
+    "recorded-date": "11-03-2025, 19:55:20",
     "recorded-content": {
-      "describe-replay-unknown-replay-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeReplay operation: Replay <replay-name> does not exist.') tblen=3>"
+      "describe-replay-unknown-replay-error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Replay <replay-name> does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::tests_concurrency_error_too_many_active_replays": {
-    "recorded-date": "22-05-2024, 15:34:28",
+    "recorded-date": "11-03-2025, 19:55:54",
     "recorded-content": {
-      "list-replays-with-limit": "<ExceptionInfo LimitExceededException('An error occurred (LimitExceededException) when calling the StartReplay operation: The requested resource exceeds the maximum number allowed.') tblen=3>"
+      "list-replays-with-limit": {
+        "Error": {
+          "Code": "LimitExceededException",
+          "Message": "The requested resource exceeds the maximum number allowed."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_list_replays_with_event_source_arn": {
@@ -1042,9 +1177,18 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_duplicate_different_archive": {
-    "recorded-date": "27-05-2024, 10:41:42",
+    "recorded-date": "11-03-2025, 19:57:07",
     "recorded-content": {
-      "start-replay-duplicate-error": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the StartReplay operation: Replay <replay-name> already exists.') tblen=3>"
+      "start-replay-duplicate-error": {
+        "Error": {
+          "Code": "ResourceAlreadyExistsException",
+          "Message": "Replay <replay-name> already exists."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   }
 }

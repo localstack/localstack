@@ -561,7 +561,7 @@ class TestEventBus:
 
         with pytest.raises(aws_client.events.exceptions.ResourceAlreadyExistsException) as e:
             events_create_event_bus(Name=bus_name)
-        snapshot.match("create-multiple-event-buses-same-name", e)
+        snapshot.match("create-multiple-event-buses-same-name", e.value.response)
 
     @markers.aws.validated
     def test_describe_delete_not_existing_event_bus(self, aws_client, snapshot):
@@ -570,16 +570,16 @@ class TestEventBus:
 
         with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as e:
             aws_client.events.describe_event_bus(Name=bus_name)
-        snapshot.match("describe-not-existing-event-bus-error", e)
+        snapshot.match("describe-not-existing-event-bus-error", e.value.response)
 
         aws_client.events.delete_event_bus(Name=bus_name)
-        snapshot.match("delete-not-existing-event-bus", e)
+        snapshot.match("delete-not-existing-event-bus", e.value.response)
 
     @markers.aws.validated
     def test_delete_default_event_bus(self, aws_client, snapshot):
         with pytest.raises(aws_client.events.exceptions.ClientError) as e:
             aws_client.events.delete_event_bus(Name="default")
-        snapshot.match("delete-default-event-bus-error", e)
+        snapshot.match("delete-default-event-bus-error", e.value.response)
 
     @markers.aws.validated
     @pytest.mark.skipif(
@@ -757,7 +757,7 @@ class TestEventBus:
                 Principal="*",
                 StatementId="statement-id",
             )
-        snapshot.match("remove-permission-non-existing-sid-error", e)
+        snapshot.match("remove-permission-non-existing-sid-error", e.value.response)
 
     @markers.aws.validated
     @pytest.mark.skipif(
@@ -865,7 +865,7 @@ class TestEventBus:
             aws_client.events.remove_permission(
                 EventBusName=bus_name, StatementId="non-existing-sid"
             )
-        snapshot.match("remove-permission-non-existing-sid-error", e)
+        snapshot.match("remove-permission-non-existing-sid-error", e.value.response)
 
     @markers.aws.validated
     # TODO move to test targets
@@ -1304,7 +1304,7 @@ class TestEventRule:
 
         with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as e:
             aws_client.events.describe_rule(Name=rule_name)
-        snapshot.match("describe-not-existing-rule-error", e)
+        snapshot.match("describe-not-existing-rule-error", e.value.response)
 
     @markers.aws.validated
     @pytest.mark.parametrize("bus_name", ["custom", "default"])
@@ -1366,7 +1366,7 @@ class TestEventRule:
 
         with pytest.raises(aws_client.events.exceptions.ClientError) as e:
             aws_client.events.delete_rule(Name=rule_name)
-        snapshot.match("delete-rule-with-targets-error", e)
+        snapshot.match("delete-rule-with-targets-error", e.value.response)
 
     @markers.aws.validated
     def test_update_rule_with_targets(
@@ -1900,7 +1900,7 @@ class TestEventTarget:
 
         with pytest.raises(aws_client.events.exceptions.LimitExceededException) as error:
             aws_client.events.put_targets(Rule=rule_name, Targets=targets)
-        snapshot.match("put-targets-client-error", error)
+        snapshot.match("put-targets-client-error", error.value.response)
 
     @markers.aws.validated
     @pytest.mark.skipif(
