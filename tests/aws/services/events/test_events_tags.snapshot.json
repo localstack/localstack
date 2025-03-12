@@ -90,7 +90,7 @@
     }
   },
   "tests/aws/services/events/test_events_tags.py::tests_tag_list_untag_not_existing_resource[not_existing_rule]": {
-    "recorded-date": "12-03-2025, 06:03:11",
+    "recorded-date": "12-03-2025, 10:19:54",
     "recorded-content": {
       "tag_not_existing_resource_error": {
         "Error": {
@@ -125,7 +125,7 @@
     }
   },
   "tests/aws/services/events/test_events_tags.py::tests_tag_list_untag_not_existing_resource[not_existing_event_bus]": {
-    "recorded-date": "12-03-2025, 06:03:13",
+    "recorded-date": "12-03-2025, 10:19:56",
     "recorded-content": {
       "tag_not_existing_resource_error": {
         "Error": {
@@ -188,7 +188,7 @@
     }
   },
   "tests/aws/services/events/test_events_tags.py::TestRuleTags::test_list_tags_for_deleted_rule": {
-    "recorded-date": "12-03-2025, 06:04:45",
+    "recorded-date": "12-03-2025, 10:19:42",
     "recorded-content": {
       "list_tags_for_deleted_rule_error": {
         "Error": {
@@ -231,7 +231,7 @@
     }
   },
   "tests/aws/services/events/test_events_tags.py::TestEventBusTags::test_list_tags_for_deleted_event_bus": {
-    "recorded-date": "12-03-2025, 06:06:48",
+    "recorded-date": "12-03-2025, 10:19:32",
     "recorded-content": {
       "list_tags_for_deleted_rule_error": {
         "Error": {

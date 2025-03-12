@@ -31,7 +31,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::tests_put_rule_with_schedule_custom_event_bus": {
-    "recorded-date": "11-03-2025, 19:05:36",
+    "recorded-date": "12-03-2025, 10:19:22",
     "recorded-content": {
       "put-rule-with-custom-event-bus-error": {
         "Error": {

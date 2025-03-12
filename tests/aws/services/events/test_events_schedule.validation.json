@@ -123,7 +123,7 @@
     "last_validated_date": "2024-05-14T11:23:22+00:00"
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::tests_put_rule_with_schedule_custom_event_bus": {
-    "last_validated_date": "2025-03-11T19:05:36+00:00"
+    "last_validated_date": "2025-03-12T10:19:22+00:00"
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::tests_schedule_rate_custom_input_target_sqs": {
     "last_validated_date": "2024-05-15T09:31:53+00:00"

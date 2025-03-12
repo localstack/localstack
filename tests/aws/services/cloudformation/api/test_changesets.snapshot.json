@@ -172,7 +172,7 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_delete_change_set_exception": {
-    "recorded-date": "11-03-2025, 19:13:48",
+    "recorded-date": "12-03-2025, 10:14:25",
     "recorded-content": {
       "e1": {
         "Error": {
