@@ -12,7 +12,7 @@
     "last_validated_date": "2023-11-22T07:49:15+00:00"
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_delete_change_set_exception": {
-    "last_validated_date": "2025-03-11T19:13:48+00:00"
+    "last_validated_date": "2025-03-12T10:14:25+00:00"
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_deleted_changeset": {
     "last_validated_date": "2022-08-11T09:11:47+00:00"

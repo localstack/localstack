@@ -160,7 +160,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_missing_keys": {
-    "recorded-date": "11-03-2025, 19:01:17",
+    "recorded-date": "12-03-2025, 10:19:13",
     "recorded-content": {
       "missing-key-exception-error": {
         "Error": {
@@ -229,7 +229,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::test_put_event_input_path_and_input_transformer": {
-    "recorded-date": "11-03-2025, 19:03:54",
+    "recorded-date": "12-03-2025, 10:19:01",
     "recorded-content": {
       "duplicated-input-operations-error": {
         "Error": {

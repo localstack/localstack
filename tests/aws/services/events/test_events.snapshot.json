@@ -740,7 +740,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_multiple_event_buses_same_name": {
-    "recorded-date": "11-03-2025, 19:59:23",
+    "recorded-date": "12-03-2025, 10:20:08",
     "recorded-content": {
       "create-multiple-event-buses-same-name": {
         "Error": {
@@ -755,7 +755,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_describe_delete_not_existing_event_bus": {
-    "recorded-date": "11-03-2025, 19:59:55",
+    "recorded-date": "12-03-2025, 10:20:18",
     "recorded-content": {
       "describe-not-existing-event-bus-error": {
         "Error": {
@@ -780,7 +780,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_delete_default_event_bus": {
-    "recorded-date": "11-03-2025, 20:01:03",
+    "recorded-date": "12-03-2025, 10:20:26",
     "recorded-content": {
       "delete-default-event-bus-error": {
         "Error": {
@@ -1150,7 +1150,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission_non_existing_event_bus": {
-    "recorded-date": "11-03-2025, 20:01:53",
+    "recorded-date": "12-03-2025, 10:20:41",
     "recorded-content": {
       "remove-permission-non-existing-sid-error": {
         "Error": {
@@ -1267,7 +1267,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[True-custom]": {
-    "recorded-date": "11-03-2025, 20:10:01",
+    "recorded-date": "12-03-2025, 10:20:50",
     "recorded-content": {
       "remove-permission-non-existing-sid-error": {
         "Error": {
@@ -1282,7 +1282,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[True-default]": {
-    "recorded-date": "11-03-2025, 20:10:02",
+    "recorded-date": "12-03-2025, 10:20:51",
     "recorded-content": {
       "remove-permission-non-existing-sid-error": {
         "Error": {
@@ -1297,7 +1297,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[False-custom]": {
-    "recorded-date": "11-03-2025, 20:10:03",
+    "recorded-date": "12-03-2025, 10:20:52",
     "recorded-content": {
       "remove-permission-non-existing-sid-error": {
         "Error": {
@@ -1312,7 +1312,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[False-default]": {
-    "recorded-date": "11-03-2025, 20:10:05",
+    "recorded-date": "12-03-2025, 10:20:54",
     "recorded-content": {
       "remove-permission-non-existing-sid-error": {
         "Error": {
@@ -1877,7 +1877,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_describe_nonexistent_rule": {
-    "recorded-date": "11-03-2025, 20:04:49",
+    "recorded-date": "12-03-2025, 10:21:02",
     "recorded-content": {
       "describe-not-existing-rule-error": {
         "Error": {
@@ -2022,7 +2022,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_delete_rule_with_targets": {
-    "recorded-date": "11-03-2025, 20:05:07",
+    "recorded-date": "12-03-2025, 10:21:10",
     "recorded-content": {
       "delete-rule-with-targets-error": {
         "Error": {
@@ -2390,7 +2390,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_add_exceed_fife_targets_per_rule": {
-    "recorded-date": "11-03-2025, 20:11:11",
+    "recorded-date": "12-03-2025, 10:21:21",
     "recorded-content": {
       "put-targets-client-error": {
         "Error": {

@@ -148,7 +148,7 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_archive_error_unknown_event_bus": {
-    "recorded-date": "11-03-2025, 19:45:47",
+    "recorded-date": "12-03-2025, 10:17:26",
     "recorded-content": {
       "create-archive-unknown-event-bus-error": {
         "Error": {
@@ -163,7 +163,7 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_archive_error_duplicate[default]": {
-    "recorded-date": "11-03-2025, 19:46:51",
+    "recorded-date": "12-03-2025, 10:15:19",
     "recorded-content": {
       "create-archive-duplicate-error": {
         "Error": {
@@ -178,7 +178,7 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_archive_error_duplicate[custom]": {
-    "recorded-date": "11-03-2025, 19:46:53",
+    "recorded-date": "12-03-2025, 10:15:21",
     "recorded-content": {
       "create-archive-duplicate-error": {
         "Error": {
@@ -193,7 +193,7 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_describe_archive_error_unknown_archive": {
-    "recorded-date": "11-03-2025, 19:47:23",
+    "recorded-date": "12-03-2025, 10:17:34",
     "recorded-content": {
       "describe-archive-unknown-archive-error": {
         "Error": {
@@ -344,7 +344,7 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_error_unknown_source_arn": {
-    "recorded-date": "11-03-2025, 19:47:46",
+    "recorded-date": "12-03-2025, 10:17:42",
     "recorded-content": {
       "list-archives-unknown-event-bus-error": {
         "Error": {
@@ -374,7 +374,7 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_delete_archive_error_unknown_archive": {
-    "recorded-date": "11-03-2025, 19:49:18",
+    "recorded-date": "12-03-2025, 10:17:49",
     "recorded-content": {
       "delete-archive-unknown-archive-error": {
         "Error": {
@@ -925,7 +925,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_unknown_event_bus": {
-    "recorded-date": "11-03-2025, 19:50:55",
+    "recorded-date": "12-03-2025, 10:18:09",
     "recorded-content": {
       "start-replay-unknown-event-bus-error": {
         "Error": {
@@ -1065,7 +1065,7 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_unknown_archive": {
-    "recorded-date": "11-03-2025, 19:55:13",
+    "recorded-date": "12-03-2025, 10:18:18",
     "recorded-content": {
       "start-replay-unknown-archive-error": {
         "Error": {
@@ -1080,7 +1080,7 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_duplicate_name_same_archive": {
-    "recorded-date": "11-03-2025, 19:54:57",
+    "recorded-date": "12-03-2025, 10:18:30",
     "recorded-content": {
       "start-replay-duplicate-error": {
         "Error": {
@@ -1095,7 +1095,7 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_invalid_end_time[0]": {
-    "recorded-date": "11-03-2025, 19:55:05",
+    "recorded-date": "12-03-2025, 10:17:58",
     "recorded-content": {
       "start-replay-invalid-end-time-error": {
         "Error": {
@@ -1110,7 +1110,7 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_invalid_end_time[10]": {
-    "recorded-date": "11-03-2025, 19:55:07",
+    "recorded-date": "12-03-2025, 10:17:59",
     "recorded-content": {
       "start-replay-invalid-end-time-error": {
         "Error": {
@@ -1125,7 +1125,7 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_describe_replay_error_unknown_replay": {
-    "recorded-date": "11-03-2025, 19:55:20",
+    "recorded-date": "12-03-2025, 10:18:50",
     "recorded-content": {
       "describe-replay-unknown-replay-error": {
         "Error": {
@@ -1177,7 +1177,7 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_duplicate_different_archive": {
-    "recorded-date": "11-03-2025, 19:57:07",
+    "recorded-date": "12-03-2025, 10:18:41",
     "recorded-content": {
       "start-replay-duplicate-error": {
         "Error": {
