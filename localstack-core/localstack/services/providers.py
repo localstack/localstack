@@ -49,6 +49,14 @@ def cloudformation():
     return Service.for_provider(provider)
 
 
+@aws_provider(api="cloudformation", name="engine-v2")
+def cloudformation_v2():
+    from localstack.services.cloudformation.v2.provider import CloudformationProviderV2
+
+    provider = CloudformationProviderV2()
+    return Service.for_provider(provider)
+
+
 @aws_provider(api="config")
 def awsconfig():
     from localstack.services.configservice.provider import ConfigProvider
