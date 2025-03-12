@@ -219,6 +219,7 @@ class ChangeSetModel:
         self._node_template = self._model(
             before_template=self._before_template, after_template=self._after_template
         )
+        # TODO: need to do template preprocessing e.g. parameter resolution, conditions etc.
 
     def get_update_model(self) -> NodeTemplate:
         # TODO: rethink naming of this for outer utils
