@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 from typing import Any, Final, Optional
 
-from localstack.aws.api.cloudformation import ChangeAction, ResourceChange
+import localstack.aws.api.cloudformation as cfn
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetEntity,
     ChangeType,
@@ -39,17 +39,18 @@ class DescribeUnit(abc.ABC):
 
 
 class ChangeSetModelDescriber(ChangeSetModelVisitor):
+    # TODO: add support for tracking the 'scope' and 'details' (field in the ResourceChange response)
+
     _node_template: Final[NodeTemplate]
-    _resource_changes: Final[list[ResourceChange]]
+    _changes: Final[list[cfn.Change]]
 
     def __init__(self, node_template: NodeTemplate):
         self._node_template = node_template
-        self._resource_changes = list()
+        self._changes = list()
         self.visit(self._node_template)
 
-    def get_resource_changes(self) -> list[ResourceChange]:
-        # TODO return 'list[Change]' instead.
-        return self._resource_changes
+    def get_changes(self) -> list[cfn.Change]:
+        return self._changes
 
     def visit(self, change_set_entity: ChangeSetEntity) -> DescribeUnit:
         # Overridden for the return type-hints.
@@ -127,23 +128,28 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
     def visit_node_intrinsic_function_fn_get_att(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> DescribeUnit:
-        arguments_unit = self.visit(node_intrinsic_function.arguments)
         # TODO: validate the return value according to the spec.
+
+        arguments_unit = self.visit(node_intrinsic_function.arguments)
+
         before_argument_list = arguments_unit.before_context
         before_logical_name_of_resource = before_argument_list[0]
         before_attribute_name = before_argument_list[1]
         before_node_resource = self._get_node_resource_for(
             resource_name=before_logical_name_of_resource, node_template=self._node_template
         )
-        node_property: TerminalValue = self._get_node_property_for(
+        node_property = self._get_node_property_for(
             property_name=before_attribute_name, node_resource=before_node_resource
         )
+        node_property_value = node_property.value
+        if not isinstance(node_property_value, TerminalValue):
+            raise RuntimeError()
 
-        before_context = node_property.value.value
-        if node_property.change_type != ChangeType.UNCHANGED:
+        before_context = node_property_value.value
+        if node_property_value.change_type != ChangeType.UNCHANGED:
             after_context = CHANGESET_KNOWN_AFTER_APPLY
         else:
-            after_context = node_property.value.value
+            after_context = node_property_value.value
 
         match node_intrinsic_function.change_type:
             case ChangeType.MODIFIED:
@@ -197,7 +203,7 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         return DescribeUnit(before_context=before_context, after_context=after_context)
 
     def visit_node_resource(self, node_resource: NodeResource) -> DescribeUnit:
-        resource_change = ResourceChange()
+        resource_change = cfn.ResourceChange()
         resource_change["LogicalResourceId"] = node_resource.name
 
         # TODO: investigate effects on type changes
@@ -209,17 +215,18 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         properties_describe_unit = self.visit_node_properties(node_resource.properties)
         match node_resource.change_type:
             case ChangeType.MODIFIED:
-                resource_change["Action"] = ChangeAction.Modify
+                resource_change["Action"] = cfn.ChangeAction.Modify
                 resource_change["BeforeContext"] = properties_describe_unit.before_context
                 resource_change["AfterContext"] = properties_describe_unit.after_context
             case ChangeType.CREATED:
-                resource_change["Action"] = ChangeAction.Add
+                resource_change["Action"] = cfn.ChangeAction.Add
                 resource_change["AfterContext"] = properties_describe_unit.after_context
             case ChangeType.REMOVED:
-                resource_change["Action"] = ChangeAction.Remove
+                resource_change["Action"] = cfn.ChangeAction.Remove
                 resource_change["BeforeContext"] = properties_describe_unit.before_context
 
-        self._resource_changes.append(resource_change)
+        change = cfn.Change(ResourceChange=resource_change, Type=cfn.ChangeType.Resource)
+        self._changes.append(change)
 
         # TODO
         return None

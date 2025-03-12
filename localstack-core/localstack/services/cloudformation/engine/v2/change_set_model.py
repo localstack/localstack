@@ -203,7 +203,8 @@ class ChangeSetModel:
 
     # TODO: can probably improve the typehints to use CFN's 'language' eg. dict -> Template|Properties, etc.
 
-    # TODO: typechecks for key-value pairs?
+    # TODO: add support for 'replacement' computation, and ensure this state is propagated in tree traversals
+    #  such as intrinsic functions.
 
     _before_template: Final[Maybe[dict]]
     _after_template: Final[Maybe[dict]]
@@ -216,7 +217,7 @@ class ChangeSetModel:
         self._after_template = after_template or Nothing
         self._visited_resources = dict()
         self._node_template = self._model(
-            before_template=before_template, after_template=after_template
+            before_template=self._before_template, after_template=self._after_template
         )
 
     def get_update_model(self) -> NodeTemplate:
@@ -256,13 +257,14 @@ class ChangeSetModel:
 
     def _resolve_intrinsic_function_fn_get_att(self, arguments: ChangeSetEntity) -> ChangeType:
         # TODO: add support for nested intrinsic functions.
-        # TODO: validate arguments structure properly.
+        # TODO: validate arguments structure and type.
+        # TODO: should this check for deletion of resources and/or properties, if so what error should be raised?
+
         if not isinstance(arguments, NodeArray) or not arguments.array:
             raise RuntimeError()
         logical_name_of_resource_entity = arguments.array[0]
         if not isinstance(logical_name_of_resource_entity, TerminalValue):
             raise RuntimeError()
-        # TODO: sample new value if there is one!
         logical_name_of_resource: str = logical_name_of_resource_entity.value
         if not isinstance(logical_name_of_resource, str):
             raise RuntimeError()
@@ -270,17 +272,15 @@ class ChangeSetModel:
             resource_name=logical_name_of_resource
         )
 
-        # TODO: should this check for deletion of resource, if so what error should be raised?
         node_property_attribute_name = arguments.array[1]
-        # TODO: validate what this entity is, may be another function.
         if not isinstance(node_property_attribute_name, TerminalValue):
-            # TODO: add support for other types here
             raise RuntimeError()
         if isinstance(node_property_attribute_name, TerminalValueModified):
             attribute_name = node_property_attribute_name.modified_value
         else:
             attribute_name = node_property_attribute_name.value
 
+        # TODO: this is another use case for which properties should be referenced by name
         for node_property in node_resource.properties.properties:
             if node_property.name == attribute_name:
                 return node_property.change_type

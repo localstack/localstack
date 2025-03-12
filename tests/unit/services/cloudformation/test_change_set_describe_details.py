@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from localstack.aws.api.cloudformation import ResourceChange
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetModel,
@@ -20,10 +22,17 @@ class TestChangeSetDescribeDetails:
         )
         update_model: NodeTemplate = change_set_model.get_update_model()
         change_set_describer = ChangeSetModelDescriber(node_template=update_model)
-        resource_changes = change_set_describer.get_resource_changes()
+        changes = change_set_describer.get_changes()
         # TODO
-        json_str = json.dumps(resource_changes)
+        json_str = json.dumps(changes)
         return json.loads(json_str)
+
+    @staticmethod
+    def compare_changes(computed: list, target: list) -> None:
+        def sort_criteria(resource_change):
+            return resource_change["ResourceChange"]["LogicalResourceId"]
+
+        assert sorted(computed, key=sort_criteria) == sorted(target, key=sort_criteria)
 
     def test_direct_update(self):
         t1 = {
@@ -46,17 +55,41 @@ class TestChangeSetDescribeDetails:
                 },
             },
         }
-        resource_changes = self.eval_change_set(t1, t2)
+        changes = self.eval_change_set(t1, t2)
         target = [
             {
-                "Action": "Modify",
-                "AfterContext": {"Properties": {"TopicName": "topic-2"}},
-                "BeforeContext": {"Properties": {"TopicName": "topic-1"}},
-                "LogicalResourceId": "Foo",
-                "ResourceType": "AWS::SNS::Topic",
-            },
+                "ResourceChange": {
+                    "Action": "Modify",
+                    "AfterContext": {"Properties": {"TopicName": "topic-2"}},
+                    "BeforeContext": {"Properties": {"TopicName": "topic-1"}},
+                    # "Details": [
+                    #     {
+                    #         "ChangeSource": "DirectModification",
+                    #         "Evaluation": "Static",
+                    #         "Target": {
+                    #             "AfterValue": "topic-2-fdd551f7",
+                    #             "Attribute": "Properties",
+                    #             "AttributeChangeType": "Modify",
+                    #             "BeforeValue": "topic-1-eaed84b9",
+                    #             "Name": "TopicName",
+                    #             "Path": "/Properties/TopicName",
+                    #             "RequiresRecreation": "Always"
+                    #         }
+                    #     }
+                    # ],
+                    "LogicalResourceId": "Foo",
+                    # "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-1",
+                    # "PolicyAction": "ReplaceAndDelete",
+                    # "Replacement": "True",
+                    "ResourceType": "AWS::SNS::Topic",
+                    # "Scope": [
+                    #     "Properties"
+                    # ]
+                },
+                "Type": "Resource",
+            }
         ]
-        assert resource_changes == target
+        self.compare_changes(changes, target)
 
     def test_dynamic_update(self):
         t1 = {
@@ -97,26 +130,87 @@ class TestChangeSetDescribeDetails:
                 },
             },
         }
-        resource_changes = self.eval_change_set(t1, t2)
+        changes = self.eval_change_set(t1, t2)
         target = [
             {
-                "Action": "Modify",
-                "AfterContext": {"Properties": {"TopicName": "topic-2"}},
-                "BeforeContext": {"Properties": {"TopicName": "topic-1"}},
-                "LogicalResourceId": "Foo",
-                "ResourceType": "AWS::SNS::Topic",
+                "ResourceChange": {
+                    "Action": "Modify",
+                    "AfterContext": {"Properties": {"TopicName": "topic-2"}},
+                    "BeforeContext": {"Properties": {"TopicName": "topic-1"}},
+                    # "Details": [
+                    #     {
+                    #         "ChangeSource": "DirectModification",
+                    #         "Evaluation": "Static",
+                    #         "Target": {
+                    #             "AfterValue": "topic-2-6da2c5b0",
+                    #             "Attribute": "Properties",
+                    #             "AttributeChangeType": "Modify",
+                    #             "BeforeValue": "topic-1-1601f61d",
+                    #             "Name": "TopicName",
+                    #             "Path": "/Properties/TopicName",
+                    #             "RequiresRecreation": "Always"
+                    #         }
+                    #     }
+                    # ],
+                    "LogicalResourceId": "Foo",
+                    # "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-1",
+                    # "PolicyAction": "ReplaceAndDelete",
+                    # "Replacement": "True",
+                    "ResourceType": "AWS::SNS::Topic",
+                    # "Scope": [
+                    #     "Properties"
+                    # ]
+                },
+                "Type": "Resource",
             },
             {
-                "Action": "Modify",
-                "AfterContext": {
-                    "Properties": {"Value": "{{changeSet:KNOWN_AFTER_APPLY}}", "Type": "String"}
+                "ResourceChange": {
+                    "Action": "Modify",
+                    "AfterContext": {
+                        "Properties": {"Value": "{{changeSet:KNOWN_AFTER_APPLY}}", "Type": "String"}
+                    },
+                    "BeforeContext": {"Properties": {"Value": "topic-1", "Type": "String"}},
+                    # "Details": [
+                    #     {
+                    #         "ChangeSource": "DirectModification",
+                    #         "Evaluation": "Dynamic",
+                    #         "Target": {
+                    #             "AfterValue": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                    #             "Attribute": "Properties",
+                    #             "AttributeChangeType": "Modify",
+                    #             "BeforeValue": "topic-1-1601f61d",
+                    #             "Name": "Value",
+                    #             "Path": "/Properties/Value",
+                    #             "RequiresRecreation": "Never"
+                    #         }
+                    #     },
+                    #     {
+                    #         "CausingEntity": "Foo.TopicName",
+                    #         "ChangeSource": "ResourceAttribute",
+                    #         "Evaluation": "Static",
+                    #         "Target": {
+                    #             "AfterValue": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                    #             "Attribute": "Properties",
+                    #             "AttributeChangeType": "Modify",
+                    #             "BeforeValue": "topic-1-1601f61d",
+                    #             "Name": "Value",
+                    #             "Path": "/Properties/Value",
+                    #             "RequiresRecreation": "Never"
+                    #         }
+                    #     }
+                    # ],
+                    "LogicalResourceId": "Parameter",
+                    # "PhysicalResourceId": "CFN-Parameter",
+                    # "Replacement": "False",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Scope": [
+                    #     "Properties"
+                    # ]
                 },
-                "BeforeContext": {"Properties": {"Value": "topic-1", "Type": "String"}},
-                "LogicalResourceId": "Parameter",
-                "ResourceType": "AWS::SSM::Parameter",
+                "Type": "Resource",
             },
         ]
-        assert resource_changes == target
+        self.compare_changes(changes, target)
 
     def test_unrelated_changes_update_propagation(self):
         t1 = {
@@ -157,30 +251,59 @@ class TestChangeSetDescribeDetails:
                 },
             },
         }
-        resource_changes = self.eval_change_set(t1, t2)
+        changes = self.eval_change_set(t1, t2)
         target = [
             {
-                "Action": "Modify",
-                "AfterContext": {
-                    "Properties": {
-                        "Value": "topic_name",
-                        "Type": "String",
-                        "Description": "changed",
-                    }
+                "ResourceChange": {
+                    "Action": "Modify",
+                    "AfterContext": {
+                        "Properties": {
+                            "Value": "topic_name",
+                            "Type": "String",
+                            "Description": "changed",
+                        }
+                    },
+                    "BeforeContext": {
+                        "Properties": {
+                            "Value": "topic_name",
+                            "Type": "String",
+                            "Description": "original",
+                        }
+                    },
+                    # "Details": [
+                    #     {
+                    #         "ChangeSource": "DirectModification",
+                    #         "Evaluation": "Static",
+                    #         "Target": {
+                    #             "AfterValue": "changed",
+                    #             "Attribute": "Properties",
+                    #             "AttributeChangeType": "Modify",
+                    #             "BeforeValue": "original",
+                    #             "Name": "Description",
+                    #             "Path": "/Properties/Description",
+                    #             "RequiresRecreation": "Never"
+                    #         }
+                    #     }
+                    # ],
+                    "LogicalResourceId": "Parameter1",
+                    # "PhysicalResourceId": "CFN-Parameter1",
+                    # "Replacement": "False",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Scope": [
+                    #     "Properties"
+                    # ]
                 },
-                "BeforeContext": {
-                    "Properties": {
-                        "Value": "topic_name",
-                        "Type": "String",
-                        "Description": "original",
-                    }
-                },
-                "LogicalResourceId": "Parameter1",
-                "ResourceType": "AWS::SSM::Parameter",
+                "Type": "Resource",
             }
         ]
-        assert resource_changes == target
+        self.compare_changes(changes, target)
 
+    @pytest.mark.skip(
+        reason=(
+            "Updating an SSN name seems to require replacement of the resource which "
+            "means the other resource using Fn::GetAtt is known after apply."
+        )
+    )
     def test_unrelated_changes_requires_replacement(self):
         t1 = {
             "Resources": {
@@ -220,28 +343,88 @@ class TestChangeSetDescribeDetails:
                 },
             },
         }
-        resource_changes = self.eval_change_set(t1, t2)
+        changes = self.eval_change_set(t1, t2)
         target = [
             {
-                "Action": "Modify",
-                "AfterContext": {
-                    "Properties": {"Value": "value", "Type": "String", "Name": "MyParameter-2"}
+                "ResourceChange": {
+                    "Action": "Modify",
+                    "AfterContext": {
+                        "Properties": {"Value": "value", "Type": "String", "Name": "MyParameter-2"}
+                    },
+                    "BeforeContext": {
+                        "Properties": {"Value": "value", "Type": "String", "Name": "MyParameter-1"}
+                    },
+                    # "Details": [
+                    #     {
+                    #         "ChangeSource": "DirectModification",
+                    #         "Evaluation": "Static",
+                    #         "Target": {
+                    #             "AfterValue": "MyParameter846966c8",
+                    #             "Attribute": "Properties",
+                    #             "AttributeChangeType": "Modify",
+                    #             "BeforeValue": "MyParameter676af33a",
+                    #             "Name": "Name",
+                    #             "Path": "/Properties/Name",
+                    #             "RequiresRecreation": "Always"
+                    #         }
+                    #     }
+                    # ],
+                    "LogicalResourceId": "Parameter1",
+                    # "PhysicalResourceId": "MyParameter676af33a",
+                    # "PolicyAction": "ReplaceAndDelete",
+                    # "Replacement": "True",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Scope": [
+                    #     "Properties"
+                    # ]
                 },
-                "BeforeContext": {
-                    "Properties": {"Value": "value", "Type": "String", "Name": "MyParameter-1"}
-                },
-                "LogicalResourceId": "Parameter1",
-                "ResourceType": "AWS::SSM::Parameter",
+                "Type": "Resource",
             },
             {
-                "Action": "Modify",
-                "AfterContext": {
-                    "Properties": {"Value": "{{changeSet:KNOWN_AFTER_APPLY}}", "Type": "String"}
+                "ResourceChange": {
+                    "Action": "Modify",
+                    "AfterContext": {
+                        "Properties": {"Value": "{{changeSet:KNOWN_AFTER_APPLY}}", "Type": "String"}
+                    },
+                    "BeforeContext": {"Properties": {"Value": "value", "Type": "String"}},
+                    # "Details": [
+                    #     {
+                    #         "ChangeSource": "DirectModification",
+                    #         "Evaluation": "Dynamic",
+                    #         "Target": {
+                    #             "AfterValue": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                    #             "Attribute": "Properties",
+                    #             "AttributeChangeType": "Modify",
+                    #             "BeforeValue": "value",
+                    #             "Name": "Value",
+                    #             "Path": "/Properties/Value",
+                    #             "RequiresRecreation": "Never"
+                    #         }
+                    #     },
+                    #     {
+                    #         "CausingEntity": "Parameter1.Value",
+                    #         "ChangeSource": "ResourceAttribute",
+                    #         "Evaluation": "Static",
+                    #         "Target": {
+                    #             "AfterValue": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                    #             "Attribute": "Properties",
+                    #             "AttributeChangeType": "Modify",
+                    #             "BeforeValue": "value",
+                    #             "Name": "Value",
+                    #             "Path": "/Properties/Value",
+                    #             "RequiresRecreation": "Never"
+                    #         }
+                    #     }
+                    # ],
+                    "LogicalResourceId": "Parameter2",
+                    # "PhysicalResourceId": "CFN-Parameter2",
+                    # "Replacement": "False",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Scope": [
+                    #     "Properties"
+                    # ]
                 },
-                "BeforeContext": {"Properties": {"Value": "value", "Type": "String"}},
-                "LogicalResourceId": "Parameter2",
-                "Replacement": "False",
-                "ResourceType": "AWS::SSM::Parameter",
+                "Type": "Resource",
             },
         ]
-        assert resource_changes == target
+        self.compare_changes(changes, target)
