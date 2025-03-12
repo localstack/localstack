@@ -174,6 +174,14 @@ class TestApiGatewayApiRestApi:
         snapshot.match("string-compression-size", e.value.response)
 
     @markers.aws.validated
+    def test_create_rest_api_with_binary_media_types(self, apigw_create_rest_api, snapshot):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            binaryMediaTypes=["image/png"],
+        )
+        snapshot.match("create-with-binary-media", response)
+
+    @markers.aws.validated
     def test_create_rest_api_with_tags(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}",
