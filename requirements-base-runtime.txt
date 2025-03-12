@@ -4,16 +4,16 @@
 #
 #    pip-compile --extra=base-runtime --output-file=requirements-base-runtime.txt --strip-extras --unsafe-package=distribute --unsafe-package=localstack-core --unsafe-package=pip --unsafe-package=setuptools pyproject.toml
 #
-attrs==25.1.0
+attrs==25.2.0
     # via
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.23.10
+awscrt==0.24.1
     # via localstack-core (pyproject.toml)
-boto3==1.36.21
+boto3==1.37.11
     # via localstack-core (pyproject.toml)
-botocore==1.36.21
+botocore==1.37.11
     # via
     #   boto3
     #   localstack-core (pyproject.toml)
@@ -170,7 +170,7 @@ rpds-py==0.23.1
     # via
     #   jsonschema
     #   referencing
-s3transfer==0.11.3
+s3transfer==0.11.4
     # via boto3
 semver==3.0.4
     # via localstack-core (pyproject.toml)

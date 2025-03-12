@@ -160,9 +160,18 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_missing_keys": {
-    "recorded-date": "11-06-2024, 08:33:07",
+    "recorded-date": "12-03-2025, 10:19:13",
     "recorded-content": {
-      "missing-key-exception-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the PutTargets operation: InputTemplate for target <target-id> contains invalid placeholder notdefinedkey.') tblen=3>"
+      "missing-key-exception-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "InputTemplate for target <target-id> contains invalid placeholder notdefinedkey."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_predefined_variables[\"Message containing all pre defined variables <aws.events.rule-arn> <aws.events.rule-name> <aws.events.event.ingestion-time>\"]": {
@@ -220,9 +229,18 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::test_put_event_input_path_and_input_transformer": {
-    "recorded-date": "13-05-2024, 13:01:15",
+    "recorded-date": "12-03-2025, 10:19:01",
     "recorded-content": {
-      "duplicated-input-operations-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the PutTargets operation: Only one of Input, InputPath, or InputTransformer must be provided for target <target-id>.') tblen=3>"
+      "duplicated-input-operations-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Only one of Input, InputPath, or InputTransformer must be provided for target <target-id>."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_string[\"Event of <detail-type> type, at time <timestamp>, info extracted from detail <command>\"]": {

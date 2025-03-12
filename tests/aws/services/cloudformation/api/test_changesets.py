@@ -420,15 +420,15 @@ def test_execute_change_set(
 @markers.aws.validated
 def test_delete_change_set_exception(snapshot, aws_client):
     """test error cases when trying to delete a change set"""
-    with pytest.raises(Exception) as e1:
+    with pytest.raises(ClientError) as e1:
         aws_client.cloudformation.delete_change_set(
             StackName="nostack", ChangeSetName="DoesNotExist"
         )
-    snapshot.match("e1", e1)
+    snapshot.match("e1", e1.value.response)
 
-    with pytest.raises(Exception) as e2:
+    with pytest.raises(ClientError) as e2:
         aws_client.cloudformation.delete_change_set(ChangeSetName="DoesNotExist")
-    snapshot.match("e2", e2)
+    snapshot.match("e2", e2.value.response)
 
 
 @markers.aws.validated
