@@ -282,7 +282,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                     "Timestamp": timestamp,
                     "Value": value,
                 }
-                for timestamp, value in zip(timestamps, values)
+                for timestamp, value in zip(timestamps, values, strict=False)
             ]
 
             pagination = PaginatedList(timestamp_value_dicts)

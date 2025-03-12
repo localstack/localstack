@@ -297,7 +297,9 @@ class PortMappings:
                     bind_port(bind_address, host_port),
                 )
                 for container_port, host_port in zip(
-                    range(to_range[0], to_range[1] + 1), range(from_range[0], from_range[1] + 1)
+                    range(to_range[0], to_range[1] + 1),
+                    range(from_range[0], from_range[1] + 1),
+                    strict=False,
                 )
             ]
 
