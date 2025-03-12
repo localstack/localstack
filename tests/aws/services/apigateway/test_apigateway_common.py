@@ -834,6 +834,7 @@ class TestApiGatewayCommon:
         _create_route("path", '#set($result = $input.path("$.json"))$result')
         _create_route("nested", '#set($result = $input.path("$.json"))$result.nested')
         _create_route("list", '#set($result = $input.path("$.json"))$result[0]')
+        _create_route("to-string", '#set($result = $input.path("$.json"))$result.toString()')
 
         stage_name = "dev"
         aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
@@ -842,6 +843,7 @@ class TestApiGatewayCommon:
         path_url = url + "path"
         nested_url = url + "nested"
         list_url = url + "list"
+        to_string = url + "to-string"
 
         response = requests.post(path_url, json={"foo": "bar"})
         snapshot.match("dict-response", response.text)
@@ -868,6 +870,12 @@ class TestApiGatewayCommon:
             path_url, json={"bigger": "dict", "to": "test", "with": "separators"}
         )
         snapshot.match("bigger-dict", response.text)
+
+        response = requests.post(to_string, json={"foo": "bar"})
+        snapshot.match("to-string", response.text)
+
+        response = requests.post(to_string, json={"list": [{"foo": "bar"}]})
+        snapshot.match("list-to-string", response.text)
 
 
 class TestUsagePlans:

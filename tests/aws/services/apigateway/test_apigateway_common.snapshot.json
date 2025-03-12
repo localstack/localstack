@@ -1378,7 +1378,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_input_path_template_formatting": {
-    "recorded-date": "12-03-2025, 18:47:52",
+    "recorded-date": "12-03-2025, 21:18:25",
     "recorded-content": {
       "dict-response": "{foo=bar}",
       "json-list": "[{\"foo\":\"bar\"}]",
@@ -1387,7 +1387,9 @@
       "dict-in-list": "{foo=bar}",
       "list-with-nested-list": "[{\"foo\":\"bar\"}]",
       "dict-with-nested-list": "{foo=[{\"nested\":\"bar\"}]}",
-      "bigger-dict": "{bigger=dict, to=test, with=separators}"
+      "bigger-dict": "{bigger=dict, to=test, with=separators}",
+      "to-string": "{foo=bar}",
+      "list-to-string": "{list=[{\"foo\":\"bar\"}]}"
     }
   }
 }

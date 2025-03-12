@@ -21,6 +21,9 @@ import logging
 from typing import Any, TypedDict
 from urllib.parse import quote_plus, unquote_plus
 
+import airspeed
+from airspeed.operators import dict_to_string
+
 from localstack import config
 from localstack.services.apigateway.next_gen.execute_api.variables import (
     ContextVariables,
@@ -82,8 +85,7 @@ class JavaDictFormatter(dict):
             self[k] = self.formatter_factory(v)
 
     def __str__(self) -> str:
-        to_str = ", ".join(f"{k}={v}" for k, v in self.items())
-        return f"{{{to_str}}}"
+        return dict_to_string(self)
 
 
 class InputPathListFormatter(list):
@@ -255,3 +257,15 @@ class ApiGatewayVtlTemplate(VtlTemplate):
         )
         result = self.render_vtl(template=template.strip(), variables=variables_copy)
         return result, variables_copy["context"]["responseOverride"]
+
+
+# patches required to allow our custom class operations in VTL templates processed by airspeed
+airspeed.operators.__additional_methods__[JavaDictFormatter] = (
+    airspeed.operators.__additional_methods__[dict]
+)
+airspeed.operators.__additional_methods__[InputPathDictFormatter] = (
+    airspeed.operators.__additional_methods__[dict]
+)
+airspeed.operators.__additional_methods__[InputPathListFormatter] = (
+    airspeed.operators.__additional_methods__[list]
+)
