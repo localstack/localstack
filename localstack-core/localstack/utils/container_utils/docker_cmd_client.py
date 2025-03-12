@@ -412,7 +412,7 @@ class CmdDockerClient(ContainerClient):
         cmd += [context_path]
         LOG.debug("Building Docker image: %s", cmd)
         try:
-            run(cmd)
+            return run(cmd)
         except subprocess.CalledProcessError as e:
             raise ContainerException(
                 f"Docker build process returned with error code {e.returncode}", e.stdout, e.stderr
