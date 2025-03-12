@@ -1346,10 +1346,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         self, context: RequestContext, request: RotateKeyOnDemandRequest
     ) -> RotateKeyOnDemandResponse:
         account_id, region_name, key_id = self._parse_key_id(request["KeyId"], context)
-        key = self._get_kms_key(account_id, region_name, key_id, any_key_state_allowed=True)
+        key = self._get_kms_key(account_id, region_name, key_id)
 
-        if key.metadata["KeyState"] == KeyState.Disabled:
-            raise DisabledException(f"{key.metadata['Arn']} is disabled.")
         if key.metadata["KeySpec"] != KeySpec.SYMMETRIC_DEFAULT:
             raise UnsupportedOperationException()
         if key.metadata["Origin"] == OriginType.EXTERNAL:
