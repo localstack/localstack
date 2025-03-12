@@ -54,7 +54,7 @@ def get_java_formatter(value):
     if isinstance(value, dict):
         return JavaDictFormatter(value)
     if isinstance(value, list):
-        return [JavaDictFormatter(item) for item in value]
+        return [get_java_formatter(item) for item in value]
     return value
 
 
@@ -68,13 +68,14 @@ def get_input_path_formatter(value: any) -> any:
 
 class JavaDictFormatter(dict):
     # TODO apply this class more generally through the template mappings
-    @staticmethod
-    def formatter_factory(value: any) -> any:
-        return get_java_formatter(value)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.update(*args, **kwargs)
+
+    @staticmethod
+    def formatter_factory(value: any) -> any:
+        return get_java_formatter(value)
 
     def update(self, *args, **kwargs):
         for k, v in self.items():
