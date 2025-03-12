@@ -1264,9 +1264,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         )
         if key.is_key_rotation_enabled:
             response["RotationPeriodInDays"] = key.rotation_period_in_days
-        # We are simulating that on demand rotation is executed asynchronously and this we return only return `OnDemandRotationStartDate` while it's "in progress"
-        if key.on_demand_rotation_in_progress():
-            response["OnDemandRotationStartDate"] = key.on_demand_rotation_start_date
 
         return response
 

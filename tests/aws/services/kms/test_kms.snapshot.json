@@ -2049,7 +2049,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_disabled": {
-    "recorded-date": "11-03-2025, 16:48:11",
+    "recorded-date": "12-03-2025, 19:05:50",
     "recorded-content": {
       "rotate-on-demand-response": {
         "KeyId": "<key-id:1>",
@@ -2061,7 +2061,6 @@
       "rotation-status-response-after-rotation": {
         "KeyId": "<key-id:1>",
         "KeyRotationEnabled": false,
-        "OnDemandRotationStartDate": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2070,7 +2069,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_enabled": {
-    "recorded-date": "11-03-2025, 16:48:26",
+    "recorded-date": "12-03-2025, 19:07:01",
     "recorded-content": {
       "rotate-on-demand-response": {
         "KeyId": "<key-id:1>",
@@ -2083,7 +2082,6 @@
         "KeyId": "<key-id:1>",
         "KeyRotationEnabled": true,
         "NextRotationDate": "datetime",
-        "OnDemandRotationStartDate": "datetime",
         "RotationPeriodInDays": 365,
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -2151,27 +2149,6 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_should_return_rotation_start_date_only_while_its_in_progress": {
-    "recorded-date": "11-03-2025, 16:42:52",
-    "recorded-content": {
-      "rotate-on-demand-response": {
-        "KeyId": "<key-id:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "rotation-status-response-after-rotation": {
-        "KeyId": "<key-id:1>",
-        "KeyRotationEnabled": false,
-        "OnDemandRotationStartDate": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
         }
       }
     }
