@@ -1376,5 +1376,18 @@
         "message": "Invalid request body"
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_input_path_template_formatting": {
+    "recorded-date": "12-03-2025, 18:47:52",
+    "recorded-content": {
+      "dict-response": "{foo=bar}",
+      "json-list": "[{\"foo\":\"bar\"}]",
+      "nested-dict": "{foo=bar}",
+      "nested-list": "[{\"foo\":\"bar\"}]",
+      "dict-in-list": "{foo=bar}",
+      "list-with-nested-list": "[{\"foo\":\"bar\"}]",
+      "dict-with-nested-list": "{foo=[{\"nested\":\"bar\"}]}",
+      "bigger-dict": "{bigger=dict, to=test, with=separators}"
+    }
   }
 }

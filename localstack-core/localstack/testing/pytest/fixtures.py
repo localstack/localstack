@@ -2175,6 +2175,7 @@ def echo_http_server(httpserver: HTTPServer):
             "headers": dict(request.headers),
             "url": request.url,
             "method": request.method,
+            "json": request.json if request.is_json else None,
         }
         response_body = json.dumps(json_safe(result))
         return Response(response_body, status=200)
