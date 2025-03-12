@@ -595,7 +595,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             if continuation_token
             else None
         )
-        
+
         count = 0
         buckets: list[Bucket] = []
         next_continuation_token = None
@@ -614,11 +614,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 next_continuation_token = to_str(base64.urlsafe_b64encode(bucket.name.encode()))
                 break
 
-            output_bucket = Bucket(Name=bucket.name, CreationDate=bucket.creation_date, BucketRegion=bucket.bucket_region)
+            output_bucket = Bucket(
+                Name=bucket.name,
+                CreationDate=bucket.creation_date,
+                BucketRegion=bucket.bucket_region,
+            )
             buckets.append(output_bucket)
             count += 1
-        
-        return ListBucketsOutput(Owner=owner, Buckets=buckets, Prefix=prefix, ContinuationToken=next_continuation_token)
+
+        return ListBucketsOutput(
+            Owner=owner, Buckets=buckets, Prefix=prefix, ContinuationToken=next_continuation_token
+        )
 
     def head_bucket(
         self,
