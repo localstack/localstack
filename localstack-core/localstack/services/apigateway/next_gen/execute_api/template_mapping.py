@@ -50,6 +50,58 @@ class MappingTemplateVariables(TypedDict, total=False):
     stageVariables: dict[str, str]
 
 
+def get_java_formatter(value):
+    if isinstance(value, dict):
+        return JavaDictFormatter(value)
+    if isinstance(value, list):
+        return [JavaDictFormatter(item) for item in value]
+    return value
+
+
+def get_input_path_formatter(value: any) -> any:
+    if isinstance(value, dict):
+        return InputPathDictFormatter(value)
+    if isinstance(value, list):
+        return InputPathListFormatter(value)
+    return value
+
+
+class JavaDictFormatter(dict):
+    # TODO apply this class more generally through the template mappings
+    @staticmethod
+    def formatter_factory(value: any) -> any:
+        return get_java_formatter(value)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.update(*args, **kwargs)
+
+    def update(self, *args, **kwargs):
+        for k, v in self.items():
+            self[k] = self.formatter_factory(v)
+
+    def __str__(self) -> str:
+        to_str = ", ".join(f"{k}={v}" for k, v in self.items())
+        return f"{{{to_str}}}"
+
+
+class InputPathListFormatter(list):
+    def __init__(self, *args):
+        super(InputPathListFormatter, self).__init__(*args)
+        for idx, item in enumerate(self):
+            self[idx] = get_input_path_formatter(item)
+
+    def __str__(self):
+        if isinstance(self, list):
+            return json.dumps(self, separators=(",", ":"))
+
+
+class InputPathDictFormatter(JavaDictFormatter):
+    @staticmethod
+    def formatter_factory(value: any) -> any:
+        return get_input_path_formatter(value)
+
+
 class AttributeDict(dict):
     """
     Wrapper returned by VelocityUtilApiGateway.parseJson to allow access to dict values as attributes (dot notation),
@@ -142,7 +194,7 @@ class VelocityInput:
         if not self.value:
             return {}
         value = self.value if isinstance(self.value, dict) else json.loads(self.value)
-        return extract_jsonpath(value, path)
+        return get_input_path_formatter(extract_jsonpath(value, path))
 
     def json(self, path):
         path = path or "$"
