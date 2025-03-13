@@ -28,7 +28,7 @@ class UsageMetricsStaticAnalyser(StaticAnalyser):
             analyser.analyse(definition=definition)
 
             # Determine which query language is being used in this state machine.
-            query_modes = analyser._query_language_modes
+            query_modes = analyser.query_language_modes
             if len(query_modes) == 2:
                 language_used = QueryLanguage.Both
             elif QueryLanguageMode.JSONata in query_modes:
@@ -37,7 +37,7 @@ class UsageMetricsStaticAnalyser(StaticAnalyser):
                 language_used = QueryLanguage.JSONPath
 
             # Determine is the state machine uses the variables feature.
-            uses_variables = analyser._uses_variables
+            uses_variables = analyser.uses_variables
 
             # Count.
             UsageMetrics.language_features_counter.labels(
@@ -50,28 +50,35 @@ class UsageMetricsStaticAnalyser(StaticAnalyser):
             )
         return analyser
 
-    _query_language_modes: Final[set[QueryLanguageMode]]
-    _uses_variables: bool
+    query_language_modes: Final[set[QueryLanguageMode]]
+    uses_variables: bool
 
     def __init__(self):
         super().__init__()
-        self._query_language_modes = set()
-        self._uses_variables = False
+        self.query_language_modes = set()
+        self.uses_variables = False
 
     def visitQuery_language_decl(self, ctx: ASLParser.Query_language_declContext):
-        if len(self._query_language_modes) == 2:
+        if len(self.query_language_modes) == 2:
             # Both query language modes have been confirmed to be in use.
             return
         query_language_mode_int = ctx.children[-1].getSymbol().type
         query_language_mode = QueryLanguageMode(value=query_language_mode_int)
-        self._query_language_modes.add(query_language_mode)
+        self.query_language_modes.add(query_language_mode)
+
+    def visitState_decl(self, ctx: ASLParser.State_declContext):
+        # If before entering a state, no query language was explicitly enforced, then we know
+        # this is the first state operating under the default mode (JSONPath)
+        if not self.query_language_modes:
+            self.query_language_modes.add(QueryLanguageMode.JSONPath)
+        super().visitState_decl(ctx=ctx)
 
     def visitString_literal(self, ctx: ASLParser.String_literalContext):
         # Prune everything parsed as a string literal.
         return
 
     def visitString_variable_sample(self, ctx: ASLParser.String_variable_sampleContext):
-        self._uses_variables = True
+        self.uses_variables = True
 
     def visitAssign_decl(self, ctx: ASLParser.Assign_declContext):
-        self._uses_variables = True
+        self.uses_variables = True
