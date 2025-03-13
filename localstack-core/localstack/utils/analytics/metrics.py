@@ -99,16 +99,17 @@ class Metric(ABC):
         pass
 
 
-class _Counter:
+class BaseCounter:
     """
     A thread-safe counter for any kind of tracking.
+    This class should not be instantiated directly, use the Counter class instead.
     """
 
     _mutex: threading.Lock
     _count: int
 
     def __init__(self):
-        super(_Counter, self).__init__()
+        super(BaseCounter, self).__init__()
         self._mutex = threading.Lock()
         self._count = 0
 
@@ -136,9 +137,10 @@ class _Counter:
             self._count = 0
 
 
-class CounterMetric(Metric, _Counter):
+class CounterMetric(Metric, BaseCounter):
     """
     A thread-safe counter for tracking occurrences of an event without labels.
+    This class is intended for type hinting only and should not be instantiated directly; use the Counter class instead.
     """
 
     _namespace: Optional[str]
@@ -146,7 +148,7 @@ class CounterMetric(Metric, _Counter):
 
     def __init__(self, name: str, namespace: Optional[str] = ""):
         Metric.__init__(self, name=name)
-        _Counter.__init__(self)
+        BaseCounter.__init__(self)
 
         self._namespace = namespace.strip() if namespace else ""
         self._type = "counter"
@@ -173,6 +175,7 @@ class CounterMetric(Metric, _Counter):
 class LabeledCounterMetric(Metric):
     """
     A labeled counter that tracks occurrences of an event across different label combinations.
+    This class is intended for type hinting only and should not be instantiated directly; use the Counter class instead.
     """
 
     _namespace: Optional[str]
@@ -180,7 +183,7 @@ class LabeledCounterMetric(Metric):
     _unit: str
     _labels: list[str]
     _label_values: Tuple[Optional[Union[str, float]], ...]
-    _counters_by_label_values: defaultdict[Tuple[Optional[Union[str, float]], ...], _Counter]
+    _counters_by_label_values: defaultdict[Tuple[Optional[Union[str, float]], ...], BaseCounter]
 
     def __init__(self, name: str, labels: List[str], namespace: Optional[str] = ""):
         super(LabeledCounterMetric, self).__init__(name=name)
@@ -197,15 +200,15 @@ class LabeledCounterMetric(Metric):
         self._namespace = namespace.strip() if namespace else ""
         self._type = "counter"
         self._labels = labels
-        self._counters_by_label_values = defaultdict(_Counter)
+        self._counters_by_label_values = defaultdict(BaseCounter)
         MetricRegistry().register(self)
 
-    def labels(self, **kwargs: Union[str, float, None]) -> _Counter:
+    def labels(self, **kwargs: Union[str, float, None]) -> BaseCounter:
         """
         Create a scoped counter instance with specific label values.
 
         This method assigns values to the predefined labels of a labeled counter and returns
-        a _Counter object (``) that allows tracking metrics for that specific
+        a BaseCounter object that allows tracking metrics for that specific
         combination of label values.
 
         :raises ValueError:
