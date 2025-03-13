@@ -787,16 +787,21 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    @pytest.mark.parametrize(
+        "template_path",
+        [ST.MAP_STATE_ITEM_SELECTOR, ST.MAP_STATE_ITEM_SELECTOR_JSONATA],
+        ids=["MAP_STATE_ITEM_SELECTOR", "MAP_STATE_ITEM_SELECTOR_JSONATA"],
+    )
     def test_map_state_item_selector(
         self,
         aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
+        template_path,
     ):
-        template = ST.load_sfn_template(ST.MAP_STATE_ITEM_SELECTOR)
+        template = ST.load_sfn_template(template_path)
         definition = json.dumps(template)
-
         exec_input = json.dumps({})
         create_and_record_execution(
             aws_client,

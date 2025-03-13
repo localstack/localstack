@@ -224,6 +224,12 @@
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_item_selector": {
     "last_validated_date": "2023-07-19T11:47:54+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_item_selector[MAP_STATE_ITEM_SELECTOR]": {
+    "last_validated_date": "2025-03-03T16:07:53+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_item_selector[MAP_STATE_ITEM_SELECTOR_JSONATA]": {
+    "last_validated_date": "2025-03-03T16:08:13+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_item_selector_parameters": {
     "last_validated_date": "2024-11-15T11:20:56+00:00"
   },

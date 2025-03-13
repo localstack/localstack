@@ -1,6 +1,6 @@
 {
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_update_assume_role_policy": {
-    "recorded-date": "14-09-2023, 17:42:36",
+    "recorded-date": "06-03-2025, 12:24:58",
     "recorded-content": {
       "created_role": {
         "Role": {
@@ -21,7 +21,7 @@
             ],
             "Version": "2012-10-17"
           },
-          "CreateDate": "datetime",
+          "CreateDate": "<datetime>",
           "Path": "/",
           "RoleId": "<role-id:1>",
           "RoleName": "<role-name:1>"
@@ -40,7 +40,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMExtensions::test_create_role_with_malformed_assume_role_policy_document": {
-    "recorded-date": "14-09-2023, 17:07:51",
+    "recorded-date": "06-03-2025, 12:24:44",
     "recorded-content": {
       "invalid-json": {
         "Error": {
@@ -56,7 +56,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_list_roles_with_permission_boundary": {
-    "recorded-date": "14-09-2023, 17:42:39",
+    "recorded-date": "06-03-2025, 12:25:01",
     "recorded-content": {
       "created_role": {
         "Role": {
@@ -73,7 +73,7 @@
             ],
             "Version": "2012-10-17"
           },
-          "CreateDate": "datetime",
+          "CreateDate": "<datetime>",
           "Path": "/<path-prefix>/",
           "RoleId": "<role-id:1>",
           "RoleName": "<role-name:1>"
@@ -100,7 +100,7 @@
               ],
               "Version": "2012-10-17"
             },
-            "CreateDate": "datetime",
+            "CreateDate": "<datetime>",
             "MaxSessionDuration": 3600,
             "Path": "/<path-prefix>/",
             "RoleId": "<role-id:1>",
@@ -115,7 +115,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_create_describe_role": {
-    "recorded-date": "14-09-2023, 17:42:37",
+    "recorded-date": "06-03-2025, 12:24:59",
     "recorded-content": {
       "create_role_result": {
         "Role": {
@@ -132,7 +132,7 @@
             ],
             "Version": "2012-10-17"
           },
-          "CreateDate": "datetime",
+          "CreateDate": "<datetime>",
           "Path": "/<path-prefix>/",
           "RoleId": "<role-id:1>",
           "RoleName": "<role-name:1>"
@@ -157,7 +157,7 @@
             ],
             "Version": "2012-10-17"
           },
-          "CreateDate": "datetime",
+          "CreateDate": "<datetime>",
           "MaxSessionDuration": 3600,
           "Path": "/<path-prefix>/",
           "RoleId": "<role-id:1>",
@@ -186,7 +186,7 @@
               ],
               "Version": "2012-10-17"
             },
-            "CreateDate": "datetime",
+            "CreateDate": "<datetime>",
             "MaxSessionDuration": 3600,
             "Path": "/<path-prefix>/",
             "RoleId": "<role-id:1>",
@@ -201,20 +201,20 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_role_attach_policy": {
-    "recorded-date": "14-09-2023, 17:42:42",
+    "recorded-date": "06-03-2025, 12:25:04",
     "recorded-content": {
       "create_policy_response": {
         "Policy": {
           "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
           "AttachmentCount": 0,
-          "CreateDate": "datetime",
+          "CreateDate": "<datetime>",
           "DefaultVersionId": "v1",
           "IsAttachable": true,
           "Path": "/",
           "PermissionsBoundaryUsageCount": 0,
           "PolicyId": "<policy-id:1>",
           "PolicyName": "<policy-name:1>",
-          "UpdateDate": "datetime"
+          "UpdateDate": "<datetime>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -223,8 +223,8 @@
       },
       "non_existent_malformed_policy_arn": {
         "Error": {
-          "Code": "InvalidInput",
-          "Message": "ARN longpolicynamebutnoarn is not valid.",
+          "Code": "ValidationError",
+          "Message": "Invalid ARN:  Could not be parsed!",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -234,8 +234,8 @@
       },
       "existing_policy_name_provided": {
         "Error": {
-          "Code": "InvalidInput",
-          "Message": "ARN <policy-name:1> is not valid.",
+          "Code": "ValidationError",
+          "Message": "Invalid ARN:  Could not be parsed!",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -263,20 +263,20 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_user_attach_policy": {
-    "recorded-date": "14-09-2023, 17:42:45",
+    "recorded-date": "06-03-2025, 12:25:06",
     "recorded-content": {
       "create_policy_response": {
         "Policy": {
           "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
           "AttachmentCount": 0,
-          "CreateDate": "datetime",
+          "CreateDate": "<datetime>",
           "DefaultVersionId": "v1",
           "IsAttachable": true,
           "Path": "/",
           "PermissionsBoundaryUsageCount": 0,
           "PolicyId": "<policy-id:1>",
           "PolicyName": "<policy-name:1>",
-          "UpdateDate": "datetime"
+          "UpdateDate": "<datetime>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -285,8 +285,8 @@
       },
       "non_existent_malformed_policy_arn": {
         "Error": {
-          "Code": "InvalidInput",
-          "Message": "ARN longpolicynamebutnoarn is not valid.",
+          "Code": "ValidationError",
+          "Message": "Invalid ARN:  Could not be parsed!",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -296,8 +296,8 @@
       },
       "existing_policy_name_provided": {
         "Error": {
-          "Code": "InvalidInput",
-          "Message": "ARN <policy-name:1> is not valid.",
+          "Code": "ValidationError",
+          "Message": "Invalid ARN:  Could not be parsed!",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -325,7 +325,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMExtensions::test_role_with_path_lifecycle": {
-    "recorded-date": "21-06-2024, 12:13:05",
+    "recorded-date": "06-03-2025, 12:24:45",
     "recorded-content": {
       "create-role-response": {
         "Role": {
@@ -342,7 +342,7 @@
             ],
             "Version": "2012-10-17"
           },
-          "CreateDate": "datetime",
+          "CreateDate": "<datetime>",
           "Path": "<path>",
           "RoleId": "<role-id:1>",
           "RoleName": "<role-name:1>"
@@ -367,7 +367,7 @@
             ],
             "Version": "2012-10-17"
           },
-          "CreateDate": "datetime",
+          "CreateDate": "<datetime>",
           "MaxSessionDuration": 3600,
           "Path": "<path>",
           "RoleId": "<role-id:1>",
@@ -388,7 +388,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMPolicyEncoding::test_put_user_policy_encoding": {
-    "recorded-date": "25-09-2024, 15:10:45",
+    "recorded-date": "06-03-2025, 12:25:08",
     "recorded-content": {
       "get-policy-response": {
         "PolicyDocument": {
@@ -415,7 +415,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMPolicyEncoding::test_put_role_policy_encoding": {
-    "recorded-date": "30-09-2024, 15:17:42",
+    "recorded-date": "06-03-2025, 12:25:09",
     "recorded-content": {
       "create-role-response": {
         "Role": {
@@ -437,7 +437,7 @@
             ],
             "Version": "2012-10-17"
           },
-          "CreateDate": "datetime",
+          "CreateDate": "<datetime>",
           "Path": "<path:1>",
           "RoleId": "<role-id:1>",
           "RoleName": "<role-name:1>"
@@ -489,7 +489,7 @@
             ],
             "Version": "2012-10-17"
           },
-          "CreateDate": "datetime",
+          "CreateDate": "<datetime>",
           "MaxSessionDuration": 3600,
           "Path": "<path:1>",
           "RoleId": "<role-id:1>",
@@ -523,7 +523,7 @@
               ],
               "Version": "2012-10-17"
             },
-            "CreateDate": "datetime",
+            "CreateDate": "<datetime>",
             "MaxSessionDuration": 3600,
             "Path": "<path:1>",
             "RoleId": "<role-id:1>",
@@ -538,7 +538,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMPolicyEncoding::test_put_group_policy_encoding": {
-    "recorded-date": "25-09-2024, 15:10:47",
+    "recorded-date": "06-03-2025, 12:25:10",
     "recorded-content": {
       "get-policy-response": {
         "GroupName": "<group-name:1>",
@@ -560,6 +560,621 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_service_specific_credential_lifecycle[codecommit.amazonaws.com]": {
+    "recorded-date": "06-03-2025, 16:58:34",
+    "recorded-content": {
+      "create-user-response": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-service-specific-credential-response": {
+        "ServiceSpecificCredential": {
+          "CreateDate": "<datetime>",
+          "ServiceName": "codecommit.amazonaws.com",
+          "ServicePassword": "<service-password:1>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
+          "ServiceUserName": "<user-name:1>-at-111111111111",
+          "Status": "Active",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-service-specific-credentials-response-before-update": {
+        "ServiceSpecificCredentials": [
+          {
+            "CreateDate": "<datetime>",
+            "ServiceName": "codecommit.amazonaws.com",
+            "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
+            "ServiceUserName": "<user-name:1>-at-111111111111",
+            "Status": "Active",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-service-specific-credential-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-service-specific-credentials-response-after-update": {
+        "ServiceSpecificCredentials": [
+          {
+            "CreateDate": "<datetime>",
+            "ServiceName": "codecommit.amazonaws.com",
+            "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
+            "ServiceUserName": "<user-name:1>-at-111111111111",
+            "Status": "Inactive",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "reset-service-specific-credential-response": {
+        "ServiceSpecificCredential": {
+          "CreateDate": "<datetime>",
+          "ServiceName": "codecommit.amazonaws.com",
+          "ServicePassword": "<service-password:2>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
+          "ServiceUserName": "<user-name:1>-at-111111111111",
+          "Status": "Inactive",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-service-specific-credentials-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_service_specific_credential_lifecycle[cassandra.amazonaws.com]": {
+    "recorded-date": "06-03-2025, 16:58:36",
+    "recorded-content": {
+      "create-user-response": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-service-specific-credential-response": {
+        "ServiceSpecificCredential": {
+          "CreateDate": "<datetime>",
+          "ServiceName": "cassandra.amazonaws.com",
+          "ServicePassword": "<service-password:1>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
+          "ServiceUserName": "<user-name:1>-at-111111111111",
+          "Status": "Active",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-service-specific-credentials-response-before-update": {
+        "ServiceSpecificCredentials": [
+          {
+            "CreateDate": "<datetime>",
+            "ServiceName": "cassandra.amazonaws.com",
+            "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
+            "ServiceUserName": "<user-name:1>-at-111111111111",
+            "Status": "Active",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-service-specific-credential-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-service-specific-credentials-response-after-update": {
+        "ServiceSpecificCredentials": [
+          {
+            "CreateDate": "<datetime>",
+            "ServiceName": "cassandra.amazonaws.com",
+            "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
+            "ServiceUserName": "<user-name:1>-at-111111111111",
+            "Status": "Inactive",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "reset-service-specific-credential-response": {
+        "ServiceSpecificCredential": {
+          "CreateDate": "<datetime>",
+          "ServiceName": "cassandra.amazonaws.com",
+          "ServicePassword": "<service-password:2>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
+          "ServiceUserName": "<user-name:1>-at-111111111111",
+          "Status": "Inactive",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-service-specific-credentials-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_delete_non_existent_policy_returns_no_such_entity": {
+    "recorded-date": "06-03-2025, 12:29:55",
+    "recorded-content": {
+      "delete-non-existent-policy-exc": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/non-existent-policy was not found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_create_service_specific_credential_invalid_user": {
+    "recorded-date": "06-03-2025, 16:58:36",
+    "recorded-content": {
+      "invalid-user-name-exception": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name non-existent-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "invalid-user-and-service-exception": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name non-existent-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_create_service_specific_credential_invalid_service": {
+    "recorded-date": "06-03-2025, 16:58:38",
+    "recorded-content": {
+      "create-user-response": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invalid-service-exception": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "No such service nonexistentservice.amazonaws.com is supported for Service Specific Credentials",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "invalid-service-completely-malformed-exception": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "No such service o3on3n3onosneo is supported for Service Specific Credentials",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "invalid-service-existing-but-unsupported-exception": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "No such service lambda.amazonaws.com is supported for Service Specific Credentials",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_list_service_specific_credential_different_service": {
+    "recorded-date": "06-03-2025, 16:58:39",
+    "recorded-content": {
+      "create-user-response": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-service-specific-credentials-invalid-service": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "No such service nonexistentservice.amazonaws.com is supported for Service Specific Credentials",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "create-service-specific-credential-response": {
+        "ServiceSpecificCredential": {
+          "CreateDate": "<datetime>",
+          "ServiceName": "codecommit.amazonaws.com",
+          "ServicePassword": "<service-password:1>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
+          "ServiceUserName": "<user-name:1>-at-111111111111",
+          "Status": "Active",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-service-specific-credentials-response-wrong-service": {
+        "ServiceSpecificCredentials": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_delete_user_after_service_credential_created": {
+    "recorded-date": "06-03-2025, 16:58:41",
+    "recorded-content": {
+      "create-user-response": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-service-specific-credential-response": {
+        "ServiceSpecificCredential": {
+          "CreateDate": "<datetime>",
+          "ServiceName": "codecommit.amazonaws.com",
+          "ServicePassword": "<service-password:1>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
+          "ServiceUserName": "<user-name:1>-at-111111111111",
+          "Status": "Active",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-user-existing-credential": {
+        "Error": {
+          "Code": "DeleteConflict",
+          "Message": "Cannot delete entity, must remove referenced objects first.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_user_match_id_mismatch[totally-wrong-credential-id-with-hyphens]": {
+    "recorded-date": "06-03-2025, 16:58:45",
+    "recorded-content": {
+      "create-user-response": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-service-specific-credential-response": {
+        "ServiceSpecificCredential": {
+          "CreateDate": "<datetime>",
+          "ServiceName": "codecommit.amazonaws.com",
+          "ServicePassword": "<service-password:1>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
+          "ServiceUserName": "<user-name:1>-at-111111111111",
+          "Status": "Active",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-wrong-id": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'serviceSpecificCredentialId' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\w]+",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "reset-wrong-id": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'serviceSpecificCredentialId' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\w]+",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "delete-wrong-id": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'serviceSpecificCredentialId' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\w]+",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_user_match_id_mismatch[satisfiesregexbutstillinvalid]": {
+    "recorded-date": "06-03-2025, 16:58:47",
+    "recorded-content": {
+      "create-user-response": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-service-specific-credential-response": {
+        "ServiceSpecificCredential": {
+          "CreateDate": "<datetime>",
+          "ServiceName": "codecommit.amazonaws.com",
+          "ServicePassword": "<service-password:1>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
+          "ServiceUserName": "<user-name:1>-at-111111111111",
+          "Status": "Active",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-wrong-id": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "No such credential satisfiesregexbutstillinvalid exists",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "reset-wrong-id": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "No such credential satisfiesregexbutstillinvalid exists",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete-wrong-id": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "No such credential satisfiesregexbutstillinvalid exists",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_id_match_user_mismatch": {
+    "recorded-date": "06-03-2025, 16:58:43",
+    "recorded-content": {
+      "create-user-response": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-service-specific-credential-response": {
+        "ServiceSpecificCredential": {
+          "CreateDate": "<datetime>",
+          "ServiceName": "codecommit.amazonaws.com",
+          "ServicePassword": "<service-password:1>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
+          "ServiceUserName": "<user-name:1>-at-111111111111",
+          "Status": "Active",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-wrong-user-name": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name wrong-user-name cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "reset-wrong-user-name": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name wrong-user-name cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete-wrong-user-name": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name wrong-user-name cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_invalid_update_parameters": {
+    "recorded-date": "06-03-2025, 16:58:49",
+    "recorded-content": {
+      "create-user-response": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-service-specific-credential-response": {
+        "ServiceSpecificCredential": {
+          "CreateDate": "<datetime>",
+          "ServiceName": "codecommit.amazonaws.com",
+          "ServicePassword": "<service-password:1>",
+          "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
+          "ServiceUserName": "<user-name:1>-at-111111111111",
+          "Status": "Active",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-invalid-status": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'status' failed to satisfy constraint: Member must satisfy enum value set",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }

@@ -1,32 +1,104 @@
 {
   "tests/aws/services/iam/test_iam.py::TestIAMExtensions::test_create_role_with_malformed_assume_role_policy_document": {
-    "last_validated_date": "2023-09-14T15:07:51+00:00"
+    "last_validated_date": "2025-03-06T12:24:44+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMExtensions::test_create_user_add_permission_boundary_afterwards": {
+    "last_validated_date": "2025-03-06T12:24:43+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMExtensions::test_create_user_with_permission_boundary": {
+    "last_validated_date": "2025-03-06T12:24:41+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMExtensions::test_get_user_without_username_as_role": {
+    "last_validated_date": "2025-03-06T12:24:39+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMExtensions::test_get_user_without_username_as_user": {
+    "last_validated_date": "2025-03-06T12:24:26+00:00"
   },
   "tests/aws/services/iam/test_iam.py::TestIAMExtensions::test_role_with_path_lifecycle": {
-    "last_validated_date": "2024-06-21T12:13:05+00:00"
+    "last_validated_date": "2025-03-06T12:24:45+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_attach_detach_role_policy": {
+    "last_validated_date": "2025-03-06T12:24:54+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_attach_iam_role_to_new_iam_user": {
+    "last_validated_date": "2025-03-06T12:24:47+00:00"
   },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_create_describe_role": {
-    "last_validated_date": "2023-09-14T15:42:37+00:00"
+    "last_validated_date": "2025-03-06T12:24:59+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_create_role_with_assume_role_policy": {
+    "last_validated_date": "2025-03-06T12:24:57+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_create_user_with_tags": {
+    "last_validated_date": "2025-03-06T12:24:52+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_delete_non_existent_policy_returns_no_such_entity": {
+    "last_validated_date": "2025-03-06T12:29:55+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_instance_profile_tags": {
+    "last_validated_date": "2025-03-06T12:24:52+00:00"
   },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_list_roles_with_permission_boundary": {
-    "last_validated_date": "2023-09-14T15:42:39+00:00"
+    "last_validated_date": "2025-03-06T12:25:00+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_recreate_iam_role": {
+    "last_validated_date": "2025-03-06T12:24:48+00:00"
   },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_role_attach_policy": {
-    "last_validated_date": "2023-09-14T15:42:42+00:00"
+    "last_validated_date": "2025-03-06T12:25:03+00:00"
   },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_update_assume_role_policy": {
-    "last_validated_date": "2023-09-14T15:42:36+00:00"
+    "last_validated_date": "2025-03-06T12:24:58+00:00"
   },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_user_attach_policy": {
-    "last_validated_date": "2023-09-14T15:42:45+00:00"
+    "last_validated_date": "2025-03-06T12:25:05+00:00"
   },
   "tests/aws/services/iam/test_iam.py::TestIAMPolicyEncoding::test_put_group_policy_encoding": {
-    "last_validated_date": "2024-09-25T15:12:26+00:00"
+    "last_validated_date": "2025-03-06T12:25:10+00:00"
   },
   "tests/aws/services/iam/test_iam.py::TestIAMPolicyEncoding::test_put_role_policy_encoding": {
-    "last_validated_date": "2024-09-30T15:17:41+00:00"
+    "last_validated_date": "2025-03-06T12:25:09+00:00"
   },
   "tests/aws/services/iam/test_iam.py::TestIAMPolicyEncoding::test_put_user_policy_encoding": {
-    "last_validated_date": "2024-09-25T15:12:23+00:00"
+    "last_validated_date": "2025-03-06T12:25:07+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_create_service_specific_credential_invalid_service": {
+    "last_validated_date": "2025-03-06T16:58:37+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_create_service_specific_credential_invalid_user": {
+    "last_validated_date": "2025-03-06T16:58:36+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_delete_user_after_service_credential_created": {
+    "last_validated_date": "2025-03-06T16:58:40+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_id_match_user_mismatch": {
+    "last_validated_date": "2025-03-06T16:58:42+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_invalid_update_parameters": {
+    "last_validated_date": "2025-03-06T16:58:48+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_list_service_specific_credential_different_service": {
+    "last_validated_date": "2025-03-06T16:58:39+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_service_specific_credential_lifecycle": {
+    "last_validated_date": "2025-03-05T17:56:55+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_service_specific_credential_lifecycle[cassandra.amazonaws.com]": {
+    "last_validated_date": "2025-03-06T16:58:35+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_service_specific_credential_lifecycle[codecommit.amazonaws.com]": {
+    "last_validated_date": "2025-03-06T16:58:33+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_user_id_mismatch": {
+    "last_validated_date": "2025-03-06T13:34:01+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_user_match_id_mismatch": {
+    "last_validated_date": "2025-03-06T13:36:53+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_user_match_id_mismatch[satisfiesregexbutstillinvalid]": {
+    "last_validated_date": "2025-03-06T16:58:47+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_user_match_id_mismatch[totally-wrong-credential-id-with-hyphens]": {
+    "last_validated_date": "2025-03-06T16:58:44+00:00"
   }
 }

@@ -45,7 +45,7 @@ class TestScheduleRate:
             aws_client.events.put_rule(
                 Name=rule_name, EventBusName=bus_name, ScheduleExpression="rate(1 minute)"
             )
-        snapshot.match("put-rule-with-custom-event-bus-error", e)
+        snapshot.match("put-rule-with-custom-event-bus-error", e.value.response)
 
     @markers.aws.validated
     @pytest.mark.parametrize(
