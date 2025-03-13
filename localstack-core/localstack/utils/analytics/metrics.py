@@ -140,7 +140,7 @@ class BaseCounter:
 class CounterMetric(Metric, BaseCounter):
     """
     A thread-safe counter for tracking occurrences of an event without labels.
-    This class is intended for type hinting only and should not be instantiated directly; use the Counter class instead.
+    This class should not be instantiated directly, use the Counter class instead.
     """
 
     _namespace: Optional[str]
@@ -175,7 +175,7 @@ class CounterMetric(Metric, BaseCounter):
 class LabeledCounterMetric(Metric):
     """
     A labeled counter that tracks occurrences of an event across different label combinations.
-    This class is intended for type hinting only and should not be instantiated directly; use the Counter class instead.
+    This class should not be instantiated directly, use the Counter class instead.
     """
 
     _namespace: Optional[str]
