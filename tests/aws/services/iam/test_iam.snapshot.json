@@ -6206,5 +6206,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_already_exists": {
+    "recorded-date": "13-03-2025, 15:18:42",
+    "recorded-content": {
+      "role-already-exists-error": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Service role name AWSServiceRoleForBatch has been taken in this account, please try a different suffix.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

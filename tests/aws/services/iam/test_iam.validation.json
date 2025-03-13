@@ -62,6 +62,9 @@
   "tests/aws/services/iam/test_iam.py::TestIAMPolicyEncoding::test_put_user_policy_encoding": {
     "last_validated_date": "2025-03-06T12:25:07+00:00"
   },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_already_exists": {
+    "last_validated_date": "2025-03-13T15:18:42+00:00"
+  },
   "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle": {
     "last_validated_date": "2025-03-11T13:49:49+00:00"
   },

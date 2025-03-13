@@ -339,6 +339,14 @@ class IamProvider(IamApi):
         if custom_suffix:
             role_name = f"{role_name}_{custom_suffix}"
         backend = get_iam_backend(context)
+
+        # check for role duplicates
+        for role in backend.roles.values():
+            if role.name == role_name:
+                raise InvalidInputException(
+                    f"Service role name {role_name} has been taken in this account, please try a different suffix."
+                )
+
         role = backend.create_role(
             role_name=role_name,
             assume_role_policy_document=policy_doc,

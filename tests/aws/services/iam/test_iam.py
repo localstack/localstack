@@ -1386,3 +1386,12 @@ class TestIAMServiceRoles:
                 AWSServiceName=service_name, CustomSuffix=suffix
             )
         snapshot.match("custom-suffix-not-allowed", e.value.response)
+
+    @markers.aws.validated
+    def test_service_role_already_exists(self, aws_client, snapshot, create_service_linked_role):
+        service_name = "batch.amazonaws.com"
+        create_service_linked_role(AWSServiceName=service_name)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_service_linked_role(AWSServiceName=service_name)
+        snapshot.match("role-already-exists-error", e.value.response)
