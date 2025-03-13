@@ -1,3 +1,4 @@
+import functools
 import json
 import logging
 from urllib.parse import quote_plus
@@ -9,9 +10,11 @@ from localstack.aws.api.iam import Tag
 from localstack.services.iam.iam_patches import ADDITIONAL_MANAGED_POLICIES
 from localstack.testing.aws.util import create_client_with_keys, wait_for_user
 from localstack.testing.pytest import markers
+from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
 from localstack.utils.aws.arns import get_partition
 from localstack.utils.common import short_uid
 from localstack.utils.strings import long_uid
+from localstack.utils.sync import retry
 
 LOG = logging.getLogger(__name__)
 
@@ -1204,3 +1207,214 @@ class TestIAMServiceSpecificCredentials:
                 ServiceSpecificCredentialId=credential_id, Status="Invalid"
             )
         snapshot.match("update-invalid-status", e.value.response)
+
+
+class TestIAMServiceRoles:
+    SERVICES = {
+        "accountdiscovery.ssm.amazonaws.com": (),
+        "acm.amazonaws.com": (),
+        "appmesh.amazonaws.com": (),
+        "autoscaling-plans.amazonaws.com": (),
+        "autoscaling.amazonaws.com": (),
+        "backup.amazonaws.com": (),
+        "batch.amazonaws.com": (),
+        "cassandra.application-autoscaling.amazonaws.com": (),
+        "cks.kms.amazonaws.com": (),
+        "cloudtrail.amazonaws.com": (),
+        "codestar-notifications.amazonaws.com": (),
+        "config.amazonaws.com": (),
+        "connect.amazonaws.com": (),
+        "dms-fleet-advisor.amazonaws.com": (),
+        "dms.amazonaws.com": (),
+        "docdb-elastic.amazonaws.com": (),
+        "ec2-instance-connect.amazonaws.com": (),
+        "ec2.application-autoscaling.amazonaws.com": (),
+        "ecr.amazonaws.com": (),
+        "ecs.amazonaws.com": (),
+        "eks-connector.amazonaws.com": (),
+        "eks-fargate.amazonaws.com": (),
+        "eks-nodegroup.amazonaws.com": (),
+        "eks.amazonaws.com": (),
+        "elasticache.amazonaws.com": (),
+        "elasticbeanstalk.amazonaws.com": (),
+        "elasticfilesystem.amazonaws.com": (),
+        "elasticloadbalancing.amazonaws.com": (),
+        "email.cognito-idp.amazonaws.com": (),
+        "emr-containers.amazonaws.com": (),
+        "emrwal.amazonaws.com": (),
+        "fis.amazonaws.com": (),
+        "grafana.amazonaws.com": (),
+        "imagebuilder.amazonaws.com": (),
+        "iotmanagedintegrations.amazonaws.com": (
+            markers.snapshot.skip_snapshot_verify(paths=["$..AttachedPolicies"])
+        ),  # TODO include aws managed policy in the future
+        "kafka.amazonaws.com": (),
+        "kafkaconnect.amazonaws.com": (),
+        "lakeformation.amazonaws.com": (),
+        "lex.amazonaws.com": (
+            markers.snapshot.skip_snapshot_verify(paths=["$..AttachedPolicies"])
+        ),  # TODO include aws managed policy in the future
+        "lexv2.amazonaws.com": (),
+        "lightsail.amazonaws.com": (),
+        # "logs.amazonaws.com": (),  # not possible to create on AWS
+        "m2.amazonaws.com": (),
+        "memorydb.amazonaws.com": (),
+        "mq.amazonaws.com": (),
+        "mrk.kms.amazonaws.com": (),
+        "notifications.amazonaws.com": (),
+        "observability.aoss.amazonaws.com": (),
+        "opensearchservice.amazonaws.com": (),
+        "ops.apigateway.amazonaws.com": (),
+        "ops.emr-serverless.amazonaws.com": (),
+        "opsdatasync.ssm.amazonaws.com": (),
+        "opsinsights.ssm.amazonaws.com": (),
+        "pullthroughcache.ecr.amazonaws.com": (),
+        "ram.amazonaws.com": (),
+        "rds.amazonaws.com": (),
+        "redshift.amazonaws.com": (),
+        "replication.cassandra.amazonaws.com": (),
+        "replication.ecr.amazonaws.com": (),
+        "repository.sync.codeconnections.amazonaws.com": (),
+        "resource-explorer-2.amazonaws.com": (),
+        # "resourcegroups.amazonaws.com": (),  # not possible to create on AWS
+        "rolesanywhere.amazonaws.com": (),
+        "s3-outposts.amazonaws.com": (),
+        "ses.amazonaws.com": (),
+        "shield.amazonaws.com": (),
+        "ssm-incidents.amazonaws.com": (),
+        "ssm-quicksetup.amazonaws.com": (),
+        "ssm.amazonaws.com": (),
+        "sso.amazonaws.com": (),
+        "vpcorigin.cloudfront.amazonaws.com": (),
+        "waf.amazonaws.com": (),
+        "wafv2.amazonaws.com": (),
+    }
+
+    SERVICES_CUSTOM_SUFFIX = [
+        "autoscaling.amazonaws.com",
+        "connect.amazonaws.com",
+        "lexv2.amazonaws.com",
+    ]
+
+    @pytest.fixture
+    def create_service_linked_role(self, aws_client):
+        role_names = []
+
+        @functools.wraps(aws_client.iam.create_service_linked_role)
+        def _create_service_linked_role(*args, **kwargs):
+            response = aws_client.iam.create_service_linked_role(*args, **kwargs)
+            role_names.append(response["Role"]["RoleName"])
+            return response
+
+        yield _create_service_linked_role
+        for role_name in role_names:
+            try:
+                aws_client.iam.delete_service_linked_role(RoleName=role_name)
+            except Exception as e:
+                LOG.debug("Error while deleting service linked role '%s': %s", role_name, e)
+
+    @pytest.fixture
+    def create_service_linked_role_if_not_exists(self, aws_client, create_service_linked_role):
+        """This fixture is necessary since some service linked roles cannot be deleted - so we have to snapshot the existing ones"""
+
+        def _create_service_linked_role_if_not_exists(*args, **kwargs):
+            try:
+                return create_service_linked_role(*args, **kwargs)["Role"]["RoleName"]
+            except aws_client.iam.exceptions.InvalidInputException as e:
+                # return the role name from the error message for now, quite hacky.
+                return e.response["Error"]["Message"].split()[3]
+
+        return _create_service_linked_role_if_not_exists
+
+    @pytest.fixture(autouse=True)
+    def snapshot_transformers(self, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("RoleId"))
+
+    @markers.aws.validated
+    # last used and the description depend on whether the role was created in the snapshot account by a service or manually
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Role.RoleLastUsed", "$..Role.Description"])
+    @pytest.mark.parametrize(
+        "service_name",
+        [pytest.param(service, marks=marker) for service, marker in SERVICES.items()],
+    )
+    def test_service_role_lifecycle(
+        self, aws_client, snapshot, create_service_linked_role_if_not_exists, service_name
+    ):
+        # some roles are already present and not deletable - so we just create them if they exist, and snapshot later
+        role_name = create_service_linked_role_if_not_exists(AWSServiceName=service_name)
+
+        response = aws_client.iam.get_role(RoleName=role_name)
+        snapshot.match("describe-response", response)
+
+        response = aws_client.iam.list_role_policies(RoleName=role_name)
+        snapshot.match("inline-role-policies", response)
+
+        response = aws_client.iam.list_attached_role_policies(RoleName=role_name)
+        snapshot.match("attached-role-policies", response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("service_name", SERVICES_CUSTOM_SUFFIX)
+    def test_service_role_lifecycle_custom_suffix(
+        self, aws_client, snapshot, create_service_linked_role, service_name
+    ):
+        """Tests services allowing custom suffixes"""
+        custom_suffix = short_uid()
+        snapshot.add_transformer(snapshot.transform.regex(custom_suffix, "<suffix>"))
+        response = create_service_linked_role(
+            AWSServiceName=service_name, CustomSuffix=custom_suffix
+        )
+        role_name = response["Role"]["RoleName"]
+
+        response = aws_client.iam.get_role(RoleName=role_name)
+        snapshot.match("describe-response", response)
+
+        response = aws_client.iam.list_role_policies(RoleName=role_name)
+        snapshot.match("inline-role-policies", response)
+
+        response = aws_client.iam.list_attached_role_policies(RoleName=role_name)
+        snapshot.match("attached-role-policies", response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "service_name", list(set(SERVICES.keys()) - set(SERVICES_CUSTOM_SUFFIX))
+    )
+    def test_service_role_lifecycle_custom_suffix_not_allowed(
+        self, aws_client, snapshot, create_service_linked_role, service_name
+    ):
+        """Test services which do not allow custom suffixes"""
+        suffix = "testsuffix"
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_service_linked_role(
+                AWSServiceName=service_name, CustomSuffix=suffix
+            )
+        snapshot.match("custom-suffix-not-allowed", e.value.response)
+
+    @markers.aws.validated
+    def test_service_role_deletion(self, aws_client, snapshot, create_service_linked_role):
+        """Testing deletion only with one service name to avoid undeletable service linked roles in developer accounts"""
+        snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<uuid>"))
+        service_name = "batch.amazonaws.com"
+        role_name = create_service_linked_role(AWSServiceName=service_name)["Role"]["RoleName"]
+
+        response = aws_client.iam.delete_service_linked_role(RoleName=role_name)
+        snapshot.match("service-linked-role-deletion-response", response)
+        deletion_task_id = response["DeletionTaskId"]
+
+        def wait_role_deleted():
+            response = aws_client.iam.get_service_linked_role_deletion_status(
+                DeletionTaskId=deletion_task_id
+            )
+            assert response["Status"] == "SUCCEEDED"
+            return response
+
+        response = retry(wait_role_deleted, retries=10, sleep=1)
+        snapshot.match("service-linked-role-deletion-status-response", response)
+
+    @markers.aws.validated
+    def test_service_role_already_exists(self, aws_client, snapshot, create_service_linked_role):
+        service_name = "batch.amazonaws.com"
+        create_service_linked_role(AWSServiceName=service_name)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_service_linked_role(AWSServiceName=service_name)
+        snapshot.match("role-already-exists-error", e.value.response)

@@ -1178,5 +1178,5068 @@
         }
       }
     }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[accountdiscovery.ssm.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:30:49",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/accountdiscovery.ssm.amazonaws.com/AWSServiceRoleForAmazonSSM_AccountDiscovery",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "accountdiscovery.ssm.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/accountdiscovery.ssm.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAmazonSSM_AccountDiscovery"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSSystemsManagerAccountDiscoveryServicePolicy",
+            "PolicyName": "AWSSystemsManagerAccountDiscoveryServicePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[acm.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:30:50",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/acm.amazonaws.com/AWSServiceRoleForCertificateManager",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "acm.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/acm.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForCertificateManager"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/CertificateManagerServiceRolePolicy",
+            "PolicyName": "CertificateManagerServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[appmesh.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:30:51",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/appmesh.amazonaws.com/AWSServiceRoleForAppMesh",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "appmesh.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/appmesh.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAppMesh"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSAppMeshServiceRolePolicy",
+            "PolicyName": "AWSAppMeshServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[autoscaling-plans.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:30:51",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/autoscaling-plans.amazonaws.com/AWSServiceRoleForAutoScalingPlans_EC2AutoScaling",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "autoscaling-plans.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/autoscaling-plans.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAutoScalingPlans_EC2AutoScaling"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSAutoScalingPlansEC2AutoScalingPolicy",
+            "PolicyName": "AWSAutoScalingPlansEC2AutoScalingPolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[autoscaling.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:30:52",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "autoscaling.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/autoscaling.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAutoScaling"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AutoScalingServiceRolePolicy",
+            "PolicyName": "AutoScalingServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[backup.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:30:53",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/backup.amazonaws.com/AWSServiceRoleForBackup",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "backup.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/backup.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForBackup"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSBackupServiceLinkedRolePolicyForBackup",
+            "PolicyName": "AWSBackupServiceLinkedRolePolicyForBackup"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[batch.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:30:54",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/batch.amazonaws.com/AWSServiceRoleForBatch",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "batch.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/batch.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForBatch"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/BatchServiceRolePolicy",
+            "PolicyName": "BatchServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[cassandra.application-autoscaling.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:30:55",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/cassandra.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_CassandraTable",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "cassandra.application-autoscaling.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/cassandra.application-autoscaling.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForApplicationAutoScaling_CassandraTable"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSApplicationAutoscalingCassandraTablePolicy",
+            "PolicyName": "AWSApplicationAutoscalingCassandraTablePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[cks.kms.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:30:56",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/cks.kms.amazonaws.com/AWSServiceRoleForKeyManagementServiceCustomKeyStores",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "cks.kms.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/cks.kms.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForKeyManagementServiceCustomKeyStores"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSKeyManagementServiceCustomKeyStoresServiceRolePolicy",
+            "PolicyName": "AWSKeyManagementServiceCustomKeyStoresServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[cloudtrail.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:30:57",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/cloudtrail.amazonaws.com/AWSServiceRoleForCloudTrail",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "cloudtrail.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/cloudtrail.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForCloudTrail"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/CloudTrailServiceRolePolicy",
+            "PolicyName": "CloudTrailServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[codestar-notifications.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:30:58",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/codestar-notifications.amazonaws.com/AWSServiceRoleForCodeStarNotifications",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "codestar-notifications.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/codestar-notifications.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForCodeStarNotifications"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSCodeStarNotificationsServiceRolePolicy",
+            "PolicyName": "AWSCodeStarNotificationsServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[config.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:30:59",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "config.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/config.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForConfig"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSConfigServiceRolePolicy",
+            "PolicyName": "AWSConfigServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[connect.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:00",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/connect.amazonaws.com/AWSServiceRoleForAmazonConnect",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "connect.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/connect.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAmazonConnect"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonConnectServiceLinkedRolePolicy",
+            "PolicyName": "AmazonConnectServiceLinkedRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[dms-fleet-advisor.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:01",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/dms-fleet-advisor.amazonaws.com/AWSServiceRoleForDMSFleetAdvisor",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "dms-fleet-advisor.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/dms-fleet-advisor.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForDMSFleetAdvisor"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSDMSFleetAdvisorServiceRolePolicy",
+            "PolicyName": "AWSDMSFleetAdvisorServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[dms.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:02",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/dms.amazonaws.com/AWSServiceRoleForDMSServerless",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "dms.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/dms.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForDMSServerless"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSDMSServerlessServiceRolePolicy",
+            "PolicyName": "AWSDMSServerlessServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[docdb-elastic.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:03",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/docdb-elastic.amazonaws.com/AWSServiceRoleForDocDB-Elastic",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "docdb-elastic.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/docdb-elastic.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForDocDB-Elastic"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonDocDB-ElasticServiceRolePolicy",
+            "PolicyName": "AmazonDocDB-ElasticServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ec2-instance-connect.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:04",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/ec2-instance-connect.amazonaws.com/AWSServiceRoleForEc2InstanceConnect",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2-instance-connect.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/ec2-instance-connect.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForEc2InstanceConnect"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/Ec2InstanceConnectEndpoint",
+            "PolicyName": "Ec2InstanceConnectEndpoint"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ec2.application-autoscaling.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:05",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/ec2.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_EC2SpotFleetRequest",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.application-autoscaling.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/ec2.application-autoscaling.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForApplicationAutoScaling_EC2SpotFleetRequest"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSApplicationAutoscalingEC2SpotFleetRequestPolicy",
+            "PolicyName": "AWSApplicationAutoscalingEC2SpotFleetRequestPolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ecr.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:06",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/ecr.amazonaws.com/AWSServiceRoleForECRTemplate",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ecr.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/ecr.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForECRTemplate"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/ECRTemplateServiceRolePolicy",
+            "PolicyName": "ECRTemplateServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ecs.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:07",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ecs.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/ecs.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForECS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonECSServiceRolePolicy",
+            "PolicyName": "AmazonECSServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[eks-connector.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:08",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/eks-connector.amazonaws.com/AWSServiceRoleForAmazonEKSConnector",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "eks-connector.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/eks-connector.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAmazonEKSConnector"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonEKSConnectorServiceRolePolicy",
+            "PolicyName": "AmazonEKSConnectorServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[eks-fargate.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:08",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/eks-fargate.amazonaws.com/AWSServiceRoleForAmazonEKSForFargate",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "eks-fargate.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/eks-fargate.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAmazonEKSForFargate"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonEKSForFargateServiceRolePolicy",
+            "PolicyName": "AmazonEKSForFargateServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[eks-nodegroup.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:09",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/eks-nodegroup.amazonaws.com/AWSServiceRoleForAmazonEKSNodegroup",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "eks-nodegroup.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/eks-nodegroup.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAmazonEKSNodegroup"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSServiceRoleForAmazonEKSNodegroup",
+            "PolicyName": "AWSServiceRoleForAmazonEKSNodegroup"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[eks.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:10",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/eks.amazonaws.com/AWSServiceRoleForAmazonEKS",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "eks.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/eks.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAmazonEKS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonEKSServiceRolePolicy",
+            "PolicyName": "AmazonEKSServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[elasticache.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:11",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/elasticache.amazonaws.com/AWSServiceRoleForElastiCache",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "elasticache.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/elasticache.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForElastiCache"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/ElastiCacheServiceRolePolicy",
+            "PolicyName": "ElastiCacheServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[elasticbeanstalk.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:12",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/elasticbeanstalk.amazonaws.com/AWSServiceRoleForElasticBeanstalk",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "elasticbeanstalk.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/elasticbeanstalk.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForElasticBeanstalk"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSElasticBeanstalkServiceRolePolicy",
+            "PolicyName": "AWSElasticBeanstalkServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[elasticfilesystem.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:13",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/elasticfilesystem.amazonaws.com/AWSServiceRoleForAmazonElasticFileSystem",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "elasticfilesystem.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/elasticfilesystem.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAmazonElasticFileSystem"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonElasticFileSystemServiceRolePolicy",
+            "PolicyName": "AmazonElasticFileSystemServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[elasticloadbalancing.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:14",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/elasticloadbalancing.amazonaws.com/AWSServiceRoleForElasticLoadBalancing",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "elasticloadbalancing.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/elasticloadbalancing.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForElasticLoadBalancing"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSElasticLoadBalancingServiceRolePolicy",
+            "PolicyName": "AWSElasticLoadBalancingServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[email.cognito-idp.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:14",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/email.cognito-idp.amazonaws.com/AWSServiceRoleForAmazonCognitoIdpEmailService",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "email.cognito-idp.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/email.cognito-idp.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAmazonCognitoIdpEmailService"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonCognitoIdpEmailServiceRolePolicy",
+            "PolicyName": "AmazonCognitoIdpEmailServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[emr-containers.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:15",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/emr-containers.amazonaws.com/AWSServiceRoleForAmazonEMRContainers",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "emr-containers.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/emr-containers.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAmazonEMRContainers"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonEMRContainersServiceRolePolicy",
+            "PolicyName": "AmazonEMRContainersServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[emrwal.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:16",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/emrwal.amazonaws.com/AWSServiceRoleForEMRWAL",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "emrwal.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/emrwal.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForEMRWAL"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/EMRDescribeClusterPolicyForEMRWAL",
+            "PolicyName": "EMRDescribeClusterPolicyForEMRWAL"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[fis.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:17",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/fis.amazonaws.com/AWSServiceRoleForFIS",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "fis.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/fis.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForFIS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonFISServiceRolePolicy",
+            "PolicyName": "AmazonFISServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[grafana.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:18",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/grafana.amazonaws.com/AWSServiceRoleForAmazonGrafana",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "grafana.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/grafana.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAmazonGrafana"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonGrafanaServiceLinkedRolePolicy",
+            "PolicyName": "AmazonGrafanaServiceLinkedRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[imagebuilder.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:19",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/imagebuilder.amazonaws.com/AWSServiceRoleForImageBuilder",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "imagebuilder.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/imagebuilder.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForImageBuilder"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSServiceRoleForImageBuilder",
+            "PolicyName": "AWSServiceRoleForImageBuilder"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[iotmanagedintegrations.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:20",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/iotmanagedintegrations.amazonaws.com/AWSServiceRoleForIoTManagedIntegrations",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "iotmanagedintegrations.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/iotmanagedintegrations.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForIoTManagedIntegrations"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSIoTManagedIntegrationsRolePolicy",
+            "PolicyName": "AWSIoTManagedIntegrationsRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[kafka.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:21",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/kafka.amazonaws.com/AWSServiceRoleForKafka",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "kafka.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/kafka.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {
+            "LastUsedDate": "<datetime>",
+            "Region": "<region>"
+          },
+          "RoleName": "AWSServiceRoleForKafka"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/KafkaServiceRolePolicy",
+            "PolicyName": "KafkaServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[kafkaconnect.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:22",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/kafkaconnect.amazonaws.com/AWSServiceRoleForKafkaConnect",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "kafkaconnect.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/kafkaconnect.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForKafkaConnect"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/KafkaConnectServiceRolePolicy",
+            "PolicyName": "KafkaConnectServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[lakeformation.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:23",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/lakeformation.amazonaws.com/AWSServiceRoleForLakeFormationDataAccess",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "lakeformation.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/lakeformation.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForLakeFormationDataAccess"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/LakeFormationDataAccessServiceRolePolicy",
+            "PolicyName": "LakeFormationDataAccessServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[lex.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:24",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/lex.amazonaws.com/AWSServiceRoleForLexBots",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "lex.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/lex.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForLexBots"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonLexBotPolicy",
+            "PolicyName": "AmazonLexBotPolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[lexv2.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:25",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/lexv2.amazonaws.com/AWSServiceRoleForLexV2Bots",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "lexv2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/lexv2.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForLexV2Bots"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonLexV2BotPolicy",
+            "PolicyName": "AmazonLexV2BotPolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[lightsail.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:25",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/lightsail.amazonaws.com/AWSServiceRoleForLightsail",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "lightsail.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/lightsail.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForLightsail"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/LightsailExportAccess",
+            "PolicyName": "LightsailExportAccess"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[m2.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:26",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/m2.amazonaws.com/AWSServiceRoleForAWSM2",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "m2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/m2.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAWSM2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSM2ServicePolicy",
+            "PolicyName": "AWSM2ServicePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[memorydb.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:27",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/memorydb.amazonaws.com/AWSServiceRoleForMemoryDB",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "memorydb.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/memorydb.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForMemoryDB"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/MemoryDBServiceRolePolicy",
+            "PolicyName": "MemoryDBServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[mq.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:28",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/mq.amazonaws.com/AWSServiceRoleForAmazonMQ",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "mq.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/mq.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAmazonMQ"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonMQServiceRolePolicy",
+            "PolicyName": "AmazonMQServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[mrk.kms.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:29",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/mrk.kms.amazonaws.com/AWSServiceRoleForKeyManagementServiceMultiRegionKeys",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "mrk.kms.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/mrk.kms.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForKeyManagementServiceMultiRegionKeys"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSKeyManagementServiceMultiRegionKeysServiceRolePolicy",
+            "PolicyName": "AWSKeyManagementServiceMultiRegionKeysServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[notifications.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:30",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/notifications.amazonaws.com/AWSServiceRoleForAwsUserNotifications",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "notifications.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/notifications.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAwsUserNotifications"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSUserNotificationsServiceLinkedRolePolicy",
+            "PolicyName": "AWSUserNotificationsServiceLinkedRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[observability.aoss.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:31",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/observability.aoss.amazonaws.com/AWSServiceRoleForAmazonOpenSearchServerless",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "observability.aoss.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/observability.aoss.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAmazonOpenSearchServerless"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonOpenSearchServerlessServiceRolePolicy",
+            "PolicyName": "AmazonOpenSearchServerlessServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[opensearchservice.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:32",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/opensearchservice.amazonaws.com/AWSServiceRoleForAmazonOpenSearchService",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "opensearchservice.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/opensearchservice.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAmazonOpenSearchService"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonOpenSearchServiceRolePolicy",
+            "PolicyName": "AmazonOpenSearchServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ops.apigateway.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:33",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/ops.apigateway.amazonaws.com/AWSServiceRoleForAPIGateway",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ops.apigateway.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/ops.apigateway.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAPIGateway"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/APIGatewayServiceRolePolicy",
+            "PolicyName": "APIGatewayServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ops.emr-serverless.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:34",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/ops.emr-serverless.amazonaws.com/AWSServiceRoleForAmazonEMRServerless",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ops.emr-serverless.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/ops.emr-serverless.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAmazonEMRServerless"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonEMRServerlessServiceRolePolicy",
+            "PolicyName": "AmazonEMRServerlessServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[opsdatasync.ssm.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:35",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/opsdatasync.ssm.amazonaws.com/AWSServiceRoleForSystemsManagerOpsDataSync",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "opsdatasync.ssm.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/opsdatasync.ssm.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForSystemsManagerOpsDataSync"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSSystemsManagerOpsDataSyncServiceRolePolicy",
+            "PolicyName": "AWSSystemsManagerOpsDataSyncServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[opsinsights.ssm.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:35",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/opsinsights.ssm.amazonaws.com/AWSServiceRoleForAmazonSSM_OpsInsights",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "opsinsights.ssm.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/opsinsights.ssm.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAmazonSSM_OpsInsights"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSSSMOpsInsightsServiceRolePolicy",
+            "PolicyName": "AWSSSMOpsInsightsServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[pullthroughcache.ecr.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:36",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/pullthroughcache.ecr.amazonaws.com/AWSServiceRoleForECRPullThroughCache",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "pullthroughcache.ecr.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/pullthroughcache.ecr.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForECRPullThroughCache"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSECRPullThroughCache_ServiceRolePolicy",
+            "PolicyName": "AWSECRPullThroughCache_ServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ram.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:37",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/ram.amazonaws.com/AWSServiceRoleForResourceAccessManager",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ram.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/ram.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForResourceAccessManager"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSResourceAccessManagerServiceRolePolicy",
+            "PolicyName": "AWSResourceAccessManagerServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[rds.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:38",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/rds.amazonaws.com/AWSServiceRoleForRDS",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "rds.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Description": "Allows Amazon RDS to manage AWS resources on your behalf",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/rds.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {
+            "LastUsedDate": "<datetime>",
+            "Region": "ap-southeast-1"
+          },
+          "RoleName": "AWSServiceRoleForRDS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonRDSServiceRolePolicy",
+            "PolicyName": "AmazonRDSServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[redshift.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:39",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/redshift.amazonaws.com/AWSServiceRoleForRedshift",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "redshift.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/redshift.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForRedshift"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonRedshiftServiceLinkedRolePolicy",
+            "PolicyName": "AmazonRedshiftServiceLinkedRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[replication.cassandra.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:40",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/replication.cassandra.amazonaws.com/AWSServiceRoleForKeyspacesReplication",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "replication.cassandra.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/replication.cassandra.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForKeyspacesReplication"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/KeyspacesReplicationServiceRolePolicy",
+            "PolicyName": "KeyspacesReplicationServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[replication.ecr.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:41",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/replication.ecr.amazonaws.com/AWSServiceRoleForECRReplication",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "replication.ecr.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/replication.ecr.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForECRReplication"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/ECRReplicationServiceRolePolicy",
+            "PolicyName": "ECRReplicationServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[repository.sync.codeconnections.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:42",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/repository.sync.codeconnections.amazonaws.com/AWSServiceRoleForGitSync",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "repository.sync.codeconnections.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/repository.sync.codeconnections.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForGitSync"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSGitSyncServiceRolePolicy",
+            "PolicyName": "AWSGitSyncServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[resource-explorer-2.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:43",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/resource-explorer-2.amazonaws.com/AWSServiceRoleForResourceExplorer",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "resource-explorer-2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/resource-explorer-2.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {
+            "LastUsedDate": "<datetime>",
+            "Region": "us-west-2"
+          },
+          "RoleName": "AWSServiceRoleForResourceExplorer"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSResourceExplorerServiceRolePolicy",
+            "PolicyName": "AWSResourceExplorerServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[rolesanywhere.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:44",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/rolesanywhere.amazonaws.com/AWSServiceRoleForRolesAnywhere",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "rolesanywhere.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/rolesanywhere.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForRolesAnywhere"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSRolesAnywhereServicePolicy",
+            "PolicyName": "AWSRolesAnywhereServicePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[s3-outposts.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:45",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/s3-outposts.amazonaws.com/AWSServiceRoleForS3OnOutposts",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "s3-outposts.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/s3-outposts.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForS3OnOutposts"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSS3OnOutpostsServiceRolePolicy",
+            "PolicyName": "AWSS3OnOutpostsServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ses.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:46",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/ses.amazonaws.com/AWSServiceRoleForAmazonSES",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ses.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/ses.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAmazonSES"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonSESServiceRolePolicy",
+            "PolicyName": "AmazonSESServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[shield.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:47",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/shield.amazonaws.com/AWSServiceRoleForAWSShield",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "shield.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/shield.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAWSShield"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSShieldServiceRolePolicy",
+            "PolicyName": "AWSShieldServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ssm-incidents.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:48",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/ssm-incidents.amazonaws.com/AWSServiceRoleForIncidentManager",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ssm-incidents.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/ssm-incidents.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForIncidentManager"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSIncidentManagerServiceRolePolicy",
+            "PolicyName": "AWSIncidentManagerServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ssm-quicksetup.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:49",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/ssm-quicksetup.amazonaws.com/AWSServiceRoleForSSMQuickSetup",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ssm-quicksetup.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/ssm-quicksetup.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForSSMQuickSetup"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/SSMQuickSetupRolePolicy",
+            "PolicyName": "SSMQuickSetupRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ssm.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:50",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/ssm.amazonaws.com/AWSServiceRoleForAmazonSSM",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ssm.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Description": "Provides access to AWS Resources managed or used by Amazon SSM.",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/ssm.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {
+            "LastUsedDate": "<datetime>",
+            "Region": "<region>"
+          },
+          "RoleName": "AWSServiceRoleForAmazonSSM"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonSSMServiceRolePolicy",
+            "PolicyName": "AmazonSSMServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[sso.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:51",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/sso.amazonaws.com/AWSServiceRoleForSSO",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "sso.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Description": "Service-linked role used by AWS SSO to manage AWS resources, including IAM roles, policies and SAML IdP on your behalf.",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/sso.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {
+            "LastUsedDate": "<datetime>",
+            "Region": "us-east-1"
+          },
+          "RoleName": "AWSServiceRoleForSSO"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSSSOServiceRolePolicy",
+            "PolicyName": "AWSSSOServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[vpcorigin.cloudfront.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:52",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/vpcorigin.cloudfront.amazonaws.com/AWSServiceRoleForCloudFrontVPCOrigin",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "vpcorigin.cloudfront.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/vpcorigin.cloudfront.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForCloudFrontVPCOrigin"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AWSCloudFrontVPCOriginServiceRolePolicy",
+            "PolicyName": "AWSCloudFrontVPCOriginServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[waf.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:53",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/waf.amazonaws.com/AWSServiceRoleForWAFLogging",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "waf.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/waf.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForWAFLogging"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/WAFLoggingServiceRolePolicy",
+            "PolicyName": "WAFLoggingServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[wafv2.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:54",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/wafv2.amazonaws.com/AWSServiceRoleForWAFV2Logging",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "wafv2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/wafv2.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForWAFV2Logging"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/WAFV2LoggingServiceRolePolicy",
+            "PolicyName": "WAFV2LoggingServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix[autoscaling.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:55",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling_<suffix>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "autoscaling.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/autoscaling.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAutoScaling_<suffix>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AutoScalingServiceRolePolicy",
+            "PolicyName": "AutoScalingServiceRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix[connect.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:56",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/connect.amazonaws.com/AWSServiceRoleForAmazonConnect_<suffix>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "connect.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/connect.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForAmazonConnect_<suffix>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonConnectServiceLinkedRolePolicy",
+            "PolicyName": "AmazonConnectServiceLinkedRolePolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix[lexv2.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:57",
+    "recorded-content": {
+      "describe-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/aws-service-role/lexv2.amazonaws.com/AWSServiceRoleForLexV2Bots_<suffix>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "lexv2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/aws-service-role/lexv2.amazonaws.com/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "AWSServiceRoleForLexV2Bots_<suffix>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-role-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/aws-service-role/AmazonLexV2BotPolicy",
+            "PolicyName": "AmazonLexV2BotPolicy"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ops.apigateway.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:57",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for ops.apigateway.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[eks-fargate.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:57",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for eks-fargate.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[emrwal.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:58",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for emrwal.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ops.emr-serverless.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:59",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for ops.emr-serverless.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[eks.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:31:59",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for eks.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[iotmanagedintegrations.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:00",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for iotmanagedintegrations.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[kafkaconnect.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:00",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for kafkaconnect.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[wafv2.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:01",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for wafv2.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[rolesanywhere.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:01",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for rolesanywhere.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[m2.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:02",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for m2.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[dms-fleet-advisor.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:03",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for dms-fleet-advisor.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[opsdatasync.ssm.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:03",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for opsdatasync.ssm.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[resource-explorer-2.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:04",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for resource-explorer-2.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[opsinsights.ssm.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:04",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for opsinsights.ssm.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[codestar-notifications.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:05",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for codestar-notifications.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[appmesh.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:05",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for appmesh.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[waf.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:06",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for waf.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[notifications.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:07",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for notifications.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[docdb-elastic.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:07",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for docdb-elastic.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[elasticbeanstalk.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:08",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for elasticbeanstalk.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[replication.ecr.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:08",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for replication.ecr.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ecs.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:09",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for ecs.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[batch.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:09",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for batch.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[shield.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:10",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for shield.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[redshift.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:10",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for redshift.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[rds.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:11",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for rds.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[mrk.kms.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:12",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for mrk.kms.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[eks-connector.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:12",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for eks-connector.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[kafka.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:13",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for kafka.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[observability.aoss.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:13",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for observability.aoss.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[lakeformation.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:14",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for lakeformation.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[memorydb.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:14",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for memorydb.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[elasticache.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:15",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for elasticache.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[emr-containers.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:16",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for emr-containers.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[pullthroughcache.ecr.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:16",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for pullthroughcache.ecr.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[imagebuilder.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:17",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for imagebuilder.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[cassandra.application-autoscaling.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:17",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for cassandra.application-autoscaling.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[s3-outposts.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:18",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for s3-outposts.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[eks-nodegroup.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:18",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for eks-nodegroup.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[accountdiscovery.ssm.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:19",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for accountdiscovery.ssm.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ssm-incidents.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:20",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for ssm-incidents.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[dms.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:20",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for dms.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ecr.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:21",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for ecr.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[sso.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:21",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for sso.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[lex.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:22",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for lex.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[repository.sync.codeconnections.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:22",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for repository.sync.codeconnections.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ram.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:23",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for ram.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[cks.kms.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:23",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for cks.kms.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[cloudtrail.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:24",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for cloudtrail.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ses.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:25",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for ses.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[opensearchservice.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:25",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for opensearchservice.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ssm-quicksetup.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:26",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for ssm-quicksetup.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[vpcorigin.cloudfront.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:26",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for vpcorigin.cloudfront.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ec2-instance-connect.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:27",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for ec2-instance-connect.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[acm.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:27",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for acm.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[elasticloadbalancing.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:28",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for elasticloadbalancing.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[fis.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:29",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for fis.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[elasticfilesystem.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:29",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for elasticfilesystem.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[replication.cassandra.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:30",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for replication.cassandra.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[config.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:30",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for config.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[autoscaling-plans.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:31",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for autoscaling-plans.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[mq.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:31",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for mq.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[email.cognito-idp.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:32",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for email.cognito-idp.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ec2.application-autoscaling.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:32",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for ec2.application-autoscaling.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[backup.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:33",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for backup.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[grafana.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:34",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for grafana.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[lightsail.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:34",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for lightsail.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ssm.amazonaws.com]": {
+    "recorded-date": "13-03-2025, 08:32:35",
+    "recorded-content": {
+      "custom-suffix-not-allowed": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Custom suffix is not allowed for ssm.amazonaws.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_already_exists": {
+    "recorded-date": "13-03-2025, 15:18:42",
+    "recorded-content": {
+      "role-already-exists-error": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Service role name AWSServiceRoleForBatch has been taken in this account, please try a different suffix.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_deletion": {
+    "recorded-date": "13-03-2025, 16:11:23",
+    "recorded-content": {
+      "service-linked-role-deletion-response": {
+        "DeletionTaskId": "task/aws-service-role/batch.amazonaws.com/AWSServiceRoleForBatch/<uuid>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "service-linked-role-deletion-status-response": {
+        "Status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
