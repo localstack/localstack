@@ -27,6 +27,7 @@ from typing import (
 import dotenv
 
 from localstack import config
+from localstack.constants import DEFAULT_VOLUME_DIR
 from localstack.utils.collections import HashableList, ensure_list
 from localstack.utils.files import TMP_FILES, chmod_r, rm_rf, save_file
 from localstack.utils.no_exit_argument_parser import NoExitArgumentParser
@@ -395,6 +396,12 @@ class VolumeBind:
 
         return ":".join(args)
 
+    def to_dict(self):
+        return str(self.host_dir), {
+            "bind": self.container_dir,
+            "mode": "ro" if self.read_only else "rw",
+        }
+
     @classmethod
     def parse(cls, param: str) -> "VolumeBind":
         parts = param.split(":")
@@ -408,13 +415,53 @@ class VolumeBind:
         return volume
 
 
+@dataclasses.dataclass
+class VolumeDirMount:
+    volume_path: str
+    """
+    Absolute path inside /var/lib/localstack to mount into the container
+    """
+    container_path: str
+    """
+    Target path inside the started container
+    """
+    read_only: bool = False
+
+    def to_str(self) -> str:
+        self._validate()
+        from localstack.utils.docker_utils import get_host_path_for_path_in_docker
+
+        host_dir = get_host_path_for_path_in_docker(self.volume_path)
+        return f"{host_dir}:{self.container_path}{':ro' if self.read_only else ''}"
+
+    def _validate(self):
+        if not self.volume_path:
+            raise ValueError("no volume dir specified")
+        if not self.volume_path.startswith(DEFAULT_VOLUME_DIR):
+            raise ValueError(f"volume dir not starting with {DEFAULT_VOLUME_DIR}")
+        if not self.container_path:
+            raise ValueError("no container dir specified")
+
+    def to_dict(self) -> dict:
+        self._validate()
+        from localstack.utils.docker_utils import get_host_path_for_path_in_docker
+
+        host_dir = get_host_path_for_path_in_docker(self.volume_path)
+        return {
+            host_dir: {
+                "bind": self.container_path,
+                "mode": "ro" if self.read_only else "rw",
+            }
+        }
+
+
 class VolumeMappings:
     mappings: List[Union[SimpleVolumeBind, VolumeBind]]
 
-    def __init__(self, mappings: List[Union[SimpleVolumeBind, VolumeBind]] = None):
+    def __init__(self, mappings: List[Union[SimpleVolumeBind, VolumeBind, VolumeDirMount]] = None):
         self.mappings = mappings if mappings is not None else []
 
-    def add(self, mapping: Union[SimpleVolumeBind, VolumeBind]):
+    def add(self, mapping: Union[SimpleVolumeBind, VolumeBind, VolumeDirMount]):
         self.append(mapping)
 
     def append(
@@ -422,13 +469,14 @@ class VolumeMappings:
         mapping: Union[
             SimpleVolumeBind,
             VolumeBind,
+            VolumeDirMount,
         ],
     ):
         self.mappings.append(mapping)
 
     def find_target_mapping(
         self, container_dir: str
-    ) -> Optional[Union[SimpleVolumeBind, VolumeBind]]:
+    ) -> Optional[Union[SimpleVolumeBind, VolumeBind, VolumeDirMount]]:
         """
         Looks through the volumes and returns the one where the container dir matches ``container_dir``.
         Returns None if there is no volume mapping to the given container directory.
@@ -1447,12 +1495,9 @@ class Util:
     ) -> Dict[str, Dict[str, str]]:
         """Converts a List of (host_path, container_path) tuples to a Dict suitable as volume argument for docker sdk"""
 
-        def _map_to_dict(paths: SimpleVolumeBind | VolumeBind):
-            if isinstance(paths, VolumeBind):
-                return str(paths.host_dir), {
-                    "bind": paths.container_dir,
-                    "mode": "ro" if paths.read_only else "rw",
-                }
+        def _map_to_dict(paths: SimpleVolumeBind | VolumeBind | VolumeDirMount):
+            if isinstance(paths, (VolumeBind, VolumeDirMount)):
+                return paths.to_dict()
             else:
                 return str(paths[0]), {"bind": paths[1], "mode": "rw"}
 
