@@ -36,6 +36,7 @@ from localstack.aws.api.iam import (
     GetServiceLinkedRoleDeletionStatusResponse,
     GetUserResponse,
     IamApi,
+    InvalidInputException,
     ListInstanceProfileTagsResponse,
     ListRolesResponse,
     ListServiceSpecificCredentialsResponse,
@@ -75,6 +76,7 @@ from localstack.aws.api.iam import (
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.iam.iam_patches import apply_iam_patches
+from localstack.services.iam.resources.service_linked_roles import SERVICE_LINKED_ROLES
 from localstack.services.moto import call_moto
 from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
 from localstack.utils.common import short_uid
@@ -311,8 +313,6 @@ class IamProvider(IamApi):
         custom_suffix: customSuffixType = None,
         **kwargs,
     ) -> CreateServiceLinkedRoleResponse:
-        # TODO: test
-        # TODO: how to support "CustomSuffix" API request parameter?
         policy_doc = json.dumps(
             {
                 "Version": "2012-10-17",
@@ -325,8 +325,19 @@ class IamProvider(IamApi):
                 ],
             }
         )
-        path = f"{SERVICE_LINKED_ROLE_PATH_PREFIX}/{aws_service_name}"
-        role_name = f"r-{short_uid()}"
+        service_role_data = SERVICE_LINKED_ROLES.get(aws_service_name)
+
+        path = f"{SERVICE_LINKED_ROLE_PATH_PREFIX}/{aws_service_name}/"
+        if service_role_data:
+            if custom_suffix and not service_role_data["suffix_allowed"]:
+                raise InvalidInputException(f"Custom suffix is not allowed for {aws_service_name}")
+            role_name = service_role_data.get("role_name")
+            attached_policies = service_role_data["attached_policies"]
+        else:
+            role_name = f"AWSServiceRoleFor{aws_service_name.split('.')[0].capitalize()}"
+            attached_policies = []
+        if custom_suffix:
+            role_name = f"{role_name}_{custom_suffix}"
         backend = get_iam_backend(context)
         role = backend.create_role(
             role_name=role_name,
@@ -336,10 +347,19 @@ class IamProvider(IamApi):
             description=description,
             tags={},
             max_session_duration=3600,
+            linked_service=aws_service_name,
         )
-        role.service_linked_role_arn = "arn:{0}:iam::{1}:role/aws-service-role/{2}/{3}".format(
-            context.partition, context.account_id, aws_service_name, role.name
-        )
+        # attach policies
+        for policy in attached_policies:
+            try:
+                backend.attach_role_policy(policy, role_name)
+            except Exception as e:
+                LOG.warning(
+                    "Policy %s for service linked role %s does not exist: %s",
+                    policy,
+                    aws_service_name,
+                    e,
+                )
 
         res_role = self.moto_role_to_role_type(role)
         return CreateServiceLinkedRoleResponse(Role=res_role)

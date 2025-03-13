@@ -62,6 +62,435 @@
   "tests/aws/services/iam/test_iam.py::TestIAMPolicyEncoding::test_put_user_policy_encoding": {
     "last_validated_date": "2025-03-06T12:25:07+00:00"
   },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle": {
+    "last_validated_date": "2025-03-11T13:49:49+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[accountdiscovery.ssm.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:30:48+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[acm.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:30:49+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[appmesh.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:30:50+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[autoscaling-plans.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:30:51+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[autoscaling.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:30:52+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[backup.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:30:53+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[batch.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:30:54+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[cassandra.application-autoscaling.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:30:55+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[cks.kms.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:30:56+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[cloudtrail.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:30:57+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[codestar-notifications.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:30:58+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[config.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:30:59+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[connect.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:00+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[dms-fleet-advisor.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:01+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[dms.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:02+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[docdb-elastic.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:03+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ec2-instance-connect.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:04+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ec2.application-autoscaling.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:05+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ecr.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:06+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ecs.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:07+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[eks-connector.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:07+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[eks-fargate.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:08+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[eks-nodegroup.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:09+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[eks.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:10+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[elasticache.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:11+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[elasticbeanstalk.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:12+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[elasticfilesystem.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:13+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[elasticloadbalancing.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:13+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[email.cognito-idp.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:14+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[emr-containers.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:15+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[emrwal.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:16+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[fis.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:17+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[grafana.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:18+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[imagebuilder.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:19+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[iotmanagedintegrations.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:20+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[kafka.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:21+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[kafkaconnect.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:22+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[lakeformation.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:23+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[lex.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:24+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[lexv2.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:24+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[lightsail.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:25+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[m2.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:26+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[memorydb.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:27+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[mq.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:28+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[mrk.kms.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:29+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[notifications.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:30+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[observability.aoss.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:31+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[opensearchservice.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:32+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ops.apigateway.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:33+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ops.emr-serverless.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:33+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[opsdatasync.ssm.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:34+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[opsinsights.ssm.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:35+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[pullthroughcache.ecr.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:36+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ram.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:37+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[rds.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:38+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[redshift.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:39+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[replication.cassandra.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:40+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[replication.ecr.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:41+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[repository.sync.codeconnections.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:42+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[resource-explorer-2.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:43+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[rolesanywhere.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:44+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[s3-outposts.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:45+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ses.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:46+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[shield.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:47+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ssm-incidents.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:48+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ssm-quicksetup.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:48+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[ssm.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:50+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[sso.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:51+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[vpcorigin.cloudfront.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:52+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[waf.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:53+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle[wafv2.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:54+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix[autoscaling.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:55+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix[connect.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:56+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix[lexv2.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:56+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[accountdiscovery.ssm.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:19+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[acm.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:27+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[appmesh.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:05+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[autoscaling-plans.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:31+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[backup.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:33+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[batch.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:09+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[cassandra.application-autoscaling.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:17+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[cks.kms.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:23+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[cloudtrail.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:24+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[codestar-notifications.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:05+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[config.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:30+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[dms-fleet-advisor.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:03+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[dms.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:20+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[docdb-elastic.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:07+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ec2-instance-connect.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:27+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ec2.application-autoscaling.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:32+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ecr.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:21+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ecs.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:09+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[eks-connector.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:12+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[eks-fargate.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:57+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[eks-nodegroup.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:18+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[eks.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:59+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[elasticache.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:15+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[elasticbeanstalk.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:08+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[elasticfilesystem.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:29+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[elasticloadbalancing.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:28+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[email.cognito-idp.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:32+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[emr-containers.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:16+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[emrwal.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:58+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[fis.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:29+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[grafana.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:34+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[imagebuilder.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:17+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[iotmanagedintegrations.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:00+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[kafka.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:13+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[kafkaconnect.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:00+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[lakeformation.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:14+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[lex.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:22+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[lightsail.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:34+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[m2.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:02+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[memorydb.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:14+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[mq.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:31+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[mrk.kms.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:12+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[notifications.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:07+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[observability.aoss.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:13+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[opensearchservice.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:25+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ops.apigateway.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:57+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ops.emr-serverless.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:31:59+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[opsdatasync.ssm.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:03+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[opsinsights.ssm.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:04+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[pullthroughcache.ecr.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:16+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ram.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:23+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[rds.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:11+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[redshift.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:10+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[replication.cassandra.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:30+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[replication.ecr.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:08+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[repository.sync.codeconnections.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:22+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[resource-explorer-2.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:04+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[rolesanywhere.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:01+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[s3-outposts.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:18+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ses.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:24+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[shield.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:10+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ssm-incidents.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:19+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ssm-quicksetup.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:26+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[ssm.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:35+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[sso.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:21+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[vpcorigin.cloudfront.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:26+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[waf.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:06+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle_custom_suffix_not_allowed[wafv2.amazonaws.com]": {
+    "last_validated_date": "2025-03-13T08:32:01+00:00"
+  },
   "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_create_service_specific_credential_invalid_service": {
     "last_validated_date": "2025-03-06T16:58:37+00:00"
   },
@@ -100,8 +529,5 @@
   },
   "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_user_match_id_mismatch[totally-wrong-credential-id-with-hyphens]": {
     "last_validated_date": "2025-03-06T16:58:44+00:00"
-  },
-  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle": {
-    "last_validated_date": "2025-03-11T13:49:49+00:00"
   }
 }

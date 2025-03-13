@@ -167,12 +167,6 @@ class StreamPoller(Poller):
             raise EmptyPollResultsException(service=self.event_source(), source_arn=self.source_arn)
 
         polled_events = self.transform_into_events(records, shard_id)
-<<<<<<< HEAD
-=======
-        if not polled_events:
-            self.shards[shard_id] = get_records_response["NextShardIterator"]
-            raise EmptyPollResultsException(service=self.event_source, source_arn=self.source_arn)
->>>>>>> 21ec6ee05 (Initial tests)
 
         # Check MaximumRecordAgeInSeconds
         if maximum_record_age_in_seconds := self.stream_parameters.get("MaximumRecordAgeInSeconds"):
