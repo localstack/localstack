@@ -30,6 +30,7 @@ from localstack.utils.container_utils.container_client import (
     Ulimit,
     Util,
     VolumeBind,
+    VolumeDirMount,
 )
 from localstack.utils.run import run
 from localstack.utils.strings import first_char_to_upper, to_str
@@ -878,7 +879,7 @@ class CmdDockerClient(ContainerClient):
         return cmd, env_file
 
     @staticmethod
-    def _map_to_volume_param(volume: Union[SimpleVolumeBind, VolumeBind]) -> str:
+    def _map_to_volume_param(volume: Union[SimpleVolumeBind, VolumeBind, VolumeDirMount]) -> str:
         """
         Maps the mount volume, to a parameter for the -v docker cli argument.
 
@@ -889,7 +890,7 @@ class CmdDockerClient(ContainerClient):
         :param volume: Either a SimpleVolumeBind, in essence a tuple (host_dir, container_dir), or a VolumeBind object
         :return: String which is passable as parameter to the docker cli -v option
         """
-        if isinstance(volume, VolumeBind):
+        if isinstance(volume, (VolumeBind, VolumeDirMount)):
             return volume.to_str()
         else:
             return f"{volume[0]}:{volume[1]}"
