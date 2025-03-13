@@ -6222,5 +6222,24 @@
         }
       }
     }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_deletion": {
+    "recorded-date": "13-03-2025, 16:11:23",
+    "recorded-content": {
+      "service-linked-role-deletion-response": {
+        "DeletionTaskId": "task/aws-service-role/batch.amazonaws.com/AWSServiceRoleForBatch/<uuid>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "service-linked-role-deletion-status-response": {
+        "Status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -10,9 +10,11 @@ from localstack.aws.api.iam import Tag
 from localstack.services.iam.iam_patches import ADDITIONAL_MANAGED_POLICIES
 from localstack.testing.aws.util import create_client_with_keys, wait_for_user
 from localstack.testing.pytest import markers
+from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
 from localstack.utils.aws.arns import get_partition
 from localstack.utils.common import short_uid
 from localstack.utils.strings import long_uid
+from localstack.utils.sync import retry
 
 LOG = logging.getLogger(__name__)
 
@@ -1386,6 +1388,27 @@ class TestIAMServiceRoles:
                 AWSServiceName=service_name, CustomSuffix=suffix
             )
         snapshot.match("custom-suffix-not-allowed", e.value.response)
+
+    @markers.aws.validated
+    def test_service_role_deletion(self, aws_client, snapshot, create_service_linked_role):
+        """Testing deletion only with one service name to avoid undeletable service linked roles in developer accounts"""
+        snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<uuid>"))
+        service_name = "batch.amazonaws.com"
+        role_name = create_service_linked_role(AWSServiceName=service_name)["Role"]["RoleName"]
+
+        response = aws_client.iam.delete_service_linked_role(RoleName=role_name)
+        snapshot.match("service-linked-role-deletion-response", response)
+        deletion_task_id = response["DeletionTaskId"]
+
+        def wait_role_deleted():
+            response = aws_client.iam.get_service_linked_role_deletion_status(
+                DeletionTaskId=deletion_task_id
+            )
+            assert response["Status"] == "SUCCEEDED"
+            return response
+
+        response = retry(wait_role_deleted, retries=10, sleep=1)
+        snapshot.match("service-linked-role-deletion-status-response", response)
 
     @markers.aws.validated
     def test_service_role_already_exists(self, aws_client, snapshot, create_service_linked_role):

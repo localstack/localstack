@@ -65,6 +65,9 @@
   "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_already_exists": {
     "last_validated_date": "2025-03-13T15:18:42+00:00"
   },
+  "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_deletion": {
+    "last_validated_date": "2025-03-13T16:11:22+00:00"
+  },
   "tests/aws/services/iam/test_iam.py::TestIAMServiceRoles::test_service_role_lifecycle": {
     "last_validated_date": "2025-03-11T13:49:49+00:00"
   },

@@ -4,6 +4,7 @@ import logging
 import random
 import re
 import string
+import uuid
 from datetime import datetime
 from typing import Any, Dict, List, TypeVar
 from urllib.parse import quote
@@ -79,7 +80,6 @@ from localstack.services.iam.iam_patches import apply_iam_patches
 from localstack.services.iam.resources.service_linked_roles import SERVICE_LINKED_ROLES
 from localstack.services.moto import call_moto
 from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
-from localstack.utils.common import short_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -375,15 +375,18 @@ class IamProvider(IamApi):
     def delete_service_linked_role(
         self, context: RequestContext, role_name: roleNameType, **kwargs
     ) -> DeleteServiceLinkedRoleResponse:
-        # TODO: test
         backend = get_iam_backend(context)
+        role = backend.get_role(role_name=role_name)
+        role.managed_policies.clear()
         backend.delete_role(role_name)
-        return DeleteServiceLinkedRoleResponse(DeletionTaskId=short_uid())
+        return DeleteServiceLinkedRoleResponse(
+            DeletionTaskId=f"task{role.path}{role.name}/{uuid.uuid4()}"
+        )
 
     def get_service_linked_role_deletion_status(
         self, context: RequestContext, deletion_task_id: DeletionTaskIdType, **kwargs
     ) -> GetServiceLinkedRoleDeletionStatusResponse:
-        # TODO: test
+        # TODO: check if task id is valid
         return GetServiceLinkedRoleDeletionStatusResponse(Status=DeletionTaskStatusType.SUCCEEDED)
 
     def put_user_permissions_boundary(
