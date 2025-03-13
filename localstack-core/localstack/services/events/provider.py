@@ -154,7 +154,6 @@ from localstack.services.events.target import (
     TargetSenderDict,
     TargetSenderFactory,
 )
-from localstack.services.events.usage import rule_error, rule_invocation
 from localstack.services.events.utils import (
     TARGET_ID_PATTERN,
     extract_connection_name,
@@ -171,6 +170,8 @@ from localstack.utils.common import truncate
 from localstack.utils.event_matcher import matches_event
 from localstack.utils.strings import long_uid
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
+
+from .analytics import InvocationStatus, rule_invocation
 
 LOG = logging.getLogger(__name__)
 
@@ -1889,9 +1890,16 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     target_sender = self._target_sender_store[target_unique_id]
                     try:
                         target_sender.process_event(event_formatted.copy())
-                        rule_invocation.record(target_sender.service)
+                        rule_invocation.labels(
+                            status=InvocationStatus.success,
+                            service=target_sender.service,
+                        ).increment()
+
                     except Exception as error:
-                        rule_error.record(target_sender.service)
+                        rule_invocation.labels(
+                            status=InvocationStatus.error,
+                            service=target_sender.service,
+                        ).increment()
                         # Log the error but don't modify the response
                         LOG.info(
                             json.dumps(
