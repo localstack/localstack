@@ -8,6 +8,10 @@ from localstack.services.cloudformation.engine.parameters import (
     mask_no_echo,
     strip_parameter_type,
 )
+from localstack.services.cloudformation.engine.v2.change_set_model import (
+    ChangeSetModel,
+    NodeTemplate,
+)
 from localstack.utils.aws import arns
 from localstack.utils.collections import select_attributes
 from localstack.utils.id_generator import ExistingIds, ResourceIdentifier, Tags, generate_short_uid
@@ -363,7 +367,10 @@ class Stack:
 
 
 # FIXME: remove inheritance
+# TODO: what functionality of the Stack object do we rely on here?
 class StackChangeSet(Stack):
+    update_graph: NodeTemplate | None
+
     def __init__(self, account_id: str, region_name: str, stack: Stack, params=None, template=None):
         if template is None:
             template = {}
@@ -399,3 +406,11 @@ class StackChangeSet(Stack):
     def changes(self):
         result = self.metadata["Changes"] = self.metadata.get("Changes", [])
         return result
+
+    # V2 only
+    def populate_update_graph(self, before_template: dict | None, after_template: dict | None):
+        change_set_model = ChangeSetModel(
+            before_template=before_template,
+            after_template=after_template,
+        )
+        self.update_graph = change_set_model.get_update_model()
