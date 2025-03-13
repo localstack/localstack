@@ -127,6 +127,9 @@ class ScenariosTemplate(TemplateLoader):
     MAP_STATE_ITEM_SELECTOR: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_item_selector.json5"
     )
+    MAP_STATE_ITEM_SELECTOR_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_item_selector_jsonata.json5"
+    )
     MAP_STATE_ITEM_SELECTOR_PARAMETERS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_item_selector_parameters.json5"
     )
