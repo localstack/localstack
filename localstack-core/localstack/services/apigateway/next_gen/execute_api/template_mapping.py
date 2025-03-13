@@ -209,15 +209,18 @@ class VelocityInput:
         self.parameters = params or {}
         self.value = body
 
-    def path(self, path):
+    def _extract_json_path(self, path):
         if not self.value:
             return {}
         value = self.value if isinstance(self.value, dict) else json.loads(self.value)
-        return cast_to_vtl_json_object(extract_jsonpath(value, path))
+        return extract_jsonpath(value, path)
+
+    def path(self, path):
+        return cast_to_vtl_json_object(self._extract_json_path(path))
 
     def json(self, path):
         path = path or "$"
-        matching = self.path(path)
+        matching = self._extract_json_path(path)
         if isinstance(matching, (list, dict)):
             matching = json_safe(matching)
         return json.dumps(matching)
