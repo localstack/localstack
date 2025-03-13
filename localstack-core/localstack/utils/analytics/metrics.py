@@ -136,7 +136,7 @@ class _Counter:
             self._count = 0
 
 
-class _CounterMetric(Metric, _Counter):
+class CounterMetric(Metric, _Counter):
     """
     A thread-safe counter for tracking occurrences of an event without labels.
     """
@@ -170,7 +170,7 @@ class _CounterMetric(Metric, _Counter):
         ]
 
 
-class _LabeledCounterMetric(Metric):
+class LabeledCounterMetric(Metric):
     """
     A labeled counter that tracks occurrences of an event across different label combinations.
     """
@@ -183,7 +183,7 @@ class _LabeledCounterMetric(Metric):
     _counters_by_label_values: defaultdict[Tuple[Optional[Union[str, float]], ...], _Counter]
 
     def __init__(self, name: str, labels: List[str], namespace: Optional[str] = ""):
-        super(_LabeledCounterMetric, self).__init__(name=name)
+        super(LabeledCounterMetric, self).__init__(name=name)
 
         if not labels:
             raise ValueError("At least one label is required; the labels list cannot be empty.")
@@ -260,26 +260,26 @@ class Counter:
     A factory class for creating counter instances.
 
     This class provides a flexible way to create either a simple counter
-    (`_SimpleCounter`) or a labeled counter (`_LabeledCounter`) based on
+    (`_CounterMetric`) or a labeled counter (`_LabeledCounterMetric`) based on
     whether labels are provided.
     """
 
     @overload
-    def __new__(cls, name: str, namespace: Optional[str] = "") -> _CounterMetric:
-        return _CounterMetric(namespace=namespace, name=name)
+    def __new__(cls, name: str, namespace: Optional[str] = "") -> CounterMetric:
+        return CounterMetric(namespace=namespace, name=name)
 
     @overload
     def __new__(
         cls, name: str, labels: List[str], namespace: Optional[str] = ""
-    ) -> _LabeledCounterMetric:
-        return _LabeledCounterMetric(namespace=namespace, name=name, labels=labels)
+    ) -> LabeledCounterMetric:
+        return LabeledCounterMetric(namespace=namespace, name=name, labels=labels)
 
     def __new__(
         cls, name: str, namespace: Optional[str] = "", labels: Optional[List[str]] = None
-    ) -> Union[_CounterMetric, _LabeledCounterMetric]:
+    ) -> Union[CounterMetric, LabeledCounterMetric]:
         if labels is not None:
-            return _LabeledCounterMetric(namespace=namespace, name=name, labels=labels)
-        return _CounterMetric(namespace=namespace, name=name)
+            return LabeledCounterMetric(namespace=namespace, name=name, labels=labels)
+        return CounterMetric(namespace=namespace, name=name)
 
 
 @hooks.on_infra_shutdown()
