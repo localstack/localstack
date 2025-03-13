@@ -514,7 +514,7 @@ class ResourceProviderExecutor:
         match change_type:
             case "Add":
                 # replicate previous event emitting behaviour
-                usage.resource_type.record(request.resource_type)
+                usage.resource_types.labels(resource_type=request.resource_type).increment()
 
                 return resource_provider.create(request)
             case "Dynamic" | "Modify":
@@ -604,7 +604,7 @@ class ResourceProviderExecutor:
             f'No resource provider found for "{resource_type}"',
         )
 
-        usage.missing_resource_types.record(resource_type)
+        usage.missing_resource_types.labels(missing_resource_type=resource_type).increment()
 
         if config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
             # TODO: figure out a better way to handle non-implemented here?
