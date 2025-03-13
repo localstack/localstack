@@ -9,6 +9,8 @@ import threading
 import time
 from typing import IO, Any, Optional, Tuple
 
+from botocore.exceptions import ClientError
+
 from localstack import config
 from localstack.aws.api import RequestContext, ServiceException, handler
 from localstack.aws.api.lambda_ import (
@@ -139,6 +141,10 @@ from localstack.aws.api.lambda_ import (
 )
 from localstack.aws.api.lambda_ import FunctionVersion as FunctionVersionApi
 from localstack.aws.api.lambda_ import ServiceException as LambdaServiceException
+from localstack.aws.api.pipes import (
+    DynamoDBStreamStartPosition,
+    KinesisStreamStartPosition,
+)
 from localstack.aws.connect import connect_to
 from localstack.aws.spec import load_service
 from localstack.services.edge import ROUTER
@@ -160,6 +166,7 @@ from localstack.services.lambda_.event_source_mapping.esm_worker import (
 from localstack.services.lambda_.event_source_mapping.esm_worker_factory import (
     EsmWorkerFactory,
 )
+from localstack.services.lambda_.event_source_mapping.pipe_utils import get_internal_client
 from localstack.services.lambda_.invocation import AccessDeniedException
 from localstack.services.lambda_.invocation.execution_environment import (
     EnvironmentStartupTimeoutException,
@@ -224,6 +231,7 @@ from localstack.utils.aws.arns import (
     lambda_event_source_mapping_arn,
     parse_arn,
 )
+from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import PaginatedList
 from localstack.utils.event_matcher import validate_event_pattern
@@ -1866,6 +1874,58 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # =======================================
     # ======= EVENT SOURCE MAPPINGS =========
     # =======================================
+    def check_service_resource_exists(
+        self, service: str, resource_arn: str, function_arn: str, function_role_arn: str
+    ):
+        """
+        Check if the service resource exists and if the function has access to it.
+
+        Raises:
+            InvalidParameterValueException: If the service resource does not exist or the function does not have access to it.
+        """
+        arn = parse_arn(resource_arn)
+        source_client = get_internal_client(
+            arn=resource_arn,
+            role_arn=function_role_arn,
+            service_principal=ServicePrincipal.lambda_,
+            source_arn=function_arn,
+        )
+        if service in ["sqs", "sqs-fifo"]:
+            try:
+                # AWS uses `GetQueueAttributes` internally to verify the queue existence, but we need the `QueueUrl`
+                # which is not given directly. We build out a dummy `QueueUrl` which can be parsed by SQS to return
+                # the right value
+                queue_name = arn["resource"].split("/")[-1]
+                queue_url = f"http://sqs.{arn['region']}.domain/{arn['account']}/{queue_name}"
+                source_client.get_queue_attributes(QueueUrl=queue_url)
+            except ClientError as e:
+                error_code = e.response["Error"]["Code"]
+                if error_code == "AWS.SimpleQueueService.NonExistentQueue":
+                    raise InvalidParameterValueException(
+                        f"Error occurred while ReceiveMessage. SQS Error Code: {error_code}. SQS Error Message: {e.response['Error']['Message']}",
+                        Type="User",
+                    )
+                raise e
+        elif service in ["kinesis"]:
+            try:
+                source_client.describe_stream(StreamARN=resource_arn)
+            except ClientError as e:
+                if e.response["Error"]["Code"] == "ResourceNotFoundException":
+                    raise InvalidParameterValueException(
+                        f"Stream not found: {resource_arn}",
+                        Type="User",
+                    )
+                raise e
+        elif service in ["dynamodb"]:
+            try:
+                source_client.describe_stream(StreamArn=resource_arn)
+            except ClientError as e:
+                if e.response["Error"]["Code"] == "ResourceNotFoundException":
+                    raise InvalidParameterValueException(
+                        f"Stream not found: {resource_arn}",
+                        Type="User",
+                    )
+                raise e
 
     @handler("CreateEventSourceMapping", expand=False)
     def create_event_source_mapping(
@@ -1881,14 +1941,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         request: CreateEventSourceMappingRequest,
     ) -> EventSourceMappingConfiguration:
         # Validations
-        function_arn, function_name, state = self.validate_event_source_mapping(context, request)
+        function_arn, function_name, state, function_version, function_role = (
+            self.validate_event_source_mapping(context, request)
+        )
 
         esm_config = EsmConfigFactory(request, context, function_arn).get_esm_config()
 
         # Copy esm_config to avoid a race condition with potential async update in the store
         state.event_source_mappings[esm_config["UUID"]] = esm_config.copy()
-        function_version = get_function_version_from_arn(function_arn)
-        function_role = function_version.config.role
         enabled = request.get("Enabled", True)
         # TODO: check for potential async race condition update -> think about locking
         esm_worker = EsmWorkerFactory(esm_config, function_role, enabled).get_esm_worker()
@@ -1923,11 +1983,28 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             service = extract_service_from_arn(request["EventSourceArn"])
 
         batch_size = api_utils.validate_and_set_batch_size(service, request.get("BatchSize"))
-        if service in ["dynamodb", "kinesis"] and "StartingPosition" not in request:
-            raise InvalidParameterValueException(
-                "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null.",
-                Type="User",
-            )
+        if service in ["dynamodb", "kinesis"]:
+            starting_position = request.get("StartingPosition")
+            if not starting_position:
+                raise InvalidParameterValueException(
+                    "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null.",
+                    Type="User",
+                )
+
+            if starting_position not in KinesisStreamStartPosition.__members__:
+                raise ValidationException(
+                    f"1 validation error detected: Value '{starting_position}' at 'startingPosition' failed to satisfy constraint: Member must satisfy enum value set: [LATEST, AT_TIMESTAMP, TRIM_HORIZON]"
+                )
+            # AT_TIMESTAMP is not allowed for DynamoDB Streams
+            elif (
+                service == "dynamodb"
+                and starting_position not in DynamoDBStreamStartPosition.__members__
+            ):
+                raise InvalidParameterValueException(
+                    f"Unsupported starting position for arn type: {request['EventSourceArn']}",
+                    Type="User",
+                )
+
         if service in ["sqs", "sqs-fifo"]:
             if batch_size > 10 and request.get("MaximumBatchingWindowInSeconds", 0) == 0:
                 raise InvalidParameterValueException(
@@ -1962,6 +2039,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         fn = state.functions.get(function_name)
         if not fn:
             raise InvalidParameterValueException("Function does not exist", Type="User")
+
         if qualifier:
             # make sure the function version/alias exists
             if api_utils.qualifier_is_alias(qualifier):
@@ -1981,6 +2059,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         else:
             fn_arn = api_utils.unqualified_lambda_arn(function_name, account, region)
 
+        function_version = get_function_version_from_arn(fn_arn)
+        function_role = function_version.config.role
+
+        if source_arn := request.get("EventSourceArn"):
+            self.check_service_resource_exists(service, source_arn, fn_arn, function_role)
         # Check we are validating a CreateEventSourceMapping request
         if is_create_esm_request:
 
@@ -2026,7 +2109,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                             f"existing mapping with UUID {uuid}",
                             Type="User",
                         )
-        return fn_arn, function_name, state
+        return fn_arn, function_name, state, function_version, function_role
 
     @handler("UpdateEventSourceMapping", expand=False)
     def update_event_source_mapping(
@@ -2065,7 +2148,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         temp_params = {}  # values only set for the returned response, not saved internally (e.g. transient state)
 
         # Validate the newly updated ESM object. We ignore the output here since we only care whether an Exception is raised.
-        function_arn, _, _ = self.validate_event_source_mapping(context, event_source_mapping)
+        function_arn, _, _, function_version, function_role = self.validate_event_source_mapping(
+            context, event_source_mapping
+        )
 
         # remove the FunctionName field
         event_source_mapping.pop("FunctionName", None)
@@ -2090,8 +2175,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state.event_source_mappings[uuid] = event_source_mapping
 
         # TODO: Currently, we re-create the entire ESM worker. Look into approach with better performance.
-        function_version = get_function_version_from_arn(function_arn)
-        function_role = function_version.config.role
         worker_factory = EsmWorkerFactory(
             event_source_mapping, function_role, request.get("Enabled", esm_worker.enabled)
         )

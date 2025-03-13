@@ -96,9 +96,9 @@
     "last_validated_date": "2024-06-11T08:33:00+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_missing_keys": {
-    "last_validated_date": "2024-06-11T08:33:07+00:00"
+    "last_validated_date": "2025-03-12T10:19:13+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::test_put_event_input_path_and_input_transformer": {
-    "last_validated_date": "2024-05-13T13:01:15+00:00"
+    "last_validated_date": "2025-03-12T10:19:01+00:00"
   }
 }

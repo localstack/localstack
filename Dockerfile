@@ -1,7 +1,7 @@
 #
 # base: Stage which installs necessary runtime dependencies (OS packages, etc.)
 #
-FROM python:3.11.11-slim-bookworm@sha256:42420f737ba91d509fc60d5ed65ed0492678a90c561e1fa08786ae8ba8b52eda AS base
+FROM python:3.11.11-slim-bookworm@sha256:614c8691ab74150465ec9123378cd4dde7a6e57be9e558c3108df40664667a4c AS base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -147,6 +147,9 @@ RUN --mount=type=cache,target=/root/.cache \
 RUN SETUPTOOLS_SCM_PRETEND_VERSION_FOR_LOCALSTACK_CORE=${LOCALSTACK_BUILD_VERSION} \
     make entrypoints
 
+# Generate service catalog cache in static libs dir
+RUN . .venv/bin/activate && python3 -m localstack.aws.spec
+
 # Install packages which should be shipped by default
 RUN --mount=type=cache,target=/root/.cache \
     --mount=type=cache,target=/var/lib/localstack/cache \
@@ -167,7 +170,7 @@ RUN echo /usr/lib/localstack/python-packages/lib/python3.11/site-packages > loca
 # expose edge service, external service ports, and debugpy
 EXPOSE 4566 4510-4559 5678
 
-HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=10s CMD .venv/bin/localstack status services --format=json
+HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=10s CMD /opt/code/localstack/.venv/bin/localstack status services --format=json
 
 # default volume directory
 VOLUME /var/lib/localstack

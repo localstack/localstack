@@ -18,7 +18,7 @@ apispec==6.8.1
     # via localstack-core (pyproject.toml)
 argparse==1.4.0
     # via amazon-kclpy
-attrs==25.1.0
+attrs==25.2.0
     # via
     #   jsonschema
     #   localstack-twisted
@@ -29,17 +29,17 @@ aws-sam-translator==1.95.0
     #   localstack-core (pyproject.toml)
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.37.21
+awscli==1.38.11
     # via localstack-core (pyproject.toml)
-awscrt==0.23.10
+awscrt==0.24.1
     # via localstack-core
-boto3==1.36.21
+boto3==1.37.11
     # via
     #   amazon-kclpy
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-botocore==1.36.21
+botocore==1.37.11
     # via
     #   aws-xray-sdk
     #   awscli
@@ -64,7 +64,7 @@ certifi==2025.1.31
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.26.1
+cfn-lint==1.29.1
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -78,7 +78,7 @@ constantly==23.10.4
     # via localstack-twisted
 crontab==1.0.1
     # via localstack-core (pyproject.toml)
-cryptography==44.0.1
+cryptography==44.0.2
     # via
     #   joserfc
     #   localstack-core
@@ -91,7 +91,7 @@ dill==0.3.6
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-dnslib==0.9.25
+dnslib==0.9.26
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -135,13 +135,13 @@ incremental==24.7.2
     # via localstack-twisted
 isodate==0.7.2
     # via openapi-core
-jinja2==3.1.5
+jinja2==3.1.6
     # via moto-ext
 jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.0.3
+joserfc==1.0.4
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core (pyproject.toml)
@@ -245,7 +245,7 @@ pydantic-core==2.27.2
     # via pydantic
 pygments==2.19.1
     # via rich
-pymongo==4.11.1
+pymongo==4.11.2
     # via localstack-core (pyproject.toml)
 pyopenssl==25.0.0
     # via
@@ -296,7 +296,7 @@ requests==2.32.3
     #   rolo
 requests-aws4auth==1.3.1
     # via localstack-core
-responses==0.25.6
+responses==0.25.7
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
@@ -312,7 +312,7 @@ rpds-py==0.23.1
     #   referencing
 rsa==4.7.2
     # via awscli
-s3transfer==0.11.3
+s3transfer==0.11.4
     # via
     #   awscli
     #   boto3

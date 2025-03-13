@@ -33,13 +33,13 @@ class LocalstackAwsGateway(Gateway):
                 metric_collector.create_metric_handler_item,
                 load_service_for_data_plane,
                 handlers.preprocess_request,
-                handlers.parse_service_name,  # enforce_cors and content_decoder depend on the service name
                 handlers.enforce_cors,
-                handlers.content_decoder,
+                handlers.content_decoder,  # depends on preprocess_request for the S3 service
                 handlers.validate_request_schema,  # validate request schema for public LS endpoints
                 handlers.serve_localstack_resources,  # try to serve endpoints in /_localstack
                 handlers.serve_edge_router_rules,
                 # start aws handler chain
+                handlers.parse_service_name,
                 handlers.parse_pre_signed_url_request,
                 handlers.inject_auth_header_if_missing,
                 handlers.add_region_from_header,

@@ -347,6 +347,9 @@
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_nested_config_distributed": {
     "last_validated_date": "2024-12-13T13:38:16+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_nested_config_distributed_no_max_max_concurrency": {
+    "last_validated_date": "2025-03-05T12:09:21+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_no_processor_config": {
     "last_validated_date": "2023-12-15T21:25:27+00:00"
   },

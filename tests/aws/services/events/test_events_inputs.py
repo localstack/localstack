@@ -4,6 +4,7 @@ import json
 
 import pytest
 from botocore.client import Config
+from botocore.exceptions import ClientError
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -57,7 +58,7 @@ def test_put_event_input_path_and_input_transformer(
         "InputPathsMap": input_path_map,
         "InputTemplate": input_template,
     }
-    with pytest.raises(Exception) as exception:
+    with pytest.raises(ClientError) as exception:
         aws_client.events.put_targets(
             Rule=rule_name,
             EventBusName=bus_name,
@@ -72,7 +73,7 @@ def test_put_event_input_path_and_input_transformer(
         )
 
     snapshot.add_transformer(snapshot.transform.regex(target_id, "<target-id>"))
-    snapshot.match("duplicated-input-operations-error", exception)
+    snapshot.match("duplicated-input-operations-error", exception.value.response)
 
 
 class TestInputPath:
@@ -380,7 +381,7 @@ class TestInputTransformer:
             "InputTemplate": input_template,
         }
 
-        with pytest.raises(Exception) as exception:
+        with pytest.raises(ClientError) as exception:
             events_client.put_targets(
                 Rule=rule_name,
                 EventBusName=bus_name,
@@ -390,7 +391,7 @@ class TestInputTransformer:
             )
 
         snapshot.add_transformer(snapshot.transform.regex(target_id, "<target-id>"))
-        snapshot.match("missing-key-exception-error", exception)
+        snapshot.match("missing-key-exception-error", exception.value.response)
 
     # TODO test wrong input template
     # '{"userId": "users/<userId>/profile/<type>"}',

@@ -14,6 +14,9 @@
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_duplicate_event_source_mappings": {
     "last_validated_date": "2024-12-13T14:03:01+00:00"
   },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_esm_with_not_existing_kinesis_stream": {
+    "last_validated_date": "2025-02-26T03:05:29+00:00"
+  },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_empty_provided": {
     "last_validated_date": "2024-12-13T14:45:29+00:00"
   },

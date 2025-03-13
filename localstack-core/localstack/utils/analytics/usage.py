@@ -17,6 +17,7 @@ from localstack.utils.analytics.publisher import AnalyticsClientPublisher
 # Counters have to register with the registry
 collector_registry: dict[str, Any] = dict()
 
+
 # TODO: introduce some base abstraction for the counters after gather some initial experience working with it
 #  we could probably do intermediate aggregations over time to avoid unbounded counters for very long LS sessions
 #  for now, we can recommend to use config.DISABLE_EVENTS=1
@@ -119,22 +120,21 @@ class TimingStats:
         result = {}
         if self.state:
             for aggregation in self.aggregations:
-                match aggregation:
-                    case "sum":
-                        result[aggregation] = sum(self.state)
-                    case "min":
-                        result[aggregation] = min(self.state)
-                    case "max":
-                        result[aggregation] = max(self.state)
-                    case "mean":
-                        result[aggregation] = sum(self.state) / len(self.state)
-                    case "median":
-                        median_index = math.floor(len(self.state) / 2)
-                        result[aggregation] = sorted(self.state)[median_index]
-                    case "count":
-                        result[aggregation] = len(self.state)
-                    case _:
-                        raise Exception(f"Unsupported aggregation: {aggregation}")
+                if aggregation == "sum":
+                    result[aggregation] = sum(self.state)
+                elif aggregation == "min":
+                    result[aggregation] = min(self.state)
+                elif aggregation == "max":
+                    result[aggregation] = max(self.state)
+                elif aggregation == "mean":
+                    result[aggregation] = sum(self.state) / len(self.state)
+                elif aggregation == "median":
+                    median_index = math.floor(len(self.state) / 2)
+                    result[aggregation] = sorted(self.state)[median_index]
+                elif aggregation == "count":
+                    result[aggregation] = len(self.state)
+                else:
+                    raise Exception(f"Unsupported aggregation: {aggregation}")
         return result
 
 

@@ -52,6 +52,13 @@ def convert_pascalcase_to_lower_camelcase(item: str) -> str:
         return f"{item[0].lower()}{item[1:]}"
 
 
+def convert_lower_camelcase_to_pascalcase(item: str) -> str:
+    if len(item) <= 1:
+        return item.upper()
+    else:
+        return f"{item[0].upper()}{item[1:]}"
+
+
 def _recurse_properties(obj: dict | list, fn: Callable) -> dict | list:
     obj = fn(obj)
     if isinstance(obj, dict):
@@ -76,6 +83,18 @@ def keys_pascalcase_to_lower_camelcase(model: dict) -> dict:
             return obj
 
     return _recurse_properties(model, _keys_pascalcase_to_lower_camelcase)
+
+
+def keys_lower_camelcase_to_pascalcase(model: dict) -> dict:
+    """Recursively change any dicts keys to PascalCase"""
+
+    def _keys_lower_camelcase_to_pascalcase(obj):
+        if isinstance(obj, dict):
+            return {convert_lower_camelcase_to_pascalcase(k): v for k, v in obj.items()}
+        else:
+            return obj
+
+    return _recurse_properties(model, _keys_lower_camelcase_to_pascalcase)
 
 
 def transform_list_to_dict(param, key_attr_name="Key", value_attr_name="Value"):

@@ -132,7 +132,7 @@
     "last_validated_date": "2024-12-12T10:46:41+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_put_integration_response_validation": {
-    "last_validated_date": "2024-08-21T15:09:28+00:00"
+    "last_validated_date": "2025-03-03T14:27:24+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_put_integration_wrong_type": {
     "last_validated_date": "2024-04-15T20:48:47+00:00"
