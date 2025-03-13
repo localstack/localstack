@@ -260,7 +260,7 @@ class Counter:
     A factory class for creating counter instances.
 
     This class provides a flexible way to create either a simple counter
-    (`_CounterMetric`) or a labeled counter (`_LabeledCounterMetric`) based on
+    (`CounterMetric`) or a labeled counter (`LabeledCounterMetric`) based on
     whether labels are provided.
     """
 
