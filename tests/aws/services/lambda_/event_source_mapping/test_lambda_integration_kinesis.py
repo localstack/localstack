@@ -6,7 +6,7 @@ from datetime import datetime
 
 import pytest
 from botocore.exceptions import ClientError
-from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
+from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer, SortingTransformer
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.lambda_utils import (
@@ -163,6 +163,7 @@ class TestKinesisSource:
             "$..EncryptionType",
         ],
     )
+    @pytest.mark.parametrize("parallelization_factor", [1, 3, 6])
     def test_create_kinesis_event_source_mapping_multiple_shards(
         self,
         kinesis_create_stream,
@@ -171,9 +172,11 @@ class TestKinesisSource:
         get_msg_from_q,
         cleanups,
         snapshot,
+        parallelization_factor,
         aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.kinesis_api())
+        snapshot.add_transformer(SortingTransformer("Records", lambda o: o["SequenceNumber"]))
 
         stream_name = f"test-foobar-{short_uid()}"
         record_data = "hello"
@@ -202,7 +205,7 @@ class TestKinesisSource:
                     {
                         "Data": f"{record_data}".encode(),
                         "PartitionKey": f"test_{i}",
-                        "ExplicitHashKey": starting_hash_key,
+                        "ExplicitHashKey": starting_hash_key,  # Ensure we write to same shard
                     }
                 )
 
@@ -216,7 +219,7 @@ class TestKinesisSource:
             EventSourceArn=stream_arn,
             FunctionName=function_name,
             StartingPosition="TRIM_HORIZON",
-            ParallelizationFactor=1,
+            ParallelizationFactor=parallelization_factor,
         )
 
         snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)

@@ -2,7 +2,7 @@ import json
 import logging
 import threading
 from abc import abstractmethod
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from typing import Iterator
 
@@ -114,10 +114,18 @@ class StreamPoller(Poller):
     def get_sequence_number(self, record: dict) -> str:
         pass
 
-    def initialize_shard_workers(self, shard_count: int) -> ThreadPoolExecutor:
+    @abstractmethod
+    def split_by_partition_key(self, records: list[dict]) -> dict[str, list[dict]]:
+        """Splitting records by PartitionKey to ensure concurrent processing"""
+        pass
+
+    def initialize_shard_workers(
+        self, shard_count: int, *, parallelization_factor: int = 1
+    ) -> ThreadPoolExecutor:
         _, event_source = self.event_source().split(":")
         return ThreadPoolExecutor(
-            max_workers=shard_count, thread_name_prefix=f"{event_source}-shard-consumer"
+            max_workers=shard_count * parallelization_factor,
+            thread_name_prefix=f"{event_source}-shard-consumer",
         )
 
     def close(self):
@@ -144,20 +152,27 @@ class StreamPoller(Poller):
             self.shards = self.initialize_shards()
 
         if not self.executor:
-            self.executor = self.initialize_shard_workers(shard_count=len(self.shards))
+            pf = self.stream_parameters.get("ParallelizationFactor", 1)
+            self.executor = self.initialize_shard_workers(
+                shard_count=len(self.shards), parallelization_factor=pf
+            )
 
-        future_iter = self.executor.map(
-            self.poll_events_from_shard, *zip(*self.shards.items(), strict=False)
-        )
+        futures = []
+        for shard_id, shard_iterator in self.shards.items():
+            futures.append(
+                self.executor.submit(self.poll_events_from_shard, shard_id, shard_iterator)
+            )
+
         try:
-            list(future_iter)  # Wait on responses and raise any exceptions encountered
+            # Wait on responses and raise any exceptions encountered
+            for future in as_completed(futures):
+                future.result()
         except PipeInternalError:
             # TODO: standardize logging
             # Ignore and wait for the next polling interval, which will do retry
             pass
 
     def poll_events_from_shard(self, shard_id: str, shard_iterator: str):
-        abort_condition = None
         get_records_response = self.get_records(shard_iterator)
         records = get_records_response.get("Records", [])
         if not records:
@@ -166,6 +181,37 @@ class StreamPoller(Poller):
 
         polled_events = self.transform_into_events(records, shard_id)
 
+        parallelization_factor = self.stream_parameters.get("ParallelizationFactor", 1)
+        if parallelization_factor == 1:
+            # Process all events in shard together
+            self.forward_events_to_target(
+                polled_events, shard_id, get_records_response["NextShardIterator"]
+            )
+            return
+
+        partitioned_events = self.split_by_partition_key(polled_events)
+        distributed_events_by_partition = distribute_partitions(
+            partitioned_events, parallelization_factor
+        )
+
+        futures = []
+        for events in distributed_events_by_partition:
+            futures.append(
+                self.executor.submit(
+                    self.forward_events_to_target,
+                    events,
+                    shard_id,
+                    get_records_response["NextShardIterator"],
+                )
+            )
+
+        for future in as_completed(futures):
+            future.result()
+
+    def forward_events_to_target(
+        self, polled_events: list[dict], shard_id: str, next_shard_iterator: str
+    ):
+        abort_condition = None
         # Check MaximumRecordAgeInSeconds
         if maximum_record_age_in_seconds := self.stream_parameters.get("MaximumRecordAgeInSeconds"):
             arrival_timestamp_of_last_event = polled_events[-1]["approximateArrivalTimestamp"]
@@ -194,7 +240,7 @@ class StreamPoller(Poller):
         # Don't trigger upon empty events
         if len(matching_events_post_filter) == 0:
             # Update shard iterator if no records match the filter
-            self.shards[shard_id] = get_records_response["NextShardIterator"]
+            self.shards[shard_id] = next_shard_iterator
             return
         events = self.add_source_metadata(matching_events_post_filter)
         LOG.debug("Polled %d events from %s in shard %s", len(events), self.source_arn, shard_id)
@@ -226,7 +272,7 @@ class StreamPoller(Poller):
                 boff.reset()
 
                 # Update shard iterator if execution is successful
-                self.shards[shard_id] = get_records_response["NextShardIterator"]
+                self.shards[shard_id] = next_shard_iterator
                 return
             except PartialBatchFailureError as ex:
                 # TODO: add tests for partial batch failure scenarios
@@ -292,7 +338,7 @@ class StreamPoller(Poller):
         )
         self.send_events_to_dlq(shard_id, events, context=failure_context)
         # Update shard iterator if the execution failed but the events are sent to a DLQ
-        self.shards[shard_id] = get_records_response["NextShardIterator"]
+        self.shards[shard_id] = next_shard_iterator
 
     def get_records(self, shard_iterator: str) -> dict:
         """Returns a GetRecordsOutput from the GetRecords endpoint of streaming services such as Kinesis or DynamoDB"""
@@ -433,6 +479,25 @@ class StreamPoller(Poller):
                 return events[:i], events[i:]
 
         return events, []
+
+
+def distribute_partitions(
+    partitioned_events: dict[str, list[dict]], parallelization_factor: int
+) -> list[list[dict]]:
+    """
+    Distribute partition keys across Lambda instances based on a parallelization factor.
+    """
+    # If a paralleliztion factor is larger than how many partition keys we actually have available
+    # then limit partition groups to the no. of unique events
+    effective_factor = min(len(partitioned_events), parallelization_factor)
+    partition_groups = [[] * effective_factor]
+
+    # Round-robin
+    for i, partition_key in enumerate(partitioned_events.keys()):
+        group_id = i % parallelization_factor
+        partition_groups[group_id].append(partition_key)
+
+    return partition_groups
 
 
 def get_failure_s3_object_key(esm_uuid: str, shard_id: str, failure_datetime: datetime) -> str:
