@@ -1,6 +1,7 @@
 import json
 import math
 import time
+from collections import defaultdict
 from datetime import datetime
 
 import pytest
@@ -154,6 +155,80 @@ class TestKinesisSource:
         # check if the timestamp has same amount of numbers before the comma as the current timestamp
         # this will fail in november 2286, if this code is still around by then, read this comment and update to 10
         assert int(math.log10(timestamp)) == 9
+
+    @markers.aws.validated
+    def test_create_kinesis_event_source_mapping_multiple_shards(
+        self,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        create_function_with_sqs_destination,
+        get_msg_from_q,
+        cleanups,
+        snapshot,
+        aws_client,
+    ):
+        snapshot.add_transformer(snapshot.transform.kinesis_api())
+
+        stream_name = f"test-foobar-{short_uid()}"
+        record_data = "hello"
+        num_events_kinesis = 10
+
+        function_name, sqs_url = create_function_with_sqs_destination()
+
+        kinesis_create_stream(StreamName=stream_name, ShardCount=5)
+        wait_for_stream_ready(stream_name=stream_name)
+
+        stream_summary = aws_client.kinesis.describe_stream_summary(StreamName=stream_name)
+        assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 5
+
+        stream_description = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]
+
+        stream_arn = stream_description["StreamARN"]
+        shards = stream_description["Shards"]
+
+        records = []
+        for shard in shards:
+            starting_hash_key = shard["HashKeyRange"]["StartingHashKey"]
+            for i in range(2):
+                records.append(
+                    {
+                        "Data": f"{record_data}".encode(),
+                        "PartitionKey": f"test_{i}",
+                        "ExplicitHashKey": starting_hash_key,
+                    }
+                )
+
+        put_records_response = aws_client.kinesis.put_records(
+            Records=records,
+            StreamName=stream_name,
+        )
+        snapshot.match("put_records_response", put_records_response)
+
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            EventSourceArn=stream_arn,
+            FunctionName=function_name,
+            StartingPosition="TRIM_HORIZON",
+            ParallelizationFactor=1,
+        )
+
+        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
+        uuid = create_event_source_mapping_response["UUID"]
+
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
+        _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
+
+        events = retry(
+            get_msg_from_q,
+            retries=30,
+            sleep_before=5,
+            # args for get_msg_from_q
+            destination_queue_url=sqs_url,
+            expected_size=num_events_kinesis,
+        )
+
+        snapshot.match("kinesis_records", transform_kinesis_batch_data(events))
 
     @markers.aws.validated
     def test_create_kinesis_event_source_mapping_multiple_lambdas_single_kinesis_event_stream(
@@ -1252,3 +1327,13 @@ class TestKinesisEventFiltering:
         # TODO: missing trailing \n is a LocalStack Lambda logging issue
         snapshot.match("kinesis-record-lambda-payload", message.strip())
         assert wait_until(_wait_lambda_fn_invoked_x_times(function2_name, 1))
+
+
+def transform_kinesis_batch_data(batches: list[list[dict]]) -> dict:
+    result = defaultdict(list)
+    for batch in batches:
+        for record in batch:
+            shard_id, *_ = record["eventID"].split(":")
+            result[shard_id].append(record)
+
+    return dict(result)
