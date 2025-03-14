@@ -2,6 +2,7 @@ import json
 import logging
 import threading
 from abc import abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Iterator
 
@@ -66,9 +67,10 @@ class StreamPoller(Poller):
         self.partner_resource_arn = partner_resource_arn
         self.esm_uuid = esm_uuid
         self.shards = {}
-        self.iterator_over_shards = None
 
         self._is_shutdown = threading.Event()
+
+        self.executor = None
 
     @abstractmethod
     def transform_into_events(self, records: list[dict], shard_id) -> list[dict]:
@@ -112,6 +114,12 @@ class StreamPoller(Poller):
     def get_sequence_number(self, record: dict) -> str:
         pass
 
+    def initialize_shard_workers(self, shard_count: int) -> ThreadPoolExecutor:
+        _, event_source = self.event_source().split(":")
+        return ThreadPoolExecutor(
+            max_workers=shard_count, thread_name_prefix=f"{event_source}-shard-consumer"
+        )
+
     def close(self):
         self._is_shutdown.set()
 
@@ -135,24 +143,14 @@ class StreamPoller(Poller):
         if not self.shards:
             self.shards = self.initialize_shards()
 
-        # TODO: improve efficiency because this currently limits the throughput to at most batch size per poll interval
-        # Handle shards round-robin. Re-initialize current shard iterator once all shards are handled.
-        if self.iterator_over_shards is None:
-            self.iterator_over_shards = iter(self.shards.items())
+        if not self.executor:
+            self.executor = self.initialize_shard_workers(shard_count=len(self.shards))
 
-        current_shard_tuple = next(self.iterator_over_shards, None)
-        if not current_shard_tuple:
-            self.iterator_over_shards = iter(self.shards.items())
-            current_shard_tuple = next(self.iterator_over_shards, None)
-
-        # TODO Better handling when shards are initialised and the iterator returns nothing
-        if not current_shard_tuple:
-            raise PipeInternalError(
-                "Failed to retrieve any shards for stream polling despite initialization."
-            )
-
+        future_iter = self.executor.map(
+            self.poll_events_from_shard, *zip(*self.shards.items(), strict=False)
+        )
         try:
-            self.poll_events_from_shard(*current_shard_tuple)
+            list(future_iter)  # Wait on responses and raise any exceptions encountered
         except PipeInternalError:
             # TODO: standardize logging
             # Ignore and wait for the next polling interval, which will do retry

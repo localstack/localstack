@@ -157,6 +157,12 @@ class TestKinesisSource:
         assert int(math.log10(timestamp)) == 9
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # LocalStack's Kinesis::PutRecords adds this field on response whereas AWS does not.
+            "$..EncryptionType",
+        ],
+    )
     def test_create_kinesis_event_source_mapping_multiple_shards(
         self,
         kinesis_create_stream,
