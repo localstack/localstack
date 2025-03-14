@@ -1,9 +1,42 @@
 {
+  "tests/aws/services/cloudformation/api/test_update_stack.py::TestCaptureUpdateProcess::test_conditions": {
+    "last_validated_date": "2025-02-25T13:56:49+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::TestCaptureUpdateProcess::test_direct_update": {
+    "last_validated_date": "2025-02-25T12:57:29+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::TestCaptureUpdateProcess::test_dynamic_update": {
+    "last_validated_date": "2025-02-25T12:59:31+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::TestCaptureUpdateProcess::test_mappings_with_parameter_lookup": {
+    "last_validated_date": "2025-02-25T13:40:52+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::TestCaptureUpdateProcess::test_mappings_with_static_fields": {
+    "last_validated_date": "2025-02-25T13:53:00+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::TestCaptureUpdateProcess::test_parameter_changes": {
+    "last_validated_date": "2025-02-25T13:24:03+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::TestCaptureUpdateProcess::test_unrelated_changes_requires_replacement": {
+    "last_validated_date": "2025-02-26T09:42:26+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::TestCaptureUpdateProcess::test_unrelated_changes_update_propagation": {
+    "last_validated_date": "2025-02-26T09:25:56+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_update_stack.py::test_basic_update": {
-    "last_validated_date": "2022-11-21T07:27:37+00:00"
+    "last_validated_date": "2025-02-11T16:49:47+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_capture_update_process": {
+    "last_validated_date": "2025-02-11T16:34:20+00:00"
   },
   "tests/aws/services/cloudformation/api/test_update_stack.py::test_diff_after_update": {
     "last_validated_date": "2024-04-09T06:19:23+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_direct_update": {
+    "last_validated_date": "2025-02-11T16:54:12+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_dynamic_update": {
+    "last_validated_date": "2025-02-11T16:54:16+00:00"
   },
   "tests/aws/services/cloudformation/api/test_update_stack.py::test_no_template_error": {
     "last_validated_date": "2022-11-21T07:57:45+00:00"

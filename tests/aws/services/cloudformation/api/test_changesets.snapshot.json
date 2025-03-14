@@ -498,5 +498,767 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestSingleResource::test_static_change": {
+    "recorded-date": "04-03-2025, 17:06:54",
+    "recorded-content": {
+      "changes": [
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "<physical-resource-id:1>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Static",
+                "ChangeSource": "DirectModification"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestSingleResource::test_dynamic_change": {
+    "recorded-date": "04-03-2025, 17:07:07",
+    "recorded-content": {
+      "changes": [
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "<physical-resource-id:1>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Static",
+                "ChangeSource": "ParameterReference",
+                "CausingEntity": "ParameterValue"
+              },
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "DirectModification"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestTwoResources::test_static_change": {
+    "recorded-date": "04-03-2025, 17:07:21",
+    "recorded-content": {
+      "changes": [
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "Parameter1",
+            "PhysicalResourceId": "<physical-resource-id:1>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Static",
+                "ChangeSource": "DirectModification"
+              }
+            ]
+          }
+        },
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "Parameter2",
+            "PhysicalResourceId": "<physical-resource-id:2>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "ResourceAttribute",
+                "CausingEntity": "Parameter1.Value"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestTwoResources::test_dynamic_change": {
+    "recorded-date": "04-03-2025, 17:07:35",
+    "recorded-content": {
+      "changes": [
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "Parameter1",
+            "PhysicalResourceId": "<physical-resource-id:1>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Static",
+                "ChangeSource": "ParameterReference",
+                "CausingEntity": "ParameterValue"
+              },
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "DirectModification"
+              }
+            ]
+          }
+        },
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "Parameter2",
+            "PhysicalResourceId": "<physical-resource-id:2>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "ResourceAttribute",
+                "CausingEntity": "Parameter1.Value"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestTwoResources::test_dynamic_change_unrelated_property": {
+    "recorded-date": "04-03-2025, 17:07:49",
+    "recorded-content": {
+      "changes": [
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "Parameter1",
+            "PhysicalResourceId": "<physical-resource-id:1>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Static",
+                "ChangeSource": "ParameterReference",
+                "CausingEntity": "ParameterValue"
+              },
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "DirectModification"
+              }
+            ]
+          }
+        },
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "Parameter2",
+            "PhysicalResourceId": "<physical-resource-id:2>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "ResourceAttribute",
+                "CausingEntity": "Parameter1.Name"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestTwoResources::test_dynamic_change_unrelated_property_not_create_only": {
+    "recorded-date": "04-03-2025, 17:08:04",
+    "recorded-content": {
+      "changes": [
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "Parameter1",
+            "PhysicalResourceId": "<physical-resource-id:1>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Static",
+                "ChangeSource": "ParameterReference",
+                "CausingEntity": "ParameterValue"
+              },
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "DirectModification"
+              }
+            ]
+          }
+        },
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "Parameter2",
+            "PhysicalResourceId": "<physical-resource-id:2>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "ResourceAttribute",
+                "CausingEntity": "Parameter1.Type"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestThreeResources::test_root_change": {
+    "recorded-date": "04-03-2025, 17:08:22",
+    "recorded-content": {
+      "changes": [
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "Parameter1",
+            "PhysicalResourceId": "<physical-resource-id:1>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Static",
+                "ChangeSource": "ParameterReference",
+                "CausingEntity": "ParameterValue"
+              },
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "DirectModification"
+              }
+            ]
+          }
+        },
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "Parameter2",
+            "PhysicalResourceId": "<physical-resource-id:2>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "ResourceAttribute",
+                "CausingEntity": "Parameter1.Value"
+              }
+            ]
+          }
+        },
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "Parameter3",
+            "PhysicalResourceId": "<physical-resource-id:3>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "ResourceAttribute",
+                "CausingEntity": "Parameter2.Value"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestThreeResources::test_middle_change[A]": {
+    "recorded-date": "06-03-2025, 13:26:19",
+    "recorded-content": {
+      "changes": [
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "A",
+            "PhysicalResourceId": "<physical-resource-id:1>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Static",
+                "ChangeSource": "DirectModification"
+              }
+            ]
+          }
+        },
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "<physical-resource-id:2>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "ResourceAttribute",
+                "CausingEntity": "A.Value"
+              }
+            ]
+          }
+        },
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "<physical-resource-id:3>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "ResourceAttribute",
+                "CausingEntity": "A.Value"
+              }
+            ]
+          }
+        },
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "D",
+            "PhysicalResourceId": "<physical-resource-id:4>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "ResourceAttribute",
+                "CausingEntity": "B.Value"
+              }
+            ]
+          }
+        },
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "E",
+            "PhysicalResourceId": "<physical-resource-id:5>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "ResourceAttribute",
+                "CausingEntity": "C.Value"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestThreeResources::test_middle_change[B]": {
+    "recorded-date": "06-03-2025, 13:26:37",
+    "recorded-content": {
+      "changes": [
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "<physical-resource-id:1>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Static",
+                "ChangeSource": "DirectModification"
+              }
+            ]
+          }
+        },
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "D",
+            "PhysicalResourceId": "<physical-resource-id:2>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "ResourceAttribute",
+                "CausingEntity": "B.Value"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestThreeResources::test_middle_change[C]": {
+    "recorded-date": "06-03-2025, 13:26:53",
+    "recorded-content": {
+      "changes": [
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "<physical-resource-id:1>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Static",
+                "ChangeSource": "DirectModification"
+              }
+            ]
+          }
+        },
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "E",
+            "PhysicalResourceId": "<physical-resource-id:2>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Dynamic",
+                "ChangeSource": "ResourceAttribute",
+                "CausingEntity": "C.Value"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestThreeResources::test_middle_change[D]": {
+    "recorded-date": "06-03-2025, 13:27:10",
+    "recorded-content": {
+      "changes": [
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "D",
+            "PhysicalResourceId": "<physical-resource-id:1>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Static",
+                "ChangeSource": "DirectModification"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestChangeSetDiff::TestThreeResources::test_middle_change[E]": {
+    "recorded-date": "06-03-2025, 13:27:27",
+    "recorded-content": {
+      "changes": [
+        {
+          "Type": "Resource",
+          "ResourceChange": {
+            "Action": "Modify",
+            "LogicalResourceId": "E",
+            "PhysicalResourceId": "<physical-resource-id:1>",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Replacement": "False",
+            "Scope": [
+              "Properties"
+            ],
+            "Details": [
+              {
+                "Target": {
+                  "Attribute": "Properties",
+                  "Name": "Value",
+                  "RequiresRecreation": "Never"
+                },
+                "Evaluation": "Static",
+                "ChangeSource": "DirectModification"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestDeployProcess::TestCreateChangeSetSync::test_invalid_macro_bad_conditions": {
+    "recorded-date": "11-03-2025, 12:39:00",
+    "recorded-content": {}
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestDeployProcess::TestCreateChangeSetAsync::test_invalid_macro_missing_ssm_parameter": {
+    "recorded-date": "11-03-2025, 12:41:15",
+    "recorded-content": {}
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestDeployProcess::TestCreateChangeSetSync::test_mappings_vs_conditions[resource-condition,condition-mapping]": {
+    "recorded-date": "11-03-2025, 13:32:07",
+    "recorded-content": {
+      "client-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template error: Mapping named 'MyMap2' is not present in the 'Mappings' section of template.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestDeployProcess::TestCreateChangeSetSync::test_mappings_vs_conditions[resource-condition,resource-mapping]": {
+    "recorded-date": "11-03-2025, 13:32:07",
+    "recorded-content": {
+      "client-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Condition MyCondition2 is not defined.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
