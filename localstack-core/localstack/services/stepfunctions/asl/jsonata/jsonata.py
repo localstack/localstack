@@ -86,11 +86,16 @@ class _JSONataJVMBridge:
             raise JSONataException("UNKNOWN", str(ex))
 
 
-# Final reference to the java evaluation function.
-_eval_jsonata: Final[Callable[[JSONataExpression], Any]] = _JSONataJVMBridge.get().eval_jsonata
+# Lazy initialization of the `eval_jsonata` function pointer.
+# This ensures the JVM is only started when JSONata functionality is needed.
+_eval_jsonata: Optional[Callable[[JSONataExpression], Any]] = None
 
 
 def eval_jsonata_expression(jsonata_expression: JSONataExpression) -> Any:
+    global _eval_jsonata
+    if _eval_jsonata is None:
+        # Initialize _eval_jsonata only when invoked for the first time using the Singleton pattern.
+        _eval_jsonata = _JSONataJVMBridge.get().eval_jsonata
     return _eval_jsonata(jsonata_expression)
 
 
