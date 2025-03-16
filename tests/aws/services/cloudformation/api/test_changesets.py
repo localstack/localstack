@@ -1,8 +1,10 @@
+import json
 import os.path
 
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.aws.cloudformation_utils import (
     load_template_file,
     load_template_raw,
@@ -15,6 +17,23 @@ from localstack.utils.sync import ShortCircuitWaitException, poll_condition, wai
 from tests.aws.services.cloudformation.api.test_stacks import (
     MINIMAL_TEMPLATE,
 )
+
+
+@markers.aws.unknown
+def test_foo(aws_client: ServiceLevelClientFactory, deploy_cfn_template):
+    t1 = {
+        "Resources": {
+            "MyParameter": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": "foo",
+                },
+            },
+        },
+    }
+
+    deploy_cfn_template(template=json.dumps(t1))
 
 
 @markers.aws.validated
