@@ -22,7 +22,7 @@ class TestChangeSetDescribeDetails:
         )
         update_model: NodeTemplate = change_set_model.get_update_model()
         change_set_describer = ChangeSetModelDescriber(node_template=update_model)
-        changes = change_set_describer.get_changes()
+        changes = change_set_describer.get_resource_changes()
         # TODO
         json_str = json.dumps(changes)
         return json.loads(json_str)
