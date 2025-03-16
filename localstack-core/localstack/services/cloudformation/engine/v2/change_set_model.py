@@ -215,6 +215,12 @@ class NodeResource(ChangeSetNode):
         self.condition_reference = condition_reference
         self.properties = properties
 
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "Type": cast(TerminalValue, self.type_).value,
+            "Properties": self.properties.as_dict(),
+        }
+
 
 class NodeProperties(ChangeSetNode):
     properties: Final[list[NodeProperty]]
@@ -222,6 +228,9 @@ class NodeProperties(ChangeSetNode):
     def __init__(self, scope: Scope, change_type: ChangeType, properties: list[NodeProperty]):
         super().__init__(scope=scope, change_type=change_type)
         self.properties = properties
+
+    def as_dict(self) -> dict[str, Any]:
+        return {prop.name: cast(TerminalValue, prop.value).value for prop in self.properties}
 
 
 class NodeProperty(ChangeSetNode):
@@ -655,7 +664,7 @@ class ChangeSetModel:
             change_type = ChangeType.UNCHANGED
 
         # TODO: investigate behaviour with type changes, for now this is filler code.
-        _, type_str = self._safe_access_in(scope, TypeKey, before_resource)
+        _, type_str = self._safe_access_in(scope, TypeKey, after_resource)
 
         scope_condition, (before_condition, after_condition) = self._safe_access_in(
             scope, ConditionKey, before_resource, after_resource
