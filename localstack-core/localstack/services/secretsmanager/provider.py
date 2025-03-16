@@ -729,11 +729,15 @@ def backend_rotate_secret(
     if not self._is_valid_identifier(secret_id):
         raise SecretNotFoundException()
 
-    if self.secrets[secret_id].is_deleted():
+    secret = self.secrets[secret_id]
+    if secret.is_deleted():
         raise InvalidRequestException(
             "An error occurred (InvalidRequestException) when calling the RotateSecret operation: You tried to \
             perform the operation on a secret that's currently marked deleted."
         )
+    # Resolve rotation_lambda_arn and fallback to previous value if its missing
+    # from the current request
+    rotation_lambda_arn = rotation_lambda_arn or secret.rotation_lambda_arn
 
     if rotation_lambda_arn:
         if len(rotation_lambda_arn) > 2048:
@@ -746,14 +750,16 @@ def backend_rotate_secret(
             if rotation_period < 1 or rotation_period > 1000:
                 msg = "RotationRules.AutomaticallyAfterDays must be within 1-1000."
                 raise InvalidParameterException(msg)
+    else:
+        # Resolve auto_rotate_after_days and fallback to previous value
+        # if its missing from the current request
+        rotation_period = secret.auto_rotate_after_days
 
     try:
         lm_client = connect_to(region_name=self.region_name).lambda_
         lm_client.get_function(FunctionName=rotation_lambda_arn)
     except Exception:
         raise ResourceNotFoundException("Lambda does not exist or could not be accessed")
-
-    secret = self.secrets[secret_id]
 
     # The rotation function must end with the versions of the secret in
     # one of two states:
@@ -782,7 +788,7 @@ def backend_rotate_secret(
         pass
 
     secret.rotation_lambda_arn = rotation_lambda_arn
-    secret.auto_rotate_after_days = rotation_rules.get(rotation_days, 0)
+    secret.auto_rotate_after_days = rotation_period
     if secret.auto_rotate_after_days > 0:
         wait_interval_s = int(rotation_period) * 86400
         secret.next_rotation_date = int(time.time()) + wait_interval_s
