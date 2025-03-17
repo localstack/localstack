@@ -136,6 +136,7 @@ class TestUsageMetricsStaticAnalyser:
     )
     def test_jsonata_and_variable_sampling(self, definition):
         analyser = UsageMetricsStaticAnalyser.process(definition)
+        assert QueryLanguageMode.JSONPath in analyser.query_language_modes
         assert QueryLanguageMode.JSONata in analyser.query_language_modes
         assert analyser.uses_variables
 
