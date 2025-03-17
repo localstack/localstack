@@ -48,3 +48,6 @@ LEGACY_STRATEGY_URL_REGEX = (
 # HTTP headers used to override internal SQS ReceiveMessage
 HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT = "x-localstack-sqs-override-message-count"
 HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS = "x-localstack-sqs-override-wait-time-seconds"
+
+# response includes a maximum of 1,000 results
+MAX_RESULT_LIMIT = 1000

@@ -3806,5 +3806,55 @@
         }
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_list_queues_pagination": {
+    "recorded-date": "17-03-2025, 10:30:30",
+    "recorded-content": {
+      "list_all": {
+        "QueueUrls": [
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-4dcb05a9",
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-83eddc2b",
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-93930240",
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-a9e33d47",
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-abb7f437",
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-b62421b1",
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-c01f6d02",
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-c439ef4b",
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-e0bc586f",
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-f9ab2038"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_two_max": {
+        "NextToken": "AAcAAgGAARQXbHCZy8vCQTHKQ3Vpec43AAAAAQAET2RpbgAVMgAAAIAAAAAMQTmnLGawNvx0WhGMACAEBOrk2SHqtjPnC7CsFB0eXNrrnpOz73TYKPTCcV002gIAAAAADAAAEAAAAAAAAAAAAAAAAADtlEgNhe9gcM29p695usG1_____wAAAAEAAAAAAAAAAAAAAAEAAABENMWbuX1DoBCvPNV2bPHO5hcwGvFBMX4dQ990S21QrxZFH39k4oqUO8tNJFAAepL4OsesO-T80Lugi1sXiOUD8tNMtFYZo__gHiDHfcnMyFbkjzXa",
+        "QueueUrls": [
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-4dcb05a9",
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-83eddc2b"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_remaining": {
+        "QueueUrls": [
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-93930240",
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-a9e33d47",
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-abb7f437",
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-b62421b1",
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-c01f6d02",
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-c439ef4b",
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-e0bc586f",
+          "https://sqs.<region>.amazonaws.com/111111111111/test-queue-f9ab2038"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

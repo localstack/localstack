@@ -5,6 +5,7 @@ import logging
 import re
 import threading
 import time
+import base64
 from concurrent.futures.thread import ThreadPoolExecutor
 from itertools import islice
 from typing import Dict, Iterable, List, Literal, Optional, Tuple
@@ -80,6 +81,7 @@ from localstack.services.sqs import constants as sqs_constants
 from localstack.services.sqs.constants import (
     HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT,
     HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS,
+    MAX_RESULT_LIMIT,
 )
 from localstack.services.sqs.exceptions import InvalidParameterValueException
 from localstack.services.sqs.models import (
@@ -113,6 +115,7 @@ from localstack.utils.scheduler import Scheduler
 from localstack.utils.strings import md5
 from localstack.utils.threads import start_thread
 from localstack.utils.time import now
+from localstack.utils.collections import PaginatedList
 
 LOG = logging.getLogger(__name__)
 
@@ -985,17 +988,22 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         else:
             urls = [queue.url(context) for queue in store.queues.values()]
 
-        if max_results:
-            # FIXME: also need to solve pagination with stateful iterators: If the total number of items available is
-            #  more than the value specified, a NextToken is provided in the command's output. To resume pagination,
-            #  provide the NextToken value in the starting-token argument of a subsequent command. Do not use the
-            #  NextToken response element directly outside of the AWS CLI.
-            urls = urls[:max_results]
+        paginated_list = PaginatedList(urls)
 
-        if len(urls) == 0:
-            return ListQueuesResult()
+        def token_generator(item: str) -> str:
+            base64_bytes = base64.b64encode(item.encode('utf-8'))
+            next_token = base64_bytes.decode('utf-8')
+            return next_token
 
-        return ListQueuesResult(QueueUrls=urls)
+        page_size = max_results if max_results else MAX_RESULT_LIMIT
+        paginated_urls, next_token = paginated_list.get_page(
+            token_generator=token_generator,
+            next_token=next_token,
+            page_size=page_size
+        )
+
+        return ListQueuesResult(QueueUrls=paginated_urls, NextToken=next_token)
+
 
     def change_message_visibility(
         self,
