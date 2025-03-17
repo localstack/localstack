@@ -61,7 +61,6 @@ from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sns import constants as sns_constants
-from localstack.services.sns import usage
 from localstack.services.sns.certificate import SNS_SERVER_CERT
 from localstack.services.sns.filter import FilterPolicyValidator
 from localstack.services.sns.models import (
@@ -85,6 +84,8 @@ from localstack.utils.aws.arns import (
 )
 from localstack.utils.collections import PaginatedList, select_from_typed_dict
 from localstack.utils.strings import short_uid, to_bytes, to_str
+
+from .analytics import internal_api_calls
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -1134,7 +1135,7 @@ class SNSInternalResource:
     """Base class with helper to properly track usage of internal endpoints"""
 
     def count_usage(self):
-        usage.internalapi.record(f"{self.resource_type}")
+        internal_api_calls.labels(resource_type=self.resource_type).increment()
 
 
 def count_usage(f):

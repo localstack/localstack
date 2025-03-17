@@ -107,21 +107,21 @@ def tests_tag_list_untag_not_existing_resource(
             ],
         )
 
-    snapshot.match("tag_not_existing_resource_error", error)
+    snapshot.match("tag_not_existing_resource_error", error.value.response)
 
     snapshot.add_transformer(
         snapshot.transform.regex(resource_name, "<not-existing-resource-name>")
     )
     with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as error:
         aws_client.events.list_tags_for_resource(ResourceARN=resource_arn)
-    snapshot.match("list_tags_for_not_existing_resource_error", error)
+    snapshot.match("list_tags_for_not_existing_resource_error", error.value.response)
 
     with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as error:
         aws_client.events.untag_resource(
             ResourceARN=resource_arn,
             TagKeys=[tag_key_1],
         )
-    snapshot.match("untag_not_existing_resource_error", error)
+    snapshot.match("untag_not_existing_resource_error", error.value.response)
 
 
 @markers.aws.validated
@@ -243,7 +243,7 @@ class TestRuleTags:
                 snapshot.transform.regex(bus_name, "<bus_name>"),
             ]
         )
-        snapshot.match("list_tags_for_deleted_rule_error", error)
+        snapshot.match("list_tags_for_deleted_rule_error", error.value.response)
 
 
 class TestEventBusTags:
@@ -286,4 +286,4 @@ class TestEventBusTags:
             aws_client.events.list_tags_for_resource(ResourceARN=bus_arn)
 
         snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus_name>"))
-        snapshot.match("list_tags_for_deleted_rule_error", error)
+        snapshot.match("list_tags_for_deleted_rule_error", error.value.response)

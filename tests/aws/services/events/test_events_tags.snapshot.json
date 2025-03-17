@@ -90,19 +90,73 @@
     }
   },
   "tests/aws/services/events/test_events_tags.py::tests_tag_list_untag_not_existing_resource[not_existing_rule]": {
-    "recorded-date": "15-05-2024, 14:57:57",
+    "recorded-date": "12-03-2025, 10:19:54",
     "recorded-content": {
-      "tag_not_existing_resource_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the TagResource operation: Rule <not-existing-resource-name> does not exist on EventBus default.') tblen=3>",
-      "list_tags_for_not_existing_resource_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the ListTagsForResource operation: Rule <not-existing-resource-name> does not exist on EventBus default.') tblen=3>",
-      "untag_not_existing_resource_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the UntagResource operation: Rule <not-existing-resource-name> does not exist on EventBus default.') tblen=3>"
+      "tag_not_existing_resource_error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Rule <not-existing-resource-name> does not exist on EventBus default."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list_tags_for_not_existing_resource_error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Rule <not-existing-resource-name> does not exist on EventBus default."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "untag_not_existing_resource_error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Rule <not-existing-resource-name> does not exist on EventBus default."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_events_tags.py::tests_tag_list_untag_not_existing_resource[not_existing_event_bus]": {
-    "recorded-date": "15-05-2024, 14:58:00",
+    "recorded-date": "12-03-2025, 10:19:56",
     "recorded-content": {
-      "tag_not_existing_resource_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the TagResource operation: Event bus <not-existing-resource-name> does not exist.') tblen=3>",
-      "list_tags_for_not_existing_resource_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the ListTagsForResource operation: Event bus <not-existing-resource-name> does not exist.') tblen=3>",
-      "untag_not_existing_resource_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the UntagResource operation: Event bus <not-existing-resource-name> does not exist.') tblen=3>"
+      "tag_not_existing_resource_error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Event bus <not-existing-resource-name> does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list_tags_for_not_existing_resource_error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Event bus <not-existing-resource-name> does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "untag_not_existing_resource_error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Event bus <not-existing-resource-name> does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_events_tags.py::TestRuleTags::test_put_rule_with_tags": {
@@ -134,9 +188,18 @@
     }
   },
   "tests/aws/services/events/test_events_tags.py::TestRuleTags::test_list_tags_for_deleted_rule": {
-    "recorded-date": "15-05-2024, 14:58:02",
+    "recorded-date": "12-03-2025, 10:19:42",
     "recorded-content": {
-      "list_tags_for_deleted_rule_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the ListTagsForResource operation: Rule <rule_name> does not exist on EventBus <bus_name>.') tblen=3>"
+      "list_tags_for_deleted_rule_error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Rule <rule_name> does not exist on EventBus <bus_name>."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_events_tags.py::TestEventBusTags::test_create_event_bus_with_tags": {
@@ -168,9 +231,18 @@
     }
   },
   "tests/aws/services/events/test_events_tags.py::TestEventBusTags::test_list_tags_for_deleted_event_bus": {
-    "recorded-date": "15-05-2024, 14:58:05",
+    "recorded-date": "12-03-2025, 10:19:32",
     "recorded-content": {
-      "list_tags_for_deleted_rule_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the ListTagsForResource operation: Event bus <bus_name> does not exist.') tblen=3>"
+      "list_tags_for_deleted_rule_error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Event bus <bus_name> does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[event_bus-event_bus_default]": {

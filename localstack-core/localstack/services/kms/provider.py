@@ -92,6 +92,8 @@ from localstack.aws.api.kms import (
     ReEncryptResponse,
     ReplicateKeyRequest,
     ReplicateKeyResponse,
+    RotateKeyOnDemandRequest,
+    RotateKeyOnDemandResponse,
     ScheduleKeyDeletionRequest,
     ScheduleKeyDeletionResponse,
     SignRequest,
@@ -1254,12 +1256,16 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # We do not model that here, though.
         account_id, region_name, key_id = self._parse_key_id(request["KeyId"], context)
         key = self._get_kms_key(account_id, region_name, key_id, any_key_state_allowed=True)
-        return GetKeyRotationStatusResponse(
+
+        response = GetKeyRotationStatusResponse(
             KeyId=key_id,
             KeyRotationEnabled=key.is_key_rotation_enabled,
             NextRotationDate=key.next_rotation_date,
-            RotationPeriodInDays=key.rotation_period_in_days,
         )
+        if key.is_key_rotation_enabled:
+            response["RotationPeriodInDays"] = key.rotation_period_in_days
+
+        return response
 
     @handler("DisableKeyRotation", expand=False)
     def disable_key_rotation(
@@ -1333,6 +1339,27 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         )
         kwargs = {"NextMarker": next_token, "Truncated": True} if next_token else {}
         return ListResourceTagsResponse(Tags=page, **kwargs)
+
+    @handler("RotateKeyOnDemand", expand=False)
+    # TODO: keep trak of key rotations as AWS does and return them in the ListKeyRotations operation
+    def rotate_key_on_demand(
+        self, context: RequestContext, request: RotateKeyOnDemandRequest
+    ) -> RotateKeyOnDemandResponse:
+        account_id, region_name, key_id = self._parse_key_id(request["KeyId"], context)
+        key = self._get_kms_key(account_id, region_name, key_id)
+
+        if key.metadata["KeySpec"] != KeySpec.SYMMETRIC_DEFAULT:
+            raise UnsupportedOperationException()
+        if key.metadata["Origin"] == OriginType.EXTERNAL:
+            raise UnsupportedOperationException(
+                f"{key.metadata['Arn']} origin is EXTERNAL which is not valid for this operation."
+            )
+
+        key.rotate_key_on_demand()
+
+        return RotateKeyOnDemandResponse(
+            KeyId=key_id,
+        )
 
     @handler("TagResource", expand=False)
     def tag_resource(self, context: RequestContext, request: TagResourceRequest) -> None:

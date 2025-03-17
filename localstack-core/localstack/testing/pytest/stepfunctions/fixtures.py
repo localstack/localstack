@@ -267,6 +267,31 @@ def create_state_machine():
 
 
 @pytest.fixture
+def create_state_machine_alias():
+    state_machine_alias_arn_and_client = list()
+
+    def _create_state_machine_alias(target_aws_client, **kwargs):
+        step_functions_client = target_aws_client.stepfunctions
+        create_state_machine_response = step_functions_client.create_state_machine_alias(**kwargs)
+        state_machine_alias_arn_and_client.append(
+            (create_state_machine_response["stateMachineAliasArn"], step_functions_client)
+        )
+        return create_state_machine_response
+
+    yield _create_state_machine_alias
+
+    for state_machine_alias_arn, sfn_client in state_machine_alias_arn_and_client:
+        try:
+            sfn_client.delete_state_machine_alias(stateMachineAliasArn=state_machine_alias_arn)
+        except Exception as ex:
+            LOG.debug(
+                "Unable to delete the state machine alias '%s' during cleanup due '%s'",
+                state_machine_alias_arn,
+                ex,
+            )
+
+
+@pytest.fixture
 def create_activity(aws_client):
     activities_arns: Final[list[str]] = list()
 

@@ -34,6 +34,7 @@ Description = str
 DestinationArn = str
 DestinationField = str
 DestinationName = str
+DetectorKmsKeyArn = str
 DetectorName = str
 DimensionsKey = str
 DimensionsValue = str
@@ -691,7 +692,7 @@ class CreateLogAnomalyDetectorRequest(ServiceRequest):
     detectorName: Optional[DetectorName]
     evaluationFrequency: Optional[EvaluationFrequency]
     filterPattern: Optional[FilterPattern]
-    kmsKeyId: Optional[KmsKeyId]
+    kmsKeyId: Optional[DetectorKmsKeyArn]
     anomalyVisibilityTime: Optional[AnomalyVisibilityTime]
     tags: Optional[Tags]
 
@@ -2159,7 +2160,7 @@ class LogsApi:
         detector_name: DetectorName = None,
         evaluation_frequency: EvaluationFrequency = None,
         filter_pattern: FilterPattern = None,
-        kms_key_id: KmsKeyId = None,
+        kms_key_id: DetectorKmsKeyArn = None,
         anomaly_visibility_time: AnomalyVisibilityTime = None,
         tags: Tags = None,
         **kwargs,

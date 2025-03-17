@@ -516,9 +516,19 @@
     }
   },
   "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_disassociate_non_existent_association": {
-    "recorded-date": "08-09-2023, 10:22:56",
+    "recorded-date": "12-03-2025, 10:21:30",
     "recorded-content": {
-      "resource_not_found_res": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DisassociateResolverRule operation: [RSLVR-00703] Resolver rule with ID \"rslvr-123\" does not exist.') tblen=3>"
+      "resource_not_found_res": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "[RSLVR-00703] Resolver rule with ID \"rslvr-123\" does not exist."
+        },
+        "Message": "[RSLVR-00703] Resolver rule with ID \"rslvr-123\" does not exist.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_create_resolver_query_log_config": {

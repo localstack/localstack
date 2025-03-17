@@ -68,6 +68,8 @@ class Poller(ABC):
         """Return the event source metadata (e.g., aws:sqs)"""
         pass
 
+    # TODO: create an abstract fetch_records method that all children should implement. This will unify how poller's internally retreive data from an event
+    # source and make for much easier error handling.
     @abstractmethod
     def poll_events(self) -> None:
         """Poll events polled from the event source and matching at least one filter criteria and invoke the target processor."""

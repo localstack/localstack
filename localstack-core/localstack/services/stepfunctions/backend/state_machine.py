@@ -30,6 +30,7 @@ from localstack.services.stepfunctions.asl.eval.event.logging import (
 from localstack.services.stepfunctions.asl.static_analyser.variable_references_static_analyser import (
     VariableReferencesStaticAnalyser,
 )
+from localstack.services.stepfunctions.backend.alias import Alias
 from localstack.utils.strings import long_uid
 
 
@@ -163,6 +164,7 @@ class StateMachineRevision(StateMachineInstance):
     _next_version_number: int
     versions: Final[dict[RevisionId, Arn]]
     tag_manager: Final[TagManager]
+    aliases: Final[set[Alias]]
 
     def __init__(
         self,
@@ -194,6 +196,7 @@ class StateMachineRevision(StateMachineInstance):
         self.tag_manager = TagManager()
         if tags:
             self.tag_manager.add_all(tags)
+        self.aliases = set()
 
     def create_revision(
         self,
