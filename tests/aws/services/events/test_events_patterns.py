@@ -536,6 +536,3 @@ class TestRuleWithPattern:
             ]
         )
         snapshot.match("messages", messages)
-
-    def test_put_event_with_large_and_complex_payload(self):
-        pass

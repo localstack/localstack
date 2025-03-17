@@ -43,7 +43,7 @@ class EventRuleEngine:
 
         # TODO: maybe save/cache the flattened/expanded pattern?
         flat_pattern_conditions = self.flatten_pattern(event_pattern)
-        flat_payloads = self.flatten_payload(payload)
+        flat_payloads = self.flatten_payload(payload, flat_pattern_conditions)
 
         return any(
             all(
@@ -58,9 +58,6 @@ class EventRuleEngine:
             )
             for flat_pattern in flat_pattern_conditions
         )
-
-    def _build_event_branches(self, pattern, event):
-        pass
 
     def _evaluate_condition(self, value, condition, field_exists: bool):
         if not isinstance(condition, dict):
@@ -150,7 +147,7 @@ class EventRuleEngine:
 
     @staticmethod
     def _evaluate_wildcard(condition: str, value: str) -> bool:
-        return re.match(re.escape(condition).replace("\\*", ".+") + "$", value)
+        return bool(re.match(re.escape(condition).replace("\\*", ".+") + "$", value))
 
     @staticmethod
     def _evaluate_numeric_condition(conditions: list, value: t.Any) -> bool:
@@ -240,18 +237,24 @@ class EventRuleEngine:
         return _traverse_event_pattern(nested_dict)
 
     @staticmethod
-    def flatten_payload(nested_dict: dict) -> list[dict]:
+    def flatten_payload(payload: dict, patterns: list[dict]) -> list[dict]:
         """
         Takes a dictionary as input and will output the dictionary on a single level.
         The dictionary can have lists containing other dictionaries, and one root level entry will be created for every
-        item in a list.
+        item in a list if it corresponds to the entries of the patterns.
         Input:
+        payload:
         `{"field1": {
             "field2: [
                 {"field3: "val1", "field4": "val2"},
                 {"field3: "val3", "field4": "val4"},
             }
         ]}`
+        patterns:
+        `[
+            "field1.field2.field3": <condition>,
+            "field1.field2.field4": <condition>,
+        ]`
         Output:
         `[
             {
@@ -263,16 +266,25 @@ class EventRuleEngine:
                 "field1.field2.field4": "val4"
             },
         ]`
-        :param nested_dict: a (nested) dictionary
+        :param payload: a (nested) dictionary, the event payload
+        :param patterns: the flattened patterns from the EventPattern (see flatten_pattern)
         :return: flatten_dict: a dictionary with no nested dict inside, flattened to a single level
         """
+        patterns_keys = {key for keys in patterns for key in keys}
+
+        def _is_key_in_patterns(key: str) -> bool:
+            return key is None or any(pattern_key.startswith(key) for pattern_key in patterns_keys)
 
         def _traverse(_object: dict, array=None, parent_key=None) -> list:
             if isinstance(_object, dict):
                 for key, values in _object.items():
-                    # We update the parent key do that {"key1": {"key2": ""}} becomes "key1.key2"
+                    # We update the parent key so that {"key1": {"key2": ""}} becomes "key1.key2"
                     _parent_key = f"{parent_key}.{key}" if parent_key else key
-                    array = _traverse(values, array, _parent_key)
+
+                    # we make sure that we are building only the relevant parts of the payload related to the pattern
+                    # the payload could be very complex, and the pattern only applies to part of it
+                    if _is_key_in_patterns(_parent_key):
+                        array = _traverse(values, array, _parent_key)
 
             elif isinstance(_object, list):
                 if not _object:
@@ -282,7 +294,7 @@ class EventRuleEngine:
                 array = [{**item, parent_key: _object} for item in array]
             return array
 
-        return _traverse(nested_dict, array=[{}], parent_key=None)
+        return _traverse(payload, array=[{}], parent_key=None)
 
 
 class EventPatternCompiler:
