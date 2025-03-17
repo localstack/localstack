@@ -45,10 +45,10 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
     def __init__(self, node_template: NodeTemplate):
         self._node_template = node_template
         self._resource_changes = list()
-        self.visit(self._node_template)
 
     def get_resource_changes(self) -> list[ResourceChange]:
         # TODO return 'list[Change]' instead.
+        self.visit(self._node_template)
         return [{"ResourceChange": change, "Type": "Resource"} for change in self._resource_changes]
 
     def visit(self, change_set_entity: ChangeSetEntity) -> DescribeUnit:
