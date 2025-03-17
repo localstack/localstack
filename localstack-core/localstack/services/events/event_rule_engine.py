@@ -51,13 +51,16 @@ class EventRuleEngine:
                     self._evaluate_condition(
                         flat_payload.get(key), condition, field_exists=key in flat_payload
                     )
-                    for condition in values
+                    for condition in conditions
                     for flat_payload in flat_payloads
                 )
-                for key, values in flat_pattern.items()
+                for key, conditions in flat_pattern.items()
             )
             for flat_pattern in flat_pattern_conditions
         )
+
+    def _build_event_branches(self, pattern, event):
+        pass
 
     def _evaluate_condition(self, value, condition, field_exists: bool):
         if not isinstance(condition, dict):
