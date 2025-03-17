@@ -58,7 +58,7 @@ class SubscriptionFilter:
 
         # TODO: maybe save/cache the flattened/expanded policy?
         flat_policy_conditions = self.flatten_policy(filter_policy)
-        flat_payloads = self.flatten_payload(payload)
+        flat_payloads = self.flatten_payload(payload, flat_policy_conditions)
 
         return any(
             all(
@@ -66,10 +66,10 @@ class SubscriptionFilter:
                     self._evaluate_condition(
                         flat_payload.get(key), condition, field_exists=key in flat_payload
                     )
-                    for condition in values
+                    for condition in conditions
                     for flat_payload in flat_payloads
                 )
-                for key, values in flat_policy.items()
+                for key, conditions in flat_policy.items()
             )
             for flat_policy in flat_policy_conditions
         )
@@ -218,18 +218,24 @@ class SubscriptionFilter:
         return _traverse_policy(nested_dict)
 
     @staticmethod
-    def flatten_payload(nested_dict: dict) -> list[dict]:
+    def flatten_payload(payload: dict, policy_conditions: list[dict]) -> list[dict]:
         """
         Takes a dictionary as input and will output the dictionary on a single level.
         The dictionary can have lists containing other dictionaries, and one root level entry will be created for every
-        item in a list.
+        item in a list if it corresponds to the entries of the policy conditions.
         Input:
+        payload:
         `{"field1": {
             "field2: [
                 {"field3": "val1", "field4": "val2"},
                 {"field3": "val3", "field4": "val4"}
             }
         ]}`
+        policy_conditions:
+        `[
+            "field1.field2.field3": <condition>,
+            "field1.field2.field4": <condition>,
+        ]`
         Output:
         `[
             {
@@ -241,16 +247,24 @@ class SubscriptionFilter:
                 "field1.field2.field4": "val4"
             }
         ]`
-        :param nested_dict: a (nested) dictionary
+        :param payload: a (nested) dictionary
         :return: flatten_dict: a dictionary with no nested dict inside, flattened to a single level
         """
+        policy_keys = {key for keys in policy_conditions for key in keys}
+
+        def _is_key_in_policy(key: str) -> bool:
+            return key is None or any(policy_key.startswith(key) for policy_key in policy_keys)
 
         def _traverse(_object: dict, array=None, parent_key=None) -> list:
             if isinstance(_object, dict):
                 for key, values in _object.items():
-                    # We update the parent key do that {"key1": {"key2": ""}} becomes "key1.key2"
+                    # We update the parent key so that {"key1": {"key2": ""}} becomes "key1.key2"
                     _parent_key = f"{parent_key}.{key}" if parent_key else key
-                    array = _traverse(values, array, _parent_key)
+
+                    # we make sure that we are building only the relevant parts of the payload related to the policy
+                    # the payload could be very complex, and the policy only applies to part of it
+                    if _is_key_in_policy(_parent_key):
+                        array = _traverse(values, array, _parent_key)
 
             elif isinstance(_object, list):
                 if not _object:
@@ -261,7 +275,7 @@ class SubscriptionFilter:
 
             return array
 
-        return _traverse(nested_dict, array=[{}], parent_key=None)
+        return _traverse(payload, array=[{}], parent_key=None)
 
 
 class FilterPolicyValidator:

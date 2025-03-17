@@ -1872,5 +1872,9 @@
         ]
       }
     }
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_large_complex_payload": {
+    "recorded-date": "17-03-2025, 12:37:52",
+    "recorded-content": {}
   }
 }
