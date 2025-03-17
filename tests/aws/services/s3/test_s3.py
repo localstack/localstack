@@ -6008,8 +6008,6 @@ class TestS3PresignedUrl:
 
     @markers.aws.validated
     def test_put_object(self, s3_bucket, snapshot, aws_client):
-        # big bug here in the old provider: PutObject gets the Expires param from the presigned url??
-        #  when it's supposed to be in the headers?
         snapshot.add_transformer(snapshot.transform.s3_api())
 
         key = "my-key"

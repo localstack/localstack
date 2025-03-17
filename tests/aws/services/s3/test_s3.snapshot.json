@@ -314,7 +314,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_get_object_attributes": {
-    "recorded-date": "21-01-2025, 18:27:28",
+    "recorded-date": "17-03-2025, 20:02:49",
     "recorded-content": {
       "object-attrs": {
         "Checksum": {
@@ -357,6 +357,10 @@
         }
       },
       "object-attrs-multiparts-2-parts-checksum": {
+        "Checksum": {
+          "ChecksumCRC64NVME": "VV86k746S6o=",
+          "ChecksumType": "FULL_OBJECT"
+        },
         "ETag": "5389a7fb9c7e4b97c90255e2ee5e57f7-2",
         "LastModified": "datetime",
         "ObjectSize": 5242965,
@@ -1892,10 +1896,12 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_copy_object_etag": {
-    "recorded-date": "21-01-2025, 18:32:55",
+    "recorded-date": "17-03-2025, 21:29:16",
     "recorded-content": {
       "multipart-upload": {
         "Bucket": "<bucket:1>",
+        "ChecksumCRC64NVME": "BsLNlKumA5I=",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"b972025bc34adf8d76d6d51e93c035cc-1\"",
         "Key": "test.file",
         "Location": "<location:1>",
@@ -1930,10 +1936,12 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_set_external_hostname": {
-    "recorded-date": "21-01-2025, 19:47:46",
+    "recorded-date": "17-03-2025, 21:30:10",
     "recorded-content": {
       "multipart-upload": {
         "Bucket": "<bucket:1>",
+        "ChecksumCRC64NVME": "BsLNlKumA5I=",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"b972025bc34adf8d76d6d51e93c035cc-1\"",
         "Key": "test.file",
         "Location": "<location:1>",
@@ -1945,6 +1953,8 @@
       },
       "get-object": {
         "Bucket": "<bucket:1>",
+        "ChecksumCRC64NVME": "BsLNlKumA5I=",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"b972025bc34adf8d76d6d51e93c035cc-1\"",
         "Key": "test.file",
         "Location": "<location:1>",
@@ -2713,11 +2723,13 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_put_object": {
-    "recorded-date": "21-01-2025, 18:22:45",
+    "recorded-date": "17-03-2025, 21:31:27",
     "recorded-content": {
       "get_object": {
         "AcceptRanges": "bytes",
         "Body": "",
+        "ChecksumCRC64NVME": "1BGd19PD4OU=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 9,
         "ContentType": "binary/octet-stream",
         "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
@@ -3816,7 +3828,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_request_expires": {
-    "recorded-date": "04-08-2023, 23:58:47",
+    "recorded-date": "17-03-2025, 20:16:24",
     "recorded-content": {
       "exception": {
         "Error": {
@@ -3830,7 +3842,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_request_malformed_policy[s3]": {
-    "recorded-date": "04-08-2023, 23:58:49",
+    "recorded-date": "17-03-2025, 20:16:26",
     "recorded-content": {
       "exception-policy": {
         "Error": {
@@ -3848,7 +3860,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_request_malformed_policy[s3v4]": {
-    "recorded-date": "04-08-2023, 23:58:51",
+    "recorded-date": "17-03-2025, 20:16:27",
     "recorded-content": {
       "exception-policy": {
         "Error": {
@@ -3866,7 +3878,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_request_missing_signature[s3]": {
-    "recorded-date": "04-08-2023, 23:58:52",
+    "recorded-date": "17-03-2025, 20:16:29",
     "recorded-content": {
       "exception-missing-signature": {
         "Error": {
@@ -3882,7 +3894,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_request_missing_signature[s3v4]": {
-    "recorded-date": "04-08-2023, 23:58:54",
+    "recorded-date": "17-03-2025, 20:16:30",
     "recorded-content": {
       "exception-missing-signature": {
         "Error": {
@@ -3898,7 +3910,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_request_missing_fields[s3]": {
-    "recorded-date": "04-08-2023, 23:58:56",
+    "recorded-date": "17-03-2025, 20:16:32",
     "recorded-content": {
       "exception-missing-fields": {
         "Error": {
@@ -3923,7 +3935,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_request_missing_fields[s3v4]": {
-    "recorded-date": "04-08-2023, 23:58:58",
+    "recorded-date": "17-03-2025, 20:16:34",
     "recorded-content": {
       "exception-missing-fields": {
         "Error": {
@@ -4111,7 +4123,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_and_list_parts": {
-    "recorded-date": "25-01-2025, 04:30:53",
+    "recorded-date": "17-03-2025, 21:28:50",
     "recorded-content": {
       "create-multipart": {
         "Bucket": "bucket",
@@ -4244,6 +4256,8 @@
       },
       "complete-multipart": {
         "Bucket": "bucket",
+        "ChecksumCRC64NVME": "CTXktO4pIQs=",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"e747540af6911dbc890f8d3e0b48549b-1\"",
         "Key": "test-list-parts",
         "Location": "<location:1>",
@@ -4279,6 +4293,8 @@
       },
       "head-multipart-checksum": {
         "AcceptRanges": "bytes",
+        "ChecksumCRC64NVME": "CTXktO4pIQs=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 65,
         "ContentType": "binary/octet-stream",
         "ETag": "\"e747540af6911dbc890f8d3e0b48549b-1\"",
@@ -4293,6 +4309,8 @@
       "get-multipart-checksum": {
         "AcceptRanges": "bytes",
         "Body": "upload-part-1upload-part-1upload-part-1upload-part-1upload-part-1",
+        "ChecksumCRC64NVME": "CTXktO4pIQs=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 65,
         "ContentType": "binary/octet-stream",
         "ETag": "\"e747540af6911dbc890f8d3e0b48549b-1\"",
@@ -4685,7 +4703,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_complete_multipart_parts_order": {
-    "recorded-date": "21-01-2025, 18:41:16",
+    "recorded-date": "17-03-2025, 21:30:44",
     "recorded-content": {
       "upload-part-negative-part-number": {
         "Error": {
@@ -4712,6 +4730,8 @@
       },
       "complete-multipart-ordered": {
         "Bucket": "bucket",
+        "ChecksumCRC64NVME": "Y8LhTZLfnr0=",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"c7cb0938a47e31f70cf07028d22e6913-3\"",
         "Key": "test-order-parts",
         "Location": "<location:1>",
@@ -4723,6 +4743,8 @@
       },
       "complete-multipart-with-step-2": {
         "Bucket": "bucket",
+        "ChecksumCRC64NVME": "Y8LhTZLfnr0=",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"c7cb0938a47e31f70cf07028d22e6913-3\"",
         "Key": "key-sequence-with-step-2",
         "Location": "<location:2>",
@@ -5845,7 +5867,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_multipart_upload_sse": {
-    "recorded-date": "21-01-2025, 18:42:33",
+    "recorded-date": "17-03-2025, 21:31:09",
     "recorded-content": {
       "multi-sse-create-multipart": {
         "Bucket": "<bucket>",
@@ -5862,7 +5884,7 @@
       "multi-sse-upload-part": {
         "BucketKeyEnabled": true,
         "ChecksumCRC32": "KHcEKQ==",
-        "ETag": "\"230725a9c06559c8c87b80db7d5f1e84\"",
+        "ETag": "\"f14c3faa9237b95312866412ecf80f93\"",
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
@@ -5873,7 +5895,7 @@
       "multi-sse-compete-multipart": {
         "Bucket": "<bucket>",
         "BucketKeyEnabled": true,
-        "ETag": "\"81a48c32a3853ad634226b64e92b21b9-1\"",
+        "ETag": "\"a35f284c9ce41d60640bd70f8069a276-1\"",
         "Key": "test-sse-field-multipart",
         "Location": "<location:1>",
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
@@ -5887,9 +5909,11 @@
         "AcceptRanges": "bytes",
         "Body": "test-sse",
         "BucketKeyEnabled": true,
+        "ChecksumCRC64NVME": "Kr7StX/uFlQ=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 8,
         "ContentType": "binary/octet-stream",
-        "ETag": "\"81a48c32a3853ad634226b64e92b21b9-1\"",
+        "ETag": "\"a35f284c9ce41d60640bd70f8069a276-1\"",
         "LastModified": "datetime",
         "Metadata": {},
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
@@ -10566,10 +10590,12 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_get_object_part": {
-    "recorded-date": "21-01-2025, 18:33:13",
+    "recorded-date": "17-03-2025, 21:30:00",
     "recorded-content": {
       "multipart-upload": {
         "Bucket": "<bucket:1>",
+        "ChecksumCRC64NVME": "44QnbGeotHE=",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"2848839dc84e13fa00a0944e760e233b-2\"",
         "Key": "test.file",
         "Location": "<location:1>",
@@ -10582,6 +10608,7 @@
       "head-object-part": {
         "AcceptRanges": "bytes",
         "ContentLength": 16,
+        "ContentRange": "bytes 5242896-5242911/5242912",
         "ContentType": "binary/octet-stream",
         "ETag": "\"2848839dc84e13fa00a0944e760e233b-2\"",
         "LastModified": "datetime",
@@ -10663,7 +10690,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_tags[single]": {
-    "recorded-date": "14-08-2023, 19:32:11",
+    "recorded-date": "17-03-2025, 20:16:38",
     "recorded-content": {
       "get-tagging": {
         "TagSet": [
@@ -10680,7 +10707,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_tags[list]": {
-    "recorded-date": "14-08-2023, 19:32:13",
+    "recorded-date": "17-03-2025, 20:16:39",
     "recorded-content": {
       "get-tagging": {
         "TagSet": [
@@ -10701,7 +10728,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_tags[invalid]": {
-    "recorded-date": "14-08-2023, 19:32:14",
+    "recorded-date": "17-03-2025, 20:16:41",
     "recorded-content": {
       "get-tagging": {
         "TagSet": [],
@@ -10713,7 +10740,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_tags[notxml]": {
-    "recorded-date": "14-08-2023, 19:32:16",
+    "recorded-date": "17-03-2025, 20:16:43",
     "recorded-content": {
       "tagging-error": {
         "Error": {
@@ -10726,7 +10753,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_metadata": {
-    "recorded-date": "23-09-2024, 11:01:18",
+    "recorded-date": "17-03-2025, 20:16:45",
     "recorded-content": {
       "head-object": {
         "AcceptRanges": "bytes",
@@ -10749,7 +10776,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_storage_class": {
-    "recorded-date": "14-08-2023, 20:14:49",
+    "recorded-date": "17-03-2025, 20:16:47",
     "recorded-content": {
       "head-object": {
         "AcceptRanges": "bytes",
@@ -11169,7 +11196,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_overwrite_key": {
-    "recorded-date": "21-01-2025, 18:32:53",
+    "recorded-date": "17-03-2025, 21:29:05",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "B18g1g==",
@@ -11183,6 +11210,8 @@
       },
       "multipart-upload": {
         "Bucket": "<bucket:1>",
+        "ChecksumCRC64NVME": "BsLNlKumA5I=",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"b972025bc34adf8d76d6d51e93c035cc-1\"",
         "Key": "test.file",
         "Location": "<location:1>",
@@ -11708,10 +11737,12 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_v4_x_amz_in_qs": {
-    "recorded-date": "22-01-2025, 18:21:12",
+    "recorded-date": "17-03-2025, 21:32:11",
     "recorded-content": {
       "head-object": {
         "AcceptRanges": "bytes",
+        "ChecksumCRC64NVME": "CVmbZh4IWzA=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 6,
         "ContentType": "binary/octet-stream",
         "ETag": "\"e10adc3949ba59abbe56e057f20f883e\"",
@@ -12077,7 +12108,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_wrong_content_type": {
-    "recorded-date": "23-02-2024, 23:47:44",
+    "recorded-date": "17-03-2025, 20:16:49",
     "recorded-content": {
       "invalid-content-type-error": {
         "Error": {
@@ -12091,7 +12122,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_file_as_string": {
-    "recorded-date": "24-02-2024, 01:01:59",
+    "recorded-date": "17-03-2025, 20:16:51",
     "recorded-content": {
       "head-object": {
         "AcceptRanges": "bytes",
@@ -12109,6 +12140,10 @@
       "list-objects": {
         "Contents": [
           {
+            "ChecksumAlgorithm": [
+              "CRC64NVME"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"31ac3a102af06a3d79f0172d01158b49\"",
             "Key": "file-as-field-${filename}",
             "LastModified": "datetime",
@@ -12116,6 +12151,10 @@
             "StorageClass": "STANDARD"
           },
           {
+            "ChecksumAlgorithm": [
+              "CRC64NVME"
+            ],
+            "ChecksumType": "FULL_OBJECT",
             "ETag": "\"518feee9a33977e5047cda470999729a\"",
             "Key": "test-presigned-post-file-as-field",
             "LastModified": "datetime",
@@ -12326,7 +12365,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_validation_size": {
-    "recorded-date": "24-05-2024, 11:43:48",
+    "recorded-date": "17-03-2025, 20:17:02",
     "recorded-content": {
       "invalid-content-length-too-big": {
         "Error": {
@@ -12351,6 +12390,8 @@
       "final-object": {
         "AcceptRanges": "bytes",
         "Body": "aaaaaaaaaa",
+        "ChecksumCRC64NVME": "DBqAA21lxVU=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 10,
         "ContentType": "binary/octet-stream",
         "ETag": "\"e09c80c42fda55f9d992e59ca6b3307d\"",
@@ -12373,7 +12414,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_conditions_validation_eq": {
-    "recorded-date": "23-09-2024, 11:02:16",
+    "recorded-date": "17-03-2025, 20:16:55",
     "recorded-content": {
       "invalid-condition-eq": {
         "Error": {
@@ -12428,6 +12469,8 @@
       "final-object": {
         "AcceptRanges": "bytes",
         "Body": "abcdef",
+        "ChecksumCRC64NVME": "Pact6XRTYyA=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 6,
         "ContentType": "binary/octet-stream",
         "ETag": "\"e80b5017098950fc58aad83c8c14978e\"",
@@ -12442,7 +12485,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_conditions_validation_starts_with": {
-    "recorded-date": "24-05-2024, 15:11:14",
+    "recorded-date": "17-03-2025, 20:16:58",
     "recorded-content": {
       "invalid-condition-starts-with": {
         "Error": {
@@ -12463,6 +12506,8 @@
       "get-object-1": {
         "AcceptRanges": "bytes",
         "Body": "abcdef",
+        "ChecksumCRC64NVME": "Pact6XRTYyA=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 6,
         "ContentType": "binary/octet-stream",
         "ETag": "\"e80b5017098950fc58aad83c8c14978e\"",
@@ -12477,6 +12522,8 @@
       "get-object-2": {
         "AcceptRanges": "bytes",
         "Body": "manual value to change ETag",
+        "ChecksumCRC64NVME": "wSCEAfbAYnk=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 27,
         "ContentType": "binary/octet-stream",
         "ETag": "\"365cb4550a52593ad95c6b31242d7418\"",
@@ -12491,11 +12538,13 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_presigned_post_with_different_user_credentials": {
-    "recorded-date": "24-04-2024, 18:30:08",
+    "recorded-date": "17-03-2025, 20:17:16",
     "recorded-content": {
       "get-obj": {
         "AcceptRanges": "bytes",
         "Body": "abcdef",
+        "ChecksumCRC64NVME": "Pact6XRTYyA=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 6,
         "ContentType": "binary/octet-stream",
         "ETag": "\"e80b5017098950fc58aad83c8c14978e\"",
@@ -13034,7 +13083,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_multipart_upload_sse_c": {
-    "recorded-date": "21-01-2025, 18:16:40",
+    "recorded-date": "17-03-2025, 21:34:32",
     "recorded-content": {
       "create-mpu-sse-c": {
         "Bucket": "bucket",
@@ -13049,7 +13098,7 @@
       },
       "upload-part-0": {
         "ChecksumCRC32": "NRU+Sw==",
-        "ETag": "\"0bc32028156f0a0824de3e912be373db\"",
+        "ETag": "\"2e960c4b94e486be11c78ba6c86b6fda\"",
         "SSECustomerAlgorithm": "AES256",
         "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
         "ResponseMetadata": {
@@ -13059,7 +13108,7 @@
       },
       "upload-part-1": {
         "ChecksumCRC32": "NRU+Sw==",
-        "ETag": "\"18a97f25eb6e4debd5deef792d7b7a21\"",
+        "ETag": "\"24f6f4a1bdd67169ce59651fac021078\"",
         "SSECustomerAlgorithm": "AES256",
         "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
         "ResponseMetadata": {
@@ -13069,7 +13118,7 @@
       },
       "upload-part-2": {
         "ChecksumCRC32": "NRU+Sw==",
-        "ETag": "\"bb00467760ee667403f460d4bda6316d\"",
+        "ETag": "\"ae76fff9e666ed1a03aba6285219889b\"",
         "SSECustomerAlgorithm": "AES256",
         "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
         "ResponseMetadata": {
@@ -13094,19 +13143,19 @@
         "PartNumberMarker": 0,
         "Parts": [
           {
-            "ETag": "\"0bc32028156f0a0824de3e912be373db\"",
+            "ETag": "\"2e960c4b94e486be11c78ba6c86b6fda\"",
             "LastModified": "datetime",
             "PartNumber": 1,
             "Size": 5242881
           },
           {
-            "ETag": "\"18a97f25eb6e4debd5deef792d7b7a21\"",
+            "ETag": "\"24f6f4a1bdd67169ce59651fac021078\"",
             "LastModified": "datetime",
             "PartNumber": 2,
             "Size": 5242881
           },
           {
-            "ETag": "\"bb00467760ee667403f460d4bda6316d\"",
+            "ETag": "\"ae76fff9e666ed1a03aba6285219889b\"",
             "LastModified": "datetime",
             "PartNumber": 3,
             "Size": 5242881
@@ -13121,7 +13170,7 @@
       },
       "complete-multipart-checksum": {
         "Bucket": "bucket",
-        "ETag": "\"32eee733a67677c2fc971ffe9b8c481f-3\"",
+        "ETag": "\"e77ec98154b07be86f8d0b04619daa82-3\"",
         "Key": "test-sse-c-multipart",
         "Location": "<location:1>",
         "ResponseMetadata": {
@@ -13144,7 +13193,7 @@
         "Body": "",
         "ContentLength": 15728643,
         "ContentType": "binary/octet-stream",
-        "ETag": "\"32eee733a67677c2fc971ffe9b8c481f-3\"",
+        "ETag": "\"e77ec98154b07be86f8d0b04619daa82-3\"",
         "LastModified": "datetime",
         "Metadata": {},
         "SSECustomerAlgorithm": "AES256",
