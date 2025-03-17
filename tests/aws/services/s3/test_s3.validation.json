@@ -150,7 +150,7 @@
     "last_validated_date": "2025-01-21T18:27:42+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_copy_object_etag": {
-    "last_validated_date": "2025-03-17T21:29:16+00:00"
+    "last_validated_date": "2025-03-17T23:02:42+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_no_such_upload": {
     "last_validated_date": "2025-01-21T18:27:38+00:00"
@@ -362,6 +362,21 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_with_checksum[SHA256]": {
     "last_validated_date": "2025-01-24T19:06:36+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_with_default_checksum[CRC32C]": {
+    "last_validated_date": "2025-03-17T22:17:06+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_with_default_checksum[CRC32]": {
+    "last_validated_date": "2025-03-17T22:17:03+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_with_default_checksum[CRC64NVME]": {
+    "last_validated_date": "2025-03-17T22:17:13+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_with_default_checksum[SHA1]": {
+    "last_validated_date": "2025-03-17T22:17:08+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_with_default_checksum[SHA256]": {
+    "last_validated_date": "2025-03-17T22:17:11+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_wrong_format": {
     "last_validated_date": "2025-01-21T18:29:58+00:00"
   },
@@ -561,28 +576,28 @@
     "last_validated_date": "2023-08-14T20:35:53+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_composite[CRC32C]": {
-    "last_validated_date": "2025-03-17T18:19:59+00:00"
+    "last_validated_date": "2025-03-17T22:35:48+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_composite[CRC32]": {
-    "last_validated_date": "2025-03-17T18:19:53+00:00"
+    "last_validated_date": "2025-03-17T22:35:34+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_composite[SHA1]": {
-    "last_validated_date": "2025-03-17T18:20:05+00:00"
+    "last_validated_date": "2025-03-17T22:36:04+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_composite[SHA256]": {
-    "last_validated_date": "2025-03-17T18:20:10+00:00"
+    "last_validated_date": "2025-03-17T22:36:19+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_default": {
-    "last_validated_date": "2025-03-17T19:08:17+00:00"
+    "last_validated_date": "2025-03-17T22:36:46+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_full_object[CRC32C]": {
-    "last_validated_date": "2025-03-17T18:21:39+00:00"
+    "last_validated_date": "2025-03-17T22:59:31+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_full_object[CRC32]": {
-    "last_validated_date": "2025-03-17T18:21:34+00:00"
+    "last_validated_date": "2025-03-17T22:59:16+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_full_object[CRC64NVME]": {
-    "last_validated_date": "2025-03-17T18:21:45+00:00"
+    "last_validated_date": "2025-03-17T22:59:46+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_full_object_default": {
     "last_validated_date": "2025-03-17T18:22:27+00:00"
@@ -912,7 +927,7 @@
     "last_validated_date": "2025-03-17T18:29:05+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3PutObjectChecksum::test_s3_checksum_no_automatic_sdk_calculation": {
-    "last_validated_date": "2025-03-17T18:29:08+00:00"
+    "last_validated_date": "2025-03-17T22:25:43+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3PutObjectChecksum::test_s3_checksum_with_content_encoding": {
     "last_validated_date": "2025-03-17T18:29:02+00:00"
@@ -939,7 +954,7 @@
     "last_validated_date": "2025-01-21T18:16:26+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_multipart_upload_sse_c": {
-    "last_validated_date": "2025-03-17T21:34:32+00:00"
+    "last_validated_date": "2025-03-17T22:55:35+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_multipart_upload_sse_c_validation": {
     "last_validated_date": "2025-01-21T18:16:43+00:00"

@@ -1096,6 +1096,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if range_data:
             response["ContentLength"] = range_data.content_length
+            response["ContentRange"] = range_data.content_range
             response["StatusCode"] = 206
 
         add_encryption_to_response(response, s3_object=s3_object)
@@ -1475,6 +1476,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         acl = get_access_control_policy_for_new_resource_request(
             request, owner=dest_s3_bucket.owner
         )
+        checksum_algorithm = request.get("ChecksumAlgorithm")
 
         s3_object = S3Object(
             key=dest_key,
@@ -1484,7 +1486,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             expires=request.get("Expires"),
             user_metadata=user_metadata,
             system_metadata=system_metadata,
-            checksum_algorithm=request.get("ChecksumAlgorithm") or src_s3_object.checksum_algorithm,
+            checksum_algorithm=checksum_algorithm or src_s3_object.checksum_algorithm,
             encryption=encryption_parameters.encryption,
             kms_key_id=encryption_parameters.kms_key_id,
             bucket_key_enabled=request.get(
@@ -2180,6 +2182,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             owner=s3_bucket.owner,
             precondition=object_exists_for_precondition_write(s3_bucket, key),
         )
+        # it seems if there is SSE-C on the multipart, AWS S3 will override the default Checksum behavior (but not on
+        # PutObject)
+        if sse_c_key_md5:
+            s3_multipart.object.checksum_algorithm = None
 
         s3_bucket.multiparts[s3_multipart.id] = s3_multipart
 
