@@ -2593,7 +2593,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         stored_multipart.complete_multipart(
             [s3_multipart.parts.get(part_number) for part_number in parts_numbers]
         )
-        if not s3_multipart.checksum_algorithm:
+        if not s3_multipart.checksum_algorithm and s3_multipart.object.checksum_algorithm:
             with self._storage_backend.open(
                 bucket, s3_multipart.object, mode="r"
             ) as s3_stored_object:
