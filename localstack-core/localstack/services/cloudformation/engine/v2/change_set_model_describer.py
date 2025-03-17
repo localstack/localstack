@@ -51,9 +51,10 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         self._node_template = node_template
         self._changes = list()
         self._describe_unit_cache = dict()
-        self.visit(self._node_template)
+        self._resource_changes = list()
 
     def get_changes(self) -> cfn_api.Changes:
+        self.visit(self._node_template)
         return self._changes
 
     @staticmethod
