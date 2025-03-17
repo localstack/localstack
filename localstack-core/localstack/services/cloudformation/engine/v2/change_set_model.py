@@ -7,6 +7,7 @@ from typing import Any, Final, Generator, Optional, Union, cast
 
 from typing_extensions import TypeVar
 
+from localstack.aws.api.cloudformation import ChangeAction
 from localstack.utils.strings import camel_to_snake_case
 
 T = TypeVar("T")
@@ -65,6 +66,15 @@ class ChangeType(enum.Enum):
 
     def __str__(self):
         return self.value
+
+    def to_action(self) -> ChangeAction | None:
+        match self:
+            case self.CREATED:
+                return ChangeAction.Add
+            case self.MODIFIED:
+                return ChangeAction.Modify
+            case self.REMOVED:
+                return ChangeAction.Remove
 
     def for_child(self, child_change_type: ChangeType) -> ChangeType:
         if child_change_type == self:
