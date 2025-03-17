@@ -284,6 +284,8 @@ class CloudformationProviderV2(CloudformationProvider):
             change_set.update_graph,
             account_id=context.account_id,
             region=context.region,
+            stack_name=change_set.stack.stack_name,
+            stack_id=change_set.stack.stack_id,
         )
         change_set_executor.execute()
         change_set.stack.set_stack_status("CREATE_COMPLETE")
