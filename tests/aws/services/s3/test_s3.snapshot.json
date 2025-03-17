@@ -10753,7 +10753,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_metadata": {
-    "recorded-date": "17-03-2025, 20:16:45",
+    "recorded-date": "17-03-2025, 21:56:03",
     "recorded-content": {
       "head-object": {
         "AcceptRanges": "bytes",
@@ -16743,6 +16743,26 @@
         },
         "ETag": "e2c3da976e66ec9e7dc128fbc782fc91-1",
         "LastModified": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_default_checksum": {
+    "recorded-date": "17-03-2025, 21:46:24",
+    "recorded-content": {
+      "head-object": {
+        "AcceptRanges": "bytes",
+        "ChecksumCRC64NVME": "L1qdhyEV1JY=",
+        "ChecksumType": "FULL_OBJECT",
+        "ContentLength": 17,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"a7d8531d918474360de3e2eaeb110cda\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

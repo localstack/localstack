@@ -10021,9 +10021,6 @@ class TestS3PresignedPost:
         )
 
     @markers.aws.validated
-    @pytest.mark.skip(
-        reason="failing sporadically with new HTTP gateway (only in CI)",
-    )
     def test_post_object_with_files(self, s3_bucket, aws_client):
         object_key = "test-presigned-post-key"
 
@@ -10223,9 +10220,6 @@ class TestS3PresignedPost:
         snapshot.match("exception-no-sig-related-fields", exception)
 
     @markers.aws.validated
-    @pytest.mark.skip(
-        reason="sporadically failing in CI: presigned-post does not set the body, and then etag is wrong",
-    )
     def test_s3_presigned_post_success_action_status_201_response(
         self, s3_bucket, aws_client, region_name
     ):
@@ -10505,6 +10499,33 @@ class TestS3PresignedPost:
 
         assert response.status_code == 412
         snapshot.match("invalid-content-type-error", xmltodict.parse(response.content))
+
+    @markers.aws.validated
+    def test_post_object_default_checksum(self, s3_bucket, aws_client, snapshot):
+        object_key = "test-presigned-post-checksum"
+
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Conditions=[{"bucket": s3_bucket}],
+        )
+
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "test-body-tagging"},
+            verify=False,
+        )
+        assert response.status_code == 204
+        assert "x-amz-checksum-crc64nvme" in response.headers
+        assert response.headers["x-amz-checksum-type"] == "FULL_OBJECT"
+
+        head_object = aws_client.s3.head_object(
+            Bucket=s3_bucket, Key=object_key, ChecksumMode="ENABLED"
+        )
+        snapshot.match("head-object", head_object)
+        assert head_object["ChecksumCRC64NVME"] == response.headers["x-amz-checksum-crc64nvme"]
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(

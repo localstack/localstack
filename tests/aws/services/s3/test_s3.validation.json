@@ -692,6 +692,9 @@
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_s3_object_retention_exc": {
     "last_validated_date": "2025-01-23T11:12:34+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_default_checksum": {
+    "last_validated_date": "2025-03-17T21:46:24+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_conditions_validation_eq": {
     "last_validated_date": "2025-03-17T20:16:55+00:00"
   },
@@ -705,7 +708,7 @@
     "last_validated_date": "2025-03-17T20:16:51+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_metadata": {
-    "last_validated_date": "2025-03-17T20:16:45+00:00"
+    "last_validated_date": "2025-03-17T21:56:03+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_storage_class": {
     "last_validated_date": "2025-03-17T20:16:47+00:00"

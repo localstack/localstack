@@ -4308,7 +4308,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         with self._storage_backend.open(bucket, s3_object, mode="w") as s3_stored_object:
             s3_stored_object.write(stream)
 
-            if checksum_algorithm and s3_object.checksum_value != s3_stored_object.checksum:
+            if not s3_object.checksum_value:
+                s3_object.checksum_value = s3_stored_object.checksum
+
+            elif checksum_algorithm and s3_object.checksum_value != s3_stored_object.checksum:
                 self._storage_backend.remove(bucket, s3_object)
                 raise InvalidRequest(
                     f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
@@ -4354,7 +4357,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["VersionId"] = s3_object.version_id
 
         if s3_object.checksum_algorithm:
-            response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
+            response[f"Checksum{s3_object.checksum_algorithm.upper()}"] = s3_object.checksum_value
+            response["ChecksumType"] = ChecksumType.FULL_OBJECT
 
         if s3_bucket.lifecycle_rules:
             if expiration_header := self._get_expiration_header(
