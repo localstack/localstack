@@ -286,6 +286,7 @@ class CloudformationProviderV2(CloudformationProvider):
             region=context.region,
             stack_name=change_set.stack.stack_name,
             stack_id=change_set.stack.stack_id,
+            resources=change_set.stack.resources,
         )
         change_set_executor.execute()
         change_set.stack.set_stack_status("CREATE_COMPLETE")

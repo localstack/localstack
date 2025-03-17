@@ -35,12 +35,15 @@ class ChangeSetModelExecutor(ChangeSetModelDescriber):
         region: str,
         stack_name: str,
         stack_id: str,
+        # XXX legacy: we need to update the external state to keep the implementation
+        resources: dict,
     ):
         super().__init__(node_template)
         self.account_id = account_id
         self.region = region
         self.stack_name = stack_name
         self.stack_id = stack_id
+        self.resources = resources
 
     def execute(self):
         self.visit(self._node_template)
@@ -78,7 +81,13 @@ class ChangeSetModelExecutor(ChangeSetModelDescriber):
         else:
             event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
 
+        self.resources.setdefault(node_resource.name, {"Properties": {}})
         match event.status:
+            case OperationStatus.SUCCESS:
+                # merge the resources state with the external state
+                # TODO: this is likely a duplicate of updating from extra_resource_properties
+                self.resources[node_resource.name]["Properties"].update(event.resource_model)
+                self.resources[node_resource.name].update(extra_resource_properties)
             case any:
                 raise NotImplementedError(f"Event status '{any}' not handled")
 
