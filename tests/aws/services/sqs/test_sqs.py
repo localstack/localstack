@@ -145,14 +145,12 @@ class TestSqsProvider:
 
     @markers.aws.validated
     def test_list_queues_pagination(self, sqs_create_queue, aws_client, snapshot):
-
         queue_names = [f"test-queue-{short_uid()}" for _ in range(10)]
 
         queue_urls = []
         for name in queue_names:
             sqs_create_queue(QueueName=name)
-            queue_url = aws_client.sqs.get_queue_url(QueueName=name)[
-                "QueueUrl"]
+            queue_url = aws_client.sqs.get_queue_url(QueueName=name)["QueueUrl"]
             queue_urls.append(queue_url)
 
         list_all = aws_client.sqs.list_queues()
@@ -172,9 +170,6 @@ class TestSqsProvider:
         assert "NextToken" not in list_remaining
         assert len(list_remaining["QueueUrls"]) == 8
         snapshot.match("list_remaining", list_remaining)
-
-
-
 
     @markers.aws.validated
     def test_create_queue_and_get_attributes(self, sqs_queue, aws_sqs_client):

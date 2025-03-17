@@ -1,3 +1,4 @@
+import base64
 import copy
 import hashlib
 import json
@@ -5,7 +6,6 @@ import logging
 import re
 import threading
 import time
-import base64
 from concurrent.futures.thread import ThreadPoolExecutor
 from itertools import islice
 from typing import Dict, Iterable, List, Literal, Optional, Tuple
@@ -110,12 +110,12 @@ from localstack.utils.cloudwatch.cloudwatch_util import (
     publish_sqs_metric,
     publish_sqs_metric_batch,
 )
+from localstack.utils.collections import PaginatedList
 from localstack.utils.run import FuncThread
 from localstack.utils.scheduler import Scheduler
 from localstack.utils.strings import md5
 from localstack.utils.threads import start_thread
 from localstack.utils.time import now
-from localstack.utils.collections import PaginatedList
 
 LOG = logging.getLogger(__name__)
 
@@ -991,19 +991,16 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         paginated_list = PaginatedList(urls)
 
         def token_generator(item: str) -> str:
-            base64_bytes = base64.b64encode(item.encode('utf-8'))
-            next_token = base64_bytes.decode('utf-8')
+            base64_bytes = base64.b64encode(item.encode("utf-8"))
+            next_token = base64_bytes.decode("utf-8")
             return next_token
 
         page_size = max_results if max_results else MAX_RESULT_LIMIT
         paginated_urls, next_token = paginated_list.get_page(
-            token_generator=token_generator,
-            next_token=next_token,
-            page_size=page_size
+            token_generator=token_generator, next_token=next_token, page_size=page_size
         )
 
         return ListQueuesResult(QueueUrls=paginated_urls, NextToken=next_token)
-
 
     def change_message_visibility(
         self,
