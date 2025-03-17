@@ -41,7 +41,7 @@ class UsageMetricsStaticAnalyser(StaticAnalyser):
 
             # Count.
             UsageMetrics.language_features_counter.labels(
-                query_language=language_used, variables=uses_variables
+                query_language=language_used, uses_variables=uses_variables
             ).increment()
         except Exception as e:
             LOG.warning(
