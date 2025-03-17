@@ -21,19 +21,26 @@ from tests.aws.services.cloudformation.api.test_stacks import (
 
 @markers.aws.unknown
 def test_foo(aws_client: ServiceLevelClientFactory, deploy_cfn_template):
+    parameter_name = "my-parameter"
+    value = "foo"
+
     t1 = {
         "Resources": {
             "MyParameter": {
                 "Type": "AWS::SSM::Parameter",
                 "Properties": {
+                    "Name": parameter_name,
                     "Type": "String",
-                    "Value": "foo",
+                    "Value": value,
                 },
             },
         },
     }
 
     deploy_cfn_template(template=json.dumps(t1))
+
+    found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+    assert found_value == value
 
 
 @markers.aws.validated
