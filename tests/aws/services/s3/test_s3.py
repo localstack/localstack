@@ -12587,6 +12587,75 @@ class TestS3MultipartUploadChecksum:
         snapshot.match("get-object-attrs", object_attrs)
 
     @markers.aws.validated
+    def test_complete_multipart_parts_checksum_full_object_default(
+        self, s3_bucket, snapshot, aws_client
+    ):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value("ID", reference_replacement=False),
+            ]
+        )
+
+        key_name = "test-multipart-checksum"
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket, Key=key_name, ChecksumAlgorithm="CRC64NVME"
+        )
+        snapshot.match("create-mpu-checksum-crc64", response)
+        upload_id = response["UploadId"]
+
+        data = b"aaa"
+
+        upload_part = aws_client.s3.upload_part(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body=data,
+            PartNumber=1,
+            UploadId=upload_id,
+            ChecksumAlgorithm="CRC64NVME",
+        )
+        snapshot.match("upload-part", upload_part)
+
+        # complete with no checksum type specified, just all default values
+        response = aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={
+                "Parts": [
+                    {
+                        "ETag": upload_part["ETag"],
+                        "PartNumber": 1,
+                        "ChecksumCRC64NVME": upload_part["ChecksumCRC64NVME"],
+                    }
+                ]
+            },
+            UploadId=upload_id,
+        )
+        snapshot.match("complete-multipart-checksum", response)
+
+        get_object_with_checksum = aws_client.s3.get_object(
+            Bucket=s3_bucket, Key=key_name, ChecksumMode="ENABLED"
+        )
+        # empty the stream
+        get_object_with_checksum["Body"].read()
+        snapshot.match("get-object-with-checksum", get_object_with_checksum)
+
+        head_object_with_checksum = aws_client.s3.head_object(
+            Bucket=s3_bucket, Key=key_name, ChecksumMode="ENABLED"
+        )
+        snapshot.match("head-object-with-checksum", head_object_with_checksum)
+
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=key_name,
+            ObjectAttributes=["Checksum", "ETag"],
+        )
+        snapshot.match("get-object-attrs", object_attrs)
+
+    @markers.aws.validated
     def test_multipart_size_validation(self, aws_client, s3_bucket, snapshot):
         snapshot.add_transformer(
             [
@@ -12598,6 +12667,7 @@ class TestS3MultipartUploadChecksum:
         # test the default ChecksumType for each ChecksumAlgorithm
         key_name = "test-multipart-size"
         response = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("create-mpu", response)
         upload_id = response["UploadId"]
 
         data = b"aaaa"
@@ -12636,6 +12706,15 @@ class TestS3MultipartUploadChecksum:
             MpuObjectSize=len(data),
         )
         snapshot.match("complete-multipart-good-size", success)
+
+        # AWS returns the default CRC64NVME checksum in every operation (CompleteMPU, GetObject, HeadObject) but not
+        # in GetObjectAttributes...
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=key_name,
+            ObjectAttributes=["Checksum", "ETag"],
+        )
+        snapshot.match("get-object-attrs", object_attrs)
 
 
 def _s3_client_pre_signed_client(conf: Config, endpoint_url: str = None):

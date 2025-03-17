@@ -786,7 +786,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             s3_stored_object.write(body)
 
             if s3_object.checksum_algorithm:
-                if not validate_checksum_value(s3_object.checksum_value, checksum_algorithm):
+                if not s3_object.checksum_value:
+                    s3_object.checksum_value = s3_stored_object.checksum
+                elif not validate_checksum_value(s3_object.checksum_value, checksum_algorithm):
                     self._storage_backend.remove(bucket_name, s3_object)
                     raise InvalidRequest(
                         f"Value for x-amz-checksum-{s3_object.checksum_algorithm.lower()} header is invalid."
@@ -1066,6 +1068,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if checksum_algorithm := s3_object.checksum_algorithm:
             if (request.get("ChecksumMode") or "").upper() == "ENABLED":
                 response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
+                response["ChecksumType"] = getattr(
+                    s3_object, "checksum_type", ChecksumType.FULL_OBJECT
+                )
 
         if s3_object.parts and request.get("PartNumber"):
             response["PartsCount"] = len(s3_object.parts)
@@ -2286,7 +2291,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
             body = AwsChunkedDecoder(body, decoded_content_length, s3_part)
 
-        if s3_part.checksum_algorithm != s3_multipart.object.checksum_algorithm:
+        if (
+            s3_multipart.checksum_algorithm
+            and s3_part.checksum_algorithm != s3_multipart.checksum_algorithm
+        ):
             error_req_checksum = checksum_algorithm.lower() if checksum_algorithm else "null"
             error_mp_checksum = (
                 s3_multipart.object.checksum_algorithm.lower()
@@ -2525,7 +2533,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 UploadId=upload_id,
             )
 
-        mpu_checksum_algorithm = s3_multipart.object.checksum_algorithm
+        mpu_checksum_algorithm = s3_multipart.checksum_algorithm
         mpu_checksum_type = getattr(s3_multipart, "checksum_type", None)
 
         if checksum_type and checksum_type != mpu_checksum_type:
@@ -2555,24 +2563,36 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             s3_multipart.complete_multipart(
                 parts, mpu_size=mpu_object_size, validation_checksum=checksum_value
             )
+            if mpu_checksum_algorithm and (
+                (
+                    checksum_value
+                    and mpu_checksum_type == ChecksumType.FULL_OBJECT
+                    and not checksum_type
+                )
+                or any(
+                    checksum_value
+                    for checksum_type, checksum_value in checksum_map.items()
+                    if checksum_type != checksum_algorithm
+                )
+            ):
+                # this is not ideal, but this validation comes last... after the validation of individual parts
+                s3_multipart.object.parts.clear()
+                raise BadDigest(
+                    f"The {mpu_checksum_algorithm.lower()} you specified did not match the calculated checksum."
+                )
         else:
             s3_multipart.complete_multipart(parts)
-
-        if (
-            mpu_checksum_algorithm
-            and not checksum_type
-            and mpu_checksum_type == ChecksumType.FULL_OBJECT
-        ):
-            # this is not ideal, but this validation comes last... after the validation of individual parts
-            s3_multipart.object.parts.clear()
-            raise BadDigest(
-                f"The {mpu_checksum_algorithm.lower()} you specified did not match the calculated checksum."
-            )
 
         stored_multipart = self._storage_backend.get_multipart(bucket, s3_multipart)
         stored_multipart.complete_multipart(
             [s3_multipart.parts.get(part_number) for part_number in parts_numbers]
         )
+        if not s3_multipart.checksum_algorithm:
+            with self._storage_backend.open(
+                bucket, s3_multipart.object, mode="r"
+            ) as s3_stored_object:
+                s3_multipart.object.checksum_value = s3_stored_object.checksum
+                s3_multipart.object.checksum_type = ChecksumType.FULL_OBJECT
 
         s3_object = s3_multipart.object
 
@@ -2601,7 +2621,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if s3_object.checksum_algorithm:
             response[f"Checksum{s3_object.checksum_algorithm.upper()}"] = s3_object.checksum_value
-            response["ChecksumType"] = mpu_checksum_type
+            response["ChecksumType"] = s3_object.checksum_type
 
         if s3_object.expiration:
             response["Expiration"] = s3_object.expiration  # TODO: properly parse the datetime
@@ -2691,7 +2711,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 PartNumber=part_number,
                 Size=part.size,
             )
-            if s3_multipart.object.checksum_algorithm:
+            if s3_multipart.checksum_algorithm:
                 part_item[f"Checksum{part.checksum_algorithm.upper()}"] = part.checksum_value
 
             parts.append(part_item)
@@ -2720,7 +2740,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if part_number_marker:
             response["PartNumberMarker"] = part_number_marker
-        if s3_multipart.object.checksum_algorithm:
+        if s3_multipart.checksum_algorithm:
             response["ChecksumAlgorithm"] = s3_multipart.object.checksum_algorithm
             response["ChecksumType"] = getattr(s3_multipart, "checksum_type", None)
 
@@ -2820,8 +2840,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     Owner=multipart.initiator,  # TODO: check the difference
                     Initiator=multipart.initiator,
                 )
-                if multipart.object.checksum_algorithm:
-                    multipart_upload["ChecksumAlgorithm"] = multipart.object.checksum_algorithm
+                if multipart.checksum_algorithm:
+                    multipart_upload["ChecksumAlgorithm"] = multipart.checksum_algorithm
                     multipart_upload["ChecksumType"] = getattr(multipart, "checksum_type", None)
 
                 uploads.append(multipart_upload)
