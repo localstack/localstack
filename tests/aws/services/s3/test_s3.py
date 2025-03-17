@@ -11728,6 +11728,58 @@ class TestS3SSECEncryption:
         )
         snapshot.match("get-obj-sse-c-version-1", get_version_1_obj)
 
+    @markers.aws.validated
+    def test_put_object_default_checksum_with_sse_c(
+        self, aws_client, s3_bucket, snapshot, aws_http_client_factory
+    ):
+        cus_key, cus_key_md5 = self.get_encryption_key_b64_and_md5(self.ENCRYPTION_KEY)
+        headers = {
+            "x-amz-content-sha256": "UNSIGNED-PAYLOAD",
+            "x-amz-server-side-encryption-customer-algorithm": "AES256",
+            "x-amz-server-side-encryption-customer-key": cus_key,
+            "x-amz-server-side-encryption-customer-key-MD5": cus_key_md5,
+        }
+        data = b"test data.."
+
+        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+        bucket_url = _bucket_url(s3_bucket)
+
+        no_checksum_key_sse_c = "test-sse-c"
+
+        # https://docs.aws.amazon.com/sdkref/latest/guide/feature-dataintegrity.html
+        no_checksum_put_object_url = f"{bucket_url}/{no_checksum_key_sse_c}"
+        resp = s3_http_client.put(no_checksum_put_object_url, headers=headers, data=data)
+        assert resp.ok
+
+        head_obj = aws_client.s3.head_object(
+            Bucket=s3_bucket,
+            Key=no_checksum_key_sse_c,
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key,
+            SSECustomerKeyMD5=cus_key_md5,
+            ChecksumMode="ENABLED",
+        )
+        snapshot.match("head-obj-sse-c", head_obj)
+
+        get_obj = aws_client.s3.get_object(
+            Bucket=s3_bucket,
+            Key=no_checksum_key_sse_c,
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key,
+            SSECustomerKeyMD5=cus_key_md5,
+        )
+        snapshot.match("get-obj-sse-c", get_obj)
+
+        get_obj_attr = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=no_checksum_key_sse_c,
+            ObjectAttributes=["ETag", "Checksum"],
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key,
+            SSECustomerKeyMD5=cus_key_md5,
+        )
+        snapshot.match("get-obj-attrs-sse-c", get_obj_attr)
+
 
 class TestS3PutObjectChecksum:
     @markers.aws.validated
@@ -11965,8 +12017,6 @@ class TestS3PutObjectChecksum:
         )
         snapshot.match("head-obj-diff-checksum-algo", head_obj)
 
-        # AWS S3 documentation says that if you don't provide a checksum, it internally calculates a CRC64NVME checksum
-        # but this does not seem to be true, at least from the API
         # https://docs.aws.amazon.com/sdkref/latest/guide/feature-dataintegrity.html
         no_checksum_object_key = "no-checksum"
         no_checksum_put_object_url = f"{bucket_url}/{no_checksum_object_key}"

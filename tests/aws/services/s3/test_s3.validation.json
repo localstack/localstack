@@ -962,6 +962,9 @@
   "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_object_retrieval_sse_c": {
     "last_validated_date": "2025-01-22T14:21:48+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_put_object_default_checksum_with_sse_c": {
+    "last_validated_date": "2025-03-17T23:22:52+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_put_object_lifecycle_with_sse_c": {
     "last_validated_date": "2025-01-21T18:16:15+00:00"
   },

@@ -17361,5 +17361,55 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3SSECEncryption::test_put_object_default_checksum_with_sse_c": {
+    "recorded-date": "17-03-2025, 23:22:53",
+    "recorded-content": {
+      "head-obj-sse-c": {
+        "AcceptRanges": "bytes",
+        "ChecksumCRC64NVME": "qUVrWYOrIAM=",
+        "ChecksumType": "FULL_OBJECT",
+        "ContentLength": 11,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"14838aba23aac65c8befbb53acf51014\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "SSECustomerAlgorithm": "AES256",
+        "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-sse-c": {
+        "AcceptRanges": "bytes",
+        "Body": "test data..",
+        "ChecksumCRC64NVME": "qUVrWYOrIAM=",
+        "ChecksumType": "FULL_OBJECT",
+        "ContentLength": 11,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"14838aba23aac65c8befbb53acf51014\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "SSECustomerAlgorithm": "AES256",
+        "SSECustomerKeyMD5": "JMwgiexXqwuPqIPjYFmIZQ==",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-attrs-sse-c": {
+        "Checksum": {
+          "ChecksumCRC64NVME": "qUVrWYOrIAM=",
+          "ChecksumType": "FULL_OBJECT"
+        },
+        "ETag": "14838aba23aac65c8befbb53acf51014",
+        "LastModified": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
