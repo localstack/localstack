@@ -374,8 +374,17 @@ class Stack:
 # TODO: what functionality of the Stack object do we rely on here?
 class StackChangeSet(Stack):
     update_graph: NodeTemplate | None
+    change_set_type: ChangeSetType | None
 
-    def __init__(self, account_id: str, region_name: str, stack: Stack, params=None, template=None):
+    def __init__(
+        self,
+        account_id: str,
+        region_name: str,
+        stack: Stack,
+        params=None,
+        template=None,
+        change_set_type: ChangeSetType | None = None,
+    ):
         if template is None:
             template = {}
         if params is None:
@@ -393,6 +402,7 @@ class StackChangeSet(Stack):
         self.stack = stack
         self.metadata["StackId"] = stack.stack_id
         self.metadata["Status"] = "CREATE_PENDING"
+        self.change_set_type = change_set_type
 
     @property
     def change_set_id(self):
