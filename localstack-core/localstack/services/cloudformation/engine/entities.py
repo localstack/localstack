@@ -297,6 +297,10 @@ class Stack:
         """Return dict of resources"""
         return dict(self.template_resources)
 
+    @resources.setter
+    def resources(self, resources: dict):
+        self.template["Resources"] = resources
+
     @property
     def template_resources(self):
         return self.template.setdefault("Resources", {})
