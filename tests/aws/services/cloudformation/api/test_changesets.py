@@ -1,3 +1,4 @@
+import copy
 import json
 import os.path
 
@@ -22,7 +23,9 @@ from tests.aws.services.cloudformation.api.test_stacks import (
 @markers.aws.unknown
 def test_foo(aws_client: ServiceLevelClientFactory, deploy_cfn_template):
     parameter_name = "my-parameter"
-    value = "foo"
+    value1 = "foo"
+    value2 = "bar"
+    stack_name = f"stack-{short_uid()}"
 
     t1 = {
         "Resources": {
@@ -31,16 +34,24 @@ def test_foo(aws_client: ServiceLevelClientFactory, deploy_cfn_template):
                 "Properties": {
                     "Name": parameter_name,
                     "Type": "String",
-                    "Value": value,
+                    "Value": value1,
                 },
             },
         },
     }
 
-    deploy_cfn_template(template=json.dumps(t1))
+    deploy_cfn_template(stack_name=stack_name, template=json.dumps(t1), is_update=False)
 
     found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
-    assert found_value == value
+    assert found_value == value1
+
+    t2 = copy.deepcopy(t1)
+    t2["Resources"]["MyParameter"]["Properties"]["Value"] = value2
+
+    deploy_cfn_template(stack_name=stack_name, template=json.dumps(t2), is_update=True)
+    #
+    # found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+    # assert found_value == value1
 
 
 @markers.aws.validated
