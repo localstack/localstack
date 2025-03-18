@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import enum
 from itertools import zip_longest
-from typing import Any, Final, Generator, Optional, Union
+from typing import Any, Final, Generator, Optional, Union, cast
 
 from typing_extensions import TypeVar
 
@@ -34,6 +34,23 @@ Maybe = Union[T, NothingType]
 Nothing = NothingType()
 
 
+class Scope(str):
+    _ROOT_SCOPE: Final[str] = str()
+    _SEPARATOR: Final[str] = "/"
+
+    def __new__(cls, scope: str = _ROOT_SCOPE) -> Scope:
+        return cast(Scope, super().__new__(cls, scope))
+
+    def open_scope(self, name: Scope | str) -> Scope:
+        return Scope(self._SEPARATOR.join([self, name]))
+
+    def open_index(self, index: int) -> Scope:
+        return Scope(self._SEPARATOR.join([self, str(index)]))
+
+    def unwrap(self) -> list[str]:
+        return self.split(self._SEPARATOR)
+
+
 class ChangeType(enum.Enum):
     UNCHANGED = "Unchanged"
     CREATED = "Created"
@@ -43,11 +60,21 @@ class ChangeType(enum.Enum):
     def __str__(self):
         return self.value
 
+    def for_child(self, child_change_type: ChangeType) -> ChangeType:
+        if child_change_type == self:
+            return self
+        elif self == ChangeType.UNCHANGED:
+            return child_change_type
+        else:
+            return ChangeType.MODIFIED
+
 
 class ChangeSetEntity(abc.ABC):
+    scope: Final[Scope]
     change_type: Final[ChangeType]
 
-    def __init__(self, change_type: ChangeType):
+    def __init__(self, scope: Scope, change_type: ChangeType):
+        self.scope = scope
         self.change_type = change_type
 
     def get_children(self) -> Generator[ChangeSetEntity]:
@@ -80,18 +107,53 @@ class ChangeSetTerminal(ChangeSetEntity, abc.ABC): ...
 
 
 class NodeTemplate(ChangeSetNode):
+    parameters: Final[NodeParameters]
     resources: Final[NodeResources]
 
-    def __init__(self, change_type: ChangeType, resources: NodeResources):
-        super().__init__(change_type=change_type)
+    def __init__(
+        self,
+        scope: Scope,
+        change_type: ChangeType,
+        parameters: NodeParameters,
+        resources: NodeResources,
+    ):
+        super().__init__(scope=scope, change_type=change_type)
+        self.parameters = parameters
         self.resources = resources
+
+
+class NodeParameter(ChangeSetNode):
+    name: Final[str]
+    value: Final[ChangeSetEntity]
+    dynamic_value: Final[ChangeSetEntity]
+
+    def __init__(
+        self,
+        scope: Scope,
+        change_type: ChangeType,
+        name: str,
+        value: ChangeSetEntity,
+        dynamic_value: ChangeSetEntity,
+    ):
+        super().__init__(scope=scope, change_type=change_type)
+        self.name = name
+        self.value = value
+        self.dynamic_value = dynamic_value
+
+
+class NodeParameters(ChangeSetNode):
+    parameters: Final[list[NodeParameter]]
+
+    def __init__(self, scope: Scope, change_type: ChangeType, parameters: list[NodeParameter]):
+        super().__init__(scope=scope, change_type=change_type)
+        self.parameters = parameters
 
 
 class NodeResources(ChangeSetNode):
     resources: Final[list[NodeResource]]
 
-    def __init__(self, change_type: ChangeType, resources: list[NodeResource]):
-        super().__init__(change_type=change_type)
+    def __init__(self, scope: Scope, change_type: ChangeType, resources: list[NodeResource]):
+        super().__init__(scope=scope, change_type=change_type)
         self.resources = resources
 
 
@@ -102,12 +164,13 @@ class NodeResource(ChangeSetNode):
 
     def __init__(
         self,
+        scope: Scope,
         change_type: ChangeType,
         name: str,
         type_: ChangeSetTerminal,
         properties: NodeProperties,
     ):
-        super().__init__(change_type=change_type)
+        super().__init__(scope=scope, change_type=change_type)
         self.name = name
         self.type_ = type_
         self.properties = properties
@@ -116,8 +179,8 @@ class NodeResource(ChangeSetNode):
 class NodeProperties(ChangeSetNode):
     properties: Final[list[NodeProperty]]
 
-    def __init__(self, change_type: ChangeType, properties: list[NodeProperty]):
-        super().__init__(change_type=change_type)
+    def __init__(self, scope: Scope, change_type: ChangeType, properties: list[NodeProperty]):
+        super().__init__(scope=scope, change_type=change_type)
         self.properties = properties
 
 
@@ -125,8 +188,8 @@ class NodeProperty(ChangeSetNode):
     name: Final[str]
     value: Final[ChangeSetEntity]
 
-    def __init__(self, change_type: ChangeType, name: str, value: ChangeSetEntity):
-        super().__init__(change_type=change_type)
+    def __init__(self, scope: Scope, change_type: ChangeType, name: str, value: ChangeSetEntity):
+        super().__init__(scope=scope, change_type=change_type)
         self.name = name
         self.value = value
 
@@ -136,9 +199,13 @@ class NodeIntrinsicFunction(ChangeSetNode):
     arguments: Final[ChangeSetEntity]
 
     def __init__(
-        self, change_type: ChangeType, intrinsic_function: str, arguments: ChangeSetEntity
+        self,
+        scope: Scope,
+        change_type: ChangeType,
+        intrinsic_function: str,
+        arguments: ChangeSetEntity,
     ):
-        super().__init__(change_type=change_type)
+        super().__init__(scope=scope, change_type=change_type)
         self.intrinsic_function = intrinsic_function
         self.arguments = arguments
 
@@ -146,56 +213,58 @@ class NodeIntrinsicFunction(ChangeSetNode):
 class NodeObject(ChangeSetNode):
     bindings: Final[dict[str, ChangeSetEntity]]
 
-    def __init__(self, change_type: ChangeType, bindings: dict[str, ChangeSetEntity]):
-        super().__init__(change_type=change_type)
+    def __init__(self, scope: Scope, change_type: ChangeType, bindings: dict[str, ChangeSetEntity]):
+        super().__init__(scope=scope, change_type=change_type)
         self.bindings = bindings
 
 
 class NodeArray(ChangeSetNode):
     array: Final[list[ChangeSetEntity]]
 
-    def __init__(self, change_type: ChangeType, array: list[ChangeSetEntity]):
-        super().__init__(change_type=change_type)
+    def __init__(self, scope: Scope, change_type: ChangeType, array: list[ChangeSetEntity]):
+        super().__init__(scope=scope, change_type=change_type)
         self.array = array
 
 
 class TerminalValue(ChangeSetTerminal, abc.ABC):
     value: Final[Any]
 
-    def __init__(self, change_type: ChangeType, value: Any):
-        super().__init__(change_type=change_type)
+    def __init__(self, scope: Scope, change_type: ChangeType, value: Any):
+        super().__init__(scope=scope, change_type=change_type)
         self.value = value
 
 
 class TerminalValueModified(TerminalValue):
     modified_value: Final[Any]
 
-    def __init__(self, value: Any, modified_value: Any):
-        super().__init__(change_type=ChangeType.MODIFIED, value=value)
+    def __init__(self, scope: Scope, value: Any, modified_value: Any):
+        super().__init__(scope=scope, change_type=ChangeType.MODIFIED, value=value)
         self.modified_value = modified_value
 
 
 class TerminalValueCreated(TerminalValue):
-    def __init__(self, value: Any):
-        super().__init__(change_type=ChangeType.CREATED, value=value)
+    def __init__(self, scope: Scope, value: Any):
+        super().__init__(scope=scope, change_type=ChangeType.CREATED, value=value)
 
 
 class TerminalValueRemoved(TerminalValue):
-    def __init__(self, value: Any):
-        super().__init__(change_type=ChangeType.REMOVED, value=value)
+    def __init__(self, scope: Scope, value: Any):
+        super().__init__(scope=scope, change_type=ChangeType.REMOVED, value=value)
 
 
 class TerminalValueUnchanged(TerminalValue):
-    def __init__(self, value: Any):
-        super().__init__(change_type=ChangeType.UNCHANGED, value=value)
+    def __init__(self, scope: Scope, value: Any):
+        super().__init__(scope=scope, change_type=ChangeType.UNCHANGED, value=value)
 
 
 ResourcesKey: Final[str] = "Resources"
 PropertiesKey: Final[str] = "Properties"
+ParametersKey: Final[str] = "Parameters"
 TypeKey: Final[str] = "Type"
 # TODO: expand intrinsic functions set.
 FnGetAttKey: Final[str] = "Fn::GetAtt"
-INTRINSIC_FUNCTIONS: Final[set[str]] = {FnGetAttKey}
+RefKey: Final[str] = "Ref"
+INTRINSIC_FUNCTIONS: Final[set[str]] = {RefKey, FnGetAttKey}
 
 
 class ChangeSetModel:
@@ -208,14 +277,24 @@ class ChangeSetModel:
 
     _before_template: Final[Maybe[dict]]
     _after_template: Final[Maybe[dict]]
+    _before_parameters: Final[Maybe[dict]]
+    _after_parameters: Final[Maybe[dict]]
     # TODO: generalise this lookup for other goto visitable types such as parameters and conditions
-    _visited_resources: Final[dict[str, NodeResource]]
+    _visited_scopes: Final[dict[str, ChangeSetEntity]]
     _node_template: Final[NodeTemplate]
 
-    def __init__(self, before_template: Optional[dict], after_template: Optional[dict]):
+    def __init__(
+        self,
+        before_template: Optional[dict],
+        after_template: Optional[dict],
+        before_parameters: Optional[dict],
+        after_parameters: Optional[dict],
+    ):
         self._before_template = before_template or Nothing
         self._after_template = after_template or Nothing
-        self._visited_resources = dict()
+        self._before_parameters = before_parameters or Nothing
+        self._after_parameters = after_parameters or Nothing
+        self._visited_scopes = dict()
         self._node_template = self._model(
             before_template=self._before_template, after_template=self._after_template
         )
@@ -226,21 +305,37 @@ class ChangeSetModel:
         return self._node_template
 
     def _visit_terminal_value(
-        self, before_value: Maybe[Any], after_value: Maybe[Any]
+        self, scope: Scope, before_value: Maybe[Any], after_value: Maybe[Any]
     ) -> TerminalValue:
+        terminal_value = self._visited_scopes.get(scope)
+        if isinstance(terminal_value, TerminalValue):
+            return terminal_value
         if self._is_created(before=before_value, after=after_value):
-            return TerminalValueCreated(value=after_value)
-        if self._is_removed(before=before_value, after=after_value):
-            return TerminalValueRemoved(value=before_value)
-        if before_value == after_value:
-            return TerminalValueUnchanged(value=before_value)
-        return TerminalValueModified(value=before_value, modified_value=after_value)
+            terminal_value = TerminalValueCreated(scope=scope, value=after_value)
+        elif self._is_removed(before=before_value, after=after_value):
+            terminal_value = TerminalValueRemoved(scope=scope, value=before_value)
+        elif before_value == after_value:
+            terminal_value = TerminalValueUnchanged(scope=scope, value=before_value)
+        else:
+            terminal_value = TerminalValueModified(
+                scope=scope, value=before_value, modified_value=after_value
+            )
+        self._visited_scopes[scope] = terminal_value
+        return terminal_value
 
     def _visit_intrinsic_function(
-        self, intrinsic_function: str, before_arguments: Maybe[Any], after_arguments: Maybe[Any]
+        self,
+        scope: Scope,
+        intrinsic_function: str,
+        before_arguments: Maybe[Any],
+        after_arguments: Maybe[Any],
     ) -> NodeIntrinsicFunction:
-        arguments = self._visit_value(before_value=before_arguments, after_value=after_arguments)
-
+        node_intrinsic_function = self._visited_scopes.get(scope)
+        if isinstance(node_intrinsic_function, NodeIntrinsicFunction):
+            return node_intrinsic_function
+        arguments = self._visit_value(
+            scope=scope, before_value=before_arguments, after_value=after_arguments
+        )
         if self._is_created(before=before_arguments, after=after_arguments):
             change_type = ChangeType.CREATED
         elif self._is_removed(before=before_arguments, after=after_arguments):
@@ -251,10 +346,14 @@ class ChangeSetModel:
             visit_function_name = f"_resolve_intrinsic_function_{function_name}"
             visit_function = getattr(self, visit_function_name)
             change_type = visit_function(arguments)
-
-        return NodeIntrinsicFunction(
-            change_type=change_type, intrinsic_function=intrinsic_function, arguments=arguments
+        node_intrinsic_function = NodeIntrinsicFunction(
+            scope=scope,
+            change_type=change_type,
+            intrinsic_function=intrinsic_function,
+            arguments=arguments,
         )
+        self._visited_scopes[scope] = node_intrinsic_function
+        return node_intrinsic_function
 
     def _resolve_intrinsic_function_fn_get_att(self, arguments: ChangeSetEntity) -> ChangeType:
         # TODO: add support for nested intrinsic functions.
@@ -288,119 +387,219 @@ class ChangeSetModel:
 
         return ChangeType.UNCHANGED
 
-    def _retrieve_or_visit_resource(self, resource_name: str) -> NodeResource:
-        before_resources, after_resources = self._sample_from(
-            ResourcesKey, self._before_template, self._after_template
+    def _resolve_intrinsic_function_ref(self, arguments: ChangeSetEntity) -> ChangeType:
+        if arguments.change_type != ChangeType.UNCHANGED:
+            return arguments.change_type
+        # TODO: add support for nested functions, here we assume the argument is a logicalID.
+        if not isinstance(arguments, TerminalValue):
+            return arguments.change_type
+
+        logical_id = arguments.value
+
+        node_parameter = self._retrieve_parameter_if_exists(parameter_name=logical_id)
+        if isinstance(node_parameter, NodeParameter):
+            return node_parameter.dynamic_value.change_type
+
+        # TODO: this should check the replacement flag for a resource update.
+        node_resource = self._retrieve_or_visit_resource(resource_name=logical_id)
+        return node_resource.change_type
+
+    def _retrieve_parameter_if_exists(self, parameter_name: str) -> Optional[NodeParameter]:
+        parameters_scope, (before_parameters, after_parameters) = self._safe_access_in(
+            Scope(), ParametersKey, self._before_template, self._after_template
         )
-        before_resource, after_resource = self._sample_from(
-            resource_name, before_resources, after_resources
+        before_parameters = before_parameters or dict()
+        after_parameters = after_parameters or dict()
+        if parameter_name in before_parameters or parameter_name in after_parameters:
+            parameter_scope, (before_parameter, after_parameter) = self._safe_access_in(
+                parameters_scope, parameter_name, before_parameters, after_parameters
+            )
+            node_parameter = self._visit_parameter(
+                parameters_scope,
+                parameter_name,
+                before_parameter=before_parameter,
+                after_parameter=after_parameter,
+            )
+            return node_parameter
+        return None
+
+    def _retrieve_or_visit_resource(self, resource_name: str) -> NodeResource:
+        resources_scope, (before_resources, after_resources) = self._safe_access_in(
+            Scope(),
+            ResourcesKey,
+            self._before_template,
+            self._after_template,
+        )
+        resource_scope, (before_resource, after_resource) = self._safe_access_in(
+            resources_scope, resource_name, before_resources, after_resources
         )
         return self._visit_resource(
+            scope=resource_scope,
             resource_name=resource_name,
             before_resource=before_resource,
             after_resource=after_resource,
         )
 
-    def _visit_array(self, before_array: Maybe[list], after_array: Maybe[list]) -> NodeArray:
+    def _visit_array(
+        self, scope: Scope, before_array: Maybe[list], after_array: Maybe[list]
+    ) -> NodeArray:
         change_type = ChangeType.UNCHANGED
         array: list[ChangeSetEntity] = list()
-        for before_value, after_value in zip_longest(before_array, after_array, fillvalue=Nothing):
-            value = self._visit_value(before_value=before_value, after_value=after_value)
+        for index, (before_value, after_value) in enumerate(
+            zip_longest(before_array, after_array, fillvalue=Nothing)
+        ):
+            # TODO: should extract this scoping logic.
+            value_scope = scope.open_index(index=index)
+            value = self._visit_value(
+                scope=value_scope, before_value=before_value, after_value=after_value
+            )
             array.append(value)
             if value.change_type != ChangeType.UNCHANGED:
                 change_type = ChangeType.MODIFIED
-        return NodeArray(change_type=change_type, array=array)
+        return NodeArray(scope=scope, change_type=change_type, array=array)
 
-    def _visit_object(self, before_object: Maybe[dict], after_object: Maybe[dict]) -> NodeObject:
+    def _visit_object(
+        self, scope: Scope, before_object: Maybe[dict], after_object: Maybe[dict]
+    ) -> NodeObject:
+        node_object = self._visited_scopes.get(scope)
+        if isinstance(node_object, NodeObject):
+            return node_object
+
         change_type = ChangeType.UNCHANGED
-        binding_names = self._keys_of(before_object, after_object)
+        binding_names = self._safe_keys_of(before_object, after_object)
         bindings: dict[str, ChangeSetEntity] = dict()
         for binding_name in binding_names:
-            before_value, after_value = self._sample_from(binding_name, before_object, after_object)
+            binding_scope, (before_value, after_value) = self._safe_access_in(
+                scope, binding_name, before_object, after_object
+            )
             if self._is_intrinsic_function_name(function_name=binding_name):
                 value = self._visit_intrinsic_function(
+                    scope=binding_scope,
                     intrinsic_function=binding_name,
                     before_arguments=before_value,
                     after_arguments=after_value,
                 )
             else:
-                value = self._visit_value(before_value=before_value, after_value=after_value)
+                value = self._visit_value(
+                    scope=binding_scope, before_value=before_value, after_value=after_value
+                )
             bindings[binding_name] = value
-            if value.change_type != ChangeType.UNCHANGED:
-                change_type = ChangeType.MODIFIED
-        return NodeObject(change_type=change_type, bindings=bindings)
+            change_type = change_type.for_child(value.change_type)
+        node_object = NodeObject(scope=scope, change_type=change_type, bindings=bindings)
+        self._visited_scopes[scope] = node_object
+        return node_object
 
-    def _visit_value(self, before_value: Maybe[Any], after_value: Maybe[Any]) -> ChangeSetEntity:
+    def _visit_value(
+        self, scope: Scope, before_value: Maybe[Any], after_value: Maybe[Any]
+    ) -> ChangeSetEntity:
+        value = self._visited_scopes.get(scope)
+        if isinstance(value, ChangeSetEntity):
+            return value
+
         before_type = type(before_value)
         after_type = type(after_value)
 
         if self._is_created(before=before_value, after=after_value):
-            return TerminalValueCreated(value=after_value)
+            return TerminalValueCreated(scope=scope, value=after_value)
         if self._is_removed(before=before_value, after=after_value):
-            return TerminalValueRemoved(value=before_value)
+            return TerminalValueRemoved(scope=scope, value=before_value)
 
         # Case: update on the same type.
         if before_type == after_type:
             if self._is_terminal(value=before_value):
                 value = self._visit_terminal_value(
-                    before_value=before_value, after_value=after_value
+                    scope=scope, before_value=before_value, after_value=after_value
                 )
             elif self._is_object(value=before_value):
-                value = self._visit_object(before_object=before_value, after_object=after_value)
+                value = self._visit_object(
+                    scope=scope, before_object=before_value, after_object=after_value
+                )
             elif self._is_array(value=before_value):
-                value = self._visit_array(before_array=before_value, after_array=after_value)
+                value = self._visit_array(
+                    scope=scope, before_array=before_value, after_array=after_value
+                )
             else:
                 raise RuntimeError(f"Unsupported type {before_type}")
-            return value
         # Case: update to new type.
         else:
-            return TerminalValueModified(value=before_value, modified_value=after_value)
+            value = TerminalValueModified(
+                scope=scope, value=before_value, modified_value=after_value
+            )
+        self._visited_scopes[scope] = value
+        return value
 
     def _visit_property(
-        self, property_name: str, before_property: Maybe[Any], after_property: Maybe[Any]
+        self,
+        scope: Scope,
+        property_name: str,
+        before_property: Maybe[Any],
+        after_property: Maybe[Any],
     ) -> NodeProperty:
+        node_property = self._visited_scopes.get(scope)
+        if isinstance(node_property, NodeProperty):
+            return node_property
+
         if self._is_created(before=before_property, after=after_property):
-            return NodeProperty(
+            node_property = NodeProperty(
+                scope=scope,
                 change_type=ChangeType.CREATED,
                 name=property_name,
-                value=TerminalValueCreated(value=after_property),
+                value=TerminalValueCreated(scope=scope, value=after_property),
             )
-        if self._is_removed(before=before_property, after=after_property):
-            return NodeProperty(
+        elif self._is_removed(before=before_property, after=after_property):
+            node_property = NodeProperty(
+                scope=scope,
                 change_type=ChangeType.REMOVED,
                 name=property_name,
-                value=TerminalValueRemoved(value=before_property),
+                value=TerminalValueRemoved(scope=scope, value=before_property),
             )
-        value = self._visit_value(before_value=before_property, after_value=after_property)
-        return NodeProperty(change_type=value.change_type, name=property_name, value=value)
+        else:
+            value = self._visit_value(
+                scope=scope, before_value=before_property, after_value=after_property
+            )
+            node_property = NodeProperty(
+                scope=scope, change_type=value.change_type, name=property_name, value=value
+            )
+        self._visited_scopes[scope] = node_property
+        return node_property
 
     def _visit_properties(
-        self, before_properties: Maybe[dict], after_properties: Maybe[dict]
+        self, scope: Scope, before_properties: Maybe[dict], after_properties: Maybe[dict]
     ) -> NodeProperties:
+        node_properties = self._visited_scopes.get(scope)
+        if isinstance(node_properties, NodeProperties):
+            return node_properties
         # TODO: double check we are sure not to have this be a NodeObject
-        property_names: set[str] = self._keys_of(before_properties, after_properties)
+        property_names: set[str] = self._safe_keys_of(before_properties, after_properties)
         properties: list[NodeProperty] = list()
         change_type = ChangeType.UNCHANGED
         for property_name in property_names:
-            before_property, after_property = self._sample_from(
-                property_name, before_properties, after_properties
+            property_scope, (before_property, after_property) = self._safe_access_in(
+                scope, property_name, before_properties, after_properties
             )
             property_ = self._visit_property(
+                scope=property_scope,
                 property_name=property_name,
                 before_property=before_property,
                 after_property=after_property,
             )
             properties.append(property_)
-            # TODO: compute the properties change type properly.
-            if property_.change_type != ChangeType.UNCHANGED:
-                change_type = change_type.MODIFIED
-        return NodeProperties(change_type=change_type, properties=properties)
+            change_type = change_type.for_child(property_.change_type)
+        node_properties = NodeProperties(
+            scope=scope, change_type=change_type, properties=properties
+        )
+        self._visited_scopes[scope] = node_properties
+        return node_properties
 
     def _visit_resource(
-        self, resource_name: str, before_resource: Maybe[dict], after_resource: Maybe[dict]
+        self,
+        scope: Scope,
+        resource_name: str,
+        before_resource: Maybe[dict],
+        after_resource: Maybe[dict],
     ) -> NodeResource:
-        node_resource = self._visited_resources.get(resource_name)
-        if node_resource is not None:
+        node_resource = self._visited_scopes.get(scope)
+        if isinstance(node_resource, NodeResource):
             return node_resource
 
         if self._is_created(before=before_resource, after=after_resource):
@@ -411,68 +610,167 @@ class ChangeSetModel:
             change_type = ChangeType.UNCHANGED
 
         # TODO: investigate behaviour with type changes, for now this is filler code.
-        type_str = self._sample_from(TypeKey, before_resource)
+        _, type_str = self._safe_access_in(scope, TypeKey, before_resource)
 
-        before_properties, after_properties = self._sample_from(
-            PropertiesKey, before_resource, after_resource
+        scope_properties, (before_properties, after_properties) = self._safe_access_in(
+            scope, PropertiesKey, before_resource, after_resource
         )
         properties = self._visit_properties(
-            before_properties=before_properties, after_properties=after_properties
+            scope=scope_properties,
+            before_properties=before_properties,
+            after_properties=after_properties,
         )
-
-        if change_type == ChangeType.UNCHANGED and properties.change_type != ChangeType.UNCHANGED:
-            change_type = ChangeType.MODIFIED
-
+        change_type = change_type.for_child(properties.change_type)
         node_resource = NodeResource(
+            scope=scope,
             change_type=change_type,
             name=resource_name,
-            type_=TerminalValueUnchanged(value=type_str),
+            type_=TerminalValueUnchanged(scope=scope, value=type_str),
             properties=properties,
         )
-        self._visited_resources[resource_name] = node_resource
+        self._visited_scopes[scope] = node_resource
         return node_resource
 
     def _visit_resources(
-        self, before_resources: Maybe[dict], after_resources: Maybe[dict]
+        self, scope: Scope, before_resources: Maybe[dict], after_resources: Maybe[dict]
     ) -> NodeResources:
         # TODO: investigate type changes behavior.
         change_type = ChangeType.UNCHANGED
         resources: list[NodeResource] = list()
-        resource_names = self._keys_of(before_resources, after_resources)
+        resource_names = self._safe_keys_of(before_resources, after_resources)
         for resource_name in resource_names:
-            before_resource, after_resource = self._sample_from(
-                resource_name, before_resources, after_resources
+            resource_scope, (before_resource, after_resource) = self._safe_access_in(
+                scope, resource_name, before_resources, after_resources
             )
             resource = self._visit_resource(
+                scope=resource_scope,
                 resource_name=resource_name,
                 before_resource=before_resource,
                 after_resource=after_resource,
             )
             resources.append(resource)
-            # TODO: compute the properties change type properly.
-            if resource.change_type != ChangeType.UNCHANGED:
-                change_type = ChangeType.MODIFIED
-        return NodeResources(change_type=change_type, resources=resources)
+            change_type = change_type.for_child(resource.change_type)
+        return NodeResources(scope=scope, change_type=change_type, resources=resources)
+
+    def _visit_dynamic_parameter(self, parameter_name: str) -> ChangeSetEntity:
+        scope = Scope("Dynamic").open_scope("Parameters")
+        scope_parameter, (before_parameter, after_parameter) = self._safe_access_in(
+            scope, parameter_name, self._before_parameters, self._after_parameters
+        )
+        parameter = self._visit_value(
+            scope=scope_parameter, before_value=before_parameter, after_value=after_parameter
+        )
+        return parameter
+
+    def _visit_parameter(
+        self,
+        scope: Scope,
+        parameter_name: str,
+        before_parameter: Maybe[dict],
+        after_parameter: Maybe[dict],
+    ) -> NodeParameter:
+        node_parameter = self._visited_scopes.get(scope)
+        if isinstance(node_parameter, NodeParameter):
+            return node_parameter
+        # TODO: add logic to compute defaults already in the graph building process?
+        dynamic_value = self._visit_dynamic_parameter(parameter_name=parameter_name)
+        if self._is_created(before=before_parameter, after=after_parameter):
+            node_parameter = NodeParameter(
+                scope=scope,
+                change_type=ChangeType.CREATED,
+                name=parameter_name,
+                value=TerminalValueCreated(scope=scope, value=after_parameter),
+                dynamic_value=dynamic_value,
+            )
+        elif self._is_removed(before=before_parameter, after=after_parameter):
+            node_parameter = NodeParameter(
+                scope=scope,
+                change_type=ChangeType.REMOVED,
+                name=parameter_name,
+                value=TerminalValueRemoved(scope=scope, value=before_parameter),
+                dynamic_value=dynamic_value,
+            )
+        else:
+            value = self._visit_value(
+                scope=scope, before_value=before_parameter, after_value=after_parameter
+            )
+            change_type = self._change_type_for_parent_of(
+                change_types=[dynamic_value.change_type, value.change_type]
+            )
+            node_parameter = NodeParameter(
+                scope=scope,
+                change_type=change_type,
+                name=parameter_name,
+                value=value,
+                dynamic_value=dynamic_value,
+            )
+        self._visited_scopes[scope] = node_parameter
+        return node_parameter
+
+    def _visit_parameters(
+        self, scope: Scope, before_parameters: Maybe[dict], after_parameters: Maybe[dict]
+    ) -> NodeParameters:
+        node_parameters = self._visited_scopes.get(ParametersKey)
+        if isinstance(node_parameters, NodeParameters):
+            return node_parameters
+        parameter_names: set[str] = self._safe_keys_of(before_parameters, after_parameters)
+        parameters: list[NodeParameter] = list()
+        change_type = ChangeType.UNCHANGED
+        for parameter_name in parameter_names:
+            parameter_scope, (before_parameter, after_parameter) = self._safe_access_in(
+                scope, parameter_name, before_parameters, after_parameters
+            )
+            parameter = self._visit_parameter(
+                scope=parameter_scope,
+                parameter_name=parameter_name,
+                before_parameter=before_parameter,
+                after_parameter=after_parameter,
+            )
+            parameters.append(parameter)
+            if parameter.change_type != ChangeType.UNCHANGED:
+                change_type = change_type.MODIFIED
+        node_parameters = NodeParameters(
+            scope=scope, change_type=change_type, parameters=parameters
+        )
+        self._visited_scopes[scope] = node_parameters
+        return node_parameters
 
     def _model(self, before_template: Maybe[dict], after_template: Maybe[dict]) -> NodeTemplate:
+        root_scope = Scope()
         # TODO: visit other child types
-        before_resources, after_resources = self._sample_from(
-            ResourcesKey, before_template, after_template
+        parameters_scope, (before_parameters, after_parameters) = self._safe_access_in(
+            root_scope, ParametersKey, before_template, after_template
+        )
+        parameters = self._visit_parameters(
+            scope=parameters_scope,
+            before_parameters=before_parameters,
+            after_parameters=after_parameters,
+        )
+
+        resources_scope, (before_resources, after_resources) = self._safe_access_in(
+            root_scope, ResourcesKey, before_template, after_template
         )
         resources = self._visit_resources(
-            before_resources=before_resources, after_resources=after_resources
+            scope=resources_scope,
+            before_resources=before_resources,
+            after_resources=after_resources,
         )
-        # TODO: what is a change type for templates?
-        return NodeTemplate(change_type=resources.change_type, resources=resources)
+
+        # TODO: compute the change_type of the template properly.
+        return NodeTemplate(
+            scope=root_scope,
+            change_type=resources.change_type,
+            parameters=parameters,
+            resources=resources,
+        )
 
     @staticmethod
     def _is_intrinsic_function_name(function_name: str) -> bool:
-        # TODO: expand vocabulary.
         # TODO: are intrinsic functions soft keywords?
         return function_name in INTRINSIC_FUNCTIONS
 
     @staticmethod
-    def _sample_from(key: str, *objects: Maybe[dict]) -> Maybe[Any]:
+    def _safe_access_in(scope: Scope, key: str, *objects: Maybe[dict]) -> tuple[Scope, Maybe[Any]]:
         results = list()
         for obj in objects:
             # TODO: raise errors if not dict
@@ -480,16 +778,26 @@ class ChangeSetModel:
                 results.append(obj.get(key, Nothing))
             else:
                 results.append(obj)
-        return results[0] if len(objects) == 1 else tuple(results)
+        new_scope = scope.open_scope(name=key)
+        return new_scope, results[0] if len(objects) == 1 else tuple(results)
 
     @staticmethod
-    def _keys_of(*objects: Maybe[dict]) -> set[str]:
+    def _safe_keys_of(*objects: Maybe[dict]) -> set[str]:
         keys: set[str] = set()
         for obj in objects:
             # TODO: raise errors if not dict
             if isinstance(obj, dict):
                 keys.update(obj.keys())
         return set(keys)
+
+    @staticmethod
+    def _change_type_for_parent_of(change_types: list[ChangeType]) -> ChangeType:
+        parent_change_type = ChangeType.UNCHANGED
+        for child_change_type in change_types:
+            parent_change_type = parent_change_type.for_child(child_change_type)
+            if parent_change_type == ChangeType.MODIFIED:
+                break
+        return parent_change_type
 
     @staticmethod
     def _is_terminal(value: Any) -> bool:

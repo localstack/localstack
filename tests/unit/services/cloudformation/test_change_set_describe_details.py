@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 
 import pytest
 
@@ -16,9 +17,17 @@ from localstack.services.cloudformation.engine.v2.change_set_model_describer imp
 #  should be replaced in favour of v2 integration tests.
 class TestChangeSetDescribeDetails:
     @staticmethod
-    def eval_change_set(before_template: dict, after_template: dict) -> list[ResourceChange]:
+    def eval_change_set(
+        before_template: dict,
+        after_template: dict,
+        before_parameters: Optional[dict] = None,
+        after_parameters: Optional[dict] = None,
+    ) -> list[ResourceChange]:
         change_set_model = ChangeSetModel(
-            before_template=before_template, after_template=after_template
+            before_template=before_template,
+            after_template=after_template,
+            before_parameters=before_parameters,
+            after_parameters=after_parameters,
         )
         update_model: NodeTemplate = change_set_model.get_update_model()
         change_set_describer = ChangeSetModelDescriber(node_template=update_model)
@@ -426,5 +435,298 @@ class TestChangeSetDescribeDetails:
                 },
                 "Type": "Resource",
             },
+        ]
+        self.compare_changes(changes, target)
+
+    def test_parameters_dynamic_change(self):
+        t1 = {
+            "Parameters": {
+                "ParameterValue": {
+                    "Type": "String",
+                },
+            },
+            "Resources": {
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Ref": "ParameterValue"},
+                    },
+                }
+            },
+        }
+        changes = self.eval_change_set(
+            t1, t1, {"ParameterValue": "value-1"}, {"ParameterValue": "value-2"}
+        )
+        target = [
+            {
+                "Type": "Resource",
+                "ResourceChange": {
+                    "Action": "Modify",
+                    "LogicalResourceId": "Parameter",
+                    # "PhysicalResourceId": "<physical-resource-id:1>",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Replacement": "False",
+                    # "Scope": [
+                    #     "Properties"
+                    # ],
+                    # "Details": [
+                    #     {
+                    #         "Target": {
+                    #             "Attribute": "Properties",
+                    #             "Name": "Value",
+                    #             "RequiresRecreation": "Never",
+                    #             "Path": "/Properties/Value",
+                    #             "BeforeValue": "55252c2c",
+                    #             "AfterValue": "f8679c0b",
+                    #             "AttributeChangeType": "Modify"
+                    #         },
+                    #         "Evaluation": "Dynamic",
+                    #         "ChangeSource": "DirectModification"
+                    #     },
+                    #     {
+                    #         "Target": {
+                    #             "Attribute": "Properties",
+                    #             "Name": "Value",
+                    #             "RequiresRecreation": "Never",
+                    #             "Path": "/Properties/Value",
+                    #             "BeforeValue": "55252c2c",
+                    #             "AfterValue": "f8679c0b",
+                    #             "AttributeChangeType": "Modify"
+                    #         },
+                    #         "Evaluation": "Static",
+                    #         "ChangeSource": "ParameterReference",
+                    #         "CausingEntity": "ParameterValue"
+                    #     }
+                    # ],
+                    "BeforeContext": {"Properties": {"Value": "value-1", "Type": "String"}},
+                    "AfterContext": {"Properties": {"Value": "value-2", "Type": "String"}},
+                },
+            }
+        ]
+        self.compare_changes(changes, target)
+
+    def test_parameter_dynamic_change_unrelated_property(self):
+        t1 = {
+            "Parameters": {
+                "ParameterValue": {
+                    "Type": "String",
+                },
+            },
+            "Resources": {
+                "Parameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Ref": "ParameterValue"},
+                    },
+                },
+                "Parameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["Parameter1", "Name"]},
+                    },
+                },
+            },
+        }
+        changes = self.eval_change_set(
+            t1, t1, {"ParameterValue": "value-1"}, {"ParameterValue": "value-2"}
+        )
+        target = [
+            {
+                "Type": "Resource",
+                "ResourceChange": {
+                    "Action": "Modify",
+                    "LogicalResourceId": "Parameter1",
+                    # "PhysicalResourceId": "<physical-resource-id:1>",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Replacement": "False",
+                    # "Scope": [
+                    #     "Properties"
+                    # ],
+                    # "Details": [
+                    #     {
+                    #         "Target": {
+                    #             "Attribute": "Properties",
+                    #             "Name": "Value",
+                    #             "RequiresRecreation": "Never",
+                    #             "Path": "/Properties/Value",
+                    #             "BeforeValue": "49f3de25",
+                    #             "AfterValue": "0e788b5d",
+                    #             "AttributeChangeType": "Modify"
+                    #         },
+                    #         "Evaluation": "Static",
+                    #         "ChangeSource": "ParameterReference",
+                    #         "CausingEntity": "ParameterValue"
+                    #     },
+                    #     {
+                    #         "Target": {
+                    #             "Attribute": "Properties",
+                    #             "Name": "Value",
+                    #             "RequiresRecreation": "Never",
+                    #             "Path": "/Properties/Value",
+                    #             "BeforeValue": "49f3de25",
+                    #             "AfterValue": "0e788b5d",
+                    #             "AttributeChangeType": "Modify"
+                    #         },
+                    #         "Evaluation": "Dynamic",
+                    #         "ChangeSource": "DirectModification"
+                    #     }
+                    # ],
+                    "BeforeContext": {"Properties": {"Value": "value-1", "Type": "String"}},
+                    "AfterContext": {"Properties": {"Value": "value-2", "Type": "String"}},
+                },
+            }
+        ]
+        self.compare_changes(changes, target)
+
+    def test_parameter_dynamic_change_unrelated_property_not_create_only(self):
+        t1 = {
+            "Parameters": {
+                "ParameterValue": {
+                    "Type": "String",
+                },
+            },
+            "Resources": {
+                "Parameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Ref": "ParameterValue"},
+                    },
+                },
+                "Parameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["Parameter1", "Type"]},
+                    },
+                },
+            },
+        }
+        changes = self.eval_change_set(
+            t1, t1, {"ParameterValue": "value-1"}, {"ParameterValue": "value-2"}
+        )
+        target = [
+            {
+                "Type": "Resource",
+                "ResourceChange": {
+                    "Action": "Modify",
+                    "LogicalResourceId": "Parameter1",
+                    # "PhysicalResourceId": "<physical-resource-id:1>",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Replacement": "False",
+                    # "Scope": [
+                    #     "Properties"
+                    # ],
+                    # "Details": [
+                    #     {
+                    #         "Target": {
+                    #             "Attribute": "Properties",
+                    #             "Name": "Value",
+                    #             "RequiresRecreation": "Never",
+                    #             "Path": "/Properties/Value",
+                    #             "BeforeValue": "d45ab5ec",
+                    #             "AfterValue": "c77f207c",
+                    #             "AttributeChangeType": "Modify"
+                    #         },
+                    #         "Evaluation": "Dynamic",
+                    #         "ChangeSource": "DirectModification"
+                    #     },
+                    #     {
+                    #         "Target": {
+                    #             "Attribute": "Properties",
+                    #             "Name": "Value",
+                    #             "RequiresRecreation": "Never",
+                    #             "Path": "/Properties/Value",
+                    #             "BeforeValue": "d45ab5ec",
+                    #             "AfterValue": "c77f207c",
+                    #             "AttributeChangeType": "Modify"
+                    #         },
+                    #         "Evaluation": "Static",
+                    #         "ChangeSource": "ParameterReference",
+                    #         "CausingEntity": "ParameterValue"
+                    #     }
+                    # ],
+                    "BeforeContext": {"Properties": {"Value": "value-1", "Type": "String"}},
+                    "AfterContext": {"Properties": {"Value": "value-2", "Type": "String"}},
+                },
+            }
+        ]
+        self.compare_changes(changes, target)
+
+    def test_parameter_root_change(self):
+        t1 = {
+            "Parameters": {
+                "ParameterValue": {
+                    "Type": "String",
+                },
+            },
+            "Resources": {
+                "Parameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Ref": "ParameterValue"},
+                    },
+                },
+                "Parameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["Parameter1", "Type"]},
+                    },
+                },
+            },
+        }
+        changes = self.eval_change_set(
+            t1, t1, {"ParameterValue": "value-1"}, {"ParameterValue": "value-2"}
+        )
+        target = [
+            {
+                "Type": "Resource",
+                "ResourceChange": {
+                    "Action": "Modify",
+                    "LogicalResourceId": "Parameter1",
+                    # "PhysicalResourceId": "<physical-resource-id:1>",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Replacement": "False",
+                    # "Scope": [
+                    #     "Properties"
+                    # ],
+                    # "Details": [
+                    #     {
+                    #         "Target": {
+                    #             "Attribute": "Properties",
+                    #             "Name": "Value",
+                    #             "RequiresRecreation": "Never",
+                    #             "Path": "/Properties/Value",
+                    #             "BeforeValue": "d45ab5ec",
+                    #             "AfterValue": "c77f207c",
+                    #             "AttributeChangeType": "Modify"
+                    #         },
+                    #         "Evaluation": "Dynamic",
+                    #         "ChangeSource": "DirectModification"
+                    #     },
+                    #     {
+                    #         "Target": {
+                    #             "Attribute": "Properties",
+                    #             "Name": "Value",
+                    #             "RequiresRecreation": "Never",
+                    #             "Path": "/Properties/Value",
+                    #             "BeforeValue": "d45ab5ec",
+                    #             "AfterValue": "c77f207c",
+                    #             "AttributeChangeType": "Modify"
+                    #         },
+                    #         "Evaluation": "Static",
+                    #         "ChangeSource": "ParameterReference",
+                    #         "CausingEntity": "ParameterValue"
+                    #     }
+                    # ],
+                    "BeforeContext": {"Properties": {"Value": "value-1", "Type": "String"}},
+                    "AfterContext": {"Properties": {"Value": "value-2", "Type": "String"}},
+                },
+            }
         ]
         self.compare_changes(changes, target)
