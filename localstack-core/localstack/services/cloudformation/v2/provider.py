@@ -195,7 +195,7 @@ class CloudformationProviderV2(CloudformationProvider):
             stack,
             req_params,
             transformed_template,
-            change_set_type=request["ChangeSetType"],
+            change_set_type=change_set_type,
         )
         # only set parameters for the changeset, then switch to stack on execute_change_set
         change_set.template_body = template_body
