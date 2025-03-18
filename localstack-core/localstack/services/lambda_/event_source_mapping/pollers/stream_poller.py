@@ -2,8 +2,8 @@ import json
 import logging
 import threading
 from abc import abstractmethod
+from concurrent.futures import FIRST_EXCEPTION, Future, ThreadPoolExecutor, as_completed, wait
 from datetime import datetime
-from typing import Iterator
 
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
@@ -41,9 +41,6 @@ LOG = logging.getLogger(__name__)
 class StreamPoller(Poller):
     # Mapping of shard id => shard iterator
     shards: dict[str, str]
-    # Iterator for round-robin polling from different shards because a batch cannot contain events from different shards
-    # This is a workaround for not handling shards in parallel.
-    iterator_over_shards: Iterator[tuple[str, str]] | None
     # ESM UUID is needed in failure processing to form s3 failure destination object key
     esm_uuid: str | None
 
@@ -52,6 +49,8 @@ class StreamPoller(Poller):
 
     # Used for backing-off between retries and breaking the retry loop
     _is_shutdown: threading.Event
+
+    shard_poll_calls: dict[str, Future]
 
     def __init__(
         self,
@@ -66,9 +65,11 @@ class StreamPoller(Poller):
         self.partner_resource_arn = partner_resource_arn
         self.esm_uuid = esm_uuid
         self.shards = {}
-        self.iterator_over_shards = None
 
         self._is_shutdown = threading.Event()
+
+        self.shard_poll_calls = {}
+        self.executor = None
 
     @abstractmethod
     def transform_into_events(self, records: list[dict], shard_id) -> list[dict]:
@@ -112,8 +113,49 @@ class StreamPoller(Poller):
     def get_sequence_number(self, record: dict) -> str:
         pass
 
+    @abstractmethod
+    def split_by_partition_key(self, records: list[dict]) -> dict[str, list[dict]]:
+        """Splitting records by PartitionKey to ensure concurrent processing"""
+        pass
+
+    def do_initialize(self):
+        new_shards = self.initialize_shards()
+
+        if not new_shards:
+            # If no shards are found, we should back-off
+            raise EmptyPollResultsException(service=self.event_source(), source_arn=self.source_arn)
+
+        pf = self.stream_parameters.get("ParallelizationFactor", 1)
+        self.executor = self.initialize_shard_workers(
+            shard_count=len(new_shards), parallelization_factor=pf
+        )
+
+        return new_shards
+
+    def initialize_shard_workers(
+        self, shard_count: int, *, parallelization_factor: int = 1
+    ) -> ThreadPoolExecutor:
+        required_workers = shard_count * (1 + parallelization_factor)
+
+        # No new ThreadPool should be created if the current max worker count
+        # can handle the current shard count and parallization factor.
+        if self.executor:
+            if required_workers <= self.executor._max_workers:
+                return self.executor
+            else:
+                self.executor.shutdown(wait=False, cancel_futures=True)
+
+        _, event_source = self.event_source().split(":")
+
+        return ThreadPoolExecutor(
+            max_workers=required_workers,
+            thread_name_prefix=f"{event_source}-shard-consumer",
+        )
+
     def close(self):
         self._is_shutdown.set()
+        if self.executor:
+            self.executor.shutdown(wait=False, cancel_futures=True)
 
     def pre_filter(self, events: list[dict]) -> list[dict]:
         return events
@@ -133,41 +175,71 @@ class StreamPoller(Poller):
         #   https://docs.aws.amazon.com/streams/latest/dev/troubleshooting-consumers.html#shard-iterator-expires-unexpectedly
         #  Does this happen if no records are received for 300 seconds?
         if not self.shards:
-            self.shards = self.initialize_shards()
+            self.shards = self.do_initialize()
 
-        # TODO: improve efficiency because this currently limits the throughput to at most batch size per poll interval
-        # Handle shards round-robin. Re-initialize current shard iterator once all shards are handled.
-        if self.iterator_over_shards is None:
-            self.iterator_over_shards = iter(self.shards.items())
+        for shard_id, shard_iterator in self.shards.items():
+            if shard_id not in self.shard_poll_calls:
+                # If the shard is still processing, do not schedule another poll
+                future = self.executor.submit(self.poll_events_from_shard, shard_id, shard_iterator)
 
-        current_shard_tuple = next(self.iterator_over_shards, None)
-        if not current_shard_tuple:
-            self.iterator_over_shards = iter(self.shards.items())
-            current_shard_tuple = next(self.iterator_over_shards, None)
+                def create_callback(sid):
+                    def callback(*_):
+                        self.shard_poll_calls.pop(sid, None)
 
-        # TODO Better handling when shards are initialised and the iterator returns nothing
-        if not current_shard_tuple:
-            raise PipeInternalError(
-                "Failed to retrieve any shards for stream polling despite initialization."
-            )
+                    return callback
+
+                # When the future has completed, remove it from the dictionary
+                future.add_done_callback(create_callback(shard_id))
+                self.shard_poll_calls[shard_id] = future
 
         try:
-            self.poll_events_from_shard(*current_shard_tuple)
+            futures = list(
+                self.shard_poll_calls.values()
+            )  # to prevent concurrent dictionary modifications
+            # Return on the first completed call
+            next(as_completed(futures)).result()
         except PipeInternalError:
             # TODO: standardize logging
             # Ignore and wait for the next polling interval, which will do retry
             pass
 
     def poll_events_from_shard(self, shard_id: str, shard_iterator: str):
-        abort_condition = None
         get_records_response = self.get_records(shard_iterator)
         records = get_records_response.get("Records", [])
         if not records:
             self.shards[shard_id] = get_records_response["NextShardIterator"]
-            raise EmptyPollResultsException(service=self.event_source(), source_arn=self.source_arn)
+            return
 
         polled_events = self.transform_into_events(records, shard_id)
+        partitioned_events = self.split_by_partition_key(polled_events)
 
+        parallelization_factor = self.stream_parameters.get("ParallelizationFactor", 1)
+        distributed_events_by_partition = distribute_partitions(
+            partitioned_events, parallelization_factor
+        )
+
+        futures = []
+        for events in distributed_events_by_partition:
+            futures.append(
+                self.executor.submit(
+                    self.forward_events_to_target,
+                    events,
+                    shard_id,
+                    get_records_response["NextShardIterator"],
+                )
+            )
+
+        done, _ = wait(futures, return_when=FIRST_EXCEPTION)
+        for future in done:
+            # Raise the first exception encountered.
+            # TODO: Should we be cancelling remaining futures?
+            if exception := future.exception():
+                raise exception
+
+    def forward_events_to_target(
+        self, polled_events: list[dict], shard_id: str, next_shard_iterator: str
+    ):
+        abort_condition = None
         # Check MaximumRecordAgeInSeconds
         if maximum_record_age_in_seconds := self.stream_parameters.get("MaximumRecordAgeInSeconds"):
             arrival_timestamp_of_last_event = polled_events[-1]["approximateArrivalTimestamp"]
@@ -196,7 +268,7 @@ class StreamPoller(Poller):
         # Don't trigger upon empty events
         if len(matching_events_post_filter) == 0:
             # Update shard iterator if no records match the filter
-            self.shards[shard_id] = get_records_response["NextShardIterator"]
+            self.shards[shard_id] = next_shard_iterator
             return
         events = self.add_source_metadata(matching_events_post_filter)
         LOG.debug("Polled %d events from %s in shard %s", len(events), self.source_arn, shard_id)
@@ -228,7 +300,7 @@ class StreamPoller(Poller):
                 boff.reset()
 
                 # Update shard iterator if execution is successful
-                self.shards[shard_id] = get_records_response["NextShardIterator"]
+                self.shards[shard_id] = next_shard_iterator
                 return
             except PartialBatchFailureError as ex:
                 # TODO: add tests for partial batch failure scenarios
@@ -294,7 +366,7 @@ class StreamPoller(Poller):
         )
         self.send_events_to_dlq(shard_id, events, context=failure_context)
         # Update shard iterator if the execution failed but the events are sent to a DLQ
-        self.shards[shard_id] = get_records_response["NextShardIterator"]
+        self.shards[shard_id] = next_shard_iterator
 
     def get_records(self, shard_iterator: str) -> dict:
         """Returns a GetRecordsOutput from the GetRecords endpoint of streaming services such as Kinesis or DynamoDB"""
@@ -316,7 +388,7 @@ class StreamPoller(Poller):
             )
             # TODO: test TRIM_HORIZON and AT_TIMESTAMP scenarios for this case. We don't want to start from scratch and
             #  might need to think about checkpointing here.
-            self.shards = self.initialize_shards()
+            self.shards = self.do_initialize()
             raise PipeInternalError from e
         except ClientError as e:
             if "AccessDeniedException" in str(e):
@@ -333,7 +405,7 @@ class StreamPoller(Poller):
                         "Invalid ShardId in ShardIterator for %s. Re-initializing shards.",
                         self.source_arn,
                     )
-                    self.shards = self.initialize_shards()
+                    self.shards = self.do_initialize()
                 else:
                     LOG.warning(
                         "Source stream %s does not exist: %s",
@@ -347,7 +419,7 @@ class StreamPoller(Poller):
                     shard_iterator,
                     self.source_arn,
                 )
-                self.shards = self.initialize_shards()
+                self.shards = self.do_initialize()
             else:
                 LOG.debug("ClientError during get_records for stream %s: %s", self.source_arn, e)
             raise PipeInternalError from e
@@ -435,6 +507,25 @@ class StreamPoller(Poller):
                 return events[:i], events[i:]
 
         return events, []
+
+
+def distribute_partitions(
+    partitioned_events: dict[str, list[dict]], parallelization_factor: int
+) -> list[list[dict]]:
+    """
+    Distribute partition keys across Lambda instances based on a parallelization factor.
+    """
+    # If a paralleliztion factor is larger than how many partition keys we actually have available
+    # then limit partition groups to the no. of unique events
+    effective_factor = min(len(partitioned_events), parallelization_factor)
+    partition_groups = [[] for _ in range(effective_factor)]
+
+    # Round-robin
+    for i, partition_key in enumerate(partitioned_events.keys()):
+        group_id = i % effective_factor
+        partition_groups[group_id].extend(partitioned_events[partition_key])
+
+    return partition_groups
 
 
 def get_failure_s3_object_key(esm_uuid: str, shard_id: str, failure_datetime: datetime) -> str:

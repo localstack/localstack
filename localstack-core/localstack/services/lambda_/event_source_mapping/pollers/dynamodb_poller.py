@@ -1,9 +1,14 @@
 import logging
+from collections import defaultdict
 from datetime import datetime
 
 from botocore.client import BaseClient
 
-from localstack.aws.api.dynamodbstreams import StreamStatus
+from localstack.aws.api.dynamodbstreams import (
+    DescribeStreamOutput,
+    KeyType,
+    StreamStatus,
+)
 from localstack.services.lambda_.event_source_mapping.event_processor import (
     EventProcessor,
 )
@@ -13,6 +18,9 @@ LOG = logging.getLogger(__name__)
 
 
 class DynamoDBPoller(StreamPoller):
+    # The DynamoDB Table's partition key. Used to process records in parallel.
+    partition_key: str | None
+
     def __init__(
         self,
         source_arn: str,
@@ -30,6 +38,7 @@ class DynamoDBPoller(StreamPoller):
             esm_uuid=esm_uuid,
             partner_resource_arn=partner_resource_arn,
         )
+        self.partition_key = None
 
     @property
     def stream_parameters(self) -> dict:
@@ -37,8 +46,24 @@ class DynamoDBPoller(StreamPoller):
 
     def initialize_shards(self):
         # TODO: update upon re-sharding, maybe using a cache and call every time?!
-        stream_info = self.source_client.describe_stream(StreamArn=self.source_arn)
+        stream_info: DescribeStreamOutput = self.source_client.describe_stream(
+            StreamArn=self.source_arn
+        )
         stream_status = stream_info["StreamDescription"]["StreamStatus"]
+
+        # Set the partition key from the Stream description's KeySchema attribute
+        key_schema = stream_info["StreamDescription"]["KeySchema"]
+        for key in key_schema:
+            if key["KeyType"] == KeyType.HASH:
+                self.partition_key = key["AttributeName"]
+                break
+
+        if self.partition_key is None:
+            LOG.warning(
+                "No PartitionKey found for DynamoDB Stream %s. Parallel processing will be disabled.",
+                self.source_arn,
+            )
+
         if stream_status != StreamStatus.ENABLED:
             LOG.warning(
                 "DynamoDB stream %s is not enabled. Current status: %s",
@@ -75,6 +100,17 @@ class DynamoDBPoller(StreamPoller):
         return {
             "eventVersion": "1.1",
         }
+
+    def split_by_partition_key(self, records: list[dict]) -> dict[str, list[dict]]:
+        """Splitting DynamoDB records by PartitionKey to ensure concurrent processing"""
+        partitions = defaultdict(list)
+        for record in records:
+            keys = record.get("dynamodb", {}).get("Keys", {})
+            if pk_object := keys.get(self.partition_key, {}):
+                # Extract the value out of the PK object i.e {"S": "key"}
+                partition_key = next(iter(pk_object.values()))
+                partitions[partition_key].append(record)
+        return dict(partitions)
 
     def transform_into_events(self, records: list[dict], shard_id) -> list[dict]:
         events = []

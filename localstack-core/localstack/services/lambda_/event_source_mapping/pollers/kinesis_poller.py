@@ -1,6 +1,7 @@
 import base64
 import json
 import logging
+from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
 
@@ -98,6 +99,14 @@ class KinesisPoller(StreamPoller):
             "eventName": "aws:kinesis:record",
             "invokeIdentityArn": self.invoke_identity_arn,
         }
+
+    def split_by_partition_key(self, records: list[dict]) -> dict[str, list[dict]]:
+        """Splitting Kinesis records by PartitionKey to ensure concurrent processing"""
+        partitions = defaultdict(list)
+        for record in records:
+            partition_key = record.get("kinesis", {}).get("partitionKey")
+            partitions[partition_key].append(record)
+        return dict(partitions)
 
     def transform_into_events(self, records: list[dict], shard_id) -> list[dict]:
         events = []
