@@ -87,6 +87,9 @@ class ChangeSetModelExecutor(ChangeSetModelDescriber):
                 # TODO: this is likely a duplicate of updating from extra_resource_properties
                 self.resources[node_resource.name]["Properties"].update(event.resource_model)
                 self.resources[node_resource.name].update(extra_resource_properties)
+                # XXX for legacy delete_stack compatibility
+                self.resources[node_resource.name]["LogicalResourceId"] = node_resource.name
+                self.resources[node_resource.name]["Type"] = resource_type
             case any:
                 raise NotImplementedError(f"Event status '{any}' not handled")
 
