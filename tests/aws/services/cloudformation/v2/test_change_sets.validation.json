@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/v2/test_change_sets.py::test_single_resource_static_update": {
+    "last_validated_date": "2025-03-18T16:52:35+00:00"
+  }
+}

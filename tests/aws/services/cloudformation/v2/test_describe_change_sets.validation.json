@@ -1,5 +1,0 @@
-{
-  "tests/aws/services/cloudformation/v2/test_describe_change_sets.py::TestDescribeChangeSet::test_describe_change_set": {
-    "last_validated_date": "2025-03-18T16:48:03+00:00"
-  }
-}
