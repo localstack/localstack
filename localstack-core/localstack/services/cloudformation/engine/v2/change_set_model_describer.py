@@ -46,12 +46,17 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
     _node_template: Final[NodeTemplate]
     _changes: Final[cfn_api.Changes]
     _describe_unit_cache: dict[Scope, DescribeUnit]
+    _include_property_values: Final[cfn_api.IncludePropertyValues | None]
 
-    def __init__(self, node_template: NodeTemplate):
+    def __init__(
+        self,
+        node_template: NodeTemplate,
+        include_property_values: IncludePropertyValues | None = None,
+    ):
         self._node_template = node_template
         self._changes = list()
         self._describe_unit_cache = dict()
-        self._resource_changes = list()
+        self._include_property_values = include_property_values
 
     def get_changes(self) -> cfn_api.Changes:
         self.visit(self._node_template)
@@ -395,12 +400,19 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
                 resource_change["Action"] = cfn_api.ChangeAction.Modify
                 resource_change["BeforeContext"] = properties_describe_unit.before_context
                 resource_change["AfterContext"] = properties_describe_unit.after_context
+                if self._include_property_values:
+                    resource_change["BeforeContext"] = properties_describe_unit.before_context
+                    resource_change["AfterContext"] = properties_describe_unit.after_context
             case ChangeType.CREATED:
                 resource_change["Action"] = cfn_api.ChangeAction.Add
                 resource_change["AfterContext"] = properties_describe_unit.after_context
+                if self._include_property_values:
+                    resource_change["AfterContext"] = properties_describe_unit.after_context
             case ChangeType.REMOVED:
                 resource_change["Action"] = cfn_api.ChangeAction.Remove
                 resource_change["BeforeContext"] = properties_describe_unit.before_context
+                if self._include_property_values:
+                    resource_change["BeforeContext"] = properties_describe_unit.before_context
 
         self._changes.append(
             cfn_api.Change(Type=cfn_api.ChangeType.Resource, ResourceChange=resource_change)

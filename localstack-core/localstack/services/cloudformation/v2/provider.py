@@ -325,7 +325,9 @@ class CloudformationProviderV2(CloudformationProvider):
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
 
-        change_set_describer = ChangeSetModelDescriber(node_template=change_set.update_graph)
+        change_set_describer = ChangeSetModelDescriber(
+            node_template=change_set.update_graph, include_property_values=include_property_values
+        )
         resource_changes = change_set_describer.get_resource_changes()
 
         attrs = [
