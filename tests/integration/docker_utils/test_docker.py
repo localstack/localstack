@@ -1240,7 +1240,15 @@ class TestDockerClient:
         dockerfile_ref = str(dockerfile_dir) if dockerfile_as_dir else dockerfile_path
 
         image_name = f"img-{short_uid()}"
-        docker_client.build_image(dockerfile_path=dockerfile_ref, image_name=image_name, **kwargs)
+        build_logs = docker_client.build_image(
+            dockerfile_path=dockerfile_ref, image_name=image_name, **kwargs
+        )
+        # The exact log files are very different between the CMD and SDK
+        # We just run some smoke tests
+        assert build_logs
+        assert isinstance(build_logs, str)
+        assert "ADD" in build_logs
+
         cleanups.append(lambda: docker_client.remove_image(image_name, force=True))
 
         assert image_name in docker_client.get_docker_image_names()

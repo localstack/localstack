@@ -141,10 +141,10 @@
 /tests/aws/services/es/ @alexrashed @silv-io
 
 # events
-/localstack-core/localstack/aws/api/events/ @maxhoheiser @joe4dev
-/localstack-core/localstack/services/events/ @maxhoheiser @joe4dev
-/tests/aws/services/events/ @maxhoheiser @joe4dev
-/tests/unit/services/events/ @maxhoheiser @joe4dev
+/localstack-core/localstack/aws/api/events/ @maxhoheiser @bentsku
+/localstack-core/localstack/services/events/ @maxhoheiser @bentsku
+/tests/aws/services/events/ @maxhoheiser @bentsku
+/tests/unit/services/events/ @maxhoheiser @bentsku
 
 # firehose
 /localstack-core/localstack/aws/api/firehose/ @pinzon
@@ -248,6 +248,6 @@
 /tests/aws/services/sts/ @pinzon @dfangl
 
 # transcribe
-/localstack-core/localstack/aws/api/transcribe/ @sannya-singal @ackdav
-/localstack-core/localstack/services/transcribe/ @sannya-singal @ackdav
-/tests/aws/services/transcribe/ @sannya-singal @ackdav
+/localstack-core/localstack/aws/api/transcribe/ @sannya-singal
+/localstack-core/localstack/services/transcribe/ @sannya-singal
+/tests/aws/services/transcribe/ @sannya-singal

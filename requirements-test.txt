@@ -20,20 +20,20 @@ apispec==6.8.1
     # via localstack-core
 argparse==1.4.0
     # via amazon-kclpy
-attrs==25.1.0
+attrs==25.2.0
     # via
     #   cattrs
     #   jsii
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.226
+aws-cdk-asset-awscli-v1==2.2.227
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==39.2.20
+aws-cdk-cloud-assembly-schema==40.7.0
     # via aws-cdk-lib
-aws-cdk-lib==2.181.1
+aws-cdk-lib==2.183.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.95.0
     # via
@@ -41,17 +41,17 @@ aws-sam-translator==1.95.0
     #   localstack-core
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.37.21
+awscli==1.38.13
     # via localstack-core
-awscrt==0.23.10
+awscrt==0.24.1
     # via localstack-core
-boto3==1.36.21
+boto3==1.37.13
     # via
     #   amazon-kclpy
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-botocore==1.36.21
+botocore==1.37.13
     # via
     #   aws-xray-sdk
     #   awscli
@@ -80,7 +80,7 @@ certifi==2025.1.31
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.27.0
+cfn-lint==1.29.1
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -107,7 +107,7 @@ cryptography==44.0.2
     #   pyopenssl
 decorator==5.2.1
     # via jsonpath-rw
-deepdiff==8.2.0
+deepdiff==8.3.0
     # via
     #   localstack-core (pyproject.toml)
     #   localstack-snapshot
@@ -171,7 +171,7 @@ iniconfig==2.0.0
     # via pytest
 isodate==0.7.2
     # via openapi-core
-jinja2==3.1.5
+jinja2==3.1.6
     # via moto-ext
 jmespath==1.0.1
     # via
@@ -181,7 +181,7 @@ joserfc==1.0.4
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core
-jsii==1.108.0
+jsii==1.109.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
@@ -373,7 +373,7 @@ requests==2.32.3
     #   rolo
 requests-aws4auth==1.3.1
     # via localstack-core
-responses==0.25.6
+responses==0.25.7
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
@@ -389,7 +389,7 @@ rpds-py==0.23.1
     #   referencing
 rsa==4.7.2
     # via awscli
-s3transfer==0.11.3
+s3transfer==0.11.4
     # via
     #   awscli
     #   boto3

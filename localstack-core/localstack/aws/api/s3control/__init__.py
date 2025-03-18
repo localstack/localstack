@@ -1732,6 +1732,7 @@ class GetDataAccessRequest(ServiceRequest):
 class GetDataAccessResult(TypedDict, total=False):
     Credentials: Optional[Credentials]
     MatchedGrantTarget: Optional[S3Prefix]
+    Grantee: Optional[Grantee]
 
 
 class GetJobTaggingRequest(ServiceRequest):

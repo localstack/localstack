@@ -14,7 +14,6 @@ from localstack.http import Request
 from localstack.services.s3.utils import uses_host_addressing
 from localstack.services.sqs.utils import is_sqs_queue_url
 from localstack.utils.strings import to_bytes
-from localstack.utils.urls import hostname_from_url
 
 LOG = logging.getLogger(__name__)
 
@@ -141,12 +140,6 @@ def custom_host_addressing_rules(host: str) -> Optional[ServiceModelIdentifier]:
 
     Some services are added through a patch in ext.
     """
-
-    # a note on ``.execute-api.`` and why it shouldn't be added as a check here: ``.execute-api.`` was previously
-    # mapped distinctly to ``apigateway``, but this assumption is too strong, since the URL can be apigw v1, v2,
-    # or apigw management api. so in short, simply based on the host header, it's not possible to unambiguously
-    # associate a specific apigw service to the request.
-
     if ".lambda-url." in host:
         return ServiceModelIdentifier("lambda")
 
@@ -166,38 +159,14 @@ def custom_path_addressing_rules(path: str) -> Optional[ServiceModelIdentifier]:
         return ServiceModelIdentifier("lambda")
 
 
-well_known_path_prefixes = (
-    "/_aws",
-    "/_localstack",
-    "/_pods",
-    "/_extension",
-)
-
-
-def legacy_rules(request: Request) -> Optional[ServiceModelIdentifier]:
+def legacy_s3_rules(request: Request) -> Optional[ServiceModelIdentifier]:
     """
-    *Legacy* rules which migrate routing logic which will become obsolete with the ASF Gateway.
-    All rules which are implemented here should be migrated to the new router once these services are migrated to ASF.
-
-    TODO: These custom rules should become obsolete by migrating these to use the http/router.py
+    *Legacy* rules which allow us to fallback to S3 if no other service was matched.
+    All rules which are implemented here should be removed once we make sure it would not break any use-cases.
     """
 
     path = request.path
     method = request.method
-    host = hostname_from_url(request.host)
-
-    if ".lambda-url." in host:
-        return ServiceModelIdentifier("lambda")
-
-    # DynamoDB shell URLs
-    if path.startswith("/shell") or path.startswith("/dynamodb/shell"):
-        return ServiceModelIdentifier("dynamodb")
-
-    # TODO Remove once fallback to S3 is disabled (after S3 ASF and Cors rework)
-    # necessary for correct handling of cors for internal endpoints
-    for prefix in well_known_path_prefixes:
-        if path.startswith(prefix):
-            return None
 
     # TODO The remaining rules here are special S3 rules - needs to be discussed how these should be handled.
     #      Some are similar to other rules and not that greedy, others are nearly general fallbacks.
@@ -420,8 +389,8 @@ def determine_aws_service_model(
     if resolved_conflict:
         return services.get(*resolved_conflict)
 
-    # 7. check the legacy rules in the end
-    legacy_match = legacy_rules(request)
+    # 7. check the legacy S3 rules in the end
+    legacy_match = legacy_s3_rules(request)
     if legacy_match:
         return services.get(*legacy_match)
 

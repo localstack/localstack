@@ -353,6 +353,7 @@ VolumeId = str
 VolumeIdWithResolver = str
 VpcBlockPublicAccessExclusionId = str
 VpcCidrAssociationId = str
+VpcEncryptionControlId = str
 VpcEndpointId = str
 VpcEndpointServiceId = str
 VpcFlowLogId = str
@@ -3081,6 +3082,11 @@ class ServiceConnectivityType(StrEnum):
     ipv6 = "ipv6"
 
 
+class ServiceManaged(StrEnum):
+    alb = "alb"
+    nlb = "nlb"
+
+
 class ServiceState(StrEnum):
     Pending = "Pending"
     Available = "Available"
@@ -3604,6 +3610,28 @@ class VpcCidrBlockStateCode(StrEnum):
     disassociated = "disassociated"
     failing = "failing"
     failed = "failed"
+
+
+class VpcEncryptionControlExclusionState(StrEnum):
+    enabling = "enabling"
+    enabled = "enabled"
+    disabling = "disabling"
+    disabled = "disabled"
+
+
+class VpcEncryptionControlMode(StrEnum):
+    monitor = "monitor"
+    enforce = "enforce"
+
+
+class VpcEncryptionControlState(StrEnum):
+    enforce_in_progress = "enforce-in-progress"
+    monitor_in_progress = "monitor-in-progress"
+    enforce_failed = "enforce-failed"
+    monitor_failed = "monitor-failed"
+    deleting = "deleting"
+    deleted = "deleted"
+    available = "available"
 
 
 class VpcEndpointType(StrEnum):
@@ -4331,6 +4359,7 @@ class Address(TypedDict, total=False):
     CustomerOwnedIp: Optional[String]
     CustomerOwnedIpv4Pool: Optional[String]
     CarrierIp: Optional[String]
+    ServiceManaged: Optional[ServiceManaged]
     InstanceId: Optional[String]
     PublicIp: Optional[String]
 
@@ -5308,6 +5337,7 @@ class AvailabilityZone(TypedDict, total=False):
     ZoneType: Optional[String]
     ParentZoneName: Optional[String]
     ParentZoneId: Optional[String]
+    GroupLongName: Optional[String]
     State: Optional[AvailabilityZoneState]
 
 
@@ -5401,6 +5431,27 @@ class BlockDeviceMapping(TypedDict, total=False):
 
 BlockDeviceMappingList = List[BlockDeviceMapping]
 BlockDeviceMappingRequestList = List[BlockDeviceMapping]
+
+
+class EbsBlockDeviceResponse(TypedDict, total=False):
+    Encrypted: Optional[Boolean]
+    DeleteOnTermination: Optional[Boolean]
+    Iops: Optional[Integer]
+    Throughput: Optional[Integer]
+    KmsKeyId: Optional[KmsKeyId]
+    SnapshotId: Optional[SnapshotId]
+    VolumeSize: Optional[Integer]
+    VolumeType: Optional[VolumeType]
+
+
+class BlockDeviceMappingResponse(TypedDict, total=False):
+    DeviceName: Optional[String]
+    VirtualName: Optional[String]
+    Ebs: Optional[EbsBlockDeviceResponse]
+    NoDevice: Optional[String]
+
+
+BlockDeviceMappingResponseList = List[BlockDeviceMappingResponse]
 
 
 class BlockPublicAccessStates(TypedDict, total=False):
@@ -6242,6 +6293,7 @@ class CopyImageRequest(ServiceRequest):
     DestinationOutpostArn: Optional[String]
     CopyImageTags: Optional[Boolean]
     TagSpecifications: Optional[TagSpecificationList]
+    SnapshotCopyCompletionDurationMinutes: Optional[Long]
     DryRun: Optional[Boolean]
 
 
@@ -6511,6 +6563,29 @@ class CreateDefaultVpcRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
 
+class VpcEncryptionControlExclusion(TypedDict, total=False):
+    State: Optional[VpcEncryptionControlExclusionState]
+    StateMessage: Optional[String]
+
+
+class VpcEncryptionControlExclusions(TypedDict, total=False):
+    InternetGateway: Optional[VpcEncryptionControlExclusion]
+    EgressOnlyInternetGateway: Optional[VpcEncryptionControlExclusion]
+    NatGateway: Optional[VpcEncryptionControlExclusion]
+    VirtualPrivateGateway: Optional[VpcEncryptionControlExclusion]
+    VpcPeering: Optional[VpcEncryptionControlExclusion]
+
+
+class VpcEncryptionControl(TypedDict, total=False):
+    VpcId: Optional[VpcId]
+    VpcEncryptionControlId: Optional[VpcEncryptionControlId]
+    Mode: Optional[VpcEncryptionControlMode]
+    State: Optional[VpcEncryptionControlState]
+    StateMessage: Optional[String]
+    ResourceExclusions: Optional[VpcEncryptionControlExclusions]
+    Tags: Optional[TagList]
+
+
 VpcCidrBlockAssociationSet = List[VpcCidrBlockAssociation]
 VpcIpv6CidrBlockAssociationSet = List[VpcIpv6CidrBlockAssociation]
 
@@ -6521,6 +6596,7 @@ class Vpc(TypedDict, total=False):
     Ipv6CidrBlockAssociationSet: Optional[VpcIpv6CidrBlockAssociationSet]
     CidrBlockAssociationSet: Optional[VpcCidrBlockAssociationSet]
     IsDefault: Optional[Boolean]
+    EncryptionControl: Optional[VpcEncryptionControl]
     Tags: Optional[TagList]
     BlockPublicAccessStates: Optional[BlockPublicAccessStates]
     VpcId: Optional[String]
@@ -6674,6 +6750,7 @@ class FleetLaunchTemplateOverrides(TypedDict, total=False):
     Placement: Optional[PlacementResponse]
     InstanceRequirements: Optional[InstanceRequirements]
     ImageId: Optional[ImageId]
+    BlockDeviceMappings: Optional[BlockDeviceMappingResponseList]
 
 
 class FleetLaunchTemplateSpecification(TypedDict, total=False):
@@ -6775,6 +6852,27 @@ class InstanceRequirementsRequest(TypedDict, total=False):
     BaselinePerformanceFactors: Optional[BaselinePerformanceFactorsRequest]
 
 
+class FleetEbsBlockDeviceRequest(TypedDict, total=False):
+    Encrypted: Optional[Boolean]
+    DeleteOnTermination: Optional[Boolean]
+    Iops: Optional[Integer]
+    Throughput: Optional[Integer]
+    KmsKeyId: Optional[KmsKeyId]
+    SnapshotId: Optional[SnapshotId]
+    VolumeSize: Optional[Integer]
+    VolumeType: Optional[VolumeType]
+
+
+class FleetBlockDeviceMappingRequest(TypedDict, total=False):
+    DeviceName: Optional[String]
+    VirtualName: Optional[String]
+    Ebs: Optional[FleetEbsBlockDeviceRequest]
+    NoDevice: Optional[String]
+
+
+FleetBlockDeviceMappingRequestList = List[FleetBlockDeviceMappingRequest]
+
+
 class Placement(TypedDict, total=False):
     Affinity: Optional[String]
     GroupName: Optional[PlacementGroupName]
@@ -6795,8 +6893,9 @@ class FleetLaunchTemplateOverridesRequest(TypedDict, total=False):
     WeightedCapacity: Optional[Double]
     Priority: Optional[Double]
     Placement: Optional[Placement]
+    BlockDeviceMappings: Optional[FleetBlockDeviceMappingRequestList]
     InstanceRequirements: Optional[InstanceRequirementsRequest]
-    ImageId: Optional[ImageId]
+    ImageId: Optional[String]
 
 
 FleetLaunchTemplateOverridesListRequest = List[FleetLaunchTemplateOverridesRequest]
@@ -10667,6 +10766,10 @@ class DeprovisionPublicIpv4PoolCidrResult(TypedDict, total=False):
 class DeregisterImageRequest(ServiceRequest):
     ImageId: ImageId
     DryRun: Optional[Boolean]
+
+
+class DeregisterImageResult(TypedDict, total=False):
+    pass
 
 
 InstanceTagKeySet = List[String]
@@ -20367,6 +20470,7 @@ class Ec2Api:
         destination_outpost_arn: String = None,
         copy_image_tags: Boolean = None,
         tag_specifications: TagSpecificationList = None,
+        snapshot_copy_completion_duration_minutes: Long = None,
         dry_run: Boolean = None,
         **kwargs,
     ) -> CopyImageResult:
@@ -22425,7 +22529,7 @@ class Ec2Api:
     @handler("DeregisterImage")
     def deregister_image(
         self, context: RequestContext, image_id: ImageId, dry_run: Boolean = None, **kwargs
-    ) -> None:
+    ) -> DeregisterImageResult:
         raise NotImplementedError
 
     @handler("DeregisterInstanceEventNotificationAttributes")
