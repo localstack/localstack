@@ -1,0 +1,21 @@
+{
+  "Comment": "EVENTS_PUT_EVENTS_ENTRIES_JSONPATH",
+  "StartAt": "PutEvents",
+  "States": {
+    "PutEvents": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::events:putEvents",
+      "Parameters": {
+          "Entries": [
+            {
+              "Detail.$": "$.detail",
+              "DetailType.$": "$.detailType",
+              "Source.$": "$.source",
+              "Resources.$": "$.resources",
+            }
+          ]
+      },
+      "End": true
+    }
+  }
+}

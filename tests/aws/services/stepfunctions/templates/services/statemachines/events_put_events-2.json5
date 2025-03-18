@@ -1,0 +1,31 @@
+{
+  "Comment": "EVENTS_PUT_EVENTS",
+  "StartAt": "PutEvents",
+  "States": {
+    "notifySuccessEventBridgeTask": {
+      "Type": "Task",
+      "ResultPath": "$.notifySuccessEventBridgeTask",
+      "Resource": "arn:aws:states:::events:putEvents",
+      "Parameters": {
+        "Entries": [
+          {
+            "Detail": {
+              "tenantId.$": "$.detail.tenantId",
+              "jobOutput": {
+                "tenantConfig.$": "$.startLambda.Payload.output.tenantConfig",
+                "tenantStatus.$": "$.startLambda.Payload.output.tenantStatus",
+                "prices.$": "$.startLambda.Payload.output.prices",
+                "tenantName.$": "$.startLambda.Payload.output.tenantName",
+                "email.$": "$.startLambda.Payload.output.email"
+              }
+            },
+            "DetailType": "provisionSuccess",
+            "EventBusName": "__tbd__",
+            "Source": "applicationPlaneEventSource"
+          }
+        ]
+      },
+      "End": true
+    }
+  }
+}

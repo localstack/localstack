@@ -3173,5 +3173,1038 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping_multiple_shards[1]": {
+    "recorded-date": "17-03-2025, 17:48:36",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 100,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {}
+        },
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": -1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "kinesis_records": [
+        {
+          "invocation_id": "<invocation_id>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-0",
+                "sequenceNumber": "<sequence-number:1>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000000:<sequence-number:1>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-0",
+                "sequenceNumber": "<sequence-number:2>",
+                "data": "aGVsbG8tMQ==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000000:<sequence-number:2>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        },
+        {
+          "invocation_id": "<invocation_id>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-1",
+                "sequenceNumber": "<sequence-number:3>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000001:<sequence-number:3>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-1",
+                "sequenceNumber": "<sequence-number:4>",
+                "data": "aGVsbG8tMQ==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000001:<sequence-number:4>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        },
+        {
+          "invocation_id": "<invocation_id>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-2",
+                "sequenceNumber": "<sequence-number:5>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000002:<sequence-number:5>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-2",
+                "sequenceNumber": "<sequence-number:6>",
+                "data": "aGVsbG8tMQ==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000002:<sequence-number:6>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        },
+        {
+          "invocation_id": "<invocation_id>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-3",
+                "sequenceNumber": "<sequence-number:7>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000003:<sequence-number:7>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-3",
+                "sequenceNumber": "<sequence-number:8>",
+                "data": "aGVsbG8tMQ==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000003:<sequence-number:8>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        },
+        {
+          "invocation_id": "<invocation_id>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-4",
+                "sequenceNumber": "<sequence-number:9>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000004:<sequence-number:9>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-4",
+                "sequenceNumber": "<sequence-number:10>",
+                "data": "aGVsbG8tMQ==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000004:<sequence-number:10>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping_multiple_shards[3]": {
+    "recorded-date": "17-03-2025, 17:14:12",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 100,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {}
+        },
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": -1,
+        "ParallelizationFactor": 3,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "kinesis_records": [
+        {
+          "invocation_id": "<invocation_id>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-0",
+                "sequenceNumber": "<sequence-number:1>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000000:<sequence-number:1>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-0",
+                "sequenceNumber": "<sequence-number:2>",
+                "data": "aGVsbG8tMQ==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000000:<sequence-number:2>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        },
+        {
+          "invocation_id": "<invocation_id>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-1",
+                "sequenceNumber": "<sequence-number:3>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000001:<sequence-number:3>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-1",
+                "sequenceNumber": "<sequence-number:4>",
+                "data": "aGVsbG8tMQ==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000001:<sequence-number:4>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        },
+        {
+          "invocation_id": "<invocation_id>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-2",
+                "sequenceNumber": "<sequence-number:5>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000002:<sequence-number:5>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-2",
+                "sequenceNumber": "<sequence-number:6>",
+                "data": "aGVsbG8tMQ==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000002:<sequence-number:6>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        },
+        {
+          "invocation_id": "<invocation_id>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-3",
+                "sequenceNumber": "<sequence-number:7>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000003:<sequence-number:7>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-3",
+                "sequenceNumber": "<sequence-number:8>",
+                "data": "aGVsbG8tMQ==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000003:<sequence-number:8>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        },
+        {
+          "invocation_id": "<invocation_id>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-4",
+                "sequenceNumber": "<sequence-number:9>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000004:<sequence-number:9>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-4",
+                "sequenceNumber": "<sequence-number:10>",
+                "data": "aGVsbG8tMQ==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000004:<sequence-number:10>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping_multiple_shards[6]": {
+    "recorded-date": "17-03-2025, 17:47:25",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 100,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {}
+        },
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": -1,
+        "ParallelizationFactor": 6,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "kinesis_records": [
+        {
+          "invocation_id": "<invocation_id>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-0",
+                "sequenceNumber": "<sequence-number:1>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000000:<sequence-number:1>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-0",
+                "sequenceNumber": "<sequence-number:2>",
+                "data": "aGVsbG8tMQ==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000000:<sequence-number:2>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        },
+        {
+          "invocation_id": "<invocation_id>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-1",
+                "sequenceNumber": "<sequence-number:3>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000001:<sequence-number:3>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-1",
+                "sequenceNumber": "<sequence-number:4>",
+                "data": "aGVsbG8tMQ==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000001:<sequence-number:4>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        },
+        {
+          "invocation_id": "<invocation_id>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-2",
+                "sequenceNumber": "<sequence-number:5>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000002:<sequence-number:5>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-2",
+                "sequenceNumber": "<sequence-number:6>",
+                "data": "aGVsbG8tMQ==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000002:<sequence-number:6>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        },
+        {
+          "invocation_id": "<invocation_id>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-3",
+                "sequenceNumber": "<sequence-number:7>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000003:<sequence-number:7>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-3",
+                "sequenceNumber": "<sequence-number:8>",
+                "data": "aGVsbG8tMQ==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000003:<sequence-number:8>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        },
+        {
+          "invocation_id": "<invocation_id>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-4",
+                "sequenceNumber": "<sequence-number:9>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000004:<sequence-number:9>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test-4",
+                "sequenceNumber": "<sequence-number:10>",
+                "data": "aGVsbG8tMQ==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000004:<sequence-number:10>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping_parallelization_factor[1]": {
+    "recorded-date": "18-03-2025, 09:26:35",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 5,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {}
+        },
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 5,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": -1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "kinesis_records": [
+        {
+          "invocation_id": "<uuid:2>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "short_processing",
+                "sequenceNumber": "<sequence-number:1>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000000:<sequence-number:1>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "short_processing",
+                "sequenceNumber": "<sequence-number:2>",
+                "data": "aGVsbG8tMQ==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000000:<sequence-number:2>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "short_processing",
+                "sequenceNumber": "<sequence-number:3>",
+                "data": "aGVsbG8tMg==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000000:<sequence-number:3>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        },
+        {
+          "invocation_id": "<uuid:3>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "short_processing",
+                "sequenceNumber": "<sequence-number:4>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000000:<sequence-number:4>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        },
+        {
+          "invocation_id": "<uuid:4>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "long_processing",
+                "sequenceNumber": "<sequence-number:5>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000001:<sequence-number:5>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping_parallelization_factor[2]": {
+    "recorded-date": "18-03-2025, 16:06:24",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 5,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {}
+        },
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 5,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": -1,
+        "ParallelizationFactor": 2,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "kinesis_records": [
+        {
+          "invocation_id": "<uuid:2>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "short_processing",
+                "sequenceNumber": "<sequence-number:1>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000000:<sequence-number:1>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "short_processing",
+                "sequenceNumber": "<sequence-number:2>",
+                "data": "aGVsbG8tMQ==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000000:<sequence-number:2>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "short_processing",
+                "sequenceNumber": "<sequence-number:3>",
+                "data": "aGVsbG8tMg==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000000:<sequence-number:3>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "short_processing",
+                "sequenceNumber": "<sequence-number:4>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000000:<sequence-number:4>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        },
+        {
+          "invocation_id": "<uuid:3>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "long_processing",
+                "sequenceNumber": "<sequence-number:5>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000001:<sequence-number:5>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping_parallelization_factor[3]": {
+    "recorded-date": "18-03-2025, 14:52:25",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 5,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {}
+        },
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 5,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": -1,
+        "ParallelizationFactor": 3,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "kinesis_records": [
+        {
+          "invocation_id": "<uuid:2>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "short_processing",
+                "sequenceNumber": "<sequence-number:1>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000000:<sequence-number:1>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "short_processing",
+                "sequenceNumber": "<sequence-number:2>",
+                "data": "aGVsbG8tMQ==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000000:<sequence-number:2>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "short_processing",
+                "sequenceNumber": "<sequence-number:3>",
+                "data": "aGVsbG8tMg==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000000:<sequence-number:3>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        },
+        {
+          "invocation_id": "<uuid:3>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "short_processing",
+                "sequenceNumber": "<sequence-number:4>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000000:<sequence-number:4>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        },
+        {
+          "invocation_id": "<uuid:4>",
+          "Batch": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "long_processing",
+                "sequenceNumber": "<sequence-number:5>",
+                "data": "aGVsbG8tMA==",
+                "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "shardId-000000000001:<sequence-number:5>",
+              "eventName": "aws:kinesis:record",
+              "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:3>",
+              "awsRegion": "<region>",
+              "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>"
+            }
+          ]
+        }
+      ]
+    }
   }
 }

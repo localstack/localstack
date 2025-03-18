@@ -1,11 +1,15 @@
 import json
 import math
+import threading
 import time
 from datetime import datetime
 
 import pytest
 from botocore.exceptions import ClientError
-from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
+from localstack_snapshot.snapshots.transformer import (
+    KeyValueBasedTransformer,
+    SortingTransformer,
+)
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.lambda_utils import (
@@ -154,6 +158,232 @@ class TestKinesisSource:
         # check if the timestamp has same amount of numbers before the comma as the current timestamp
         # this will fail in november 2286, if this code is still around by then, read this comment and update to 10
         assert int(math.log10(timestamp)) == 9
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # FIXME: Shard IDs not being transformed.
+            "$..eventID",
+        ],
+    )
+    @pytest.mark.parametrize(
+        "parallelization_factor",
+        [
+            1,
+            pytest.param(
+                2,
+                marks=pytest.mark.skipif(
+                    condition=not is_aws_cloud(),
+                    reason="AWS joins the delayed record with the first batch in the first shard.",
+                ),
+            ),
+            3,
+        ],
+    )
+    def test_create_kinesis_event_source_mapping_parallelization_factor(
+        self,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        create_function_with_sqs_destination,
+        get_msg_from_q,
+        cleanups,
+        snapshot,
+        parallelization_factor,
+        aws_client,
+    ):
+        snapshot.add_transformer(snapshot.transform.kinesis_api())
+
+        stream_name = f"test-foobar-{short_uid()}"
+        record_data = "hello"
+        num_events_kinesis = 5
+
+        lambda_timeout = 300 if is_aws_cloud() else 60
+        delayed_send_duration = 80 if is_aws_cloud() else 10
+
+        function_name, sqs_url = create_function_with_sqs_destination(timeout=lambda_timeout)
+
+        kinesis_create_stream(StreamName=stream_name, ShardCount=2)
+        wait_for_stream_ready(stream_name=stream_name)
+
+        stream_summary = aws_client.kinesis.describe_stream_summary(StreamName=stream_name)
+        assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 2
+
+        stream_description = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]
+
+        stream_arn = stream_description["StreamARN"]
+        shards = stream_description["Shards"]
+
+        def _put_records(record_count: int, partition_key: str, shard: dict):
+            starting_hash_key = shard["HashKeyRange"]["StartingHashKey"]
+            previous_sequence = None
+            kwargs = {
+                "ExplicitHashKey": starting_hash_key,  # Ensure we write to same shard
+                "StreamName": stream_name,
+            }
+
+            for i in range(record_count):
+                if not previous_sequence:
+                    response = aws_client.kinesis.put_record(
+                        Data=f"{record_data}-{i}".encode(),
+                        PartitionKey=partition_key,
+                        **kwargs,
+                    )
+                else:
+                    response = aws_client.kinesis.put_record(
+                        Data=f"{record_data}-{i}".encode(),
+                        PartitionKey=partition_key,
+                        SequenceNumberForOrdering=previous_sequence,  # Ensure in-order writes to shard
+                        **kwargs,
+                    )
+
+                previous_sequence = response["SequenceNumber"]
+
+        _put_records(3, "short_processing", shards[0])
+        _put_records(1, "long_processing", shards[1])
+
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            EventSourceArn=stream_arn,
+            FunctionName=function_name,
+            StartingPosition="TRIM_HORIZON",
+            ParallelizationFactor=parallelization_factor,
+            BatchSize=5,
+            MaximumBatchingWindowInSeconds=5,
+        )
+
+        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
+        uuid = create_event_source_mapping_response["UUID"]
+
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
+        _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
+
+        # Do a single PUT record after 80s in AWS and 10s in LocalStack
+        timed_put_record = threading.Timer(
+            delayed_send_duration, _put_records, args=(1, "short_processing", shards[0])
+        )
+        cleanups.append(timed_put_record.cancel)
+        timed_put_record.daemon = True
+        timed_put_record.start()
+
+        events = retry(
+            get_msg_from_q,
+            retries=180,
+            sleep_before=5,
+            # args passed to get_msg_from_q
+            destination_queue_url=sqs_url,
+            expected_size=num_events_kinesis,
+        )
+
+        snapshot.match("kinesis_records", transform_kinesis_batch_data(events))
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # FIXME: Shard IDs not being transformed.
+            "$..eventID",
+        ],
+    )
+    @pytest.mark.parametrize("parallelization_factor", [1, 3, 6])
+    def test_create_kinesis_event_source_mapping_multiple_shards(
+        self,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        create_function_with_sqs_destination,
+        get_msg_from_q,
+        cleanups,
+        snapshot,
+        parallelization_factor,
+        aws_client,
+    ):
+        snapshot.add_transformer(snapshot.transform.kinesis_api())
+
+        # Sort each batch by lowest sequence number
+        snapshot.add_transformer(
+            SortingTransformer(
+                "kinesis_records",
+                lambda o: min(record["kinesis"]["sequenceNumber"] for record in o["Batch"]),
+            ),
+            priority=-1,
+        )
+
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "invocation_id", "<invocation_id>", reference_replacement=False
+            )
+        )
+
+        stream_name = f"test-foobar-{short_uid()}"
+        record_data = "hello"
+        num_events_kinesis = 10
+
+        function_name, sqs_url = create_function_with_sqs_destination()
+
+        kinesis_create_stream(StreamName=stream_name, ShardCount=5)
+        wait_for_stream_ready(stream_name=stream_name)
+
+        stream_summary = aws_client.kinesis.describe_stream_summary(StreamName=stream_name)
+        assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 5
+
+        stream_description = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]
+
+        stream_arn = stream_description["StreamARN"]
+        shards = stream_description["Shards"]
+
+        def _put_records(record_count: int, partition_key: str, shard: dict):
+            starting_hash_key = shard["HashKeyRange"]["StartingHashKey"]
+            previous_sequence = None
+            kwargs = {
+                "ExplicitHashKey": starting_hash_key,  # Ensure we write to same shard
+                "StreamName": stream_name,
+            }
+
+            for i in range(record_count):
+                if not previous_sequence:
+                    response = aws_client.kinesis.put_record(
+                        Data=f"{record_data}-{i}".encode(),
+                        PartitionKey=partition_key,
+                        **kwargs,
+                    )
+                else:
+                    response = aws_client.kinesis.put_record(
+                        Data=f"{record_data}-{i}".encode(),
+                        PartitionKey=partition_key,
+                        SequenceNumberForOrdering=previous_sequence,  # Ensure in-order writes to shard
+                        **kwargs,
+                    )
+
+                previous_sequence = response["SequenceNumber"]
+
+        for shard_id, shard in enumerate(shards):
+            _put_records(2, f"test-{shard_id}", shard)
+
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            EventSourceArn=stream_arn,
+            FunctionName=function_name,
+            StartingPosition="TRIM_HORIZON",
+            ParallelizationFactor=parallelization_factor,
+            MaximumBatchingWindowInSeconds=1,
+        )
+
+        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
+        uuid = create_event_source_mapping_response["UUID"]
+
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
+        _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
+
+        events = retry(
+            get_msg_from_q,
+            retries=30,
+            sleep_before=5,
+            # args passed to get_msg_from_q
+            destination_queue_url=sqs_url,
+            expected_size=num_events_kinesis,
+        )
+
+        snapshot.match("kinesis_records", transform_kinesis_batch_data(events))
 
     @markers.aws.validated
     def test_create_kinesis_event_source_mapping_multiple_lambdas_single_kinesis_event_stream(
@@ -1252,3 +1482,11 @@ class TestKinesisEventFiltering:
         # TODO: missing trailing \n is a LocalStack Lambda logging issue
         snapshot.match("kinesis-record-lambda-payload", message.strip())
         assert wait_until(_wait_lambda_fn_invoked_x_times(function2_name, 1))
+
+
+def transform_kinesis_batch_data(batches: dict[str, list[list[dict]]]) -> list:
+    result = []
+    for invocation_id, batch in batches.items():
+        result.append({"invocation_id": invocation_id, "Batch": sum(batch, [])})
+
+    return result

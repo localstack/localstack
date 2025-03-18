@@ -8,6 +8,27 @@
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping_multiple_lambdas_single_kinesis_event_stream": {
     "last_validated_date": "2024-12-13T14:02:48+00:00"
   },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping_multiple_shards": {
+    "last_validated_date": "2025-03-14T12:32:36+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping_multiple_shards[1]": {
+    "last_validated_date": "2025-03-17T17:48:33+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping_multiple_shards[3]": {
+    "last_validated_date": "2025-03-17T17:14:09+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping_multiple_shards[6]": {
+    "last_validated_date": "2025-03-17T17:47:22+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping_parallelization_factor[1]": {
+    "last_validated_date": "2025-03-18T09:26:32+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping_parallelization_factor[2]": {
+    "last_validated_date": "2025-03-18T16:06:21+00:00"
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping_parallelization_factor[3]": {
+    "last_validated_date": "2025-03-18T14:52:22+00:00"
+  },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_disable_kinesis_event_source_mapping": {
     "last_validated_date": "2024-12-13T14:10:20+00:00"
   },
