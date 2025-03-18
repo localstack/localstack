@@ -513,9 +513,6 @@ class ResourceProviderExecutor:
 
         match change_type:
             case "Add":
-                # replicate previous event emitting behaviour
-                usage.resource_type.record(request.resource_type)
-
                 return resource_provider.create(request)
             case "Dynamic" | "Modify":
                 try:
@@ -586,6 +583,7 @@ class ResourceProviderExecutor:
         # 2. try to load community resource provider
         try:
             plugin = plugin_manager.load(resource_type)
+            usage.resources.labels(resource_type=resource_type, missing=False).increment()
             return plugin.factory()
         except ValueError:
             # could not find a plugin for that name
@@ -604,7 +602,7 @@ class ResourceProviderExecutor:
             f'No resource provider found for "{resource_type}"',
         )
 
-        usage.missing_resource_types.record(resource_type)
+        usage.resources.labels(resource_type=resource_type, missing=True).increment()
 
         if config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
             # TODO: figure out a better way to handle non-implemented here?
