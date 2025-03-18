@@ -190,7 +190,12 @@ class CloudformationProviderV2(CloudformationProvider):
 
         # create change set for the stack and apply changes
         change_set = StackChangeSet(
-            context.account_id, context.region, stack, req_params, transformed_template
+            context.account_id,
+            context.region,
+            stack,
+            req_params,
+            transformed_template,
+            change_set_type=request["ChangeSetType"],
         )
         # only set parameters for the changeset, then switch to stack on execute_change_set
         change_set.template_body = template_body
