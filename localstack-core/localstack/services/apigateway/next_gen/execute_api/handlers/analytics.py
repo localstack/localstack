@@ -43,4 +43,8 @@ class IntegrationUsageCounter(RestApiGatewayHandler):
         if len(split_arn := integration_uri.split(":", maxsplit=5)) < 4:
             return "null"
 
-        return split_arn[4]
+        service = split_arn[4]
+        # the URI can also contain some <api-id>.<service>-api kind of route like `execute-api` or `appsync-api`
+        # we need to make sure we do not pass the full value back
+        service = service.split(".")[-1]
+        return service
