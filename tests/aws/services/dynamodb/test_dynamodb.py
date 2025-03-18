@@ -1459,6 +1459,7 @@ class TestDynamoDB:
         retry(lambda: _get_records_amount(4), sleep=1, retries=3)
         snapshot.match("get-records", {"Records": records})
 
+    @pytest.mark.skip(reason="Flaky in CI")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[

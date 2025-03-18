@@ -203,6 +203,27 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_revoke_grant": {
     "last_validated_date": "2024-04-11T15:52:44+00:00"
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_modifies_key_material": {
+    "last_validated_date": "2025-03-08T09:24:15+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_key_is_disabled": {
+    "last_validated_date": "2025-03-08T09:26:50+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_key_that_does_not_exist": {
+    "last_validated_date": "2025-03-08T09:27:10+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_key_with_imported_key_material": {
+    "last_validated_date": "2025-03-08T09:28:13+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_non_symmetric_key": {
+    "last_validated_date": "2025-03-08T09:27:44+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_disabled": {
+    "last_validated_date": "2025-03-12T19:05:50+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_enabled": {
+    "last_validated_date": "2025-03-12T19:07:01+00:00"
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_schedule_and_cancel_key_deletion": {
     "last_validated_date": "2024-04-11T15:52:36+00:00"
   },

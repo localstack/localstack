@@ -1,4 +1,6 @@
+import functools
 import json
+import logging
 from urllib.parse import quote_plus
 
 import pytest
@@ -8,9 +10,13 @@ from localstack.aws.api.iam import Tag
 from localstack.services.iam.iam_patches import ADDITIONAL_MANAGED_POLICIES
 from localstack.testing.aws.util import create_client_with_keys, wait_for_user
 from localstack.testing.pytest import markers
+from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
 from localstack.utils.aws.arns import get_partition
 from localstack.utils.common import short_uid
 from localstack.utils.strings import long_uid
+from localstack.utils.sync import retry
+
+LOG = logging.getLogger(__name__)
 
 GET_USER_POLICY_DOC = """{
     "Version": "2012-10-17",
@@ -223,13 +229,14 @@ class TestIAMIntegrations:
         assert ctx.value.response["Error"]["Code"] == "NoSuchEntity"
 
     @markers.aws.validated
-    def test_delete_non_existent_policy_returns_no_such_entity(self, aws_client):
-        non_existent_policy_arn = "arn:aws:iam::000000000000:policy/non-existent-policy"
+    def test_delete_non_existent_policy_returns_no_such_entity(
+        self, aws_client, snapshot, account_id
+    ):
+        non_existent_policy_arn = f"arn:aws:iam::{account_id}:policy/non-existent-policy"
 
-        with pytest.raises(ClientError) as ctx:
+        with pytest.raises(ClientError) as e:
             aws_client.iam.delete_policy(PolicyArn=non_existent_policy_arn)
-        assert ctx.typename == "NoSuchEntityException"
-        assert ctx.value.response["Error"]["Code"] == "NoSuchEntity"
+        snapshot.match("delete-non-existent-policy-exc", e.value.response)
 
     @markers.aws.validated
     def test_recreate_iam_role(self, aws_client, create_role):
@@ -859,3 +866,555 @@ class TestIAMPolicyEncoding:
             GroupName=group_name, PolicyName=policy_name
         )
         snapshot.match("get-policy-response", get_policy_response)
+
+
+class TestIAMServiceSpecificCredentials:
+    @pytest.fixture(autouse=True)
+    def register_snapshot_transformers(self, snapshot):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+        snapshot.add_transformer(snapshot.transform.key_value("ServicePassword"))
+        snapshot.add_transformer(snapshot.transform.key_value("ServiceSpecificCredentialId"))
+
+    @pytest.fixture
+    def create_service_specific_credential(self, aws_client):
+        username_id_pairs = []
+
+        def _create_service_specific_credential(*args, **kwargs):
+            response = aws_client.iam.create_service_specific_credential(*args, **kwargs)
+            username_id_pairs.append(
+                (
+                    response["ServiceSpecificCredential"]["ServiceSpecificCredentialId"],
+                    response["ServiceSpecificCredential"]["UserName"],
+                )
+            )
+            return response
+
+        yield _create_service_specific_credential
+
+        for credential_id, user_name in username_id_pairs:
+            try:
+                aws_client.iam.delete_service_specific_credential(
+                    ServiceSpecificCredentialId=credential_id, UserName=user_name
+                )
+            except Exception:
+                LOG.debug(
+                    "Unable to delete service specific credential '%s' for user name '%s'",
+                    credential_id,
+                    user_name,
+                )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "service_name", ["codecommit.amazonaws.com", "cassandra.amazonaws.com"]
+    )
+    def test_service_specific_credential_lifecycle(
+        self, aws_client, create_user, snapshot, service_name
+    ):
+        """Test the lifecycle of service specific credentials."""
+        user_name = f"user-{short_uid()}"
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user-response", create_user_response)
+
+        # create
+        create_service_specific_credential_response = (
+            aws_client.iam.create_service_specific_credential(
+                UserName=user_name, ServiceName=service_name
+            )
+        )
+        snapshot.match(
+            "create-service-specific-credential-response",
+            create_service_specific_credential_response,
+        )
+        credential_id = create_service_specific_credential_response["ServiceSpecificCredential"][
+            "ServiceSpecificCredentialId"
+        ]
+
+        # list
+        list_service_specific_credentials_response = (
+            aws_client.iam.list_service_specific_credentials(
+                UserName=user_name, ServiceName=service_name
+            )
+        )
+        snapshot.match(
+            "list-service-specific-credentials-response-before-update",
+            list_service_specific_credentials_response,
+        )
+
+        # update
+        update_service_specific_credential_response = (
+            aws_client.iam.update_service_specific_credential(
+                UserName=user_name, ServiceSpecificCredentialId=credential_id, Status="Inactive"
+            )
+        )
+        snapshot.match(
+            "update-service-specific-credential-response",
+            update_service_specific_credential_response,
+        )
+
+        # list after update
+        list_service_specific_credentials_response = (
+            aws_client.iam.list_service_specific_credentials(
+                UserName=user_name, ServiceName=service_name
+            )
+        )
+        snapshot.match(
+            "list-service-specific-credentials-response-after-update",
+            list_service_specific_credentials_response,
+        )
+
+        # reset
+        reset_service_specific_credential_response = (
+            aws_client.iam.reset_service_specific_credential(
+                UserName=user_name, ServiceSpecificCredentialId=credential_id
+            )
+        )
+        snapshot.match(
+            "reset-service-specific-credential-response", reset_service_specific_credential_response
+        )
+
+        # delete
+        delete_service_specific_credential_response = (
+            aws_client.iam.delete_service_specific_credential(
+                ServiceSpecificCredentialId=credential_id, UserName=user_name
+            )
+        )
+        snapshot.match(
+            "delete-service-specific-credentials-response",
+            delete_service_specific_credential_response,
+        )
+
+    @markers.aws.validated
+    def test_create_service_specific_credential_invalid_user(self, aws_client, snapshot):
+        """Use invalid users for the create operation"""
+        user_name = "non-existent-user"
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_service_specific_credential(
+                UserName=user_name, ServiceName="codecommit.amazonaws.com"
+            )
+        snapshot.match("invalid-user-name-exception", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_service_specific_credential(
+                UserName=user_name, ServiceName="nonexistentservice.amazonaws.com"
+            )
+        snapshot.match("invalid-user-and-service-exception", e.value.response)
+
+    @markers.aws.validated
+    def test_create_service_specific_credential_invalid_service(
+        self, aws_client, create_user, snapshot
+    ):
+        """Test different scenarios of invalid service names passed to the create operation"""
+        user_name = f"user-{short_uid()}"
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user-response", create_user_response)
+
+        # a bogus service which does not exist on AWS
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_service_specific_credential(
+                UserName=user_name, ServiceName="nonexistentservice.amazonaws.com"
+            )
+        snapshot.match("invalid-service-exception", e.value.response)
+
+        # a random string not even ending in amazonaws.com
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_service_specific_credential(
+                UserName=user_name, ServiceName="o3on3n3onosneo"
+            )
+        snapshot.match("invalid-service-completely-malformed-exception", e.value.response)
+
+        # existing service, which is not supported by service specific credentials
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_service_specific_credential(
+                UserName=user_name, ServiceName="lambda.amazonaws.com"
+            )
+        snapshot.match("invalid-service-existing-but-unsupported-exception", e.value.response)
+
+    @markers.aws.validated
+    def test_list_service_specific_credential_different_service(
+        self, aws_client, create_user, snapshot, create_service_specific_credential
+    ):
+        """Test different scenarios of invalid or wrong service names passed to the list operation"""
+        user_name = f"user-{short_uid()}"
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user-response", create_user_response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.list_service_specific_credentials(
+                UserName=user_name, ServiceName="nonexistentservice.amazonaws.com"
+            )
+        snapshot.match("list-service-specific-credentials-invalid-service", e.value.response)
+
+        # Create a proper credential for codecommit
+        create_service_specific_credential_response = (
+            aws_client.iam.create_service_specific_credential(
+                UserName=user_name, ServiceName="codecommit.amazonaws.com"
+            )
+        )
+        snapshot.match(
+            "create-service-specific-credential-response",
+            create_service_specific_credential_response,
+        )
+
+        # List credentials for cassandra
+        list_service_specific_credentials_response = (
+            aws_client.iam.list_service_specific_credentials(
+                UserName=user_name, ServiceName="cassandra.amazonaws.com"
+            )
+        )
+        snapshot.match(
+            "list-service-specific-credentials-response-wrong-service",
+            list_service_specific_credentials_response,
+        )
+
+    @markers.aws.validated
+    def test_delete_user_after_service_credential_created(
+        self, aws_client, create_user, snapshot, create_service_specific_credential
+    ):
+        """Try deleting a user with active service credentials"""
+        user_name = f"user-{short_uid()}"
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user-response", create_user_response)
+
+        # Create a credential
+        create_service_specific_credential_response = create_service_specific_credential(
+            UserName=user_name, ServiceName="codecommit.amazonaws.com"
+        )
+        snapshot.match(
+            "create-service-specific-credential-response",
+            create_service_specific_credential_response,
+        )
+
+        # delete user
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.delete_user(UserName=user_name)
+        snapshot.match("delete-user-existing-credential", e.value.response)
+
+    @markers.aws.validated
+    def test_id_match_user_mismatch(
+        self, aws_client, create_user, snapshot, create_service_specific_credential
+    ):
+        """Test operations with valid ids, but invalid users"""
+        user_name = f"user-{short_uid()}"
+        wrong_user_name = "wrong-user-name"
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user-response", create_user_response)
+
+        create_service_specific_credential_response = create_service_specific_credential(
+            UserName=user_name, ServiceName="codecommit.amazonaws.com"
+        )
+        snapshot.match(
+            "create-service-specific-credential-response",
+            create_service_specific_credential_response,
+        )
+        credential_id = create_service_specific_credential_response["ServiceSpecificCredential"][
+            "ServiceSpecificCredentialId"
+        ]
+
+        # update
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.update_service_specific_credential(
+                UserName=wrong_user_name,
+                ServiceSpecificCredentialId=credential_id,
+                Status="Inactive",
+            )
+        snapshot.match("update-wrong-user-name", e.value.response)
+
+        # reset
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.reset_service_specific_credential(
+                UserName=wrong_user_name, ServiceSpecificCredentialId=credential_id
+            )
+        snapshot.match("reset-wrong-user-name", e.value.response)
+
+        # delete
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.delete_service_specific_credential(
+                UserName=wrong_user_name, ServiceSpecificCredentialId=credential_id
+            )
+        snapshot.match("delete-wrong-user-name", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "wrong_credential_id",
+        ["totally-wrong-credential-id-with-hyphens", "satisfiesregexbutstillinvalid"],
+    )
+    def test_user_match_id_mismatch(
+        self,
+        aws_client,
+        create_user,
+        snapshot,
+        create_service_specific_credential,
+        wrong_credential_id,
+    ):
+        """Test operations with valid usernames, but invalid ids"""
+        user_name = f"user-{short_uid()}"
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user-response", create_user_response)
+
+        create_service_specific_credential_response = create_service_specific_credential(
+            UserName=user_name, ServiceName="codecommit.amazonaws.com"
+        )
+        snapshot.match(
+            "create-service-specific-credential-response",
+            create_service_specific_credential_response,
+        )
+
+        # update
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.update_service_specific_credential(
+                UserName=user_name,
+                ServiceSpecificCredentialId=wrong_credential_id,
+                Status="Inactive",
+            )
+        snapshot.match("update-wrong-id", e.value.response)
+
+        # reset
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.reset_service_specific_credential(
+                UserName=user_name, ServiceSpecificCredentialId=wrong_credential_id
+            )
+        snapshot.match("reset-wrong-id", e.value.response)
+
+        # delete
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.delete_service_specific_credential(
+                UserName=user_name, ServiceSpecificCredentialId=wrong_credential_id
+            )
+        snapshot.match("delete-wrong-id", e.value.response)
+
+    @markers.aws.validated
+    def test_invalid_update_parameters(
+        self, aws_client, create_user, snapshot, create_service_specific_credential
+    ):
+        """Try updating a service specific credential with invalid values"""
+        user_name = f"user-{short_uid()}"
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user-response", create_user_response)
+
+        create_service_specific_credential_response = create_service_specific_credential(
+            UserName=user_name, ServiceName="codecommit.amazonaws.com"
+        )
+        snapshot.match(
+            "create-service-specific-credential-response",
+            create_service_specific_credential_response,
+        )
+        credential_id = create_service_specific_credential_response["ServiceSpecificCredential"][
+            "ServiceSpecificCredentialId"
+        ]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.update_service_specific_credential(
+                ServiceSpecificCredentialId=credential_id, Status="Invalid"
+            )
+        snapshot.match("update-invalid-status", e.value.response)
+
+
+class TestIAMServiceRoles:
+    SERVICES = {
+        "accountdiscovery.ssm.amazonaws.com": (),
+        "acm.amazonaws.com": (),
+        "appmesh.amazonaws.com": (),
+        "autoscaling-plans.amazonaws.com": (),
+        "autoscaling.amazonaws.com": (),
+        "backup.amazonaws.com": (),
+        "batch.amazonaws.com": (),
+        "cassandra.application-autoscaling.amazonaws.com": (),
+        "cks.kms.amazonaws.com": (),
+        "cloudtrail.amazonaws.com": (),
+        "codestar-notifications.amazonaws.com": (),
+        "config.amazonaws.com": (),
+        "connect.amazonaws.com": (),
+        "dms-fleet-advisor.amazonaws.com": (),
+        "dms.amazonaws.com": (),
+        "docdb-elastic.amazonaws.com": (),
+        "ec2-instance-connect.amazonaws.com": (),
+        "ec2.application-autoscaling.amazonaws.com": (),
+        "ecr.amazonaws.com": (),
+        "ecs.amazonaws.com": (),
+        "eks-connector.amazonaws.com": (),
+        "eks-fargate.amazonaws.com": (),
+        "eks-nodegroup.amazonaws.com": (),
+        "eks.amazonaws.com": (),
+        "elasticache.amazonaws.com": (),
+        "elasticbeanstalk.amazonaws.com": (),
+        "elasticfilesystem.amazonaws.com": (),
+        "elasticloadbalancing.amazonaws.com": (),
+        "email.cognito-idp.amazonaws.com": (),
+        "emr-containers.amazonaws.com": (),
+        "emrwal.amazonaws.com": (),
+        "fis.amazonaws.com": (),
+        "grafana.amazonaws.com": (),
+        "imagebuilder.amazonaws.com": (),
+        "iotmanagedintegrations.amazonaws.com": (
+            markers.snapshot.skip_snapshot_verify(paths=["$..AttachedPolicies"])
+        ),  # TODO include aws managed policy in the future
+        "kafka.amazonaws.com": (),
+        "kafkaconnect.amazonaws.com": (),
+        "lakeformation.amazonaws.com": (),
+        "lex.amazonaws.com": (
+            markers.snapshot.skip_snapshot_verify(paths=["$..AttachedPolicies"])
+        ),  # TODO include aws managed policy in the future
+        "lexv2.amazonaws.com": (),
+        "lightsail.amazonaws.com": (),
+        # "logs.amazonaws.com": (),  # not possible to create on AWS
+        "m2.amazonaws.com": (),
+        "memorydb.amazonaws.com": (),
+        "mq.amazonaws.com": (),
+        "mrk.kms.amazonaws.com": (),
+        "notifications.amazonaws.com": (),
+        "observability.aoss.amazonaws.com": (),
+        "opensearchservice.amazonaws.com": (),
+        "ops.apigateway.amazonaws.com": (),
+        "ops.emr-serverless.amazonaws.com": (),
+        "opsdatasync.ssm.amazonaws.com": (),
+        "opsinsights.ssm.amazonaws.com": (),
+        "pullthroughcache.ecr.amazonaws.com": (),
+        "ram.amazonaws.com": (),
+        "rds.amazonaws.com": (),
+        "redshift.amazonaws.com": (),
+        "replication.cassandra.amazonaws.com": (),
+        "replication.ecr.amazonaws.com": (),
+        "repository.sync.codeconnections.amazonaws.com": (),
+        "resource-explorer-2.amazonaws.com": (),
+        # "resourcegroups.amazonaws.com": (),  # not possible to create on AWS
+        "rolesanywhere.amazonaws.com": (),
+        "s3-outposts.amazonaws.com": (),
+        "ses.amazonaws.com": (),
+        "shield.amazonaws.com": (),
+        "ssm-incidents.amazonaws.com": (),
+        "ssm-quicksetup.amazonaws.com": (),
+        "ssm.amazonaws.com": (),
+        "sso.amazonaws.com": (),
+        "vpcorigin.cloudfront.amazonaws.com": (),
+        "waf.amazonaws.com": (),
+        "wafv2.amazonaws.com": (),
+    }
+
+    SERVICES_CUSTOM_SUFFIX = [
+        "autoscaling.amazonaws.com",
+        "connect.amazonaws.com",
+        "lexv2.amazonaws.com",
+    ]
+
+    @pytest.fixture
+    def create_service_linked_role(self, aws_client):
+        role_names = []
+
+        @functools.wraps(aws_client.iam.create_service_linked_role)
+        def _create_service_linked_role(*args, **kwargs):
+            response = aws_client.iam.create_service_linked_role(*args, **kwargs)
+            role_names.append(response["Role"]["RoleName"])
+            return response
+
+        yield _create_service_linked_role
+        for role_name in role_names:
+            try:
+                aws_client.iam.delete_service_linked_role(RoleName=role_name)
+            except Exception as e:
+                LOG.debug("Error while deleting service linked role '%s': %s", role_name, e)
+
+    @pytest.fixture
+    def create_service_linked_role_if_not_exists(self, aws_client, create_service_linked_role):
+        """This fixture is necessary since some service linked roles cannot be deleted - so we have to snapshot the existing ones"""
+
+        def _create_service_linked_role_if_not_exists(*args, **kwargs):
+            try:
+                return create_service_linked_role(*args, **kwargs)["Role"]["RoleName"]
+            except aws_client.iam.exceptions.InvalidInputException as e:
+                # return the role name from the error message for now, quite hacky.
+                return e.response["Error"]["Message"].split()[3]
+
+        return _create_service_linked_role_if_not_exists
+
+    @pytest.fixture(autouse=True)
+    def snapshot_transformers(self, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("RoleId"))
+
+    @markers.aws.validated
+    # last used and the description depend on whether the role was created in the snapshot account by a service or manually
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Role.RoleLastUsed", "$..Role.Description"])
+    @pytest.mark.parametrize(
+        "service_name",
+        [pytest.param(service, marks=marker) for service, marker in SERVICES.items()],
+    )
+    def test_service_role_lifecycle(
+        self, aws_client, snapshot, create_service_linked_role_if_not_exists, service_name
+    ):
+        # some roles are already present and not deletable - so we just create them if they exist, and snapshot later
+        role_name = create_service_linked_role_if_not_exists(AWSServiceName=service_name)
+
+        response = aws_client.iam.get_role(RoleName=role_name)
+        snapshot.match("describe-response", response)
+
+        response = aws_client.iam.list_role_policies(RoleName=role_name)
+        snapshot.match("inline-role-policies", response)
+
+        response = aws_client.iam.list_attached_role_policies(RoleName=role_name)
+        snapshot.match("attached-role-policies", response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("service_name", SERVICES_CUSTOM_SUFFIX)
+    def test_service_role_lifecycle_custom_suffix(
+        self, aws_client, snapshot, create_service_linked_role, service_name
+    ):
+        """Tests services allowing custom suffixes"""
+        custom_suffix = short_uid()
+        snapshot.add_transformer(snapshot.transform.regex(custom_suffix, "<suffix>"))
+        response = create_service_linked_role(
+            AWSServiceName=service_name, CustomSuffix=custom_suffix
+        )
+        role_name = response["Role"]["RoleName"]
+
+        response = aws_client.iam.get_role(RoleName=role_name)
+        snapshot.match("describe-response", response)
+
+        response = aws_client.iam.list_role_policies(RoleName=role_name)
+        snapshot.match("inline-role-policies", response)
+
+        response = aws_client.iam.list_attached_role_policies(RoleName=role_name)
+        snapshot.match("attached-role-policies", response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "service_name", list(set(SERVICES.keys()) - set(SERVICES_CUSTOM_SUFFIX))
+    )
+    def test_service_role_lifecycle_custom_suffix_not_allowed(
+        self, aws_client, snapshot, create_service_linked_role, service_name
+    ):
+        """Test services which do not allow custom suffixes"""
+        suffix = "testsuffix"
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_service_linked_role(
+                AWSServiceName=service_name, CustomSuffix=suffix
+            )
+        snapshot.match("custom-suffix-not-allowed", e.value.response)
+
+    @markers.aws.validated
+    def test_service_role_deletion(self, aws_client, snapshot, create_service_linked_role):
+        """Testing deletion only with one service name to avoid undeletable service linked roles in developer accounts"""
+        snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<uuid>"))
+        service_name = "batch.amazonaws.com"
+        role_name = create_service_linked_role(AWSServiceName=service_name)["Role"]["RoleName"]
+
+        response = aws_client.iam.delete_service_linked_role(RoleName=role_name)
+        snapshot.match("service-linked-role-deletion-response", response)
+        deletion_task_id = response["DeletionTaskId"]
+
+        def wait_role_deleted():
+            response = aws_client.iam.get_service_linked_role_deletion_status(
+                DeletionTaskId=deletion_task_id
+            )
+            assert response["Status"] == "SUCCEEDED"
+            return response
+
+        response = retry(wait_role_deleted, retries=10, sleep=1)
+        snapshot.match("service-linked-role-deletion-status-response", response)
+
+    @markers.aws.validated
+    def test_service_role_already_exists(self, aws_client, snapshot, create_service_linked_role):
+        service_name = "batch.amazonaws.com"
+        create_service_linked_role(AWSServiceName=service_name)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_service_linked_role(AWSServiceName=service_name)
+        snapshot.match("role-already-exists-error", e.value.response)

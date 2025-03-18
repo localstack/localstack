@@ -788,6 +788,95 @@ class TestApiGatewayCommon:
         # assert that AWS populated the parent part of the trace with a generated one
         assert split_trace[1] != hardcoded_parent
 
+    @markers.aws.validated
+    def test_input_path_template_formatting(
+        self, aws_client, create_rest_apigw, echo_http_server_post, snapshot
+    ):
+        api_id, _, root_id = create_rest_apigw()
+
+        def _create_route(path: str, response_templates):
+            resource_id = aws_client.apigateway.create_resource(
+                restApiId=api_id, parentId=root_id, pathPart=path
+            )["id"]
+            aws_client.apigateway.put_method(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod="POST",
+                authorizationType="NONE",
+                apiKeyRequired=False,
+            )
+
+            aws_client.apigateway.put_method_response(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod="POST",
+                statusCode="200",
+            )
+
+            aws_client.apigateway.put_integration(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod="POST",
+                integrationHttpMethod="POST",
+                type="HTTP",
+                uri=echo_http_server_post,
+            )
+
+            aws_client.apigateway.put_integration_response(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod="POST",
+                statusCode="200",
+                selectionPattern="",
+                responseTemplates={"application/json": response_templates},
+            )
+
+        _create_route("path", '#set($result = $input.path("$.json"))$result')
+        _create_route("nested", '#set($result = $input.path("$.json"))$result.nested')
+        _create_route("list", '#set($result = $input.path("$.json"))$result[0]')
+        _create_route("to-string", '#set($result = $input.path("$.json"))$result.toString()')
+
+        stage_name = "dev"
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+        url = api_invoke_url(api_id=api_id, stage=stage_name, path="/")
+        path_url = url + "path"
+        nested_url = url + "nested"
+        list_url = url + "list"
+        to_string = url + "to-string"
+
+        response = requests.post(path_url, json={"foo": "bar"})
+        snapshot.match("dict-response", response.text)
+
+        response = requests.post(path_url, json=[{"foo": "bar"}])
+        snapshot.match("json-list", response.text)
+
+        response = requests.post(nested_url, json={"nested": {"foo": "bar"}})
+        snapshot.match("nested-dict", response.text)
+
+        response = requests.post(nested_url, json={"nested": [{"foo": "bar"}]})
+        snapshot.match("nested-list", response.text)
+
+        response = requests.post(list_url, json=[{"foo": "bar"}])
+        snapshot.match("dict-in-list", response.text)
+
+        response = requests.post(list_url, json=[[{"foo": "bar"}]])
+        snapshot.match("list-with-nested-list", response.text)
+
+        response = requests.post(path_url, json={"foo": [{"nested": "bar"}]})
+        snapshot.match("dict-with-nested-list", response.text)
+
+        response = requests.post(
+            path_url, json={"bigger": "dict", "to": "test", "with": "separators"}
+        )
+        snapshot.match("bigger-dict", response.text)
+
+        response = requests.post(to_string, json={"foo": "bar"})
+        snapshot.match("to-string", response.text)
+
+        response = requests.post(to_string, json={"list": [{"foo": "bar"}]})
+        snapshot.match("list-to-string", response.text)
+
 
 class TestUsagePlans:
     @markers.aws.validated

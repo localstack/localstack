@@ -141,10 +141,10 @@
 /tests/aws/services/es/ @alexrashed @silv-io
 
 # events
-/localstack-core/localstack/aws/api/events/ @maxhoheiser @joe4dev
-/localstack-core/localstack/services/events/ @maxhoheiser @joe4dev
-/tests/aws/services/events/ @maxhoheiser @joe4dev
-/tests/unit/services/events/ @maxhoheiser @joe4dev
+/localstack-core/localstack/aws/api/events/ @maxhoheiser @bentsku
+/localstack-core/localstack/services/events/ @maxhoheiser @bentsku
+/tests/aws/services/events/ @maxhoheiser @bentsku
+/tests/unit/services/events/ @maxhoheiser @bentsku
 
 # firehose
 /localstack-core/localstack/aws/api/firehose/ @pinzon

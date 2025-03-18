@@ -36,7 +36,7 @@ def order_resources(
             nodes[dep].append(logical_resource_id)
 
     # implementation from https://dev.to/leopfeiffer/topological-sort-with-kahns-algorithm-3dl1
-    indegrees = {k: 0 for k in nodes.keys()}
+    indegrees = dict.fromkeys(nodes.keys(), 0)
     for dependencies in nodes.values():
         for dependency in dependencies:
             indegrees[dependency] += 1

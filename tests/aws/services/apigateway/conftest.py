@@ -105,7 +105,7 @@ def create_rest_api_with_integration(
             httpMethod=resource_method,
             authorizationType="NONE",
             apiKeyRequired=False,
-            requestParameters={value: True for value in req_parameters.values()},
+            requestParameters=dict.fromkeys(req_parameters.values(), True),
         )
 
         # set AWS policy to give API GW access to backend resources

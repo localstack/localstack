@@ -11,6 +11,7 @@ from botocore.exceptions import ClientError
 
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
+from localstack.utils.files import load_file
 from tests.aws.services.events.helper_functions import (
     is_old_provider,
     sqs_collect_messages,
@@ -22,6 +23,7 @@ COMPLEX_MULTI_KEY_EVENT_PATTERN = os.path.join(
     REQUEST_TEMPLATE_DIR, "complex_multi_key_event_pattern.json"
 )
 COMPLEX_MULTI_KEY_EVENT = os.path.join(REQUEST_TEMPLATE_DIR, "complex_multi_key_event.json")
+TEST_PAYLOAD_DIR = os.path.join(THIS_FOLDER, "test_payloads")
 
 
 def load_request_templates(directory_path: str) -> List[Tuple[dict, str]]:
@@ -261,6 +263,27 @@ class TestEventPattern:
                 EventPattern=json.dumps(pattern),
             )
         snapshot.match("plain-string-payload-exc", e.value.response)
+
+    @markers.aws.validated
+    def test_event_with_large_and_complex_payload(self, aws_client, snapshot):
+        event_file_path = os.path.join(TEST_PAYLOAD_DIR, "large_complex_payload.json")
+        event = load_file(event_file_path)
+
+        simple_pattern = {"detail-type": ["cmd.documents.generate"]}
+        response = aws_client.events.test_event_pattern(
+            Event=event,
+            EventPattern=json.dumps(simple_pattern),
+        )
+        snapshot.match("complex-event-simple-pattern", response)
+
+        complex_pattern = {
+            "detail": {"payload.nested.another-level.deep": {"inside-list": [{"prefix": "q-test"}]}}
+        }
+        response = aws_client.events.test_event_pattern(
+            Event=event,
+            EventPattern=json.dumps(complex_pattern),
+        )
+        snapshot.match("complex-event-complex-pattern", response)
 
 
 class TestRuleWithPattern:

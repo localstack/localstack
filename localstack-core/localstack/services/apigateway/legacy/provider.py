@@ -255,6 +255,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         result = call_moto(context)
         rest_api = get_moto_rest_api(context, rest_api_id=result["id"])
         rest_api.version = request.get("version")
+        if binary_media_types := request.get("binaryMediaTypes"):
+            rest_api.binaryMediaTypes = binary_media_types
+
         response: RestApi = rest_api.to_dict()
         remove_empty_attributes_from_rest_api(response)
         store = get_apigateway_store(context=context)
