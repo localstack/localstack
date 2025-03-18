@@ -145,7 +145,7 @@ class TestSqsProvider:
 
     @markers.aws.validated
     def test_list_queues_pagination(self, sqs_create_queue, aws_client, snapshot):
-        queue_names = [f"test-queue-{short_uid()}" for _ in range(10)]
+        queue_names = [f"test-queue-{i}" for i in range(10)]
 
         queue_urls = []
         for name in queue_names:
@@ -170,6 +170,8 @@ class TestSqsProvider:
         assert "NextToken" not in list_remaining
         assert len(list_remaining["QueueUrls"]) == 8
         snapshot.match("list_remaining", list_remaining)
+
+        snapshot.add_transformer(snapshot.transform.regex(r'https://sqs\.(.+?)\.amazonaws\.com/(.+)', r'http://sqs.\1.localhost.localstack.cloud:4566/\2'))
 
     @markers.aws.validated
     def test_create_queue_and_get_attributes(self, sqs_queue, aws_sqs_client):

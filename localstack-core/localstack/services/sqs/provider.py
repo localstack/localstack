@@ -1000,6 +1000,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             token_generator=token_generator, next_token=next_token, page_size=page_size
         )
 
+        if len(urls) == 0:
+            return ListQueuesResult()
+
         return ListQueuesResult(QueueUrls=paginated_urls, NextToken=next_token)
 
     def change_message_visibility(
