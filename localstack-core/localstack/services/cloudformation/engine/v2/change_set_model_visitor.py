@@ -3,6 +3,7 @@ import abc
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetEntity,
     NodeArray,
+    NodeIntrinsicFunction,
     NodeObject,
     NodeProperties,
     NodeProperty,
@@ -50,6 +51,20 @@ class ChangeSetModelVisitor(abc.ABC):
 
     def visit_node_property(self, node_property: NodeProperty):
         self.visit_children(node_property)
+
+    def visit_node_intrinsic_function(self, node_intrinsic_function: NodeIntrinsicFunction):
+        # TODO: speed up this lookup logic
+        function_name = node_intrinsic_function.intrinsic_function
+        function_name = function_name.replace("::", "_")
+        function_name = camel_to_snake_case(function_name)
+        visit_function_name = f"visit_node_intrinsic_function_{function_name}"
+        visit_function = getattr(self, visit_function_name)
+        return visit_function(node_intrinsic_function)
+
+    def visit_node_intrinsic_function_fn_get_att(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ):
+        self.visit_children(node_intrinsic_function)
 
     def visit_node_object(self, node_object: NodeObject):
         self.visit_children(node_object)
