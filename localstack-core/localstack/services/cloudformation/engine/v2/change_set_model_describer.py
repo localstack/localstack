@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 from typing import Any, Final, Optional
 
-from localstack.aws.api.cloudformation import ChangeAction, ResourceChange
+from localstack.aws.api.cloudformation import ChangeAction, IncludePropertyValues, ResourceChange
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetEntity,
     ChangeType,
@@ -41,10 +41,16 @@ class DescribeUnit(abc.ABC):
 class ChangeSetModelDescriber(ChangeSetModelVisitor):
     _node_template: Final[NodeTemplate]
     _resource_changes: Final[list[ResourceChange]]
+    _include_property_values: Final[IncludePropertyValues | None]
 
-    def __init__(self, node_template: NodeTemplate):
+    def __init__(
+        self,
+        node_template: NodeTemplate,
+        include_property_values: IncludePropertyValues | None = None,
+    ):
         self._node_template = node_template
         self._resource_changes = list()
+        self._include_property_values = include_property_values
 
     def get_resource_changes(self) -> list[ResourceChange]:
         # TODO return 'list[Change]' instead.
@@ -210,14 +216,17 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         match node_resource.change_type:
             case ChangeType.MODIFIED:
                 resource_change["Action"] = ChangeAction.Modify
-                resource_change["BeforeContext"] = properties_describe_unit.before_context
-                resource_change["AfterContext"] = properties_describe_unit.after_context
+                if self._include_property_values:
+                    resource_change["BeforeContext"] = properties_describe_unit.before_context
+                    resource_change["AfterContext"] = properties_describe_unit.after_context
             case ChangeType.CREATED:
                 resource_change["Action"] = ChangeAction.Add
-                resource_change["AfterContext"] = properties_describe_unit.after_context
+                if self._include_property_values:
+                    resource_change["AfterContext"] = properties_describe_unit.after_context
             case ChangeType.REMOVED:
                 resource_change["Action"] = ChangeAction.Remove
-                resource_change["BeforeContext"] = properties_describe_unit.before_context
+                if self._include_property_values:
+                    resource_change["BeforeContext"] = properties_describe_unit.before_context
 
         self._resource_changes.append(resource_change)
 
