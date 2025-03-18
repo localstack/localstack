@@ -1,6 +1,6 @@
 {
-  "tests/aws/services/cloudformation/v2/test_describe_change_sets.py::TestDescribeChangeSet::test_describe_change_set": {
-    "recorded-date": "18-03-2025, 16:48:03",
+  "tests/aws/services/cloudformation/v2/test_change_sets.py::test_single_resource_static_update": {
+    "recorded-date": "18-03-2025, 16:52:36",
     "recorded-content": {
       "describe-1": {
         "Capabilities": [],
@@ -31,9 +31,18 @@
           "HTTPStatusCode": 200
         }
       },
+      "parameter-1": {
+        "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/<resource:3>",
+        "DataType": "text",
+        "LastModifiedDate": "datetime",
+        "Name": "<resource:3>",
+        "Type": "String",
+        "Value": "foo",
+        "Version": 1
+      },
       "describe-2": {
         "Capabilities": [],
-        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:4>",
         "ChangeSetName": "<change-set-name:2>",
         "Changes": [
           {
@@ -51,7 +60,7 @@
                 }
               ],
               "LogicalResourceId": "MyParameter",
-              "PhysicalResourceId": "parameter-86cab3d9",
+              "PhysicalResourceId": "<resource:3>",
               "Replacement": "False",
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": [
@@ -73,6 +82,15 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "parameter-2": {
+        "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/<resource:3>",
+        "DataType": "text",
+        "LastModifiedDate": "datetime",
+        "Name": "<resource:3>",
+        "Type": "String",
+        "Value": "bar",
+        "Version": 2
       }
     }
   }
