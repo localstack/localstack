@@ -2625,7 +2625,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_object.version_id:
             response["VersionId"] = s3_object.version_id
 
-        if s3_object.checksum_algorithm:
+        # it seems AWS is not returning checksum related fields if the object has KMS encryption ¯\_(ツ)_/¯
+        # but it still generates them, and they can be retrieved with regular GetObject and such operations
+        if s3_object.checksum_algorithm and not s3_object.kms_key_id:
             response[f"Checksum{s3_object.checksum_algorithm.upper()}"] = s3_object.checksum_value
             response["ChecksumType"] = s3_object.checksum_type
 
