@@ -1344,7 +1344,7 @@ def test_lambda_aws_proxy_integration_request_data_mapping(
         resourceId=resource_id,
         httpMethod="ANY",
         authorizationType="NONE",
-        requestParameters={value: True for value in req_parameters.values()},
+        requestParameters=dict.fromkeys(req_parameters.values(), True),
     )
 
     # Lambda AWS_PROXY integration
