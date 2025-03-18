@@ -18,7 +18,7 @@ apispec==6.8.1
     # via localstack-core (pyproject.toml)
 argparse==1.4.0
     # via amazon-kclpy
-attrs==25.2.0
+attrs==25.3.0
     # via
     #   jsonschema
     #   localstack-twisted
@@ -31,7 +31,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.38.13
     # via localstack-core (pyproject.toml)
-awscrt==0.24.1
+awscrt==0.24.2
     # via localstack-core
 boto3==1.37.13
     # via
@@ -64,7 +64,7 @@ certifi==2025.1.31
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.29.1
+cfn-lint==1.30.0
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
