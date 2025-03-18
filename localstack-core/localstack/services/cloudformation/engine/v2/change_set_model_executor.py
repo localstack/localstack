@@ -35,18 +35,17 @@ class ChangeSetModelExecutor(ChangeSetModelDescriber):
         region: str,
         stack_name: str,
         stack_id: str,
-        # XXX legacy: we need to update the external state to keep the implementation
-        resources: dict,
     ):
         super().__init__(node_template)
         self.account_id = account_id
         self.region = region
         self.stack_name = stack_name
         self.stack_id = stack_id
-        self.resources = resources
+        self.resources = {}
 
-    def execute(self):
+    def execute(self) -> dict:
         self.visit(self._node_template)
+        return self.resources
 
     def visit_node_resource(self, node_resource: NodeResource):
         resource_provider_executor = ResourceProviderExecutor(
