@@ -171,7 +171,12 @@ class TestSqsProvider:
         assert len(list_remaining["QueueUrls"]) == 8
         snapshot.match("list_remaining", list_remaining)
 
-        snapshot.add_transformer(snapshot.transform.regex(r'https://sqs\.(.+?)\.amazonaws\.com/(.+)', r'http://sqs.\1.localhost.localstack.cloud:4566/\2'))
+        snapshot.add_transformer(
+            snapshot.transform.regex(
+                r"https://sqs\.(.+?)\.amazonaws\.com/(.+)",
+                r"http://sqs.\1.localhost.localstack.cloud:4566/\2",
+            )
+        )
 
     @markers.aws.validated
     def test_create_queue_and_get_attributes(self, sqs_queue, aws_sqs_client):
