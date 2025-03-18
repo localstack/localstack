@@ -933,21 +933,38 @@ class TestSns:
         assert combinations == 150
 
     @pytest.mark.parametrize(
-        "payload,expected",
+        "payload,flat_policy,expected",
         [
             (
                 {"f3": ["v3"], "f1": {"f2": "v2"}},
+                [{"f3": "v3"}, {"f1.f2": "v2"}],
                 [{"f3": "v3", "f1.f2": "v2"}],
             ),
             (
                 {"f3": ["v3", "v4"], "f1": {"f2": "v2"}},
+                [{"f3": "v3", "f1.f2": "v2"}],
                 [{"f3": "v3", "f1.f2": "v2"}, {"f3": "v4", "f1.f2": "v2"}],
+            ),
+            (
+                {"f3": ["v3"], "f1": {"f2": "v2"}},
+                [{"f3": "v3"}],
+                [{"f3": "v3"}],
+            ),
+            (
+                {"f1": {"f2": {"f3": {"f4": [{"f5": "v5"}]}, "f6": [{"f8": "v8"}]}}},
+                [{"f1.f2.f3": "val1", "f1.f2.f4": "val2"}],
+                [{}],
+            ),
+            (
+                {"f1": {"f2": {"f3": {"f4": [{"f5": "v5"}]}, "f6": [{"f7": "v7"}]}}},
+                [{"f1.f2.f3.f4.f5": "test1", "f1.f2.f6.f7": "test2"}],
+                [{"f1.f2.f3.f4.f5": "v5", "f1.f2.f6.f7": "v7"}],
             ),
         ],
     )
-    def test_filter_flatten_payload(self, payload, expected):
+    def test_filter_flatten_payload(self, payload, flat_policy, expected):
         sub_filter = SubscriptionFilter()
-        assert sub_filter.flatten_payload(payload) == expected
+        assert sub_filter.flatten_payload(payload, flat_policy) == expected
 
     @pytest.mark.parametrize(
         "policy,expected",

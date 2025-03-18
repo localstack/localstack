@@ -17,6 +17,9 @@
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_ip_address_condition": {
     "last_validated_date": "2024-12-04T10:36:45+00:00"
   },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_large_complex_payload": {
+    "last_validated_date": "2025-03-17T12:37:51+00:00"
+  },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body[False]": {
     "last_validated_date": "2024-12-03T15:02:09+00:00"
   },

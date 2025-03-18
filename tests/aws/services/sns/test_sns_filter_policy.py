@@ -1,5 +1,6 @@
 import copy
 import json
+import os
 from operator import itemgetter
 
 import pytest
@@ -8,7 +9,11 @@ from botocore.exceptions import ClientError
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws.arns import get_partition
+from localstack.utils.files import load_file
 from localstack.utils.sync import poll_condition, retry
+
+THIS_FOLDER: str = os.path.dirname(os.path.realpath(__file__))
+TEST_PAYLOAD_DIR = os.path.join(THIS_FOLDER, "test_payloads")
 
 
 @pytest.fixture(autouse=True)
@@ -1205,6 +1210,44 @@ class TestSNSFilterPolicyBody:
             expected=1,
         )
         snapshot.match("messages-queue", {"Messages": recv_messages})
+
+    @markers.aws.validated
+    def test_filter_policy_large_complex_payload(
+        self,
+        sqs_create_queue,
+        sns_create_topic,
+        sns_create_sqs_subscription_with_filter_policy,
+        aws_client,
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+
+        filter_policy = {
+            "detail": {"payload.nested.another-level.deep": {"inside-list": [{"prefix": "q-test"}]}}
+        }
+        sns_create_sqs_subscription_with_filter_policy(
+            topic_arn=topic_arn,
+            queue_url=queue_url,
+            filter_scope="MessageBody",
+            filter_policy=filter_policy,
+        )
+        large_payload_path = os.path.join(TEST_PAYLOAD_DIR, "complex_payload.json")
+        message = load_file(large_payload_path)
+
+        aws_client.sns.publish(TopicArn=topic_arn, Message=message)
+
+        recv_messages = []
+        retry(
+            self.get_messages,
+            retries=10,
+            sleep=0.1,
+            aws_client=aws_client,
+            _queue_url=queue_url,
+            _msg_list=recv_messages,
+            expected=1,
+        )
+        # we do not want to snapshot a massive 40kb message
+        assert len(recv_messages) == 1
 
     @markers.aws.validated
     def test_filter_policy_ip_address_condition(
