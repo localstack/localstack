@@ -78,6 +78,7 @@ from localstack.aws.api.ssm import (
 )
 from localstack.aws.connect import connect_to
 from localstack.services.moto import call_moto, call_moto_with_request
+from localstack.services.ssm.patches import apply_all_patches
 from localstack.utils.aws.arns import extract_resource_from_arn, is_arn
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import remove_attributes
@@ -105,6 +106,9 @@ class InvalidParameterNameException(ValidationException):
 
 # TODO: check if _normalize_name(..) calls are still required here
 class SsmProvider(SsmApi, ABC):
+    def on_after_init(self):
+        apply_all_patches()
+
     def get_parameters(
         self,
         context: RequestContext,
