@@ -17,7 +17,6 @@ from _pytest.config import Config
 from _pytest.nodes import Item
 from botocore.exceptions import ClientError
 from botocore.regions import EndpointResolver
-from mypy_boto3_apigateway import APIGatewayClient
 from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
@@ -2055,30 +2054,33 @@ def sample_stores() -> AccountRegionBundle:
 @pytest.fixture
 def create_rest_apigw(aws_client_factory):
     rest_apis = []
+    retry_boto_config = None
+    if is_aws_cloud():
+        retry_boto_config = botocore.config.Config(
+            # Api gateway can throttle requests pretty heavily. Leading to potentially undeleted apis
+            retries={"max_attempts": 10, "mode": "adaptive"}
+        )
 
     def _create_apigateway_function(**kwargs):
-        region_name = kwargs.pop("region_name", None)
-        client_config = None
-        if is_aws_cloud():
-            client_config = botocore.config.Config(
-                # Api gateway can throttle requests pretty heavily. Leading to potentially undeleted apis
-                retries={"max_attempts": 10, "mode": "adaptive"}
-            )
+        client_region_name = kwargs.pop("region_name", None)
         apigateway_client = aws_client_factory(
-            region_name=region_name, config=client_config
+            region_name=client_region_name, config=retry_boto_config
         ).apigateway
         kwargs.setdefault("name", f"api-{short_uid()}")
 
         response = apigateway_client.create_rest_api(**kwargs)
         api_id = response.get("id")
-        rest_apis.append((api_id, region_name))
+        rest_apis.append((api_id, client_region_name))
 
         return api_id, response.get("name"), response.get("rootResourceId")
 
     yield _create_apigateway_function
 
-    for rest_api_id, region_name in rest_apis:
-        apigateway_client: APIGatewayClient = aws_client_factory(region_name=region_name).apigateway
+    for rest_api_id, _client_region_name in rest_apis:
+        apigateway_client = aws_client_factory(
+            region_name=_client_region_name,
+            config=retry_boto_config,
+        ).apigateway
         # First, retrieve the usage plans associated with the REST API
         usage_plan_ids = []
         usage_plans = apigateway_client.get_usage_plans()
@@ -2090,13 +2092,7 @@ def create_rest_apigw(aws_client_factory):
 
         # Then delete the API, as you can't delete the UsagePlan if a stage is associated with it
         with contextlib.suppress(Exception):
-            for i in range(5):
-                try:
-                    apigateway_client.delete_rest_api(restApiId=rest_api_id)
-                    break
-                except apigateway_client.exceptions.TooManyRequestsException:
-                    # APIGW rate limits are quite low, let's wait a bit
-                    time.sleep(2**i)
+            apigateway_client.delete_rest_api(restApiId=rest_api_id)
 
         # finally delete the usage plans and the API Keys linked to it
         for usage_plan_id in usage_plan_ids:
