@@ -65,6 +65,7 @@ def model_from_description(sg_description: dict) -> dict:
         "GroupDescription": sg_description.get("Description"),
         "SecurityGroupEgress": [],
         "SecurityGroupIngress": [],
+        "Tags": sg_description.get("Tags", []),
     }
 
     for i, egress in enumerate(sg_description.get("IpPermissionsEgress", [])):
