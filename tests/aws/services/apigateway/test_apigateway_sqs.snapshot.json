@@ -1,15 +1,4 @@
 {
-  "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_aws_integration": {
-    "recorded-date": "30-05-2024, 17:27:58",
-    "recorded-content": {
-      "sqs-aws-integration": {
-        "message": "great success!"
-      },
-      "sqs-message": {
-        "foo": "bar"
-      }
-    }
-  },
   "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_request_and_response_xml_templates_integration": {
     "recorded-date": "12-07-2024, 16:27:03",
     "recorded-content": {
@@ -44,6 +33,36 @@
           "DataType": "String",
           "StringValue": "BAR-Header"
         }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_aws_integration[payload0]": {
+    "recorded-date": "19-03-2025, 13:11:14",
+    "recorded-content": {
+      "sqs-aws-integration": {
+        "message": "great success!"
+      },
+      "sqs-message": {
+        "Body": {
+          "foo": "bar"
+        },
+        "MD5OfBody": "94232c5b8fc9272f6f73a1e36eb68fcf",
+        "MessageId": "<uuid:1>",
+        "ReceiptHandle": "<receipt-handle:1>"
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_aws_integration[None]": {
+    "recorded-date": "19-03-2025, 13:11:24",
+    "recorded-content": {
+      "sqs-aws-integration": {
+        "message": "great success!"
+      },
+      "sqs-message": {
+        "Body": {},
+        "MD5OfBody": "99914b932bd37a50b983c5e7c90ae93b",
+        "MessageId": "<uuid:1>",
+        "ReceiptHandle": "<receipt-handle:1>"
       }
     }
   }

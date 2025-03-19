@@ -17,6 +17,7 @@ from _pytest.config import Config
 from _pytest.nodes import Item
 from botocore.exceptions import ClientError
 from botocore.regions import EndpointResolver
+from mypy_boto3_apigateway import APIGatewayClient
 from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
@@ -2077,7 +2078,7 @@ def create_rest_apigw(aws_client_factory):
     yield _create_apigateway_function
 
     for rest_api_id, region_name in rest_apis:
-        apigateway_client = aws_client_factory(region_name=region_name).apigateway
+        apigateway_client: APIGatewayClient = aws_client_factory(region_name=region_name).apigateway
         # First, retrieve the usage plans associated with the REST API
         usage_plan_ids = []
         usage_plans = apigateway_client.get_usage_plans()
@@ -2089,7 +2090,13 @@ def create_rest_apigw(aws_client_factory):
 
         # Then delete the API, as you can't delete the UsagePlan if a stage is associated with it
         with contextlib.suppress(Exception):
-            apigateway_client.delete_rest_api(restApiId=rest_api_id)
+            for i in range(5):
+                try:
+                    apigateway_client.delete_rest_api(restApiId=rest_api_id)
+                    break
+                except apigateway_client.exceptions.TooManyRequestsException:
+                    # APIGW rate limits are quite low, let's wait a bit
+                    time.sleep(2**i)
 
         # finally delete the usage plans and the API Keys linked to it
         for usage_plan_id in usage_plan_ids:

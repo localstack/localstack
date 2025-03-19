@@ -14,6 +14,7 @@ from tests.aws.services.apigateway.test_apigateway_basic import TEST_STAGE_NAME
 
 
 @markers.aws.validated
+@pytest.mark.parametrize("payload", [{"foo": "bar"}, None])
 def test_sqs_aws_integration(
     create_rest_apigw,
     sqs_create_queue,
@@ -22,7 +23,9 @@ def test_sqs_aws_integration(
     region_name,
     account_id,
     snapshot,
+    payload,
 ):
+    snapshot.add_transformer(snapshot.transform.sqs_api())
     # create target SQS stream
     queue_name = f"queue-{short_uid()}"
     queue_url = sqs_create_queue(QueueName=queue_name)
@@ -93,7 +96,8 @@ def test_sqs_aws_integration(
     invocation_url = api_invoke_url(api_id=api_id, stage=TEST_STAGE_NAME, path="/sqs")
 
     def invoke_api(url):
-        _response = requests.post(url, json={"foo": "bar"})
+        kwargs = {"json": payload} if payload is not None else {}
+        _response = requests.post(url, **kwargs)
         assert _response.ok
         content = _response.json()
         assert content == {"message": "great success!"}
@@ -108,7 +112,7 @@ def test_sqs_aws_integration(
         return messages[0]
 
     message = retry(get_sqs_message, sleep=2, retries=10)
-    snapshot.match("sqs-message", json.loads(message["Body"]))
+    snapshot.match("sqs-message", message)
 
 
 @markers.aws.validated
