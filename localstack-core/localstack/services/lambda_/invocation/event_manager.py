@@ -11,7 +11,8 @@ from math import ceil
 from botocore.config import Config
 
 from localstack import config
-from localstack.aws.api.lambda_ import TooManyRequestsException
+from localstack.aws.api.lambda_ import InvocationType, TooManyRequestsException
+from localstack.services.lambda_.analytics import FunctionStatus, function_counter
 from localstack.services.lambda_.invocation.internal_sqs_queue import get_fake_sqs_client
 from localstack.services.lambda_.invocation.lambda_models import (
     EventInvokeConfig,
@@ -194,18 +195,29 @@ class Poller:
         failure_cause = None
         qualifier = self.version_manager.function_version.id.qualifier
         event_invoke_config = self.version_manager.function.event_invoke_configs.get(qualifier)
+        runtime = None
+        status = None
         try:
             sqs_invocation = SQSInvocation.decode(message["Body"])
             invocation = sqs_invocation.invocation
             try:
                 invocation_result = self.version_manager.invoke(invocation=invocation)
+                runtime = self.version_manager.function_version.config.runtime
+                function_counter.labels(
+                    operation="invoke",
+                    runtime=runtime,
+                    status=FunctionStatus.success,
+                    invocation_type=InvocationType.Event,
+                ).increment()
             except Exception as e:
                 # Reserved concurrency == 0
                 if self.version_manager.function.reserved_concurrent_executions == 0:
                     failure_cause = "ZeroReservedConcurrency"
+                    status = FunctionStatus.zero_reserved_concurrency_error
                 # Maximum event age expired (lookahead for next retry)
                 elif not has_enough_time_for_retry(sqs_invocation, event_invoke_config):
                     failure_cause = "EventAgeExceeded"
+                    status = FunctionStatus.event_age_exceeded_error
                 if failure_cause:
                     invocation_result = InvocationResult(
                         is_error=True, request_id=invocation.request_id, payload=None, logs=None
@@ -216,13 +228,20 @@ class Poller:
                     self.process_dead_letter_queue(sqs_invocation, invocation_result)
                     return
                 # 3) Otherwise, retry without increasing counter
-                self.process_throttles_and_system_errors(sqs_invocation, e)
+                status = self.process_throttles_and_system_errors(sqs_invocation, e)
                 return
             finally:
                 sqs_client = get_sqs_client(self.version_manager.function_version)
                 sqs_client.delete_message(
                     QueueUrl=self.event_queue_url, ReceiptHandle=message["ReceiptHandle"]
                 )
+                # status MUST be set before returning
+                function_counter.labels(
+                    operation="invoke",
+                    runtime=runtime,
+                    status=status,
+                    invocation_type=InvocationType.Event,
+                ).increment()
 
             # Good summary blogpost: https://haithai91.medium.com/aws-lambdas-retry-behaviors-edff90e1cf1b
             # Asynchronous invocation handling: https://docs.aws.amazon.com/lambda/latest/dg/invocation-async.html
@@ -278,7 +297,9 @@ class Poller:
                 "Error handling lambda invoke %s", e, exc_info=LOG.isEnabledFor(logging.DEBUG)
             )
 
-    def process_throttles_and_system_errors(self, sqs_invocation: SQSInvocation, error: Exception):
+    def process_throttles_and_system_errors(
+        self, sqs_invocation: SQSInvocation, error: Exception
+    ) -> str:
         # If the function doesn't have enough concurrency available to process all events, additional
         # requests are throttled. For throttling errors (429) and system errors (500-series), Lambda returns
         # the event to the queue and attempts to run the function again for up to 6 hours. The retry interval
@@ -292,10 +313,12 @@ class Poller:
         # https://repost.aws/knowledge-center/lambda-troubleshoot-invoke-error-502-500
         if isinstance(error, TooManyRequestsException):  # Throttles 429
             LOG.debug("Throttled lambda %s: %s", self.version_manager.function_arn, error)
+            status = FunctionStatus.throttle_error
         else:  # System errors 5xx
             LOG.debug(
                 "Service exception in lambda %s: %s", self.version_manager.function_arn, error
             )
+            status = FunctionStatus.system_error
         maximum_exception_retry_delay_seconds = 5 * 60
         delay_seconds = min(
             2**sqs_invocation.exception_retries, maximum_exception_retry_delay_seconds
@@ -307,6 +330,7 @@ class Poller:
             MessageBody=sqs_invocation.encode(),
             DelaySeconds=delay_seconds,
         )
+        return status
 
     def process_success_destination(
         self,

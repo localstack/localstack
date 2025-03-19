@@ -25,7 +25,11 @@ from localstack.aws.api.lambda_ import (
 )
 from localstack.aws.connect import connect_to
 from localstack.constants import AWS_REGION_US_EAST_1
-from localstack.services.lambda_ import usage
+from localstack.services.lambda_.analytics import (
+    FunctionStatus,
+    function_counter,
+    hotreload_counter,
+)
 from localstack.services.lambda_.api_utils import (
     lambda_arn,
     qualified_lambda_arn,
@@ -272,15 +276,17 @@ class LambdaService:
 
         # Need the qualified arn to exactly get the target lambda
         qualified_arn = qualified_lambda_arn(function_name, version_qualifier, account_id, region)
+        runtime = None
         try:
             version_manager = self.get_lambda_version_manager(qualified_arn)
             event_manager = self.get_lambda_event_manager(qualified_arn)
-            usage.runtime.record(version_manager.function_version.config.runtime)
+            runtime = version_manager.function_version.config.runtime
         except ValueError as e:
             version = function.versions.get(version_qualifier)
             state = version and version.config.state.state
             # TODO: make such developer hints optional or remove after initial v2 transition period
             if state == State.Failed:
+                status = FunctionStatus.failed_state_error
                 HINT_LOG.error(
                     f"Failed to create the runtime executor for the function {function_name}. "
                     "Please ensure that Docker is available in the LocalStack container by adding the volume mount "
@@ -288,6 +294,7 @@ class LambdaService:
                     "Check out https://docs.localstack.cloud/user-guide/aws/lambda/#docker-not-available"
                 )
             elif state == State.Pending:
+                status = FunctionStatus.pending_state_error
                 HINT_LOG.warning(
                     "Lambda functions are created and updated asynchronously in the new lambda provider like in AWS. "
                     f"Before invoking {function_name}, please wait until the function transitioned from the state "
@@ -295,6 +302,12 @@ class LambdaService:
                     f'"awslocal lambda wait function-active-v2 --function-name {function_name}" '
                     "Check out https://docs.localstack.cloud/user-guide/aws/lambda/#function-in-pending-state"
                 )
+            else:
+                status = FunctionStatus.unhandled_state_error
+                LOG.error("Unexpected state %s for Lambda function %s", state, function_name)
+            function_counter.labels(
+                operation="invoke", runtime=runtime, status=status, invocation_type=invocation_type
+            ).increment()
             raise ResourceConflictException(
                 f"The operation cannot be performed at this time. The function is currently in the following state: {state}"
             ) from e
@@ -307,6 +320,12 @@ class LambdaService:
                 to_str(payload)
             except Exception as e:
                 # MAYBE: improve parity of detailed exception message (quite cumbersome)
+                function_counter.labels(
+                    operation="invoke",
+                    runtime=runtime,
+                    status=FunctionStatus.invalid_payload_error,
+                    invocation_type=invocation_type,
+                ).increment()
                 raise InvalidRequestContentException(
                     f"Could not parse request body into json: Could not parse payload into json: {e}",
                     Type="User",
@@ -331,7 +350,7 @@ class LambdaService:
                 )
             )
 
-        return version_manager.invoke(
+        invocation_result = version_manager.invoke(
             invocation=Invocation(
                 payload=payload,
                 invoked_arn=invoked_arn,
@@ -342,6 +361,15 @@ class LambdaService:
                 trace_context=trace_context,
             )
         )
+        status = (
+            FunctionStatus.invocation_error
+            if invocation_result.is_error
+            else FunctionStatus.success
+        )
+        function_counter.labels(
+            operation="invoke", runtime=runtime, status=status, invocation_type=invocation_type
+        ).increment()
+        return invocation_result
 
     def update_version(self, new_version: FunctionVersion) -> Future[None]:
         """
@@ -601,7 +629,7 @@ def store_s3_bucket_archive(
     :return: S3 Code object representing the archive stored in S3
     """
     if archive_bucket == config.BUCKET_MARKER_LOCAL:
-        usage.hotreload.increment()
+        hotreload_counter.labels(operation="create").increment()
         return create_hot_reloading_code(path=archive_key)
     s3_client: "S3Client" = connect_to().s3
     kwargs = {"VersionId": archive_version} if archive_version else {}
