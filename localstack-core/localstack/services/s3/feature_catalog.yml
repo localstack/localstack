@@ -70,3 +70,13 @@ features:
           documentation: "https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListBucketMetricsConfigurations.html"
           status: "not supported"
     status: "limited supported"
+
+  - name: "Lifecycle Management"
+    description: "Manage object lifecycles by transitioning them to lower-cost storage classes or deleting expired objects."
+    documentation: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html"
+    status: "supported"
+
+  - name: "Access Control"
+    description: "Control access to resources using bucket policies, IAM roles, and ACLs."
+    documentation: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-management.html"
+    status: "supported"
