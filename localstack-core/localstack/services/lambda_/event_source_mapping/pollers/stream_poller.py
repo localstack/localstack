@@ -2,6 +2,7 @@ import json
 import logging
 import threading
 from abc import abstractmethod
+from collections import defaultdict
 from datetime import datetime
 from typing import Iterator
 
@@ -31,6 +32,7 @@ from localstack.services.lambda_.event_source_mapping.pollers.poller import (
 from localstack.services.lambda_.event_source_mapping.pollers.sqs_poller import get_queue_url
 from localstack.utils.aws.arns import parse_arn, s3_bucket_name
 from localstack.utils.backoff import ExponentialBackoff
+from localstack.utils.batch_policy import Batcher
 from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
@@ -53,6 +55,9 @@ class StreamPoller(Poller):
     # Used for backing-off between retries and breaking the retry loop
     _is_shutdown: threading.Event
 
+    # Collects and flushes a batch of records based on a batching policy
+    shard_batcher: dict[str, Batcher[list]]
+
     def __init__(
         self,
         source_arn: str,
@@ -69,6 +74,13 @@ class StreamPoller(Poller):
         self.iterator_over_shards = None
 
         self._is_shutdown = threading.Event()
+
+        self.shard_batcher = defaultdict(
+            lambda: Batcher(
+                max_count=self.stream_parameters.get("BatchSize"),
+                max_window=self.stream_parameters.get("MaximumBatchingWindowInSeconds"),
+            )
+        )
 
     @abstractmethod
     def transform_into_events(self, records: list[dict], shard_id) -> list[dict]:
@@ -135,6 +147,10 @@ class StreamPoller(Poller):
         if not self.shards:
             self.shards = self.initialize_shards()
 
+        if not self.shards:
+            # If no shards are set, back-off until they are.
+            raise EmptyPollResultsException(service=self.event_source(), source_arn=self.source_arn)
+
         # TODO: improve efficiency because this currently limits the throughput to at most batch size per poll interval
         # Handle shards round-robin. Re-initialize current shard iterator once all shards are handled.
         if self.iterator_over_shards is None:
@@ -162,15 +178,19 @@ class StreamPoller(Poller):
         abort_condition = None
         get_records_response = self.get_records(shard_iterator)
         records = get_records_response.get("Records", [])
-        if not records:
-            self.shards[shard_id] = get_records_response["NextShardIterator"]
-            raise EmptyPollResultsException(service=self.event_source(), source_arn=self.source_arn)
 
-        polled_events = self.transform_into_events(records, shard_id)
+        transformed_events = self.transform_into_events(records, shard_id)
+        should_flush = self.shard_batcher[shard_id].add_items(transformed_events)
+
+        if not should_flush:
+            self.shards[shard_id] = get_records_response["NextShardIterator"]
+            return
+
+        polled_events = self.shard_batcher[shard_id].flush()
 
         # Check MaximumRecordAgeInSeconds
         if maximum_record_age_in_seconds := self.stream_parameters.get("MaximumRecordAgeInSeconds"):
-            arrival_timestamp_of_last_event = polled_events[-1]["approximateArrivalTimestamp"]
+            arrival_timestamp_of_last_event = transformed_events[-1]["approximateArrivalTimestamp"]
             now = get_current_time().timestamp()
             record_age_in_seconds = now - arrival_timestamp_of_last_event
             if record_age_in_seconds > maximum_record_age_in_seconds:
