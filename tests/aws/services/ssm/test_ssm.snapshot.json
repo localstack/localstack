@@ -91,5 +91,81 @@
         }
       }
     }
+  },
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_list_tags_for_parameter": {
+    "recorded-date": "19-03-2025, 02:18:23",
+    "recorded-content": {
+      "list-tags": {
+        "TagList": [
+          {
+            "Key": "my-tags",
+            "Value": "123"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-tags-with-leading-slash": {
+        "TagList": [
+          {
+            "Key": "my-tags",
+            "Value": "123"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invalid-resource-with-two-slashes": {
+        "Error": {
+          "Code": "InvalidResourceId",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_list_tags_for_nested_parameter": {
+    "recorded-date": "19-03-2025, 02:20:27",
+    "recorded-content": {
+      "list-tags": {
+        "TagList": [
+          {
+            "Key": "my-tags",
+            "Value": "123"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-nested-tags-missing-leading-slash": {
+        "Error": {
+          "Code": "InvalidResourceId",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-resource-with-two-slashes": {
+        "Error": {
+          "Code": "InvalidResourceId",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
