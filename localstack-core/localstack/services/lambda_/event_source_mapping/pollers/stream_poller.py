@@ -135,6 +135,12 @@ class StreamPoller(Poller):
         if not self.shards:
             self.shards = self.initialize_shards()
 
+        if not self.shards:
+            LOG.debug("No shards found for %s.", self.source_arn)
+            raise EmptyPollResultsException(service=self.event_source(), source_arn=self.source_arn)
+        else:
+            LOG.debug("Event source %s has %d shards.", self.source_arn, len(self.shards))
+
         # TODO: improve efficiency because this currently limits the throughput to at most batch size per poll interval
         # Handle shards round-robin. Re-initialize current shard iterator once all shards are handled.
         if self.iterator_over_shards is None:
@@ -164,7 +170,7 @@ class StreamPoller(Poller):
         records = get_records_response.get("Records", [])
         if not records:
             self.shards[shard_id] = get_records_response["NextShardIterator"]
-            raise EmptyPollResultsException(service=self.event_source(), source_arn=self.source_arn)
+            return
 
         polled_events = self.transform_into_events(records, shard_id)
 
