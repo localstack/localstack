@@ -167,6 +167,9 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_list_queues": {
     "last_validated_date": "2024-04-30T13:39:55+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_list_queues_pagination": {
+    "last_validated_date": "2025-03-19T19:19:45+00:00"
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_marker_serialization_json_protocol[\"{\\\\\"foo\\\\\": \\\\\"ba\\\\rr\\\\\"}\"]": {
     "last_validated_date": "2024-05-07T13:33:39+00:00"
   },
