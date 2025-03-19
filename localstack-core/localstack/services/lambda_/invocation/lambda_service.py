@@ -319,13 +319,13 @@ class LambdaService:
             try:
                 to_str(payload)
             except Exception as e:
-                # MAYBE: improve parity of detailed exception message (quite cumbersome)
                 function_counter.labels(
                     operation="invoke",
                     runtime=runtime,
                     status=FunctionStatus.invalid_payload_error,
                     invocation_type=invocation_type,
                 ).increment()
+                # MAYBE: improve parity of detailed exception message (quite cumbersome)
                 raise InvalidRequestContentException(
                     f"Could not parse request body into json: Could not parse payload into json: {e}",
                     Type="User",
