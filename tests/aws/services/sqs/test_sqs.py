@@ -13,10 +13,10 @@ from localstack_snapshot.snapshots.transformer import GenericTransformer
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
+from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE, SQS_UUID_STRING_SEED
 from localstack.services.sqs.models import sqs_stores
 from localstack.services.sqs.provider import MAX_NUMBER_OF_MESSAGES
-from localstack.services.sqs.utils import parse_queue_url
+from localstack.services.sqs.utils import parse_queue_url, token_generator
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.config import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
@@ -28,7 +28,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import get_partition
 from localstack.utils.aws.request_context import mock_aws_request_headers
-from localstack.utils.common import poll_condition, retry, short_uid, to_str
+from localstack.utils.common import poll_condition, retry, short_uid, short_uid_from_seed, to_str
 from localstack.utils.urls import localstack_host
 from tests.aws.services.lambda_.functions import lambda_integration
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON
@@ -145,7 +145,13 @@ class TestSqsProvider:
 
     @markers.aws.validated
     def test_list_queues_pagination(self, sqs_create_queue, aws_client, snapshot):
-        queue_names = [f"test-queue-{i}" for i in range(10)]
+        queue_list_length = 10
+        # ensures test is unique and prevents conflict in case of parrallel test runs
+        test_output_identifier = short_uid_from_seed(SQS_UUID_STRING_SEED)
+        max_result_1 = 2
+        max_result_2 = 10
+
+        queue_names = [f"test-queue-{i}-{test_output_identifier}" for i in range(queue_list_length)]
 
         queue_urls = []
         for name in queue_names:
@@ -155,26 +161,34 @@ class TestSqsProvider:
 
         list_all = aws_client.sqs.list_queues()
         assert "QueueUrls" in list_all
-        assert len(list_all["QueueUrls"]) == 10
+        assert len(list_all["QueueUrls"]) == queue_list_length
         snapshot.match("list_all", list_all)
 
-        list_two_max = aws_client.sqs.list_queues(MaxResults=2)
+        list_two_max = aws_client.sqs.list_queues(MaxResults=max_result_1)
         assert "QueueUrls" in list_two_max
         assert "NextToken" in list_two_max
-        assert len(list_two_max["QueueUrls"]) == 2
+        assert len(list_two_max["QueueUrls"]) == max_result_1
         snapshot.match("list_two_max", list_two_max)
         next_token = list_two_max["NextToken"]
 
-        list_remaining = aws_client.sqs.list_queues(MaxResults=10, NextToken=next_token)
+        list_remaining = aws_client.sqs.list_queues(MaxResults=max_result_2, NextToken=next_token)
         assert "QueueUrls" in list_remaining
         assert "NextToken" not in list_remaining
-        assert len(list_remaining["QueueUrls"]) == 8
+        assert len(list_remaining["QueueUrls"]) == max_result_2 - max_result_1
         snapshot.match("list_remaining", list_remaining)
 
         snapshot.add_transformer(
             snapshot.transform.regex(
                 r"https://sqs\.(.+?)\.amazonaws\.com/(.+)",
                 r"http://sqs.\1.localhost.localstack.cloud:4566/\2",
+            )
+        )
+
+        url = f"http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/test-queue-{max_result_1 - 1}-{test_output_identifier}"
+        snapshot.add_transformer(
+            snapshot.transform.regex(
+                r'("NextToken":\s*")[^"]*(")',
+                r"\1" + token_generator(url) + r"\2",
             )
         )
 

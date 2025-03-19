@@ -1,9 +1,6 @@
 {
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_list_queues_pagination": {
-    "last_validated_date": "2025-03-17T10:30:28+00:00"
-  }
-}
-ed_date": "2024-04-30T13:33:26+00:00"
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_change_message_visibility_after_visibility_timeout_expiration[sqs]": {
+    "last_validated_date": "2024-04-30T13:33:26+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_change_message_visibility_after_visibility_timeout_expiration[sqs_query]": {
     "last_validated_date": "2024-04-30T13:33:30+00:00"
@@ -170,9 +167,6 @@ ed_date": "2024-04-30T13:33:26+00:00"
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_list_queues": {
     "last_validated_date": "2024-04-30T13:39:55+00:00"
   },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_list_queues_pagination": {
-    "last_validated_date": "2025-03-17T10:25:03+00:00"
-  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_marker_serialization_json_protocol[\"{\\\\\"foo\\\\\": \\\\\"ba\\\\rr\\\\\"}\"]": {
     "last_validated_date": "2024-05-07T13:33:39+00:00"
   },
@@ -259,6 +253,12 @@ ed_date": "2024-04-30T13:33:26+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_batch_receive_multiple[sqs_query]": {
     "last_validated_date": "2024-04-30T13:40:12+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_empty_message[sqs]": {
+    "last_validated_date": "2025-03-05T19:25:09+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_empty_message[sqs_query]": {
+    "last_validated_date": "2025-03-05T19:25:09+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch[sqs]": {
     "last_validated_date": "2024-04-30T13:40:08+00:00"
@@ -417,13 +417,6 @@ ed_date": "2024-04-30T13:33:26+00:00"
     "last_validated_date": "2025-01-23T13:57:19+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_wait_time_seconds_waits_correctly[sqs_query]": {
-    "last_validated_date": "2025-01-23T13:57:30+00:00"
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsQueryApi::test_send_message_via_queue_url_with_json_protocol": {
-    "last_validated_date": "2024-04-30T13:35:11+00:00"
-  }
-}
-_waits_correctly[sqs_query]": {
     "last_validated_date": "2025-01-23T13:57:30+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsQueryApi::test_send_message_via_queue_url_with_json_protocol": {

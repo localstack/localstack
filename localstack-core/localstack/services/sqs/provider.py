@@ -1,4 +1,3 @@
-import base64
 import copy
 import hashlib
 import json
@@ -100,6 +99,7 @@ from localstack.services.sqs.utils import (
     is_fifo_queue,
     is_message_deduplication_id_required,
     parse_queue_url,
+    token_generator,
 )
 from localstack.services.stores import AccountRegionBundle
 from localstack.utils.aws.arns import parse_arn
@@ -989,11 +989,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             urls = [queue.url(context) for queue in store.queues.values()]
 
         paginated_list = PaginatedList(urls)
-
-        def token_generator(item: str) -> str:
-            base64_bytes = base64.b64encode(item.encode("utf-8"))
-            next_token = base64_bytes.decode("utf-8")
-            return next_token
 
         page_size = max_results if max_results else MAX_RESULT_LIMIT
         paginated_urls, next_token = paginated_list.get_page(

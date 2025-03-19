@@ -132,6 +132,7 @@ class PaginatedList(List[_ListType]):
         if page_size is None:
             page_size = self.DEFAULT_PAGE_SIZE
 
+        # returns all or remaining elements in final page.
         if len(result_list) <= page_size and next_token is None:
             return result_list, None
 
