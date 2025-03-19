@@ -82,7 +82,10 @@ from localstack.services.sqs.constants import (
     HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS,
     MAX_RESULT_LIMIT,
 )
-from localstack.services.sqs.exceptions import InvalidParameterValueException
+from localstack.services.sqs.exceptions import (
+    InvalidParameterValueException,
+    MissingRequiredParameterException,
+)
 from localstack.services.sqs.models import (
     FifoQueue,
     MessageMoveTask,
@@ -147,13 +150,19 @@ def assert_queue_name(queue_name: str, fifo: bool = False):
         )
 
 
-def check_message_size(
+def check_message_min_size(message_body: str):
+    if _message_body_size(message_body) == 0:
+        raise MissingRequiredParameterException(
+            "The request must contain the parameter MessageBody."
+        )
+
+
+def check_message_max_size(
     message_body: str, message_attributes: MessageBodyAttributeMap, max_message_size: int
 ):
     # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html
     error = "One or more parameters are invalid. "
     error += f"Reason: Message must be shorter than {max_message_size} bytes."
-
     if (
         _message_body_size(message_body) + _message_attributes_size(message_attributes)
         > max_message_size
@@ -1202,7 +1211,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         message_deduplication_id: String = None,
         message_group_id: String = None,
     ) -> SqsMessage:
-        check_message_size(message_body, message_attributes, queue.maximum_message_size)
+        check_message_min_size(message_body)
+        check_message_max_size(message_body, message_attributes, queue.maximum_message_size)
         check_message_content(message_body)
         check_attributes(message_attributes)
         check_attributes(message_system_attributes)

@@ -1,4 +1,7 @@
-from localstack.utils.analytics.usage import UsageSetCounter
+from localstack.utils.analytics.metrics import Counter
 
-resource_type = UsageSetCounter("cloudformation:resourcetype")
-missing_resource_types = UsageSetCounter("cloudformation:missingresourcetypes")
+COUNTER_NAMESPACE = "cloudformation"
+
+resources = Counter(
+    namespace=COUNTER_NAMESPACE, name="resources", labels=["resource_type", "missing"]
+)
