@@ -14,7 +14,6 @@ from tests.aws.services.apigateway.test_apigateway_basic import TEST_STAGE_NAME
 
 
 @markers.aws.validated
-@pytest.mark.parametrize("payload", [{"foo": "bar"}, None])
 def test_sqs_aws_integration(
     create_rest_apigw,
     sqs_create_queue,
@@ -23,7 +22,7 @@ def test_sqs_aws_integration(
     region_name,
     account_id,
     snapshot,
-    payload,
+    sqs_collect_messages,
 ):
     snapshot.add_transformer(snapshot.transform.sqs_api())
     # create target SQS stream
@@ -95,7 +94,7 @@ def test_sqs_aws_integration(
 
     invocation_url = api_invoke_url(api_id=api_id, stage=TEST_STAGE_NAME, path="/sqs")
 
-    def invoke_api(url):
+    def invoke_api(url, payload):
         kwargs = {"json": payload} if payload is not None else {}
         _response = requests.post(url, **kwargs)
         assert _response.ok
@@ -103,16 +102,15 @@ def test_sqs_aws_integration(
         assert content == {"message": "great success!"}
         return content
 
-    response_data = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
-    snapshot.match("sqs-aws-integration", response_data)
+    response_data = retry(
+        invoke_api, sleep=2, retries=10, url=invocation_url, payload={"foo": "bar"}
+    )
+    snapshot.match("sqs-aws-integration-with-payload", response_data)
+    response_data = retry(invoke_api, sleep=2, retries=10, url=invocation_url, payload=None)
+    snapshot.match("sqs-aws-integration-without-payload", response_data)
 
-    def get_sqs_message():
-        messages = aws_client.sqs.receive_message(QueueUrl=queue_url).get("Messages", [])
-        assert 1 == len(messages)
-        return messages[0]
-
-    message = retry(get_sqs_message, sleep=2, retries=10)
-    snapshot.match("sqs-message", message)
+    messages = sqs_collect_messages(queue_url=queue_url, expected=2, timeout=10)
+    snapshot.match("sqs-messages", messages)
 
 
 @markers.aws.validated

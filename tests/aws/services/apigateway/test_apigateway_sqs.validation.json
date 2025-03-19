@@ -1,6 +1,6 @@
 {
   "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_aws_integration": {
-    "last_validated_date": "2024-05-30T17:27:58+00:00"
+    "last_validated_date": "2025-03-19T13:27:52+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_aws_integration[None]": {
     "last_validated_date": "2025-03-19T13:11:24+00:00"
