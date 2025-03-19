@@ -496,12 +496,12 @@
       }
     }
   },
-  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_speaker_diarization[../../files/multi-speaker.wav-2]": {
-    "recorded-date": "19-03-2025, 10:27:00",
+  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_speaker_diarization": {
+    "recorded-date": "19-03-2025, 15:38:43",
     "recorded-content": {
       "transcribe_speaker_diarization": {
         "accountId": "111111111111",
-        "jobName": "test-transcribe-4d8fbdf1",
+        "jobName": "<job-name:1>",
         "results": {
           "audio_segments": [
             {
@@ -888,8 +888,8 @@
       }
     }
   },
-  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_speaker_diarization[../../files/multi-speaker.wav-1]": {
-    "recorded-date": "19-03-2025, 10:27:12",
+  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_error_speaker_labels": {
+    "recorded-date": "19-03-2025, 15:42:09",
     "recorded-content": {
       "err_speaker_labels_diarization": "Parameter validation failed:\nInvalid value for parameter Settings.MaxSpeakerLabels, value: 1, valid min value: 2"
     }
