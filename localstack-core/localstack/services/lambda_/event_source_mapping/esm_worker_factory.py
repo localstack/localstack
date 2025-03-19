@@ -168,6 +168,9 @@ class EsmWorkerFactory:
                         self.esm_config["StartingPosition"]
                     ],
                     BatchSize=self.esm_config["BatchSize"],
+                    MaximumBatchingWindowInSeconds=self.esm_config[
+                        "MaximumBatchingWindowInSeconds"
+                    ],
                     MaximumRetryAttempts=self.esm_config["MaximumRetryAttempts"],
                     **optional_params,
                 ),
@@ -196,6 +199,9 @@ class EsmWorkerFactory:
                         self.esm_config["StartingPosition"]
                     ],
                     BatchSize=self.esm_config["BatchSize"],
+                    MaximumBatchingWindowInSeconds=self.esm_config[
+                        "MaximumBatchingWindowInSeconds"
+                    ],
                     MaximumRetryAttempts=self.esm_config["MaximumRetryAttempts"],
                     **optional_params,
                 ),
