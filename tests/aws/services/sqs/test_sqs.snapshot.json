@@ -1,6 +1,6 @@
 {
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_max_number_of_messages[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:08",
+    "recorded-date": "30-04-2024, 13:32:56",
     "recorded-content": {
       "send_max_number_of_messages": {
         "Error": {
@@ -17,11 +17,12 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_max_number_of_messages[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:08",
+    "recorded-date": "30-04-2024, 13:32:57",
     "recorded-content": {
       "send_max_number_of_messages": {
         "Error": {
           "Code": "InvalidParameterValue",
+          "Detail": null,
           "Message": "Value 11 for parameter MaxNumberOfMessages is invalid. Reason: Must be between 1 and 10, if provided.",
           "Type": "Sender"
         },
@@ -33,7 +34,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_oversized_message[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:11",
+    "recorded-date": "30-04-2024, 13:32:59",
     "recorded-content": {
       "send_oversized_message": {
         "Error": {
@@ -50,11 +51,12 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_oversized_message[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:11",
+    "recorded-date": "30-04-2024, 13:33:01",
     "recorded-content": {
       "send_oversized_message": {
         "Error": {
           "Code": "InvalidParameterValue",
+          "Detail": null,
           "Message": "One or more parameters are invalid. Reason: Message must be shorter than 262144 bytes.",
           "Type": "Sender"
         },
@@ -66,7 +68,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_updated_maximum_message_size[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:11",
+    "recorded-date": "30-04-2024, 13:33:02",
     "recorded-content": {
       "send_oversized_message": {
         "Error": {
@@ -83,11 +85,12 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_updated_maximum_message_size[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:11",
+    "recorded-date": "30-04-2024, 13:33:04",
     "recorded-content": {
       "send_oversized_message": {
         "Error": {
           "Code": "InvalidParameterValue",
+          "Detail": null,
           "Message": "One or more parameters are invalid. Reason: Message must be shorter than 1024 bytes.",
           "Type": "Sender"
         },
@@ -99,7 +102,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:11",
+    "recorded-date": "30-04-2024, 13:33:06",
     "recorded-content": {
       "send_oversized_message_batch": {
         "Error": {
@@ -116,11 +119,12 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:11",
+    "recorded-date": "30-04-2024, 13:33:08",
     "recorded-content": {
       "send_oversized_message_batch": {
         "Error": {
           "Code": "AWS.SimpleQueueService.BatchRequestTooLong",
+          "Detail": null,
           "Message": "Batch requests cannot be longer than 262144 bytes. You have sent 262145 bytes.",
           "Type": "Sender"
         },
@@ -132,7 +136,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents_with_updated_maximum_message_size[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:12",
+    "recorded-date": "30-04-2024, 13:33:09",
     "recorded-content": {
       "send_oversized_message_batch": {
         "Successful": [
@@ -156,7 +160,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents_with_updated_maximum_message_size[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:12",
+    "recorded-date": "30-04-2024, 13:33:10",
     "recorded-content": {
       "send_oversized_message_batch": {
         "Successful": [
@@ -180,7 +184,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_tag_untag_queue[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:12",
+    "recorded-date": "30-04-2024, 13:35:30",
     "recorded-content": {
       "get-tag-1": {
         "Tags": {
@@ -211,7 +215,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_tag_untag_queue[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:12",
+    "recorded-date": "30-04-2024, 13:35:33",
     "recorded-content": {
       "get-tag-1": {
         "Tags": {
@@ -242,7 +246,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_fifo_queue_with_different_attributes_raises_error[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:17",
+    "recorded-date": "30-04-2024, 13:33:13",
     "recorded-content": {
       "queue-already-exists": {
         "Error": {
@@ -259,7 +263,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_fifo_queue_with_different_attributes_raises_error[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:17",
+    "recorded-date": "30-04-2024, 13:33:14",
     "recorded-content": {
       "queue-already-exists": {
         "Error": {
@@ -276,7 +280,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_deduplication_id_too_long": {
-    "recorded-date": "19-03-2025, 16:30:18",
+    "recorded-date": "30-04-2024, 13:35:34",
     "recorded-content": {
       "error-response": {
         "Error": {
@@ -293,7 +297,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_group_id_too_long": {
-    "recorded-date": "19-03-2025, 16:30:18",
+    "recorded-date": "30-04-2024, 13:35:35",
     "recorded-content": {
       "error-response": {
         "Error": {
@@ -310,7 +314,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_with_different_attributes_raises_exception[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:18",
+    "recorded-date": "30-04-2024, 13:33:18",
     "recorded-content": {
       "create_queue_01": {
         "Error": {
@@ -339,7 +343,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_with_different_attributes_raises_exception[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:18",
+    "recorded-date": "30-04-2024, 13:33:20",
     "recorded-content": {
       "create_queue_01": {
         "Error": {
@@ -368,7 +372,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_and_update_queue_attributes[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:18",
+    "recorded-date": "30-04-2024, 13:33:21",
     "recorded-content": {
       "get_queue_attributes": {
         "Attributes": {
@@ -413,7 +417,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_and_update_queue_attributes[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:18",
+    "recorded-date": "30-04-2024, 13:33:22",
     "recorded-content": {
       "get_queue_attributes": {
         "Attributes": {
@@ -458,7 +462,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_change_message_visibility_after_visibility_timeout_expiration[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:48",
+    "recorded-date": "30-04-2024, 13:33:27",
     "recorded-content": {
       "visibility_timeout_expired": {
         "ResponseMetadata": {
@@ -469,7 +473,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_change_message_visibility_after_visibility_timeout_expiration[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:50",
+    "recorded-date": "30-04-2024, 13:33:30",
     "recorded-content": {
       "visibility_timeout_expired": {
         "ResponseMetadata": {
@@ -480,7 +484,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_empty_message_groups_added_back_to_queue[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:03",
+    "recorded-date": "30-04-2024, 13:46:32",
     "recorded-content": {
       "inital-fifo-receive": {
         "Messages": [
@@ -519,7 +523,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_empty_message_groups_added_back_to_queue[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:03",
+    "recorded-date": "30-04-2024, 13:46:34",
     "recorded-content": {
       "inital-fifo-receive": {
         "Messages": [
@@ -558,7 +562,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_queue_send_message_with_delay_seconds_fails[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:19",
+    "recorded-date": "30-04-2024, 13:33:33",
     "recorded-content": {
       "send_message": {
         "Error": {
@@ -575,11 +579,12 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_queue_send_message_with_delay_seconds_fails[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:19",
+    "recorded-date": "30-04-2024, 13:33:34",
     "recorded-content": {
       "send_message": {
         "Error": {
           "Code": "InvalidParameterValue",
+          "Detail": null,
           "Message": "Value 2 for parameter DelaySeconds is invalid. Reason: The request include parameter that is not valid for this queue type.",
           "Type": "Sender"
         },
@@ -591,7 +596,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_message_attributes[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:28",
+    "recorded-date": "30-04-2024, 13:36:56",
     "recorded-content": {
       "send_message": {
         "MD5OfMessageBody": "19c9e282d65f9733bc6b35d50062c7ee",
@@ -651,7 +656,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_message_attributes[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:28",
+    "recorded-date": "30-04-2024, 13:36:57",
     "recorded-content": {
       "send_message": {
         "MD5OfMessageBody": "19c9e282d65f9733bc6b35d50062c7ee",
@@ -719,7 +724,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_set_content_based_deduplication_strategy[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:28",
+    "recorded-date": "30-04-2024, 13:47:39",
     "recorded-content": {
       "before-update": {
         "Attributes": {
@@ -772,7 +777,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_set_content_based_deduplication_strategy[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:28",
+    "recorded-date": "30-04-2024, 13:47:41",
     "recorded-content": {
       "before-update": {
         "Attributes": {
@@ -825,7 +830,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_too_many_entries_in_batch_request[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:29",
+    "recorded-date": "30-04-2024, 13:33:39",
     "recorded-content": {
       "test_too_many_entries_in_batch_request": {
         "Error": {
@@ -842,11 +847,12 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_too_many_entries_in_batch_request[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:29",
+    "recorded-date": "30-04-2024, 13:33:40",
     "recorded-content": {
       "test_too_many_entries_in_batch_request": {
         "Error": {
           "Code": "AWS.SimpleQueueService.TooManyEntriesInBatchRequest",
+          "Detail": null,
           "Message": "Maximum number of entries per request are 10. You have sent 20.",
           "Type": "Sender"
         },
@@ -858,7 +864,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_invalid_batch_id[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:29",
+    "recorded-date": "30-04-2024, 13:33:40",
     "recorded-content": {
       "test_invalid_batch_id": {
         "Error": {
@@ -875,11 +881,12 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_invalid_batch_id[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:29",
+    "recorded-date": "30-04-2024, 13:33:41",
     "recorded-content": {
       "test_invalid_batch_id": {
         "Error": {
           "Code": "AWS.SimpleQueueService.InvalidBatchEntryId",
+          "Detail": null,
           "Message": "A batch entry id can only contain alphanumeric characters, hyphens and underscores. It can be at most 80 letters long.",
           "Type": "Sender"
         },
@@ -891,7 +898,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_batch_missing_deduplication_id_for_fifo_queue[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:29",
+    "recorded-date": "30-04-2024, 13:33:42",
     "recorded-content": {
       "test_missing_deduplication_id_for_fifo_queue": {
         "Error": {
@@ -908,11 +915,12 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_batch_missing_deduplication_id_for_fifo_queue[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:29",
+    "recorded-date": "30-04-2024, 13:33:43",
     "recorded-content": {
       "test_missing_deduplication_id_for_fifo_queue": {
         "Error": {
           "Code": "InvalidParameterValue",
+          "Detail": null,
           "Message": "The queue should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
           "Type": "Sender"
         },
@@ -924,14 +932,14 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_batch_message_size": {
-    "recorded-date": "19-03-2025, 16:31:29",
+    "recorded-date": "30-04-2024, 13:33:44",
     "recorded-content": {
       "send-message-batch-result": {
         "Failed": [
           {
-            "Code": "InvalidParameterValueException",
+            "Code": "InvalidParameterValue",
             "Id": "<uuid:1>",
-            "Message": "One or more parameters are invalid. Reason: Message must be shorter than 1024 bytes.",
+            "Message": "One or more parameters cannot be validated. Reason: Message must be shorter than 1024 bytes.",
             "SenderFault": true
           }
         ],
@@ -950,7 +958,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_batch_missing_message_group_id_for_fifo_queue[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:29",
+    "recorded-date": "30-04-2024, 13:33:44",
     "recorded-content": {
       "test_missing_message_group_id_for_fifo_queue": {
         "Error": {
@@ -967,7 +975,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_to_standard_queue_with_empty_message_group_id": {
-    "recorded-date": "19-03-2025, 16:30:12",
+    "recorded-date": "08-11-2024, 12:04:39",
     "recorded-content": {
       "error-response": {
         "Error": {
@@ -984,11 +992,12 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_batch_missing_message_group_id_for_fifo_queue[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:29",
+    "recorded-date": "30-04-2024, 13:33:45",
     "recorded-content": {
       "test_missing_message_group_id_for_fifo_queue": {
         "Error": {
           "Code": "InvalidParameterValue",
+          "Detail": null,
           "Message": "The request must contain the parameter MessageGroupId.",
           "Type": "Sender"
         },
@@ -1000,7 +1009,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_invalid_msg_id[sqs-]": {
-    "recorded-date": "19-03-2025, 16:31:30",
+    "recorded-date": "30-04-2024, 13:48:34",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -1017,7 +1026,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_invalid_msg_id[sqs-testLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongId]": {
-    "recorded-date": "19-03-2025, 16:31:30",
+    "recorded-date": "30-04-2024, 13:48:35",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -1034,7 +1043,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_invalid_msg_id[sqs-invalid:id]": {
-    "recorded-date": "19-03-2025, 16:31:30",
+    "recorded-date": "30-04-2024, 13:48:36",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -1051,7 +1060,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_invalid_msg_id[sqs_query-]": {
-    "recorded-date": "19-03-2025, 16:31:30",
+    "recorded-date": "30-04-2024, 13:48:37",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -1067,7 +1076,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_invalid_msg_id[sqs_query-testLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongId]": {
-    "recorded-date": "19-03-2025, 16:31:30",
+    "recorded-date": "30-04-2024, 13:48:38",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -1083,7 +1092,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_invalid_msg_id[sqs_query-invalid:id]": {
-    "recorded-date": "19-03-2025, 16:31:30",
+    "recorded-date": "30-04-2024, 13:48:38",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -1099,7 +1108,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_with_too_large_batch[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:31",
+    "recorded-date": "30-04-2024, 13:49:26",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -1116,7 +1125,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_with_too_large_batch[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:31",
+    "recorded-date": "30-04-2024, 13:49:32",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -1132,7 +1141,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_change_message_visibility_batch_with_too_large_batch[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:32",
+    "recorded-date": "30-04-2024, 13:50:34",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -1149,7 +1158,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_change_message_visibility_batch_with_too_large_batch[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:32",
+    "recorded-date": "30-04-2024, 13:50:41",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -1169,7 +1178,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_binary_attributes[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:33",
+    "recorded-date": "30-04-2024, 13:33:48",
     "recorded-content": {
       "binary-attrs-msg": {
         "Messages": [
@@ -1195,7 +1204,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_binary_attributes[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:33",
+    "recorded-date": "30-04-2024, 13:33:49",
     "recorded-content": {
       "binary-attrs-msg": {
         "Messages": [
@@ -1221,7 +1230,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_empty_string_attribute[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:34",
+    "recorded-date": "30-04-2024, 13:35:41",
     "recorded-content": {
       "empty-string-attr": {
         "Error": {
@@ -1238,11 +1247,12 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_empty_string_attribute[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:34",
+    "recorded-date": "30-04-2024, 13:35:42",
     "recorded-content": {
       "empty-string-attr": {
         "Error": {
           "Code": "InvalidParameterValue",
+          "Detail": null,
           "Message": "Message (user) attribute 'ErrorDetails' must contain a non-empty value of type 'String'.",
           "Type": "Sender"
         },
@@ -1254,7 +1264,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_message_attributes": {
-    "recorded-date": "19-03-2025, 16:31:35",
+    "recorded-date": "30-04-2024, 13:33:55",
     "recorded-content": {
       "dlq-arn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
       "sourcen-arn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
@@ -1265,10 +1275,10 @@
           "MD5OfBody": "3d6b824fd8c1520e9a047d21fee6fb1f",
           "Body": "message-1",
           "Attributes": {
-            "SentTimestamp": "timestamp",
-            "AWSTraceHeader": "Root=1-5759e988-bd862e3fe1be46a994272793;Parent=53995c3f42cd8ad8;Sampled=1",
+            "ApproximateFirstReceiveTimestamp": "timestamp",
             "ApproximateReceiveCount": "1",
-            "ApproximateFirstReceiveTimestamp": "timestamp"
+            "SentTimestamp": "timestamp",
+            "AWSTraceHeader": "Root=1-5759e988-bd862e3fe1be46a994272793;Parent=53995c3f42cd8ad8;Sampled=1"
           },
           "MD5OfMessageAttributes": "adb59cd4678ea5a855436b949cd07ab6",
           "MessageAttributes": {
@@ -1284,9 +1294,9 @@
           "MD5OfBody": "95ef155b66299d14edf7ed57c468c13b",
           "Body": "message-2",
           "Attributes": {
-            "SentTimestamp": "timestamp",
+            "ApproximateFirstReceiveTimestamp": "timestamp",
             "ApproximateReceiveCount": "1",
-            "ApproximateFirstReceiveTimestamp": "timestamp"
+            "SentTimestamp": "timestamp"
           }
         }
       ],
@@ -1297,11 +1307,11 @@
           "MD5OfBody": "3d6b824fd8c1520e9a047d21fee6fb1f",
           "Body": "message-1",
           "Attributes": {
+            "ApproximateFirstReceiveTimestamp": "timestamp",
+            "ApproximateReceiveCount": "2",
             "SentTimestamp": "timestamp",
             "AWSTraceHeader": "Root=1-5759e988-bd862e3fe1be46a994272793;Parent=53995c3f42cd8ad8;Sampled=1",
-            "ApproximateReceiveCount": "2",
-            "DeadLetterQueueSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
-            "ApproximateFirstReceiveTimestamp": "timestamp"
+            "DeadLetterQueueSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>"
           },
           "MD5OfMessageAttributes": "adb59cd4678ea5a855436b949cd07ab6",
           "MessageAttributes": {
@@ -1317,17 +1327,17 @@
           "MD5OfBody": "95ef155b66299d14edf7ed57c468c13b",
           "Body": "message-2",
           "Attributes": {
-            "SentTimestamp": "timestamp",
+            "ApproximateFirstReceiveTimestamp": "timestamp",
             "ApproximateReceiveCount": "2",
-            "DeadLetterQueueSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
-            "ApproximateFirstReceiveTimestamp": "timestamp"
+            "SentTimestamp": "timestamp",
+            "DeadLetterQueueSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>"
           }
         }
       ]
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_unsupported_attribute_fifo[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:36",
+    "recorded-date": "14-05-2024, 22:23:46",
     "recorded-content": {
       "invalid-attr-name-1": {
         "Error": {
@@ -1358,12 +1368,14 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_unsupported_attribute_fifo[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:36",
+    "recorded-date": "14-05-2024, 22:23:47",
     "recorded-content": {
       "invalid-attr-name-1": {
         "Error": {
           "Code": "InvalidAttributeName",
-          "Message": "Unknown Attribute FifoQueue."
+          "Detail": null,
+          "Message": "Unknown Attribute FifoQueue.",
+          "Type": "Sender"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1373,6 +1385,7 @@
       "invalid-attr-name-2": {
         "Error": {
           "Code": "InvalidAttributeValue",
+          "Detail": null,
           "Message": "Invalid value for the parameter FifoQueue. Reason: Modifying queue type is not supported.",
           "Type": "Sender"
         },
@@ -1384,7 +1397,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_arrives_once_after_delete[sqs-True]": {
-    "recorded-date": "19-03-2025, 16:31:39",
+    "recorded-date": "30-04-2024, 13:34:01",
     "recorded-content": {
       "get-messages": {
         "Messages": [
@@ -1411,7 +1424,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_arrives_once_after_delete[sqs-False]": {
-    "recorded-date": "19-03-2025, 16:31:40",
+    "recorded-date": "30-04-2024, 13:34:04",
     "recorded-content": {
       "get-messages": {
         "Messages": [
@@ -1438,7 +1451,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_arrives_once_after_delete[sqs_query-True]": {
-    "recorded-date": "19-03-2025, 16:31:41",
+    "recorded-date": "30-04-2024, 13:34:06",
     "recorded-content": {
       "get-messages": {
         "Messages": [
@@ -1465,7 +1478,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_arrives_once_after_delete[sqs_query-False]": {
-    "recorded-date": "19-03-2025, 16:31:42",
+    "recorded-date": "30-04-2024, 13:34:09",
     "recorded-content": {
       "get-messages": {
         "Messages": [
@@ -1492,7 +1505,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_not_on_message_group_id[sqs-True]": {
-    "recorded-date": "19-03-2025, 16:31:44",
+    "recorded-date": "30-04-2024, 13:34:11",
     "recorded-content": {
       "get-messages": {
         "Messages": [
@@ -1519,7 +1532,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_not_on_message_group_id[sqs-False]": {
-    "recorded-date": "19-03-2025, 16:31:45",
+    "recorded-date": "30-04-2024, 13:34:14",
     "recorded-content": {
       "get-messages": {
         "Messages": [
@@ -1546,7 +1559,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_not_on_message_group_id[sqs_query-True]": {
-    "recorded-date": "19-03-2025, 16:31:46",
+    "recorded-date": "30-04-2024, 13:34:17",
     "recorded-content": {
       "get-messages": {
         "Messages": [
@@ -1573,7 +1586,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_not_on_message_group_id[sqs_query-False]": {
-    "recorded-date": "19-03-2025, 16:31:47",
+    "recorded-date": "30-04-2024, 13:34:19",
     "recorded-content": {
       "get-messages": {
         "Messages": [
@@ -1600,7 +1613,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_posting_to_fifo_requires_deduplicationid_group_id[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:52",
+    "recorded-date": "30-04-2024, 13:34:21",
     "recorded-content": {
       "invalid-parameter-value": {
         "Error": {
@@ -1653,11 +1666,12 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_posting_to_fifo_requires_deduplicationid_group_id[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:52",
+    "recorded-date": "30-04-2024, 13:34:22",
     "recorded-content": {
       "invalid-parameter-value": {
         "Error": {
           "Code": "InvalidParameterValue",
+          "Detail": null,
           "Message": "The queue should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
           "Type": "Sender"
         },
@@ -1669,6 +1683,7 @@
       "missing-parameter": {
         "Error": {
           "Code": "MissingParameter",
+          "Detail": null,
           "Message": "The request must contain the parameter MessageGroupId.",
           "Type": "Sender"
         },
@@ -1704,7 +1719,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_successive_purge_calls_fail[sqs]": {
-    "recorded-date": "19-03-2025, 16:32:10",
+    "recorded-date": "30-04-2024, 13:37:02",
     "recorded-content": {
       "purge_queue_error": {
         "Error": {
@@ -1721,11 +1736,12 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_successive_purge_calls_fail[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:32:10",
+    "recorded-date": "30-04-2024, 13:37:04",
     "recorded-content": {
       "purge_queue_error": {
         "Error": {
           "Code": "AWS.SimpleQueueService.PurgeQueueInProgress",
+          "Detail": null,
           "Message": "Only one PurgeQueue operation on <queue-name> is allowed every 60 seconds.",
           "Type": "Sender"
         },
@@ -1737,7 +1753,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_fifo_same_dedup_id_different_message_groups[sqs]": {
-    "recorded-date": "19-03-2025, 16:32:14",
+    "recorded-date": "30-04-2024, 13:51:17",
     "recorded-content": {
       "same-dedup-different-grp-1": {
         "Messages": [
@@ -1762,7 +1778,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_fifo_same_dedup_id_different_message_groups[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:32:14",
+    "recorded-date": "30-04-2024, 13:51:20",
     "recorded-content": {
       "same-dedup-different-grp-1": {
         "Messages": [
@@ -1787,7 +1803,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_high_throughput_ordering[sqs]": {
-    "recorded-date": "19-03-2025, 16:32:15",
+    "recorded-date": "30-04-2024, 13:34:27",
     "recorded-content": {
       "same-dedup-different-grp-1": {
         "Messages": [
@@ -1820,7 +1836,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_high_throughput_ordering[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:32:15",
+    "recorded-date": "30-04-2024, 13:34:29",
     "recorded-content": {
       "same-dedup-different-grp-1": {
         "Messages": [
@@ -1853,7 +1869,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_high_throughput_after_creation[sqs]": {
-    "recorded-date": "19-03-2025, 16:32:15",
+    "recorded-date": "24-05-2024, 09:41:13",
     "recorded-content": {
       "same-dedup-different-grp-1": {
         "Messages": [
@@ -1934,7 +1950,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_high_throughput_after_creation[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:32:15",
+    "recorded-date": "24-05-2024, 09:41:19",
     "recorded-content": {
       "same-dedup-different-grp-1": {
         "Messages": [
@@ -2015,7 +2031,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_regular_throughput_after_creation[sqs]": {
-    "recorded-date": "19-03-2025, 16:32:15",
+    "recorded-date": "30-04-2024, 13:52:03",
     "recorded-content": {
       "same-dedup-different-grp-1": {
         "Messages": [
@@ -2086,7 +2102,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_regular_throughput_after_creation[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:32:15",
+    "recorded-date": "30-04-2024, 13:52:06",
     "recorded-content": {
       "same-dedup-different-grp-1": {
         "Messages": [
@@ -2157,7 +2173,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sse_queue_attributes[sqs]": {
-    "recorded-date": "19-03-2025, 16:32:16",
+    "recorded-date": "30-04-2024, 13:34:43",
     "recorded-content": {
       "sse_kms_attributes": {
         "Attributes": {
@@ -2182,7 +2198,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sse_queue_attributes[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:32:16",
+    "recorded-date": "30-04-2024, 13:34:47",
     "recorded-content": {
       "sse_kms_attributes": {
         "Attributes": {
@@ -2219,7 +2235,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_message_attribute_names_filters[sqs]": {
-    "recorded-date": "19-03-2025, 16:32:16",
+    "recorded-date": "30-04-2024, 13:34:51",
     "recorded-content": {
       "send_message_response": {
         "MD5OfMessageAttributes": "4c360f3fdafd970e05fae2f149d997f5",
@@ -2399,7 +2415,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_message_attribute_names_filters[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:32:16",
+    "recorded-date": "30-04-2024, 13:34:55",
     "recorded-content": {
       "send_message_response": {
         "MD5OfMessageAttributes": "4c360f3fdafd970e05fae2f149d997f5",
@@ -2579,7 +2595,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_attribute_names_filters[sqs]": {
-    "recorded-date": "19-03-2025, 16:32:16",
+    "recorded-date": "04-06-2024, 11:54:31",
     "recorded-content": {
       "all_attributes": {
         "Messages": [
@@ -2665,7 +2681,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_attribute_names_filters[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:32:16",
+    "recorded-date": "04-06-2024, 11:54:34",
     "recorded-content": {
       "all_attributes": {
         "Messages": [
@@ -2751,7 +2767,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_permission_lifecycle[sqs]": {
-    "recorded-date": "19-03-2025, 16:32:17",
+    "recorded-date": "30-04-2024, 13:35:03",
     "recorded-content": {
       "add-permission-response": {
         "ResponseMetadata": {
@@ -2908,7 +2924,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_permission_lifecycle[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:32:17",
+    "recorded-date": "30-04-2024, 13:35:07",
     "recorded-content": {
       "add-permission-response": {
         "ResponseMetadata": {
@@ -2980,6 +2996,7 @@
       "get-queue-policy-attribute-second-account-same-label": {
         "Error": {
           "Code": "InvalidParameterValue",
+          "Detail": null,
           "Message": "Value crossaccountpermission for parameter Label is invalid. Reason: Already exists.",
           "Type": "Sender"
         },
@@ -3052,6 +3069,7 @@
       "get-queue-policy-attribute-delete-non-existent-label": {
         "Error": {
           "Code": "InvalidParameterValue",
+          "Detail": null,
           "Message": "Value crossaccountpermission2 for parameter Label is invalid. Reason: can't find label.",
           "Type": "Sender"
         },
@@ -3063,7 +3081,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_non_existent_queue": {
-    "recorded-date": "19-03-2025, 16:32:17",
+    "recorded-date": "30-04-2024, 13:35:47",
     "recorded-content": {
       "queue-does-not-exist": {
         "Error": {
@@ -3092,6 +3110,7 @@
       "queue-does-not-exist-query": {
         "Error": {
           "Code": "AWS.SimpleQueueService.NonExistentQueue",
+          "Detail": null,
           "Message": "The specified queue does not exist for this wsdl version.",
           "Type": "Sender"
         },
@@ -3114,7 +3133,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_unsupported_attribute_standard[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:36",
+    "recorded-date": "14-05-2024, 22:34:35",
     "recorded-content": {
       "invalid-attr-name-1": {
         "Error": {
@@ -3145,12 +3164,14 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_unsupported_attribute_standard[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:36",
+    "recorded-date": "14-05-2024, 22:34:35",
     "recorded-content": {
       "invalid-attr-name-1": {
         "Error": {
           "Code": "InvalidAttributeName",
-          "Message": "Unknown Attribute FifoQueue."
+          "Detail": null,
+          "Message": "Unknown Attribute FifoQueue.",
+          "Type": "Sender"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -3160,7 +3181,9 @@
       "invalid-attr-name-2": {
         "Error": {
           "Code": "InvalidAttributeName",
-          "Message": "Unknown Attribute FifoQueue."
+          "Detail": null,
+          "Message": "Unknown Attribute FifoQueue.",
+          "Type": "Sender"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -3170,7 +3193,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_standard_queue_with_fifo_attribute_raises_error[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:17",
+    "recorded-date": "15-05-2024, 02:30:47",
     "recorded-content": {
       "invalid-attribute-fifo-queue": {
         "Error": {
@@ -3227,7 +3250,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_standard_queue_with_fifo_attribute_raises_error[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:17",
+    "recorded-date": "15-05-2024, 02:30:48",
     "recorded-content": {
       "invalid-attribute-fifo-queue": {
         "Error": {
@@ -3284,15 +3307,15 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_with_fifo_and_content_based_deduplication[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:34",
+    "recorded-date": "21-05-2024, 13:48:08",
     "recorded-content": {}
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_with_fifo_and_content_based_deduplication[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:35",
+    "recorded-date": "21-05-2024, 13:48:14",
     "recorded-content": {}
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_fifo_message_group_scope_no_throughput_setting[sqs]": {
-    "recorded-date": "19-03-2025, 16:32:15",
+    "recorded-date": "24-05-2024, 09:03:33",
     "recorded-content": {
       "same-dedup-different-grp-1": {
         "Messages": [
@@ -3325,7 +3348,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_fifo_message_group_scope_no_throughput_setting[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:32:15",
+    "recorded-date": "24-05-2024, 09:03:35",
     "recorded-content": {
       "same-dedup-different-grp-1": {
         "Messages": [
@@ -3358,7 +3381,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_message_system_attribute_names_filters[sqs]": {
-    "recorded-date": "19-03-2025, 16:32:16",
+    "recorded-date": "04-06-2024, 16:10:07",
     "recorded-content": {
       "all_attributes": {
         "Messages": [
@@ -3444,7 +3467,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_message_system_attribute_names_filters[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:32:16",
+    "recorded-date": "04-06-2024, 16:10:10",
     "recorded-content": {
       "all_attributes": {
         "Messages": [
@@ -3530,7 +3553,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_system_attribute_names_with_attribute_names[sqs]": {
-    "recorded-date": "19-03-2025, 16:32:16",
+    "recorded-date": "04-06-2024, 17:43:13",
     "recorded-content": {
       "same_values": {
         "Messages": [
@@ -3575,7 +3598,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_system_attribute_names_with_attribute_names[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:32:16",
+    "recorded-date": "04-06-2024, 17:43:15",
     "recorded-content": {
       "same_values": {
         "Messages": [
@@ -3617,15 +3640,15 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_empty_redrive_policy[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:33",
+    "recorded-date": "20-08-2024, 14:14:08",
     "recorded-content": {}
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_empty_redrive_policy[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:33",
+    "recorded-date": "20-08-2024, 14:14:11",
     "recorded-content": {}
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_wait_time_seconds[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:10",
+    "recorded-date": "10-02-2025, 13:22:29",
     "recorded-content": {
       "recieve_message_error_too_large": {
         "Error": {
@@ -3682,11 +3705,12 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_wait_time_seconds[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:10",
+    "recorded-date": "10-02-2025, 13:22:32",
     "recorded-content": {
       "recieve_message_error_too_large": {
         "Error": {
           "Code": "InvalidParameterValue",
+          "Detail": null,
           "Message": "Value 21 for parameter WaitTimeSeconds is invalid. Reason: Must be >= 0 and <= 20, if provided.",
           "Type": "Sender"
         },
@@ -3698,6 +3722,7 @@
       "recieve_message_error_too_small": {
         "Error": {
           "Code": "InvalidParameterValue",
+          "Detail": null,
           "Message": "Value -1 for parameter WaitTimeSeconds is invalid. Reason: Must be >= 0 and <= 20, if provided.",
           "Type": "Sender"
         },
@@ -3737,8 +3762,14 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_empty_queue[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:09",
+    "recorded-date": "10-02-2025, 13:18:17",
     "recorded-content": {
+      "empty_short_poll_resp_no_param": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "empty_short_poll_resp": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -3754,8 +3785,14 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_empty_queue[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:10",
+    "recorded-date": "10-02-2025, 13:18:20",
     "recorded-content": {
+      "empty_short_poll_resp_no_param": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "empty_short_poll_resp": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -3770,8 +3807,42 @@
       }
     }
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_empty_message[sqs]": {
+    "recorded-date": "05-03-2025, 19:25:09",
+    "recorded-content": {
+      "send_empty_message": {
+        "Error": {
+          "Code": "MissingParameter",
+          "Message": "The request must contain the parameter MessageBody.",
+          "QueryErrorCode": "MissingRequiredParameterException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_empty_message[sqs_query]": {
+    "recorded-date": "05-03-2025, 19:25:09",
+    "recorded-content": {
+      "send_empty_message": {
+        "Error": {
+          "Code": "MissingParameter",
+          "Detail": null,
+          "Message": "The request must contain the parameter MessageBody.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_list_queues_pagination": {
-    "recorded-date": "19-03-2025, 19:31:28",
+    "recorded-date": "19-03-2025, 21:04:35",
     "recorded-content": {
       "list_all": {
         "QueueUrls": [
@@ -3819,697 +3890,5 @@
         }
       }
     }
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_get_queue_url_contains_localstack_host[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:04",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_get_queue_url_contains_localstack_host[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:04",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_list_queues": {
-    "recorded-date": "19-03-2025, 16:30:04",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_and_get_attributes[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:04",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_and_get_attributes[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:04",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_recently_deleted[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:04",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_recently_deleted[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:04",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_recently_deleted_cache[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:06",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_recently_deleted_cache[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:07",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_recently_deleted_can_be_disabled[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:07",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_recently_deleted_can_be_disabled[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:08",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_message[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:08",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_message[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:08",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_attributes_timestamp_types[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:10",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_attributes_timestamp_types[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:10",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_message_multiple_queues": {
-    "recorded-date": "19-03-2025, 16:30:10",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_message_encoded_content[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:11",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_message_encoded_content[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:11",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:11",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:11",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_batch_receive_multiple[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:11",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_batch_receive_multiple[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:11",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_empty_list[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:11",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_empty_list[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:11",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_tags_case_sensitive[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:12",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_tags_case_sensitive[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:12",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_untag_queue_ignores_non_existing_tag[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:12",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_untag_queue_ignores_non_existing_tag[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:12",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_tag_queue_overwrites_existing_tag[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:12",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_tag_queue_overwrites_existing_tag[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:12",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_with_tags[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:12",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_with_tags[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:12",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_without_attributes_is_idempotent": {
-    "recorded-date": "19-03-2025, 16:30:12",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_with_same_attributes_is_idempotent": {
-    "recorded-date": "19-03-2025, 16:30:13",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_wait_time_seconds_and_max_number_of_messages_does_not_block[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:13",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_wait_time_seconds_and_max_number_of_messages_does_not_block[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:13",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_wait_time_seconds_waits_correctly[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:14",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_wait_time_seconds_waits_correctly[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:15",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_wait_time_seconds_queue_attribute_waits_correctly[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:16",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_wait_time_seconds_queue_attribute_waits_correctly[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:17",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_with_default_attributes_is_idempotent": {
-    "recorded-date": "19-03-2025, 16:30:17",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_fifo_queue_with_same_attributes_is_idempotent": {
-    "recorded-date": "19-03-2025, 16:30:17",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_delay_0_works_for_fifo[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:17",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_delay_0_works_for_fifo[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:18",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_after_internal_attributes_changes_works[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:18",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_after_internal_attributes_changes_works[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:18",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_after_send[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:18",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_after_send[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:18",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_delay_and_wait_time[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:20",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_delay_and_wait_time[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:22",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_approximate_number_of_messages_delayed[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:25",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_approximate_number_of_messages_delayed[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:28",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_after_visibility_timeout[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:30",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_after_visibility_timeout[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:32",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_terminate_visibility_timeout[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:32",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_terminate_visibility_timeout[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:32",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_extend_message_visibility_timeout_set_in_queue[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:39",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_extend_message_visibility_timeout_set_in_queue[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:46",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_with_visibility_timeout_updates_timeout[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:50",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_with_visibility_timeout_updates_timeout[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:51",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_terminate_visibility_timeout_after_receive[sqs]": {
-    "recorded-date": "19-03-2025, 16:30:51",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_terminate_visibility_timeout_after_receive[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:30:51",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_retention": {
-    "recorded-date": "19-03-2025, 16:30:54",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_retention_fifo": {
-    "recorded-date": "19-03-2025, 16:30:57",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_retention_with_inflight": {
-    "recorded-date": "19-03-2025, 16:31:03",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_invalid_receipt_handle_should_return_error_message[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:03",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_invalid_receipt_handle_should_return_error_message[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:03",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_with_attributes_should_be_enqueued[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:03",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_with_attributes_should_be_enqueued[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:03",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_batch_send_with_invalid_char_should_succeed[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:03",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_batch_send_with_invalid_char_should_succeed[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:03",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_external_endpoint[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:03",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_external_endpoint[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:03",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_external_hostname_via_host_header": {
-    "recorded-date": "19-03-2025, 16:31:03",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_marker_serialization_json_protocol[{\"foo\": \"ba\\rr\", \"foo2\": \"ba&quot;r&quot;\"}]": {
-    "recorded-date": "19-03-2025, 16:31:03",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_marker_serialization_json_protocol[\"{\\\\\"foo\\\\\": \\\\\"ba\\\\rr\\\\\"}\"]": {
-    "recorded-date": "19-03-2025, 16:31:04",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_external_host_via_header_complete_message_lifecycle": {
-    "recorded-date": "19-03-2025, 16:31:04",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_message_group_visibility": {
-    "recorded-date": "19-03-2025, 16:31:06",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_messages_in_order_after_timeout[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:08",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_messages_in_order_after_timeout[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:10",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_receive_message_group_id_ordering[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:10",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_receive_message_group_id_ordering[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:10",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_receive_message_visibility_timeout_shared_in_group[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:12",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_receive_message_visibility_timeout_shared_in_group[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:14",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_receive_message_with_zero_visibility_timeout[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:14",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_receive_message_with_zero_visibility_timeout[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:14",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_message_group_visibility_after_terminate_visibility_timeout[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:15",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_message_group_visibility_after_terminate_visibility_timeout[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:15",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_message_group_visibility_after_change_message_visibility[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:17",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_message_group_visibility_after_change_message_visibility[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:19",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_message_group_visibility_after_delete[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:19",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_message_group_visibility_after_delete[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:19",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_message_group_visibility_after_partial_delete[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:19",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_message_group_visibility_after_partial_delete[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:19",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_queue_send_message_with_delay_on_queue_works[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:24",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_queue_send_message_with_delay_on_queue_works[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:28",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_approx_number_of_messages[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:28",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_approx_number_of_messages[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:28",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_list_queue_tags[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:28",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_list_queue_tags[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:28",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_queue_list_nonexistent_tags[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:28",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_queue_list_nonexistent_tags[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:29",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_publish_get_delete_message[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:29",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_publish_get_delete_message[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:29",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_deletes_with_change_visibility_timeout[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:29",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_deletes_with_change_visibility_timeout[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:29",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_publish_get_delete_message_batch[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:29",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_publish_get_delete_message_batch[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:30",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_and_send_to_fifo_queue[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:32",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_and_send_to_fifo_queue[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:33",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_queue_requires_suffix": {
-    "recorded-date": "19-03-2025, 16:31:33",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_standard_queue_cannot_have_fifo_suffix": {
-    "recorded-date": "19-03-2025, 16:31:33",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_queue_policy[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:33",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_queue_policy[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:33",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_empty_queue_policy[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:33",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_empty_queue_policy[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:33",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_attributes[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:33",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_attributes[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:33",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sent_message_retains_attributes_after_receive[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:33",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sent_message_retains_attributes_after_receive[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:34",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_invalid_string_attributes[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:34",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_invalid_string_attributes[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:34",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_invalid_payload_characters[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:34",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_invalid_payload_characters[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:34",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_config": {
-    "recorded-date": "19-03-2025, 16:31:34",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_list_sources[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:34",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_list_sources[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:34",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_max_receive_count[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:35",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_max_receive_count[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:35",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_get_specific_queue_attribute_response[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:35",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_get_specific_queue_attribute_response[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:35",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_queue_send_multiple_messages_multiple_single_receives[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:36",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_queue_send_multiple_messages_multiple_single_receives[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:36",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_content_based_message_deduplication_arrives_once[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:37",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_content_based_message_deduplication_arrives_once[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:38",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_get_list_queues_with_query_auth": {
-    "recorded-date": "19-03-2025, 16:31:47",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_system_attributes_have_no_effect_on_attr_md5[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:47",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_system_attributes_have_no_effect_on_attr_md5[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:47",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_inflight_message_requeue": {
-    "recorded-date": "19-03-2025, 16:31:52",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sequence_number[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:52",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sequence_number[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:52",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_sequence_number_increases[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:52",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_sequence_number_increases[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:52",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_posting_to_queue_via_queue_name[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:52",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_posting_to_queue_via_queue_name[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:52",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_invalid_string_attributes_cause_invalid_parameter_value_error[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:52",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_invalid_string_attributes_cause_invalid_parameter_value_error[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:52",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_change_message_visibility_not_permanent[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:52",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_change_message_visibility_not_permanent[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:53",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_with_carriage_return[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:53",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_with_carriage_return[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:53",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_purge_queue[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:54",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_purge_queue[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:31:55",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_purge_queue_deletes_inflight_messages[sqs]": {
-    "recorded-date": "19-03-2025, 16:31:59",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_purge_queue_deletes_inflight_messages[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:32:03",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_purge_queue_deletes_delayed_messages[sqs]": {
-    "recorded-date": "19-03-2025, 16:32:06",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_purge_queue_deletes_delayed_messages[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:32:09",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_purge_queue_clears_fifo_deduplication_cache[sqs]": {
-    "recorded-date": "19-03-2025, 16:32:09",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_purge_queue_clears_fifo_deduplication_cache[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:32:10",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_remove_message_with_old_receipt_handle[sqs]": {
-    "recorded-date": "19-03-2025, 16:32:12",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_remove_message_with_old_receipt_handle[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:32:14",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_list_queues_multi_region_without_endpoint_strategy": {
-    "recorded-date": "19-03-2025, 16:32:14",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_list_queues_multi_region_with_endpoint_strategy_standard": {
-    "recorded-date": "19-03-2025, 16:32:14",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_list_queues_multi_region_with_endpoint_strategy_domain": {
-    "recorded-date": "19-03-2025, 16:32:14",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_get_queue_url_multi_region[standard]": {
-    "recorded-date": "19-03-2025, 16:32:14",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_get_queue_url_multi_region[domain]": {
-    "recorded-date": "19-03-2025, 16:32:14",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_get_queue_url_multi_region[path]": {
-    "recorded-date": "19-03-2025, 16:32:14",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_change_visibility_on_deleted_message_raises_invalid_parameter_value[sqs]": {
-    "recorded-date": "19-03-2025, 16:32:16",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_change_visibility_on_deleted_message_raises_invalid_parameter_value[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:32:17",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_with_illegal_receipt_handle[sqs]": {
-    "recorded-date": "19-03-2025, 16:32:17",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_with_illegal_receipt_handle[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:32:17",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_with_deleted_receipt_handle[sqs]": {
-    "recorded-date": "19-03-2025, 16:32:17",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_with_deleted_receipt_handle[sqs_query]": {
-    "recorded-date": "19-03-2025, 16:32:17",
-    "recorded-content": {}
   }
 }
