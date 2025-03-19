@@ -887,10 +887,6 @@ class TestApiGatewayCommon:
         # create a special lambda URL returning exactly what it got as a body
         handler_code = handler_code = textwrap.dedent("""
         def handler(event, context):
-            # response = {"statusCode": 200}
-            # body = event.get("body", "")
-            # if body:
-            #     response["body"] = body
             return event.get("body", "")
         """)
         func_name = f"echo-http-{short_uid()}"
