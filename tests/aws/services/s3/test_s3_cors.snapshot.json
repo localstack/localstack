@@ -246,7 +246,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_match_methods": {
-    "recorded-date": "31-07-2023, 12:34:36",
+    "recorded-date": "17-03-2025, 20:18:58",
     "recorded-content": {
       "opt-get": {
         "Body": "",
@@ -329,6 +329,8 @@
           "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
           "date": "date",
           "server": "<server:1>",
+          "x-amz-checksum-crc64nvme": "AAAAAAAAAAA=",
+          "x-amz-checksum-type": "FULL_OBJECT",
           "x-amz-id-2": "<x-amz-id-2:5>",
           "x-amz-request-id": "<x-amz-request-id:5>",
           "x-amz-server-side-encryption": "AES256"

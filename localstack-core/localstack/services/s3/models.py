@@ -310,7 +310,7 @@ class S3Object:
         self.etag = etag
         self.size = size
         self.expires = expires
-        self.checksum_algorithm = checksum_algorithm
+        self.checksum_algorithm = checksum_algorithm or ChecksumAlgorithm.CRC64NVME
         self.checksum_value = checksum_value
         self.checksum_type = checksum_type
         self.encryption = encryption
@@ -429,6 +429,7 @@ class S3Multipart:
     upload_id: MultipartUploadId
     checksum_value: Optional[str]
     checksum_type: Optional[ChecksumType]
+    checksum_algorithm: ChecksumAlgorithm
     initiated: datetime
     precondition: bool
 
@@ -463,6 +464,7 @@ class S3Multipart:
         self.tagging = tagging
         self.checksum_value = None
         self.checksum_type = checksum_type
+        self.checksum_algorithm = checksum_algorithm
         self.precondition = precondition
         self.object = S3Object(
             key=key,
@@ -490,13 +492,13 @@ class S3Multipart:
     ):
         last_part_index = len(parts) - 1
         object_etag = hashlib.md5(usedforsecurity=False)
-        has_checksum = self.object.checksum_algorithm is not None
+        has_checksum = self.checksum_algorithm is not None
         checksum_hash = None
         if has_checksum:
-            if self.object.checksum_type == ChecksumType.COMPOSITE:
-                checksum_hash = get_s3_checksum(self.object.checksum_algorithm)
+            if self.checksum_type == ChecksumType.COMPOSITE:
+                checksum_hash = get_s3_checksum(self.checksum_algorithm)
             else:
-                checksum_hash = CombinedCrcHash(self.object.checksum_algorithm)
+                checksum_hash = CombinedCrcHash(self.checksum_algorithm)
 
         pos = 0
         parts_map = {}
@@ -520,7 +522,7 @@ class S3Multipart:
                 )
 
             if has_checksum:
-                checksum_key = f"Checksum{self.object.checksum_algorithm.upper()}"
+                checksum_key = f"Checksum{self.checksum_algorithm.upper()}"
                 if not (part_checksum := part.get(checksum_key)):
                     if self.checksum_type == ChecksumType.COMPOSITE:
                         # weird case, they still try to validate a different checksum type than the multipart
@@ -532,7 +534,7 @@ class S3Multipart:
                                 )
 
                         raise InvalidRequest(
-                            f"The upload was created using a {self.object.checksum_algorithm.lower()} checksum. "
+                            f"The upload was created using a {self.checksum_algorithm.lower()} checksum. "
                             f"The complete request must include the checksum for each part. "
                             f"It was missing for part {part_number} in the request."
                         )
@@ -584,7 +586,7 @@ class S3Multipart:
                 checksum_value = f"{checksum_value}-{len(parts)}"
 
             elif self.checksum_type == ChecksumType.FULL_OBJECT:
-                if validation_checksum != checksum_value:
+                if validation_checksum and validation_checksum != checksum_value:
                     raise BadDigest(
                         f"The {self.object.checksum_algorithm.lower()} you specified did not match the calculated checksum."
                     )

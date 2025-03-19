@@ -1977,6 +1977,59 @@ class TestS3:
         snapshot.match("copy-object-to-dest-keep-checksum", resp)
 
     @markers.aws.validated
+    @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256", "CRC64NVME"])
+    def test_s3_copy_object_with_default_checksum(self, s3_bucket, snapshot, aws_client, algorithm):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "source-object"
+        resp = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body='{"key": "value"}',
+            ContentType="application/json",
+            ChecksumAlgorithm=algorithm,
+            Metadata={"key": "value"},
+        )
+        snapshot.match("put-object-no-checksum", resp)
+
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ObjectAttributes=["Checksum"],
+        )
+        snapshot.match("object-attrs", object_attrs)
+
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key,
+            Metadata={"key1": "value1"},
+            MetadataDirective="REPLACE",
+        )
+        snapshot.match("copy-object-in-place-with-no-checksum", resp)
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ObjectAttributes=["Checksum"],
+        )
+        snapshot.match("object-attrs-after-copy", object_attrs)
+
+        dest_key = "dest-object"
+        # copy the object to check if the new object has the checksum too
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=dest_key,
+        )
+        snapshot.match("copy-object-to-dest-keep-checksum", resp)
+
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=dest_key,
+            ObjectAttributes=["Checksum"],
+        )
+        snapshot.match("dest-object-attrs-after-copy", object_attrs)
+
+    @markers.aws.validated
     def test_s3_copy_object_preconditions(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         object_key = "source-object"
@@ -3817,6 +3870,9 @@ class TestS3:
         copy_etag = response["CopyObjectResult"]["ETag"]
         # etags should be different
         assert copy_etag != multipart_etag
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=key, ChecksumMode="ENABLED")
+        snapshot.match("head-obj", head_object)
 
     @markers.aws.validated
     def test_get_object_part(self, s3_bucket, s3_multipart_upload, snapshot, aws_client):
@@ -6008,8 +6064,6 @@ class TestS3PresignedUrl:
 
     @markers.aws.validated
     def test_put_object(self, s3_bucket, snapshot, aws_client):
-        # big bug here in the old provider: PutObject gets the Expires param from the presigned url??
-        #  when it's supposed to be in the headers?
         snapshot.add_transformer(snapshot.transform.s3_api())
 
         key = "my-key"
@@ -10023,9 +10077,6 @@ class TestS3PresignedPost:
         )
 
     @markers.aws.validated
-    @pytest.mark.skip(
-        reason="failing sporadically with new HTTP gateway (only in CI)",
-    )
     def test_post_object_with_files(self, s3_bucket, aws_client):
         object_key = "test-presigned-post-key"
 
@@ -10225,9 +10276,6 @@ class TestS3PresignedPost:
         snapshot.match("exception-no-sig-related-fields", exception)
 
     @markers.aws.validated
-    @pytest.mark.skip(
-        reason="sporadically failing in CI: presigned-post does not set the body, and then etag is wrong",
-    )
     def test_s3_presigned_post_success_action_status_201_response(
         self, s3_bucket, aws_client, region_name
     ):
@@ -10507,6 +10555,33 @@ class TestS3PresignedPost:
 
         assert response.status_code == 412
         snapshot.match("invalid-content-type-error", xmltodict.parse(response.content))
+
+    @markers.aws.validated
+    def test_post_object_default_checksum(self, s3_bucket, aws_client, snapshot):
+        object_key = "test-presigned-post-checksum"
+
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Conditions=[{"bucket": s3_bucket}],
+        )
+
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "test-body-tagging"},
+            verify=False,
+        )
+        assert response.status_code == 204
+        assert "x-amz-checksum-crc64nvme" in response.headers
+        assert response.headers["x-amz-checksum-type"] == "FULL_OBJECT"
+
+        head_object = aws_client.s3.head_object(
+            Bucket=s3_bucket, Key=object_key, ChecksumMode="ENABLED"
+        )
+        snapshot.match("head-object", head_object)
+        assert head_object["ChecksumCRC64NVME"] == response.headers["x-amz-checksum-crc64nvme"]
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
@@ -11653,6 +11728,58 @@ class TestS3SSECEncryption:
         )
         snapshot.match("get-obj-sse-c-version-1", get_version_1_obj)
 
+    @markers.aws.validated
+    def test_put_object_default_checksum_with_sse_c(
+        self, aws_client, s3_bucket, snapshot, aws_http_client_factory
+    ):
+        cus_key, cus_key_md5 = self.get_encryption_key_b64_and_md5(self.ENCRYPTION_KEY)
+        headers = {
+            "x-amz-content-sha256": "UNSIGNED-PAYLOAD",
+            "x-amz-server-side-encryption-customer-algorithm": "AES256",
+            "x-amz-server-side-encryption-customer-key": cus_key,
+            "x-amz-server-side-encryption-customer-key-MD5": cus_key_md5,
+        }
+        data = b"test data.."
+
+        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+        bucket_url = _bucket_url(s3_bucket)
+
+        no_checksum_key_sse_c = "test-sse-c"
+
+        # https://docs.aws.amazon.com/sdkref/latest/guide/feature-dataintegrity.html
+        no_checksum_put_object_url = f"{bucket_url}/{no_checksum_key_sse_c}"
+        resp = s3_http_client.put(no_checksum_put_object_url, headers=headers, data=data)
+        assert resp.ok
+
+        head_obj = aws_client.s3.head_object(
+            Bucket=s3_bucket,
+            Key=no_checksum_key_sse_c,
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key,
+            SSECustomerKeyMD5=cus_key_md5,
+            ChecksumMode="ENABLED",
+        )
+        snapshot.match("head-obj-sse-c", head_obj)
+
+        get_obj = aws_client.s3.get_object(
+            Bucket=s3_bucket,
+            Key=no_checksum_key_sse_c,
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key,
+            SSECustomerKeyMD5=cus_key_md5,
+        )
+        snapshot.match("get-obj-sse-c", get_obj)
+
+        get_obj_attr = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=no_checksum_key_sse_c,
+            ObjectAttributes=["ETag", "Checksum"],
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey=cus_key,
+            SSECustomerKeyMD5=cus_key_md5,
+        )
+        snapshot.match("get-obj-attrs-sse-c", get_obj_attr)
+
 
 class TestS3PutObjectChecksum:
     @markers.aws.validated
@@ -11890,8 +12017,6 @@ class TestS3PutObjectChecksum:
         )
         snapshot.match("head-obj-diff-checksum-algo", head_obj)
 
-        # AWS S3 documentation says that if you don't provide a checksum, it internally calculates a CRC64NVME checksum
-        # but this does not seem to be true, at least from the API
         # https://docs.aws.amazon.com/sdkref/latest/guide/feature-dataintegrity.html
         no_checksum_object_key = "no-checksum"
         no_checksum_put_object_url = f"{bucket_url}/{no_checksum_object_key}"
@@ -11907,6 +12032,19 @@ class TestS3PutObjectChecksum:
             Bucket=s3_bucket, Key=no_checksum_object_key, ObjectAttributes=["Checksum"]
         )
         snapshot.match("get-obj-attrs-no-checksum", obj_attributes)
+
+        dest_checksum_object_key = "dest-key-checksum"
+        copy_obj = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            Key=dest_checksum_object_key,
+            CopySource=f"{s3_bucket}/{no_checksum_object_key}",
+        )
+        snapshot.match("copy-obj-default-checksum", copy_obj)
+
+        obj_attributes = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket, Key=dest_checksum_object_key, ObjectAttributes=["Checksum"]
+        )
+        snapshot.match("get-copy-obj-attrs-no-checksum", obj_attributes)
 
 
 class TestS3MultipartUploadChecksum:
@@ -12027,6 +12165,19 @@ class TestS3MultipartUploadChecksum:
             ObjectAttributes=["Checksum", "ETag"],
         )
         snapshot.match("get-object-attrs", object_attrs)
+
+        dest_key = "mpu-copy-checksum"
+        copy_obj = aws_client.s3.copy_object(
+            Bucket=s3_bucket, Key=dest_key, CopySource=f"{s3_bucket}/{key_name}"
+        )
+        snapshot.match("copy-obj-checksum", copy_obj)
+
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=dest_key,
+            ObjectAttributes=["Checksum", "ETag"],
+        )
+        snapshot.match("get-copy-object-attrs", object_attrs)
 
     @markers.aws.validated
     @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256", "CRC64NVME"])
@@ -12312,6 +12463,19 @@ class TestS3MultipartUploadChecksum:
         )
         snapshot.match("get-object-attrs", object_attrs)
 
+        dest_key = "mpu-copy-checksum"
+        copy_obj = aws_client.s3.copy_object(
+            Bucket=s3_bucket, Key=dest_key, CopySource=f"{s3_bucket}/{key_name}"
+        )
+        snapshot.match("copy-obj-checksum", copy_obj)
+
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=dest_key,
+            ObjectAttributes=["Checksum", "ETag"],
+        )
+        snapshot.match("get-copy-object-attrs", object_attrs)
+
     @markers.aws.validated
     def test_multipart_parts_checksum_exceptions_full_object(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
@@ -12454,12 +12618,7 @@ class TestS3MultipartUploadChecksum:
         snapshot.match("upload-part-different-checksum-exc", e.value.response)
 
     @markers.aws.validated
-    def test_complete_multipart_parts_checksum_default(
-        self,
-        s3_bucket,
-        snapshot,
-        aws_client,
-    ):
+    def test_complete_multipart_parts_checksum_default(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("Bucket", reference_replacement=False),
@@ -12586,6 +12745,88 @@ class TestS3MultipartUploadChecksum:
         )
         snapshot.match("get-object-attrs", object_attrs)
 
+        dest_key = "mpu-copy-checksum"
+        copy_obj = aws_client.s3.copy_object(
+            Bucket=s3_bucket, Key=dest_key, CopySource=f"{s3_bucket}/{key_name}"
+        )
+        snapshot.match("copy-obj-checksum", copy_obj)
+
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=dest_key,
+            ObjectAttributes=["Checksum", "ETag"],
+        )
+        snapshot.match("get-copy-object-attrs", object_attrs)
+
+    @markers.aws.validated
+    def test_complete_multipart_parts_checksum_full_object_default(
+        self, s3_bucket, snapshot, aws_client
+    ):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value("ID", reference_replacement=False),
+            ]
+        )
+
+        key_name = "test-multipart-checksum"
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket, Key=key_name, ChecksumAlgorithm="CRC64NVME"
+        )
+        snapshot.match("create-mpu-checksum-crc64", response)
+        upload_id = response["UploadId"]
+
+        data = b"aaa"
+
+        upload_part = aws_client.s3.upload_part(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body=data,
+            PartNumber=1,
+            UploadId=upload_id,
+            ChecksumAlgorithm="CRC64NVME",
+        )
+        snapshot.match("upload-part", upload_part)
+
+        # complete with no checksum type specified, just all default values
+        response = aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={
+                "Parts": [
+                    {
+                        "ETag": upload_part["ETag"],
+                        "PartNumber": 1,
+                        "ChecksumCRC64NVME": upload_part["ChecksumCRC64NVME"],
+                    }
+                ]
+            },
+            UploadId=upload_id,
+        )
+        snapshot.match("complete-multipart-checksum", response)
+
+        get_object_with_checksum = aws_client.s3.get_object(
+            Bucket=s3_bucket, Key=key_name, ChecksumMode="ENABLED"
+        )
+        # empty the stream
+        get_object_with_checksum["Body"].read()
+        snapshot.match("get-object-with-checksum", get_object_with_checksum)
+
+        head_object_with_checksum = aws_client.s3.head_object(
+            Bucket=s3_bucket, Key=key_name, ChecksumMode="ENABLED"
+        )
+        snapshot.match("head-object-with-checksum", head_object_with_checksum)
+
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=key_name,
+            ObjectAttributes=["Checksum", "ETag"],
+        )
+        snapshot.match("get-object-attrs", object_attrs)
+
     @markers.aws.validated
     def test_multipart_size_validation(self, aws_client, s3_bucket, snapshot):
         snapshot.add_transformer(
@@ -12598,6 +12839,7 @@ class TestS3MultipartUploadChecksum:
         # test the default ChecksumType for each ChecksumAlgorithm
         key_name = "test-multipart-size"
         response = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("create-mpu", response)
         upload_id = response["UploadId"]
 
         data = b"aaaa"
@@ -12636,6 +12878,13 @@ class TestS3MultipartUploadChecksum:
             MpuObjectSize=len(data),
         )
         snapshot.match("complete-multipart-good-size", success)
+
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=key_name,
+            ObjectAttributes=["Checksum", "ETag"],
+        )
+        snapshot.match("get-object-attrs", object_attrs)
 
 
 def _s3_client_pre_signed_client(conf: Config, endpoint_url: str = None):
