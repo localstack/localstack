@@ -76,7 +76,8 @@ class LambdaVersionManager:
         # async state
         self.provisioned_state = None
         self.provisioned_state_lock = threading.RLock()
-        self.state = None
+        # https://aws.amazon.com/blogs/compute/coming-soon-expansion-of-aws-lambda-states-to-all-functions/
+        self.state = VersionState(state=State.Pending)
 
     def start(self) -> VersionState:
         try:
@@ -91,14 +92,14 @@ class LambdaVersionManager:
 
             # code and reason not set for success scenario because only failed states provide this field:
             # https://docs.aws.amazon.com/lambda/latest/dg/API_GetFunctionConfiguration.html#SSS-GetFunctionConfiguration-response-LastUpdateStatusReasonCode
-            new_state = VersionState(state=State.Active)
+            self.state = VersionState(state=State.Active)
             LOG.debug(
                 "Changing Lambda %s (id %s) to active",
                 self.function_arn,
                 self.function_version.config.internal_revision,
             )
         except Exception as e:
-            new_state = VersionState(
+            self.state = VersionState(
                 state=State.Failed,
                 code=StateReasonCode.InternalError,
                 reason=f"Error while creating lambda: {e}",
@@ -110,7 +111,7 @@ class LambdaVersionManager:
                 e,
                 exc_info=True,
             )
-        return new_state
+        return self.state
 
     def stop(self) -> None:
         LOG.debug("Stopping lambda version '%s'", self.function_arn)
