@@ -2,7 +2,6 @@ import copy
 import json
 import logging
 import time
-from abc import ABC
 from typing import Dict, Optional
 
 from localstack.aws.api import CommonServiceException, RequestContext
@@ -78,6 +77,7 @@ from localstack.aws.api.ssm import (
 )
 from localstack.aws.connect import connect_to
 from localstack.services.moto import call_moto, call_moto_with_request
+from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.ssm.patches import apply_all_patches
 from localstack.utils.aws.arns import extract_resource_from_arn, is_arn
 from localstack.utils.bootstrap import is_api_enabled
@@ -105,7 +105,7 @@ class InvalidParameterNameException(ValidationException):
 
 
 # TODO: check if _normalize_name(..) calls are still required here
-class SsmProvider(SsmApi, ABC):
+class SsmProvider(SsmApi, ServiceLifecycleHook):
     def on_after_init(self):
         apply_all_patches()
 
