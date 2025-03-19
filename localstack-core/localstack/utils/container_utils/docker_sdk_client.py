@@ -941,6 +941,9 @@ class SdkDockerClient(ContainerClient):
 
     def login(self, username: str, password: str, registry: Optional[str] = None) -> None:
         LOG.debug("Docker login for %s", username)
+        LOG.critical(
+            "Docker login for: username=%s, password=%s, registry=%s", username, password, registry
+        )
         try:
             self.client().login(username, password=password, registry=registry, reauth=True)
         except APIError as e:
