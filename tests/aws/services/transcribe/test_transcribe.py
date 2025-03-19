@@ -5,13 +5,15 @@ import time
 from urllib.parse import urlparse
 
 import pytest
-from botocore.exceptions import ClientError
+import requests
+from botocore.exceptions import ClientError, ParamValidationError
 
 from localstack.aws.api.transcribe import BadRequestException, ConflictException, NotFoundException
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.packages.ffmpeg import ffmpeg_package
 from localstack.services.transcribe.packages import vosk_package
 from localstack.services.transcribe.provider import LANGUAGE_MODELS, TranscribeProvider
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import new_tmp_file
 from localstack.utils.strings import short_uid, to_str
@@ -403,3 +405,39 @@ class TestTranscribe:
             TranscriptionJobName=transcribe_job_name
         )
         snapshot.match("delete-transcription-job", res_delete_transcription_job)
+
+    @pytest.mark.parametrize(
+        "media_file, max_speakers",
+        [
+            ("../../files/multi-speaker.wav", 2),
+            ("../../files/multi-speaker.wav", 1),
+        ],
+    )
+    @markers.aws.validated
+    @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Not yet implemented on LS")
+    def test_transcribe_speaker_diarization(
+        self, transcribe_create_job, media_file, max_speakers, aws_client, snapshot
+    ):
+        file_path = os.path.join(BASEDIR, media_file)
+        settings = {"Settings": {"MaxSpeakerLabels": max_speakers, "ShowSpeakerLabels": True}}
+
+        if max_speakers < 2:
+            with pytest.raises(ParamValidationError) as e:
+                transcribe_create_job(audio_file=file_path, params=settings)
+            snapshot.match("err_speaker_labels_diarization", e.value)
+            return
+
+        job_name = transcribe_create_job(audio_file=file_path, params=settings)
+
+        def _is_transcription_done():
+            transcription_status = aws_client.transcribe.get_transcription_job(
+                TranscriptionJobName=job_name
+            )
+            assert transcription_status["TranscriptionJob"]["TranscriptionJobStatus"] == "COMPLETED"
+
+        retry(_is_transcription_done, retries=50, sleep=2)
+
+        resp = aws_client.transcribe.get_transcription_job(TranscriptionJobName=job_name)
+        response = requests.get(resp["TranscriptionJob"]["Transcript"]["TranscriptFileUri"])
+        content = response.json()
+        snapshot.match("transcribe_speaker_diarization", content)

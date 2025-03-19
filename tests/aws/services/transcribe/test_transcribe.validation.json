@@ -14,6 +14,12 @@
   "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_happy_path": {
     "last_validated_date": "2023-10-06T15:09:11+00:00"
   },
+  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_speaker_diarization[../../files/multi-speaker.wav-1]": {
+    "last_validated_date": "2025-03-19T10:27:09+00:00"
+  },
+  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_speaker_diarization[../../files/multi-speaker.wav-2]": {
+    "last_validated_date": "2025-03-19T10:26:57+00:00"
+  },
   "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_start_job[None-None]": {
     "last_validated_date": "2023-05-03T18:04:18+00:00"
   },
