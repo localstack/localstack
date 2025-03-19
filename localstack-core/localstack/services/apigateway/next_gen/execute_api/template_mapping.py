@@ -227,6 +227,9 @@ class VelocityInput:
 
     @property
     def body(self):
+        if not self.value:
+            return "{}"
+
         return self.value
 
     def params(self, name=None):
