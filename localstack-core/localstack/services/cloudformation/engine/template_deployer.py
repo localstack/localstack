@@ -1400,7 +1400,6 @@ class TemplateDeployer:
         self.stack.set_stack_status("DELETE_IN_PROGRESS")
         stack_resources = list(self.stack.resources.values())
         resources = {r["LogicalResourceId"]: clone_safe(r) for r in stack_resources}
-        original_resources = self.stack.template_original["Resources"]
 
         # TODO: what is this doing?
         for key, resource in resources.items():
@@ -1409,18 +1408,9 @@ class TemplateDeployer:
             )  # TODO: why is there a fallback?
             resource["ResourceType"] = get_resource_type(resource)
 
-        def _safe_lookup_is_deleted(r_id):
-            """handles the case where self.stack.resource_status(..) fails for whatever reason"""
-            try:
-                return self.stack.resource_status(r_id).get("ResourceStatus") == "DELETE_COMPLETE"
-            except Exception:
-                if config.CFN_VERBOSE_ERRORS:
-                    LOG.exception("failed to lookup if resource %s is deleted", r_id)
-                return True  # just an assumption
-
         ordered_resource_ids = list(
             order_resources(
-                resources=original_resources,
+                resources=resources,
                 resolved_conditions=self.stack.resolved_conditions,
                 resolved_parameters=self.stack.resolved_parameters,
                 reverse=True,
