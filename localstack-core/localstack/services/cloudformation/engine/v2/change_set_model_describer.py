@@ -10,6 +10,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeArray,
     NodeIntrinsicFunction,
     NodeObject,
+    NodeParameter,
     NodeProperties,
     NodeProperty,
     NodeResource,
@@ -153,6 +154,51 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
             case ChangeType.REMOVED:
                 return DescribeUnit(before_context=before_context)
         # Unchanged
+        return DescribeUnit(before_context=before_context, after_context=after_context)
+
+    def _get_node_parameter_if_exists(self, parameter_name: str) -> Optional[NodeParameter]:
+        parameters: list[NodeParameter] = self._node_template.parameters.parameters
+        # TODO: another scenarios suggesting property lookups might be preferable.
+        for parameter in parameters:
+            if parameter.name == parameter_name:
+                return parameter
+        return None
+
+    def visit_node_parameter(self, node_parameter: NodeParameter) -> DescribeUnit:
+        # TODO: add caching for these operation, parameters may be referenced more than once.
+        # TODO: add support for default value sampling
+        dynamic_value = node_parameter.dynamic_value
+        describe_unit = self.visit(dynamic_value)
+        return describe_unit
+
+    def _resolve_reference(self, logica_id: str) -> DescribeUnit:
+        node_parameter = self._get_node_parameter_if_exists(parameter_name=logica_id)
+        if isinstance(node_parameter, NodeParameter):
+            parameter_unit = self.visit_node_parameter(node_parameter)
+            return parameter_unit
+
+        # TODO: check for KNOWN AFTER APPLY values for logical ids coming from intrinsic functions as arguments.
+        #   node_resource = self._get_node_resource_for(
+        #       resource_name=logica_id, node_template=self._node_template
+        #   )
+        limitation_str = "Cannot yet compute Ref values for Resources"
+        resource_unit = DescribeUnit(before_context=limitation_str, after_context=limitation_str)
+        return resource_unit
+
+    def visit_node_intrinsic_function_ref(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> DescribeUnit:
+        arguments_unit = self.visit(node_intrinsic_function.arguments)
+
+        # TODO: add tests with created and deleted parameters and verify this logic holds.
+        before_logical_id = arguments_unit.before_context
+        before_unit = self._resolve_reference(logica_id=before_logical_id)
+        before_context = before_unit.before_context
+
+        after_logical_id = arguments_unit.after_context
+        after_unit = self._resolve_reference(logica_id=after_logical_id)
+        after_context = after_unit.after_context
+
         return DescribeUnit(before_context=before_context, after_context=after_context)
 
     def visit_node_array(self, node_array: NodeArray) -> DescribeUnit:
