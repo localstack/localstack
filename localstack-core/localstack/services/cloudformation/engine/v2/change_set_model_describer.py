@@ -56,6 +56,68 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
     def get_changes(self) -> cfn_api.Changes:
         return self._changes
 
+    @staticmethod
+    def _get_node_resource_for(resource_name: str, node_template: NodeTemplate) -> NodeResource:
+        # TODO: this could be improved with hashmap lookups if the Node contained bindings and not lists.
+        for node_resource in node_template.resources.resources:
+            if node_resource.name == resource_name:
+                return node_resource
+        # TODO
+        raise RuntimeError()
+
+    @staticmethod
+    def _get_node_property_for(property_name: str, node_resource: NodeResource) -> NodeProperty:
+        # TODO: this could be improved with hashmap lookups if the Node contained bindings and not lists.
+        for node_property in node_resource.properties.properties:
+            if node_property.name == property_name:
+                return node_property
+        # TODO
+        raise RuntimeError()
+
+    def _get_node_parameter_if_exists(self, parameter_name: str) -> Optional[NodeParameter]:
+        parameters: list[NodeParameter] = self._node_template.parameters.parameters
+        # TODO: another scenarios suggesting property lookups might be preferable.
+        for parameter in parameters:
+            if parameter.name == parameter_name:
+                return parameter
+        return None
+
+    def _get_node_condition_if_exists(self, condition_name: str) -> Optional[NodeCondition]:
+        conditions: list[NodeCondition] = self._node_template.conditions.conditions
+        # TODO: another scenarios suggesting property lookups might be preferable.
+        for condition in conditions:
+            if condition.name == condition_name:
+                return condition
+        return None
+
+    def _resolve_reference(self, logica_id: str) -> DescribeUnit:
+        node_condition = self._get_node_condition_if_exists(condition_name=logica_id)
+        if isinstance(node_condition, NodeCondition):
+            condition_unit = self.visit(node_condition)
+            return condition_unit
+
+        node_parameter = self._get_node_parameter_if_exists(parameter_name=logica_id)
+        if isinstance(node_parameter, NodeParameter):
+            parameter_unit = self.visit(node_parameter)
+            return parameter_unit
+
+        # TODO: check for KNOWN AFTER APPLY values for logical ids coming from intrinsic functions as arguments.
+        #   node_resource = self._get_node_resource_for(
+        #       resource_name=logica_id, node_template=self._node_template
+        #   )
+        limitation_str = "Cannot yet compute Ref values for Resources"
+        resource_unit = DescribeUnit(before_context=limitation_str, after_context=limitation_str)
+        return resource_unit
+
+    def _resolve_reference_binding(
+        self, before_logical_id: str, after_logical_id: str
+    ) -> DescribeUnit:
+        before_unit = self._resolve_reference(logica_id=before_logical_id)
+        after_unit = self._resolve_reference(logica_id=after_logical_id)
+        return DescribeUnit(
+            before_context=before_unit.before_context, after_context=after_unit.after_context
+        )
+
     def visit(self, change_set_entity: ChangeSetEntity) -> DescribeUnit:
         describe_unit = self._describe_unit_cache.get(change_set_entity.scope)
         if describe_unit is not None:
@@ -119,24 +181,6 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
                     after_context[name] = describe_unit.before_context
         return DescribeUnit(before_context=before_context, after_context=after_context)
 
-    @staticmethod
-    def _get_node_resource_for(resource_name: str, node_template: NodeTemplate) -> NodeResource:
-        # TODO: this could be improved with hashmap lookups if the Node contained bindings and not lists.
-        for node_resource in node_template.resources.resources:
-            if node_resource.name == resource_name:
-                return node_resource
-        # TODO
-        raise RuntimeError()
-
-    @staticmethod
-    def _get_node_property_for(property_name: str, node_resource: NodeResource) -> NodeProperty:
-        # TODO: this could be improved with hashmap lookups if the Node contained bindings and not lists.
-        for node_property in node_resource.properties.properties:
-            if node_property.name == property_name:
-                return node_property
-        # TODO
-        raise RuntimeError()
-
     def visit_node_intrinsic_function_fn_get_att(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> DescribeUnit:
@@ -191,22 +235,6 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         # Unchanged
         return DescribeUnit(before_context=before_context, after_context=after_context)
 
-    def _get_node_parameter_if_exists(self, parameter_name: str) -> Optional[NodeParameter]:
-        parameters: list[NodeParameter] = self._node_template.parameters.parameters
-        # TODO: another scenarios suggesting property lookups might be preferable.
-        for parameter in parameters:
-            if parameter.name == parameter_name:
-                return parameter
-        return None
-
-    def _get_node_condition_if_exists(self, condition_name: str) -> Optional[NodeCondition]:
-        conditions: list[NodeCondition] = self._node_template.conditions.conditions
-        # TODO: another scenarios suggesting property lookups might be preferable.
-        for condition in conditions:
-            if condition.name == condition_name:
-                return condition
-        return None
-
     def visit_node_parameter(self, node_parameter: NodeParameter) -> DescribeUnit:
         # TODO: add caching for these operation, parameters may be referenced more than once.
         # TODO: add support for default value sampling
@@ -217,34 +245,6 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
     def visit_node_condition(self, node_condition: NodeCondition) -> DescribeUnit:
         describe_unit = self.visit(node_condition.body)
         return describe_unit
-
-    def _resolve_reference(self, logica_id: str) -> DescribeUnit:
-        node_condition = self._get_node_condition_if_exists(condition_name=logica_id)
-        if isinstance(node_condition, NodeCondition):
-            condition_unit = self.visit(node_condition)
-            return condition_unit
-
-        node_parameter = self._get_node_parameter_if_exists(parameter_name=logica_id)
-        if isinstance(node_parameter, NodeParameter):
-            parameter_unit = self.visit(node_parameter)
-            return parameter_unit
-
-        # TODO: check for KNOWN AFTER APPLY values for logical ids coming from intrinsic functions as arguments.
-        #   node_resource = self._get_node_resource_for(
-        #       resource_name=logica_id, node_template=self._node_template
-        #   )
-        limitation_str = "Cannot yet compute Ref values for Resources"
-        resource_unit = DescribeUnit(before_context=limitation_str, after_context=limitation_str)
-        return resource_unit
-
-    def _resolve_reference_binding(
-        self, before_logical_id: str, after_logical_id: str
-    ) -> DescribeUnit:
-        before_unit = self._resolve_reference(logica_id=before_logical_id)
-        after_unit = self._resolve_reference(logica_id=after_logical_id)
-        return DescribeUnit(
-            before_context=before_unit.before_context, after_context=after_unit.after_context
-        )
 
     def visit_node_intrinsic_function_ref(
         self, node_intrinsic_function: NodeIntrinsicFunction

@@ -768,8 +768,7 @@ class ChangeSetModel:
     def _visit_parameters(
         self, scope: Scope, before_parameters: Maybe[dict], after_parameters: Maybe[dict]
     ) -> NodeParameters:
-        # FIXME: sampling should be able scope
-        node_parameters = self._visited_scopes.get(ParametersKey)
+        node_parameters = self._visited_scopes.get(scope)
         if isinstance(node_parameters, NodeParameters):
             return node_parameters
         parameter_names: list[str] = self._safe_keys_of(before_parameters, after_parameters)
@@ -786,9 +785,7 @@ class ChangeSetModel:
                 after_parameter=after_parameter,
             )
             parameters.append(parameter)
-            # FIXME: use new inference logic of change types.
-            if parameter.change_type != ChangeType.UNCHANGED:
-                change_type = change_type.MODIFIED
+            change_type = change_type.for_child(parameter.change_type)
         node_parameters = NodeParameters(
             scope=scope, change_type=change_type, parameters=parameters
         )
