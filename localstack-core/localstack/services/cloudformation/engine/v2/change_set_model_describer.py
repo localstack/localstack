@@ -60,7 +60,6 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         describe_unit = self._describe_unit_cache.get(change_set_entity.scope)
         if describe_unit is not None:
             return describe_unit
-        # Overridden for the return type-hints.
         describe_unit = super().visit(change_set_entity=change_set_entity)
         self._describe_unit_cache[change_set_entity.scope] = describe_unit
         return describe_unit
