@@ -1,6 +1,8 @@
 name: S3
 description: 'Amazon Simple Storage Service (Amazon S3) is an object storage service that offers scalability, data availability, security, and performance.'
 tier: "community,pro"
+aws_documentation: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html"
+localstack_documentation: "https://docs.localstack.cloud/user-guide/aws/s3/"
 features:
   - name: "Buckets"
     description: "A container for objects stored in Amazon S3."
