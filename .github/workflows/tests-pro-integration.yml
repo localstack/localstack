@@ -64,10 +64,6 @@ on:
       - '!Dockerfile*'
       - '!LICENSE.txt'
       - '!README.md'
-    branches:
-      - master
-      - 'v[0-9]+'
-      - release/*
   schedule:
     - cron: '15 4 * * *'  # run once a day at 4:15 AM UTC
   push:
