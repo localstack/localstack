@@ -10,9 +10,9 @@ from tempfile import gettempdir
 from localstack import config, constants
 from localstack.utils.bootstrap import ContainerConfigurators
 from localstack.utils.container_utils.container_client import (
+    BindMount,
     ContainerClient,
     ContainerConfiguration,
-    VolumeBind,
     VolumeMappings,
 )
 from localstack.utils.docker_utils import DOCKER_CLIENT
@@ -107,7 +107,7 @@ class CustomEntryPointConfigurator:
             # encoding needs to be "utf-8" since scripts could include emojis
             file.write_text(self.script, newline="\n", encoding="utf-8")
             file.chmod(0o777)
-        cfg.volumes.add(VolumeBind(str(file), f"/tmp/{file.name}"))
+        cfg.volumes.add(BindMount(str(file), f"/tmp/{file.name}"))
         cfg.entrypoint = f"/tmp/{file.name}"
 
 
@@ -137,7 +137,7 @@ class SourceVolumeMountConfigurator:
             cfg.volumes.add(
                 # read_only=False is a temporary workaround to make the mounting of the pro source work
                 # this can be reverted once we don't need the nested mounting anymore
-                VolumeBind(str(source), self.container_paths.localstack_source_dir, read_only=False)
+                BindMount(str(source), self.container_paths.localstack_source_dir, read_only=False)
             )
 
         # ext source code if available
@@ -145,7 +145,7 @@ class SourceVolumeMountConfigurator:
             source = self.host_paths.aws_pro_package_dir
             if source.exists():
                 cfg.volumes.add(
-                    VolumeBind(
+                    BindMount(
                         str(source), self.container_paths.localstack_pro_source_dir, read_only=True
                     )
                 )
@@ -163,7 +163,7 @@ class SourceVolumeMountConfigurator:
             source = self.host_paths.localstack_project_dir / "bin" / "docker-entrypoint.sh"
         if source.exists():
             cfg.volumes.add(
-                VolumeBind(str(source), self.container_paths.docker_entrypoint, read_only=True)
+                BindMount(str(source), self.container_paths.docker_entrypoint, read_only=True)
             )
 
     def try_mount_to_site_packages(self, cfg: ContainerConfiguration, sources_path: Path):
@@ -177,7 +177,7 @@ class SourceVolumeMountConfigurator:
         """
         if sources_path.exists():
             cfg.volumes.add(
-                VolumeBind(
+                BindMount(
                     str(sources_path),
                     self.container_paths.dependency_source(sources_path.name),
                     read_only=True,
@@ -219,7 +219,7 @@ class EntryPointMountConfigurator:
             host_path = self.host_paths.aws_community_package_dir
             if host_path.exists():
                 cfg.volumes.append(
-                    VolumeBind(
+                    BindMount(
                         str(host_path), self.localstack_community_entry_points, read_only=True
                     )
                 )
@@ -244,7 +244,7 @@ class EntryPointMountConfigurator:
                 )
                 if host_path.is_file():
                     cfg.volumes.add(
-                        VolumeBind(
+                        BindMount(
                             str(host_path),
                             str(container_path),
                             read_only=True,
@@ -260,7 +260,7 @@ class EntryPointMountConfigurator:
                 )
                 if host_path.is_file():
                     cfg.volumes.add(
-                        VolumeBind(
+                        BindMount(
                             str(host_path),
                             str(container_path),
                             read_only=True,
@@ -270,7 +270,7 @@ class EntryPointMountConfigurator:
             for host_path in self.host_paths.workspace_dir.glob(
                 f"*/{dep}.egg-info/entry_points.txt"
             ):
-                cfg.volumes.add(VolumeBind(str(host_path), str(container_path), read_only=True))
+                cfg.volumes.add(BindMount(str(host_path), str(container_path), read_only=True))
                 break
 
 
@@ -330,7 +330,7 @@ class DependencyMountConfigurator:
             if self._has_mount(cfg.volumes, target_path):
                 continue
 
-            cfg.volumes.append(VolumeBind(str(dep_path), target_path))
+            cfg.volumes.append(BindMount(str(dep_path), target_path))
 
     def _can_be_source_path(self, path: Path) -> bool:
         return path.is_dir() or (path.name.endswith(".py") and not path.name.startswith("__"))

@@ -371,7 +371,7 @@ SimpleVolumeBind = Tuple[str, str]
 
 
 @dataclasses.dataclass
-class VolumeBind:
+class BindMount:
     """Represents a --volume argument run/create command. When using VolumeBind to bind-mount a file or directory
     that does not yet exist on the Docker host, -v creates the endpoint for you. It is always created as a directory.
     """
@@ -403,7 +403,7 @@ class VolumeBind:
         }
 
     @classmethod
-    def parse(cls, param: str) -> "VolumeBind":
+    def parse(cls, param: str) -> "BindMount":
         parts = param.split(":")
         if 1 > len(parts) > 3:
             raise ValueError(f"Cannot parse volume bind {param}")
@@ -456,19 +456,19 @@ class VolumeDirMount:
 
 
 class VolumeMappings:
-    mappings: List[Union[SimpleVolumeBind, VolumeBind]]
+    mappings: List[Union[SimpleVolumeBind, BindMount]]
 
-    def __init__(self, mappings: List[Union[SimpleVolumeBind, VolumeBind, VolumeDirMount]] = None):
+    def __init__(self, mappings: List[Union[SimpleVolumeBind, BindMount, VolumeDirMount]] = None):
         self.mappings = mappings if mappings is not None else []
 
-    def add(self, mapping: Union[SimpleVolumeBind, VolumeBind, VolumeDirMount]):
+    def add(self, mapping: Union[SimpleVolumeBind, BindMount, VolumeDirMount]):
         self.append(mapping)
 
     def append(
         self,
         mapping: Union[
             SimpleVolumeBind,
-            VolumeBind,
+            BindMount,
             VolumeDirMount,
         ],
     ):
@@ -476,7 +476,7 @@ class VolumeMappings:
 
     def find_target_mapping(
         self, container_dir: str
-    ) -> Optional[Union[SimpleVolumeBind, VolumeBind, VolumeDirMount]]:
+    ) -> Optional[Union[SimpleVolumeBind, BindMount, VolumeDirMount]]:
         """
         Looks through the volumes and returns the one where the container dir matches ``container_dir``.
         Returns None if there is no volume mapping to the given container directory.
@@ -1495,8 +1495,8 @@ class Util:
     ) -> Dict[str, Dict[str, str]]:
         """Converts a List of (host_path, container_path) tuples to a Dict suitable as volume argument for docker sdk"""
 
-        def _map_to_dict(paths: SimpleVolumeBind | VolumeBind | VolumeDirMount):
-            if isinstance(paths, (VolumeBind, VolumeDirMount)):
+        def _map_to_dict(paths: SimpleVolumeBind | BindMount | VolumeDirMount):
+            if isinstance(paths, (BindMount, VolumeDirMount)):
                 return paths.to_dict()
             else:
                 return str(paths[0]), {"bind": paths[1], "mode": "rw"}
