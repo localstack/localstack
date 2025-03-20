@@ -108,6 +108,7 @@ class ChangeSetTerminal(ChangeSetEntity, abc.ABC): ...
 
 class NodeTemplate(ChangeSetNode):
     parameters: Final[NodeParameters]
+    conditions: Final[NodeConditions]
     resources: Final[NodeResources]
 
     def __init__(
@@ -115,11 +116,23 @@ class NodeTemplate(ChangeSetNode):
         scope: Scope,
         change_type: ChangeType,
         parameters: NodeParameters,
+        conditions: NodeConditions,
         resources: NodeResources,
     ):
         super().__init__(scope=scope, change_type=change_type)
         self.parameters = parameters
+        self.conditions = conditions
         self.resources = resources
+
+
+class NodeDivergence(ChangeSetNode):
+    value: Final[ChangeSetEntity]
+    divergence: Final[ChangeSetEntity]
+
+    def __init__(self, scope: Scope, value: ChangeSetEntity, divergence: ChangeSetEntity):
+        super().__init__(scope=scope, change_type=ChangeType.MODIFIED)
+        self.value = value
+        self.divergence = divergence
 
 
 class NodeParameter(ChangeSetNode):
@@ -149,6 +162,24 @@ class NodeParameters(ChangeSetNode):
         self.parameters = parameters
 
 
+class NodeCondition(ChangeSetNode):
+    name: Final[str]
+    body: Final[NodeObject]
+
+    def __init__(self, scope: Scope, change_type: ChangeType, name: str, body: NodeObject):
+        super().__init__(scope=scope, change_type=change_type)
+        self.name = name
+        self.body = body
+
+
+class NodeConditions(ChangeSetNode):
+    conditions: Final[list[NodeCondition]]
+
+    def __init__(self, scope: Scope, change_type: ChangeType, conditions: list[NodeCondition]):
+        super().__init__(scope=scope, change_type=change_type)
+        self.conditions = conditions
+
+
 class NodeResources(ChangeSetNode):
     resources: Final[list[NodeResource]]
 
@@ -160,6 +191,7 @@ class NodeResources(ChangeSetNode):
 class NodeResource(ChangeSetNode):
     name: Final[str]
     type_: Final[ChangeSetTerminal]
+    condition_reference: Final[TerminalValue]
     properties: Final[NodeProperties]
 
     def __init__(
@@ -168,11 +200,13 @@ class NodeResource(ChangeSetNode):
         change_type: ChangeType,
         name: str,
         type_: ChangeSetTerminal,
+        condition_reference: TerminalValue,
         properties: NodeProperties,
     ):
         super().__init__(scope=scope, change_type=change_type)
         self.name = name
         self.type_ = type_
+        self.condition_reference = condition_reference
         self.properties = properties
 
 
@@ -257,14 +291,17 @@ class TerminalValueUnchanged(TerminalValue):
         super().__init__(scope=scope, change_type=ChangeType.UNCHANGED, value=value)
 
 
+TypeKey: Final[str] = "Type"
+ConditionKey: Final[str] = "Condition"
+ConditionsKey: Final[str] = "Conditions"
 ResourcesKey: Final[str] = "Resources"
 PropertiesKey: Final[str] = "Properties"
 ParametersKey: Final[str] = "Parameters"
-TypeKey: Final[str] = "Type"
 # TODO: expand intrinsic functions set.
-FnGetAttKey: Final[str] = "Fn::GetAtt"
 RefKey: Final[str] = "Ref"
-INTRINSIC_FUNCTIONS: Final[set[str]] = {RefKey, FnGetAttKey}
+FnGetAttKey: Final[str] = "Fn::GetAtt"
+FnEqualsKey: Final[str] = "Fn::Equals"
+INTRINSIC_FUNCTIONS: Final[set[str]] = {RefKey, FnEqualsKey, FnGetAttKey}
 
 
 class ChangeSetModel:
@@ -279,7 +316,6 @@ class ChangeSetModel:
     _after_template: Final[Maybe[dict]]
     _before_parameters: Final[Maybe[dict]]
     _after_parameters: Final[Maybe[dict]]
-    # TODO: generalise this lookup for other goto visitable types such as parameters and conditions
     _visited_scopes: Final[dict[str, ChangeSetEntity]]
     _node_template: Final[NodeTemplate]
 
@@ -404,6 +440,9 @@ class ChangeSetModel:
         node_resource = self._retrieve_or_visit_resource(resource_name=logical_id)
         return node_resource.change_type
 
+    def _resolve_intrinsic_function_fn_equals(self, arguments: ChangeSetEntity) -> ChangeType:
+        return arguments.change_type
+
     def _retrieve_parameter_if_exists(self, parameter_name: str) -> Optional[NodeParameter]:
         parameters_scope, (before_parameters, after_parameters) = self._safe_access_in(
             Scope(), ParametersKey, self._before_template, self._after_template
@@ -489,6 +528,17 @@ class ChangeSetModel:
         self._visited_scopes[scope] = node_object
         return node_object
 
+    def _visit_divergence(
+        self, scope: Scope, before_value: Maybe[Any], after_value: Maybe[Any]
+    ) -> NodeDivergence:
+        scope_value = scope.open_scope("value")
+        value = self._visit_value(scope=scope_value, before_value=before_value, after_value=Nothing)
+        scope_divergence = scope.open_scope("divergence")
+        divergence = self._visit_value(
+            scope=scope_divergence, before_value=Nothing, after_value=after_value
+        )
+        return NodeDivergence(scope=scope, value=value, divergence=divergence)
+
     def _visit_value(
         self, scope: Scope, before_value: Maybe[Any], after_value: Maybe[Any]
     ) -> ChangeSetEntity:
@@ -520,10 +570,10 @@ class ChangeSetModel:
                 )
             else:
                 raise RuntimeError(f"Unsupported type {before_type}")
-        # Case: update to new type.
+        # Case: type divergence.
         else:
-            value = TerminalValueModified(
-                scope=scope, value=before_value, modified_value=after_value
+            value = self._visit_divergence(
+                scope=scope, before_value=before_value, after_value=after_value
             )
         self._visited_scopes[scope] = value
         return value
@@ -570,7 +620,7 @@ class ChangeSetModel:
         if isinstance(node_properties, NodeProperties):
             return node_properties
         # TODO: double check we are sure not to have this be a NodeObject
-        property_names: set[str] = self._safe_keys_of(before_properties, after_properties)
+        property_names: list[str] = self._safe_keys_of(before_properties, after_properties)
         properties: list[NodeProperty] = list()
         change_type = ChangeType.UNCHANGED
         for property_name in property_names:
@@ -612,6 +662,13 @@ class ChangeSetModel:
         # TODO: investigate behaviour with type changes, for now this is filler code.
         _, type_str = self._safe_access_in(scope, TypeKey, before_resource)
 
+        scope_condition, (before_condition, after_condition) = self._safe_access_in(
+            scope, ConditionKey, before_resource, after_resource
+        )
+        condition_reference = self._visit_terminal_value(
+            scope_condition, before_condition, after_condition
+        )
+
         scope_properties, (before_properties, after_properties) = self._safe_access_in(
             scope, PropertiesKey, before_resource, after_resource
         )
@@ -626,6 +683,7 @@ class ChangeSetModel:
             change_type=change_type,
             name=resource_name,
             type_=TerminalValueUnchanged(scope=scope, value=type_str),
+            condition_reference=condition_reference,
             properties=properties,
         )
         self._visited_scopes[scope] = node_resource
@@ -710,10 +768,11 @@ class ChangeSetModel:
     def _visit_parameters(
         self, scope: Scope, before_parameters: Maybe[dict], after_parameters: Maybe[dict]
     ) -> NodeParameters:
+        # FIXME: sampling should be able scope
         node_parameters = self._visited_scopes.get(ParametersKey)
         if isinstance(node_parameters, NodeParameters):
             return node_parameters
-        parameter_names: set[str] = self._safe_keys_of(before_parameters, after_parameters)
+        parameter_names: list[str] = self._safe_keys_of(before_parameters, after_parameters)
         parameters: list[NodeParameter] = list()
         change_type = ChangeType.UNCHANGED
         for parameter_name in parameter_names:
@@ -727,6 +786,7 @@ class ChangeSetModel:
                 after_parameter=after_parameter,
             )
             parameters.append(parameter)
+            # FIXME: use new inference logic of change types.
             if parameter.change_type != ChangeType.UNCHANGED:
                 change_type = change_type.MODIFIED
         node_parameters = NodeParameters(
@@ -734,6 +794,53 @@ class ChangeSetModel:
         )
         self._visited_scopes[scope] = node_parameters
         return node_parameters
+
+    def _visit_condition(
+        self,
+        scope: Scope,
+        condition_name: str,
+        before_condition: Maybe[dict],
+        after_condition: Maybe[dict],
+    ) -> NodeCondition:
+        node_condition = self._visited_scopes.get(scope)
+        if isinstance(node_condition, NodeCondition):
+            return node_condition
+        # TODO: can we assume the template is well formed or should we run validations?
+        body = self._visit_object(
+            scope=scope, before_object=before_condition, after_object=after_condition
+        )
+        node_condition = NodeCondition(
+            scope=scope, change_type=body.change_type, name=condition_name, body=body
+        )
+        self._visited_scopes[scope] = node_condition
+        return node_condition
+
+    def _visit_conditions(
+        self, scope: Scope, before_conditions: Maybe[dict], after_conditions: Maybe[dict]
+    ) -> NodeConditions:
+        node_conditions = self._visited_scopes.get(scope)
+        if isinstance(node_conditions, NodeConditions):
+            return node_conditions
+        condition_names: list[str] = self._safe_keys_of(before_conditions, after_conditions)
+        conditions: list[NodeCondition] = list()
+        change_type = ChangeType.UNCHANGED
+        for condition_name in condition_names:
+            condition_scope, (before_condition, after_condition) = self._safe_access_in(
+                scope, condition_name, before_conditions, after_conditions
+            )
+            condition = self._visit_condition(
+                scope=condition_scope,
+                condition_name=condition_name,
+                before_condition=before_condition,
+                after_condition=after_condition,
+            )
+            conditions.append(condition)
+            change_type = change_type.for_child(child_change_type=condition.change_type)
+        node_conditions = NodeConditions(
+            scope=scope, change_type=change_type, conditions=conditions
+        )
+        self._visited_scopes[scope] = node_conditions
+        return node_conditions
 
     def _model(self, before_template: Maybe[dict], after_template: Maybe[dict]) -> NodeTemplate:
         root_scope = Scope()
@@ -745,6 +852,15 @@ class ChangeSetModel:
             scope=parameters_scope,
             before_parameters=before_parameters,
             after_parameters=after_parameters,
+        )
+
+        conditions_scope, (before_conditions, after_conditions) = self._safe_access_in(
+            root_scope, ConditionsKey, before_template, after_template
+        )
+        conditions = self._visit_conditions(
+            scope=conditions_scope,
+            before_conditions=before_conditions,
+            after_conditions=after_conditions,
         )
 
         resources_scope, (before_resources, after_resources) = self._safe_access_in(
@@ -761,6 +877,7 @@ class ChangeSetModel:
             scope=root_scope,
             change_type=resources.change_type,
             parameters=parameters,
+            conditions=conditions,
             resources=resources,
         )
 
@@ -782,13 +899,16 @@ class ChangeSetModel:
         return new_scope, results[0] if len(objects) == 1 else tuple(results)
 
     @staticmethod
-    def _safe_keys_of(*objects: Maybe[dict]) -> set[str]:
-        keys: set[str] = set()
+    def _safe_keys_of(*objects: Maybe[dict]) -> list[str]:
+        key_set: set[str] = set()
         for obj in objects:
             # TODO: raise errors if not dict
             if isinstance(obj, dict):
-                keys.update(obj.keys())
-        return set(keys)
+                key_set.update(obj.keys())
+        # The keys list is sorted to increase reproducibility of the
+        # update graph build process or downstream logics.
+        keys = sorted(key_set)
+        return keys
 
     @staticmethod
     def _change_type_for_parent_of(change_types: list[ChangeType]) -> ChangeType:
@@ -801,7 +921,7 @@ class ChangeSetModel:
 
     @staticmethod
     def _is_terminal(value: Any) -> bool:
-        return type(value) in {int, float, bool, str, None}
+        return type(value) in {int, float, bool, str, None, NothingType}
 
     @staticmethod
     def _is_object(value: Any) -> bool:

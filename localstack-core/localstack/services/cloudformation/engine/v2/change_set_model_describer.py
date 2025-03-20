@@ -8,14 +8,16 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetEntity,
     ChangeType,
     NodeArray,
+    NodeCondition,
+    NodeDivergence,
     NodeIntrinsicFunction,
     NodeObject,
     NodeParameter,
     NodeProperties,
     NodeProperty,
     NodeResource,
-    NodeResources,
     NodeTemplate,
+    NothingType,
     PropertiesKey,
     TerminalValue,
     TerminalValueCreated,
@@ -81,6 +83,10 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
             before_context=terminal_value_unchanged.value,
             after_context=terminal_value_unchanged.value,
         )
+
+    def visit_node_divergence(self, node_divergence: NodeDivergence) -> DescribeUnit:
+        # TODO
+        raise NotImplementedError()
 
     def visit_node_object(self, node_object: NodeObject) -> DescribeUnit:
         # TODO: improve check syntax
@@ -156,12 +162,43 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         # Unchanged
         return DescribeUnit(before_context=before_context, after_context=after_context)
 
+    def visit_node_intrinsic_function_fn_equals(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ):
+        # TODO: check for KNOWN AFTER APPLY values for logical ids coming from intrinsic functions as arguments.
+        arguments_unit = self.visit(node_intrinsic_function.arguments)
+        before_values = arguments_unit.before_context
+        after_values = arguments_unit.after_context
+        before_context = None
+        if before_values:
+            before_context = before_values[0] == before_values[1]
+        after_context = None
+        if after_values:
+            after_context = after_values[0] == after_values[1]
+        match node_intrinsic_function.change_type:
+            case ChangeType.MODIFIED:
+                return DescribeUnit(before_context=before_context, after_context=after_context)
+            case ChangeType.CREATED:
+                return DescribeUnit(after_context=after_context)
+            case ChangeType.REMOVED:
+                return DescribeUnit(before_context=before_context)
+        # Unchanged
+        return DescribeUnit(before_context=before_context, after_context=after_context)
+
     def _get_node_parameter_if_exists(self, parameter_name: str) -> Optional[NodeParameter]:
         parameters: list[NodeParameter] = self._node_template.parameters.parameters
         # TODO: another scenarios suggesting property lookups might be preferable.
         for parameter in parameters:
             if parameter.name == parameter_name:
                 return parameter
+        return None
+
+    def _get_node_condition_if_exists(self, condition_name: str) -> Optional[NodeCondition]:
+        conditions: list[NodeCondition] = self._node_template.conditions.conditions
+        # TODO: another scenarios suggesting property lookups might be preferable.
+        for condition in conditions:
+            if condition.name == condition_name:
+                return condition
         return None
 
     def visit_node_parameter(self, node_parameter: NodeParameter) -> DescribeUnit:
@@ -171,7 +208,16 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         describe_unit = self.visit(dynamic_value)
         return describe_unit
 
+    def visit_node_condition(self, node_condition: NodeCondition) -> DescribeUnit:
+        describe_unit = self.visit(node_condition.body)
+        return describe_unit
+
     def _resolve_reference(self, logica_id: str) -> DescribeUnit:
+        node_condition = self._get_node_condition_if_exists(condition_name=logica_id)
+        if isinstance(node_condition, NodeCondition):
+            condition_unit = self.visit_node_condition(node_condition=node_condition)
+            return condition_unit
+
         node_parameter = self._get_node_parameter_if_exists(parameter_name=logica_id)
         if isinstance(node_parameter, NodeParameter):
             parameter_unit = self.visit_node_parameter(node_parameter)
@@ -184,6 +230,16 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         limitation_str = "Cannot yet compute Ref values for Resources"
         resource_unit = DescribeUnit(before_context=limitation_str, after_context=limitation_str)
         return resource_unit
+
+    def _resolve_reference_binding(
+        self, before_logical_id: str, after_logical_id: str
+    ) -> DescribeUnit:
+        # TODO: add memoization to the describer class through scopes.
+        before_unit = self._resolve_reference(logica_id=before_logical_id)
+        after_unit = self._resolve_reference(logica_id=after_logical_id)
+        return DescribeUnit(
+            before_context=before_unit.before_context, after_context=after_unit.after_context
+        )
 
     def visit_node_intrinsic_function_ref(
         self, node_intrinsic_function: NodeIntrinsicFunction
@@ -234,15 +290,44 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
                 case ChangeType.REMOVED:
                     before_context[property_name] = describe_unit.before_context
                 case ChangeType.UNCHANGED:
-                    if node_properties.change_type != ChangeType.UNCHANGED:
-                        before_context[property_name] = describe_unit.before_context
-                        after_context[property_name] = describe_unit.before_context
+                    before_context[property_name] = describe_unit.before_context
+                    after_context[property_name] = describe_unit.before_context
         # TODO: this object can probably be well-typed instead of a free dict(?)
         before_context = {PropertiesKey: before_context}
         after_context = {PropertiesKey: after_context}
         return DescribeUnit(before_context=before_context, after_context=after_context)
 
+    def _resolve_resource_condition_reference(self, reference: TerminalValue) -> DescribeUnit:
+        reference_unit = self.visit(reference)
+        before_reference = reference_unit.before_context
+        after_reference = reference_unit.after_context
+        condition_unit = self._resolve_reference_binding(
+            before_logical_id=before_reference, after_logical_id=after_reference
+        )
+        before_context = (
+            condition_unit.before_context if not isinstance(before_reference, NothingType) else True
+        )
+        after_context = (
+            condition_unit.after_context if not isinstance(after_reference, NothingType) else True
+        )
+        return DescribeUnit(before_context=before_context, after_context=after_context)
+
     def visit_node_resource(self, node_resource: NodeResource) -> DescribeUnit:
+        condition_unit = self._resolve_resource_condition_reference(
+            node_resource.condition_reference
+        )
+        condition_before = condition_unit.before_context
+        condition_after = condition_unit.after_context
+        if not condition_before and condition_after:
+            change_type = ChangeType.CREATED
+        elif condition_before and not condition_after:
+            change_type = ChangeType.REMOVED
+        else:
+            change_type = node_resource.change_type
+        if change_type == ChangeType.UNCHANGED:
+            # TODO
+            return None
+
         resource_change = ResourceChange()
         resource_change["LogicalResourceId"] = node_resource.name
 
@@ -253,7 +338,7 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         )
 
         properties_describe_unit = self.visit_node_properties(node_resource.properties)
-        match node_resource.change_type:
+        match change_type:
             case ChangeType.MODIFIED:
                 resource_change["Action"] = ChangeAction.Modify
                 resource_change["BeforeContext"] = properties_describe_unit.before_context
@@ -270,9 +355,9 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         # TODO
         return None
 
-    def visit_node_resources(self, node_resources: NodeResources) -> DescribeUnit:
-        for node_resource in node_resources.resources:
-            if node_resource.change_type != ChangeType.UNCHANGED:
-                self.visit_node_resource(node_resource=node_resource)
-        # TODO
-        return None
+    # def visit_node_resources(self, node_resources: NodeResources) -> DescribeUnit:
+    #     for node_resource in node_resources.resources:
+    #         if node_resource.change_type != ChangeType.UNCHANGED:
+    #             self.visit_node_resource(node_resource=node_resource)
+    #     # TODO
+    #     return None

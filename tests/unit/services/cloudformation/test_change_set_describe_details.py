@@ -730,3 +730,280 @@ class TestChangeSetDescribeDetails:
             }
         ]
         self.compare_changes(changes, target)
+
+    def test_condition_parameter_delete_resource(self):
+        t1 = {
+            "Parameters": {
+                "CreateParameter": {
+                    "Type": "String",
+                    "Default": "value-1",
+                    "AllowedValues": ["value-1", "value-2"],
+                }
+            },
+            "Conditions": {
+                "ShouldCreateParameter": {"Fn::Equals": [{"Ref": "CreateParameter"}, "value-1"]}
+            },
+            "Resources": {
+                "SSMParameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "first",
+                    },
+                },
+                "SSMParameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Condition": "ShouldCreateParameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "first",
+                    },
+                },
+            },
+        }
+        changes = self.eval_change_set(
+            t1, t1, {"CreateParameter": "value-1"}, {"CreateParameter": "value-2"}
+        )
+        target = [
+            {
+                "Type": "Resource",
+                "ResourceChange": {
+                    # "PolicyAction": "Delete",
+                    "Action": "Remove",
+                    "LogicalResourceId": "SSMParameter2",
+                    # "PhysicalResourceId": "<physical-resource-id:1>",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Scope": [],
+                    # "Details": [],
+                    "BeforeContext": {"Properties": {"Value": "first", "Type": "String"}},
+                },
+            }
+        ]
+        self.compare_changes(changes, target)
+
+    def test_condition_parameter_create_resource(self):
+        t1 = {
+            "Parameters": {
+                "CreateParameter": {
+                    "Type": "String",
+                    "Default": "value-1",
+                    "AllowedValues": ["value-1", "value-2"],
+                }
+            },
+            "Conditions": {
+                "ShouldCreateParameter": {"Fn::Equals": [{"Ref": "CreateParameter"}, "value-2"]}
+            },
+            "Resources": {
+                "SSMParameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "first",
+                    },
+                },
+                "SSMParameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Condition": "ShouldCreateParameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "first",
+                    },
+                },
+            },
+        }
+        changes = self.eval_change_set(
+            t1, t1, {"CreateParameter": "value-1"}, {"CreateParameter": "value-2"}
+        )
+        target = [
+            {
+                "Type": "Resource",
+                "ResourceChange": {
+                    "Action": "Add",
+                    "LogicalResourceId": "SSMParameter2",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Replacement": "True",
+                    # "Scope": [],
+                    # "Details": [],
+                    "AfterContext": {"Properties": {"Value": "first", "Type": "String"}},
+                },
+            }
+        ]
+        self.compare_changes(changes, target)
+
+    def test_condition_update_create_resource(self):
+        t1 = {
+            "Parameters": {
+                "CreateParameter": {
+                    "Type": "String",
+                    "AllowedValues": ["value-1", "value-2"],
+                }
+            },
+            "Conditions": {
+                "ShouldCreateParameter": {"Fn::Equals": [{"Ref": "CreateParameter"}, "value-2"]}
+            },
+            "Resources": {
+                "SSMParameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "first",
+                    },
+                },
+                "SSMParameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Condition": "ShouldCreateParameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "first",
+                    },
+                },
+            },
+        }
+        t2 = {
+            "Parameters": {
+                "CreateParameter": {
+                    "Type": "String",
+                    "AllowedValues": ["value-1", "value-2"],
+                }
+            },
+            "Conditions": {
+                "ShouldCreateParameter": {"Fn::Equals": [{"Ref": "CreateParameter"}, "value-1"]}
+            },
+            "Resources": {
+                "SSMParameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "first",
+                    },
+                },
+                "SSMParameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Condition": "ShouldCreateParameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "first",
+                    },
+                },
+            },
+        }
+        changes = self.eval_change_set(
+            t1, t2, {"CreateParameter": "value-1"}, {"CreateParameter": "value-1"}
+        )
+        target = [
+            {
+                "Type": "Resource",
+                "ResourceChange": {
+                    "Action": "Add",
+                    "LogicalResourceId": "SSMParameter2",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Replacement": "True",
+                    # "Scope": [],
+                    # "Details": [],
+                    "AfterContext": {"Properties": {"Value": "first", "Type": "String"}},
+                },
+            }
+        ]
+        self.compare_changes(changes, target)
+
+    def test_condition_update_delete_resource(self):
+        t1 = {
+            "Parameters": {
+                "CreateParameter": {
+                    "Type": "String",
+                    "AllowedValues": ["value-1", "value-2"],
+                }
+            },
+            "Conditions": {
+                "ShouldCreateParameter": {"Fn::Equals": [{"Ref": "CreateParameter"}, "value-1"]}
+            },
+            "Resources": {
+                "SSMParameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "first",
+                    },
+                },
+                "SSMParameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Condition": "ShouldCreateParameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "first",
+                    },
+                },
+            },
+        }
+        t2 = {
+            "Parameters": {
+                "CreateParameter": {
+                    "Type": "String",
+                    "AllowedValues": ["value-1", "value-2"],
+                }
+            },
+            "Conditions": {
+                "ShouldCreateParameter": {"Fn::Equals": [{"Ref": "CreateParameter"}, "value-2"]}
+            },
+            "Resources": {
+                "SSMParameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "first",
+                    },
+                },
+                "SSMParameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Condition": "ShouldCreateParameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "first",
+                    },
+                },
+            },
+        }
+        changes = self.eval_change_set(
+            t1, t2, {"CreateParameter": "value-1"}, {"CreateParameter": "value-1"}
+        )
+        target = [
+            {
+                "Type": "Resource",
+                "ResourceChange": {
+                    # "PolicyAction": "Delete",
+                    "Action": "Remove",
+                    "LogicalResourceId": "SSMParameter2",
+                    # "PhysicalResourceId": "<physical-resource-id:1>",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Scope": [],
+                    # "Details": [],
+                    "BeforeContext": {"Properties": {"Value": "first", "Type": "String"}},
+                },
+            }
+        ]
+        self.compare_changes(changes, target)
+
+    # TODO: add test for accessing a cloud formation condition
+    #  inside a Fn::If for a resource property binding
+
+    # TODO: add test for changing the entrypoint intrinsic function, eg:
+    #  "Condition": {
+    #    "Fn::Equals": [
+    #        {
+    #            "Ref": "ParameterName"
+    #        },
+    #        "prod"
+    #    ]
+    #  }
+    #  "Condition": {
+    #      "Fn::Not": [
+    #          {
+    #              "Fn::Equals": [
+    #                  {
+    #                      "Ref": "ParameterName"
+    #                  },
+    #                  "prod"
+    #              ]
+    #          }
+    #      ]
+    #  }
