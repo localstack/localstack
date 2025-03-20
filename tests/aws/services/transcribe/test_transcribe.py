@@ -5,13 +5,15 @@ import time
 from urllib.parse import urlparse
 
 import pytest
-from botocore.exceptions import ClientError
+import requests
+from botocore.exceptions import ClientError, ParamValidationError
 
 from localstack.aws.api.transcribe import BadRequestException, ConflictException, NotFoundException
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.packages.ffmpeg import ffmpeg_package
 from localstack.services.transcribe.packages import vosk_package
 from localstack.services.transcribe.provider import LANGUAGE_MODELS, TranscribeProvider
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import new_tmp_file
 from localstack.utils.strings import short_uid, to_str
@@ -403,3 +405,37 @@ class TestTranscribe:
             TranscriptionJobName=transcribe_job_name
         )
         snapshot.match("delete-transcription-job", res_delete_transcription_job)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Not yet implemented on LS")
+    def test_transcribe_speaker_diarization(self, transcribe_create_job, aws_client, snapshot):
+        media_file = "../../files/multi-speaker.wav"
+        file_path = os.path.join(BASEDIR, media_file)
+        max_speakers = 2
+        settings = {"Settings": {"MaxSpeakerLabels": max_speakers, "ShowSpeakerLabels": True}}
+
+        job_name = transcribe_create_job(audio_file=file_path, params=settings)
+
+        def _is_transcription_done():
+            resp = aws_client.transcribe.get_transcription_job(TranscriptionJobName=job_name)
+            assert resp["TranscriptionJob"]["TranscriptionJobStatus"] == "COMPLETED"
+            return resp
+
+        resp = retry(_is_transcription_done, retries=50, sleep=2)
+
+        response = requests.get(resp["TranscriptionJob"]["Transcript"]["TranscriptFileUri"])
+        response.raise_for_status()
+        content = response.json()
+        snapshot.match("transcribe_speaker_diarization", content)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Not yet implemented on LS")
+    def test_transcribe_error_speaker_labels(self, transcribe_create_job, aws_client, snapshot):
+        media_file = "../../files/multi-speaker.wav"
+        max_speakers = 1
+        file_path = os.path.join(BASEDIR, media_file)
+        settings = {"Settings": {"MaxSpeakerLabels": max_speakers, "ShowSpeakerLabels": True}}
+
+        with pytest.raises(ParamValidationError) as e:
+            transcribe_create_job(audio_file=file_path, params=settings)
+        snapshot.match("err_speaker_labels_diarization", e.value)

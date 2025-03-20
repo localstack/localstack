@@ -362,6 +362,7 @@ class TransformerUtility:
                 r"([a-zA-Z0-9-_.]*)?\/test-bucket-([a-zA-Z0-9-_.]*)?", replacement="<test-bucket>"
             ),
             TransformerUtility.key_value("TranscriptionJobName", "transcription-job"),
+            TransformerUtility.key_value("jobName", "job-name"),
             TransformerUtility.jsonpath(
                 jsonpath="$..Transcript..TranscriptFileUri",
                 value_replacement="<transcript-file-uri>",
