@@ -10304,12 +10304,18 @@ class TestS3PresignedPost:
         assert "PostResponse" in json_response
         json_response = json_response["PostResponse"]
 
-        location = f"{_bucket_url_vhost(s3_bucket, region_name)}/key-my-file"
         etag = '"43281e21fce675ac3bcb3524b38ca4ed"'
         assert response.headers["ETag"] == etag
-        assert response.headers["Location"] == location
 
+        location = f"{_bucket_url_vhost(s3_bucket, region_name)}/key-my-file"
+        if region_name != "us-east-1":
+            # the format is a bit different for non-default regions, we don't return the region as part of the
+            # `Location` to avoid SSL issue, but we still want to test it works with `_bucket_url_vhost`
+            location = location.replace(f".{region_name}.", ".")
+
+        assert response.headers["Location"] == location
         assert json_response["Location"] == location
+
         assert json_response["Bucket"] == s3_bucket
         assert json_response["Key"] == "key-my-file"
         assert json_response["ETag"] == etag
