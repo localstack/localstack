@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 from typing import Any, Final, Optional
 
-from localstack.aws.api.cloudformation import ChangeAction, ResourceChange
+import localstack.aws.api.cloudformation as cfn_api
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetEntity,
     ChangeType,
@@ -43,16 +43,15 @@ class DescribeUnit(abc.ABC):
 
 class ChangeSetModelDescriber(ChangeSetModelVisitor):
     _node_template: Final[NodeTemplate]
-    _resource_changes: Final[list[ResourceChange]]
+    _changes: Final[cfn_api.Changes]
 
     def __init__(self, node_template: NodeTemplate):
         self._node_template = node_template
-        self._resource_changes = list()
+        self._changes = list()
         self.visit(self._node_template)
 
-    def get_resource_changes(self) -> list[ResourceChange]:
-        # TODO return 'list[Change]' instead.
-        return [{"ResourceChange": change, "Type": "Resource"} for change in self._resource_changes]
+    def get_changes(self) -> cfn_api.Changes:
+        return self._changes
 
     def visit(self, change_set_entity: ChangeSetEntity) -> DescribeUnit:
         # Overridden for the return type-hints.
@@ -328,7 +327,7 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
             # TODO
             return None
 
-        resource_change = ResourceChange()
+        resource_change = cfn_api.ResourceChange()
         resource_change["LogicalResourceId"] = node_resource.name
 
         # TODO: investigate effects on type changes
@@ -340,17 +339,19 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         properties_describe_unit = self.visit_node_properties(node_resource.properties)
         match change_type:
             case ChangeType.MODIFIED:
-                resource_change["Action"] = ChangeAction.Modify
+                resource_change["Action"] = cfn_api.ChangeAction.Modify
                 resource_change["BeforeContext"] = properties_describe_unit.before_context
                 resource_change["AfterContext"] = properties_describe_unit.after_context
             case ChangeType.CREATED:
-                resource_change["Action"] = ChangeAction.Add
+                resource_change["Action"] = cfn_api.ChangeAction.Add
                 resource_change["AfterContext"] = properties_describe_unit.after_context
             case ChangeType.REMOVED:
-                resource_change["Action"] = ChangeAction.Remove
+                resource_change["Action"] = cfn_api.ChangeAction.Remove
                 resource_change["BeforeContext"] = properties_describe_unit.before_context
 
-        self._resource_changes.append(resource_change)
+        self._changes.append(
+            cfn_api.Change(Type=cfn_api.ChangeType.Resource, ResourceChange=resource_change)
+        )
 
         # TODO
         return None
