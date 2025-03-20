@@ -32,13 +32,13 @@ from localstack.services.lambda_.packages import get_runtime_client_path
 from localstack.services.lambda_.runtimes import IMAGE_MAPPING
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
+    BindMount,
     ContainerConfiguration,
     DockerNotAvailable,
     DockerPlatform,
     NoSuchContainer,
     NoSuchImage,
     PortMappings,
-    VolumeBind,
     VolumeMappings,
 )
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
@@ -331,7 +331,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
                 if container_config.volumes is None:
                     container_config.volumes = VolumeMappings()
                 container_config.volumes.add(
-                    VolumeBind(
+                    BindMount(
                         str(self.function_version.config.code.get_unzipped_code_location()),
                         "/var/task",
                         read_only=True,

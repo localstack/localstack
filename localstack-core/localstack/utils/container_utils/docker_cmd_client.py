@@ -12,6 +12,7 @@ from localstack import config
 from localstack.utils.collections import ensure_list
 from localstack.utils.container_utils.container_client import (
     AccessDenied,
+    BindMount,
     CancellableStream,
     ContainerClient,
     ContainerException,
@@ -29,7 +30,6 @@ from localstack.utils.container_utils.container_client import (
     SimpleVolumeBind,
     Ulimit,
     Util,
-    VolumeBind,
     VolumeDirMount,
 )
 from localstack.utils.run import run
@@ -879,7 +879,7 @@ class CmdDockerClient(ContainerClient):
         return cmd, env_file
 
     @staticmethod
-    def _map_to_volume_param(volume: Union[SimpleVolumeBind, VolumeBind, VolumeDirMount]) -> str:
+    def _map_to_volume_param(volume: Union[SimpleVolumeBind, BindMount, VolumeDirMount]) -> str:
         """
         Maps the mount volume, to a parameter for the -v docker cli argument.
 
@@ -890,7 +890,7 @@ class CmdDockerClient(ContainerClient):
         :param volume: Either a SimpleVolumeBind, in essence a tuple (host_dir, container_dir), or a VolumeBind object
         :return: String which is passable as parameter to the docker cli -v option
         """
-        if isinstance(volume, (VolumeBind, VolumeDirMount)):
+        if isinstance(volume, (BindMount, VolumeDirMount)):
             return volume.to_str()
         else:
             return f"{volume[0]}:{volume[1]}"
