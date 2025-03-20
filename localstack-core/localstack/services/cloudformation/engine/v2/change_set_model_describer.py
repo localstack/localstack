@@ -19,6 +19,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeTemplate,
     NothingType,
     PropertiesKey,
+    Scope,
     TerminalValue,
     TerminalValueCreated,
     TerminalValueModified,
@@ -44,18 +45,25 @@ class DescribeUnit(abc.ABC):
 class ChangeSetModelDescriber(ChangeSetModelVisitor):
     _node_template: Final[NodeTemplate]
     _changes: Final[cfn_api.Changes]
+    _describe_unit_cache: dict[Scope, DescribeUnit]
 
     def __init__(self, node_template: NodeTemplate):
         self._node_template = node_template
         self._changes = list()
+        self._describe_unit_cache = dict()
         self.visit(self._node_template)
 
     def get_changes(self) -> cfn_api.Changes:
         return self._changes
 
     def visit(self, change_set_entity: ChangeSetEntity) -> DescribeUnit:
+        describe_unit = self._describe_unit_cache.get(change_set_entity.scope)
+        if describe_unit is not None:
+            return describe_unit
         # Overridden for the return type-hints.
-        return super().visit(change_set_entity=change_set_entity)
+        describe_unit = super().visit(change_set_entity=change_set_entity)
+        self._describe_unit_cache[change_set_entity.scope] = describe_unit
+        return describe_unit
 
     def visit_terminal_value_modified(
         self, terminal_value_modified: TerminalValueModified
@@ -214,12 +222,12 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
     def _resolve_reference(self, logica_id: str) -> DescribeUnit:
         node_condition = self._get_node_condition_if_exists(condition_name=logica_id)
         if isinstance(node_condition, NodeCondition):
-            condition_unit = self.visit_node_condition(node_condition=node_condition)
+            condition_unit = self.visit(node_condition)
             return condition_unit
 
         node_parameter = self._get_node_parameter_if_exists(parameter_name=logica_id)
         if isinstance(node_parameter, NodeParameter):
-            parameter_unit = self.visit_node_parameter(node_parameter)
+            parameter_unit = self.visit(node_parameter)
             return parameter_unit
 
         # TODO: check for KNOWN AFTER APPLY values for logical ids coming from intrinsic functions as arguments.
@@ -233,7 +241,6 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
     def _resolve_reference_binding(
         self, before_logical_id: str, after_logical_id: str
     ) -> DescribeUnit:
-        # TODO: add memoization to the describer class through scopes.
         before_unit = self._resolve_reference(logica_id=before_logical_id)
         after_unit = self._resolve_reference(logica_id=after_logical_id)
         return DescribeUnit(
@@ -336,7 +343,7 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
             type_describe_unit.before_context or type_describe_unit.after_context
         )
 
-        properties_describe_unit = self.visit_node_properties(node_resource.properties)
+        properties_describe_unit = self.visit(node_resource.properties)
         match change_type:
             case ChangeType.MODIFIED:
                 resource_change["Action"] = cfn_api.ChangeAction.Modify
