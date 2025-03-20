@@ -21,37 +21,118 @@ from tests.aws.services.cloudformation.api.test_stacks import (
 
 
 @markers.aws.unknown
-def test_foo(aws_client: ServiceLevelClientFactory, deploy_cfn_template):
-    parameter_name = "my-parameter"
-    value1 = "foo"
-    value2 = "bar"
-    stack_name = f"stack-{short_uid()}"
+class TestUpdates:
+    def test_foo(self, aws_client: ServiceLevelClientFactory, deploy_cfn_template):
+        parameter_name = "my-parameter"
+        value1 = "foo"
+        value2 = "bar"
+        stack_name = f"stack-{short_uid()}"
 
-    t1 = {
-        "Resources": {
-            "MyParameter": {
-                "Type": "AWS::SSM::Parameter",
-                "Properties": {
-                    "Name": parameter_name,
-                    "Type": "String",
-                    "Value": value1,
+        t1 = {
+            "Resources": {
+                "MyParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": parameter_name,
+                        "Type": "String",
+                        "Value": value1,
+                    },
                 },
             },
-        },
-    }
+        }
 
-    deploy_cfn_template(stack_name=stack_name, template=json.dumps(t1), is_update=False)
+        res = deploy_cfn_template(stack_name=stack_name, template=json.dumps(t1), is_update=False)
 
-    found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
-    assert found_value == value1
+        found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+        assert found_value == value1
 
-    t2 = copy.deepcopy(t1)
-    t2["Resources"]["MyParameter"]["Properties"]["Value"] = value2
+        t2 = copy.deepcopy(t1)
+        t2["Resources"]["MyParameter"]["Properties"]["Value"] = value2
 
-    deploy_cfn_template(stack_name=stack_name, template=json.dumps(t2), is_update=True)
-    #
-    # found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
-    # assert found_value == value1
+        deploy_cfn_template(stack_name=stack_name, template=json.dumps(t2), is_update=True)
+        found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+        assert found_value == value2
+
+        res.destroy()
+
+    def test_bar(self, aws_client: ServiceLevelClientFactory, deploy_cfn_template):
+        parameter_name = "my-parameter"
+        value1 = "foo"
+        value2 = "bar"
+        stack_name = f"stack-{short_uid()}"
+
+        t1 = {
+            "Resources": {
+                "MyParameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": value1,
+                    },
+                },
+                "MyParameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": parameter_name,
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["MyParameter1", "Value"]},
+                    },
+                },
+            },
+        }
+
+        res = deploy_cfn_template(stack_name=stack_name, template=json.dumps(t1), is_update=False)
+        found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+        assert found_value == value1
+
+        t2 = copy.deepcopy(t1)
+        t2["Resources"]["MyParameter1"]["Properties"]["Value"] = value2
+
+        deploy_cfn_template(stack_name=stack_name, template=json.dumps(t2), is_update=True)
+        found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+        assert found_value == value2
+
+        res.destroy()
+
+    def test_deleting_resource(self, aws_client: ServiceLevelClientFactory, deploy_cfn_template):
+        parameter_name = "my-parameter"
+        value1 = "foo"
+        stack_name = f"stack-{short_uid()}"
+
+        t1 = {
+            "Resources": {
+                "MyParameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": value1,
+                    },
+                },
+                "MyParameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": parameter_name,
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["MyParameter1", "Value"]},
+                    },
+                },
+            },
+        }
+
+        res = deploy_cfn_template(stack_name=stack_name, template=json.dumps(t1), is_update=False)
+        found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+        assert found_value == value1
+
+        t2 = copy.deepcopy(t1)
+        del t2["Resources"]["MyParameter2"]
+
+        deploy_cfn_template(stack_name=stack_name, template=json.dumps(t2), is_update=True)
+        with pytest.raises(ClientError) as exc_info:
+            aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+
+        assert f"Parameter {parameter_name} not found" in str(exc_info.value)
+
+        res.destroy()
 
 
 @markers.aws.validated
