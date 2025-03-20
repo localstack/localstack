@@ -169,6 +169,9 @@ class StreamPoller(Poller):
         get_records_response = self.get_records(shard_iterator)
         records = get_records_response.get("Records", [])
         if not records:
+            # We cannot reliably back-off when no records found since an iterator
+            # may have to move multiple times until records are returned.
+            # See https://docs.aws.amazon.com/streams/latest/dev/troubleshooting-consumers.html#getrecords-returns-empty
             self.shards[shard_id] = get_records_response["NextShardIterator"]
             return
 

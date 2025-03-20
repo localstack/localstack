@@ -19,11 +19,6 @@ from localstack.services.lambda_.provider_utils import get_function_version_from
 from localstack.utils.backoff import ExponentialBackoff
 from localstack.utils.threads import FuncThread
 
-POLL_INTERVAL_SEC: float = LAMBDA_EVENT_SOURCE_MAPPING_POLL_INTERVAL_SEC
-MAX_BACKOFF_POLL_EMPTY_SEC: float = LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_EMPTY_POLL_SEC
-MAX_BACKOFF_POLL_ERROR_SEC: float = LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_ERROR_SEC
-
-
 LOG = logging.getLogger(__name__)
 
 
@@ -149,10 +144,15 @@ class EsmWorker:
             self.update_esm_state_in_store(EsmState.ENABLED)
             self.state_transition_reason = self.user_state_reason
 
-        error_boff = ExponentialBackoff(initial_interval=2, max_interval=MAX_BACKOFF_POLL_ERROR_SEC)
-        empty_boff = ExponentialBackoff(initial_interval=1, max_interval=MAX_BACKOFF_POLL_EMPTY_SEC)
+        error_boff = ExponentialBackoff(
+            initial_interval=2, max_interval=LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_ERROR_SEC
+        )
+        empty_boff = ExponentialBackoff(
+            initial_interval=1,
+            max_interval=LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_EMPTY_POLL_SEC,
+        )
 
-        poll_interval_duration = POLL_INTERVAL_SEC
+        poll_interval_duration = LAMBDA_EVENT_SOURCE_MAPPING_POLL_INTERVAL_SEC
 
         while not self._shutdown_event.is_set():
             try:
@@ -164,7 +164,7 @@ class EsmWorker:
                 empty_boff.reset()
 
                 # Set the poll frequency back to the default
-                poll_interval_duration = POLL_INTERVAL_SEC
+                poll_interval_duration = LAMBDA_EVENT_SOURCE_MAPPING_POLL_INTERVAL_SEC
             except EmptyPollResultsException as miss_ex:
                 # If the event source is empty, backoff
                 poll_interval_duration = empty_boff.next_backoff()
