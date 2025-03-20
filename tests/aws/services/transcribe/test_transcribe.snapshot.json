@@ -497,7 +497,7 @@
     }
   },
   "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_speaker_diarization": {
-    "recorded-date": "19-03-2025, 15:38:43",
+    "recorded-date": "20-03-2025, 04:44:53",
     "recorded-content": {
       "transcribe_speaker_diarization": {
         "accountId": "111111111111",

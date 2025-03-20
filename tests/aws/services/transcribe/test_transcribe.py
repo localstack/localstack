@@ -424,8 +424,8 @@ class TestTranscribe:
         resp = retry(_is_transcription_done, retries=50, sleep=2)
 
         response = requests.get(resp["TranscriptionJob"]["Transcript"]["TranscriptFileUri"])
-        content = response.json()
         response.raise_for_status()
+        content = response.json()
         snapshot.match("transcribe_speaker_diarization", content)
 
     @markers.aws.validated

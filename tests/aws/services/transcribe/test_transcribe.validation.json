@@ -18,7 +18,7 @@
     "last_validated_date": "2023-10-06T15:09:11+00:00"
   },
   "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_speaker_diarization": {
-    "last_validated_date": "2025-03-19T15:38:40+00:00"
+    "last_validated_date": "2025-03-20T04:44:50+00:00"
   },
   "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_speaker_diarization[../../files/multi-speaker.wav-1]": {
     "last_validated_date": "2025-03-19T10:27:09+00:00"
