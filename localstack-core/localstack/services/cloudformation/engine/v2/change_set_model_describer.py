@@ -153,8 +153,11 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         )
 
     def visit_node_divergence(self, node_divergence: NodeDivergence) -> DescribeUnit:
-        # TODO
-        raise NotImplementedError()
+        before_unit = self.visit(node_divergence.value)
+        after_unit = self.visit(node_divergence.divergence)
+        return DescribeUnit(
+            before_context=before_unit.before_context, after_context=after_unit.after_context
+        )
 
     def visit_node_object(self, node_object: NodeObject) -> DescribeUnit:
         # TODO: improve check syntax
@@ -214,7 +217,7 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
 
     def visit_node_intrinsic_function_fn_equals(
         self, node_intrinsic_function: NodeIntrinsicFunction
-    ):
+    ) -> DescribeUnit:
         # TODO: check for KNOWN AFTER APPLY values for logical ids coming from intrinsic functions as arguments.
         arguments_unit = self.visit(node_intrinsic_function.arguments)
         before_values = arguments_unit.before_context
@@ -233,6 +236,49 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
             case ChangeType.REMOVED:
                 return DescribeUnit(before_context=before_context)
         # Unchanged
+        return DescribeUnit(before_context=before_context, after_context=after_context)
+
+    def visit_node_intrinsic_function_fn_if(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> DescribeUnit:
+        # TODO: check for KNOWN AFTER APPLY values for logical ids coming from intrinsic functions as arguments.
+        arguments_unit = self.visit(node_intrinsic_function.arguments)
+
+        def _compute_unit_for_if_statement(args: list[Any]) -> DescribeUnit:
+            condition_name = args[0]
+            boolean_expression_unit = self._resolve_reference(logica_id=condition_name)
+            return DescribeUnit(
+                before_context=args[1] if boolean_expression_unit.before_context else args[2],
+                after_context=args[1] if boolean_expression_unit.after_context else args[2],
+            )
+
+        # TODO: add support for this being created or removed.
+        before_outcome_unit = _compute_unit_for_if_statement(arguments_unit.before_context)
+        before_context = before_outcome_unit.before_context
+        after_outcome_unit = _compute_unit_for_if_statement(arguments_unit.after_context)
+        after_context = after_outcome_unit.after_context
+        return DescribeUnit(before_context=before_context, after_context=after_context)
+
+    def visit_node_intrinsic_function_fn_not(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> DescribeUnit:
+        # TODO: check for KNOWN AFTER APPLY values for logical ids coming from intrinsic functions as arguments.
+        # TODO: add type checking/validation for result unit?
+        arguments_unit = self.visit(node_intrinsic_function.arguments)
+        before_condition = arguments_unit.before_context
+        after_condition = arguments_unit.after_context
+        if before_condition:
+            before_condition_outcome = before_condition[0]
+            before_context = not before_condition_outcome
+        else:
+            before_context = None
+
+        if after_condition:
+            after_condition_outcome = after_condition[0]
+            after_context = not after_condition_outcome
+        else:
+            after_context = None
+        # Implicit change type computation.
         return DescribeUnit(before_context=before_context, after_context=after_context)
 
     def visit_node_parameter(self, node_parameter: NodeParameter) -> DescribeUnit:

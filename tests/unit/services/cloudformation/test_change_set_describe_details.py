@@ -983,27 +983,242 @@ class TestChangeSetDescribeDetails:
         ]
         self.compare_changes(changes, target)
 
-    # TODO: add test for accessing a cloud formation condition
-    #  inside a Fn::If for a resource property binding
+    def test_condition_bound_property_assignment_parameter_modified(self):
+        t1 = {
+            "Parameters": {
+                "UseProductionValue": {
+                    "Type": "String",
+                    "AllowedValues": ["true", "false"],
+                    "Default": "false",
+                }
+            },
+            "Conditions": {"IsProduction": {"Fn::Equals": [{"Ref": "UseProductionValue"}, "true"]}},
+            "Resources": {
+                "MySSMParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::If": [
+                                "IsProduction",
+                                "ProductionParameterValue",
+                                "StagingParameterValue",
+                            ]
+                        },
+                    },
+                }
+            },
+        }
+        changes = self.eval_change_set(
+            t1, t1, {"UseProductionValue": "false"}, {"UseProductionValue": "true"}
+        )
+        target = [
+            {
+                "Type": "Resource",
+                "ResourceChange": {
+                    "Action": "Modify",
+                    "LogicalResourceId": "MySSMParameter",
+                    # "PhysicalResourceId": "<physical-resource-id:1>",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Replacement": "False",
+                    # "Scope": [
+                    #     "Properties"
+                    # ],
+                    # "Details": [
+                    #     {
+                    #         "Target": {
+                    #             "Attribute": "Properties",
+                    #             "Name": "Value",
+                    #             "RequiresRecreation": "Never",
+                    #             "Path": "/Properties/Value",
+                    #             "BeforeValue": "StagingParameterValue",
+                    #             "AfterValue": "ProductionParameterValue",
+                    #             "AttributeChangeType": "Modify"
+                    #         },
+                    #         "Evaluation": "Static",
+                    #         "ChangeSource": "DirectModification"
+                    #     }
+                    # ],
+                    "BeforeContext": {
+                        "Properties": {"Value": "StagingParameterValue", "Type": "String"}
+                    },
+                    "AfterContext": {
+                        "Properties": {"Value": "ProductionParameterValue", "Type": "String"}
+                    },
+                },
+            }
+        ]
+        self.compare_changes(changes, target)
 
-    # TODO: add test for changing the entrypoint intrinsic function, eg:
-    #  "Condition": {
-    #    "Fn::Equals": [
-    #        {
-    #            "Ref": "ParameterName"
-    #        },
-    #        "prod"
-    #    ]
-    #  }
-    #  "Condition": {
-    #      "Fn::Not": [
-    #          {
-    #              "Fn::Equals": [
-    #                  {
-    #                      "Ref": "ParameterName"
-    #                  },
-    #                  "prod"
-    #              ]
-    #          }
-    #      ]
-    #  }
+    def test_condition_bound_property_assignment_modified(self):
+        t1 = {
+            "Parameters": {
+                "UseProductionValue": {
+                    "Type": "String",
+                    "AllowedValues": ["true", "false"],
+                    "Default": "false",
+                }
+            },
+            "Conditions": {"IsProduction": {"Fn::Equals": [{"Ref": "UseProductionValue"}, "true"]}},
+            "Resources": {
+                "MySSMParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::If": [
+                                "IsProduction",
+                                "ProductionParameterValue",
+                                "StagingParameterValue",
+                            ]
+                        },
+                    },
+                }
+            },
+        }
+        t2 = {
+            "Parameters": {
+                "UseProductionValue": {
+                    "Type": "String",
+                    "AllowedValues": ["true", "false"],
+                    "Default": "false",
+                }
+            },
+            "Conditions": {
+                "IsProduction": {"Fn::Equals": [{"Ref": "UseProductionValue"}, "false"]}
+            },
+            "Resources": {
+                "MySSMParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::If": [
+                                "IsProduction",
+                                "ProductionParameterValue",
+                                "StagingParameterValue",
+                            ]
+                        },
+                    },
+                }
+            },
+        }
+        changes = self.eval_change_set(
+            t1, t2, {"UseProductionValue": "false"}, {"UseProductionValue": "false"}
+        )
+        target = [
+            {
+                "Type": "Resource",
+                "ResourceChange": {
+                    "Action": "Modify",
+                    "LogicalResourceId": "MySSMParameter",
+                    # "PhysicalResourceId": "<physical-resource-id:1>",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Replacement": "False",
+                    # "Scope": [
+                    #     "Properties"
+                    # ],
+                    # "Details": [
+                    #     {
+                    #         "Target": {
+                    #             "Attribute": "Properties",
+                    #             "Name": "Value",
+                    #             "RequiresRecreation": "Never",
+                    #             "Path": "/Properties/Value",
+                    #             "BeforeValue": "StagingParameterValue",
+                    #             "AfterValue": "ProductionParameterValue",
+                    #             "AttributeChangeType": "Modify"
+                    #         },
+                    #         "Evaluation": "Static",
+                    #         "ChangeSource": "DirectModification"
+                    #     }
+                    # ],
+                    "BeforeContext": {
+                        "Properties": {"Value": "StagingParameterValue", "Type": "String"}
+                    },
+                    "AfterContext": {
+                        "Properties": {"Value": "ProductionParameterValue", "Type": "String"}
+                    },
+                },
+            }
+        ]
+        self.compare_changes(changes, target)
+
+    def test_condition_update_production_remove_resource(self):
+        t1 = {
+            "Parameters": {
+                "CreateParameter": {
+                    "Type": "String",
+                    "AllowedValues": ["value-1", "value-2"],
+                }
+            },
+            "Conditions": {
+                "ShouldCreateParameter": {"Fn::Equals": [{"Ref": "CreateParameter"}, "value-1"]}
+            },
+            "Resources": {
+                "SSMParameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "first",
+                    },
+                },
+                "SSMParameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Condition": "ShouldCreateParameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "first",
+                    },
+                },
+            },
+        }
+        t2 = {
+            "Parameters": {
+                "CreateParameter": {
+                    "Type": "String",
+                    "AllowedValues": ["value-1", "value-2"],
+                }
+            },
+            "Conditions": {
+                "ShouldCreateParameter": {
+                    "Fn::Not": [{"Fn::Equals": [{"Ref": "CreateParameter"}, "value-1"]}]
+                }
+            },
+            "Resources": {
+                "SSMParameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "first",
+                    },
+                },
+                "SSMParameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Condition": "ShouldCreateParameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "first",
+                    },
+                },
+            },
+        }
+        changes = self.eval_change_set(
+            t1, t2, {"CreateParameter": "value-1"}, {"CreateParameter": "value-1"}
+        )
+        target = [
+            {
+                "Type": "Resource",
+                "ResourceChange": {
+                    # "PolicyAction": "Delete",
+                    "Action": "Remove",
+                    "LogicalResourceId": "SSMParameter2",
+                    # "PhysicalResourceId": "<physical-resource-id:1>",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Scope": [],
+                    # "Details": [],
+                    "BeforeContext": {"Properties": {"Value": "first", "Type": "String"}},
+                },
+            }
+        ]
+        self.compare_changes(changes, target)
