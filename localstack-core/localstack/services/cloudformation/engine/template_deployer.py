@@ -1400,6 +1400,7 @@ class TemplateDeployer:
         self.stack.set_stack_status("DELETE_IN_PROGRESS")
         stack_resources = list(self.stack.resources.values())
         resources = {r["LogicalResourceId"]: clone_safe(r) for r in stack_resources}
+        original_resources = self.stack.template_original["Resources"]
 
         # TODO: what is this doing?
         for key, resource in resources.items():
@@ -1410,7 +1411,7 @@ class TemplateDeployer:
 
         ordered_resource_ids = list(
             order_resources(
-                resources=resources,
+                resources=original_resources,
                 resolved_conditions=self.stack.resolved_conditions,
                 resolved_parameters=self.stack.resolved_parameters,
                 reverse=True,
