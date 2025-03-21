@@ -427,3 +427,45 @@ class TestSnfBase:
             definition,
             exec_input,
         )
+
+    # These json_path_strings are handled gracefully in AWS by returning an empty array,
+    #   although there are some exceptions like  "$[1:5]", "$[1:], "$[:1]
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "json_path_string",
+        [
+            "$[*]",
+            "$.items[*]",
+            "$.items[1:]",
+            "$.items[:1]",
+            "$.item.items[*]",
+            "$.item.items[1:]",
+            "$.item.items[:1]",
+            "$.item.items[1:5]",
+            "$.items[*].itemValue",
+            "$.items[1:].itemValue",
+            "$.items[:1].itemValue",
+            "$.item.items[1:5].itemValue",
+        ],
+    )
+    def test_json_path_array_wildcard_or_slice_with_no_input(
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        json_path_string,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.JSON_PATH_ARRAY_ACCESS)
+        template["States"]["EntryState"]["Parameters"]["item.$"] = json_path_string
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client,
+            create_state_machine_iam_role,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
