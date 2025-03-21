@@ -5,7 +5,7 @@ import random
 import uuid
 from datetime import datetime
 from math import isclose
-from typing import Optional
+from typing import Any, Optional
 
 import pytest
 import requests
@@ -102,6 +102,81 @@ class TestSecretsManager:
                 "Timed out whilst awaiting for force deletion of secret '%s' to complete.",
                 secret_id,
             )
+
+    @staticmethod
+    def _setup_rotation_secret(
+        sm_snapshot,
+        secret_name,
+        create_secret,
+        create_lambda_function,
+        aws_client,
+    ) -> (str, str):
+        cre_res = create_secret(
+            Name=secret_name,
+            SecretString="my_secret",
+            Description="testing rotation of secrets",
+        )
+
+        sm_snapshot.add_transformer(
+            sm_snapshot.transform.key_value("RotationLambdaARN", "lambda-arn")
+        )
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(cre_res, 0)
+        )
+
+        function_name = f"s-{short_uid()}"
+        function_arn = create_lambda_function(
+            handler_file=TEST_LAMBDA_ROTATE_SECRET,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+        )["CreateFunctionResponse"]["FunctionArn"]
+
+        aws_client.lambda_.add_permission(
+            FunctionName=function_name,
+            StatementId="secretsManagerPermission",
+            Action="lambda:InvokeFunction",
+            Principal="secretsmanager.amazonaws.com",
+        )
+        return cre_res["VersionId"], function_arn
+
+    def _assert_after_rotate_secret_with_lambda_success(
+        self,
+        sm_snapshot,
+        secret_name,
+        initial_secret_version,
+        aws_client,
+        snapshot_key_suffix: str = "1",
+        function_arn: str | None = None,
+        rotation_config: dict[str, Any] = None,
+    ):
+        rotation_config = rotation_config or {}
+        if function_arn:
+            rotation_config["RotationLambdaARN"] = function_arn
+
+        rot_res = aws_client.secretsmanager.rotate_secret(
+            SecretId=secret_name,
+            **rotation_config,
+        )
+
+        sm_snapshot.match(f"rotate_secret_immediately_{snapshot_key_suffix}", rot_res)
+
+        self._wait_rotation(aws_client.secretsmanager, secret_name, rot_res["VersionId"])
+
+        response = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
+        sm_snapshot.match(f"describe_secret_rotated_{snapshot_key_suffix}", response)
+
+        list_secret_versions_1 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
+
+        sm_snapshot.match(
+            f"list_secret_versions_rotated_1_{snapshot_key_suffix}", list_secret_versions_1
+        )
+
+        # As a result of the Lambda invocations. current version should be
+        # pointed to `AWSCURRENT` & previous version to `AWSPREVIOUS`
+        assert response["VersionIdsToStages"][initial_secret_version] == ["AWSPREVIOUS"]
+        assert response["VersionIdsToStages"][rot_res["VersionId"]] == ["AWSCURRENT"]
 
     @staticmethod
     def _wait_rotation(client, secret_id: str, secret_version: str):
@@ -533,57 +608,64 @@ class TestSecretsManager:
         Tests secret rotation via a lambda function.
         Parametrization ensures we test the default behavior which is an immediate rotation.
         """
-        cre_res = create_secret(
-            Name=secret_name,
-            SecretString="my_secret",
-            Description="testing rotation of secrets",
+        rotation_config = {
+            "RotationRules": {"AutomaticallyAfterDays": 1},
+        }
+        if rotate_immediately:
+            rotation_config["RotateImmediately"] = rotate_immediately
+        initial_secret_version, function_arn = self._setup_rotation_secret(
+            sm_snapshot, secret_name, create_secret, create_lambda_function, aws_client
+        )
+        self._assert_after_rotate_secret_with_lambda_success(
+            sm_snapshot,
+            secret_name,
+            initial_secret_version,
+            aws_client,
+            function_arn=function_arn,
+            rotation_config=rotation_config,
         )
 
-        sm_snapshot.add_transformer(
-            sm_snapshot.transform.key_value("RotationLambdaARN", "lambda-arn")
-        )
-        sm_snapshot.add_transformers_list(
-            sm_snapshot.transform.secretsmanager_secret_id_arn(cre_res, 0)
-        )
-
-        function_name = f"s-{short_uid()}"
-        function_arn = create_lambda_function(
-            handler_file=TEST_LAMBDA_ROTATE_SECRET,
-            func_name=function_name,
-            runtime=Runtime.python3_12,
-        )["CreateFunctionResponse"]["FunctionArn"]
-
-        aws_client.lambda_.add_permission(
-            FunctionName=function_name,
-            StatementId="secretsManagerPermission",
-            Action="lambda:InvokeFunction",
-            Principal="secretsmanager.amazonaws.com",
-        )
-
-        rotation_kwargs = {}
-        if rotate_immediately is not None:
-            rotation_kwargs["RotateImmediately"] = rotate_immediately
-        rot_res = aws_client.secretsmanager.rotate_secret(
-            SecretId=secret_name,
-            RotationLambdaARN=function_arn,
-            RotationRules={
-                "AutomaticallyAfterDays": 1,
-            },
-            **rotation_kwargs,
+    @pytest.mark.parametrize("set_rotation_on_second_run", [False, True])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..VersionIdsToStages", "$..Versions", "$..VersionId"]
+    )
+    @markers.aws.validated
+    def test_rotate_secret_multiple_times_with_lambda_success(
+        self,
+        sm_snapshot,
+        secret_name,
+        create_secret,
+        create_lambda_function,
+        aws_client,
+        set_rotation_on_second_run,
+    ):
+        rotation_config = {
+            "RotationRules": {"AutomaticallyAfterDays": 1},
+            "RotateImmediately": True,
+        }
+        secret_initial_version, function_arn = self._setup_rotation_secret(
+            sm_snapshot, secret_name, create_secret, create_lambda_function, aws_client
         )
 
-        sm_snapshot.match("rotate_secret_immediately", rot_res)
-
-        self._wait_rotation(aws_client.secretsmanager, secret_name, rot_res["VersionId"])
-
-        response = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
-        sm_snapshot.match("describe_secret_rotated", response)
-
-        list_secret_versions_1 = aws_client.secretsmanager.list_secret_version_ids(
-            SecretId=secret_name
+        self._assert_after_rotate_secret_with_lambda_success(
+            sm_snapshot,
+            secret_name,
+            secret_initial_version,
+            aws_client,
+            function_arn=function_arn,
+            rotation_config=rotation_config,
         )
-
-        sm_snapshot.match("list_secret_versions_rotated_1", list_secret_versions_1)
+        # Fetch the current version after first rotation
+        secret = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
+        self._assert_after_rotate_secret_with_lambda_success(
+            sm_snapshot,
+            secret_name,
+            secret["VersionId"],
+            aws_client,
+            snapshot_key_suffix="2",
+            function_arn=function_arn if set_rotation_on_second_run else None,
+            rotation_config=rotation_config if set_rotation_on_second_run else None,
+        )
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error", "$..Message"])
     @markers.aws.validated
