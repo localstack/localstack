@@ -150,6 +150,11 @@ from localstack.aws.spec import load_service
 from localstack.services.edge import ROUTER
 from localstack.services.lambda_ import api_utils
 from localstack.services.lambda_ import hooks as lambda_hooks
+from localstack.services.lambda_.analytics import (
+    FunctionOperation,
+    FunctionStatus,
+    function_counter,
+)
 from localstack.services.lambda_.api_utils import (
     ARCHITECTURES,
     STATEMENT_ID_REGEX,
@@ -1037,6 +1042,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
             fn.versions["$LATEST"] = version
             state.functions[function_name] = fn
+        function_counter.labels(
+            operation=FunctionOperation.create,
+            runtime=runtime,
+            status=FunctionStatus.success,
+            invocation_type="n/a",
+            package_type=package_type,
+        )
         self.lambda_service.create_function_version(version)
 
         if tags := request.get("Tags"):

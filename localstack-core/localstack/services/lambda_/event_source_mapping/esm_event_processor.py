@@ -3,6 +3,7 @@ import logging
 import uuid
 
 from localstack.aws.api.pipes import LogLevel
+from localstack.services.lambda_.analytics import EsmExecutionStatus, esm_counter
 from localstack.services.lambda_.event_source_mapping.event_processor import (
     BatchFailureError,
     EventProcessor,
@@ -15,7 +16,6 @@ from localstack.services.lambda_.event_source_mapping.senders.sender import (
     Sender,
     SenderError,
 )
-from localstack.services.lambda_.usage import esm_error, esm_invocation
 
 LOG = logging.getLogger(__name__)
 
@@ -37,7 +37,6 @@ class EsmEventProcessor(EventProcessor):
         else:
             first_event = {}
         event_source = first_event.get("eventSource")
-        esm_invocation.record(event_source)
 
         execution_id = uuid.uuid4()
         # Create a copy of the original input events
@@ -60,12 +59,16 @@ class EsmEventProcessor(EventProcessor):
                 messageType="ExecutionSucceeded",
                 logLevel=LogLevel.INFO,
             )
+            esm_counter.labels(source=event_source, status=EsmExecutionStatus.success).increment()
         except PartialFailureSenderError as e:
             self.logger.log(
                 messageType="ExecutionFailed",
                 logLevel=LogLevel.ERROR,
                 error=e.error,
             )
+            esm_counter.labels(
+                source=event_source, status=EsmExecutionStatus.partial_batch_failure_error
+            ).increment()
             # TODO: check whether partial batch item failures is enabled by default or need to be explicitly enabled
             #  using --function-response-types "ReportBatchItemFailures"
             #  https://docs.aws.amazon.com/lambda/latest/dg/services-sqs-errorhandling.html
@@ -78,15 +81,20 @@ class EsmEventProcessor(EventProcessor):
                 logLevel=LogLevel.ERROR,
                 error=e.error,
             )
+            esm_counter.labels(
+                source=event_source, status=EsmExecutionStatus.target_invocation_error
+            ).increment()
             raise BatchFailureError(error=e.error) from e
         except Exception as e:
-            esm_error.record(event_source)
             LOG.error(
                 "Unhandled exception while processing Lambda event source mapping (ESM) events %s for ESM with execution id %s",
                 events,
                 execution_id,
                 exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
+            esm_counter.labels(
+                source=event_source, status=EsmExecutionStatus.unhandled_error
+            ).increment()
             raise e
 
     def process_target_stage(self, events: list[dict]) -> None:
