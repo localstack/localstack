@@ -26,6 +26,7 @@ from localstack.aws.api.lambda_ import (
 from localstack.aws.connect import connect_to
 from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.services.lambda_.analytics import (
+    FunctionOperation,
     FunctionStatus,
     function_counter,
     hotreload_counter,
@@ -276,13 +277,13 @@ class LambdaService:
 
         # Need the qualified arn to exactly get the target lambda
         qualified_arn = qualified_lambda_arn(function_name, version_qualifier, account_id, region)
-        runtime = None
+        version = function.versions.get(version_qualifier)
+        runtime = version.config.runtime
+        package_type = version.config.package_type
         try:
             version_manager = self.get_lambda_version_manager(qualified_arn)
             event_manager = self.get_lambda_event_manager(qualified_arn)
-            runtime = version_manager.function_version.config.runtime
         except ValueError as e:
-            version = function.versions.get(version_qualifier)
             state = version and version.config.state.state
             # TODO: make such developer hints optional or remove after initial v2 transition period
             if state == State.Failed:
@@ -306,7 +307,11 @@ class LambdaService:
                 status = FunctionStatus.unhandled_state_error
                 LOG.error("Unexpected state %s for Lambda function %s", state, function_name)
             function_counter.labels(
-                operation="invoke", runtime=runtime, status=status, invocation_type=invocation_type
+                operation=FunctionOperation.invoke,
+                runtime=runtime,
+                status=status,
+                invocation_type=invocation_type,
+                package_type=package_type,
             ).increment()
             raise ResourceConflictException(
                 f"The operation cannot be performed at this time. The function is currently in the following state: {state}"
@@ -320,10 +325,11 @@ class LambdaService:
                 to_str(payload)
             except Exception as e:
                 function_counter.labels(
-                    operation="invoke",
+                    operation=FunctionOperation.invoke,
                     runtime=runtime,
                     status=FunctionStatus.invalid_payload_error,
                     invocation_type=invocation_type,
+                    package_type=package_type,
                 ).increment()
                 # MAYBE: improve parity of detailed exception message (quite cumbersome)
                 raise InvalidRequestContentException(
@@ -367,7 +373,11 @@ class LambdaService:
             else FunctionStatus.success
         )
         function_counter.labels(
-            operation="invoke", runtime=runtime, status=status, invocation_type=invocation_type
+            operation=FunctionOperation.invoke,
+            runtime=runtime,
+            status=status,
+            invocation_type=invocation_type,
+            package_type=package_type,
         ).increment()
         return invocation_result
 

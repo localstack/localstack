@@ -11,11 +11,18 @@ function_counter = Counter(
     name="function",
     labels=[
         "operation",
-        "runtime",
         "status",
+        "runtime",
+        "package_type",
+        # only for operation "invoke"
         "invocation_type",
     ],
 )
+
+
+class FunctionOperation(StrEnum):
+    invoke = "invoke"
+    create = "create"
 
 
 class FunctionStatus(StrEnum):
@@ -32,3 +39,15 @@ class FunctionStatus(StrEnum):
 
 
 esm_counter = Counter(namespace=NAMESPACE, name="esm", labels=["source", "status"])
+
+
+class EsmExecutionStatus(StrEnum):
+    success = "success"
+    partial_batch_failure_error = "partial_batch_failure_error"
+    target_invocation_error = "target_invocation_error"
+    unhandled_error = "unhandled_error"
+    source_poller_error = "source_poller_error"
+    # TODO: Add tracking for filter error. Options:
+    #  a) raise filter exception and track it in the esm_worker
+    #  b) somehow add tracking in the individual pollers
+    filter_error = "filter_error"

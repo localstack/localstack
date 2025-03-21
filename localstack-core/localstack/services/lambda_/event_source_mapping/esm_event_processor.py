@@ -3,7 +3,7 @@ import logging
 import uuid
 
 from localstack.aws.api.pipes import LogLevel
-from localstack.services.lambda_.analytics import esm_counter
+from localstack.services.lambda_.analytics import EsmExecutionStatus, esm_counter
 from localstack.services.lambda_.event_source_mapping.event_processor import (
     BatchFailureError,
     EventProcessor,
@@ -59,7 +59,7 @@ class EsmEventProcessor(EventProcessor):
                 messageType="ExecutionSucceeded",
                 logLevel=LogLevel.INFO,
             )
-            esm_counter.labels(source=event_source, status="success").increment()
+            esm_counter.labels(source=event_source, status=EsmExecutionStatus.success).increment()
         except PartialFailureSenderError as e:
             self.logger.log(
                 messageType="ExecutionFailed",
@@ -67,7 +67,7 @@ class EsmEventProcessor(EventProcessor):
                 error=e.error,
             )
             esm_counter.labels(
-                source=event_source, status="partial_batch_failure_error"
+                source=event_source, status=EsmExecutionStatus.partial_batch_failure_error
             ).increment()
             # TODO: check whether partial batch item failures is enabled by default or need to be explicitly enabled
             #  using --function-response-types "ReportBatchItemFailures"
@@ -81,7 +81,9 @@ class EsmEventProcessor(EventProcessor):
                 logLevel=LogLevel.ERROR,
                 error=e.error,
             )
-            esm_counter.labels(source=event_source, status="batch_failure_error").increment()
+            esm_counter.labels(
+                source=event_source, status=EsmExecutionStatus.target_invocation_error
+            ).increment()
             raise BatchFailureError(error=e.error) from e
         except Exception as e:
             LOG.error(
@@ -90,7 +92,9 @@ class EsmEventProcessor(EventProcessor):
                 execution_id,
                 exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
-            esm_counter.labels(source=event_source, status="unhandled_error").increment()
+            esm_counter.labels(
+                source=event_source, status=EsmExecutionStatus.unhandled_error
+            ).increment()
             raise e
 
     def process_target_stage(self, events: list[dict]) -> None:

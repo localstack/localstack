@@ -12,7 +12,11 @@ from botocore.config import Config
 
 from localstack import config
 from localstack.aws.api.lambda_ import InvocationType, TooManyRequestsException
-from localstack.services.lambda_.analytics import FunctionStatus, function_counter
+from localstack.services.lambda_.analytics import (
+    FunctionOperation,
+    FunctionStatus,
+    function_counter,
+)
 from localstack.services.lambda_.invocation.internal_sqs_queue import get_fake_sqs_client
 from localstack.services.lambda_.invocation.lambda_models import (
     EventInvokeConfig,
@@ -202,12 +206,13 @@ class Poller:
             invocation = sqs_invocation.invocation
             try:
                 invocation_result = self.version_manager.invoke(invocation=invocation)
-                runtime = self.version_manager.function_version.config.runtime
+                function_config = self.version_manager.function_version.config
                 function_counter.labels(
-                    operation="invoke",
-                    runtime=runtime,
+                    operation=FunctionOperation.invoke,
+                    runtime=function_config.runtime,
                     status=FunctionStatus.success,
                     invocation_type=InvocationType.Event,
+                    package_type=function_config.package_type,
                 ).increment()
             except Exception as e:
                 # Reserved concurrency == 0
@@ -236,11 +241,13 @@ class Poller:
                     QueueUrl=self.event_queue_url, ReceiptHandle=message["ReceiptHandle"]
                 )
                 # status MUST be set before returning
+                package_type = self.version_manager.function_version.config.package_type
                 function_counter.labels(
-                    operation="invoke",
+                    operation=FunctionOperation.invoke,
                     runtime=runtime,
                     status=status,
                     invocation_type=InvocationType.Event,
+                    package_type=package_type,
                 ).increment()
 
             # Good summary blogpost: https://haithai91.medium.com/aws-lambdas-retry-behaviors-edff90e1cf1b
