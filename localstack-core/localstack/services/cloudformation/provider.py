@@ -105,7 +105,6 @@ from localstack.services.cloudformation.engine.transformers import (
     FailedTransformationException,
 )
 from localstack.services.cloudformation.engine.validations import (
-    DEFAULT_TEMPLATE_VALIDATIONS,
     ValidationError,
 )
 from localstack.services.cloudformation.resource_provider import (
@@ -208,15 +207,13 @@ class CloudformationProvider(CloudformationApi):
         if active_stack_candidates:
             raise AlreadyExistsException(f"Stack [{stack_name}] already exists")
 
-        template_body = request.get("TemplateBody") or ""
+        template_body = api_utils.extract_template_body(request)
         if len(template_body) > 51200:
             raise ValidationError(
                 f"1 validation error detected: Value '{request['TemplateBody']}' at 'templateBody' "
                 "failed to satisfy constraint: Member must have length less than or equal to 51200"
             )
-        api_utils.prepare_template_body(request)  # TODO: avoid mutating request directly
-
-        template = template_preparer.parse_template(request["TemplateBody"])
+        template = template_preparer.parse_template(template_body)
 
         stack_name = template["StackName"] = request.get("StackName")
         if api_utils.validate_stack_name(stack_name) is False:
@@ -268,10 +265,6 @@ class CloudformationProvider(CloudformationApi):
             stack.set_stack_status("ROLLBACK_COMPLETE")
             state.stacks[stack.stack_id] = stack
             return CreateStackOutput(StackId=stack.stack_id)
-
-        # perform basic static analysis on the template
-        for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
-            validation_fn(template)
 
         stack = Stack(context.account_id, context.region, request, template)
 
@@ -335,8 +328,8 @@ class CloudformationProvider(CloudformationApi):
         if not stack:
             return not_found_error(f'Unable to update non-existing stack "{stack_name}"')
 
-        api_utils.prepare_template_body(request)
-        template = template_preparer.parse_template(request["TemplateBody"])
+        template_body = api_utils.extract_template_body(request)
+        template = template_preparer.parse_template(template_body)
 
         if (
             "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", [])
@@ -392,17 +385,17 @@ class CloudformationProvider(CloudformationApi):
             stack.set_stack_status("ROLLBACK_COMPLETE")
             return CreateStackOutput(StackId=stack.stack_id)
 
-        # perform basic static analysis on the template
-        for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
-            validation_fn(template)
-
         # update the template
         stack.template_original = template
 
         deployer = template_deployer.TemplateDeployer(context.account_id, context.region, stack)
         # TODO: there shouldn't be a "new" stack on update
         new_stack = Stack(
-            context.account_id, context.region, request, template, request["TemplateBody"]
+            context.account_id,
+            context.region,
+            request,
+            template,
+            template_body,
         )
         new_stack.set_resolved_parameters(resolved_parameters)
         stack.set_resolved_parameters(resolved_parameters)
@@ -539,8 +532,8 @@ class CloudformationProvider(CloudformationApi):
                 return stack_not_found_error(stack_name)
             template = stack.template
         else:
-            api_utils.prepare_template_body(request)
-            template = template_preparer.parse_template(request["TemplateBody"])
+            template_body = api_utils.extract_template_body(request)
+            template = template_preparer.parse_template(template_body)
             request["StackName"] = "tmp-stack"
             stack = Stack(context.account_id, context.region, request, template)
 
@@ -587,39 +580,22 @@ class CloudformationProvider(CloudformationApi):
     ) -> CreateChangeSetOutput:
         state = get_cloudformation_store(context.account_id, context.region)
 
-        req_params = request
-        change_set_type = req_params.get("ChangeSetType", "UPDATE")
-        stack_name = req_params.get("StackName")
-        change_set_name = req_params.get("ChangeSetName")
-        template_body = req_params.get("TemplateBody")
-        # s3 or secretsmanager url
-        template_url = req_params.get("TemplateURL")
+        change_set_type = request.get("ChangeSetType", "UPDATE")
+        stack_name = request.get("StackName")
+        change_set_name = request.get("ChangeSetName")
 
-        # validate and resolve template
-        if template_body and template_url:
+        # fetch template
+        template_body = api_utils.extract_template_body(request)
+        if len(template_body) > 51200:
             raise ValidationError(
-                "Specify exactly one of 'TemplateBody' or 'TemplateUrl'"
-            )  # TODO: check proper message
-
-        if not template_body and not template_url:
-            raise ValidationError(
-                "Specify exactly one of 'TemplateBody' or 'TemplateUrl'"
-            )  # TODO: check proper message
-
-        api_utils.prepare_template_body(
-            req_params
-        )  # TODO: function has too many unclear responsibilities
-        if not template_body:
-            template_body = req_params[
-                "TemplateBody"
-            ]  # should then have been set by prepare_template_body
-        template = template_preparer.parse_template(req_params["TemplateBody"])
-
-        del req_params["TemplateBody"]  # TODO: stop mutating req_params
-        template["StackName"] = stack_name
-        # TODO: validate with AWS what this is actually doing?
-        template["ChangeSetName"] = change_set_name
-
+                f"1 validation error detected: Value '{request['TemplateBody']}' at 'templateBody' "
+                "failed to satisfy constraint: Member must have length less than or equal to 51200"
+            )
+        # parse template
+        template = template_preparer.parse_template(template_body)
+        # validate CFn schema
+        # TODO
+        # INTERNAL: fetch previous stack if present
         # this is intentionally not in a util yet. Let's first see how the different operations deal with these before generalizing
         # handle ARN stack_name here (not valid for initial CREATE, since stack doesn't exist yet)
         if ARN_STACK_REGEX.match(stack_name):
@@ -638,11 +614,11 @@ class CloudformationProvider(CloudformationApi):
             if not active_stack_candidates and change_set_type == ChangeSetType.CREATE:
                 empty_stack_template = dict(template)
                 empty_stack_template["Resources"] = {}
-                req_params_copy = clone_stack_params(req_params)
+                request_copy = clone_stack_params(request)
                 stack = Stack(
                     context.account_id,
                     context.region,
-                    req_params_copy,
+                    request_copy,
                     empty_stack_template,
                     template_body=template_body,
                 )
@@ -654,6 +630,7 @@ class CloudformationProvider(CloudformationApi):
                 stack = active_stack_candidates[0]
 
         # TODO: test if rollback status is allowed as well
+        # TODO: merge this with stack finding above
         if (
             change_set_type == ChangeSetType.CREATE
             and stack.status != StackStatus.REVIEW_IN_PROGRESS
@@ -662,6 +639,8 @@ class CloudformationProvider(CloudformationApi):
                 f"Stack [{stack_name}] already exists and cannot be created again with the changeSet [{change_set_name}]."
             )
 
+        # resolve SSM parameters
+        # resolve supplied parameters
         old_parameters: dict[str, Parameter] = {}
         match change_set_type:
             case ChangeSetType.UPDATE:
@@ -681,7 +660,7 @@ class CloudformationProvider(CloudformationApi):
                 )
                 raise ValidationError(msg)
 
-        # resolve parameters
+        # resolve supplied parameter overrides
         new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(
             request.get("Parameters")
         )
@@ -694,12 +673,26 @@ class CloudformationProvider(CloudformationApi):
             old_parameters=old_parameters,
         )
 
-        # TODO: remove this when fixing Stack.resources and transformation order
-        #   currently we need to create a stack with existing resources + parameters so that resolve refs recursively in here will work.
-        #   The correct way to do it would be at a later stage anyway just like a normal intrinsic function
-        req_params_copy = clone_stack_params(req_params)
-        temp_stack = Stack(context.account_id, context.region, req_params_copy, template)
-        temp_stack.set_resolved_parameters(resolved_parameters)
+        # resolve conditions
+        # TODO: on AWS this step is between resolving SSM parameters and resolving template
+        #  parameters, however the code above does both in one function so until we split this apart
+        #  we shall break with parity
+        raw_conditions = template.get("Conditions", {})
+        mappings = template.get("Mappings", {})
+        resolved_stack_conditions = resolve_stack_conditions(
+            account_id=context.account_id,
+            region_name=context.region,
+            conditions=raw_conditions,
+            parameters=resolved_parameters,
+            mappings=mappings,
+            stack_name=stack_name,
+        )
+
+        # perform mapping lookups
+        # TODO
+
+        # check for circular references
+        # TODO
 
         # TODO: everything below should be async
         # apply template transformations
@@ -707,36 +700,21 @@ class CloudformationProvider(CloudformationApi):
             context.account_id,
             context.region,
             template,
-            stack_name=temp_stack.stack_name,
-            resources=temp_stack.resources,
-            mappings=temp_stack.mappings,
+            stack_name=request["StackName"],
+            resources=template["Resources"],
+            mappings=mappings,
             conditions={},  # TODO: we don't have any resolved conditions yet at this point but we need the conditions because of the samtranslator...
             resolved_parameters=resolved_parameters,
         )
 
-        # perform basic static analysis on the template
-        for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
-            validation_fn(template)
-
         # create change set for the stack and apply changes
         change_set = StackChangeSet(
-            context.account_id, context.region, stack, req_params, transformed_template
+            context.account_id, context.region, stack, request, transformed_template
         )
         # only set parameters for the changeset, then switch to stack on execute_change_set
         change_set.set_resolved_parameters(resolved_parameters)
-        change_set.template_body = template_body
-
-        # TODO: evaluate conditions
-        raw_conditions = transformed_template.get("Conditions", {})
-        resolved_stack_conditions = resolve_stack_conditions(
-            account_id=context.account_id,
-            region_name=context.region,
-            conditions=raw_conditions,
-            parameters=resolved_parameters,
-            mappings=temp_stack.mappings,
-            stack_name=stack_name,
-        )
         change_set.set_resolved_stack_conditions(resolved_stack_conditions)
+        change_set.template_body = template_body
 
         # a bit gross but use the template ordering to validate missing resources
         try:
@@ -1020,8 +998,8 @@ class CloudformationProvider(CloudformationApi):
     ) -> ValidateTemplateOutput:
         try:
             # TODO implement actual validation logic
-            template_body = api_utils.get_template_body(request)
-            valid_template = json.loads(template_preparer.template_to_json(template_body))
+            template_body = api_utils.extract_template_body(request)
+            valid_template = template_preparer.parse_template(template_body)
 
             parameters = [
                 TemplateParameter(
