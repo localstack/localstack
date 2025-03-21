@@ -3,10 +3,11 @@ from __future__ import annotations
 import abc
 import enum
 from itertools import zip_longest
-from typing import Any, Final, Generator, Optional, Union
+from typing import Any, Final, Generator, Optional, Union, cast
 
 from typing_extensions import TypeVar
 
+from localstack.aws.api.cloudformation import ChangeAction
 from localstack.utils.strings import camel_to_snake_case
 
 T = TypeVar("T")
@@ -42,6 +43,15 @@ class ChangeType(enum.Enum):
 
     def __str__(self):
         return self.value
+
+    def to_action(self) -> ChangeAction | None:
+        match self:
+            case self.CREATED:
+                return ChangeAction.Add
+            case self.MODIFIED:
+                return ChangeAction.Modify
+            case self.REMOVED:
+                return ChangeAction.Remove
 
 
 class ChangeSetEntity(abc.ABC):
@@ -112,6 +122,12 @@ class NodeResource(ChangeSetNode):
         self.type_ = type_
         self.properties = properties
 
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "Type": cast(TerminalValue, self.type_).value,
+            "Properties": self.properties.as_dict(),
+        }
+
 
 class NodeProperties(ChangeSetNode):
     properties: Final[list[NodeProperty]]
@@ -119,6 +135,9 @@ class NodeProperties(ChangeSetNode):
     def __init__(self, change_type: ChangeType, properties: list[NodeProperty]):
         super().__init__(change_type=change_type)
         self.properties = properties
+
+    def as_dict(self) -> dict[str, Any]:
+        return {prop.name: cast(TerminalValue, prop.value).value for prop in self.properties}
 
 
 class NodeProperty(ChangeSetNode):
@@ -411,7 +430,7 @@ class ChangeSetModel:
             change_type = ChangeType.UNCHANGED
 
         # TODO: investigate behaviour with type changes, for now this is filler code.
-        type_str = self._sample_from(TypeKey, before_resource)
+        type_str = self._sample_from(TypeKey, after_resource)
 
         before_properties, after_properties = self._sample_from(
             PropertiesKey, before_resource, after_resource
