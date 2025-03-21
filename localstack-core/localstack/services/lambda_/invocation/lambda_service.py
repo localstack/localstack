@@ -279,7 +279,6 @@ class LambdaService:
         except ValueError as e:
             version = function.versions.get(version_qualifier)
             state = version and version.config.state.state
-            # TODO: make such developer hints optional or remove after initial v2 transition period
             if state == State.Failed:
                 HINT_LOG.error(
                     f"Failed to create the runtime executor for the function {function_name}. "
