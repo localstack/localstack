@@ -1,0 +1,108 @@
+service: APIGateway
+name: "AWS API Gateway"
+features:
+  - name: "REST APIs"
+    description: "Create, deploy, and manage REST APIs"
+    documentation_page: https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-rest-api.html
+    status: "supported"
+    api_methods:
+      - create_rest_api
+      - get_rest_api
+      - delete_rest_api
+      - update_rest_api
+      - get_rest_apis
+    limitations:
+      - "Advanced integration types might have limited functionality"
+
+  - name: "API Resources and Methods"
+    description: "Manage API resources, methods, and their configurations"
+    documentation_page: https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-create-api.html
+    status: "supported"
+    emulation_level: emulated
+    api_methods:
+      - create_resource
+      - get_resource
+      - get_resources
+      - delete_resource
+      - put_method
+      - delete_method
+      - update_method
+    limitations:
+      - "Method response mappings have limited support"
+
+  - name: "Custom Domain Names"
+    description: "Configure custom domain names for APIs"
+    documentation_page: https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-custom-domains.html
+    status: "supported"
+    api_methods:
+      - create_domain_name
+      - get_domain_name
+      - get_domain_names
+      - delete_domain_name
+      - create_base_path_mapping
+    emulation_level: CRUD
+
+  - name: "API Deployments and Stages"
+    description: "Deploy APIs and manage different stages of the API"
+    documentation_page: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-stages.html
+    status: "supported"
+    emulation_level: CRUD
+    api_methods:
+      - create_deployment
+      - get_deployment
+      - get_deployments
+      - delete_deployment
+      - create_stage
+      - get_stage
+      - delete_stage
+      - update_stage
+
+  - name: "API Keys and Usage Plans"
+    description: "Manage API keys and usage plans for API access control"
+    documentation_page: https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-api-usage-plans.html
+    status: "supported"
+    emulation_level: CRUD
+    api_methods:
+      - create_api_key
+      - get_api_key
+      - get_api_keys
+      - delete_api_key
+      - create_usage_plan
+      - get_usage_plan
+      - delete_usage_plan
+      - create_usage_plan_key
+
+  - name: "Request/Response Transformations"
+    description: "Transform request and response payloads using mapping templates"
+    documentation_page: https://docs.aws.amazon.com/apigateway/latest/developerguide/rest-api-data-transformations.html
+    status: "supported"
+    emulation_level: emulated
+    api_methods:
+      - put_integration
+      - update_integration
+      - put_integration_response
+      - put_method_response
+    limitations:
+      - "Complex transformations might have limited support"
+
+  - name: "API Documentation"
+    description: "Create and manage API documentation"
+    documentation_page: https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-documenting-api.html
+    status: "supported"
+    emulation_level: CRUD
+    api_methods:
+      - create_documentation_part
+      - get_documentation_parts
+      - update_documentation_part
+      - delete_documentation_part
+      - create_documentation_version
+
+  - name: "Resource Tagging"
+    description: "Manage tags for API Gateway resources"
+    documentation_page: https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-tagging.html
+    status: "supported"
+    emulation_level: CRUD
+    api_methods:
+      - tag_resource
+      - untag_resource
+      - get_tags
