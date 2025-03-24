@@ -161,6 +161,8 @@ class CloudWatchRegion(StrEnum):
     ca_west_1 = "ca-west-1"
     ap_southeast_5 = "ap-southeast-5"
     mx_central_1 = "mx-central-1"
+    us_isof_south_1 = "us-isof-south-1"
+    us_isof_east_1 = "us-isof-east-1"
     ap_southeast_7 = "ap-southeast-7"
 
 
@@ -333,6 +335,8 @@ class VPCRegion(StrEnum):
     ca_west_1 = "ca-west-1"
     ap_southeast_5 = "ap-southeast-5"
     mx_central_1 = "mx-central-1"
+    us_isof_south_1 = "us-isof-south-1"
+    us_isof_east_1 = "us-isof-east-1"
     ap_southeast_7 = "ap-southeast-7"
 
 
