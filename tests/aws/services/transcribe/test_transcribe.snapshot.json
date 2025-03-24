@@ -495,5 +495,403 @@
         }
       }
     }
+  },
+  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_speaker_diarization": {
+    "recorded-date": "20-03-2025, 04:44:53",
+    "recorded-content": {
+      "transcribe_speaker_diarization": {
+        "accountId": "111111111111",
+        "jobName": "<job-name:1>",
+        "results": {
+          "audio_segments": [
+            {
+              "end_time": "2.19",
+              "id": 0,
+              "items": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+              ],
+              "speaker_label": "spk_0",
+              "start_time": "0.0",
+              "transcript": "Hey, I am using LocalStack."
+            },
+            {
+              "end_time": "5.86",
+              "id": 1,
+              "items": [
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                17,
+                18
+              ],
+              "speaker_label": "spk_1",
+              "start_time": "2.559",
+              "transcript": "Yeah, it's a great tool to emulate the cloud services."
+            }
+          ],
+          "items": [
+            {
+              "alternatives": [
+                {
+                  "confidence": "0.998",
+                  "content": "Hey"
+                }
+              ],
+              "end_time": "0.389",
+              "id": 0,
+              "speaker_label": "spk_0",
+              "start_time": "0.119",
+              "type": "pronunciation"
+            },
+            {
+              "alternatives": [
+                {
+                  "confidence": "0.0",
+                  "content": ","
+                }
+              ],
+              "id": 1,
+              "speaker_label": "spk_0",
+              "type": "punctuation"
+            },
+            {
+              "alternatives": [
+                {
+                  "confidence": "0.999",
+                  "content": "I"
+                }
+              ],
+              "end_time": "0.68",
+              "id": 2,
+              "speaker_label": "spk_0",
+              "start_time": "0.479",
+              "type": "pronunciation"
+            },
+            {
+              "alternatives": [
+                {
+                  "confidence": "0.997",
+                  "content": "am"
+                }
+              ],
+              "end_time": "0.879",
+              "id": 3,
+              "speaker_label": "spk_0",
+              "start_time": "0.68",
+              "type": "pronunciation"
+            },
+            {
+              "alternatives": [
+                {
+                  "confidence": "0.999",
+                  "content": "using"
+                }
+              ],
+              "end_time": "1.279",
+              "id": 4,
+              "speaker_label": "spk_0",
+              "start_time": "0.879",
+              "type": "pronunciation"
+            },
+            {
+              "alternatives": [
+                {
+                  "confidence": "0.438",
+                  "content": "LocalStack"
+                }
+              ],
+              "end_time": "2.19",
+              "id": 5,
+              "speaker_label": "spk_0",
+              "start_time": "1.279",
+              "type": "pronunciation"
+            },
+            {
+              "alternatives": [
+                {
+                  "confidence": "0.0",
+                  "content": "."
+                }
+              ],
+              "id": 6,
+              "speaker_label": "spk_0",
+              "type": "punctuation"
+            },
+            {
+              "alternatives": [
+                {
+                  "confidence": "0.997",
+                  "content": "Yeah"
+                }
+              ],
+              "end_time": "2.759",
+              "id": 7,
+              "speaker_label": "spk_1",
+              "start_time": "2.559",
+              "type": "pronunciation"
+            },
+            {
+              "alternatives": [
+                {
+                  "confidence": "0.0",
+                  "content": ","
+                }
+              ],
+              "id": 8,
+              "speaker_label": "spk_1",
+              "type": "punctuation"
+            },
+            {
+              "alternatives": [
+                {
+                  "confidence": "0.993",
+                  "content": "it's"
+                }
+              ],
+              "end_time": "3.079",
+              "id": 9,
+              "speaker_label": "spk_1",
+              "start_time": "2.92",
+              "type": "pronunciation"
+            },
+            {
+              "alternatives": [
+                {
+                  "confidence": "0.999",
+                  "content": "a"
+                }
+              ],
+              "end_time": "3.279",
+              "id": 10,
+              "speaker_label": "spk_1",
+              "start_time": "3.079",
+              "type": "pronunciation"
+            },
+            {
+              "alternatives": [
+                {
+                  "confidence": "0.999",
+                  "content": "great"
+                }
+              ],
+              "end_time": "3.64",
+              "id": 11,
+              "speaker_label": "spk_1",
+              "start_time": "3.279",
+              "type": "pronunciation"
+            },
+            {
+              "alternatives": [
+                {
+                  "confidence": "0.998",
+                  "content": "tool"
+                }
+              ],
+              "end_time": "3.92",
+              "id": 12,
+              "speaker_label": "spk_1",
+              "start_time": "3.64",
+              "type": "pronunciation"
+            },
+            {
+              "alternatives": [
+                {
+                  "confidence": "0.999",
+                  "content": "to"
+                }
+              ],
+              "end_time": "4.079",
+              "id": 13,
+              "speaker_label": "spk_1",
+              "start_time": "3.92",
+              "type": "pronunciation"
+            },
+            {
+              "alternatives": [
+                {
+                  "confidence": "0.999",
+                  "content": "emulate"
+                }
+              ],
+              "end_time": "4.559",
+              "id": 14,
+              "speaker_label": "spk_1",
+              "start_time": "4.079",
+              "type": "pronunciation"
+            },
+            {
+              "alternatives": [
+                {
+                  "confidence": "0.998",
+                  "content": "the"
+                }
+              ],
+              "end_time": "4.679",
+              "id": 15,
+              "speaker_label": "spk_1",
+              "start_time": "4.559",
+              "type": "pronunciation"
+            },
+            {
+              "alternatives": [
+                {
+                  "confidence": "0.994",
+                  "content": "cloud"
+                }
+              ],
+              "end_time": "5.159",
+              "id": 16,
+              "speaker_label": "spk_1",
+              "start_time": "4.679",
+              "type": "pronunciation"
+            },
+            {
+              "alternatives": [
+                {
+                  "confidence": "0.998",
+                  "content": "services"
+                }
+              ],
+              "end_time": "5.76",
+              "id": 17,
+              "speaker_label": "spk_1",
+              "start_time": "5.159",
+              "type": "pronunciation"
+            },
+            {
+              "alternatives": [
+                {
+                  "confidence": "0.0",
+                  "content": "."
+                }
+              ],
+              "id": 18,
+              "speaker_label": "spk_1",
+              "type": "punctuation"
+            }
+          ],
+          "speaker_labels": {
+            "channel_label": "ch_0",
+            "segments": [
+              {
+                "end_time": "2.19",
+                "items": [
+                  {
+                    "end_time": "0.389",
+                    "speaker_label": "spk_0",
+                    "start_time": "0.119"
+                  },
+                  {
+                    "end_time": "0.68",
+                    "speaker_label": "spk_0",
+                    "start_time": "0.479"
+                  },
+                  {
+                    "end_time": "0.879",
+                    "speaker_label": "spk_0",
+                    "start_time": "0.68"
+                  },
+                  {
+                    "end_time": "1.279",
+                    "speaker_label": "spk_0",
+                    "start_time": "0.879"
+                  },
+                  {
+                    "end_time": "2.19",
+                    "speaker_label": "spk_0",
+                    "start_time": "1.279"
+                  }
+                ],
+                "speaker_label": "spk_0",
+                "start_time": "0.0"
+              },
+              {
+                "end_time": "5.86",
+                "items": [
+                  {
+                    "end_time": "2.759",
+                    "speaker_label": "spk_1",
+                    "start_time": "2.559"
+                  },
+                  {
+                    "end_time": "3.079",
+                    "speaker_label": "spk_1",
+                    "start_time": "2.92"
+                  },
+                  {
+                    "end_time": "3.279",
+                    "speaker_label": "spk_1",
+                    "start_time": "3.079"
+                  },
+                  {
+                    "end_time": "3.64",
+                    "speaker_label": "spk_1",
+                    "start_time": "3.279"
+                  },
+                  {
+                    "end_time": "3.92",
+                    "speaker_label": "spk_1",
+                    "start_time": "3.64"
+                  },
+                  {
+                    "end_time": "4.079",
+                    "speaker_label": "spk_1",
+                    "start_time": "3.92"
+                  },
+                  {
+                    "end_time": "4.559",
+                    "speaker_label": "spk_1",
+                    "start_time": "4.079"
+                  },
+                  {
+                    "end_time": "4.679",
+                    "speaker_label": "spk_1",
+                    "start_time": "4.559"
+                  },
+                  {
+                    "end_time": "5.159",
+                    "speaker_label": "spk_1",
+                    "start_time": "4.679"
+                  },
+                  {
+                    "end_time": "5.76",
+                    "speaker_label": "spk_1",
+                    "start_time": "5.159"
+                  }
+                ],
+                "speaker_label": "spk_1",
+                "start_time": "2.559"
+              }
+            ],
+            "speakers": 2
+          },
+          "transcripts": [
+            {
+              "transcript": "Hey, I am using LocalStack. Yeah, it's a great tool to emulate the cloud services."
+            }
+          ]
+        },
+        "status": "COMPLETED"
+      }
+    }
+  },
+  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_error_speaker_labels": {
+    "recorded-date": "19-03-2025, 15:42:09",
+    "recorded-content": {
+      "err_speaker_labels_diarization": "Parameter validation failed:\nInvalid value for parameter Settings.MaxSpeakerLabels, value: 1, valid min value: 2"
+    }
   }
 }

@@ -91,7 +91,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_notifications_lambda.py::TestS3NotificationsToLambda::test_create_object_by_presigned_request_via_dynamodb": {
-    "recorded-date": "21-01-2025, 23:32:08",
+    "recorded-date": "17-03-2025, 20:19:48",
     "recorded-content": {
       "items": [
         {

@@ -3583,7 +3583,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_none_match": {
-    "recorded-date": "21-01-2025, 18:12:09",
+    "recorded-date": "17-03-2025, 20:15:37",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "AAAAAA==",
@@ -3625,7 +3625,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_none_match_validation": {
-    "recorded-date": "21-01-2025, 18:12:11",
+    "recorded-date": "17-03-2025, 20:15:39",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "AAAAAA==",
@@ -3652,7 +3652,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_none_match_versioned_bucket": {
-    "recorded-date": "21-01-2025, 18:12:18",
+    "recorded-date": "17-03-2025, 20:15:48",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "AAAAAA==",
@@ -3759,7 +3759,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_none_match_with_delete": {
-    "recorded-date": "21-01-2025, 18:12:14",
+    "recorded-date": "17-03-2025, 20:15:42",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "AAAAAA==",
@@ -3812,6 +3812,8 @@
       },
       "complete-multipart-after-del-restart": {
         "Bucket": "<bucket:1>",
+        "ChecksumCRC64NVME": "+bu+zv66sUM=",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"60cd54a928cbbcbb6e7b5595bab46a9e-1\"",
         "Key": "test-precondition",
         "Location": "<location:1>",
@@ -3824,7 +3826,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_none_match_with_put": {
-    "recorded-date": "21-01-2025, 18:12:16",
+    "recorded-date": "17-03-2025, 20:15:45",
     "recorded-content": {
       "create-multipart": {
         "Bucket": "<bucket:1>",
@@ -3876,7 +3878,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_match": {
-    "recorded-date": "21-01-2025, 18:12:20",
+    "recorded-date": "17-03-2025, 20:15:51",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "2H9+DA==",
@@ -3939,7 +3941,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_match_validation": {
-    "recorded-date": "21-01-2025, 18:12:22",
+    "recorded-date": "17-03-2025, 20:15:53",
     "recorded-content": {
       "put-obj-if-match-star-value": {
         "Error": {
@@ -3978,7 +3980,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_match_with_put": {
-    "recorded-date": "21-01-2025, 18:12:25",
+    "recorded-date": "17-03-2025, 20:15:56",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "2H9+DA==",
@@ -4045,6 +4047,8 @@
       },
       "complete-multipart-if-match-put-before-restart": {
         "Bucket": "<bucket:1>",
+        "ChecksumCRC64NVME": "+bu+zv66sUM=",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"60cd54a928cbbcbb6e7b5595bab46a9e-1\"",
         "Key": "test-precondition",
         "Location": "<location:1>",
@@ -4057,7 +4061,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_match_with_put_identical": {
-    "recorded-date": "21-01-2025, 18:12:28",
+    "recorded-date": "17-03-2025, 20:15:59",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "2H9+DA==",
@@ -4113,6 +4117,8 @@
       },
       "complete-multipart-if-match-put-before-restart": {
         "Bucket": "<bucket:1>",
+        "ChecksumCRC64NVME": "+bu+zv66sUM=",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"60cd54a928cbbcbb6e7b5595bab46a9e-1\"",
         "Key": "test-precondition",
         "Location": "<location:1>",
@@ -4125,7 +4131,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_match_with_delete": {
-    "recorded-date": "21-01-2025, 18:12:31",
+    "recorded-date": "17-03-2025, 20:16:02",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "2H9+DA==",
@@ -4189,7 +4195,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_match_versioned_bucket": {
-    "recorded-date": "21-01-2025, 18:12:34",
+    "recorded-date": "17-03-2025, 20:16:06",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "2H9+DA==",
@@ -4335,7 +4341,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_match_and_if_none_match_validation": {
-    "recorded-date": "21-01-2025, 18:12:36",
+    "recorded-date": "17-03-2025, 20:16:07",
     "recorded-content": {
       "put-obj-both-precondition": {
         "Error": {
@@ -4352,7 +4358,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_match_etag": {
-    "recorded-date": "21-01-2025, 18:12:39",
+    "recorded-date": "17-03-2025, 20:16:10",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "2H9+DA==",
@@ -4376,6 +4382,8 @@
       },
       "complete-multipart-if-match": {
         "Bucket": "<bucket:1>",
+        "ChecksumCRC64NVME": "+bu+zv66sUM=",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"60cd54a928cbbcbb6e7b5595bab46a9e-1\"",
         "Key": "test-precondition",
         "Location": "<location:1>",
@@ -4408,6 +4416,8 @@
       },
       "complete-multipart-if-match-overwrite-multipart": {
         "Bucket": "<bucket:1>",
+        "ChecksumCRC64NVME": "+bu+zv66sUM=",
+        "ChecksumType": "FULL_OBJECT",
         "ETag": "\"60cd54a928cbbcbb6e7b5595bab46a9e-1\"",
         "Key": "test-precondition",
         "Location": "<location:1>",

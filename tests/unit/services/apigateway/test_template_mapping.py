@@ -234,53 +234,26 @@ class TestApiGatewayVtlTemplate:
             "status": 400,
         }
 
-    # TODO The test below are making failing assumption if the returned value isn't of valid type
-    #  for the `Accept`. But AWS doesn't seem to be raising any error.
-    #  Once properly confirmed, we should delete
-    # def test_error_when_render_invalid_json(self):
-    #     api_context = ApiInvocationContext(
-    #         method="POST",
-    #         path="/foo/bar?baz=test",
-    #         data=b"<root></root>",
-    #         headers={},
-    #     )
-    #     api_context.integration = {
-    #         "integrationResponses": {
-    #             "200": {"responseTemplates": {APPLICATION_JSON: RESPONSE_TEMPLATE_WRONG_JSON}}
-    #         },
-    #     }
-    #     api_context.response = requests_response({"spam": "eggs"})
-    #     api_context.context = {}
-    #     api_context.stage_variables = {}
-    #
-    #     template = ResponseTemplates()
-    #     with pytest.raises(JSONDecodeError):
-    #         template.render(api_context=api_context)
-    #
+    def test_input_empty_body(self):
+        variables = MappingTemplateVariables(input=MappingTemplateInput(body=""))
 
+        template = "$input.body"
+        rendered_request = ApiGatewayVtlTemplate().render_vtl(
+            template=template, variables=variables
+        )
 
-#
-#     def test_error_when_render_invalid_xml(self):
-#         api_context = ApiInvocationContext(
-#             method="POST",
-#             path="/foo/bar?baz=test",
-#             data=b"<root></root>",
-#             headers={"content-type": APPLICATION_XML, "accept": APPLICATION_XML},
-#             stage="local",
-#         )
-#         api_context.integration = {
-#             "integrationResponses": {
-#                 "200": {"responseTemplates": {APPLICATION_XML: RESPONSE_TEMPLATE_WRONG_XML}}
-#             },
-#         }
-#         api_context.resource_path = "/{proxy+}"
-#         api_context.response = requests_response({"spam": "eggs"})
-#         api_context.context = {}
-#         api_context.stage_variables = {}
-#
-#         template = ResponseTemplates()
-#         with pytest.raises(xml.parsers.expat.ExpatError):
-#             template.render(api_context=api_context, template_key=APPLICATION_XML)
+        assert rendered_request == "{}"
+
+    def test_input_url_encode_empty_body(self):
+        variables = MappingTemplateVariables(input=MappingTemplateInput(body=""))
+
+        template = "$util.urlEncode($input.body)"
+        rendered_request = ApiGatewayVtlTemplate().render_vtl(
+            template=template, variables=variables
+        )
+
+        assert rendered_request == "%7B%7D"
+
 
 TEMPLATE_JSON = """
 

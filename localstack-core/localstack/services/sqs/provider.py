@@ -80,8 +80,12 @@ from localstack.services.sqs import constants as sqs_constants
 from localstack.services.sqs.constants import (
     HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT,
     HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS,
+    MAX_RESULT_LIMIT,
 )
-from localstack.services.sqs.exceptions import InvalidParameterValueException
+from localstack.services.sqs.exceptions import (
+    InvalidParameterValueException,
+    MissingRequiredParameterException,
+)
 from localstack.services.sqs.models import (
     FifoQueue,
     MessageMoveTask,
@@ -98,6 +102,7 @@ from localstack.services.sqs.utils import (
     is_fifo_queue,
     is_message_deduplication_id_required,
     parse_queue_url,
+    token_generator,
 )
 from localstack.services.stores import AccountRegionBundle
 from localstack.utils.aws.arns import parse_arn
@@ -108,6 +113,7 @@ from localstack.utils.cloudwatch.cloudwatch_util import (
     publish_sqs_metric,
     publish_sqs_metric_batch,
 )
+from localstack.utils.collections import PaginatedList
 from localstack.utils.run import FuncThread
 from localstack.utils.scheduler import Scheduler
 from localstack.utils.strings import md5
@@ -144,13 +150,19 @@ def assert_queue_name(queue_name: str, fifo: bool = False):
         )
 
 
-def check_message_size(
+def check_message_min_size(message_body: str):
+    if _message_body_size(message_body) == 0:
+        raise MissingRequiredParameterException(
+            "The request must contain the parameter MessageBody."
+        )
+
+
+def check_message_max_size(
     message_body: str, message_attributes: MessageBodyAttributeMap, max_message_size: int
 ):
     # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html
     error = "One or more parameters are invalid. "
     error += f"Reason: Message must be shorter than {max_message_size} bytes."
-
     if (
         _message_body_size(message_body) + _message_attributes_size(message_attributes)
         > max_message_size
@@ -985,17 +997,17 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         else:
             urls = [queue.url(context) for queue in store.queues.values()]
 
-        if max_results:
-            # FIXME: also need to solve pagination with stateful iterators: If the total number of items available is
-            #  more than the value specified, a NextToken is provided in the command's output. To resume pagination,
-            #  provide the NextToken value in the starting-token argument of a subsequent command. Do not use the
-            #  NextToken response element directly outside of the AWS CLI.
-            urls = urls[:max_results]
+        paginated_list = PaginatedList(urls)
+
+        page_size = max_results if max_results else MAX_RESULT_LIMIT
+        paginated_urls, next_token = paginated_list.get_page(
+            token_generator=token_generator, next_token=next_token, page_size=page_size
+        )
 
         if len(urls) == 0:
             return ListQueuesResult()
 
-        return ListQueuesResult(QueueUrls=urls)
+        return ListQueuesResult(QueueUrls=paginated_urls, NextToken=next_token)
 
     def change_message_visibility(
         self,
@@ -1199,7 +1211,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         message_deduplication_id: String = None,
         message_group_id: String = None,
     ) -> SqsMessage:
-        check_message_size(message_body, message_attributes, queue.maximum_message_size)
+        check_message_min_size(message_body)
+        check_message_max_size(message_body, message_attributes, queue.maximum_message_size)
         check_message_content(message_body)
         check_attributes(message_attributes)
         check_attributes(message_system_attributes)

@@ -134,6 +134,12 @@ def short_uid() -> str:
     return str(uuid.uuid4())[0:8]
 
 
+def short_uid_from_seed(seed: str) -> str:
+    hash = hashlib.sha1(seed.encode("utf-8")).hexdigest()
+    truncated_hash = hash[:32]
+    return str(uuid.UUID(truncated_hash))[0:8]
+
+
 def long_uid() -> str:
     return str(uuid.uuid4())
 

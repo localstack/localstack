@@ -1,4 +1,5 @@
 import json
+import textwrap
 import time
 from operator import itemgetter
 
@@ -876,6 +877,146 @@ class TestApiGatewayCommon:
 
         response = requests.post(to_string, json={"list": [{"foo": "bar"}]})
         snapshot.match("list-to-string", response.text)
+
+    @markers.aws.validated
+    def test_input_body_formatting(
+        self, aws_client, create_lambda_function, create_rest_apigw, snapshot
+    ):
+        api_id, _, root_id = create_rest_apigw()
+
+        # create a special lambda URL returning exactly what it got as a body
+        handler_code = handler_code = textwrap.dedent("""
+        def handler(event, context):
+            return event.get("body", "")
+        """)
+        func_name = f"echo-http-{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=handler_code,
+            runtime=Runtime.python3_12,
+        )
+        url_response = aws_client.lambda_.create_function_url_config(
+            FunctionName=func_name, AuthType="NONE"
+        )
+        aws_client.lambda_.add_permission(
+            FunctionName=func_name,
+            StatementId="urlPermission",
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            FunctionUrlAuthType="NONE",
+        )
+        echo_endpoint_url = url_response["FunctionUrl"]
+
+        def _create_route(path: str, request_template: str, response_template: str):
+            resource_id = aws_client.apigateway.create_resource(
+                restApiId=api_id, parentId=root_id, pathPart=path
+            )["id"]
+            aws_client.apigateway.put_method(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod="POST",
+                authorizationType="NONE",
+                apiKeyRequired=False,
+            )
+
+            aws_client.apigateway.put_method_response(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod="POST",
+                statusCode="200",
+            )
+
+            aws_client.apigateway.put_integration(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod="POST",
+                integrationHttpMethod="POST",
+                type="HTTP",
+                uri=echo_endpoint_url,
+                requestTemplates={"application/json": request_template},
+            )
+
+            aws_client.apigateway.put_integration_response(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod="POST",
+                statusCode="200",
+                selectionPattern="",
+                responseTemplates={"application/json": response_template},
+            )
+
+        raw_body = "#set($result = $input.body)$result"
+        body_in_str = "Action=SendMessage&MessageBody=$input.body"
+        input_body_attr_access = "#set($result = $input.body.testAccess)$result"
+        url_encode_body = "EncodedBody=$util.urlEncode($input.body)&EncodedBodyAccess=$util.urlEncode($input.body.testAccess)"
+        _create_route(
+            "raw-body",
+            request_template=raw_body,
+            response_template=raw_body,
+        )
+        _create_route(
+            "str-body-input",
+            request_template=body_in_str,
+            response_template=raw_body,
+        )
+        _create_route(
+            "str-body-output",
+            request_template=raw_body,
+            response_template=body_in_str,
+        )
+        _create_route(
+            "str-body-all",
+            request_template=body_in_str,
+            response_template=body_in_str,
+        )
+        _create_route(
+            "body-attr-access",
+            request_template=input_body_attr_access,
+            response_template=raw_body,
+        )
+        _create_route(
+            "url-encode",
+            request_template=url_encode_body,
+            response_template=raw_body,
+        )
+
+        stage_name = "dev"
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+        url = api_invoke_url(api_id=api_id, stage=stage_name, path="/")
+
+        route_types = [
+            "raw-body",
+            "str-body-input",
+            "str-body-output",
+            "str-body-all",
+            "body-attr-access",
+            "url-encode",
+        ]
+        for route_type in route_types:
+            route_url = url + route_type
+            # we are using `response.content` on purpose in snapshot to have text response prefixed with `b''` to avoid
+            # auto decoding of the possible JSON responses
+            # TODO: remove headers parameter, this is due to issue in our Lambda URL parity, it B64 encodes data when
+            #  AWS does not
+
+            empty_body_response = requests.post(
+                route_url, headers={"Content-Type": "application/json"}
+            )
+            json_body_response = requests.post(route_url, json={"some": "value"})
+            str_body_response = requests.post(
+                route_url, data=b"some raw data", headers={"Content-Type": "application/json"}
+            )
+
+            # keep the snapshot in one object to group related tests together
+            snapshot.match(
+                f"response-{route_type}",
+                {
+                    "empty-body": empty_body_response.content,
+                    "json-body": json_body_response.content,
+                    "str-body": str_body_response.content,
+                },
+            )
 
 
 class TestUsagePlans:

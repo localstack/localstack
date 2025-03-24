@@ -540,6 +540,12 @@
             "location": "header",
             "locationName": "x-amz-checksum-crc32c"
           },
+          "ChecksumCRC64NVME":{
+            "shape":"ChecksumCRC64NVME",
+            "documentation":"<p>This header can be used as a data integrity check to verify that the data received is the same data that was originally sent. This header specifies the Base64 encoded, 64-bit <code>CRC64NVME</code> checksum of the object. The <code>CRC64NVME</code> checksum is always a full object checksum. For more information, see <a href=\"https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html\">Checking object integrity in the Amazon S3 User Guide</a>.</p>",
+            "location":"header",
+            "locationName":"x-amz-checksum-crc64nvme"
+          },
           "ChecksumSHA1": {
             "shape": "ChecksumSHA1",
             "documentation": "<p>The base64-encoded, 160-bit SHA-1 digest of the object. This will only be present if it was uploaded with the object. With multipart uploads, this may not be a checksum value of the object. For more information about how checksums are calculated with multipart uploads, see <a href=\"https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums\"> Checking object integrity</a> in the <i>Amazon S3 User Guide</i>.</p>",
@@ -551,6 +557,12 @@
             "documentation": "<p>The base64-encoded, 256-bit SHA-256 digest of the object. This will only be present if it was uploaded with the object. With multipart uploads, this may not be a checksum value of the object. For more information about how checksums are calculated with multipart uploads, see <a href=\"https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums\"> Checking object integrity</a> in the <i>Amazon S3 User Guide</i>.</p>",
             "location": "header",
             "locationName": "x-amz-checksum-sha256"
+          },
+          "ChecksumType":{
+            "shape":"ChecksumType",
+            "documentation":"<p>This header specifies the checksum type of the object, which determines how part-level checksums are combined to create an object-level checksum for multipart objects. You can use this header as a data integrity check to verify that the checksum type that is received is the same checksum that was specified. If the checksum type doesn’t match the checksum type that was specified for the object during the <code>CreateMultipartUpload</code> request, it’ll result in a <code>BadDigest</code> error. For more information, see Checking object integrity in the Amazon S3 User Guide. </p>",
+            "location":"header",
+            "locationName":"x-amz-checksum-type"
           },
           "ServerSideEncryption": {
             "shape": "ServerSideEncryption",

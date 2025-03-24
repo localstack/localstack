@@ -29,9 +29,6 @@ on:
       - '!Dockerfile*'
       - '!LICENSE.txt'
       - '!README.md'
-    branches:
-      - master
-      - release/*
   push:
     paths:
       - '**'
