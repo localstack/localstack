@@ -66,5 +66,48 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_stepfunctions.py::test_statemachine_create_with_logging_configuration": {
+    "recorded-date": "24-03-2025, 21:58:55",
+    "recorded-content": {
+      "describe_state_machine_result": {
+        "creationDate": "datetime",
+        "definition": {
+          "StartAt": "S0",
+          "States": {
+            "S0": {
+              "Type": "Pass",
+              "End": true
+            }
+          }
+        },
+        "encryptionConfiguration": {
+          "type": "AWS_OWNED_KEY"
+        },
+        "loggingConfiguration": {
+          "destinations": [
+            {
+              "cloudWatchLogsLogGroup": {
+                "logGroupArn": "<log-group-arn:1>"
+              }
+            }
+          ],
+          "includeExecutionData": true,
+          "level": "ALL"
+        },
+        "name": "<state-machine-name:1>",
+        "roleArn": "<role-arn:1>",
+        "stateMachineArn": "<state-machine-arn:1>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

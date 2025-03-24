@@ -110,6 +110,9 @@ class StepFunctionsStateMachineProvider(ResourceProvider[StepFunctionsStateMachi
             "roleArn": model.get("RoleArn"),
             "type": model.get("StateMachineType", "STANDARD"),
         }
+        logging_configuration = model.get("LoggingConfiguration")
+        if logging_configuration is not None:
+            params["loggingConfiguration"] = logging_configuration
 
         # get definition
         s3_client = request.aws_client_factory.s3
@@ -221,6 +224,9 @@ class StepFunctionsStateMachineProvider(ResourceProvider[StepFunctionsStateMachi
             "stateMachineArn": model["Arn"],
             "definition": definition_str,
         }
+        logging_configuration = model.get("LoggingConfiguration")
+        if logging_configuration is not None:
+            params["loggingConfiguration"] = logging_configuration
 
         step_function.update_state_machine(**params)
 
