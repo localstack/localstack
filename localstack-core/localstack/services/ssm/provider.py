@@ -107,6 +107,10 @@ class InvalidParameterNameException(ValidationException):
 # TODO: check if _normalize_name(..) calls are still required here
 class SsmProvider(SsmApi, ServiceLifecycleHook):
     def on_after_init(self):
+        self.apply_patches()
+
+    @staticmethod
+    def apply_patches():
         apply_all_patches()
 
     def get_parameters(
