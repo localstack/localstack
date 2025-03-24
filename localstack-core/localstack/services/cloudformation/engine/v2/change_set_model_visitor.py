@@ -3,6 +3,9 @@ import abc
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetEntity,
     NodeArray,
+    NodeCondition,
+    NodeConditions,
+    NodeDivergence,
     NodeIntrinsicFunction,
     NodeObject,
     NodeParameter,
@@ -48,6 +51,12 @@ class ChangeSetModelVisitor(abc.ABC):
     def visit_node_parameter(self, node_parameter: NodeParameter):
         self.visit_children(node_parameter)
 
+    def visit_node_conditions(self, node_conditions: NodeConditions):
+        self.visit_children(node_conditions)
+
+    def visit_node_condition(self, node_condition: NodeCondition):
+        self.visit_children(node_condition)
+
     def visit_node_resources(self, node_resources: NodeResources):
         self.visit_children(node_resources)
 
@@ -74,8 +83,22 @@ class ChangeSetModelVisitor(abc.ABC):
     ):
         self.visit_children(node_intrinsic_function)
 
+    def visit_node_intrinsic_function_fn_equals(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ):
+        self.visit_children(node_intrinsic_function)
+
+    def visit_node_intrinsic_function_fn_if(self, node_intrinsic_function: NodeIntrinsicFunction):
+        self.visit_children(node_intrinsic_function)
+
+    def visit_node_intrinsic_function_fn_not(self, node_intrinsic_function: NodeIntrinsicFunction):
+        self.visit_children(node_intrinsic_function)
+
     def visit_node_intrinsic_function_ref(self, node_intrinsic_function: NodeIntrinsicFunction):
         self.visit_children(node_intrinsic_function)
+
+    def visit_node_divergence(self, node_divergence: NodeDivergence):
+        self.visit_children(node_divergence)
 
     def visit_node_object(self, node_object: NodeObject):
         self.visit_children(node_object)
