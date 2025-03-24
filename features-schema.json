@@ -16,6 +16,11 @@
       "enum": ["CRUD", "emulated"],
       "description": "The level of emulation support on the service level"
     },
+    "localstack_page": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL to the LocalStack user guide documentation"
+    },
     "features": {
       "type": "array",
       "description": "List of features supported by the service",
@@ -36,11 +41,6 @@
             "format": "uri",
             "description": "URL to the AWS feature's documentation"
           },
-          "localstack_page": {
-            "type": "string",
-            "format": "uri",
-            "description": "URL to the LocalStack feature's documentation"
-          },
           "status": {
             "type": "string",
             "enum": ["supported", "unsupported"],
@@ -52,6 +52,13 @@
               "type": "string"
             },
             "description": "List of API methods associated with the feature"
+          },
+          "type": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "TO-DO: change this parameter name. List of values/settings associated with the service or one of features"
           },
           "limitations": {
             "type": "array",
