@@ -278,7 +278,7 @@ class LambdaService:
         # Need the qualified arn to exactly get the target lambda
         qualified_arn = qualified_lambda_arn(function_name, version_qualifier, account_id, region)
         version = function.versions.get(version_qualifier)
-        runtime = version.config.runtime
+        runtime = version.config.runtime or "n/a"
         package_type = version.config.package_type
         try:
             version_manager = self.get_lambda_version_manager(qualified_arn)
