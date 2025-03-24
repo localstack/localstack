@@ -1044,7 +1044,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             state.functions[function_name] = fn
         function_counter.labels(
             operation=FunctionOperation.create,
-            runtime=runtime,
+            runtime=runtime or "n/a",
             status=FunctionStatus.success,
             invocation_type="n/a",
             package_type=package_type,
