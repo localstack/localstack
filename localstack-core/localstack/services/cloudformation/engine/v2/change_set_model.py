@@ -113,6 +113,7 @@ class ChangeSetTerminal(ChangeSetEntity, abc.ABC): ...
 
 
 class NodeTemplate(ChangeSetNode):
+    mappings: Final[NodeMappings]
     parameters: Final[NodeParameters]
     conditions: Final[NodeConditions]
     resources: Final[NodeResources]
@@ -121,11 +122,13 @@ class NodeTemplate(ChangeSetNode):
         self,
         scope: Scope,
         change_type: ChangeType,
+        mappings: NodeMappings,
         parameters: NodeParameters,
         conditions: NodeConditions,
         resources: NodeResources,
     ):
         super().__init__(scope=scope, change_type=change_type)
+        self.mappings = mappings
         self.parameters = parameters
         self.conditions = conditions
         self.resources = resources
@@ -166,6 +169,24 @@ class NodeParameters(ChangeSetNode):
     def __init__(self, scope: Scope, change_type: ChangeType, parameters: list[NodeParameter]):
         super().__init__(scope=scope, change_type=change_type)
         self.parameters = parameters
+
+
+class NodeMapping(ChangeSetNode):
+    name: Final[str]
+    bindings: Final[NodeObject]
+
+    def __init__(self, scope: Scope, change_type: ChangeType, name: str, bindings: NodeObject):
+        super().__init__(scope=scope, change_type=change_type)
+        self.name = name
+        self.bindings = bindings
+
+
+class NodeMappings(ChangeSetNode):
+    mappings: Final[list[NodeMapping]]
+
+    def __init__(self, scope: Scope, change_type: ChangeType, mappings: list[NodeMapping]):
+        super().__init__(scope=scope, change_type=change_type)
+        self.mappings = mappings
 
 
 class NodeCondition(ChangeSetNode):
@@ -300,6 +321,7 @@ class TerminalValueUnchanged(TerminalValue):
 TypeKey: Final[str] = "Type"
 ConditionKey: Final[str] = "Condition"
 ConditionsKey: Final[str] = "Conditions"
+MappingsKey: Final[str] = "Mappings"
 ResourcesKey: Final[str] = "Resources"
 PropertiesKey: Final[str] = "Properties"
 ParametersKey: Final[str] = "Parameters"
@@ -309,7 +331,15 @@ FnIf: Final[str] = "Fn::If"
 FnNot: Final[str] = "Fn::Not"
 FnGetAttKey: Final[str] = "Fn::GetAtt"
 FnEqualsKey: Final[str] = "Fn::Equals"
-INTRINSIC_FUNCTIONS: Final[set[str]] = {RefKey, FnIf, FnNot, FnEqualsKey, FnGetAttKey}
+FnFindInMapKey: Final[str] = "Fn::FindInMap"
+INTRINSIC_FUNCTIONS: Final[set[str]] = {
+    RefKey,
+    FnIf,
+    FnNot,
+    FnEqualsKey,
+    FnGetAttKey,
+    FnFindInMapKey,
+}
 
 
 class ChangeSetModel:
@@ -454,6 +484,36 @@ class ChangeSetModel:
         # TODO: this should check the replacement flag for a resource update.
         node_resource = self._retrieve_or_visit_resource(resource_name=logical_id)
         return node_resource.change_type
+
+    def _resolve_intrinsic_function_fn_find_in_map(self, arguments: ChangeSetEntity) -> ChangeType:
+        if arguments.change_type != ChangeType.UNCHANGED:
+            return arguments.change_type
+        # TODO: validate arguments structure and type.
+        # TODO: add support for nested functions, here we assume the arguments are string literals.
+
+        if not isinstance(arguments, NodeArray) or not arguments.array:
+            raise RuntimeError()
+        argument_mapping_name = arguments.array[0]
+        if not isinstance(argument_mapping_name, TerminalValue):
+            raise NotImplementedError()
+        argument_top_level_key = arguments.array[1]
+        if not isinstance(argument_top_level_key, TerminalValue):
+            raise NotImplementedError()
+        argument_second_level_key = arguments.array[2]
+        if not isinstance(argument_second_level_key, TerminalValue):
+            raise NotImplementedError()
+        mapping_name = argument_mapping_name.value
+        top_level_key = argument_top_level_key.value
+        second_level_key = argument_second_level_key.value
+
+        node_mapping = self._retrieve_mapping(mapping_name=mapping_name)
+        # TODO: a lookup would be beneficial in this scenario too;
+        #  consider implications downstream and for replication.
+        top_level_object = node_mapping.bindings.bindings.get(top_level_key)
+        if not isinstance(top_level_object, NodeObject):
+            raise RuntimeError()
+        target_map_value = top_level_object.bindings.get(second_level_key)
+        return target_map_value.change_type
 
     def _resolve_intrinsic_function_fn_if(self, arguments: ChangeSetEntity) -> ChangeType:
         # TODO: validate arguments structure and type.
@@ -705,6 +765,36 @@ class ChangeSetModel:
             change_type = change_type.for_child(resource.change_type)
         return NodeResources(scope=scope, change_type=change_type, resources=resources)
 
+    def _visit_mapping(
+        self, scope: Scope, name: str, before_mapping: Maybe[dict], after_mapping: Maybe[dict]
+    ) -> NodeMapping:
+        bindings = self._visit_object(
+            scope=scope, before_object=before_mapping, after_object=after_mapping
+        )
+        return NodeMapping(
+            scope=scope, change_type=bindings.change_type, name=name, bindings=bindings
+        )
+
+    def _visit_mappings(
+        self, scope: Scope, before_mappings: Maybe[dict], after_mappings: Maybe[dict]
+    ) -> NodeMappings:
+        change_type = ChangeType.UNCHANGED
+        mappings: list[NodeMapping] = list()
+        mapping_names = self._safe_keys_of(before_mappings, after_mappings)
+        for mapping_name in mapping_names:
+            scope_mapping, (before_mapping, after_mapping) = self._safe_access_in(
+                scope, mapping_name, before_mappings, after_mappings
+            )
+            mapping = self._visit_mapping(
+                scope=scope,
+                name=mapping_name,
+                before_mapping=before_mapping,
+                after_mapping=after_mapping,
+            )
+            mappings.append(mapping)
+            change_type = change_type.for_child(mapping.change_type)
+        return NodeMappings(scope=scope, change_type=change_type, mappings=mappings)
+
     def _visit_dynamic_parameter(self, parameter_name: str) -> ChangeSetEntity:
         scope = Scope("Dynamic").open_scope("Parameters")
         scope_parameter, (before_parameter, after_parameter) = self._safe_access_in(
@@ -845,6 +935,14 @@ class ChangeSetModel:
     def _model(self, before_template: Maybe[dict], after_template: Maybe[dict]) -> NodeTemplate:
         root_scope = Scope()
         # TODO: visit other child types
+
+        mappings_scope, (before_mappings, after_mappings) = self._safe_access_in(
+            root_scope, MappingsKey, before_template, after_template
+        )
+        mappings = self._visit_mappings(
+            scope=mappings_scope, before_mappings=before_mappings, after_mappings=after_mappings
+        )
+
         parameters_scope, (before_parameters, after_parameters) = self._safe_access_in(
             root_scope, ParametersKey, before_template, after_template
         )
@@ -876,6 +974,7 @@ class ChangeSetModel:
         return NodeTemplate(
             scope=root_scope,
             change_type=resources.change_type,
+            mappings=mappings,
             parameters=parameters,
             conditions=conditions,
             resources=resources,
@@ -918,6 +1017,23 @@ class ChangeSetModel:
             )
             return node_parameter
         return None
+
+    def _retrieve_mapping(self, mapping_name) -> NodeMapping:
+        # TODO: add caching mechanism, and raise appropriate error if missing.
+        scope_mappings, (before_mappings, after_mappings) = self._safe_access_in(
+            Scope(), MappingsKey, self._before_template, self._after_template
+        )
+        before_mappings = before_mappings or dict()
+        after_mappings = after_mappings or dict()
+        if mapping_name in before_mappings or mapping_name in after_mappings:
+            scope_mapping, (before_mapping, after_mapping) = self._safe_access_in(
+                scope_mappings, mapping_name, before_mappings, after_mappings
+            )
+            node_mapping = self._visit_mapping(
+                scope_mapping, mapping_name, before_mapping, after_mapping
+            )
+            return node_mapping
+        raise RuntimeError()
 
     def _retrieve_or_visit_resource(self, resource_name: str) -> NodeResource:
         resources_scope, (before_resources, after_resources) = self._safe_access_in(
