@@ -209,7 +209,7 @@ class Poller:
                 function_config = self.version_manager.function_version.config
                 function_counter.labels(
                     operation=FunctionOperation.invoke,
-                    runtime=function_config.runtime,
+                    runtime=function_config.runtime or "n/a",
                     status=FunctionStatus.success,
                     invocation_type=InvocationType.Event,
                     package_type=function_config.package_type,
@@ -244,7 +244,7 @@ class Poller:
                 package_type = self.version_manager.function_version.config.package_type
                 function_counter.labels(
                     operation=FunctionOperation.invoke,
-                    runtime=runtime,
+                    runtime=runtime or "n/a",
                     status=status,
                     invocation_type=InvocationType.Event,
                     package_type=package_type,
