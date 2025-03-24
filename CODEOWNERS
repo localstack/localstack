@@ -109,6 +109,10 @@
 /tests/aws/services/apigateway/ @bentsku @cloutierMat
 /tests/unit/services/apigateway/ @bentsku @cloutierMat
 
+# cloudcontrol
+/localstack-core/localstack/aws/api/cloudcontrol/ @simonrw
+/tests/aws/services/cloudcontrol/ @simonrw
+
 # cloudformation
 /localstack-core/localstack/aws/api/cloudformation/ @dominikschubert @pinzon @simonrw
 /localstack-core/localstack/services/cloudformation/ @dominikschubert @pinzon @simonrw
