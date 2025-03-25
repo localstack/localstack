@@ -10,12 +10,14 @@ from localstack.config import (
     LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_ERROR_SEC,
     LAMBDA_EVENT_SOURCE_MAPPING_POLL_INTERVAL_SEC,
 )
+from localstack.services.lambda_.analytics import EsmExecutionStatus, esm_counter
 from localstack.services.lambda_.event_source_mapping.pollers.poller import (
     EmptyPollResultsException,
     Poller,
 )
 from localstack.services.lambda_.invocation.models import LambdaStore, lambda_stores
 from localstack.services.lambda_.provider_utils import get_function_version_from_arn
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.backoff import ExponentialBackoff
 from localstack.utils.threads import FuncThread
 
@@ -181,6 +183,10 @@ class EsmWorker:
                     e,
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
+                event_source = parse_arn(self.esm_config.get("EventSourceArn")).get("service")
+                esm_counter.labels(
+                    source=event_source, status=EsmExecutionStatus.source_poller_error
+                ).increment()
                 # Wait some time between retries to avoid running into the problem right again
                 poll_interval_duration = error_boff.next_backoff()
             finally:
