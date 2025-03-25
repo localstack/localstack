@@ -2148,6 +2148,9 @@ def appsync_create_api(aws_client):
 
 @pytest.fixture
 def assert_host_customisation(monkeypatch):
+    initial_host = config.HostAndPort.host
+    initial_port = config.HostAndPort.port
+
     localstack_host = "foo.bar"
     monkeypatch.setattr(
         config, "LOCALSTACK_HOST", config.HostAndPort(host=localstack_host, port=8888)
@@ -2166,6 +2169,10 @@ def assert_host_customisation(monkeypatch):
             assert localstack_host in url, f"Could not find `{localstack_host}` in `{url}`"
 
     yield asserter
+
+    monkeypatch.setattr(
+        config, "LOCALSTACK_HOST", config.HostAndPort(host=initial_host, port=initial_port)
+    )
 
 
 @pytest.fixture
