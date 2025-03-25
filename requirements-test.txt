@@ -6,7 +6,7 @@
 #
 airspeed-ext==0.6.7
     # via localstack-core
-amazon-kclpy==3.0.1
+amazon-kclpy==3.0.2
     # via localstack-core
 annotated-types==0.7.0
     # via pydantic
@@ -27,13 +27,13 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.228
+aws-cdk-asset-awscli-v1==2.2.229
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==40.7.0
     # via aws-cdk-lib
-aws-cdk-lib==2.184.1
+aws-cdk-lib==2.185.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.95.0
     # via
@@ -43,7 +43,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.38.18
     # via localstack-core
-awscrt==0.24.2
+awscrt==0.25.4
     # via localstack-core
 boto3==1.37.18
     # via
@@ -80,7 +80,7 @@ certifi==2025.1.31
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.30.0
+cfn-lint==1.32.0
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -94,7 +94,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.4.2
     # via aws-cdk-lib
-coverage==7.7.0
+coverage==7.7.1
     # via localstack-core (pyproject.toml)
 crontab==1.0.1
     # via localstack-core
@@ -167,7 +167,7 @@ importlib-resources==6.5.2
     # via jsii
 incremental==24.7.2
     # via localstack-twisted
-iniconfig==2.0.0
+iniconfig==2.1.0
     # via pytest
 isodate==0.7.2
     # via openapi-core
@@ -181,7 +181,7 @@ joserfc==1.0.4
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core
-jsii==1.109.0
+jsii==1.110.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
@@ -307,13 +307,13 @@ pydantic-core==2.27.2
     # via pydantic
 pygments==2.19.1
     # via rich
-pymongo==4.11.2
+pymongo==4.11.3
     # via localstack-core
 pyopenssl==25.0.0
     # via
     #   localstack-core
     #   localstack-twisted
-pyparsing==3.2.1
+pyparsing==3.2.3
     # via moto-ext
 pyproject-hooks==1.2.0
     # via build
@@ -337,7 +337,7 @@ python-dateutil==2.9.0.post0
     #   jsii
     #   moto-ext
     #   opensearch-py
-python-dotenv==1.0.1
+python-dotenv==1.1.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
