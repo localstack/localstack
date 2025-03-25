@@ -202,6 +202,7 @@ class StreamPoller(Poller):
         for batch in batched(collected_records, self.stream_parameters.get("BatchSize")):
             # This could potentially lead to data loss if forward_events_to_target raises an exception after a flush
             # which would otherwise be solved with checkpointing.
+            # TODO: Implement checkpointing, leasing, etc. from https://docs.aws.amazon.com/streams/latest/dev/kcl-concepts.html
             self.forward_events_to_target(shard_id, next_shard_iterator, batch)
 
     def forward_events_to_target(self, shard_id, next_shard_iterator, records):
