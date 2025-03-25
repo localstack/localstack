@@ -242,7 +242,7 @@ multipart==1.2.1
     # via moto-ext
 networkx==3.4.2
     # via cfn-lint
-openapi-core==0.19.5
+openapi-core==0.19.4
     # via localstack-core
 openapi-schema-validator==0.6.3
     # via
@@ -337,7 +337,7 @@ python-dateutil==2.9.0.post0
     #   jsii
     #   moto-ext
     #   opensearch-py
-python-dotenv==1.0.1
+python-dotenv==1.1.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -426,7 +426,6 @@ typing-extensions==4.12.2
     #   cfn-lint
     #   jsii
     #   localstack-twisted
-    #   openapi-core
     #   pydantic
     #   pydantic-core
     #   pyopenssl
@@ -442,7 +441,7 @@ urllib3==2.3.0
     #   responses
 websocket-client==1.8.0
     # via localstack-core (pyproject.toml)
-werkzeug==3.1.1
+werkzeug==3.1.3
     # via
     #   localstack-core
     #   moto-ext
