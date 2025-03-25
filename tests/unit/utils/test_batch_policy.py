@@ -1,5 +1,7 @@
 import time
 
+import pytest
+
 from localstack.utils.batch_policy import Batcher
 
 
@@ -122,8 +124,16 @@ class TestBatcher:
         assert result == ["item4"]
         assert batcher.get_current_size() == 0
 
-    def test_no_limits(self):
-        batcher = Batcher()
+    @pytest.mark.parametrize(
+        "max_count,max_window",
+        [(0, 10), (10, 0), (None, None)],
+    )
+    def test_no_limits(self, max_count, max_window):
+        if max_count or max_window:
+            batcher = Batcher(max_count=max_count, max_window=max_window)
+        else:
+            batcher = Batcher()
+
         assert batcher.is_triggered()  # no limit always returns true
 
         assert batcher.add("item1")
@@ -172,7 +182,7 @@ class TestBatcher:
         original = {"key": "value"}
         batcher = Batcher(max_count=2)
 
-        batcher.add(original, cache_deep_copy=True)
+        batcher.add(original, deep_copy=True)
 
         original["key"] = "modified"
 

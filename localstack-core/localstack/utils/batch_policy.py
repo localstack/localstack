@@ -29,22 +29,22 @@ class Batcher(Generic[T]):
 
         # Triggers when 2 (or more) items are added
         batcher = Batcher(max_count=2)
-        assert batcher.add(["foo", "bar", "baz"])
-        assert batcher.flush() == ["foo", "bar", "baz"]
+        assert batcher.add(["item1", "item2", "item3"])
+        assert batcher.flush() == ["item1", "item2", "item3"]
 
         # Triggers partially when 2 (or more) items are added
         batcher = Batcher(max_count=2)
-        assert batcher.add(["foo", "bar", "baz"])
-        assert batcher.flush(partial=True) == ["foo", "bar"]
-        assert batcher.add("foobar")
-        assert batcher.flush(partial=True) == ["baz", "foobar"]
+        assert batcher.add(["item1", "item2", "item3"])
+        assert batcher.flush(partial=True) == ["item1", "item2"]
+        assert batcher.add("item4")
+        assert batcher.flush(partial=True) == ["item3", "item4"]
 
         # Trigger 2 seconds after the first add
         batcher = Batcher(max_window=2.0)
-        assert not batcher.add(["foo", "bar", "baz"])
+        assert not batcher.add(["item1", "item2", "item3"])
         time.sleep(2.1)
-        assert not batcher.add(["foobar"])
-        assert batcher.flush() == ["foo", "bar", "baz", "foobar"]
+        assert not batcher.add(["item4"])
+        assert batcher.flush() == ["item1", "item2", "item3", "item4"]
     """
 
     max_count: Optional[int] = Field(default=None, description="Maximum number of items", ge=0)
@@ -108,6 +108,7 @@ class Batcher(Generic[T]):
 
         self._last_batch_time = time.monotonic()
         self._triggered = False
+        self._check_batch_policy()
 
         return result
 
