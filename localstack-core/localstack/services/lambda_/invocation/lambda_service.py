@@ -285,7 +285,6 @@ class LambdaService:
             event_manager = self.get_lambda_event_manager(qualified_arn)
         except ValueError as e:
             state = version and version.config.state.state
-            # TODO: make such developer hints optional or remove after initial v2 transition period
             if state == State.Failed:
                 status = FunctionStatus.failed_state_error
                 HINT_LOG.error(
