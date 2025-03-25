@@ -7,6 +7,9 @@ from pydantic.dataclasses import dataclass
 
 T = TypeVar("T")
 
+# alias to signify whether a batch policy has been triggered
+BatchPolicyTriggered = bool
+
 
 # TODO: Add batching on bytes as well.
 @dataclass
@@ -70,13 +73,19 @@ class Batcher(Generic[T]):
         return self._triggered
 
     @overload
-    def add(self, item: T, *, cache_deep_copy: bool = False) -> bool: ...
+    def add(self, item: T, *, deep_copy: bool = False) -> BatchPolicyTriggered: ...
 
     @overload
-    def add(self, items: List[T], *, cache_deep_copy: bool = False) -> bool: ...
+    def add(self, items: List[T], *, deep_copy: bool = False) -> BatchPolicyTriggered: ...
 
-    def add(self, item_or_items: T | list[T], *, cache_deep_copy: bool = False) -> bool:
-        if cache_deep_copy:
+    def add(self, item_or_items: T | list[T], *, deep_copy: bool = False) -> BatchPolicyTriggered:
+        """
+        Add an item or list of items to the collected batch.
+
+        Returns:
+            BatchPolicyTriggered: True if the batch policy was triggered during addition, False otherwise.
+        """
+        if deep_copy:
             item_or_items = copy.deepcopy(item_or_items)
 
         if isinstance(item_or_items, list):
