@@ -80,8 +80,8 @@ class StreamPoller(Poller):
 
         self.shard_batcher = defaultdict(
             lambda: Batcher(
-                max_count=self.stream_parameters.get("BatchSize"),
-                max_window=self.stream_parameters.get("MaximumBatchingWindowInSeconds"),
+                max_count=self.stream_parameters.get("BatchSize", 100),
+                max_window=self.stream_parameters.get("MaximumBatchingWindowInSeconds", 0),
             )
         )
 
