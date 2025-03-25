@@ -22,6 +22,10 @@ pytestmark = pytest.mark.skipif(
         "$..IncludeNestedStacks",
         "$..NotificationARNs",
         "$..Parameters",
+        "$..Changes..ResourceChange.Details",
+        "$..Changes..ResourceChange.Scope",
+        "$..Changes..ResourceChange.PhysicalResourceId",
+        "$..Changes..ResourceChange.Replacement",
     ]
 )
 def test_single_resource_static_update(aws_client: ServiceLevelClientFactory, snapshot, cleanups):

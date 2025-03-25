@@ -328,7 +328,7 @@ class CloudformationProviderV2(CloudformationProvider):
         change_set_describer = ChangeSetModelDescriber(
             node_template=change_set.update_graph, include_property_values=include_property_values
         )
-        resource_changes = change_set_describer.get_resource_changes()
+        resource_changes = change_set_describer.get_changes()
 
         attrs = [
             "ChangeSetType",

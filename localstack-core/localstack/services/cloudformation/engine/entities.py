@@ -426,5 +426,8 @@ class StackChangeSet(Stack):
         change_set_model = ChangeSetModel(
             before_template=before_template,
             after_template=after_template,
+            # TODO
+            before_parameters=None,
+            after_parameters=None,
         )
         self.update_graph = change_set_model.get_update_model()

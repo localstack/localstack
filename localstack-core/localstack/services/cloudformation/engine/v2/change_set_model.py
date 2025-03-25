@@ -603,24 +603,24 @@ class ChangeSetModel:
         if isinstance(node_property, NodeProperty):
             return node_property
 
+        value = self._visit_value(
+            scope=scope, before_value=before_property, after_value=after_property
+        )
         if self._is_created(before=before_property, after=after_property):
             node_property = NodeProperty(
                 scope=scope,
                 change_type=ChangeType.CREATED,
                 name=property_name,
-                value=TerminalValueCreated(scope=scope, value=after_property),
+                value=value,
             )
         elif self._is_removed(before=before_property, after=after_property):
             node_property = NodeProperty(
                 scope=scope,
                 change_type=ChangeType.REMOVED,
                 name=property_name,
-                value=TerminalValueRemoved(scope=scope, value=before_property),
+                value=value,
             )
         else:
-            value = self._visit_value(
-                scope=scope, before_value=before_property, after_value=after_property
-            )
             node_property = NodeProperty(
                 scope=scope, change_type=value.change_type, name=property_name, value=value
             )

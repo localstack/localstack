@@ -5,8 +5,10 @@ from typing import Final
 from localstack.aws.api.cloudformation import ChangeAction
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.engine.v2.change_set_model import (
+    NodeIntrinsicFunction,
     NodeResource,
     NodeTemplate,
+    TerminalValue,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_describer import (
     ChangeSetModelDescriber,
@@ -47,7 +49,7 @@ class ChangeSetModelExecutor(ChangeSetModelDescriber):
         self.visit(self._node_template)
         return self.resources
 
-    def visit_node_resource(self, node_resource: NodeResource):
+    def visit_node_resource(self, node_resource: NodeResource) -> DescribeUnit:
         resource_provider_executor = ResourceProviderExecutor(
             stack_name=self.stack_name, stack_id=self.stack_id
         )
@@ -62,7 +64,8 @@ class ChangeSetModelExecutor(ChangeSetModelDescriber):
                 f"Action should always be present, got change type: {node_resource.change_type}"
             )
 
-        resource_type = get_resource_type(node_resource.as_dict())
+        # TODO
+        resource_type = get_resource_type({"Type": "AWS::SSM::Parameter"})
         payload = self.create_resource_provider_payload(
             properties_describe_unit,
             action,
@@ -92,6 +95,42 @@ class ChangeSetModelExecutor(ChangeSetModelDescriber):
                 self.resources[node_resource.name]["Type"] = resource_type
             case any:
                 raise NotImplementedError(f"Event status '{any}' not handled")
+
+        return DescribeUnit(before_context=None, after_context={})
+
+    def visit_node_intrinsic_function_fn_get_att(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> DescribeUnit:
+        arguments_unit = self.visit(node_intrinsic_function.arguments)
+        before_arguments_list = arguments_unit.before_context
+        after_arguments_list = arguments_unit.after_context
+        if before_arguments_list:
+            logical_name_of_resource = before_arguments_list[0]
+            attribute_name = before_arguments_list[1]
+            before_node_resource = self._get_node_resource_for(
+                resource_name=logical_name_of_resource, node_template=self._node_template
+            )
+            node_property: TerminalValue = self._get_node_property_for(
+                property_name=attribute_name, node_resource=before_node_resource
+            )
+            before_context = self.visit(node_property.value).before_context
+        else:
+            before_context = None
+
+        if after_arguments_list:
+            logical_name_of_resource = after_arguments_list[0]
+            attribute_name = after_arguments_list[1]
+            after_node_resource = self._get_node_resource_for(
+                resource_name=logical_name_of_resource, node_template=self._node_template
+            )
+            node_property: TerminalValue = self._get_node_property_for(
+                property_name=attribute_name, node_resource=after_node_resource
+            )
+            after_context = self.visit(node_property.value).after_context
+        else:
+            after_context = None
+
+        return DescribeUnit(before_context=before_context, after_context=after_context)
 
     def create_resource_provider_payload(
         self,

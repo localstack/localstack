@@ -51,7 +51,7 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
     def __init__(
         self,
         node_template: NodeTemplate,
-        include_property_values: IncludePropertyValues | None = None,
+        include_property_values: cfn_api.IncludePropertyValues | None = None,
     ):
         self._node_template = node_template
         self._changes = list()
@@ -195,30 +195,34 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
     ) -> DescribeUnit:
         arguments_unit = self.visit(node_intrinsic_function.arguments)
         # TODO: validate the return value according to the spec.
-        before_argument_list = arguments_unit.before_context
-        before_logical_name_of_resource = before_argument_list[0]
-        before_attribute_name = before_argument_list[1]
-        before_node_resource = self._get_node_resource_for(
-            resource_name=before_logical_name_of_resource, node_template=self._node_template
-        )
-        node_property: TerminalValue = self._get_node_property_for(
-            property_name=before_attribute_name, node_resource=before_node_resource
-        )
-
-        before_context = node_property.value.value
-        if node_property.change_type != ChangeType.UNCHANGED:
-            after_context = CHANGESET_KNOWN_AFTER_APPLY
+        before_arguments_list = arguments_unit.before_context
+        after_arguments_list = arguments_unit.after_context
+        if before_arguments_list:
+            logical_name_of_resource = before_arguments_list[0]
+            attribute_name = before_arguments_list[1]
+            before_node_resource = self._get_node_resource_for(
+                resource_name=logical_name_of_resource, node_template=self._node_template
+            )
+            node_property: TerminalValue = self._get_node_property_for(
+                property_name=attribute_name, node_resource=before_node_resource
+            )
+            before_context = self.visit(node_property.value).before_context
         else:
-            after_context = node_property.value.value
+            before_context = None
 
-        match node_intrinsic_function.change_type:
-            case ChangeType.MODIFIED:
-                return DescribeUnit(before_context=before_context, after_context=after_context)
-            case ChangeType.CREATED:
-                return DescribeUnit(after_context=after_context)
-            case ChangeType.REMOVED:
-                return DescribeUnit(before_context=before_context)
-        # Unchanged
+        if after_arguments_list:
+            logical_name_of_resource = after_arguments_list[0]
+            attribute_name = after_arguments_list[1]
+            after_node_resource = self._get_node_resource_for(
+                resource_name=logical_name_of_resource, node_template=self._node_template
+            )
+            node_property: TerminalValue = self._get_node_property_for(
+                property_name=attribute_name, node_resource=after_node_resource
+            )
+            after_context = self.visit(node_property.value).after_context
+        else:
+            after_context = None
+
         return DescribeUnit(before_context=before_context, after_context=after_context)
 
     def visit_node_intrinsic_function_fn_equals(
@@ -398,19 +402,15 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         match change_type:
             case ChangeType.MODIFIED:
                 resource_change["Action"] = cfn_api.ChangeAction.Modify
-                resource_change["BeforeContext"] = properties_describe_unit.before_context
-                resource_change["AfterContext"] = properties_describe_unit.after_context
                 if self._include_property_values:
                     resource_change["BeforeContext"] = properties_describe_unit.before_context
                     resource_change["AfterContext"] = properties_describe_unit.after_context
             case ChangeType.CREATED:
                 resource_change["Action"] = cfn_api.ChangeAction.Add
-                resource_change["AfterContext"] = properties_describe_unit.after_context
                 if self._include_property_values:
                     resource_change["AfterContext"] = properties_describe_unit.after_context
             case ChangeType.REMOVED:
                 resource_change["Action"] = cfn_api.ChangeAction.Remove
-                resource_change["BeforeContext"] = properties_describe_unit.before_context
                 if self._include_property_values:
                     resource_change["BeforeContext"] = properties_describe_unit.before_context
 
