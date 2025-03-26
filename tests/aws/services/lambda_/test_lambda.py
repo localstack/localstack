@@ -2640,9 +2640,7 @@ class TestLambdaConcurrency:
         min_concurrent_executions = 10 + 3
         check_concurrency_quota(aws_client, min_concurrent_executions)
 
-        queue_name = f"test-queue-{short_uid()}"
-        queue_url = sqs_create_queue(QueueName=queue_name)
-        snapshot.add_transformer(snapshot.transform.regex(queue_name, "<queue-name>"))
+        queue_url = sqs_create_queue()
 
         func_name = f"test_lambda_{short_uid()}"
         create_lambda_function(
@@ -2651,7 +2649,6 @@ class TestLambdaConcurrency:
             runtime=Runtime.python3_12,
             client=aws_client.lambda_,
             timeout=30,
-            Environment={"Variables": {"SQS_QUEUE_URL": queue_url}},
         )
 
         fn = aws_client.lambda_.get_function_configuration(
@@ -2668,21 +2665,23 @@ class TestLambdaConcurrency:
 
         # warm up the Lambda function to mitigate flakiness due to cold start
         sync_invoke_warm_up = aws_client.lambda_.invoke(
-            FunctionName=fn_arn,
-            InvocationType="RequestResponse",
-            Payload=json.dumps({"notify": False}),
+            FunctionName=fn_arn, InvocationType="RequestResponse"
         )
         assert "FunctionError" not in sync_invoke_warm_up
 
         # Immediately queue two event invocations:
         # 1) The first event invoke gets executed immediately
         async_invoke_one = aws_client.lambda_.invoke(
-            FunctionName=fn_arn, InvocationType="Event", Payload=json.dumps({"wait": 15})
+            FunctionName=fn_arn,
+            InvocationType="Event",
+            Payload=json.dumps({"notify": queue_url, "wait": 15}),
         )
         assert "FunctionError" not in async_invoke_one
         # 2) The second event invoke gets throttled and re-scheduled with an internal retry
         async_invoke_two = aws_client.lambda_.invoke(
-            FunctionName=fn_arn, InvocationType="Event", Payload=json.dumps({"wait": 10})
+            FunctionName=fn_arn,
+            InvocationType="Event",
+            Payload=json.dumps({"notify": queue_url}),
         )
         assert "FunctionError" not in async_invoke_two
 
@@ -2714,7 +2713,9 @@ class TestLambdaConcurrency:
         )
         # Invocations succeed after raising reserved concurrency
         sync_invoke_final = aws_client.lambda_.invoke(
-            FunctionName=fn_arn, InvocationType="RequestResponse"
+            FunctionName=fn_arn,
+            InvocationType="RequestResponse",
+            Payload=json.dumps({"notify": queue_url}),
         )
         assert "FunctionError" not in sync_invoke_final
 
