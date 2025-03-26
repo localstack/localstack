@@ -1431,6 +1431,122 @@
       }
     }
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_asymmetric_wrapped": {
+    "recorded-date": "30-10-2024, 10:11:39",
+    "recorded-content": {
+      "created-key": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "RSA_2048",
+        "Description": "<description:1>",
+        "Enabled": false,
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "RSA_2048",
+        "KeyState": "PendingImport",
+        "KeyUsage": "SIGN_VERIFY",
+        "MultiRegion": false,
+        "Origin": "EXTERNAL",
+        "SigningAlgorithms": [
+          "RSASSA_PKCS1_V1_5_SHA_256",
+          "RSASSA_PKCS1_V1_5_SHA_384",
+          "RSASSA_PKCS1_V1_5_SHA_512",
+          "RSASSA_PSS_SHA_256",
+          "RSASSA_PSS_SHA_384",
+          "RSASSA_PSS_SHA_512"
+        ]
+      },
+      "describe-key-before-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "RSA_2048",
+          "Description": "<description:1>",
+          "Enabled": false,
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "RSA_2048",
+          "KeyState": "PendingImport",
+          "KeyUsage": "SIGN_VERIFY",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL",
+          "SigningAlgorithms": [
+            "RSASSA_PKCS1_V1_5_SHA_256",
+            "RSASSA_PKCS1_V1_5_SHA_384",
+            "RSASSA_PKCS1_V1_5_SHA_512",
+            "RSASSA_PSS_SHA_256",
+            "RSASSA_PSS_SHA_384",
+            "RSASSA_PSS_SHA_512"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-key-after-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "RSA_2048",
+          "Description": "<description:1>",
+          "Enabled": true,
+          "ExpirationModel": "KEY_MATERIAL_DOES_NOT_EXPIRE",
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "RSA_2048",
+          "KeyState": "Enabled",
+          "KeyUsage": "SIGN_VERIFY",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL",
+          "SigningAlgorithms": [
+            "RSASSA_PKCS1_V1_5_SHA_256",
+            "RSASSA_PKCS1_V1_5_SHA_384",
+            "RSASSA_PKCS1_V1_5_SHA_512",
+            "RSASSA_PSS_SHA_256",
+            "RSASSA_PSS_SHA_384",
+            "RSASSA_PSS_SHA_512"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-key-after-deleted-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "RSA_2048",
+          "Description": "<description:1>",
+          "Enabled": false,
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "RSA_2048",
+          "KeyState": "PendingImport",
+          "KeyUsage": "SIGN_VERIFY",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL",
+          "SigningAlgorithms": [
+            "RSASSA_PKCS1_V1_5_SHA_256",
+            "RSASSA_PKCS1_V1_5_SHA_384",
+            "RSASSA_PKCS1_V1_5_SHA_512",
+            "RSASSA_PSS_SHA_256",
+            "RSASSA_PSS_SHA_384",
+            "RSASSA_PSS_SHA_512"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_error_messaging_for_invalid_keys": {
     "recorded-date": "13-04-2023, 11:31:23",
     "recorded-content": {
