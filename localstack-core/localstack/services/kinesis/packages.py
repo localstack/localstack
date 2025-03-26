@@ -5,7 +5,7 @@ from typing import List
 from localstack.packages import Package, PackageInstaller
 from localstack.packages.core import NodePackageInstaller
 
-_KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.4.8"
+_KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.4.9"
 
 
 class KinesisMockPackage(Package):
