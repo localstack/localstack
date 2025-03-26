@@ -67,6 +67,19 @@ if TYPE_CHECKING:
     from mypy_boto3_sqs.type_defs import MessageTypeDef
 
 
+@pytest.fixture(scope="session")
+def aws_client_no_retry(aws_client_factory):
+    """
+    This fixture can be used to obtain Boto clients with disabled retries for testing.
+    botocore docs: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/retries.html#configuring-a-retry-mode
+
+    Use this client when testing exceptions (i.e., with pytest.raises(...)) or expected errors (e.g., status code 500)
+    to avoid unnecessary retries and mitigate test flakiness if the tested error condition is time-bound.
+    """
+    no_retry_config = botocore.config.Config(retries={"max_attempts": 1})
+    return aws_client_factory(config=no_retry_config)
+
+
 @pytest.fixture(scope="class")
 def aws_http_client_factory(aws_session):
     """
