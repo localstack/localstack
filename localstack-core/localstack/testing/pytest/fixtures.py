@@ -2149,7 +2149,7 @@ def appsync_create_api(aws_client):
 @pytest.fixture
 def assert_host_customisation(monkeypatch):
     initial_host = "localhost"
-    initial_port = "4566"
+    initial_port = 4566
 
     localstack_host = "foo.bar"
     monkeypatch.setattr(
