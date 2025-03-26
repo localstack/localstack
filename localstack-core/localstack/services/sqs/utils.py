@@ -118,11 +118,20 @@ def parse_queue_url(queue_url: str) -> Tuple[str, Optional[str], str]:
 
 def decode_receipt_handle(receipt_handle: str) -> str:
     try:
-        handle = base64.b64decode(receipt_handle).decode("utf-8")
-        _, queue_arn, message_id, last_received = handle.split(" ")
+        _, queue_arn, message_id, last_received = extract_receipt_handle_info(receipt_handle)
         parse_arn(queue_arn)  # raises a ValueError if it is not an arn
         return queue_arn
-    except (IndexError, ValueError):
+    except ValueError:
+        raise ReceiptHandleIsInvalid(
+            f'The input receipt handle "{receipt_handle}" is not a valid receipt handle.'
+        )
+
+
+def extract_receipt_handle_info(receipt_handle: str) -> list[str]:
+    try:
+        handle = base64.b64decode(receipt_handle).decode("utf-8")
+        return handle.split(" ")
+    except IndexError:
         raise ReceiptHandleIsInvalid(
             f'The input receipt handle "{receipt_handle}" is not a valid receipt handle.'
         )

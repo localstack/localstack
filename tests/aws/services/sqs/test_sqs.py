@@ -25,6 +25,7 @@ from localstack.testing.config import (
     TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.testing.pytest import markers
+from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import get_partition
 from localstack.utils.aws.request_context import mock_aws_request_headers
@@ -1103,7 +1104,7 @@ class TestSqsProvider:
             "receipt handles should be different"
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_delete_after_visibility_timeout(self, sqs_create_queue, aws_sqs_client, snapshot):
         timeout = 1
         queue_url = sqs_create_queue(
@@ -1124,8 +1125,16 @@ class TestSqsProvider:
             aws_sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=f"{receipt_handle}"),
         )
 
-    @markers.aws.unknown
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
+    @markers.aws.validated
     def test_fifo_delete_after_visibility_timeout(self, sqs_create_queue, aws_sqs_client, snapshot):
+        # Replaces the actual ReceiptHandle in the error message
+        error_message_regex = r"Value \S* for parameter ReceiptHandle is invalid. Reason: The receipt handle has expired."
+        modified_error_message = "Value <RECEIPT_HANDLE> for parameter ReceiptHandle is invalid. Reason: The receipt handle has expired."
+        snapshot.add_transformer(
+            TransformerUtility.regex(error_message_regex, modified_error_message)
+        )
+
         timeout = 1
         queue_url = sqs_create_queue(
             QueueName=f"test-{short_uid()}.fifo",
