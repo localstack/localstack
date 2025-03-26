@@ -2628,14 +2628,14 @@ class TestLambdaConcurrency:
         aws_client_no_retry,
     ):
         """Test async/event invoke retry behavior due to limited reserved concurrency.
-        Invocation history:
-        Set ReservedConcurrentExecutions=1
-        1) sync_invoke_warm_up => ok
-        2) async_invoke_one => ok
-        3) async_invoke_two => gets retried
-        4) sync invoke => fails with TooManyRequestsException
-        Set ReservedConcurrentExecutions=3
-        5) sync_invoke_final => ok
+        Timeline:
+        1) Set ReservedConcurrentExecutions=1
+        2) sync_invoke_warm_up => ok
+        3) async_invoke_one => ok
+        4) async_invoke_two => gets retried
+        5) sync invoke => fails with TooManyRequestsException
+        6) Set ReservedConcurrentExecutions=3
+        7) sync_invoke_final => ok
         """
         min_concurrent_executions = 10 + 3
         check_concurrency_quota(aws_client, min_concurrent_executions)
