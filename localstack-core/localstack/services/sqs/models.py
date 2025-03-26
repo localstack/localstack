@@ -33,6 +33,7 @@ from localstack.services.sqs.utils import (
     decode_receipt_handle,
     encode_move_task_handle,
     encode_receipt_handle,
+    extract_receipt_handle_info,
     global_message_sequence,
     guess_endpoint_strategy_and_host,
     is_message_deduplication_id_required,
@@ -490,6 +491,7 @@ class SqsQueue:
                 return
 
             standard_message = self.receipts[receipt_handle]
+            self._pre_delete_checks(standard_message, receipt_handle)
             standard_message.deleted = True
             LOG.debug(
                 "deleting message %s from queue %s",
@@ -723,6 +725,18 @@ class SqsQueue:
             heapq.heappop(heap)
 
         return expired
+
+    def _pre_delete_checks(self, standard_message: SqsMessage, receipt_handle: str) -> None:
+        """
+        Runs any potential checks if a message that has been successfully identified via a receipt handle
+        is indeed supposed to be deleted.
+        For example, a receipt handle that has expired might not lead to deletion.
+
+        :param standard_message: The message to be deleted
+        :param receipt_handle: The handle associated with the message
+        :return: None. Potential violations raise errors.
+        """
+        pass
 
 
 class StandardQueue(SqsQueue):
@@ -1001,9 +1015,15 @@ class FifoQueue(SqsQueue):
         for message in self.delayed:
             message.delay_seconds = value
 
+    def _pre_delete_checks(self, message: SqsMessage, receipt_handle: str) -> None:
+        _, _, _, last_received = extract_receipt_handle_info(receipt_handle)
+        if time.time() - float(last_received) > message.visibility_timeout:
+            raise InvalidParameterValueException(
+                f"Value f{receipt_handle} for parameter ReceiptHandle is invalid. Reason: The receipt handle has expired."
+            )
+
     def remove(self, receipt_handle: str):
         self.validate_receipt_handle(receipt_handle)
-        decode_receipt_handle(receipt_handle)
 
         super().remove(receipt_handle)
 
