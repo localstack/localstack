@@ -815,9 +815,12 @@ class TestEventsTargetFirehose:
 
 
 class TestEventsTargetKinesis:
+    @pytest.mark.parametrize("with_input_transformer", [True, False])
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     @markers.aws.validated
     def test_put_events_with_target_kinesis(
         self,
+        with_input_transformer,
         kinesis_create_stream,
         wait_for_stream_ready,
         create_iam_role_with_policy,
@@ -872,6 +875,11 @@ class TestEventsTargetKinesis:
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
 
+        input_transformer = {
+            "InputPathsMap": {"payload": "$.detail.payload"},
+            "InputTemplate": '{"payload": <payload>}',
+        }
+        kwargs = {"InputTransformer": input_transformer} if with_input_transformer else {}
         target_id = f"target-{short_uid()}"
         aws_client.events.put_targets(
             Rule=rule_name,
@@ -882,6 +890,7 @@ class TestEventsTargetKinesis:
                     "Arn": stream_arn,
                     "RoleArn": event_bridge_bus_to_kinesis_role_arn,
                     "KinesisParameters": {"PartitionKeyPath": "$.detail-type"},
+                    **kwargs,
                 }
             ],
         )
@@ -1419,3 +1428,114 @@ class TestEventsTargetStepFunctions:
                 assert len(messages) > 0
 
             retry(_assert_messages, **retry_config)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
+    def test_put_events_with_target_statefunction_machine_and_input_transformer(
+        self, infrastructure_setup, aws_client, snapshot
+    ):
+        infra = infrastructure_setup(namespace="EventsTests")
+        stack_name = "stack-events-target-stepfunctions"
+        stack = cdk.Stack(infra.cdk_app, stack_name=stack_name)
+
+        bus_name = "MyEventBus"
+        bus = cdk.aws_events.EventBus(stack, "MyEventBus", event_bus_name=bus_name)
+
+        queue = cdk.aws_sqs.Queue(stack, "MyQueue", queue_name="MyQueue")
+
+        send_to_sqs_task = cdk.aws_stepfunctions_tasks.SqsSendMessage(
+            stack,
+            "SendToQueue",
+            queue=queue,
+            message_body=cdk.aws_stepfunctions.TaskInput.from_object(
+                {"message": cdk.aws_stepfunctions.JsonPath.entire_payload}
+            ),
+        )
+
+        state_machine = cdk.aws_stepfunctions.StateMachine(
+            stack,
+            "MyStateMachine",
+            definition=send_to_sqs_task,
+            state_machine_name="MyStateMachine",
+        )
+
+        detail_type = "myDetailType"
+        rule = cdk.aws_events.Rule(
+            stack,
+            "MyRule",
+            event_bus=bus,
+            event_pattern=cdk.aws_events.EventPattern(detail_type=[detail_type]),
+        )
+
+        input_transformer_property = cdk.aws_events.CfnRule.InputTransformerProperty(
+            input_template="Message with key <detail-key>",
+            input_paths_map={"detail-key": "$.detail.Key1"},
+        )
+        rule.add_target(
+            cdk.aws_events_targets.SfnStateMachine(
+                state_machine,
+                input=cdk.aws_events.RuleTargetInput.from_object(input_transformer_property),
+            )
+        )
+
+        cdk.CfnOutput(stack, "MachineArn", value=state_machine.state_machine_arn)
+        cdk.CfnOutput(stack, "QueueUrl", value=queue.queue_url)
+
+        with infra.provisioner() as prov:
+            outputs = prov.get_stack_outputs(stack_name=stack_name)
+
+            entries = [
+                {
+                    "Source": "com.sample.resource",
+                    "DetailType": detail_type,
+                    "Detail": json.dumps({"Key1": "Value"}),
+                    "EventBusName": bus_name,
+                }
+                for i in range(5)
+            ]
+            put_events = aws_client.events.put_events(Entries=entries)
+
+            state_machine_arn = outputs["MachineArn"]
+
+            def _assert_executions():
+                executions = (
+                    aws_client.stepfunctions.get_paginator("list_executions")
+                    .paginate(stateMachineArn=state_machine_arn)
+                    .build_full_result()
+                )
+                assert len(executions["executions"]) > 0
+
+                matched_executions = [
+                    e
+                    for e in executions["executions"]
+                    if e["name"].startswith(put_events["Entries"][0]["EventId"])
+                ]
+                assert len(matched_executions) > 0
+
+            retry_config = {
+                "retries": (20 if is_aws_cloud() else 5),
+                "sleep": (2 if is_aws_cloud() else 1),
+                "sleep_before": (2 if is_aws_cloud() else 0),
+            }
+            retry(_assert_executions, **retry_config)
+
+            messages = []
+            queue_url = outputs["QueueUrl"]
+
+            def _get_messages():
+                queue_msgs = aws_client.sqs.receive_message(QueueUrl=queue_url)
+                for msg in queue_msgs.get("Messages", []):
+                    messages.append(msg)
+
+                assert len(messages) > 0
+                return messages
+
+            messages = retry(_get_messages, **retry_config)
+
+            snapshot.add_transformers_list(
+                [
+                    snapshot.transform.key_value("ReceiptHandle", reference_replacement=False),
+                    snapshot.transform.key_value("MD5OfBody", reference_replacement=False),
+                ]
+            )
+            snapshot.match("messages", messages)
