@@ -45,7 +45,6 @@ from localstack.utils.platform import Arch, standardized_arch
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
-from tests.aws.services.lambda_.utils import get_s3_keys
 
 LOG = logging.getLogger(__name__)
 
@@ -3051,65 +3050,99 @@ class TestLambdaVersions:
         thread.join()
         assert not errored
 
-    # TODO: Fix first invoke getting retried and ending up being executed against the new variant because the
-    #  update stops the running function version. We should let running executions finish for $LATEST in this case.
     # MAYBE: consider validating whether a code update behaves differently than a configuration update
+    @markers.snapshot.skip_snapshot_verify(
+        # TODO: Fix first invoke getting retried and ending up being executed against the new variant because the
+        #  update stops the running function version. We should let running executions finish for $LATEST in this case.
+        paths=[
+            "$..01-sleep",
+        ]
+    )
     @markers.aws.validated
     def test_async_invoke_queue_upon_function_update(
-        self, aws_client, create_lambda_function, s3_create_bucket, snapshot
+        self, aws_client, create_lambda_function, sqs_create_queue, sqs_collect_messages, snapshot
     ):
         """Test what happens with queued async invokes (i.e., event invokes) when updating a function.
-        We are using a combination of reserved concurrency and sleeps to design this test case predictable.
-        Observation: If we don't wait after sending the first invoke, some queued invokes can still be handled by an
-        old variant in some non-deterministic way.
+        Timeline:
+        1) Set ReservedConcurrentExecutions=1
+        2) sync_invoke_warm_up => variant-one
+        3) async_invoke_one => variant-one
+        4) Queue 5 async invokes => variant-two because they are executed after the update
+        5) UpdateFunction
+        6) Queue 5 async invokes => variant-two
         """
-        # HACK: workaround to ignore `$..async_invoke_history_sorted[0]` because indices don't work in the ignore list
-        snapshot.add_transformer(
-            snapshot.transform.regex("01-sleep--variant-2", "01-sleep--variant-1")
-        )
-        bucket_name = f"lambda-target-bucket-{short_uid()}"
-        s3_create_bucket(Bucket=bucket_name)
+        # Queue for tracking invoked versions
+        queue_url = sqs_create_queue()
 
         function_name = f"test-function-{short_uid()}"
-        environment_v1 = {
-            "Variables": {"S3_BUCKET_NAME": bucket_name, "FUNCTION_VARIANT": "variant-1"}
-        }
+        environment_v1 = {"Variables": {"FUNCTION_VARIANT": "variant-one"}}
         create_lambda_function(
             func_name=function_name,
-            handler_file=TEST_LAMBDA_PYTHON_S3_INTEGRATION_FUNCTION_VERSION,
+            handler_file=TEST_LAMBDA_NOTIFIER,
             runtime=Runtime.python3_12,
             Environment=environment_v1,
         )
-        # Add reserved concurrency limits the throughput and makes it easier to cause event invokes to queue up.
+        # Add reserved concurrency to limit the throughput, which makes it easier to queue up event invokes
         reserved_concurrency_response = aws_client.lambda_.put_function_concurrency(
             FunctionName=function_name,
             ReservedConcurrentExecutions=1,
         )
         assert reserved_concurrency_response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        payload = {"request_prefix": f"{1:02}-sleep", "sleep_seconds": 22}
-        aws_client.lambda_.invoke(
+        # Warm up the Lambda function to mitigate flakiness due to cold start
+        sync_invoke_warm_up = aws_client.lambda_.invoke(
+            FunctionName=function_name, InvocationType="RequestResponse"
+        )
+        assert "FunctionError" not in sync_invoke_warm_up
+
+        async_invoke_one = aws_client.lambda_.invoke(
             FunctionName=function_name,
             InvocationType="Event",
-            Payload=json.dumps(payload),
+            # Wait long enough until the function gets updated to variant-two
+            Payload=json.dumps(
+                {
+                    "notify": queue_url,
+                    "env_var": "FUNCTION_VARIANT",
+                    "label": "01-sleep",
+                    "wait": 20,
+                }
+            ),
         )
-        # Make it very likely that the invocation is being processed because the Lambda poller should pick up queued
-        # async invokes quickly using long polling.
-        time.sleep(2)
 
-        # Send async invocation, which should queue up before we update the function
-        num_invocations_before = 9
+        # Send async invocations, which should queue up before we update the function
+        num_invocations_before = 5
         for index in range(num_invocations_before):
-            payload = {"request_prefix": f"{index + 2:02}-before"}
             aws_client.lambda_.invoke(
                 FunctionName=function_name,
                 InvocationType="Event",
-                Payload=json.dumps(payload),
+                Payload=json.dumps(
+                    {
+                        "notify": queue_url,
+                        "env_var": "FUNCTION_VARIANT",
+                        "label": f"{index + 2:02}-before-update",
+                    }
+                ),
             )
+
+        # Wait until the first async invoke is being executed before updating the function
+        messages_invoke_one = sqs_collect_messages(
+            queue_url,
+            expected=1,
+            timeout=15,
+        )
+        async_invoke_one_notification = json.loads(messages_invoke_one[0]["Body"])
+        snapshot.match(
+            async_invoke_one_notification["label"],
+            async_invoke_one_notification["FUNCTION_VARIANT"],
+        )
+        assert (
+            async_invoke_one_notification["request_id"]
+            == async_invoke_one["ResponseMetadata"]["RequestId"]
+        )
 
         # Update the function variant while still having invokes in the async invoke queue
         environment_v2 = environment_v1.copy()
-        environment_v2["Variables"]["FUNCTION_VARIANT"] = "variant-2"
+        environment_v2["Variables"]["FUNCTION_VARIANT"] = "variant-two"
         aws_client.lambda_.update_function_configuration(
             FunctionName=function_name, Environment=environment_v2
         )
@@ -3119,24 +3152,30 @@ class TestLambdaVersions:
         # Send further async invocations after the update succeeded
         num_invocations_after = 5
         for index in range(num_invocations_after):
-            payload = {"request_prefix": f"{index + num_invocations_before + 2:02}-after"}
             aws_client.lambda_.invoke(
                 FunctionName=function_name,
                 InvocationType="Event",
-                Payload=json.dumps(payload),
+                Payload=json.dumps(
+                    {
+                        "notify": queue_url,
+                        "env_var": "FUNCTION_VARIANT",
+                        "label": f"{index + num_invocations_before + 2:02}-after-update",
+                    }
+                ),
             )
 
-        # +1 for the first sleep invocation
-        total_invocations = 1 + num_invocations_before + num_invocations_after
-
-        def assert_s3_objects():
-            s3_keys_output = get_s3_keys(aws_client, bucket_name)
-            assert len(s3_keys_output) >= total_invocations
-            return s3_keys_output
-
-        s3_keys = retry(assert_s3_objects, retries=20, sleep=5)
-        s3_keys_sorted = sorted(s3_keys)
-        snapshot.match("async_invoke_history_sorted", s3_keys_sorted)
+        # Collect event invokes before and after update without invoke_one (already deleted)
+        messages = sqs_collect_messages(
+            queue_url,
+            expected=num_invocations_before + num_invocations_after,
+            timeout=90,
+        )
+        for message in messages:
+            body_json = json.loads(message["Body"])
+            assert body_json["label"] != "01-sleep", (
+                "The message with the label `01-sleep` should have been deleted from the queue."
+            )
+            snapshot.match(body_json["label"], body_json["FUNCTION_VARIANT"])
 
 
 # TODO: test if routing is static for a single invocation:
