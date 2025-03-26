@@ -2982,7 +2982,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_reserved_concurrency_async_queue": {
-    "recorded-date": "08-04-2024, 17:07:59",
+    "recorded-date": "26-03-2025, 10:42:23",
     "recorded-content": {
       "fn": {
         "Architectures": [
@@ -2992,7 +2992,9 @@
         "CodeSize": "<code-size>",
         "Description": "",
         "Environment": {
-          "Variables": {}
+          "Variables": {
+            "SQS_QUEUE_URL": "https://sqs.<region>.amazonaws.com/111111111111/<queue-name>"
+          }
         },
         "EphemeralStorage": {
           "Size": 512
@@ -3019,7 +3021,7 @@
           "OptimizationStatus": "Off"
         },
         "State": "Active",
-        "Timeout": 20,
+        "Timeout": 30,
         "TracingConfig": {
           "Mode": "PassThrough"
         },
