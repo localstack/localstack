@@ -131,7 +131,7 @@ def extract_receipt_handle_info(receipt_handle: str) -> list[str]:
     try:
         handle = base64.b64decode(receipt_handle).decode("utf-8")
         return handle.split(" ")
-    except IndexError:
+    except (IndexError, ValueError):
         raise ReceiptHandleIsInvalid(
             f'The input receipt handle "{receipt_handle}" is not a valid receipt handle.'
         )
