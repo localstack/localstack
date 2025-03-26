@@ -1103,6 +1103,51 @@ class TestSqsProvider:
             "receipt handles should be different"
         )
 
+    @markers.aws.unknown
+    def test_delete_after_visibility_timeout(self, sqs_create_queue, aws_sqs_client, snapshot):
+        timeout = 1
+        queue_url = sqs_create_queue(
+            QueueName=f"test-{short_uid()}", Attributes={"VisibilityTimeout": f"{timeout}"}
+        )
+
+        aws_sqs_client.send_message(QueueUrl=queue_url, MessageBody="foobar")
+        # receive the message
+        initial_receive = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        assert "Messages" in initial_receive
+        receipt_handle = initial_receive["Messages"][0]["ReceiptHandle"]
+
+        # exceed the visibility timeout window
+        time.sleep(timeout)
+
+        snapshot.match(
+            "delete_after_timeout",
+            aws_sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=f"{receipt_handle}"),
+        )
+
+    @markers.aws.unknown
+    def test_fifo_delete_after_visibility_timeout(self, sqs_create_queue, aws_sqs_client, snapshot):
+        timeout = 1
+        queue_url = sqs_create_queue(
+            QueueName=f"test-{short_uid()}.fifo",
+            Attributes={
+                "VisibilityTimeout": f"{timeout}",
+                "FifoQueue": "True",
+                "ContentBasedDeduplication": "True",
+            },
+        )
+
+        aws_sqs_client.send_message(QueueUrl=queue_url, MessageBody="foobar", MessageGroupId="1")
+        # receive the message
+        initial_receive = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        assert "Messages" in initial_receive
+        receipt_handle = initial_receive["Messages"][0]["ReceiptHandle"]
+
+        # exceed the visibility timeout window
+        time.sleep(timeout)
+        with pytest.raises(ClientError) as e:
+            aws_sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=f"{receipt_handle}")
+        snapshot.match("delete_after_timeout_fifo", e.value.response)
+
     @markers.aws.validated
     def test_receive_terminate_visibility_timeout(self, sqs_queue, aws_sqs_client):
         queue_url = sqs_queue

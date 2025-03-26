@@ -3890,5 +3890,61 @@
         }
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_after_visibility_timeout[sqs]": {
+    "recorded-date": "26-03-2025, 12:53:35",
+    "recorded-content": {
+      "delete_after_timeout": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_after_visibility_timeout[sqs_query]": {
+    "recorded-date": "26-03-2025, 12:53:38",
+    "recorded-content": {
+      "delete_after_timeout": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_delete_after_visibility_timeout[sqs]": {
+    "recorded-date": "26-03-2025, 13:04:37",
+    "recorded-content": {
+      "delete_after_timeout_fifo": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Value AQEB4DZ0eAE/vl+coiMhAZZk8AWqkX/XIzhg6iIBAD6Mk/CKAsbsoyD5DQ4PaLGJFG5wAiIhVdj7B9DOSt1Tsa/I+WFqjSnCblg7R+mZIhFReS/k7b8fordB0gMIG6DqSBlgx2QnC3DLITKds1jjOugYDCeo+dz7yHhmCByJv2QWirSGDetAac7HX1kuv/zx5aZOcfVH3tZ0ohNN/sqGRSTDip3hBsBxqpfyEl3EavWgPuIPiNiEdahb9OFykOMGML/nY/xTxESP7jETo+WhtLLgiS7ofDjYDtYQH/kWU0D8poc= for parameter ReceiptHandle is invalid. Reason: The receipt handle has expired.",
+          "QueryErrorCode": "InvalidParameterValueException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_delete_after_visibility_timeout[sqs_query]": {
+    "recorded-date": "26-03-2025, 13:04:40",
+    "recorded-content": {
+      "delete_after_timeout_fifo": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "Value AQEBaRWJUHD60JoHEy1+MiGtyl0qM45VE4mZWsI+Kkf5iNxORJkxRxVbNtwqeON3Hv4RMUF0u3j/SUU3Qq25aQVnp1cg3DvY7SpnUQhQEzn/2MynzcvEEsx4BuQs+mLjBnTO7A78bwW5caD6Rnbj4uNI3jZ2If+Ce/FdHpePbhuJ7rjS6Sio2gp1UBg0tDdEmbpEZB3Sg3g3BRJEyQzM+V+IJ8Y8RmUoj35UZnQmrlN0ei+YYOxOOuYFmL2gbh9hdtwzPm6C9CmC0jEzXqviflJAHOyQ3rWhMI5jGP3dPftn0SA= for parameter ReceiptHandle is invalid. Reason: The receipt handle has expired.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
