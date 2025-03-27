@@ -117,9 +117,6 @@ class TestSecretsManager:
             Description="testing rotation of secrets",
         )
 
-        sm_snapshot.add_transformer(
-            sm_snapshot.transform.key_value("RotationLambdaARN", "lambda-arn")
-        )
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(cre_res, 0)
         )
@@ -138,6 +135,29 @@ class TestSecretsManager:
             Principal="secretsmanager.amazonaws.com",
         )
         return cre_res["VersionId"], function_arn
+
+    @staticmethod
+    def _setup_invalid_rotation_secret(
+        invalid_arn: str | None, invalid_snapshot_key: str, sm_snapshot, secret_name, aws_client
+    ):
+        create_secret = aws_client.secretsmanager.create_secret(
+            Name=secret_name, SecretString="init"
+        )
+        sm_snapshot.add_transformer(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret, 0)
+        )
+        sm_snapshot.match("create_secret", create_secret)
+        rotation_config = {
+            "SecretId": secret_name,
+            "RotationRules": {
+                "AutomaticallyAfterDays": 1,
+            },
+        }
+        if invalid_arn:
+            rotation_config["RotationLambdaARN"] = invalid_arn
+        with pytest.raises(Exception) as e:
+            aws_client.secretsmanager.rotate_secret(**rotation_config)
+        sm_snapshot.match(invalid_snapshot_key, e.value.response)
 
     def _assert_after_rotate_secret_with_lambda_success(
         self,
@@ -672,28 +692,27 @@ class TestSecretsManager:
     def test_rotate_secret_invalid_lambda_arn(
         self, secret_name, aws_client, account_id, sm_snapshot
     ):
-        create_secret = aws_client.secretsmanager.create_secret(
-            Name=secret_name, SecretString="init"
-        )
-        sm_snapshot.add_transformer(
-            sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret, 0)
-        )
-        sm_snapshot.match("create_secret", create_secret)
-
         region_name = aws_client.secretsmanager.meta.region_name
         invalid_arn = (
             f"arn:aws:lambda:{region_name}:{account_id}:function:rotate_secret_invalid_lambda_arn"
         )
-        with pytest.raises(Exception) as e:
-            aws_client.secretsmanager.rotate_secret(
-                SecretId=secret_name,
-                RotationLambdaARN=invalid_arn,
-                RotationRules={
-                    "AutomaticallyAfterDays": 1,
-                },
-            )
-        sm_snapshot.match("rotate_secret_invalid_arn_exc", e.value.response)
+        self._setup_invalid_rotation_secret(
+            invalid_arn, "rotate_secret_invalid_arn_exc", sm_snapshot, secret_name, aws_client
+        )
+        describe_secret = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
+        sm_snapshot.match("describe_secret", describe_secret)
+        assert "RotationEnabled" not in describe_secret
+        assert "RotationRules" not in describe_secret
+        assert "RotationLambdaARN" not in describe_secret
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error", "$..Message"])
+    @markers.aws.validated
+    def test_first_rotate_secret_with_missing_lambda_arn(
+        self, secret_name, aws_client, account_id, sm_snapshot
+    ):
+        self._setup_invalid_rotation_secret(
+            None, "rotate_secret_no_arn_exc", sm_snapshot, secret_name, aws_client
+        )
         describe_secret = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
         sm_snapshot.match("describe_secret", describe_secret)
         assert "RotationEnabled" not in describe_secret

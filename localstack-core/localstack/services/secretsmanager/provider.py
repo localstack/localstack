@@ -738,7 +738,7 @@ def backend_rotate_secret(
     # Resolve rotation_lambda_arn and fallback to previous value if its missing
     # from the current request
     rotation_lambda_arn = rotation_lambda_arn or secret.rotation_lambda_arn
-
+    rotation_period = 0
     if rotation_lambda_arn:
         if len(rotation_lambda_arn) > 2048:
             msg = "RotationLambdaARN must <= 2048 characters long."
@@ -788,7 +788,7 @@ def backend_rotate_secret(
         pass
 
     secret.rotation_lambda_arn = rotation_lambda_arn
-    secret.auto_rotate_after_days = rotation_period
+    secret.auto_rotate_after_days = rotation_period or 0
     if secret.auto_rotate_after_days > 0:
         wait_interval_s = int(rotation_period) * 86400
         secret.next_rotation_date = int(time.time()) + wait_interval_s
