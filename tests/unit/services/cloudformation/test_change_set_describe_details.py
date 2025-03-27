@@ -10,7 +10,9 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_describer import (
     ChangeSetModelDescriber,
-    DescribeUnit,
+)
+from localstack.services.cloudformation.engine.v2.change_set_model_processor import (
+    ResolvedEntityDelta,
 )
 
 
@@ -43,7 +45,7 @@ class TestChangeSetDescribeDetails:
         after_template: Optional[dict],
         before_parameters: Optional[dict] = None,
         after_parameters: Optional[dict] = None,
-    ) -> DescribeUnit:
+    ) -> ResolvedEntityDelta:
         change_set_model = ChangeSetModel(
             before_template=before_template,
             after_template=after_template,
@@ -1269,8 +1271,8 @@ class TestChangeSetDescribeDetails:
             "Outputs": {"NewParamName": {"Value": {"Ref": "NewParam"}}},
         }
         outputs_unit = self.debug_outputs(t1, t2)
-        assert not outputs_unit.before_context
-        assert outputs_unit.after_context == [{"Name": "NewParamName", "Value": "NewParam"}]
+        assert not outputs_unit.before
+        assert outputs_unit.after == [{"Name": "NewParamName", "Value": "NewParam"}]
 
     def test_output_and_resource_removed(self):
         t1 = {
@@ -1299,10 +1301,8 @@ class TestChangeSetDescribeDetails:
             }
         }
         outputs_unit = self.debug_outputs(t1, t2)
-        assert outputs_unit.before_context == [
-            {"Name": "FeatureToggleName", "Value": "FeatureToggle"}
-        ]
-        assert outputs_unit.after_context == []
+        assert outputs_unit.before == [{"Name": "FeatureToggleName", "Value": "FeatureToggle"}]
+        assert outputs_unit.after == []
 
     def test_output_resource_changed(self):
         t1 = {
@@ -1332,8 +1332,8 @@ class TestChangeSetDescribeDetails:
             "Outputs": {"LogLevelOutput": {"Value": {"Ref": "LogLevelParam"}}},
         }
         outputs_unit = self.debug_outputs(t1, t2)
-        assert outputs_unit.before_context == [{"Name": "LogLevelOutput", "Value": "LogLevelParam"}]
-        assert outputs_unit.after_context == [{"Name": "LogLevelOutput", "Value": "LogLevelParam"}]
+        assert outputs_unit.before == [{"Name": "LogLevelOutput", "Value": "LogLevelParam"}]
+        assert outputs_unit.after == [{"Name": "LogLevelOutput", "Value": "LogLevelParam"}]
 
     def test_output_update(self):
         t1 = {
@@ -1364,8 +1364,8 @@ class TestChangeSetDescribeDetails:
             "Outputs": {"EnvParamRef": {"Value": {"Fn::GetAtt": ["EnvParam", "Name"]}}},
         }
         outputs_unit = self.debug_outputs(t1, t2)
-        assert outputs_unit.before_context == [{"Name": "EnvParamRef", "Value": "EnvParam"}]
-        assert outputs_unit.after_context == [
+        assert outputs_unit.before == [{"Name": "EnvParamRef", "Value": "EnvParam"}]
+        assert outputs_unit.after == [
             {"Name": "EnvParamRef", "Value": "{{changeSet:KNOWN_AFTER_APPLY}}"}
         ]
 
@@ -1397,8 +1397,8 @@ class TestChangeSetDescribeDetails:
             "Outputs": {"NewSSMOutput": {"Value": {"Ref": "SSMParam"}}},
         }
         outputs_unit = self.debug_outputs(t1, t2)
-        assert outputs_unit.before_context == [{"Name": "OldSSMOutput", "Value": "SSMParam"}]
-        assert outputs_unit.after_context == [{"Name": "NewSSMOutput", "Value": "SSMParam"}]
+        assert outputs_unit.before == [{"Name": "OldSSMOutput", "Value": "SSMParam"}]
+        assert outputs_unit.after == [{"Name": "NewSSMOutput", "Value": "SSMParam"}]
 
     def test_output_and_resource_renamed(self):
         t1 = {
@@ -1428,10 +1428,8 @@ class TestChangeSetDescribeDetails:
             "Outputs": {"DatabaseSecretOutput": {"Value": {"Ref": "DatabaseSecretParam"}}},
         }
         outputs_unit = self.debug_outputs(t1, t2)
-        assert outputs_unit.before_context == [
-            {"Name": "DBPasswordOutput", "Value": "DBPasswordParam"}
-        ]
-        assert outputs_unit.after_context == [
+        assert outputs_unit.before == [{"Name": "DBPasswordOutput", "Value": "DBPasswordParam"}]
+        assert outputs_unit.after == [
             {"Name": "DatabaseSecretOutput", "Value": "DatabaseSecretParam"}
         ]
 
