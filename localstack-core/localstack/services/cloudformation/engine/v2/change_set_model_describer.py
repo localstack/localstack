@@ -13,6 +13,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeCondition,
     NodeDivergence,
     NodeIntrinsicFunction,
+    NodeMapping,
     NodeObject,
     NodeOutput,
     NodeOutputs,
@@ -79,6 +80,15 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         # TODO
         raise RuntimeError()
 
+    def _get_node_mapping(self, map_name: str) -> NodeMapping:
+        mappings: list[NodeMapping] = self._node_template.mappings.mappings
+        # TODO: another scenarios suggesting property lookups might be preferable.
+        for mapping in mappings:
+            if mapping.name == map_name:
+                return mapping
+        # TODO
+        raise RuntimeError()
+
     def _get_node_parameter_if_exists(self, parameter_name: str) -> Optional[NodeParameter]:
         parameters: list[NodeParameter] = self._node_template.parameters.parameters
         # TODO: another scenarios suggesting property lookups might be preferable.
@@ -114,6 +124,16 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         before_context = resource_unit.before_context
         after_context = resource_unit.after_context
         return DescribeUnit(before_context=before_context, after_context=after_context)
+
+    def _resolve_mapping(self, map_name: str, top_level_key: str, second_level_key) -> DescribeUnit:
+        # TODO: add support for nested intrinsic functions, and KNOWN AFTER APPLY logical ids.
+        node_mapping: NodeMapping = self._get_node_mapping(map_name=map_name)
+        top_level_value = node_mapping.bindings.bindings.get(top_level_key)
+        if not isinstance(top_level_value, NodeObject):
+            raise RuntimeError()
+        second_level_value = top_level_value.bindings.get(second_level_key)
+        mapping_value_unit = self.visit(second_level_value)
+        return mapping_value_unit
 
     def _resolve_reference_binding(
         self, before_logical_id: str, after_logical_id: str
@@ -295,8 +315,31 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         # Implicit change type computation.
         return DescribeUnit(before_context=before_context, after_context=after_context)
 
+    def visit_node_intrinsic_function_fn_find_in_map(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> DescribeUnit:
+        # TODO: check for KNOWN AFTER APPLY values for logical ids coming from intrinsic functions as arguments.
+        # TODO: add type checking/validation for result unit?
+        arguments_unit = self.visit(node_intrinsic_function.arguments)
+        before_arguments = arguments_unit.before_context
+        after_arguments = arguments_unit.after_context
+        if before_arguments:
+            before_value_unit = self._resolve_mapping(*before_arguments)
+            before_context = before_value_unit.before_context
+        else:
+            before_context = None
+        if after_arguments:
+            after_value_unit = self._resolve_mapping(*after_arguments)
+            after_context = after_value_unit.after_context
+        else:
+            after_context = None
+        return DescribeUnit(before_context=before_context, after_context=after_context)
+
+    def visit_node_mapping(self, node_mapping: NodeMapping) -> DescribeUnit:
+        bindings_unit = self.visit(node_mapping.bindings)
+        return bindings_unit
+
     def visit_node_parameter(self, node_parameter: NodeParameter) -> DescribeUnit:
-        # TODO: add caching for these operation, parameters may be referenced more than once.
         # TODO: add support for default value sampling
         dynamic_value = node_parameter.dynamic_value
         describe_unit = self.visit(dynamic_value)
