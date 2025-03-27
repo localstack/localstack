@@ -6,6 +6,7 @@ from typing import Callable
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack import config
 from localstack.aws.api.cloudformation import StackEvent
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.aws.cloudformation_utils import (
@@ -21,6 +22,10 @@ from localstack.utils.sync import ShortCircuitWaitException, poll_condition, wai
 from tests.aws.services.cloudformation.api.test_stacks import (
     MINIMAL_TEMPLATE,
 )
+
+
+def is_v2_engine() -> bool:
+    return config.SERVICE_PROVIDER_CONFIG.get_provider("cloudformation") == "engine-v2"
 
 
 @markers.aws.validated
@@ -1086,7 +1091,7 @@ def test_describe_change_set_with_similarly_named_stacks(deploy_cfn_template, aw
 PerResourceStackEvents = dict[str, list[StackEvent]]
 
 
-@pytest.mark.skip(reason="Requires the V2 engine")
+@pytest.mark.skipif(condition=not is_v2_engine(), reason="Requires the V2 engine")
 class TestCaptureUpdateProcess:
     @pytest.fixture
     def capture_per_resource_events(
@@ -1480,8 +1485,8 @@ class TestCaptureUpdateProcess:
             "Mappings": {
                 "MyMap": {
                     "MyKey": {
-                        name1: "MyTopicName",
-                        name2: "MyNewTopicName",
+                        name1: f"topic-1-{short_uid()}",
+                        name2: f"topic-2-{short_uid()}",
                     },
                 },
             },
