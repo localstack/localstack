@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_fail": {
-    "recorded-date": "06-03-2024, 10:29:14",
+    "recorded-date": "07-03-2025, 18:07:46",
     "recorded-content": {
       "describe_execution": {
         "cause": "This state machines raises a 'SomeFailure' failure.",
@@ -11,8 +11,6 @@
           "included": true
         },
         "name": "<ExecArnPart_0idx>",
-        "redriveCount": 0,
-        "redriveStatus": "REDRIVABLE",
         "startDate": "datetime",
         "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "FAILED",
@@ -69,7 +67,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_fail_path": {
-    "recorded-date": "07-02-2024, 13:49:36",
+    "recorded-date": "07-03-2025, 18:07:47",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -124,7 +122,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_fail_intrinsic": {
-    "recorded-date": "07-02-2024, 13:49:50",
+    "recorded-date": "07-03-2025, 18:07:48",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -179,7 +177,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_fail_empty": {
-    "recorded-date": "06-03-2024, 10:24:13",
+    "recorded-date": "07-03-2025, 18:07:48",
     "recorded-content": {
       "describe_execution": {
         "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
@@ -188,8 +186,6 @@
           "included": true
         },
         "name": "<ExecArnPart_0idx>",
-        "redriveCount": 0,
-        "redriveStatus": "REDRIVABLE",
         "startDate": "datetime",
         "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "FAILED",
@@ -243,7 +239,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_pass_result": {
-    "recorded-date": "07-02-2024, 13:50:16",
+    "recorded-date": "07-03-2025, 18:07:48",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -311,7 +307,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_pass_result_jsonpaths": {
-    "recorded-date": "07-02-2024, 13:50:28",
+    "recorded-date": "07-03-2025, 18:07:49",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -381,7 +377,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_event_bridge_events_base": {
-    "recorded-date": "07-02-2024, 13:56:58",
+    "recorded-date": "07-03-2025, 18:07:52",
     "recorded-content": {
       "stepfunctions_events": [
         {
@@ -398,21 +394,17 @@
           "detail": {
             "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<resource:2>:<resource:1>",
             "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:2>",
+            "stateMachineAliasArn": null,
+            "stateMachineVersionArn": null,
             "name": "test_event_bridge_events-{short_uid()}",
             "status": "RUNNING",
             "startDate": "start-date",
             "stopDate": "stop-date",
             "input": {},
-            "output": null,
-            "stateMachineVersionArn": null,
-            "stateMachineAliasArn": null,
-            "redriveCount": 0,
-            "redriveDate": null,
-            "redriveStatus": "NOT_REDRIVABLE",
-            "redriveStatusReason": "Execution is RUNNING and cannot be redriven",
             "inputDetails": {
               "included": true
             },
+            "output": null,
             "outputDetails": null,
             "error": null,
             "cause": null
@@ -432,22 +424,18 @@
           "detail": {
             "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<resource:2>:<resource:1>",
             "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:2>",
+            "stateMachineAliasArn": null,
+            "stateMachineVersionArn": null,
             "name": "test_event_bridge_events-{short_uid()}",
             "status": "SUCCEEDED",
             "startDate": "start-date",
             "stopDate": "stop-date",
             "input": {},
-            "output": {
-              "Arg1": "argument1"
-            },
-            "stateMachineVersionArn": null,
-            "stateMachineAliasArn": null,
-            "redriveCount": 0,
-            "redriveDate": null,
-            "redriveStatus": "NOT_REDRIVABLE",
-            "redriveStatusReason": "Execution is SUCCEEDED and cannot be redriven",
             "inputDetails": {
               "included": true
+            },
+            "output": {
+              "Arg1": "argument1"
             },
             "outputDetails": {
               "included": true
@@ -460,7 +448,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_decl_version_1_0": {
-    "recorded-date": "07-02-2024, 13:52:02",
+    "recorded-date": "07-03-2025, 18:07:53",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -524,7 +512,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_query_context_object_values": {
-    "recorded-date": "15-07-2024, 13:00:19",
+    "recorded-date": "07-03-2025, 18:07:54",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -566,54 +554,52 @@
               "output": {
                 "message": "TestMessage",
                 "query_values_1": {
-                  "execution": {
-                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
-                    "Input": {
-                      "message": "TestMessage"
-                    },
-                    "StartTime": "start-time",
-                    "Name": "<ExecArnPart_0idx>",
-                    "RoleArn": "snf_role_arn",
-                    "RedriveCount": 0
-                  },
-                  "execution_rolearn": "snf_role_arn",
-                  "execution_name": "<ExecArnPart_0idx>",
-                  "statemachine_id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-                  "execution_id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
-                  "execution_input": {
-                    "message": "TestMessage"
-                  },
-                  "execution_starttime": "start-time",
-                  "state_name": "QueryValues1",
-                  "state_enteredtime": "entered-time",
-                  "statemachine": {
-                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-                    "Name": "<ArnPart_0idx>"
-                  },
-                  "state": {
-                    "Name": "QueryValues1",
-                    "EnteredTime": "entered-time"
-                  },
                   "context_object": {
                     "Execution": {
                       "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
                         "message": "TestMessage"
                       },
-                      "StartTime": "start-time",
                       "Name": "<ExecArnPart_0idx>",
                       "RoleArn": "snf_role_arn",
-                      "RedriveCount": 0
+                      "StartTime": "start-time"
                     },
                     "StateMachine": {
                       "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
-                      "Name": "QueryValues1",
-                      "EnteredTime": "entered-time"
+                      "EnteredTime": "entered-time",
+                      "Name": "QueryValues1"
                     }
                   },
+                  "execution": {
+                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Input": {
+                      "message": "TestMessage"
+                    },
+                    "Name": "<ExecArnPart_0idx>",
+                    "RoleArn": "snf_role_arn",
+                    "StartTime": "start-time"
+                  },
+                  "execution_id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "execution_input": {
+                    "message": "TestMessage"
+                  },
+                  "execution_name": "<ExecArnPart_0idx>",
+                  "execution_rolearn": "snf_role_arn",
+                  "execution_starttime": "start-time",
+                  "state": {
+                    "EnteredTime": "entered-time",
+                    "Name": "QueryValues1"
+                  },
+                  "state_enteredtime": "entered-time",
+                  "state_name": "QueryValues1",
+                  "statemachine": {
+                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Name": "<ArnPart_0idx>"
+                  },
+                  "statemachine_id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                   "statemachine_name": "<ArnPart_0idx>"
                 }
               },
@@ -631,54 +617,52 @@
               "input": {
                 "message": "TestMessage",
                 "query_values_1": {
-                  "execution": {
-                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
-                    "Input": {
-                      "message": "TestMessage"
-                    },
-                    "StartTime": "start-time",
-                    "Name": "<ExecArnPart_0idx>",
-                    "RoleArn": "snf_role_arn",
-                    "RedriveCount": 0
-                  },
-                  "execution_rolearn": "snf_role_arn",
-                  "execution_name": "<ExecArnPart_0idx>",
-                  "statemachine_id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-                  "execution_id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
-                  "execution_input": {
-                    "message": "TestMessage"
-                  },
-                  "execution_starttime": "start-time",
-                  "state_name": "QueryValues1",
-                  "state_enteredtime": "entered-time",
-                  "statemachine": {
-                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-                    "Name": "<ArnPart_0idx>"
-                  },
-                  "state": {
-                    "Name": "QueryValues1",
-                    "EnteredTime": "entered-time"
-                  },
                   "context_object": {
                     "Execution": {
                       "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
                         "message": "TestMessage"
                       },
-                      "StartTime": "start-time",
                       "Name": "<ExecArnPart_0idx>",
                       "RoleArn": "snf_role_arn",
-                      "RedriveCount": 0
+                      "StartTime": "start-time"
                     },
                     "StateMachine": {
                       "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
-                      "Name": "QueryValues1",
-                      "EnteredTime": "entered-time"
+                      "EnteredTime": "entered-time",
+                      "Name": "QueryValues1"
                     }
                   },
+                  "execution": {
+                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Input": {
+                      "message": "TestMessage"
+                    },
+                    "Name": "<ExecArnPart_0idx>",
+                    "RoleArn": "snf_role_arn",
+                    "StartTime": "start-time"
+                  },
+                  "execution_id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "execution_input": {
+                    "message": "TestMessage"
+                  },
+                  "execution_name": "<ExecArnPart_0idx>",
+                  "execution_rolearn": "snf_role_arn",
+                  "execution_starttime": "start-time",
+                  "state": {
+                    "EnteredTime": "entered-time",
+                    "Name": "QueryValues1"
+                  },
+                  "state_enteredtime": "entered-time",
+                  "state_name": "QueryValues1",
+                  "statemachine": {
+                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Name": "<ArnPart_0idx>"
+                  },
+                  "statemachine_id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                   "statemachine_name": "<ArnPart_0idx>"
                 }
               },
@@ -698,54 +682,52 @@
               "output": {
                 "message": "TestMessage",
                 "query_values_1": {
-                  "execution": {
-                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
-                    "Input": {
-                      "message": "TestMessage"
-                    },
-                    "StartTime": "start-time",
-                    "Name": "<ExecArnPart_0idx>",
-                    "RoleArn": "snf_role_arn",
-                    "RedriveCount": 0
-                  },
-                  "execution_rolearn": "snf_role_arn",
-                  "execution_name": "<ExecArnPart_0idx>",
-                  "statemachine_id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-                  "execution_id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
-                  "execution_input": {
-                    "message": "TestMessage"
-                  },
-                  "execution_starttime": "start-time",
-                  "state_name": "QueryValues1",
-                  "state_enteredtime": "entered-time",
-                  "statemachine": {
-                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-                    "Name": "<ArnPart_0idx>"
-                  },
-                  "state": {
-                    "Name": "QueryValues1",
-                    "EnteredTime": "entered-time"
-                  },
                   "context_object": {
                     "Execution": {
                       "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
                         "message": "TestMessage"
                       },
-                      "StartTime": "start-time",
                       "Name": "<ExecArnPart_0idx>",
                       "RoleArn": "snf_role_arn",
-                      "RedriveCount": 0
+                      "StartTime": "start-time"
                     },
                     "StateMachine": {
                       "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
-                      "Name": "QueryValues1",
-                      "EnteredTime": "entered-time"
+                      "EnteredTime": "entered-time",
+                      "Name": "QueryValues1"
                     }
                   },
+                  "execution": {
+                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Input": {
+                      "message": "TestMessage"
+                    },
+                    "Name": "<ExecArnPart_0idx>",
+                    "RoleArn": "snf_role_arn",
+                    "StartTime": "start-time"
+                  },
+                  "execution_id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "execution_input": {
+                    "message": "TestMessage"
+                  },
+                  "execution_name": "<ExecArnPart_0idx>",
+                  "execution_rolearn": "snf_role_arn",
+                  "execution_starttime": "start-time",
+                  "state": {
+                    "EnteredTime": "entered-time",
+                    "Name": "QueryValues1"
+                  },
+                  "state_enteredtime": "entered-time",
+                  "state_name": "QueryValues1",
+                  "statemachine": {
+                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Name": "<ArnPart_0idx>"
+                  },
+                  "statemachine_id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                   "statemachine_name": "<ArnPart_0idx>"
                 },
                 "query_values_2": {
@@ -755,18 +737,17 @@
                       "Input": {
                         "message": "TestMessage"
                       },
-                      "StartTime": "start-time",
                       "Name": "<ExecArnPart_0idx>",
                       "RoleArn": "snf_role_arn",
-                      "RedriveCount": 0
+                      "StartTime": "start-time"
                     },
                     "StateMachine": {
                       "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
-                      "Name": "QueryValues2",
-                      "EnteredTime": "entered-time"
+                      "EnteredTime": "entered-time",
+                      "Name": "QueryValues2"
                     }
                   }
                 }
@@ -783,54 +764,52 @@
               "output": {
                 "message": "TestMessage",
                 "query_values_1": {
-                  "execution": {
-                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
-                    "Input": {
-                      "message": "TestMessage"
-                    },
-                    "StartTime": "start-time",
-                    "Name": "<ExecArnPart_0idx>",
-                    "RoleArn": "snf_role_arn",
-                    "RedriveCount": 0
-                  },
-                  "execution_rolearn": "snf_role_arn",
-                  "execution_name": "<ExecArnPart_0idx>",
-                  "statemachine_id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-                  "execution_id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
-                  "execution_input": {
-                    "message": "TestMessage"
-                  },
-                  "execution_starttime": "start-time",
-                  "state_name": "QueryValues1",
-                  "state_enteredtime": "entered-time",
-                  "statemachine": {
-                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-                    "Name": "<ArnPart_0idx>"
-                  },
-                  "state": {
-                    "Name": "QueryValues1",
-                    "EnteredTime": "entered-time"
-                  },
                   "context_object": {
                     "Execution": {
                       "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
                       "Input": {
                         "message": "TestMessage"
                       },
-                      "StartTime": "start-time",
                       "Name": "<ExecArnPart_0idx>",
                       "RoleArn": "snf_role_arn",
-                      "RedriveCount": 0
+                      "StartTime": "start-time"
                     },
                     "StateMachine": {
                       "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
-                      "Name": "QueryValues1",
-                      "EnteredTime": "entered-time"
+                      "EnteredTime": "entered-time",
+                      "Name": "QueryValues1"
                     }
                   },
+                  "execution": {
+                    "Id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Input": {
+                      "message": "TestMessage"
+                    },
+                    "Name": "<ExecArnPart_0idx>",
+                    "RoleArn": "snf_role_arn",
+                    "StartTime": "start-time"
+                  },
+                  "execution_id": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "execution_input": {
+                    "message": "TestMessage"
+                  },
+                  "execution_name": "<ExecArnPart_0idx>",
+                  "execution_rolearn": "snf_role_arn",
+                  "execution_starttime": "start-time",
+                  "state": {
+                    "EnteredTime": "entered-time",
+                    "Name": "QueryValues1"
+                  },
+                  "state_enteredtime": "entered-time",
+                  "state_name": "QueryValues1",
+                  "statemachine": {
+                    "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Name": "<ArnPart_0idx>"
+                  },
+                  "statemachine_id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                   "statemachine_name": "<ArnPart_0idx>"
                 },
                 "query_values_2": {
@@ -840,18 +819,17 @@
                       "Input": {
                         "message": "TestMessage"
                       },
-                      "StartTime": "start-time",
                       "Name": "<ExecArnPart_0idx>",
                       "RoleArn": "snf_role_arn",
-                      "RedriveCount": 0
+                      "StartTime": "start-time"
                     },
                     "StateMachine": {
                       "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                       "Name": "<ArnPart_0idx>"
                     },
                     "State": {
-                      "Name": "QueryValues2",
-                      "EnteredTime": "entered-time"
+                      "EnteredTime": "entered-time",
+                      "Name": "QueryValues2"
                     }
                   }
                 }
@@ -874,7 +852,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_pass_result_null_input_output_paths": {
-    "recorded-date": "07-02-2024, 13:52:29",
+    "recorded-date": "07-03-2025, 18:07:55",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1010,7 +988,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_pass_regex_json_path_base": {
-    "recorded-date": "07-02-2024, 13:52:55",
+    "recorded-date": "07-03-2025, 18:07:57",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1110,7 +1088,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_access[$.items[0]]": {
-    "recorded-date": "16-08-2024, 15:52:50",
+    "recorded-date": "07-03-2025, 18:07:57",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1254,7 +1232,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_access[$.items[10]]": {
-    "recorded-date": "16-08-2024, 15:53:06",
+    "recorded-date": "07-03-2025, 18:07:58",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1379,6 +1357,822 @@
                 "item": {
                   "item_key": 10
                 }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$[*]]": {
+    "recorded-date": "07-03-2025, 18:08:00",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EntryState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "EntryState",
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.items[*]]": {
+    "recorded-date": "07-03-2025, 18:08:00",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EntryState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "EntryState",
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.items[1:]]": {
+    "recorded-date": "07-03-2025, 18:08:01",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EntryState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "EntryState",
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.items[:1]]": {
+    "recorded-date": "07-03-2025, 18:08:02",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EntryState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "EntryState",
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.item.items[*]]": {
+    "recorded-date": "07-03-2025, 18:08:03",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EntryState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "EntryState",
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.item.items[1:]]": {
+    "recorded-date": "07-03-2025, 18:08:03",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EntryState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "EntryState",
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.item.items[:1]]": {
+    "recorded-date": "07-03-2025, 18:08:04",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EntryState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "EntryState",
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.item.items[1:5]]": {
+    "recorded-date": "07-03-2025, 18:08:06",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EntryState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "EntryState",
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.items[*].itemValue]": {
+    "recorded-date": "07-03-2025, 18:08:07",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EntryState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "EntryState",
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.items[1:].itemValue]": {
+    "recorded-date": "07-03-2025, 18:08:08",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EntryState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "EntryState",
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.items[:1].itemValue]": {
+    "recorded-date": "07-03-2025, 18:08:08",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EntryState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "EntryState",
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.item.items[1:5].itemValue]": {
+    "recorded-date": "07-03-2025, 18:08:09",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EntryState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "EntryState",
+              "output": {
+                "item": []
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "item": []
               },
               "outputDetails": {
                 "truncated": false
