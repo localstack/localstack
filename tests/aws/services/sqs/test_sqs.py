@@ -1143,7 +1143,7 @@ class TestSqsProvider:
 
         aws_sqs_client.send_message(QueueUrl=queue_url, MessageBody="foobar", MessageGroupId="1")
         # receive the message
-        initial_receive = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        initial_receive = aws_sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)
         snapshot.match("received_sqs_message", initial_receive)
         receipt_handle = initial_receive["Messages"][0]["ReceiptHandle"]
 
