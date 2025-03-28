@@ -3,7 +3,7 @@ import itertools
 import json
 import re
 import time
-from typing import Literal, Optional, Tuple
+from typing import Literal, NamedTuple, Optional, Tuple
 from urllib.parse import urlparse
 
 from localstack.aws.api.sqs import QueueAttributeName, ReceiptHandleIsInvalid
@@ -118,10 +118,26 @@ def parse_queue_url(queue_url: str) -> Tuple[str, Optional[str], str]:
 
 def decode_receipt_handle(receipt_handle: str) -> str:
     try:
-        handle = base64.b64decode(receipt_handle).decode("utf-8")
-        _, queue_arn, message_id, last_received = handle.split(" ")
+        _, queue_arn, *_ = extract_receipt_handle_info(receipt_handle)
         parse_arn(queue_arn)  # raises a ValueError if it is not an arn
         return queue_arn
+    except (IndexError, ValueError):
+        raise ReceiptHandleIsInvalid(
+            f'The input receipt handle "{receipt_handle}" is not a valid receipt handle.'
+        )
+
+
+class ReceiptHandleInformation(NamedTuple):
+    identifier: str
+    queue_arn: str
+    message_id: str
+    last_received: str
+
+
+def extract_receipt_handle_info(receipt_handle: str) -> ReceiptHandleInformation:
+    try:
+        handle = base64.b64decode(receipt_handle).decode("utf-8")
+        return ReceiptHandleInformation(*handle.split(" "))
     except (IndexError, ValueError):
         raise ReceiptHandleIsInvalid(
             f'The input receipt handle "{receipt_handle}" is not a valid receipt handle.'

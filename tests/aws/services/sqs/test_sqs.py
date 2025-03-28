@@ -16,7 +16,10 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE, SQS_UUID_STRING_SEED
 from localstack.services.sqs.models import sqs_stores
 from localstack.services.sqs.provider import MAX_NUMBER_OF_MESSAGES
-from localstack.services.sqs.utils import parse_queue_url, token_generator
+from localstack.services.sqs.utils import (
+    parse_queue_url,
+    token_generator,
+)
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.config import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
@@ -1102,6 +1105,53 @@ class TestSqsProvider:
         assert message_receipt_0["ReceiptHandle"] != message_receipt_1["ReceiptHandle"], (
             "receipt handles should be different"
         )
+
+    @markers.aws.validated
+    def test_delete_after_visibility_timeout(self, sqs_create_queue, aws_sqs_client, snapshot):
+        timeout = 1
+        queue_url = sqs_create_queue(
+            QueueName=f"test-{short_uid()}", Attributes={"VisibilityTimeout": f"{timeout}"}
+        )
+
+        aws_sqs_client.send_message(QueueUrl=queue_url, MessageBody="foobar")
+        # receive the message
+        initial_receive = aws_sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)
+        assert "Messages" in initial_receive
+        receipt_handle = initial_receive["Messages"][0]["ReceiptHandle"]
+
+        # exceed the visibility timeout window
+        time.sleep(timeout)
+
+        aws_sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+
+        snapshot.match(
+            "delete_after_timeout_queue_empty", aws_sqs_client.receive_message(QueueUrl=queue_url)
+        )
+
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
+    @markers.aws.validated
+    def test_fifo_delete_after_visibility_timeout(self, sqs_create_queue, aws_sqs_client, snapshot):
+        timeout = 1
+        queue_url = sqs_create_queue(
+            QueueName=f"test-{short_uid()}.fifo",
+            Attributes={
+                "VisibilityTimeout": f"{timeout}",
+                "FifoQueue": "True",
+                "ContentBasedDeduplication": "True",
+            },
+        )
+
+        aws_sqs_client.send_message(QueueUrl=queue_url, MessageBody="foobar", MessageGroupId="1")
+        # receive the message
+        initial_receive = aws_sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)
+        snapshot.match("received_sqs_message", initial_receive)
+        receipt_handle = initial_receive["Messages"][0]["ReceiptHandle"]
+
+        # exceed the visibility timeout window
+        time.sleep(timeout)
+        with pytest.raises(ClientError) as e:
+            aws_sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+        snapshot.match("delete_after_timeout_fifo", e.value.response)
 
     @markers.aws.validated
     def test_receive_terminate_visibility_timeout(self, sqs_queue, aws_sqs_client):
