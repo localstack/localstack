@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 
 from localstack import config, constants
 from localstack.aws.connect import connect_to
+from localstack.services.cloudformation.engine.entities import Stack
 from localstack.services.s3.utils import (
     extract_bucket_name_and_key_from_headers_and_path,
     normalize_bucket_name,
@@ -16,7 +17,12 @@ from localstack.utils.urls import localstack_host
 LOG = logging.getLogger(__name__)
 
 
-def prepare_template_body(req_data: dict) -> str | bytes | None:  # TODO: mutating and returning
+# TODO: remove optional stack and make it required
+
+
+def prepare_template_body(
+    req_data: dict, stack: Stack | None = None
+) -> str | bytes | None:  # TODO: mutating and returning
     template_url = req_data.get("TemplateURL")
     if template_url:
         req_data["TemplateURL"] = convert_s3_to_local_url(template_url)
@@ -26,13 +32,13 @@ def prepare_template_body(req_data: dict) -> str | bytes | None:  # TODO: mutati
         if modified_template_body:
             req_data.pop("TemplateURL", None)
             req_data["TemplateBody"] = modified_template_body
-    modified_template_body = get_template_body(req_data)
+    modified_template_body = get_template_body(req_data, stack)
     if modified_template_body:
         req_data["TemplateBody"] = modified_template_body
     return modified_template_body
 
 
-def get_template_body(req_data: dict) -> str:
+def get_template_body(req_data: dict, stack: Stack | None = None) -> str:
     body = req_data.get("TemplateBody")
     if body:
         return body
@@ -60,6 +66,9 @@ def get_template_body(req_data: dict) -> str:
                 "Unable to fetch template body (code %s) from URL %s" % (status_code, url)
             )
         return to_str(response.content)
+    if req_data.get("UsePreviousTemplate") and stack:
+        return stack.template_body
+
     raise Exception("Unable to get template body from input: %s" % req_data)
 
 
