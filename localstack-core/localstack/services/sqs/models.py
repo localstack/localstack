@@ -1019,7 +1019,7 @@ class FifoQueue(SqsQueue):
         _, _, _, last_received = extract_receipt_handle_info(receipt_handle)
         if time.time() - float(last_received) > message.visibility_timeout:
             raise InvalidParameterValueException(
-                f"Value f{receipt_handle} for parameter ReceiptHandle is invalid. Reason: The receipt handle has expired."
+                f"Value {receipt_handle} for parameter ReceiptHandle is invalid. Reason: The receipt handle has expired."
             )
 
     def remove(self, receipt_handle: str):

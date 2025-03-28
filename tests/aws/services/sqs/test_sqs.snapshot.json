@@ -3892,9 +3892,9 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_after_visibility_timeout[sqs]": {
-    "recorded-date": "26-03-2025, 12:53:35",
+    "recorded-date": "28-03-2025, 13:46:28",
     "recorded-content": {
-      "delete_after_timeout": {
+      "delete_after_timeout_queue_empty": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3903,9 +3903,9 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_after_visibility_timeout[sqs_query]": {
-    "recorded-date": "26-03-2025, 12:53:38",
+    "recorded-date": "28-03-2025, 13:46:31",
     "recorded-content": {
-      "delete_after_timeout": {
+      "delete_after_timeout_queue_empty": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3914,12 +3914,26 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_delete_after_visibility_timeout[sqs]": {
-    "recorded-date": "26-03-2025, 14:10:59",
+    "recorded-date": "28-03-2025, 13:28:19",
     "recorded-content": {
+      "received_sqs_message": {
+        "Messages": [
+          {
+            "Body": "foobar",
+            "MD5OfBody": "3858f62230ac3c915f300c664312c63f",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "delete_after_timeout_fifo": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Message": "Value <RECEIPT_HANDLE> for parameter ReceiptHandle is invalid. Reason: The receipt handle has expired.",
+          "Message": "Value <receipt-handle:1> for parameter ReceiptHandle is invalid. Reason: The receipt handle has expired.",
           "QueryErrorCode": "InvalidParameterValueException",
           "Type": "Sender"
         },
@@ -3931,13 +3945,27 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_delete_after_visibility_timeout[sqs_query]": {
-    "recorded-date": "26-03-2025, 14:11:02",
+    "recorded-date": "28-03-2025, 13:28:23",
     "recorded-content": {
+      "received_sqs_message": {
+        "Messages": [
+          {
+            "Body": "foobar",
+            "MD5OfBody": "3858f62230ac3c915f300c664312c63f",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "delete_after_timeout_fifo": {
         "Error": {
           "Code": "InvalidParameterValue",
           "Detail": null,
-          "Message": "Value <RECEIPT_HANDLE> for parameter ReceiptHandle is invalid. Reason: The receipt handle has expired.",
+          "Message": "Value <receipt-handle:1> for parameter ReceiptHandle is invalid. Reason: The receipt handle has expired.",
           "Type": "Sender"
         },
         "ResponseMetadata": {

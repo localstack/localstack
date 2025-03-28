@@ -69,10 +69,10 @@
     "last_validated_date": "2024-05-29T13:47:36+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_after_visibility_timeout[sqs]": {
-    "last_validated_date": "2025-03-26T12:53:35+00:00"
+    "last_validated_date": "2025-03-28T13:46:27+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_after_visibility_timeout[sqs_query]": {
-    "last_validated_date": "2025-03-26T12:53:37+00:00"
+    "last_validated_date": "2025-03-28T13:46:31+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_invalid_msg_id[sqs-]": {
     "last_validated_date": "2024-04-30T13:48:34+00:00"
@@ -135,10 +135,10 @@
     "last_validated_date": "2024-04-30T13:34:17+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_delete_after_visibility_timeout[sqs]": {
-    "last_validated_date": "2025-03-26T14:10:59+00:00"
+    "last_validated_date": "2025-03-28T13:37:10+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_delete_after_visibility_timeout[sqs_query]": {
-    "last_validated_date": "2025-03-26T14:11:02+00:00"
+    "last_validated_date": "2025-03-28T13:37:13+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_empty_message_groups_added_back_to_queue[sqs]": {
     "last_validated_date": "2024-04-30T13:46:32+00:00"
