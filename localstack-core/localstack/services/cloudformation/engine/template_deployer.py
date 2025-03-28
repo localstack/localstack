@@ -1409,15 +1409,6 @@ class TemplateDeployer:
             )  # TODO: why is there a fallback?
             resource["ResourceType"] = get_resource_type(resource)
 
-        def _safe_lookup_is_deleted(r_id):
-            """handles the case where self.stack.resource_status(..) fails for whatever reason"""
-            try:
-                return self.stack.resource_status(r_id).get("ResourceStatus") == "DELETE_COMPLETE"
-            except Exception:
-                if config.CFN_VERBOSE_ERRORS:
-                    LOG.exception("failed to lookup if resource %s is deleted", r_id)
-                return True  # just an assumption
-
         ordered_resource_ids = list(
             order_resources(
                 resources=original_resources,
