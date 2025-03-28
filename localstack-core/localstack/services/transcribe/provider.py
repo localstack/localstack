@@ -44,6 +44,8 @@ from localstack.utils.http import download
 from localstack.utils.run import run
 from localstack.utils.threads import start_thread
 
+MAX_AUDIO_DURATION_SECONDS = 60 * 60 * 4
+
 LOG = logging.getLogger(__name__)
 
 VOSK_MODELS_URL = f"{HUGGING_FACE_ENDPOINT}/vosk-models/resolve/main/"
@@ -304,6 +306,13 @@ class TranscribeProvider(TranscribeApi):
             format = ffprobe_output["format"]["format_name"]
             LOG.debug("Media format detected as: %s", format)
             job["MediaFormat"] = SUPPORTED_FORMAT_NAMES[format]
+
+            duration = ffprobe_output["format"]["duration"]
+            LOG.debug("Media duration: %s (seconds)", duration)
+
+            if float(duration) >= MAX_AUDIO_DURATION_SECONDS:
+                failure_reason = "Invalid file size: file size too large. Maximum audio duration is 4.000000 hours. Check the length of the file and try your request again"
+                raise RuntimeError()
 
             # Determine the sample rate of input audio if possible
             for stream in ffprobe_output["streams"]:
