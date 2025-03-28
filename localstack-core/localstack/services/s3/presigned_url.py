@@ -60,7 +60,7 @@ LOG = logging.getLogger(__name__)
 
 SIGNATURE_V2_POST_FIELDS = [
     "signature",
-    "AWSAccessKeyId",
+    "awsaccesskeyid",
 ]
 
 SIGNATURE_V4_POST_FIELDS = [
@@ -768,13 +768,17 @@ def validate_post_policy(
         )
         raise ex
 
-    if not (policy := request_form.get("policy")):
+    form_dict = {k.lower(): v for k, v in request_form.items()}
+
+    policy = form_dict.get("policy")
+    if not policy:
         # A POST request needs a policy except if the bucket is publicly writable
         return
 
     # TODO: this does validation of fields only for now
-    is_v4 = _is_match_with_signature_fields(request_form, SIGNATURE_V4_POST_FIELDS)
-    is_v2 = _is_match_with_signature_fields(request_form, SIGNATURE_V2_POST_FIELDS)
+    is_v4 = _is_match_with_signature_fields(form_dict, SIGNATURE_V4_POST_FIELDS)
+    is_v2 = _is_match_with_signature_fields(form_dict, SIGNATURE_V2_POST_FIELDS)
+
     if not is_v2 and not is_v4:
         ex: AccessDenied = AccessDenied("Access Denied")
         ex.HostId = FAKE_HOST_ID
@@ -784,7 +788,7 @@ def validate_post_policy(
         policy_decoded = json.loads(base64.b64decode(policy).decode("utf-8"))
     except ValueError:
         # this means the policy has been tampered with
-        signature = request_form.get("signature") if is_v2 else request_form.get("x-amz-signature")
+        signature = form_dict.get("signature") if is_v2 else form_dict.get("x-amz-signature")
         credentials = get_credentials_from_parameters(request_form, "us-east-1")
         ex: SignatureDoesNotMatch = create_signature_does_not_match_sig_v2(
             request_signature=signature,
@@ -813,7 +817,6 @@ def validate_post_policy(
         return
 
     conditions = policy_decoded.get("conditions", [])
-    form_dict = {k.lower(): v for k, v in request_form.items()}
     for condition in conditions:
         if not _verify_condition(condition, form_dict, additional_policy_metadata):
             str_condition = str(condition).replace("'", '"')
@@ -896,7 +899,7 @@ def _parse_policy_expiration_date(expiration_string: str) -> datetime.datetime:
 
 
 def _is_match_with_signature_fields(
-    request_form: ImmutableMultiDict, signature_fields: list[str]
+    request_form: dict[str, str], signature_fields: list[str]
 ) -> bool:
     """
     Checks if the form contains at least one of the required fields passed in `signature_fields`
@@ -910,12 +913,13 @@ def _is_match_with_signature_fields(
         for p in signature_fields:
             if p not in request_form:
                 LOG.info("POST pre-sign missing fields")
-                # .capitalize() does not work here, because of AWSAccessKeyId casing
                 argument_name = (
-                    capitalize_header_name_from_snake_case(p)
-                    if "-" in p
-                    else f"{p[0].upper()}{p[1:]}"
+                    capitalize_header_name_from_snake_case(p) if "-" in p else p.capitalize()
                 )
+                # AWSAccessKeyId is a special case
+                if argument_name == "Awsaccesskeyid":
+                    argument_name = "AWSAccessKeyId"
+
                 ex: InvalidArgument = _create_invalid_argument_exc(
                     message=f"Bucket POST must contain a field named '{argument_name}'.  If it is specified, please check the order of the fields.",
                     name=argument_name,
