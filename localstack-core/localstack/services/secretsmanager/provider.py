@@ -738,22 +738,25 @@ def backend_rotate_secret(
     # Resolve rotation_lambda_arn and fallback to previous value if its missing
     # from the current request
     rotation_lambda_arn = rotation_lambda_arn or secret.rotation_lambda_arn
-    rotation_period = 0
+    if not rotation_lambda_arn:
+        raise InvalidRequestException(
+            "No Lambda rotation function ARN is associated with this secret."
+        )
+
     if rotation_lambda_arn:
         if len(rotation_lambda_arn) > 2048:
             msg = "RotationLambdaARN must <= 2048 characters long."
             raise InvalidParameterException(msg)
 
+    # In case rotation_period is not provided, resolve auto_rotate_after_days
+    # and fallback to previous value if its missing from the current request.
+    rotation_period = secret.auto_rotate_after_days or 0
     if rotation_rules:
         if rotation_days in rotation_rules:
             rotation_period = rotation_rules[rotation_days]
             if rotation_period < 1 or rotation_period > 1000:
                 msg = "RotationRules.AutomaticallyAfterDays must be within 1-1000."
                 raise InvalidParameterException(msg)
-    else:
-        # Resolve auto_rotate_after_days and fallback to previous value
-        # if its missing from the current request
-        rotation_period = secret.auto_rotate_after_days
 
     try:
         lm_client = connect_to(region_name=self.region_name).lambda_
@@ -788,7 +791,7 @@ def backend_rotate_secret(
         pass
 
     secret.rotation_lambda_arn = rotation_lambda_arn
-    secret.auto_rotate_after_days = rotation_period or 0
+    secret.auto_rotate_after_days = rotation_period
     if secret.auto_rotate_after_days > 0:
         wait_interval_s = int(rotation_period) * 86400
         secret.next_rotation_date = int(time.time()) + wait_interval_s
