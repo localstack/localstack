@@ -1,4 +1,5 @@
 import logging
+from re import sub
 from typing import Optional
 
 from moto.ec2 import models as ec2_models
@@ -78,6 +79,8 @@ def apply_patches():
         tags: Optional[dict[str, str]] = None,
         **kwargs,
     ):
+        # Patch this method so that we can create a subnet with a specific "custom"
+        # ID.  The custom ID that we will use is contained within a special tag.
         vpc_id: str = args[0] if len(args) >= 1 else kwargs["vpc_id"]
         cidr_block: str = args[1] if len(args) >= 1 else kwargs["cidr_block"]
         resource_identifier = SubnetIdentifier(
@@ -107,8 +110,15 @@ def apply_patches():
         if custom_id:
             # Remove the subnet from the default dict and add it back with the custom id
             self.subnets[availability_zone].pop(result.id)
+            old_id = result.id
             result.id = custom_id
             self.subnets[availability_zone][custom_id] = result
+
+            # Tags are not stored in the Subnet object, but instead stored in a separate
+            # dict in the EC2 backend, keyed by subnet id.  That therefore requires
+            # updating as well.
+            if old_id in self.tags:
+                self.tags[custom_id] = self.tags.pop(old_id)
 
         # Return the subnet with the patched custom id
         return result
@@ -137,8 +147,15 @@ def apply_patches():
         if custom_id:
             # Remove the security group from the default dict and add it back with the custom id
             self.groups[result.vpc_id].pop(result.group_id)
+            old_id = result.group_id
             result.group_id = result.id = custom_id
             self.groups[result.vpc_id][custom_id] = result
+
+            # Tags are not stored in the Security Group object, but instead are stored in a
+            # separate dict in the EC2 backend, keyed by id.  That therefore requires
+            # updating as well.
+            if old_id in self.tags:
+                self.tags[custom_id] = self.tags.pop(old_id)
 
         return result
 
@@ -180,8 +197,15 @@ def apply_patches():
 
             # Remove the VPC from the default dict and add it back with the custom id
             self.vpcs.pop(vpc_id)
+            old_id = result.id
             result.id = custom_id
             self.vpcs[custom_id] = result
+
+            # Tags are not stored in the VPC object, but instead stored in a separate
+            # dict in the EC2 backend, keyed by VPC id.  That therefore requires
+            # updating as well.
+            if old_id in self.tags:
+                self.tags[custom_id] = self.tags.pop(old_id)
 
             # Create default network ACL, route table, and security group for custom ID VPC
             self.create_route_table(
