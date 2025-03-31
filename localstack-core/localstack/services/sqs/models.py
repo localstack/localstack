@@ -30,7 +30,6 @@ from localstack.services.sqs.exceptions import (
 )
 from localstack.services.sqs.queue import InterruptiblePriorityQueue, InterruptibleQueue
 from localstack.services.sqs.utils import (
-    decode_receipt_handle,
     encode_move_task_handle,
     encode_receipt_handle,
     extract_receipt_handle_info,
@@ -446,7 +445,7 @@ class SqsQueue:
         return len(self.delayed)
 
     def validate_receipt_handle(self, receipt_handle: str):
-        if self.arn != decode_receipt_handle(receipt_handle):
+        if self.arn != extract_receipt_handle_info(receipt_handle).queue_arn:
             raise ReceiptHandleIsInvalid(
                 f'The input receipt handle "{receipt_handle}" is not a valid receipt handle.'
             )

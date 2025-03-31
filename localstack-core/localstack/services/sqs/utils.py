@@ -116,17 +116,6 @@ def parse_queue_url(queue_url: str) -> Tuple[str, Optional[str], str]:
     return account_id, region, queue_name
 
 
-def decode_receipt_handle(receipt_handle: str) -> str:
-    try:
-        _, queue_arn, *_ = extract_receipt_handle_info(receipt_handle)
-        parse_arn(queue_arn)  # raises a ValueError if it is not an arn
-        return queue_arn
-    except (IndexError, ValueError):
-        raise ReceiptHandleIsInvalid(
-            f'The input receipt handle "{receipt_handle}" is not a valid receipt handle.'
-        )
-
-
 class ReceiptHandleInformation(NamedTuple):
     identifier: str
     queue_arn: str
@@ -137,11 +126,15 @@ class ReceiptHandleInformation(NamedTuple):
 def extract_receipt_handle_info(receipt_handle: str) -> ReceiptHandleInformation:
     try:
         handle = base64.b64decode(receipt_handle).decode("utf-8")
-        return ReceiptHandleInformation(*handle.split(" "))
-    except (IndexError, ValueError):
+        parts = handle.split(" ")
+        if len(parts) != 4:
+            raise ValueError(f'The input receipt handle "{receipt_handle}" is incomplete.')
+        parse_arn(parts[1])
+        return ReceiptHandleInformation(*parts)
+    except (IndexError, ValueError) as e:
         raise ReceiptHandleIsInvalid(
             f'The input receipt handle "{receipt_handle}" is not a valid receipt handle.'
-        )
+        ) from e
 
 
 def encode_receipt_handle(queue_arn, message) -> str:
