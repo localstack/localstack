@@ -1,5 +1,4 @@
 import logging
-from re import sub
 from typing import Optional
 
 from moto.ec2 import models as ec2_models
