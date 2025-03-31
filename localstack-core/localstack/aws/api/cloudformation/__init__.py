@@ -120,6 +120,7 @@ ResourceSignalUniqueId = str
 ResourceStatusReason = str
 ResourceToSkip = str
 ResourceType = str
+ResourceTypeFilter = str
 ResourceTypePrefix = str
 ResourcesFailed = int
 ResourcesPending = int
@@ -524,6 +525,11 @@ class ResourceStatus(StrEnum):
     ROLLBACK_IN_PROGRESS = "ROLLBACK_IN_PROGRESS"
     ROLLBACK_COMPLETE = "ROLLBACK_COMPLETE"
     ROLLBACK_FAILED = "ROLLBACK_FAILED"
+
+
+class ScanType(StrEnum):
+    FULL = "FULL"
+    PARTIAL = "PARTIAL"
 
 
 class StackDriftDetectionStatus(StrEnum):
@@ -1536,6 +1542,16 @@ class DescribeResourceScanInput(ServiceRequest):
     ResourceScanId: ResourceScanId
 
 
+ResourceTypeFilters = List[ResourceTypeFilter]
+
+
+class ScanFilter(TypedDict, total=False):
+    Types: Optional[ResourceTypeFilters]
+
+
+ScanFilters = List[ScanFilter]
+
+
 class DescribeResourceScanOutput(TypedDict, total=False):
     ResourceScanId: Optional[ResourceScanId]
     Status: Optional[ResourceScanStatus]
@@ -1546,6 +1562,7 @@ class DescribeResourceScanOutput(TypedDict, total=False):
     ResourceTypes: Optional[ResourceTypes]
     ResourcesScanned: Optional[ResourcesScanned]
     ResourcesRead: Optional[ResourcesRead]
+    ScanFilters: Optional[ScanFilters]
 
 
 class DescribeStackDriftDetectionStatusInput(ServiceRequest):
@@ -2246,6 +2263,7 @@ class ListResourceScanResourcesOutput(TypedDict, total=False):
 class ListResourceScansInput(ServiceRequest):
     NextToken: Optional[NextToken]
     MaxResults: Optional[ResourceScannerMaxResults]
+    ScanTypeFilter: Optional[ScanType]
 
 
 class ResourceScanSummary(TypedDict, total=False):
@@ -2255,6 +2273,7 @@ class ResourceScanSummary(TypedDict, total=False):
     StartTime: Optional[Timestamp]
     EndTime: Optional[Timestamp]
     PercentageCompleted: Optional[PercentageCompleted]
+    ScanType: Optional[ScanType]
 
 
 ResourceScanSummaries = List[ResourceScanSummary]
@@ -2745,6 +2764,7 @@ class SignalResourceInput(ServiceRequest):
 
 class StartResourceScanInput(ServiceRequest):
     ClientRequestToken: Optional[ClientRequestToken]
+    ScanFilters: Optional[ScanFilters]
 
 
 class StartResourceScanOutput(TypedDict, total=False):
@@ -3482,6 +3502,7 @@ class CloudformationApi:
         context: RequestContext,
         next_token: NextToken = None,
         max_results: ResourceScannerMaxResults = None,
+        scan_type_filter: ScanType = None,
         **kwargs,
     ) -> ListResourceScansOutput:
         raise NotImplementedError
@@ -3709,7 +3730,11 @@ class CloudformationApi:
 
     @handler("StartResourceScan")
     def start_resource_scan(
-        self, context: RequestContext, client_request_token: ClientRequestToken = None, **kwargs
+        self,
+        context: RequestContext,
+        client_request_token: ClientRequestToken = None,
+        scan_filters: ScanFilters = None,
+        **kwargs,
     ) -> StartResourceScanOutput:
         raise NotImplementedError
 
