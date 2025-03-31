@@ -2982,7 +2982,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_reserved_concurrency_async_queue": {
-    "recorded-date": "08-04-2024, 17:07:59",
+    "recorded-date": "26-03-2025, 10:53:54",
     "recorded-content": {
       "fn": {
         "Architectures": [
@@ -3019,7 +3019,7 @@
           "OptimizationStatus": "Off"
         },
         "State": "Active",
-        "Timeout": 20,
+        "Timeout": 30,
         "TracingConfig": {
           "Mode": "PassThrough"
         },

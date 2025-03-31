@@ -54,6 +54,10 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         if before_properties == after_properties:
             return
 
+        # before_context =
+        # after_context = None
+        # for
+
         action = cfn_api.ChangeAction.Modify
         if before_properties is None:
             action = cfn_api.ChangeAction.Add

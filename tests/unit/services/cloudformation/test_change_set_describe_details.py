@@ -1291,211 +1291,6 @@ class TestChangeSetDescribeDetails:
         ]
         self.compare_changes(changes, target)
 
-    def test_output_new_resource_and_output(self):
-        t1 = {
-            "Resources": {
-                "UnrelatedParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
-                }
-            }
-        }
-        t2 = {
-            "Resources": {
-                "UnrelatedParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
-                },
-                "NewParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "param-name", "Type": "String", "Value": "value-1"},
-                },
-            },
-            "Outputs": {"NewParamName": {"Value": {"Ref": "NewParam"}}},
-        }
-        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
-        assert not outputs_before
-        assert outputs_after == [
-            {"ChangeType": "Created", "Name": "NewParamName", "Value": "NewParam"}
-        ]
-
-    def test_output_and_resource_removed(self):
-        t1 = {
-            "Resources": {
-                "FeatureToggle": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {
-                        "Name": "app-feature-toggle",
-                        "Type": "String",
-                        "Value": "enabled",
-                    },
-                },
-                "UnrelatedParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
-                },
-            },
-            "Outputs": {"FeatureToggleName": {"Value": {"Ref": "FeatureToggle"}}},
-        }
-        t2 = {
-            "Resources": {
-                "UnrelatedParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
-                }
-            }
-        }
-        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
-        assert outputs_before == [
-            {"ChangeType": "Removed", "Name": "FeatureToggleName", "Value": "FeatureToggle"}
-        ]
-        assert outputs_after == []
-
-    def test_output_resource_changed(self):
-        t1 = {
-            "Resources": {
-                "LogLevelParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "app-log-level", "Type": "String", "Value": "info"},
-                },
-                "UnrelatedParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
-                },
-            },
-            "Outputs": {"LogLevelOutput": {"Value": {"Ref": "LogLevelParam"}}},
-        }
-        t2 = {
-            "Resources": {
-                "LogLevelParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "app-log-level", "Type": "String", "Value": "debug"},
-                },
-                "UnrelatedParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
-                },
-            },
-            "Outputs": {"LogLevelOutput": {"Value": {"Ref": "LogLevelParam"}}},
-        }
-        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
-        assert outputs_before == [
-            {"ChangeType": "Modified", "Name": "LogLevelOutput", "Value": "LogLevelParam"}
-        ]
-        assert outputs_after == [
-            {"ChangeType": "Modified", "Name": "LogLevelOutput", "Value": "LogLevelParam"}
-        ]
-
-    def test_output_update(self):
-        t1 = {
-            "Resources": {
-                "EnvParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "app-env", "Type": "String", "Value": "prod"},
-                },
-                "UnrelatedParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
-                },
-            },
-            "Outputs": {"EnvParamRef": {"Value": {"Ref": "EnvParam"}}},
-        }
-
-        t2 = {
-            "Resources": {
-                "EnvParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "app-env", "Type": "String", "Value": "prod"},
-                },
-                "UnrelatedParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
-                },
-            },
-            "Outputs": {"EnvParamRef": {"Value": {"Fn::GetAtt": ["EnvParam", "Name"]}}},
-        }
-        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
-        assert outputs_before == [
-            {"ChangeType": "Modified", "Name": "EnvParamRef", "Value": "EnvParam"}
-        ]
-        assert outputs_after == [
-            {"ChangeType": "Modified", "Name": "EnvParamRef", "Value": "app-env"}
-        ]
-
-    def test_output_renamed(self):
-        t1 = {
-            "Resources": {
-                "SSMParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "some-param", "Type": "String", "Value": "value"},
-                },
-                "UnrelatedParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
-                },
-            },
-            "Outputs": {"OldSSMOutput": {"Value": {"Ref": "SSMParam"}}},
-        }
-        t2 = {
-            "Resources": {
-                "SSMParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "some-param", "Type": "String", "Value": "value"},
-                },
-                "UnrelatedParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
-                },
-            },
-            "Outputs": {"NewSSMOutput": {"Value": {"Ref": "SSMParam"}}},
-        }
-        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
-        assert outputs_before == [
-            {"ChangeType": "Removed", "Name": "OldSSMOutput", "Value": "SSMParam"}
-        ]
-        assert outputs_after == [
-            {"ChangeType": "Created", "Name": "NewSSMOutput", "Value": "SSMParam"}
-        ]
-
-    def test_output_and_resource_renamed(self):
-        t1 = {
-            "Resources": {
-                "DBPasswordParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "db-password", "Type": "String", "Value": "secret"},
-                },
-                "UnrelatedParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
-                },
-            },
-            "Outputs": {"DBPasswordOutput": {"Value": {"Ref": "DBPasswordParam"}}},
-        }
-        t2 = {
-            "Resources": {
-                "DatabaseSecretParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "db-password", "Type": "String", "Value": "secret"},
-                },
-                "UnrelatedParam": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
-                },
-            },
-            "Outputs": {"DatabaseSecretOutput": {"Value": {"Ref": "DatabaseSecretParam"}}},
-        }
-        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
-        assert outputs_before == [
-            {"ChangeType": "Removed", "Name": "DBPasswordOutput", "Value": "DBPasswordParam"}
-        ]
-        assert outputs_after == [
-            {
-                "ChangeType": "Created",
-                "Name": "DatabaseSecretOutput",
-                "Value": "DatabaseSecretParam",
-            }
-        ]
-
     def test_mappings_update_string_referencing_resource(self):
         t1 = {
             "Mappings": {"GenericMapping": {"EnvironmentA": {"ParameterValue": "value-1"}}},
@@ -1727,3 +1522,208 @@ class TestChangeSetDescribeDetails:
             }
         ]
         self.compare_changes(changes, target)
+
+    def test_output_new_resource_and_output(self):
+        t1 = {
+            "Resources": {
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                }
+            }
+        }
+        t2 = {
+            "Resources": {
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+                "NewParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "param-name", "Type": "String", "Value": "value-1"},
+                },
+            },
+            "Outputs": {"NewParamName": {"Value": {"Ref": "NewParam"}}},
+        }
+        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        assert not outputs_before
+        assert outputs_after == [
+            {"ChangeType": "Created", "Name": "NewParamName", "Value": "NewParam"}
+        ]
+
+    def test_output_and_resource_removed(self):
+        t1 = {
+            "Resources": {
+                "FeatureToggle": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": "app-feature-toggle",
+                        "Type": "String",
+                        "Value": "enabled",
+                    },
+                },
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+            },
+            "Outputs": {"FeatureToggleName": {"Value": {"Ref": "FeatureToggle"}}},
+        }
+        t2 = {
+            "Resources": {
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                }
+            }
+        }
+        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        assert outputs_before == [
+            {"ChangeType": "Removed", "Name": "FeatureToggleName", "Value": "FeatureToggle"}
+        ]
+        assert outputs_after == []
+
+    def test_output_resource_changed(self):
+        t1 = {
+            "Resources": {
+                "LogLevelParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "app-log-level", "Type": "String", "Value": "info"},
+                },
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+            },
+            "Outputs": {"LogLevelOutput": {"Value": {"Ref": "LogLevelParam"}}},
+        }
+        t2 = {
+            "Resources": {
+                "LogLevelParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "app-log-level", "Type": "String", "Value": "debug"},
+                },
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+            },
+            "Outputs": {"LogLevelOutput": {"Value": {"Ref": "LogLevelParam"}}},
+        }
+        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        assert outputs_before == [
+            {"ChangeType": "Modified", "Name": "LogLevelOutput", "Value": "LogLevelParam"}
+        ]
+        assert outputs_after == [
+            {"ChangeType": "Modified", "Name": "LogLevelOutput", "Value": "LogLevelParam"}
+        ]
+
+    def test_output_update(self):
+        t1 = {
+            "Resources": {
+                "EnvParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "app-env", "Type": "String", "Value": "prod"},
+                },
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+            },
+            "Outputs": {"EnvParamRef": {"Value": {"Ref": "EnvParam"}}},
+        }
+
+        t2 = {
+            "Resources": {
+                "EnvParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "app-env", "Type": "String", "Value": "prod"},
+                },
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+            },
+            "Outputs": {"EnvParamRef": {"Value": {"Fn::GetAtt": ["EnvParam", "Name"]}}},
+        }
+        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        assert outputs_before == [
+            {"ChangeType": "Modified", "Name": "EnvParamRef", "Value": "EnvParam"}
+        ]
+        assert outputs_after == [
+            {"ChangeType": "Modified", "Name": "EnvParamRef", "Value": "app-env"}
+        ]
+
+    def test_output_renamed(self):
+        t1 = {
+            "Resources": {
+                "SSMParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "some-param", "Type": "String", "Value": "value"},
+                },
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+            },
+            "Outputs": {"OldSSMOutput": {"Value": {"Ref": "SSMParam"}}},
+        }
+        t2 = {
+            "Resources": {
+                "SSMParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "some-param", "Type": "String", "Value": "value"},
+                },
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+            },
+            "Outputs": {"NewSSMOutput": {"Value": {"Ref": "SSMParam"}}},
+        }
+        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        assert outputs_before == [
+            {"ChangeType": "Removed", "Name": "OldSSMOutput", "Value": "SSMParam"}
+        ]
+        assert outputs_after == [
+            {"ChangeType": "Created", "Name": "NewSSMOutput", "Value": "SSMParam"}
+        ]
+
+    def test_output_and_resource_renamed(self):
+        t1 = {
+            "Resources": {
+                "DBPasswordParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "db-password", "Type": "String", "Value": "secret"},
+                },
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+            },
+            "Outputs": {"DBPasswordOutput": {"Value": {"Ref": "DBPasswordParam"}}},
+        }
+        t2 = {
+            "Resources": {
+                "DatabaseSecretParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "db-password", "Type": "String", "Value": "secret"},
+                },
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+            },
+            "Outputs": {"DatabaseSecretOutput": {"Value": {"Ref": "DatabaseSecretParam"}}},
+        }
+        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        assert outputs_before == [
+            {"ChangeType": "Removed", "Name": "DBPasswordOutput", "Value": "DBPasswordParam"}
+        ]
+        assert outputs_after == [
+            {
+                "ChangeType": "Created",
+                "Name": "DatabaseSecretOutput",
+                "Value": "DatabaseSecretParam",
+            }
+        ]
