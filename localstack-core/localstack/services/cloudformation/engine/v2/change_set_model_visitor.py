@@ -7,6 +7,8 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeConditions,
     NodeDivergence,
     NodeIntrinsicFunction,
+    NodeMapping,
+    NodeMappings,
     NodeObject,
     NodeParameter,
     NodeParameters,
@@ -44,6 +46,12 @@ class ChangeSetModelVisitor(abc.ABC):
 
     def visit_node_template(self, node_template: NodeTemplate):
         self.visit_children(node_template)
+
+    def visit_node_mapping(self, node_mapping: NodeMapping):
+        self.visit_children(node_mapping)
+
+    def visit_node_mappings(self, node_mappings: NodeMappings):
+        self.visit_children(node_mappings)
 
     def visit_node_parameters(self, node_parameters: NodeParameters):
         self.visit_children(node_parameters)
@@ -92,6 +100,11 @@ class ChangeSetModelVisitor(abc.ABC):
         self.visit_children(node_intrinsic_function)
 
     def visit_node_intrinsic_function_fn_not(self, node_intrinsic_function: NodeIntrinsicFunction):
+        self.visit_children(node_intrinsic_function)
+
+    def visit_node_intrinsic_function_fn_find_in_map(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ):
         self.visit_children(node_intrinsic_function)
 
     def visit_node_intrinsic_function_ref(self, node_intrinsic_function: NodeIntrinsicFunction):

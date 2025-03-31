@@ -1222,3 +1222,235 @@ class TestChangeSetDescribeDetails:
             }
         ]
         self.compare_changes(changes, target)
+
+    def test_mappings_update_string_referencing_resource(self):
+        t1 = {
+            "Mappings": {"GenericMapping": {"EnvironmentA": {"ParameterValue": "value-1"}}},
+            "Resources": {
+                "MySSMParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::FindInMap": ["GenericMapping", "EnvironmentA", "ParameterValue"]
+                        },
+                    },
+                }
+            },
+        }
+        t2 = {
+            "Mappings": {"GenericMapping": {"EnvironmentA": {"ParameterValue": "value-2"}}},
+            "Resources": {
+                "MySSMParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::FindInMap": ["GenericMapping", "EnvironmentA", "ParameterValue"]
+                        },
+                    },
+                }
+            },
+        }
+        changes = self.eval_change_set(t1, t2)
+        target = [
+            {
+                "Type": "Resource",
+                "ResourceChange": {
+                    "Action": "Modify",
+                    "LogicalResourceId": "MySSMParameter",
+                    # "PhysicalResourceId": "<physical-resource-id:1>",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Replacement": "False",
+                    # "Scope": [
+                    #   "Properties"
+                    # ],
+                    # "Details": [
+                    #   {
+                    #     "Target": {
+                    #       "Attribute": "Properties",
+                    #       "Name": "Value",
+                    #       "RequiresRecreation": "Never",
+                    #       "Path": "/Properties/Value",
+                    #       "BeforeValue": "value-1",
+                    #       "AfterValue": "value-2",
+                    #       "AttributeChangeType": "Modify"
+                    #     },
+                    #     "Evaluation": "Static",
+                    #     "ChangeSource": "DirectModification"
+                    #   }
+                    # ],
+                    "BeforeContext": {"Properties": {"Value": "value-1", "Type": "String"}},
+                    "AfterContext": {"Properties": {"Value": "value-2", "Type": "String"}},
+                },
+            }
+        ]
+        self.compare_changes(changes, target)
+
+    def test_mappings_update_type_referencing_resource(self):
+        t1 = {
+            "Mappings": {"GenericMapping": {"EnvironmentA": {"ParameterValue": "value-1"}}},
+            "Resources": {
+                "MySSMParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::FindInMap": ["GenericMapping", "EnvironmentA", "ParameterValue"]
+                        },
+                    },
+                }
+            },
+        }
+        t2 = {
+            "Mappings": {
+                "GenericMapping": {"EnvironmentA": {"ParameterValue": ["value-1", "value-2"]}}
+            },
+            "Resources": {
+                "MySSMParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::FindInMap": ["GenericMapping", "EnvironmentA", "ParameterValue"]
+                        },
+                    },
+                }
+            },
+        }
+        changes = self.eval_change_set(t1, t2)
+        target = [
+            {
+                "Type": "Resource",
+                "ResourceChange": {
+                    "Action": "Modify",
+                    "LogicalResourceId": "MySSMParameter",
+                    # "PhysicalResourceId": "<physical-resource-id:1>",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Replacement": "False",
+                    # "Scope": [
+                    #     "Properties"
+                    # ],
+                    # "Details": [
+                    #     {
+                    #         "Target": {
+                    #             "Attribute": "Properties",
+                    #             "Name": "Value",
+                    #             "RequiresRecreation": "Never",
+                    #             "Path": "/Properties/Value",
+                    #             "BeforeValue": "value-1",
+                    #             "AfterValue": "[value-1, value-2]",
+                    #             "AttributeChangeType": "Modify"
+                    #         },
+                    #         "Evaluation": "Static",
+                    #         "ChangeSource": "DirectModification"
+                    #     }
+                    # ],
+                    "BeforeContext": {"Properties": {"Value": "value-1", "Type": "String"}},
+                    "AfterContext": {
+                        "Properties": {"Value": ["value-1", "value-2"], "Type": "String"}
+                    },
+                },
+            }
+        ]
+        self.compare_changes(changes, target)
+
+    @pytest.mark.skip(reason="Add support for nested intrinsic functions")
+    def test_mappings_update_referencing_resource_through_parameter(self):
+        t1 = {
+            "Parameters": {
+                "Environment": {
+                    "Type": "String",
+                    "AllowedValues": [
+                        "EnvironmentA",
+                    ],
+                }
+            },
+            "Mappings": {
+                "GenericMapping": {
+                    "EnvironmentA": {"ParameterValue": "value-1"},
+                    "EnvironmentB": {"ParameterValue": "value-2"},
+                }
+            },
+            "Resources": {
+                "MySSMParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::FindInMap": [
+                                "GenericMapping",
+                                {"Ref": "Environment"},
+                                "ParameterValue",
+                            ]
+                        },
+                    },
+                }
+            },
+        }
+        t2 = {
+            "Parameters": {
+                "Environment": {
+                    "Type": "String",
+                    "AllowedValues": ["EnvironmentA", "EnvironmentB"],
+                    "Default": "EnvironmentA",
+                }
+            },
+            "Mappings": {
+                "GenericMapping": {
+                    "EnvironmentA": {"ParameterValue": "value-1-2"},
+                    "EnvironmentB": {"ParameterValue": "value-2"},
+                }
+            },
+            "Resources": {
+                "MySSMParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::FindInMap": [
+                                "GenericMapping",
+                                {"Ref": "Environment"},
+                                "ParameterValue",
+                            ]
+                        },
+                    },
+                }
+            },
+        }
+        changes = self.eval_change_set(
+            t1, t2, {"Environment": "EnvironmentA"}, {"Environment": "EnvironmentA"}
+        )
+        target = [
+            {
+                "Type": "Resource",
+                "ResourceChange": {
+                    "Action": "Modify",
+                    "LogicalResourceId": "MySSMParameter",
+                    # "PhysicalResourceId": "<physical-resource-id:1>",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Replacement": "False",
+                    # "Scope": [
+                    #     "Properties"
+                    # ],
+                    # "Details": [
+                    #     {
+                    #         "Target": {
+                    #             "Attribute": "Properties",
+                    #             "Name": "Value",
+                    #             "RequiresRecreation": "Never",
+                    #             "Path": "/Properties/Value",
+                    #             "BeforeValue": "value-1",
+                    #             "AfterValue": "value-1-2",
+                    #             "AttributeChangeType": "Modify"
+                    #         },
+                    #         "Evaluation": "Static",
+                    #         "ChangeSource": "DirectModification"
+                    #     }
+                    # ],
+                    "BeforeContext": {"Properties": {"Value": "value-1", "Type": "String"}},
+                    "AfterContext": {"Properties": {"Value": "value-1-2", "Type": "String"}},
+                },
+            }
+        ]
+        self.compare_changes(changes, target)
