@@ -51,7 +51,7 @@ class TestBaseEvaluateJsonata:
     )
     def test_base_task(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -79,7 +79,7 @@ class TestBaseEvaluateJsonata:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
@@ -107,7 +107,7 @@ class TestBaseEvaluateJsonata:
     )
     def test_base_map(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -119,7 +119,7 @@ class TestBaseEvaluateJsonata:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
@@ -139,7 +139,7 @@ class TestBaseEvaluateJsonata:
     )
     def test_base_task_from_input(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -168,7 +168,7 @@ class TestBaseEvaluateJsonata:
 
         exec_input = json.dumps({"input_value": input_value})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
@@ -194,7 +194,7 @@ class TestBaseEvaluateJsonata:
     )
     def test_base_map_from_input(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -223,7 +223,7 @@ class TestBaseEvaluateJsonata:
 
         exec_input = json.dumps({"input_value": input_value})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,

@@ -24,7 +24,7 @@ class TestBaseQueryLanguage:
     @markers.aws.validated
     def test_base_query_language_field(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -33,7 +33,7 @@ class TestBaseQueryLanguage:
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
@@ -52,7 +52,7 @@ class TestBaseQueryLanguage:
     @markers.aws.validated
     def test_query_language_field_override(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -61,7 +61,7 @@ class TestBaseQueryLanguage:
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
@@ -73,7 +73,7 @@ class TestBaseQueryLanguage:
     @markers.aws.unknown
     def test_jsonata_query_language_field_downgrade_exception(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -87,7 +87,7 @@ class TestBaseQueryLanguage:
 
         try:
             create_and_record_execution(
-                stepfunctions_client=aws_client.stepfunctions,
+                stepfunctions_client=aws_client_no_retry.stepfunctions,
                 create_state_machine_iam_role=create_state_machine_iam_role,
                 create_state_machine=create_state_machine,
                 sfn_snapshot=sfn_snapshot,

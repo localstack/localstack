@@ -18,7 +18,12 @@ class TestSfnWait:
     @markers.aws.validated
     @pytest.mark.parametrize("days", [24855, 24856])
     def test_timestamp_too_far_in_future_boundary(
-        self, aws_client, create_state_machine_iam_role, create_state_machine, sfn_snapshot, days
+        self,
+        aws_client_no_retry,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        days,
     ):
         """
         seems this seems to correlate with "2147483648" as the maximum integer value for the seconds stepfunctions internally uses to represent dates
@@ -40,7 +45,7 @@ class TestSfnWait:
         sfn_snapshot.add_transformer(sfn_snapshot.transform.regex(full_timestamp, "<timestamp>"))
         exec_input = json.dumps({"start_at": full_timestamp})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -63,7 +68,7 @@ class TestSfnWait:
     @markers.aws.validated
     def test_wait_timestamppath(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -84,7 +89,7 @@ class TestSfnWait:
         sfn_snapshot.add_transformer(sfn_snapshot.transform.regex(full_timestamp, "<timestamp>"))
         exec_input = json.dumps({"start_at": full_timestamp})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -98,7 +103,7 @@ class TestSfnWait:
         self,
         create_state_machine_iam_role,
         create_state_machine,
-        aws_client,
+        aws_client_no_retry,
         sfn_snapshot,
         seconds_value,
     ):
@@ -106,7 +111,7 @@ class TestSfnWait:
         definition = json.dumps(template)
         execution_input = json.dumps({"input": {"waitSeconds": seconds_value}})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

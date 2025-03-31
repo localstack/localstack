@@ -14,9 +14,9 @@ from tests.aws.services.stepfunctions.templates.intrinsicfunctions.intrinsic_fun
 class TestUniqueIdGeneration:
     @markers.aws.validated
     def test_uuid(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client)
+        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         sm_name: str = f"statemachine_{short_uid()}"
@@ -24,20 +24,24 @@ class TestUniqueIdGeneration:
         definition_str = json.dumps(definition)
 
         creation_resp = create_state_machine(
-            aws_client, name=sm_name, definition=definition_str, roleArn=snf_role_arn
+            aws_client_no_retry, name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
         state_machine_arn = creation_resp["stateMachineArn"]
 
-        exec_resp = aws_client.stepfunctions.start_execution(stateMachineArn=state_machine_arn)
+        exec_resp = aws_client_no_retry.stepfunctions.start_execution(
+            stateMachineArn=state_machine_arn
+        )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
         execution_arn = exec_resp["executionArn"]
 
         await_execution_success(
-            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
+            stepfunctions_client=aws_client_no_retry.stepfunctions, execution_arn=execution_arn
         )
 
-        exec_hist_resp = aws_client.stepfunctions.get_execution_history(executionArn=execution_arn)
+        exec_hist_resp = aws_client_no_retry.stepfunctions.get_execution_history(
+            executionArn=execution_arn
+        )
         output = extract_json("$..executionSucceededEventDetails..output", exec_hist_resp)
         uuid = json.loads(output)[IFT.FUNCTION_OUTPUT_KEY]
         sfn_snapshot.add_transformer(RegexTransformer(uuid, "generated-uuid"))

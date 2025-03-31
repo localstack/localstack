@@ -40,7 +40,7 @@ class TestTaskServiceDynamoDB:
     )
     def test_base_integrations(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         dynamodb_create_table,
@@ -48,7 +48,9 @@ class TestTaskServiceDynamoDB:
         template_path,
     ):
         table_name = f"sfn_test_table_{short_uid()}"
-        dynamodb_create_table(table_name=table_name, partition_key="id", client=aws_client.dynamodb)
+        dynamodb_create_table(
+            table_name=table_name, partition_key="id", client=aws_client_no_retry.dynamodb
+        )
         sfn_snapshot.add_transformer(RegexTransformer(table_name, "table-name"))
 
         template = ST.load_sfn_template(template_path)
@@ -64,7 +66,7 @@ class TestTaskServiceDynamoDB:
             }
         )
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -76,7 +78,7 @@ class TestTaskServiceDynamoDB:
     @markers.snapshot.skip_snapshot_verify(paths=["$..exception_value"])
     def test_invalid_integration(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -85,7 +87,7 @@ class TestTaskServiceDynamoDB:
         definition = json.dumps(template)
         with pytest.raises(Exception) as ex:
             create_state_machine_with_iam_role(
-                aws_client,
+                aws_client_no_retry,
                 create_state_machine_iam_role,
                 create_state_machine,
                 sfn_snapshot,

@@ -28,13 +28,13 @@ from tests.aws.services.stepfunctions.templates.timeouts.timeout_templates impor
 from tests.aws.test_notifications import PUBLICATION_RETRIES, PUBLICATION_TIMEOUT
 
 
-def _handle_sqs_task_token_with_heartbeats_and_success(aws_client, queue_url) -> None:
+def _handle_sqs_task_token_with_heartbeats_and_success(aws_client_no_retry, queue_url) -> None:
     # Handle the state machine task token published in the sqs queue, by submitting 10 heartbeat
     # notifications and a task success notification. Snapshot the response of each call.
 
     # Read the expected sqs message and extract the body.
     def _get_message_body():
-        receive_message_response = aws_client.sqs.receive_message(
+        receive_message_response = aws_client_no_retry.sqs.receive_message(
             QueueUrl=queue_url, MaxNumberOfMessages=1
         )
         return receive_message_response["Messages"][0]["Body"]
@@ -45,10 +45,12 @@ def _handle_sqs_task_token_with_heartbeats_and_success(aws_client, queue_url) ->
     # Send the heartbeat notifications.
     task_token = message_body["TaskToken"]
     for i in range(10):
-        aws_client.stepfunctions.send_task_heartbeat(taskToken=task_token)
+        aws_client_no_retry.stepfunctions.send_task_heartbeat(taskToken=task_token)
 
     # Send the task success notification.
-    aws_client.stepfunctions.send_task_success(taskToken=task_token, output=message_body_str)
+    aws_client_no_retry.stepfunctions.send_task_success(
+        taskToken=task_token, output=message_body_str
+    )
 
 
 @markers.snapshot.skip_snapshot_verify(
@@ -61,7 +63,7 @@ class TestCallback:
     @markers.aws.needs_fixing
     def test_sqs_wait_for_task_token(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
@@ -90,7 +92,7 @@ class TestCallback:
         message_txt = "test_message_txt"
         exec_input = json.dumps({"QueueUrl": queue_url, "Message": message_txt})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -101,7 +103,7 @@ class TestCallback:
     @markers.aws.needs_fixing
     def test_sqs_wait_for_task_token_timeout(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
@@ -128,7 +130,7 @@ class TestCallback:
         message_txt = "test_message_txt"
         exec_input = json.dumps({"QueueUrl": queue_url, "Message": message_txt})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -139,7 +141,7 @@ class TestCallback:
     @markers.aws.needs_fixing
     def test_sqs_failure_in_wait_for_task_token(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
@@ -168,7 +170,7 @@ class TestCallback:
         message_txt = "test_message_txt"
         exec_input = json.dumps({"QueueUrl": queue_url, "Message": message_txt})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -179,7 +181,7 @@ class TestCallback:
     @markers.aws.needs_fixing
     def test_sqs_wait_for_task_tok_with_heartbeat(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
@@ -209,7 +211,7 @@ class TestCallback:
         message_txt = "test_message_txt"
         exec_input = json.dumps({"QueueUrl": queue_url, "Message": message_txt})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -220,7 +222,7 @@ class TestCallback:
     @markers.aws.validated
     def test_sns_publish_wait_for_task_token(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
@@ -242,10 +244,10 @@ class TestCallback:
         topic_info = sns_create_topic()
         topic_arn = topic_info["TopicArn"]
         queue_url = sqs_create_queue()
-        queue_arn = aws_client.sqs.get_queue_attributes(
+        queue_arn = aws_client_no_retry.sqs.get_queue_attributes(
             QueueUrl=queue_url, AttributeNames=["QueueArn"]
         )["Attributes"]["QueueArn"]
-        aws_client.sns.subscribe(
+        aws_client_no_retry.sns.subscribe(
             TopicArn=topic_arn,
             Protocol="sqs",
             Endpoint=queue_arn,
@@ -263,7 +265,9 @@ class TestCallback:
             messages.clear()
             messages.extend(sqs_receive_num_messages(queue_url, expected_messages=1))
             task_token = json.loads(messages[0]["Message"])["TaskToken"]
-            aws_client.stepfunctions.send_task_success(taskToken=task_token, output=json.dumps({}))
+            aws_client_no_retry.stepfunctions.send_task_success(
+                taskToken=task_token, output=json.dumps({})
+            )
 
         threading.Thread(
             target=retry,
@@ -272,7 +276,7 @@ class TestCallback:
         ).start()
 
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -285,7 +289,7 @@ class TestCallback:
     @markers.aws.validated
     def test_start_execution_sync(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -308,7 +312,7 @@ class TestCallback:
         template_target = BT.load_sfn_template(BT.BASE_PASS_RESULT)
         definition_target = json.dumps(template_target)
         state_machine_arn_target = create_state_machine_with_iam_role(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -322,7 +326,7 @@ class TestCallback:
             {"StateMachineArn": state_machine_arn_target, "Input": None, "Name": "TestStartTarget"}
         )
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -333,7 +337,7 @@ class TestCallback:
     @markers.aws.validated
     def test_start_execution_sync2(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -356,7 +360,7 @@ class TestCallback:
         template_target = BT.load_sfn_template(BT.BASE_PASS_RESULT)
         definition_target = json.dumps(template_target)
         state_machine_arn_target = create_state_machine_with_iam_role(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -370,7 +374,7 @@ class TestCallback:
             {"StateMachineArn": state_machine_arn_target, "Input": None, "Name": "TestStartTarget"}
         )
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -381,7 +385,7 @@ class TestCallback:
     @markers.aws.validated
     def test_start_execution_sync_delegate_failure(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -411,7 +415,7 @@ class TestCallback:
         template_target = BT.load_sfn_template(BT.BASE_RAISE_FAILURE)
         definition_target = json.dumps(template_target)
         state_machine_arn_target = create_state_machine_with_iam_role(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -425,7 +429,7 @@ class TestCallback:
             {"StateMachineArn": state_machine_arn_target, "Input": None, "Name": "TestStartTarget"}
         )
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -436,7 +440,7 @@ class TestCallback:
     @markers.aws.validated
     def test_start_execution_sync_delegate_timeout(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_lambda_function,
         create_state_machine_iam_role,
         create_state_machine,
@@ -478,7 +482,7 @@ class TestCallback:
         definition_target = json.dumps(template_target)
 
         state_machine_arn_target = create_state_machine_with_iam_role(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -496,7 +500,7 @@ class TestCallback:
             }
         )
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -508,7 +512,7 @@ class TestCallback:
     @pytest.mark.skip(reason="Skipped until flaky behaviour can be rectified.")
     def test_multiple_heartbeat_notifications(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
@@ -529,7 +533,8 @@ class TestCallback:
         sfn_snapshot.add_transformer(RegexTransformer(queue_name, "sqs_queue_name"))
 
         task_token_consumer_thread = threading.Thread(
-            target=_handle_sqs_task_token_with_heartbeats_and_success, args=(aws_client, queue_url)
+            target=_handle_sqs_task_token_with_heartbeats_and_success,
+            args=(aws_client_no_retry, queue_url),
         )
         task_token_consumer_thread.start()
 
@@ -542,7 +547,7 @@ class TestCallback:
             {"QueueUrl": queue_url, "Message": "txt", "HeartbeatSecondsPath": 120}
         )
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -556,7 +561,7 @@ class TestCallback:
     @pytest.mark.skip(reason="Skipped until flaky behaviour can be rectified.")
     def test_multiple_executions_and_heartbeat_notifications(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
@@ -583,7 +588,7 @@ class TestCallback:
         sfn_snapshot.add_transformer(RegexTransformer(queue_url, "sqs_queue_url"))
         sfn_snapshot.add_transformer(RegexTransformer(queue_name, "sqs_queue_name"))
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
+        sfn_role_arn = create_state_machine_iam_role(aws_client_no_retry)
 
         template = CT.load_sfn_template(
             TT.SERVICE_SQS_SEND_AND_WAIT_FOR_TASK_TOKEN_WITH_HEARTBEAT_PATH
@@ -591,7 +596,7 @@ class TestCallback:
         definition = json.dumps(template)
 
         creation_response = create_state_machine(
-            aws_client,
+            aws_client_no_retry,
             name=f"state_machine_{short_uid()}",
             definition=definition,
             roleArn=sfn_role_arn,
@@ -607,7 +612,7 @@ class TestCallback:
         execution_count = 6
         execution_arns = list()
         for _ in range(execution_count):
-            execution_arn = aws_client.stepfunctions.start_execution(
+            execution_arn = aws_client_no_retry.stepfunctions.start_execution(
                 stateMachineArn=state_machine_arn, input=exec_input
             )["executionArn"]
             execution_arns.append(execution_arn)
@@ -616,7 +621,7 @@ class TestCallback:
         task_token_handler_latch = CountDownLatch(execution_count)
 
         def _sqs_task_token_handler():
-            _handle_sqs_task_token_with_heartbeats_and_success(aws_client, queue_url)
+            _handle_sqs_task_token_with_heartbeats_and_success(aws_client_no_retry, queue_url)
             task_token_handler_latch.count_down()
 
         for _ in range(execution_count):
@@ -628,9 +633,9 @@ class TestCallback:
         # For each execution, await terminate and record the event executions.
         for i, execution_arn in enumerate(execution_arns):
             await_execution_terminated(
-                stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
+                stepfunctions_client=aws_client_no_retry.stepfunctions, execution_arn=execution_arn
             )
-            execution_history = aws_client.stepfunctions.get_execution_history(
+            execution_history = aws_client_no_retry.stepfunctions.get_execution_history(
                 executionArn=execution_arn
             )
             sfn_snapshot.match(f"execution_history_{i}", execution_history)
@@ -638,7 +643,7 @@ class TestCallback:
     @markers.aws.validated
     def test_sqs_wait_for_task_token_call_chain(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
@@ -673,7 +678,7 @@ class TestCallback:
 
         exec_input = json.dumps({"QueueUrl": queue_url, "Message": "HelloWorld"})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -684,7 +689,7 @@ class TestCallback:
     @markers.aws.validated
     def test_sqs_wait_for_task_token_no_token_parameter(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
@@ -703,7 +708,7 @@ class TestCallback:
 
         exec_input = json.dumps({"QueueUrl": queue_url})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -719,7 +724,7 @@ class TestCallback:
     )
     def test_sqs_failure_in_wait_for_task_tok_no_error_field(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
@@ -753,7 +758,7 @@ class TestCallback:
 
         def _empty_send_task_failure_on_sqs_message():
             def _get_message_body():
-                receive_message_response = aws_client.sqs.receive_message(
+                receive_message_response = aws_client_no_retry.sqs.receive_message(
                     QueueUrl=queue_url, MaxNumberOfMessages=1
                 )
                 return receive_message_response["Messages"][0]["Body"]
@@ -761,7 +766,7 @@ class TestCallback:
             message_body_str = retry(_get_message_body, retries=60, sleep=1)
             message_body = json.loads(message_body_str)
             task_token = message_body["TaskToken"]
-            aws_client.stepfunctions.send_task_failure(taskToken=task_token)
+            aws_client_no_retry.stepfunctions.send_task_failure(taskToken=task_token)
 
         thread_send_task_failure = threading.Thread(
             target=_empty_send_task_failure_on_sqs_message,
@@ -776,7 +781,7 @@ class TestCallback:
 
         exec_input = json.dumps({"QueueUrl": queue_url, "Message": "test_message_txt"})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -787,7 +792,7 @@ class TestCallback:
     @markers.aws.validated
     def test_sync_with_task_token(
         self,
-        aws_client,
+        aws_client_no_retry,
         sqs_create_queue,
         sqs_send_task_success_state_machine,
         create_state_machine_iam_role,
@@ -841,7 +846,7 @@ class TestCallback:
         template_target = BT.load_sfn_template(ST.SQS_SEND_MESSAGE_AND_WAIT)
         definition_target = json.dumps(template_target)
         state_machine_arn_target = create_state_machine_with_iam_role(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -863,7 +868,7 @@ class TestCallback:
             }
         )
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

@@ -28,7 +28,7 @@ class TestNumerics:
     @markers.aws.validated
     def test_numeric_equals(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -41,7 +41,7 @@ class TestNumerics:
             type_equals.append((var, 1.0))
 
         create_and_test_comparison_function(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -52,7 +52,7 @@ class TestNumerics:
     @markers.aws.validated
     def test_numeric_equals_path(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -65,7 +65,7 @@ class TestNumerics:
             type_equals.append((var, 1.0))
 
         create_and_test_comparison_function(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -77,13 +77,13 @@ class TestNumerics:
     @markers.aws.validated
     def test_numeric_greater_than(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -94,13 +94,13 @@ class TestNumerics:
     @markers.aws.validated
     def test_numeric_greater_than_path(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -112,13 +112,13 @@ class TestNumerics:
     @markers.aws.validated
     def test_numeric_greater_than_equals(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -129,13 +129,13 @@ class TestNumerics:
     @markers.aws.validated
     def test_numeric_greater_than_equals_path(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -147,13 +147,13 @@ class TestNumerics:
     @markers.aws.validated
     def test_numeric_less_than(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -164,13 +164,13 @@ class TestNumerics:
     @markers.aws.validated
     def test_numeric_less_than_path(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -182,13 +182,13 @@ class TestNumerics:
     @markers.aws.validated
     def test_numeric_less_than_equals(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -199,13 +199,13 @@ class TestNumerics:
     @markers.aws.validated
     def test_numeric_less_than_equals_path(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

@@ -42,7 +42,7 @@ class TestArgumentsBase:
     def test_base_cases(
         self,
         sfn_snapshot,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -52,7 +52,7 @@ class TestArgumentsBase:
         definition = json.dumps(template)
         exec_input = json.dumps({"input_value": "string literal", "input_values": [1, 2, 3]})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
@@ -73,7 +73,7 @@ class TestArgumentsBase:
     def test_base_lambda(
         self,
         sfn_snapshot,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -92,7 +92,7 @@ class TestArgumentsBase:
         definition = json.dumps(template)
         exec_input = json.dumps({"input_value": "string literal", "input_values": [1, 2, 3]})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
@@ -113,7 +113,7 @@ class TestArgumentsBase:
     def test_base_task_lambda(
         self,
         sfn_snapshot,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -137,7 +137,7 @@ class TestArgumentsBase:
             }
         )
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
@@ -183,7 +183,7 @@ class TestArgumentsBase:
     def test_base_output_any_non_dict(
         self,
         sfn_snapshot,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -195,7 +195,7 @@ class TestArgumentsBase:
 
         exec_input = json.dumps({"input_value": "stringliteral"})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
@@ -218,7 +218,7 @@ class TestArgumentsBase:
     def test_output_in_choice(
         self,
         sfn_snapshot,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -228,7 +228,7 @@ class TestArgumentsBase:
         definition = json.dumps(template)
         exec_input = json.dumps(input_value)
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,

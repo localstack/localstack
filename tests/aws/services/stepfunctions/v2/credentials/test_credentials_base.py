@@ -44,13 +44,13 @@ class TestCredentialsBase:
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
     def test_invalid_credentials_field(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
         template_path,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client)
+        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "sfn_role_arn"))
 
         definition = CT.load_sfn_template(template_path)
@@ -60,7 +60,7 @@ class TestCredentialsBase:
 
         with pytest.raises(Exception) as ex:
             create_state_machine(
-                aws_client, name=sm_name, definition=definition_str, roleArn=snf_role_arn
+                aws_client_no_retry, name=sm_name, definition=definition_str, roleArn=snf_role_arn
             )
         sfn_snapshot.match("invalid_definition", ex.value.response)
 
@@ -84,7 +84,7 @@ class TestCredentialsBase:
     )
     def test_cross_account_states_start_sync_execution(
         self,
-        aws_client,
+        aws_client_no_retry,
         secondary_aws_client,
         create_state_machine_iam_role,
         create_state_machine,
@@ -93,7 +93,7 @@ class TestCredentialsBase:
         template_path,
     ):
         trusted_role_arn = create_cross_account_admin_role_and_policy(
-            trusted_aws_client=aws_client,
+            trusted_aws_client=aws_client_no_retry,
             trusting_aws_client=secondary_aws_client,
             trusted_account_id=TEST_AWS_ACCOUNT_ID,
         )
@@ -130,7 +130,7 @@ class TestCredentialsBase:
             }
         )
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -147,7 +147,7 @@ class TestCredentialsBase:
     @markers.aws.validated
     def test_cross_account_lambda_task(
         self,
-        aws_client,
+        aws_client_no_retry,
         secondary_aws_client,
         create_lambda_function,
         create_state_machine_iam_role,
@@ -157,7 +157,7 @@ class TestCredentialsBase:
     ):
         trusted_role_arn = create_cross_account_admin_role_and_policy(
             trusted_aws_client=secondary_aws_client,
-            trusting_aws_client=aws_client,
+            trusting_aws_client=aws_client_no_retry,
             trusted_account_id=SECONDARY_TEST_AWS_ACCOUNT_ID,
         )
         sfn_snapshot.add_transformer(RegexTransformer(trusted_role_arn, "<trusted_role_arn>"))
@@ -195,7 +195,7 @@ class TestCredentialsBase:
     @markers.aws.validated
     def test_cross_account_service_lambda_invoke(
         self,
-        aws_client,
+        aws_client_no_retry,
         secondary_aws_client,
         create_lambda_function,
         create_state_machine_iam_role,
@@ -205,7 +205,7 @@ class TestCredentialsBase:
     ):
         trusted_role_arn = create_cross_account_admin_role_and_policy(
             trusted_aws_client=secondary_aws_client,
-            trusting_aws_client=aws_client,
+            trusting_aws_client=aws_client_no_retry,
             trusted_account_id=SECONDARY_TEST_AWS_ACCOUNT_ID,
         )
         sfn_snapshot.add_transformer(RegexTransformer(trusted_role_arn, "<trusted_role_arn>"))
@@ -241,7 +241,7 @@ class TestCredentialsBase:
     @markers.aws.validated
     def test_cross_account_service_lambda_invoke_retry(
         self,
-        aws_client,
+        aws_client_no_retry,
         secondary_aws_client,
         create_lambda_function,
         create_state_machine_iam_role,
@@ -251,7 +251,7 @@ class TestCredentialsBase:
     ):
         trusted_role_arn = create_cross_account_admin_role_and_policy(
             trusted_aws_client=secondary_aws_client,
-            trusting_aws_client=aws_client,
+            trusting_aws_client=aws_client_no_retry,
             trusted_account_id=SECONDARY_TEST_AWS_ACCOUNT_ID,
         )
         sfn_snapshot.add_transformer(RegexTransformer(trusted_role_arn, "<trusted_role_arn>"))

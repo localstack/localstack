@@ -17,7 +17,7 @@ class TestStatesErrors:
     @markers.aws.validated
     def test_service_task_lambada_data_limit_exceeded_on_large_utf8_response(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -42,7 +42,7 @@ class TestStatesErrors:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -53,7 +53,7 @@ class TestStatesErrors:
     @markers.aws.validated
     def test_service_task_lambada_catch_state_all_data_limit_exceeded_on_large_utf8_response(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -79,7 +79,7 @@ class TestStatesErrors:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -90,7 +90,7 @@ class TestStatesErrors:
     @markers.aws.validated
     def test_task_lambda_data_limit_exceeded_on_large_utf8_response(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -120,7 +120,7 @@ class TestStatesErrors:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -131,7 +131,7 @@ class TestStatesErrors:
     @markers.aws.validated
     def test_task_lambda_catch_state_all_data_limit_exceeded_on_large_utf8_response(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -161,7 +161,7 @@ class TestStatesErrors:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -172,7 +172,7 @@ class TestStatesErrors:
     @markers.aws.validated
     def test_start_large_input(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -201,7 +201,7 @@ class TestStatesErrors:
 
         exec_input = json.dumps(dict())
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

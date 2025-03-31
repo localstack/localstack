@@ -62,7 +62,7 @@ class TestFundamental:
             assert describe_ex_done["status"] == assert_state
 
     @markers.aws.validated
-    def test_path_based_on_data(self, deploy_cfn_template, sfn_snapshot, aws_client):
+    def test_path_based_on_data(self, deploy_cfn_template, sfn_snapshot, aws_client_no_retry):
         """
         Based on the "path-based-on-data" sample workflow on serverlessland.com
 
@@ -82,7 +82,7 @@ class TestFundamental:
             sfn_snapshot.transform.regex(statemachine_name, "<state-machine-name>")
         )
 
-        describe_statemachine = aws_client.stepfunctions.describe_state_machine(
+        describe_statemachine = aws_client_no_retry.stepfunctions.describe_state_machine(
             stateMachineArn=statemachine_arn
         )
         sfn_snapshot.match("describe_statemachine", describe_statemachine)
@@ -107,7 +107,7 @@ class TestFundamental:
 
         for run_config in run_configs:
             self._record_execution(
-                aws_client.stepfunctions, sfn_snapshot, statemachine_arn, run_config
+                aws_client_no_retry.stepfunctions, sfn_snapshot, statemachine_arn, run_config
             )
 
     @markers.snapshot.skip_snapshot_verify(
@@ -120,7 +120,7 @@ class TestFundamental:
         ],
     )
     @markers.aws.validated
-    def test_wait_for_callback(self, deploy_cfn_template, sfn_snapshot, aws_client):
+    def test_wait_for_callback(self, deploy_cfn_template, sfn_snapshot, aws_client_no_retry):
         """
         Based on the "wait-for-callback" sample workflow on serverlessland.com
         """
@@ -145,7 +145,7 @@ class TestFundamental:
             )
         )
 
-        describe_statemachine = aws_client.stepfunctions.describe_state_machine(
+        describe_statemachine = aws_client_no_retry.stepfunctions.describe_state_machine(
             stateMachineArn=statemachine_arn
         )
         sfn_snapshot.match("describe_statemachine", describe_statemachine)
@@ -165,7 +165,7 @@ class TestFundamental:
 
         for run_config in run_configs:
             self._record_execution(
-                aws_client.stepfunctions, sfn_snapshot, statemachine_arn, run_config
+                aws_client_no_retry.stepfunctions, sfn_snapshot, statemachine_arn, run_config
             )
 
     @markers.snapshot.skip_snapshot_verify(
@@ -173,7 +173,7 @@ class TestFundamental:
     )
     @markers.aws.validated
     def test_step_functions_calling_api_gateway(
-        self, deploy_cfn_template, sfn_snapshot, aws_client
+        self, deploy_cfn_template, sfn_snapshot, aws_client_no_retry
     ):
         """
         Based on the "step-functions-calling-api-gateway" sample workflow on serverlessland.com
@@ -215,7 +215,7 @@ class TestFundamental:
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.key_value("ApiEndpoint"), priority=-1)
 
-        describe_statemachine = aws_client.stepfunctions.describe_state_machine(
+        describe_statemachine = aws_client_no_retry.stepfunctions.describe_state_machine(
             stateMachineArn=statemachine_arn
         )
         sfn_snapshot.match("describe_statemachine", describe_statemachine)
@@ -235,5 +235,5 @@ class TestFundamental:
 
         for run_config in run_configs:
             self._record_execution(
-                aws_client.stepfunctions, sfn_snapshot, statemachine_arn, run_config
+                aws_client_no_retry.stepfunctions, sfn_snapshot, statemachine_arn, run_config
             )

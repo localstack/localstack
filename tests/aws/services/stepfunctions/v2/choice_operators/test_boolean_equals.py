@@ -10,10 +10,10 @@ from tests.aws.services.stepfunctions.v2.choice_operators.utils import (
 class TestBooleanEquals:
     @markers.aws.validated
     def test_boolean_equals(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
     ):
         create_and_test_comparison_function(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -23,10 +23,10 @@ class TestBooleanEquals:
 
     @markers.aws.validated
     def test_boolean_equals_path(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
     ):
         create_and_test_comparison_function(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

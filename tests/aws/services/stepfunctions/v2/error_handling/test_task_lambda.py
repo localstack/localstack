@@ -18,7 +18,7 @@ class TestTaskLambda:
     @markers.aws.validated
     def test_raise_exception(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -40,7 +40,7 @@ class TestTaskLambda:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -51,7 +51,7 @@ class TestTaskLambda:
     @markers.aws.validated
     def test_raise_custom_exception(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -74,7 +74,7 @@ class TestTaskLambda:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -85,7 +85,7 @@ class TestTaskLambda:
     @markers.aws.validated
     def test_raise_exception_catch(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -107,7 +107,7 @@ class TestTaskLambda:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -118,7 +118,7 @@ class TestTaskLambda:
     @markers.aws.validated
     def test_no_such_function(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -140,7 +140,7 @@ class TestTaskLambda:
 
         exec_input = json.dumps({"FunctionName": f"no_such_{function_name}", "Payload": None})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -151,7 +151,7 @@ class TestTaskLambda:
     @markers.aws.validated
     def test_no_such_function_catch(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -173,7 +173,7 @@ class TestTaskLambda:
 
         exec_input = json.dumps({"FunctionName": f"no_such_{function_name}", "Payload": None})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

@@ -27,7 +27,7 @@ class TestTaskServiceSqs:
     @markers.aws.needs_fixing
     def test_send_message(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
@@ -46,7 +46,7 @@ class TestTaskServiceSqs:
         message_body = "test_message_body"
         exec_input = json.dumps({"QueueUrl": queue_url, "MessageBody": message_body})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -54,14 +54,14 @@ class TestTaskServiceSqs:
             exec_input,
         )
 
-        receive_message_res = aws_client.sqs.receive_message(QueueUrl=queue_url)
+        receive_message_res = aws_client_no_retry.sqs.receive_message(QueueUrl=queue_url)
         assert len(receive_message_res["Messages"]) == 1
         assert receive_message_res["Messages"][0]["Body"] == message_body
 
     @markers.aws.needs_fixing
     def test_send_message_unsupported_parameters(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
@@ -87,7 +87,7 @@ class TestTaskServiceSqs:
             }
         )
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -98,7 +98,7 @@ class TestTaskServiceSqs:
     @markers.aws.validated
     def test_send_message_attributes(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
@@ -127,7 +127,7 @@ class TestTaskServiceSqs:
             }
         )
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -135,7 +135,7 @@ class TestTaskServiceSqs:
             exec_input,
         )
 
-        receive_message_res = aws_client.sqs.receive_message(
+        receive_message_res = aws_client_no_retry.sqs.receive_message(
             QueueUrl=queue_url, MessageAttributeNames=["All"]
         )
         assert len(receive_message_res["Messages"]) == 1

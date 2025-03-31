@@ -25,9 +25,9 @@ class TestSfnApiValidation:
     )
     @markers.aws.validated
     def test_validate_state_machine_definition_not_a_definition(
-        self, sfn_snapshot, aws_client, definition_string
+        self, sfn_snapshot, aws_client_no_retry, definition_string
     ):
-        validation_response = aws_client.stepfunctions.validate_state_machine_definition(
+        validation_response = aws_client_no_retry.stepfunctions.validate_state_machine_definition(
             definition=definition_string, type=StateMachineType.STANDARD
         )
         sfn_snapshot.match("validation_response", validation_response)
@@ -39,11 +39,11 @@ class TestSfnApiValidation:
     )
     @markers.aws.validated
     def test_validate_state_machine_definition_type_standard(
-        self, sfn_snapshot, aws_client, validation_template
+        self, sfn_snapshot, aws_client_no_retry, validation_template
     ):
         definition = ValidationTemplate.load_sfn_template(validation_template)
         definition_str = json.dumps(definition)
-        validation_response = aws_client.stepfunctions.validate_state_machine_definition(
+        validation_response = aws_client_no_retry.stepfunctions.validate_state_machine_definition(
             definition=definition_str, type=StateMachineType.STANDARD
         )
         sfn_snapshot.match("validation_response", validation_response)
@@ -59,11 +59,11 @@ class TestSfnApiValidation:
     )
     @markers.aws.validated
     def test_validate_state_machine_definition_type_express(
-        self, sfn_snapshot, aws_client, validation_template
+        self, sfn_snapshot, aws_client_no_retry, validation_template
     ):
         definition = ValidationTemplate.load_sfn_template(validation_template)
         definition_str = json.dumps(definition)
-        validation_response = aws_client.stepfunctions.validate_state_machine_definition(
+        validation_response = aws_client_no_retry.stepfunctions.validate_state_machine_definition(
             definition=definition_str, type=StateMachineType.EXPRESS
         )
         sfn_snapshot.match("validation_response", validation_response)

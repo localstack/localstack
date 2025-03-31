@@ -25,7 +25,7 @@ class TestTaskServiceSfn:
     @markers.aws.validated
     def test_start_execution_no_such_arn(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -41,13 +41,15 @@ class TestTaskServiceSfn:
         template_target = BT.load_sfn_template(BT.BASE_PASS_RESULT)
         definition_target = json.dumps(template_target)
         state_machine_arn_target = create_state_machine_with_iam_role(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition_target,
         )
-        aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn_target)
+        aws_client_no_retry.stepfunctions.delete_state_machine(
+            stateMachineArn=state_machine_arn_target
+        )
 
         template = ST.load_sfn_template(ST.SFN_START_EXECUTION)
         definition = json.dumps(template)
@@ -63,7 +65,7 @@ class TestTaskServiceSfn:
             }
         )
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

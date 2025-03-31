@@ -47,14 +47,14 @@ class TestSnfApiLogs:
         create_state_machine,
         sfn_create_log_group,
         sfn_snapshot,
-        aws_client,
+        aws_client_no_retry,
         logging_level,
         include_execution_data,
     ):
         log_group_name = sfn_create_log_group()
-        log_group_arn = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_name)[
-            "logGroups"
-        ][0]["arn"]
+        log_group_arn = aws_client_no_retry.logs.describe_log_groups(
+            logGroupNamePrefix=log_group_name
+        )["logGroups"][0]["arn"]
         logging_configuration = LoggingConfiguration(
             level=logging_level,
             includeExecutionData=include_execution_data,
@@ -65,7 +65,7 @@ class TestSnfApiLogs:
             ],
         )
 
-        snf_role_arn = create_state_machine_iam_role(aws_client)
+        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -73,7 +73,7 @@ class TestSnfApiLogs:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp = create_state_machine(
-            aws_client,
+            aws_client_no_retry,
             name=sm_name,
             definition=definition_str,
             roleArn=snf_role_arn,
@@ -83,7 +83,7 @@ class TestSnfApiLogs:
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
         sfn_snapshot.match("creation_resp", creation_resp)
 
-        describe_resp = aws_client.stepfunctions.describe_state_machine(
+        describe_resp = aws_client_no_retry.stepfunctions.describe_state_machine(
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match("describe_resp", describe_resp)
@@ -96,10 +96,10 @@ class TestSnfApiLogs:
         create_state_machine,
         sfn_create_log_group,
         sfn_snapshot,
-        aws_client,
+        aws_client_no_retry,
         logging_configuration,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client)
+        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -107,7 +107,7 @@ class TestSnfApiLogs:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp = create_state_machine(
-            aws_client,
+            aws_client_no_retry,
             name=sm_name,
             definition=definition_str,
             roleArn=snf_role_arn,
@@ -117,7 +117,7 @@ class TestSnfApiLogs:
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
         sfn_snapshot.match("creation_resp", creation_resp)
 
-        describe_resp = aws_client.stepfunctions.describe_state_machine(
+        describe_resp = aws_client_no_retry.stepfunctions.describe_state_machine(
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match("describe_resp", describe_resp)
@@ -130,11 +130,11 @@ class TestSnfApiLogs:
         create_state_machine,
         sfn_create_log_group,
         sfn_snapshot,
-        aws_client,
+        aws_client_no_retry,
         aws_client_factory,
         logging_configuration,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client)
+        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -163,9 +163,9 @@ class TestSnfApiLogs:
         create_state_machine,
         sfn_create_log_group,
         sfn_snapshot,
-        aws_client,
+        aws_client_no_retry,
     ):
-        logs_client = aws_client.logs
+        logs_client = aws_client_no_retry.logs
         log_group_name = sfn_create_log_group()
         log_group_arn = logs_client.describe_log_groups(logGroupNamePrefix=log_group_name)[
             "logGroups"
@@ -187,7 +187,7 @@ class TestSnfApiLogs:
 
         assert poll_condition(condition=_log_group_is_deleted)
 
-        snf_role_arn = create_state_machine_iam_role(aws_client)
+        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -195,7 +195,7 @@ class TestSnfApiLogs:
 
         with pytest.raises(ClientError) as exc:
             create_state_machine_with_iam_role(
-                aws_client,
+                aws_client_no_retry,
                 create_state_machine_iam_role,
                 create_state_machine,
                 sfn_snapshot,
@@ -213,14 +213,14 @@ class TestSnfApiLogs:
         create_state_machine,
         sfn_create_log_group,
         sfn_snapshot,
-        aws_client,
+        aws_client_no_retry,
     ):
         logging_configuration = LoggingConfiguration(level=LogLevel.ALL, destinations=[])
         for i in range(2):
             log_group_name = sfn_create_log_group()
-            log_group_arn = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_name)[
-                "logGroups"
-            ][0]["arn"]
+            log_group_arn = aws_client_no_retry.logs.describe_log_groups(
+                logGroupNamePrefix=log_group_name
+            )["logGroups"][0]["arn"]
             logging_configuration["destinations"].append(
                 LogDestination(
                     cloudWatchLogsLogGroup=CloudWatchLogsLogGroup(logGroupArn=log_group_arn)
@@ -232,7 +232,7 @@ class TestSnfApiLogs:
 
         with pytest.raises(ClientError) as exc:
             create_state_machine_with_iam_role(
-                aws_client,
+                aws_client_no_retry,
                 create_state_machine_iam_role,
                 create_state_machine,
                 sfn_snapshot,
@@ -250,7 +250,7 @@ class TestSnfApiLogs:
         create_state_machine,
         sfn_create_log_group,
         sfn_snapshot,
-        aws_client,
+        aws_client_no_retry,
         aws_client_factory,
     ):
         stepfunctions_client = aws_client_factory(
@@ -258,9 +258,9 @@ class TestSnfApiLogs:
         ).stepfunctions
 
         log_group_name = sfn_create_log_group()
-        log_group_arn = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_name)[
-            "logGroups"
-        ][0]["arn"]
+        log_group_arn = aws_client_no_retry.logs.describe_log_groups(
+            logGroupNamePrefix=log_group_name
+        )["logGroups"][0]["arn"]
         base_logging_configuration = LoggingConfiguration(
             level=LogLevel.ALL,
             includeExecutionData=True,
@@ -271,7 +271,7 @@ class TestSnfApiLogs:
             ],
         )
 
-        snf_role_arn = create_state_machine_iam_role(aws_client)
+        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -279,7 +279,7 @@ class TestSnfApiLogs:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp = create_state_machine(
-            aws_client,
+            aws_client_no_retry,
             name=sm_name,
             definition=definition_str,
             roleArn=snf_role_arn,
@@ -325,9 +325,9 @@ class TestSnfApiLogs:
 
         # Add logging endpoints.
         log_group_name_2 = sfn_create_log_group()
-        log_group_arn_2 = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_name_2)[
-            "logGroups"
-        ][0]["arn"]
+        log_group_arn_2 = aws_client_no_retry.logs.describe_log_groups(
+            logGroupNamePrefix=log_group_name_2
+        )["logGroups"][0]["arn"]
         base_logging_configuration["destinations"].append(
             LogDestination(
                 cloudWatchLogsLogGroup=CloudWatchLogsLogGroup(logGroupArn=log_group_arn_2)

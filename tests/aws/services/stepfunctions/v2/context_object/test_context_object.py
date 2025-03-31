@@ -30,7 +30,7 @@ class TestSnfBase:
     @pytest.mark.parametrize("context_object_literal", ["$$", "$$.Execution.Input"])
     def test_input_path(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -45,7 +45,7 @@ class TestSnfBase:
         )
         exec_input = json.dumps({"input-value": 0})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -57,7 +57,7 @@ class TestSnfBase:
     @pytest.mark.parametrize("context_object_literal", ["$$", "$$.Execution.Input"])
     def test_output_path(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -72,7 +72,7 @@ class TestSnfBase:
         )
         exec_input = json.dumps({"input-value": 0})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -83,7 +83,7 @@ class TestSnfBase:
     @markers.aws.validated
     def test_result_selector(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -107,7 +107,7 @@ class TestSnfBase:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": {"input-value": 0}})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -118,7 +118,7 @@ class TestSnfBase:
     @markers.aws.validated
     def test_variable(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -133,7 +133,7 @@ class TestSnfBase:
         )
         exec_input = json.dumps({"input-value": 0})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -144,7 +144,7 @@ class TestSnfBase:
     @markers.aws.validated
     def test_error_cause_path(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -155,7 +155,7 @@ class TestSnfBase:
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

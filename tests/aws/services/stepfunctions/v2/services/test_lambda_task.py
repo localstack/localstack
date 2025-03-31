@@ -19,7 +19,7 @@ class TestTaskLambda:
     @markers.aws.validated
     def test_invoke_bytes_payload(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -41,7 +41,7 @@ class TestTaskLambda:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -52,7 +52,7 @@ class TestTaskLambda:
     @markers.aws.validated
     def test_invoke_string_payload(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -74,7 +74,7 @@ class TestTaskLambda:
 
         exec_input = json.dumps("HelloWorld")
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -97,7 +97,7 @@ class TestTaskLambda:
     @markers.aws.validated
     def test_invoke_json_values(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -120,7 +120,7 @@ class TestTaskLambda:
 
         exec_input = json.dumps(json_value)
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -131,7 +131,7 @@ class TestTaskLambda:
     @markers.aws.validated
     def test_invoke_pipe(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -164,7 +164,7 @@ class TestTaskLambda:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -175,7 +175,7 @@ class TestTaskLambda:
     @markers.aws.validated
     def test_lambda_task_filter_parameters_input(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -196,7 +196,7 @@ class TestTaskLambda:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

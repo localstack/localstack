@@ -27,7 +27,7 @@ class TestTaskServiceEvents:
         create_state_machine_iam_role,
         create_state_machine,
         events_to_sqs_queue,
-        aws_client,
+        aws_client_no_retry,
         sfn_snapshot,
     ):
         detail_type = f"detail_type_{short_uid()}"
@@ -59,14 +59,14 @@ class TestTaskServiceEvents:
         ]
         exec_input = json.dumps({"Entries": entries})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
             exec_input,
         )
-        record_sqs_events(aws_client, queue_url, sfn_snapshot, len(entries))
+        record_sqs_events(aws_client_no_retry, queue_url, sfn_snapshot, len(entries))
 
     @markers.aws.validated
     def test_put_events_malformed_detail(
@@ -74,7 +74,7 @@ class TestTaskServiceEvents:
         create_state_machine_iam_role,
         create_state_machine,
         events_to_sqs_queue,
-        aws_client,
+        aws_client_no_retry,
         sfn_snapshot,
     ):
         detail_type = f"detail_type_{short_uid()}"
@@ -95,7 +95,7 @@ class TestTaskServiceEvents:
         ]
         exec_input = json.dumps({"Entries": entries})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -109,7 +109,7 @@ class TestTaskServiceEvents:
         create_state_machine_iam_role,
         create_state_machine,
         events_to_sqs_queue,
-        aws_client,
+        aws_client_no_retry,
         sfn_snapshot,
     ):
         detail_type = f"detail_type_{short_uid()}"
@@ -134,14 +134,14 @@ class TestTaskServiceEvents:
         ]
         exec_input = json.dumps({"Entries": entries})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
             exec_input,
         )
-        record_sqs_events(aws_client, queue_url, sfn_snapshot, len(entries))
+        record_sqs_events(aws_client_no_retry, queue_url, sfn_snapshot, len(entries))
 
     @markers.aws.validated
     def test_put_events_mixed_malformed_detail(
@@ -149,7 +149,7 @@ class TestTaskServiceEvents:
         create_state_machine_iam_role,
         create_state_machine,
         events_to_sqs_queue,
-        aws_client,
+        aws_client_no_retry,
         sfn_snapshot,
     ):
         detail_type = f"detail_type_{short_uid()}"
@@ -175,11 +175,11 @@ class TestTaskServiceEvents:
         ]
         exec_input = json.dumps({"Entries": entries})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
             exec_input,
         )
-        record_sqs_events(aws_client, queue_url, sfn_snapshot, 1)
+        record_sqs_events(aws_client_no_retry, queue_url, sfn_snapshot, 1)

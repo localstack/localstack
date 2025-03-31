@@ -10,11 +10,11 @@ from tests.aws.services.stepfunctions.v2.intrinsic_functions.utils import create
 class TestEncodeDecode:
     @markers.aws.validated
     def test_base_64_encode(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
     ):
         input_values = ["", "Data to encode"]
         create_and_test_on_inputs(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -24,11 +24,11 @@ class TestEncodeDecode:
 
     @markers.aws.validated
     def test_base_64_decode(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
     ):
         input_values = ["", "RGF0YSB0byBlbmNvZGU="]
         create_and_test_on_inputs(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

@@ -31,7 +31,7 @@ class TestTaskServiceSqs:
     @markers.aws.needs_fixing
     def test_send_message_no_such_queue(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -49,7 +49,7 @@ class TestTaskServiceSqs:
         message_body = "test_message_body"
         exec_input = json.dumps({"QueueUrl": queue_url, "MessageBody": message_body})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -60,7 +60,7 @@ class TestTaskServiceSqs:
     @markers.aws.needs_fixing
     def test_send_message_no_such_queue_no_catch(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -78,7 +78,7 @@ class TestTaskServiceSqs:
         message_body = "test_message_body"
         exec_input = json.dumps({"QueueUrl": queue_url, "MessageBody": message_body})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -92,7 +92,7 @@ class TestTaskServiceSqs:
     @markers.aws.validated
     def test_send_message_empty_body(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
@@ -110,7 +110,7 @@ class TestTaskServiceSqs:
 
         exec_input = json.dumps({"QueueUrl": queue_url, "MessageBody": None})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -121,7 +121,7 @@ class TestTaskServiceSqs:
     @markers.aws.validated
     def test_sqs_failure_in_wait_for_task_tok(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
@@ -151,7 +151,7 @@ class TestTaskServiceSqs:
         message_txt = "test_message_txt"
         exec_input = json.dumps({"QueueUrl": queue_url, "Message": message_txt})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

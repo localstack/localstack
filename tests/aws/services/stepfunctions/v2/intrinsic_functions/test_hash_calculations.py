@@ -10,7 +10,7 @@ from tests.aws.services.stepfunctions.v2.intrinsic_functions.utils import create
 class TestHashCalculations:
     @markers.aws.validated
     def test_hash(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
     ):
         hash_bindings = [
             ("input data", "MD5"),
@@ -21,7 +21,7 @@ class TestHashCalculations:
         ]
         input_values = [{"fst": inp, "snd": algo} for inp, algo in hash_bindings]
         create_and_test_on_inputs(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

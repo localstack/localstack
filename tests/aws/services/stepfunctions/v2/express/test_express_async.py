@@ -37,13 +37,13 @@ class TestExpressAsync:
         create_state_machine,
         sfn_create_log_group,
         sfn_snapshot,
-        aws_client,
+        aws_client_no_retry,
         template,
     ):
         definition = json.dumps(BaseTemplate.load_sfn_template(template))
         exec_input = json.dumps({})
         create_and_record_express_async_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_create_log_group,
@@ -59,7 +59,7 @@ class TestExpressAsync:
         create_state_machine_iam_role,
         sfn_create_log_group,
         create_state_machine,
-        aws_client,
+        aws_client_no_retry,
         sfn_snapshot,
     ):
         sfn_snapshot.add_transformer(
@@ -88,7 +88,7 @@ class TestExpressAsync:
 
         exec_input = json.dumps({"message": "TestMessage"})
         create_and_record_express_async_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_create_log_group,
@@ -100,7 +100,7 @@ class TestExpressAsync:
     @markers.aws.validated
     def test_catch(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         sfn_create_log_group,
         create_state_machine,
@@ -127,7 +127,7 @@ class TestExpressAsync:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_express_async_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_create_log_group,
@@ -139,7 +139,7 @@ class TestExpressAsync:
     @markers.aws.validated
     def test_retry(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         sfn_create_log_group,
         create_state_machine,
@@ -168,7 +168,7 @@ class TestExpressAsync:
 
         exec_input = json.dumps({})
         create_and_record_express_async_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_create_log_group,

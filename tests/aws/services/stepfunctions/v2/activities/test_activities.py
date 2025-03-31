@@ -16,7 +16,7 @@ class TestActivities:
     @markers.aws.validated
     def test_activity_task(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_activity,
@@ -41,7 +41,7 @@ class TestActivities:
 
         exec_input = json.dumps({"Value1": "HelloWorld"})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -52,7 +52,7 @@ class TestActivities:
     @markers.aws.validated
     def test_activity_task_no_worker_name(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_activity,
@@ -78,7 +78,7 @@ class TestActivities:
 
         exec_input = json.dumps({"Value1": "HelloWorld"})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -89,7 +89,7 @@ class TestActivities:
     @markers.aws.validated
     def test_activity_task_on_deleted(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_activity,
@@ -102,7 +102,7 @@ class TestActivities:
         sfn_snapshot.add_transformer(RegexTransformer(activity_name, "activity_name"))
         sfn_snapshot.match("create_activity_output", create_activity_output)
 
-        aws_client.stepfunctions.delete_activity(activityArn=activity_arn)
+        aws_client_no_retry.stepfunctions.delete_activity(activityArn=activity_arn)
 
         template = ActivityTemplate.load_sfn_template(ActivityTemplate.BASE_ACTIVITY_TASK)
         template["States"]["ActivityTask"]["Resource"] = activity_arn
@@ -110,7 +110,7 @@ class TestActivities:
 
         exec_input = json.dumps({"Value1": "HelloWorld"})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -121,7 +121,7 @@ class TestActivities:
     @markers.aws.validated
     def test_activity_task_failure(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_activity,
@@ -148,7 +148,7 @@ class TestActivities:
 
         exec_input = json.dumps({"Value1": "HelloWorld"})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -159,7 +159,7 @@ class TestActivities:
     @markers.aws.validated
     def test_activity_task_with_heartbeat(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_activity,
@@ -186,7 +186,7 @@ class TestActivities:
 
         exec_input = json.dumps({"Value1": "HelloWorld"})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -197,7 +197,7 @@ class TestActivities:
     @markers.aws.validated
     def test_activity_task_start_timeout(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_activity,
@@ -224,7 +224,7 @@ class TestActivities:
 
         exec_input = json.dumps({"Value1": "HelloWorld"})
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

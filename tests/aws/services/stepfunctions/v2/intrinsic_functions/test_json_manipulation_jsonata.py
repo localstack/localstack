@@ -8,7 +8,7 @@ from tests.aws.services.stepfunctions.v2.intrinsic_functions.utils import create
 class TestJsonManipulationJSONata:
     @markers.aws.validated
     def test_parse(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
     ):
         input_values = [
             # "null", TODO: Skip as this is failing on the $eval/$parse
@@ -21,7 +21,7 @@ class TestJsonManipulationJSONata:
             '{"Arg1": 1, "Arg2": []}',
         ]
         create_and_test_on_inputs(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

@@ -24,7 +24,7 @@ class TestTaskServiceSfn:
     @markers.aws.needs_fixing
     def test_start_execution(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -40,7 +40,7 @@ class TestTaskServiceSfn:
         template_target = BT.load_sfn_template(BT.BASE_PASS_RESULT)
         definition_target = json.dumps(template_target)
         state_machine_arn_target = create_state_machine_with_iam_role(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -54,7 +54,7 @@ class TestTaskServiceSfn:
             {"StateMachineArn": state_machine_arn_target, "Input": None, "Name": "TestStartTarget"}
         )
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -65,7 +65,7 @@ class TestTaskServiceSfn:
     @markers.aws.validated
     def test_start_execution_input_json(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -81,7 +81,7 @@ class TestTaskServiceSfn:
         template_target = BT.load_sfn_template(BT.BASE_PASS_RESULT)
         definition_target = json.dumps(template_target)
         state_machine_arn_target = create_state_machine_with_iam_role(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -99,7 +99,7 @@ class TestTaskServiceSfn:
             }
         )
         create_and_record_execution(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

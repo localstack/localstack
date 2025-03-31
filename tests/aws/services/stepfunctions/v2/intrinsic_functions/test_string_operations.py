@@ -10,7 +10,7 @@ from tests.aws.services.stepfunctions.v2.intrinsic_functions.utils import create
 class TestStringOperations:
     @markers.aws.validated
     def test_string_split(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
     ):
         input_values = [
             {"fst": " ", "snd": ","},
@@ -22,7 +22,7 @@ class TestStringOperations:
             {"fst": "split on T and \nnew line", "snd": "T\n"},
         ]
         create_and_test_on_inputs(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -32,7 +32,7 @@ class TestStringOperations:
 
     @markers.aws.validated
     def test_string_split_context_object(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
     ):
         input_values = [
             (
@@ -45,7 +45,7 @@ class TestStringOperations:
             )
         ]
         create_and_test_on_inputs(
-            aws_client,
+            aws_client_no_retry,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
