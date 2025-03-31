@@ -479,6 +479,48 @@ class TestEc2Integrations:
         assert e.value.response["Error"]["Code"] == "InvalidVpc.DuplicateCustomId"
 
     @markers.aws.only_localstack
+    def test_create_subnet_with_tags(self, aws_client, create_vpc):
+        # Create a VPC.
+        vpc: dict = create_vpc(
+            cidr_block="10.0.0.0/16",
+            tag_specifications=[
+                {
+                    "ResourceType": "vpc",
+                    "Tags": [
+                        {"Key": "Name", "Value": "main-vpc"},
+                    ],
+                }
+            ],
+        )
+        vpc_id: str = vpc["Vpc"]["VpcId"]
+
+        # Create a subnet with a tag.
+        subnet: dict = aws_client.ec2.create_subnet(
+            VpcId=vpc_id,
+            CidrBlock="10.0.0.0/24",
+            TagSpecifications=[
+                {
+                    "ResourceType": "subnet",
+                    "Tags": [
+                        {"Key": "Name", "Value": "main-subnet"},
+                    ],
+                }
+            ],
+        )
+        assert subnet["Subnet"]["VpcId"] == vpc_id
+        subnet_id: str = subnet["Subnet"]["SubnetId"]
+
+        # Now check that the tags make it back on the describe subnets call.
+        subnet: dict = aws_client.ec2.describe_subnets(
+            SubnetIds=[subnet_id],
+        )["Subnets"][0]
+        assert subnet["SubnetId"] == subnet_id
+        assert subnet["VpcId"] == vpc_id
+        assert len(subnet["Tags"]) == 1
+        assert subnet["Tags"][0]["Key"] == "Name"
+        assert subnet["Tags"][0]["Value"] == "main-subnet"
+
+    @markers.aws.only_localstack
     def test_create_subnet_with_custom_id(self, aws_client, create_vpc):
         custom_id = random_subnet_id()
 
