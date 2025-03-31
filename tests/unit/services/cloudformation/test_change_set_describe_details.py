@@ -1546,6 +1546,8 @@ class TestChangeSetDescribeDetails:
             "Outputs": {"NewParamName": {"Value": {"Ref": "NewParam"}}},
         }
         outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        # NOTE: Outputs are currently evaluated by the describer using the entity name as a proxy,
+        #  as the executor logic is not yet implemented.
         assert not outputs_before
         assert outputs_after == [
             {"ChangeType": "Created", "Name": "NewParamName", "Value": "NewParam"}
@@ -1578,6 +1580,8 @@ class TestChangeSetDescribeDetails:
             }
         }
         outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        # NOTE: Outputs are currently evaluated by the describer using the entity name as a proxy,
+        #  as the executor logic is not yet implemented.
         assert outputs_before == [
             {"ChangeType": "Removed", "Name": "FeatureToggleName", "Value": "FeatureToggle"}
         ]
@@ -1647,6 +1651,8 @@ class TestChangeSetDescribeDetails:
             "Outputs": {"EnvParamRef": {"Value": {"Fn::GetAtt": ["EnvParam", "Name"]}}},
         }
         outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        # NOTE: Outputs are currently evaluated by the describer using the entity name as a proxy,
+        #  as the executor logic is not yet implemented.
         assert outputs_before == [
             {"ChangeType": "Modified", "Name": "EnvParamRef", "Value": "EnvParam"}
         ]
@@ -1717,6 +1723,8 @@ class TestChangeSetDescribeDetails:
             "Outputs": {"DatabaseSecretOutput": {"Value": {"Ref": "DatabaseSecretParam"}}},
         }
         outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        # NOTE: Outputs are currently evaluated by the describer using the entity name as a proxy,
+        #  as the executor logic is not yet implemented.
         assert outputs_before == [
             {"ChangeType": "Removed", "Name": "DBPasswordOutput", "Value": "DBPasswordParam"}
         ]

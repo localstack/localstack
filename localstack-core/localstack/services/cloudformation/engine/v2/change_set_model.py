@@ -174,6 +174,24 @@ class NodeParameters(ChangeSetNode):
         self.parameters = parameters
 
 
+class NodeMapping(ChangeSetNode):
+    name: Final[str]
+    bindings: Final[NodeObject]
+
+    def __init__(self, scope: Scope, change_type: ChangeType, name: str, bindings: NodeObject):
+        super().__init__(scope=scope, change_type=change_type)
+        self.name = name
+        self.bindings = bindings
+
+
+class NodeMappings(ChangeSetNode):
+    mappings: Final[list[NodeMapping]]
+
+    def __init__(self, scope: Scope, change_type: ChangeType, mappings: list[NodeMapping]):
+        super().__init__(scope=scope, change_type=change_type)
+        self.mappings = mappings
+
+
 class NodeOutput(ChangeSetNode):
     name: Final[str]
     value: Final[ChangeSetEntity]
@@ -202,24 +220,6 @@ class NodeOutputs(ChangeSetNode):
     def __init__(self, scope: Scope, change_type: ChangeType, outputs: list[NodeOutput]):
         super().__init__(scope=scope, change_type=change_type)
         self.outputs = outputs
-
-
-class NodeMapping(ChangeSetNode):
-    name: Final[str]
-    bindings: Final[NodeObject]
-
-    def __init__(self, scope: Scope, change_type: ChangeType, name: str, bindings: NodeObject):
-        super().__init__(scope=scope, change_type=change_type)
-        self.name = name
-        self.bindings = bindings
-
-
-class NodeMappings(ChangeSetNode):
-    mappings: Final[list[NodeMapping]]
-
-    def __init__(self, scope: Scope, change_type: ChangeType, mappings: list[NodeMapping]):
-        super().__init__(scope=scope, change_type=change_type)
-        self.mappings = mappings
 
 
 class NodeCondition(ChangeSetNode):
