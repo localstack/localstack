@@ -1502,6 +1502,8 @@ class TestChangeSetDescribeDetails:
         }
         outputs_unit = self.debug_outputs(t1, t2)
         assert not outputs_unit.before_context
+        # NOTE: Outputs are currently evaluated by the describer using the entity name as a proxy,
+        #  as the executor logic is not yet implemented. This will be moved to the template processor.
         assert outputs_unit.after_context == [{"Name": "NewParamName", "Value": "NewParam"}]
 
     def test_output_and_resource_removed(self):
@@ -1531,6 +1533,8 @@ class TestChangeSetDescribeDetails:
             }
         }
         outputs_unit = self.debug_outputs(t1, t2)
+        # NOTE: Outputs are currently evaluated by the describer using the entity name as a proxy,
+        #  as the executor logic is not yet implemented. This will be moved to the template processor.
         assert outputs_unit.before_context == [
             {"Name": "FeatureToggleName", "Value": "FeatureToggle"}
         ]
@@ -1564,6 +1568,8 @@ class TestChangeSetDescribeDetails:
             "Outputs": {"LogLevelOutput": {"Value": {"Ref": "LogLevelParam"}}},
         }
         outputs_unit = self.debug_outputs(t1, t2)
+        # NOTE: Outputs are currently evaluated by the describer using the entity name as a proxy,
+        #  as the executor logic is not yet implemented. This will be moved to the template processor.
         assert outputs_unit.before_context == [{"Name": "LogLevelOutput", "Value": "LogLevelParam"}]
         assert outputs_unit.after_context == [{"Name": "LogLevelOutput", "Value": "LogLevelParam"}]
 
@@ -1596,6 +1602,8 @@ class TestChangeSetDescribeDetails:
             "Outputs": {"EnvParamRef": {"Value": {"Fn::GetAtt": ["EnvParam", "Name"]}}},
         }
         outputs_unit = self.debug_outputs(t1, t2)
+        # NOTE: Outputs are currently evaluated by the describer using the entity name as a proxy,
+        #  as the executor logic is not yet implemented. This will be moved to the template processor.
         assert outputs_unit.before_context == [{"Name": "EnvParamRef", "Value": "EnvParam"}]
         assert outputs_unit.after_context == [
             {"Name": "EnvParamRef", "Value": "{{changeSet:KNOWN_AFTER_APPLY}}"}
@@ -1629,6 +1637,8 @@ class TestChangeSetDescribeDetails:
             "Outputs": {"NewSSMOutput": {"Value": {"Ref": "SSMParam"}}},
         }
         outputs_unit = self.debug_outputs(t1, t2)
+        # NOTE: Outputs are currently evaluated by the describer using the entity name as a proxy,
+        #  as the executor logic is not yet implemented. This will be moved to the template processor.
         assert outputs_unit.before_context == [{"Name": "OldSSMOutput", "Value": "SSMParam"}]
         assert outputs_unit.after_context == [{"Name": "NewSSMOutput", "Value": "SSMParam"}]
 
@@ -1660,6 +1670,8 @@ class TestChangeSetDescribeDetails:
             "Outputs": {"DatabaseSecretOutput": {"Value": {"Ref": "DatabaseSecretParam"}}},
         }
         outputs_unit = self.debug_outputs(t1, t2)
+        # NOTE: Outputs are currently evaluated by the describer using the entity name as a proxy,
+        #  as the executor logic is not yet implemented. This will be moved to the template processor.
         assert outputs_unit.before_context == [
             {"Name": "DBPasswordOutput", "Value": "DBPasswordParam"}
         ]
