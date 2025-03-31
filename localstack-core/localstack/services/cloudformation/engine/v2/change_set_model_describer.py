@@ -7,12 +7,16 @@ import localstack.aws.api.cloudformation as cfn_api
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetEntity,
     ChangeType,
+    ConditionKey,
+    ExportKey,
     NodeArray,
     NodeCondition,
     NodeDivergence,
     NodeIntrinsicFunction,
     NodeMapping,
     NodeObject,
+    NodeOutput,
+    NodeOutputs,
     NodeParameter,
     NodeProperties,
     NodeProperty,
@@ -26,6 +30,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     TerminalValueModified,
     TerminalValueRemoved,
     TerminalValueUnchanged,
+    ValueKey,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_visitor import (
     ChangeSetModelVisitor,
@@ -112,12 +117,13 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
             return parameter_unit
 
         # TODO: check for KNOWN AFTER APPLY values for logical ids coming from intrinsic functions as arguments.
-        #   node_resource = self._get_node_resource_for(
-        #       resource_name=logica_id, node_template=self._node_template
-        #   )
-        limitation_str = "Cannot yet compute Ref values for Resources"
-        resource_unit = DescribeUnit(before_context=limitation_str, after_context=limitation_str)
-        return resource_unit
+        node_resource = self._get_node_resource_for(
+            resource_name=logica_id, node_template=self._node_template
+        )
+        resource_unit = self.visit(node_resource)
+        before_context = resource_unit.before_context
+        after_context = resource_unit.after_context
+        return DescribeUnit(before_context=before_context, after_context=after_context)
 
     def _resolve_mapping(self, map_name: str, top_level_key: str, second_level_key) -> DescribeUnit:
         # TODO: add support for nested intrinsic functions, and KNOWN AFTER APPLY logical ids.
@@ -210,29 +216,37 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         arguments_unit = self.visit(node_intrinsic_function.arguments)
         # TODO: validate the return value according to the spec.
         before_argument_list = arguments_unit.before_context
-        before_logical_name_of_resource = before_argument_list[0]
-        before_attribute_name = before_argument_list[1]
-        before_node_resource = self._get_node_resource_for(
-            resource_name=before_logical_name_of_resource, node_template=self._node_template
-        )
-        node_property: TerminalValue = self._get_node_property_for(
-            property_name=before_attribute_name, node_resource=before_node_resource
-        )
+        after_argument_list = arguments_unit.after_context
 
-        before_context = node_property.value.value
-        if node_property.change_type != ChangeType.UNCHANGED:
+        before_context = None
+        if before_argument_list:
+            before_logical_name_of_resource = before_argument_list[0]
+            before_attribute_name = before_argument_list[1]
+            before_node_resource = self._get_node_resource_for(
+                resource_name=before_logical_name_of_resource, node_template=self._node_template
+            )
+            before_node_property = self._get_node_property_for(
+                property_name=before_attribute_name, node_resource=before_node_resource
+            )
+            before_property_unit = self.visit(before_node_property)
+            before_context = before_property_unit.before_context
+
+        after_context = None
+        if after_argument_list:
             after_context = CHANGESET_KNOWN_AFTER_APPLY
-        else:
-            after_context = node_property.value.value
+            # TODO: the following is the logic to resolve the attribute in the `after` template
+            #  this should be moved to the new base class and then be masked in this describer.
+            # after_logical_name_of_resource = after_argument_list[0]
+            # after_attribute_name = after_argument_list[1]
+            # after_node_resource = self._get_node_resource_for(
+            #     resource_name=after_logical_name_of_resource, node_template=self._node_template
+            # )
+            # after_node_property = self._get_node_property_for(
+            #     property_name=after_attribute_name, node_resource=after_node_resource
+            # )
+            # after_property_unit = self.visit(after_node_property)
+            # after_context = after_property_unit.after_context
 
-        match node_intrinsic_function.change_type:
-            case ChangeType.MODIFIED:
-                return DescribeUnit(before_context=before_context, after_context=after_context)
-            case ChangeType.CREATED:
-                return DescribeUnit(after_context=after_context)
-            case ChangeType.REMOVED:
-                return DescribeUnit(before_context=before_context)
-        # Unchanged
         return DescribeUnit(before_context=before_context, after_context=after_context)
 
     def visit_node_intrinsic_function_fn_equals(
@@ -342,12 +356,16 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
 
         # TODO: add tests with created and deleted parameters and verify this logic holds.
         before_logical_id = arguments_unit.before_context
-        before_unit = self._resolve_reference(logica_id=before_logical_id)
-        before_context = before_unit.before_context
+        before_context = None
+        if before_logical_id is not None:
+            before_unit = self._resolve_reference(logica_id=before_logical_id)
+            before_context = before_unit.before_context
 
         after_logical_id = arguments_unit.after_context
-        after_unit = self._resolve_reference(logica_id=after_logical_id)
-        after_context = after_unit.after_context
+        after_context = None
+        if after_logical_id is not None:
+            after_unit = self._resolve_reference(logica_id=after_logical_id)
+            after_context = after_unit.after_context
 
         return DescribeUnit(before_context=before_context, after_context=after_context)
 
@@ -406,21 +424,71 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         )
         return DescribeUnit(before_context=before_context, after_context=after_context)
 
+    def visit_node_output(self, node_output: NodeOutput) -> DescribeUnit:
+        # This logic is not required for Describe operations,
+        # and should be ported a new base for this class type.
+        change_type = node_output.change_type
+        value_unit = self.visit(node_output.value)
+
+        condition_unit = None
+        if node_output.condition_reference is not None:
+            condition_unit = self._resolve_resource_condition_reference(
+                node_output.condition_reference
+            )
+            condition_before = condition_unit.before_context
+            condition_after = condition_unit.after_context
+            if not condition_before and condition_after:
+                change_type = ChangeType.CREATED
+            elif condition_before and not condition_after:
+                change_type = ChangeType.REMOVED
+
+        export_unit = None
+        if node_output.export is not None:
+            export_unit = self.visit(node_output.export)
+
+        before_context = None
+        after_context = None
+        if change_type != ChangeType.REMOVED:
+            after_context = {"Name": node_output.name, ValueKey: value_unit.after_context}
+            if export_unit:
+                after_context[ExportKey] = export_unit.after_context
+            if condition_unit:
+                after_context[ConditionKey] = condition_unit.after_context
+        if change_type != ChangeType.CREATED:
+            before_context = {"Name": node_output.name, ValueKey: value_unit.before_context}
+            if export_unit:
+                before_context[ExportKey] = export_unit.before_context
+            if condition_unit:
+                before_context[ConditionKey] = condition_unit.before_context
+        return DescribeUnit(before_context=before_context, after_context=after_context)
+
+    def visit_node_outputs(self, node_outputs: NodeOutputs) -> DescribeUnit:
+        # This logic is not required for Describe operations,
+        # and should be ported a new base for this class type.
+        before_context = list()
+        after_context = list()
+        for node_output in node_outputs.outputs:
+            output_unit = self.visit(node_output)
+            output_before = output_unit.before_context
+            output_after = output_unit.after_context
+            if output_before:
+                before_context.append(output_before)
+            if output_after:
+                after_context.append(output_after)
+        return DescribeUnit(before_context=before_context, after_context=after_context)
+
     def visit_node_resource(self, node_resource: NodeResource) -> DescribeUnit:
-        condition_unit = self._resolve_resource_condition_reference(
-            node_resource.condition_reference
-        )
-        condition_before = condition_unit.before_context
-        condition_after = condition_unit.after_context
-        if not condition_before and condition_after:
-            change_type = ChangeType.CREATED
-        elif condition_before and not condition_after:
-            change_type = ChangeType.REMOVED
-        else:
-            change_type = node_resource.change_type
-        if change_type == ChangeType.UNCHANGED:
-            # TODO
-            return None
+        change_type = node_resource.change_type
+        if node_resource.condition_reference is not None:
+            condition_unit = self._resolve_resource_condition_reference(
+                node_resource.condition_reference
+            )
+            condition_before = condition_unit.before_context
+            condition_after = condition_unit.after_context
+            if not condition_before and condition_after:
+                change_type = ChangeType.CREATED
+            elif condition_before and not condition_after:
+                change_type = ChangeType.REMOVED
 
         resource_change = cfn_api.ResourceChange()
         resource_change["LogicalResourceId"] = node_resource.name
@@ -432,28 +500,28 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
         )
 
         properties_describe_unit = self.visit(node_resource.properties)
-        match change_type:
-            case ChangeType.MODIFIED:
-                resource_change["Action"] = cfn_api.ChangeAction.Modify
-                resource_change["BeforeContext"] = properties_describe_unit.before_context
-                resource_change["AfterContext"] = properties_describe_unit.after_context
-            case ChangeType.CREATED:
-                resource_change["Action"] = cfn_api.ChangeAction.Add
-                resource_change["AfterContext"] = properties_describe_unit.after_context
-            case ChangeType.REMOVED:
-                resource_change["Action"] = cfn_api.ChangeAction.Remove
-                resource_change["BeforeContext"] = properties_describe_unit.before_context
 
-        self._changes.append(
-            cfn_api.Change(Type=cfn_api.ChangeType.Resource, ResourceChange=resource_change)
-        )
+        if change_type != ChangeType.UNCHANGED:
+            match change_type:
+                case ChangeType.MODIFIED:
+                    resource_change["Action"] = cfn_api.ChangeAction.Modify
+                    resource_change["BeforeContext"] = properties_describe_unit.before_context
+                    resource_change["AfterContext"] = properties_describe_unit.after_context
+                case ChangeType.CREATED:
+                    resource_change["Action"] = cfn_api.ChangeAction.Add
+                    resource_change["AfterContext"] = properties_describe_unit.after_context
+                case ChangeType.REMOVED:
+                    resource_change["Action"] = cfn_api.ChangeAction.Remove
+                    resource_change["BeforeContext"] = properties_describe_unit.before_context
+            self._changes.append(
+                cfn_api.Change(Type=cfn_api.ChangeType.Resource, ResourceChange=resource_change)
+            )
 
-        # TODO
-        return None
-
-    # def visit_node_resources(self, node_resources: NodeResources) -> DescribeUnit:
-    #     for node_resource in node_resources.resources:
-    #         if node_resource.change_type != ChangeType.UNCHANGED:
-    #             self.visit_node_resource(node_resource=node_resource)
-    #     # TODO
-    #     return None
+        before_context = None
+        after_context = None
+        # TODO: reconsider what is the describe unit return value for a resource type.
+        if change_type != ChangeType.CREATED:
+            before_context = node_resource.name
+        if change_type != ChangeType.REMOVED:
+            after_context = node_resource.name
+        return DescribeUnit(before_context=before_context, after_context=after_context)

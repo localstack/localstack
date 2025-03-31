@@ -10,6 +10,8 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeMapping,
     NodeMappings,
     NodeObject,
+    NodeOutput,
+    NodeOutputs,
     NodeParameter,
     NodeParameters,
     NodeProperties,
@@ -52,6 +54,12 @@ class ChangeSetModelVisitor(abc.ABC):
 
     def visit_node_mappings(self, node_mappings: NodeMappings):
         self.visit_children(node_mappings)
+
+    def visit_node_outputs(self, node_outputs: NodeOutputs):
+        self.visit_children(node_outputs)
+
+    def visit_node_output(self, node_output: NodeOutput):
+        self.visit_children(node_output)
 
     def visit_node_parameters(self, node_parameters: NodeParameters):
         self.visit_children(node_parameters)
