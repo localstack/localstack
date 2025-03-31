@@ -9,11 +9,11 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.24.2
+awscrt==0.25.4
     # via localstack-core (pyproject.toml)
-boto3==1.37.18
+boto3==1.37.23
     # via localstack-core (pyproject.toml)
-botocore==1.37.18
+botocore==1.37.23
     # via
     #   boto3
     #   localstack-core (pyproject.toml)
@@ -138,7 +138,7 @@ pyproject-hooks==1.2.0
     # via build
 python-dateutil==2.9.0.post0
     # via botocore
-python-dotenv==1.0.1
+python-dotenv==1.1.0
     # via localstack-core (pyproject.toml)
 pyyaml==6.0.2
     # via

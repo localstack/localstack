@@ -31,7 +31,7 @@ dynamic = ["version"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
-    "License :: OSI Approved :: Apache Software License",
+    "License-Expression :: OSI Approved :: Apache Software License",
     "Topic :: Internet",
     "Topic :: Software Development :: Testing",
     "Topic :: System :: Emulators",
@@ -53,9 +53,9 @@ Issues = "https://github.com/localstack/localstack/issues"
 # minimal required to actually run localstack on the host for services natively implemented in python
 base-runtime = [
     # pinned / updated by ASF update action
-    "boto3==1.37.18",
+    "boto3==1.37.23",
     # pinned / updated by ASF update action
-    "botocore==1.37.18",
+    "botocore==1.37.23",
     "awscrt>=0.13.14",
     "cbor2>=5.5.0",
     "dnspython>=1.16.0",
@@ -69,7 +69,7 @@ base-runtime = [
     "requests-aws4auth>=1.0",
     # explicitly set urllib3 to force its usage / ensure compatibility
     "urllib3>=2.0.7",
-    "Werkzeug>=3.0.0",
+    "Werkzeug>=3.1.3",
     "xmltodict>=0.13.0",
     "rolo>=0.7",
 ]

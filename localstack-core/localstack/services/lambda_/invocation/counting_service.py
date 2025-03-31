@@ -86,7 +86,7 @@ class CountingService:
 
     @contextlib.contextmanager
     def get_invocation_lease(
-        self, function: Function, function_version: FunctionVersion
+        self, function: Function | None, function_version: FunctionVersion
     ) -> InitializationType:
         """An invocation lease reserves the right to schedule an invocation.
         The returned lease type can either be on-demand or provisioned.
@@ -94,6 +94,8 @@ class CountingService:
         1) Check for free provisioned concurrency => provisioned
         2) Check for reserved concurrency => on-demand
         3) Check for unreserved concurrency => on-demand
+
+        HACK: We allow the function to be None for Lambda@Edge to skip provisioned and reserved concurrency.
         """
         account = function_version.id.account
         region = function_version.id.region
@@ -147,25 +149,28 @@ class CountingService:
                     )
 
         lease_type = None
-        with provisioned_tracker.lock:
-            # 1) Check for free provisioned concurrency
-            provisioned_concurrency_config = function.provisioned_concurrency_configs.get(
-                function_version.id.qualifier
-            )
-            if provisioned_concurrency_config:
-                available_provisioned_concurrency = (
-                    provisioned_concurrency_config.provisioned_concurrent_executions
-                    - provisioned_tracker.concurrent_executions[qualified_arn]
+        # HACK: skip reserved and provisioned concurrency if function not available (e.g., in Lambda@Edge)
+        if function is not None:
+            with provisioned_tracker.lock:
+                # 1) Check for free provisioned concurrency
+                provisioned_concurrency_config = function.provisioned_concurrency_configs.get(
+                    function_version.id.qualifier
                 )
-                if available_provisioned_concurrency > 0:
-                    provisioned_tracker.increment(qualified_arn)
-                    lease_type = "provisioned-concurrency"
+                if provisioned_concurrency_config:
+                    available_provisioned_concurrency = (
+                        provisioned_concurrency_config.provisioned_concurrent_executions
+                        - provisioned_tracker.concurrent_executions[qualified_arn]
+                    )
+                    if available_provisioned_concurrency > 0:
+                        provisioned_tracker.increment(qualified_arn)
+                        lease_type = "provisioned-concurrency"
 
         if not lease_type:
             with on_demand_tracker.lock:
                 # 2) If reserved concurrency is set AND no provisioned concurrency available:
                 # => Check if enough reserved concurrency is available for the specific function.
-                if function.reserved_concurrent_executions is not None:
+                # HACK: skip reserved if function not available (e.g., in Lambda@Edge)
+                if function and function.reserved_concurrent_executions is not None:
                     on_demand_running_invocation_count = on_demand_tracker.concurrent_executions[
                         unqualified_function_arn
                     ]

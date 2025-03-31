@@ -42,7 +42,7 @@ pygments==2.19.1
     # via rich
 pyproject-hooks==1.2.0
     # via build
-python-dotenv==1.0.1
+python-dotenv==1.1.0
     # via localstack-core (pyproject.toml)
 pyyaml==6.0.2
     # via localstack-core (pyproject.toml)

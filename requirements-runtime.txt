@@ -6,7 +6,7 @@
 #
 airspeed-ext==0.6.7
     # via localstack-core (pyproject.toml)
-amazon-kclpy==3.0.1
+amazon-kclpy==3.0.2
     # via localstack-core (pyproject.toml)
 annotated-types==0.7.0
     # via pydantic
@@ -29,17 +29,17 @@ aws-sam-translator==1.95.0
     #   localstack-core (pyproject.toml)
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.38.18
+awscli==1.38.23
     # via localstack-core (pyproject.toml)
-awscrt==0.24.2
+awscrt==0.25.4
     # via localstack-core
-boto3==1.37.18
+boto3==1.37.23
     # via
     #   amazon-kclpy
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-botocore==1.37.18
+botocore==1.37.23
     # via
     #   aws-xray-sdk
     #   awscli
@@ -64,7 +64,7 @@ certifi==2025.1.31
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.30.0
+cfn-lint==1.32.0
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -245,14 +245,14 @@ pydantic-core==2.27.2
     # via pydantic
 pygments==2.19.1
     # via rich
-pymongo==4.11.2
+pymongo==4.11.3
     # via localstack-core (pyproject.toml)
 pyopenssl==25.0.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
     #   localstack-twisted
-pyparsing==3.2.1
+pyparsing==3.2.3
     # via moto-ext
 pyproject-hooks==1.2.0
     # via build
@@ -261,7 +261,7 @@ python-dateutil==2.9.0.post0
     #   botocore
     #   moto-ext
     #   opensearch-py
-python-dotenv==1.0.1
+python-dotenv==1.1.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)

@@ -10,6 +10,7 @@ LOG = logging.getLogger(__name__)
 TRACKED_ENV_VAR = [
     "ALLOW_NONSTANDARD_REGIONS",
     "BEDROCK_PREWARM",
+    "CLOUDFRONT_LAMBDA_EDGE",
     "CONTAINER_RUNTIME",
     "DEBUG",
     "DEFAULT_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
