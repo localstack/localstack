@@ -7,17 +7,19 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeIntrinsicFunction,
     NodeResource,
     NodeTemplate,
+    PropertiesKey,
 )
-from localstack.services.cloudformation.engine.v2.change_set_model_processor import (
-    ChangeSetModelProcessor,
-    ResolvedEntityDelta,
-    ResolvedResource,
+from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
+    ChangeSetModelPreproc,
+    PreprocEntityDelta,
+    PreprocProperties,
+    PreprocResource,
 )
 
 CHANGESET_KNOWN_AFTER_APPLY: Final[str] = "{{changeSet:KNOWN_AFTER_APPLY}}"
 
 
-class ChangeSetModelDescriber(ChangeSetModelProcessor):
+class ChangeSetModelDescriber(ChangeSetModelPreproc):
     _changes: Final[cfn_api.Changes]
 
     def __init__(self, node_template: NodeTemplate):
@@ -31,7 +33,7 @@ class ChangeSetModelDescriber(ChangeSetModelProcessor):
 
     def visit_node_intrinsic_function_fn_get_att(
         self, node_intrinsic_function: NodeIntrinsicFunction
-    ) -> ResolvedEntityDelta:
+    ) -> PreprocEntityDelta:
         delta = super().visit_node_intrinsic_function_fn_get_att(
             node_intrinsic_function=node_intrinsic_function
         )
@@ -45,33 +47,35 @@ class ChangeSetModelDescriber(ChangeSetModelProcessor):
         self,
         logical_id: str,
         type_: str,
-        before_context: Optional[dict],
-        after_context: Optional[dict],
+        before_properties: Optional[PreprocProperties],
+        after_properties: Optional[PreprocProperties],
     ) -> None:
         # unchanged: nothing to do.
-        if before_context == after_context:
+        if before_properties == after_properties:
             return
 
         action = cfn_api.ChangeAction.Modify
-        if before_context is None:
+        if before_properties is None:
             action = cfn_api.ChangeAction.Add
-        elif after_context is None:
+        elif after_properties is None:
             action = cfn_api.ChangeAction.Remove
 
         resource_change = cfn_api.ResourceChange()
         resource_change["Action"] = action
         resource_change["LogicalResourceId"] = logical_id
         resource_change["ResourceType"] = type_
-        if before_context is not None:
-            resource_change["BeforeContext"] = before_context  # noqa
-        if after_context is not None:
-            resource_change["AfterContext"] = after_context  # noqa
+        if before_properties is not None:
+            before_context_properties = {PropertiesKey: before_properties.properties}
+            resource_change["BeforeContext"] = before_context_properties  # noqa
+        if after_properties is not None:
+            after_context_properties = {PropertiesKey: after_properties.properties}
+            resource_change["AfterContext"] = after_context_properties  # noqa
         self._changes.append(
             cfn_api.Change(Type=cfn_api.ChangeType.Resource, ResourceChange=resource_change)
         )
 
-    def _describe_resource(
-        self, name: str, before: Optional[ResolvedResource], after: Optional[ResolvedResource]
+    def _describe_resource_change(
+        self, name: str, before: Optional[PreprocResource], after: Optional[PreprocResource]
     ) -> None:
         if before is not None and after is not None:
             # Case: change on same type.
@@ -80,8 +84,8 @@ class ChangeSetModelDescriber(ChangeSetModelProcessor):
                 self._register_resource_change(
                     logical_id=name,
                     type_=before.resource_type,
-                    before_context=before.properties,
-                    after_context=after.properties,
+                    before_properties=before.properties,
+                    after_properties=after.properties,
                 )
             # Case: type migration.
             # TODO: Add test to assert that on type change the resources are replaced.
@@ -90,36 +94,38 @@ class ChangeSetModelDescriber(ChangeSetModelProcessor):
                 self._register_resource_change(
                     logical_id=name,
                     type_=before.resource_type,
-                    before_context=before.properties,
-                    after_context=None,
+                    before_properties=before.properties,
+                    after_properties=None,
                 )
                 # Register a Create for the next type.
                 self._register_resource_change(
                     logical_id=name,
                     type_=after.resource_type,
-                    before_context=None,
-                    after_context=after.properties,
+                    before_properties=None,
+                    after_properties=after.properties,
                 )
         elif before is not None:
             # Case: removal
             self._register_resource_change(
                 logical_id=name,
                 type_=before.resource_type,
-                before_context=before.properties,
-                after_context=None,
+                before_properties=before.properties,
+                after_properties=None,
             )
         elif after is not None:
             # Case: addition
             self._register_resource_change(
                 logical_id=name,
                 type_=after.resource_type,
-                before_context=None,
-                after_context=after.properties,
+                before_properties=None,
+                after_properties=after.properties,
             )
 
     def visit_node_resource(
         self, node_resource: NodeResource
-    ) -> ResolvedEntityDelta[ResolvedResource, ResolvedResource]:
+    ) -> PreprocEntityDelta[PreprocResource, PreprocResource]:
         delta = super().visit_node_resource(node_resource=node_resource)
-        self._describe_resource(name=node_resource.name, before=delta.before, after=delta.after)
+        self._describe_resource_change(
+            name=node_resource.name, before=delta.before, after=delta.after
+        )
         return delta

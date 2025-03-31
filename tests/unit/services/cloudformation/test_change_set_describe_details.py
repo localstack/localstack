@@ -6,14 +6,56 @@ import pytest
 from localstack.aws.api.cloudformation import ResourceChange
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetModel,
+    ChangeType,
+    NodeOutput,
     NodeTemplate,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_describer import (
     ChangeSetModelDescriber,
 )
-from localstack.services.cloudformation.engine.v2.change_set_model_processor import (
-    ResolvedEntityDelta,
+from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
+    ChangeSetModelPreproc,
+    PreprocEntityDelta,
+    PreprocOutput,
 )
+
+
+# TODO: the following is used to debug the logic of the ChangeSetModelPreproc in the
+#  following temporary test suite. This logic should be removed and the tests on output
+#  management ported to integration tests using the snapshot strategy.
+class DebugOutputPreProc(ChangeSetModelPreproc):
+    outputs_before: list[dict]
+    outputs_after: list[dict]
+
+    def __init__(self, node_template: NodeTemplate):
+        super().__init__(node_template=node_template)
+        self.outputs_before = list()
+        self.outputs_after = list()
+
+    @staticmethod
+    def _to_debug_output(change_type: ChangeType, preproc_output: PreprocOutput) -> dict:
+        debug_object = {
+            "ChangeType": change_type.value,
+            "Name": preproc_output.name,
+            "Value": preproc_output.value,
+        }
+        if preproc_output.condition:
+            debug_object["Condition"] = preproc_output.condition
+        if preproc_output.export:
+            debug_object["Export"] = preproc_output.export
+        return debug_object
+
+    def visit_node_output(
+        self, node_output: NodeOutput
+    ) -> PreprocEntityDelta[PreprocOutput, PreprocOutput]:
+        delta = super().visit_node_output(node_output)
+        if delta.before:
+            debug_object = self._to_debug_output(node_output.change_type, delta.before)
+            self.outputs_before.append(debug_object)
+        if delta.after:
+            debug_object = self._to_debug_output(node_output.change_type, delta.after)
+            self.outputs_after.append(debug_object)
+        return delta
 
 
 # TODO: this is a temporary test suite for the v2 CFN update engine change set description logic.
@@ -40,12 +82,12 @@ class TestChangeSetDescribeDetails:
         return json.loads(json_str)
 
     @staticmethod
-    def debug_outputs(
+    def debug_output_preproc(
         before_template: Optional[dict],
         after_template: Optional[dict],
         before_parameters: Optional[dict] = None,
         after_parameters: Optional[dict] = None,
-    ) -> ResolvedEntityDelta:
+    ) -> tuple[list[dict], list[dict]]:
         change_set_model = ChangeSetModel(
             before_template=before_template,
             after_template=after_template,
@@ -53,8 +95,9 @@ class TestChangeSetDescribeDetails:
             after_parameters=after_parameters,
         )
         update_model: NodeTemplate = change_set_model.get_update_model()
-        outputs_unit = ChangeSetModelDescriber(update_model).visit(update_model.outputs)
-        return outputs_unit
+        preproc_output = DebugOutputPreProc(update_model)
+        preproc_output.visit(update_model.outputs)
+        return preproc_output.outputs_before, preproc_output.outputs_after
 
     @staticmethod
     def compare_changes(computed: list, target: list) -> None:
@@ -1270,9 +1313,11 @@ class TestChangeSetDescribeDetails:
             },
             "Outputs": {"NewParamName": {"Value": {"Ref": "NewParam"}}},
         }
-        outputs_unit = self.debug_outputs(t1, t2)
-        assert not outputs_unit.before
-        assert outputs_unit.after == [{"Name": "NewParamName", "Value": "NewParam"}]
+        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        assert not outputs_before
+        assert outputs_after == [
+            {"ChangeType": "Created", "Name": "NewParamName", "Value": "NewParam"}
+        ]
 
     def test_output_and_resource_removed(self):
         t1 = {
@@ -1300,9 +1345,11 @@ class TestChangeSetDescribeDetails:
                 }
             }
         }
-        outputs_unit = self.debug_outputs(t1, t2)
-        assert outputs_unit.before == [{"Name": "FeatureToggleName", "Value": "FeatureToggle"}]
-        assert outputs_unit.after == []
+        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        assert outputs_before == [
+            {"ChangeType": "Removed", "Name": "FeatureToggleName", "Value": "FeatureToggle"}
+        ]
+        assert outputs_after == []
 
     def test_output_resource_changed(self):
         t1 = {
@@ -1331,9 +1378,13 @@ class TestChangeSetDescribeDetails:
             },
             "Outputs": {"LogLevelOutput": {"Value": {"Ref": "LogLevelParam"}}},
         }
-        outputs_unit = self.debug_outputs(t1, t2)
-        assert outputs_unit.before == [{"Name": "LogLevelOutput", "Value": "LogLevelParam"}]
-        assert outputs_unit.after == [{"Name": "LogLevelOutput", "Value": "LogLevelParam"}]
+        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        assert outputs_before == [
+            {"ChangeType": "Modified", "Name": "LogLevelOutput", "Value": "LogLevelParam"}
+        ]
+        assert outputs_after == [
+            {"ChangeType": "Modified", "Name": "LogLevelOutput", "Value": "LogLevelParam"}
+        ]
 
     def test_output_update(self):
         t1 = {
@@ -1363,10 +1414,12 @@ class TestChangeSetDescribeDetails:
             },
             "Outputs": {"EnvParamRef": {"Value": {"Fn::GetAtt": ["EnvParam", "Name"]}}},
         }
-        outputs_unit = self.debug_outputs(t1, t2)
-        assert outputs_unit.before == [{"Name": "EnvParamRef", "Value": "EnvParam"}]
-        assert outputs_unit.after == [
-            {"Name": "EnvParamRef", "Value": "{{changeSet:KNOWN_AFTER_APPLY}}"}
+        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        assert outputs_before == [
+            {"ChangeType": "Modified", "Name": "EnvParamRef", "Value": "EnvParam"}
+        ]
+        assert outputs_after == [
+            {"ChangeType": "Modified", "Name": "EnvParamRef", "Value": "app-env"}
         ]
 
     def test_output_renamed(self):
@@ -1396,9 +1449,13 @@ class TestChangeSetDescribeDetails:
             },
             "Outputs": {"NewSSMOutput": {"Value": {"Ref": "SSMParam"}}},
         }
-        outputs_unit = self.debug_outputs(t1, t2)
-        assert outputs_unit.before == [{"Name": "OldSSMOutput", "Value": "SSMParam"}]
-        assert outputs_unit.after == [{"Name": "NewSSMOutput", "Value": "SSMParam"}]
+        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        assert outputs_before == [
+            {"ChangeType": "Removed", "Name": "OldSSMOutput", "Value": "SSMParam"}
+        ]
+        assert outputs_after == [
+            {"ChangeType": "Created", "Name": "NewSSMOutput", "Value": "SSMParam"}
+        ]
 
     def test_output_and_resource_renamed(self):
         t1 = {
@@ -1427,10 +1484,16 @@ class TestChangeSetDescribeDetails:
             },
             "Outputs": {"DatabaseSecretOutput": {"Value": {"Ref": "DatabaseSecretParam"}}},
         }
-        outputs_unit = self.debug_outputs(t1, t2)
-        assert outputs_unit.before == [{"Name": "DBPasswordOutput", "Value": "DBPasswordParam"}]
-        assert outputs_unit.after == [
-            {"Name": "DatabaseSecretOutput", "Value": "DatabaseSecretParam"}
+        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        assert outputs_before == [
+            {"ChangeType": "Removed", "Name": "DBPasswordOutput", "Value": "DBPasswordParam"}
+        ]
+        assert outputs_after == [
+            {
+                "ChangeType": "Created",
+                "Name": "DatabaseSecretOutput",
+                "Value": "DatabaseSecretParam",
+            }
         ]
 
     def test_mappings_update_string_referencing_resource(self):
