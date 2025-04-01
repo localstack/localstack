@@ -515,7 +515,7 @@ class ChangeSetModel:
 
         node_parameter = self._retrieve_parameter_if_exists(parameter_name=logical_id)
         if isinstance(node_parameter, NodeParameter):
-            return node_parameter.dynamic_value.change_type
+            return node_parameter.change_type
 
         # TODO: this should check the replacement flag for a resource update.
         node_resource = self._retrieve_or_visit_resource(resource_name=logical_id)
@@ -574,19 +574,16 @@ class ChangeSetModel:
     def _visit_array(
         self, scope: Scope, before_array: Maybe[list], after_array: Maybe[list]
     ) -> NodeArray:
-        change_type = ChangeType.UNCHANGED
         array: list[ChangeSetEntity] = list()
         for index, (before_value, after_value) in enumerate(
             zip_longest(before_array, after_array, fillvalue=Nothing)
         ):
-            # TODO: should extract this scoping logic.
             value_scope = scope.open_index(index=index)
             value = self._visit_value(
                 scope=value_scope, before_value=before_value, after_value=after_value
             )
             array.append(value)
-            if value.change_type != ChangeType.UNCHANGED:
-                change_type = ChangeType.MODIFIED
+        change_type = self._change_type_for_parent_of([value.change_type for value in array])
         return NodeArray(scope=scope, change_type=change_type, array=array)
 
     def _visit_object(
@@ -685,28 +682,12 @@ class ChangeSetModel:
         node_property = self._visited_scopes.get(scope)
         if isinstance(node_property, NodeProperty):
             return node_property
-
-        if self._is_created(before=before_property, after=after_property):
-            node_property = NodeProperty(
-                scope=scope,
-                change_type=ChangeType.CREATED,
-                name=property_name,
-                value=TerminalValueCreated(scope=scope, value=after_property),
-            )
-        elif self._is_removed(before=before_property, after=after_property):
-            node_property = NodeProperty(
-                scope=scope,
-                change_type=ChangeType.REMOVED,
-                name=property_name,
-                value=TerminalValueRemoved(scope=scope, value=before_property),
-            )
-        else:
-            value = self._visit_value(
-                scope=scope, before_value=before_property, after_value=after_property
-            )
-            node_property = NodeProperty(
-                scope=scope, change_type=value.change_type, name=property_name, value=value
-            )
+        value = self._visit_value(
+            scope=scope, before_value=before_property, after_value=after_property
+        )
+        node_property = NodeProperty(
+            scope=scope, change_type=value.change_type, name=property_name, value=value
+        )
         self._visited_scopes[scope] = node_property
         return node_property
 
@@ -738,6 +719,13 @@ class ChangeSetModel:
         self._visited_scopes[scope] = node_properties
         return node_properties
 
+    def _visit_type(self, scope: Scope, before_type: Any, after_type: Any) -> TerminalValue:
+        value = self._visit_value(scope=scope, before_value=before_type, after_value=after_type)
+        if not isinstance(value, TerminalValue):
+            # TODO: decide where template schema validation should occur.
+            raise RuntimeError()
+        return value
+
     def _visit_resource(
         self,
         scope: Scope,
@@ -756,8 +744,12 @@ class ChangeSetModel:
         else:
             change_type = ChangeType.UNCHANGED
 
-        # TODO: investigate behaviour with type changes, for now this is filler code.
-        _, type_str = self._safe_access_in(scope, TypeKey, before_resource)
+        scope_type, (before_type, after_type) = self._safe_access_in(
+            scope, TypeKey, before_resource, after_resource
+        )
+        terminal_value_type = self._visit_type(
+            scope=scope_type, before_type=before_type, after_type=after_type
+        )
 
         condition_reference = None
         scope_condition, (before_condition, after_condition) = self._safe_access_in(
@@ -782,7 +774,7 @@ class ChangeSetModel:
             scope=scope,
             change_type=change_type,
             name=resource_name,
-            type_=TerminalValueUnchanged(scope=scope, value=type_str),
+            type_=terminal_value_type,
             condition_reference=condition_reference,
             properties=properties,
         )
@@ -862,36 +854,19 @@ class ChangeSetModel:
             return node_parameter
         # TODO: add logic to compute defaults already in the graph building process?
         dynamic_value = self._visit_dynamic_parameter(parameter_name=parameter_name)
-        if self._is_created(before=before_parameter, after=after_parameter):
-            node_parameter = NodeParameter(
-                scope=scope,
-                change_type=ChangeType.CREATED,
-                name=parameter_name,
-                value=TerminalValueCreated(scope=scope, value=after_parameter),
-                dynamic_value=dynamic_value,
-            )
-        elif self._is_removed(before=before_parameter, after=after_parameter):
-            node_parameter = NodeParameter(
-                scope=scope,
-                change_type=ChangeType.REMOVED,
-                name=parameter_name,
-                value=TerminalValueRemoved(scope=scope, value=before_parameter),
-                dynamic_value=dynamic_value,
-            )
-        else:
-            value = self._visit_value(
-                scope=scope, before_value=before_parameter, after_value=after_parameter
-            )
-            change_type = self._change_type_for_parent_of(
-                change_types=[dynamic_value.change_type, value.change_type]
-            )
-            node_parameter = NodeParameter(
-                scope=scope,
-                change_type=change_type,
-                name=parameter_name,
-                value=value,
-                dynamic_value=dynamic_value,
-            )
+        value = self._visit_value(
+            scope=scope, before_value=before_parameter, after_value=after_parameter
+        )
+        change_type = self._change_type_for_parent_of(
+            change_types=[dynamic_value.change_type, value.change_type]
+        )
+        node_parameter = NodeParameter(
+            scope=scope,
+            change_type=change_type,
+            name=parameter_name,
+            value=value,
+            dynamic_value=dynamic_value,
+        )
         self._visited_scopes[scope] = node_parameter
         return node_parameter
 

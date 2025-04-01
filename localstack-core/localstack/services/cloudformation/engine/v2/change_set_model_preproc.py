@@ -125,6 +125,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         self._processed = dict()
 
     def process(self) -> None:
+        self._processed.clear()
         self.visit(self._node_template)
 
     @staticmethod
@@ -203,11 +204,17 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         return mapping_value_delta
 
     def _resolve_reference_binding(
-        self, before_logical_id: str, after_logical_id: str
+        self, before_logical_id: Optional[str], after_logical_id: Optional[str]
     ) -> PreprocEntityDelta:
-        before_delta = self._resolve_reference(logica_id=before_logical_id)
-        after_delta = self._resolve_reference(logica_id=after_logical_id)
-        return PreprocEntityDelta(before=before_delta.before, after=after_delta.after)
+        before = None
+        if before_logical_id is not None:
+            before_delta = self._resolve_reference(logica_id=before_logical_id)
+            before = before_delta.before
+        after = None
+        if after_logical_id is not None:
+            after_delta = self._resolve_reference(logica_id=after_logical_id)
+            after = after_delta.after
+        return PreprocEntityDelta(before=before, after=after)
 
     def visit(self, change_set_entity: ChangeSetEntity) -> PreprocEntityDelta:
         delta = self._processed.get(change_set_entity.scope)
@@ -249,13 +256,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         return PreprocEntityDelta(before=before_delta.before, after=after_delta.after)
 
     def visit_node_object(self, node_object: NodeObject) -> PreprocEntityDelta:
-        # TODO: improve check syntax
-        if len(node_object.bindings) == 1:
-            binding_values = list(node_object.bindings.values())
-            unique_value = binding_values[0]
-            if isinstance(unique_value, NodeIntrinsicFunction):
-                return self.visit(unique_value)
-
         before = dict()
         after = dict()
         for name, change_set_entity in node_object.bindings.items():
@@ -323,14 +323,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         after = None
         if after_values:
             after = after_values[0] == after_values[1]
-        match node_intrinsic_function.change_type:
-            case ChangeType.MODIFIED:
-                return PreprocEntityDelta(before=before, after=after)
-            case ChangeType.CREATED:
-                return PreprocEntityDelta(after=after)
-            case ChangeType.REMOVED:
-                return PreprocEntityDelta(before=before)
-        # Unchanged
         return PreprocEntityDelta(before=before, after=after)
 
     def visit_node_intrinsic_function_fn_if(
@@ -444,17 +436,10 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         after = list()
         for change_set_entity in node_array.array:
             delta: PreprocEntityDelta = self.visit(change_set_entity=change_set_entity)
-            match change_set_entity.change_type:
-                case ChangeType.MODIFIED:
-                    before.append(delta.before)
-                    after.append(delta.after)
-                case ChangeType.CREATED:
-                    after.append(delta.after)
-                case ChangeType.REMOVED:
-                    before.append(delta.before)
-                case ChangeType.UNCHANGED:
-                    before.append(delta.before)
-                    after.append(delta.before)
+            if delta.before:
+                before.append(delta.before)
+            if delta.after:
+                after.append(delta.after)
         return PreprocEntityDelta(before=before, after=after)
 
     def visit_node_properties(

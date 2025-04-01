@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Final, Optional
 
 import localstack.aws.api.cloudformation as cfn_api
@@ -20,10 +21,12 @@ CHANGESET_KNOWN_AFTER_APPLY: Final[str] = "{{changeSet:KNOWN_AFTER_APPLY}}"
 
 
 class ChangeSetModelDescriber(ChangeSetModelPreproc):
+    _include_property_values: Final[bool]
     _changes: Final[cfn_api.Changes]
 
-    def __init__(self, node_template: NodeTemplate):
+    def __init__(self, node_template: NodeTemplate, include_property_values: bool):
         super().__init__(node_template=node_template)
+        self._include_property_values = include_property_values
         self._changes = list()
 
     def get_changes(self) -> cfn_api.Changes:
@@ -54,10 +57,6 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         if before_properties == after_properties:
             return
 
-        # before_context =
-        # after_context = None
-        # for
-
         action = cfn_api.ChangeAction.Modify
         if before_properties is None:
             action = cfn_api.ChangeAction.Add
@@ -68,12 +67,14 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         resource_change["Action"] = action
         resource_change["LogicalResourceId"] = logical_id
         resource_change["ResourceType"] = type_
-        if before_properties is not None:
+        if self._include_property_values and before_properties is not None:
             before_context_properties = {PropertiesKey: before_properties.properties}
-            resource_change["BeforeContext"] = before_context_properties  # noqa
-        if after_properties is not None:
+            before_context_properties_json_str = json.dumps(before_context_properties)
+            resource_change["BeforeContext"] = before_context_properties_json_str
+        if self._include_property_values and after_properties is not None:
             after_context_properties = {PropertiesKey: after_properties.properties}
-            resource_change["AfterContext"] = after_context_properties  # noqa
+            after_context_properties_json_str = json.dumps(after_context_properties)
+            resource_change["AfterContext"] = after_context_properties_json_str
         self._changes.append(
             cfn_api.Change(Type=cfn_api.ChangeType.Resource, ResourceChange=resource_change)
         )

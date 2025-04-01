@@ -3,7 +3,7 @@ from typing import Optional
 
 import pytest
 
-from localstack.aws.api.cloudformation import ResourceChange
+from localstack.aws.api.cloudformation import Changes
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetModel,
     ChangeType,
@@ -67,7 +67,7 @@ class TestChangeSetDescribeDetails:
         after_template: dict,
         before_parameters: Optional[dict] = None,
         after_parameters: Optional[dict] = None,
-    ) -> list[ResourceChange]:
+    ) -> Changes:
         change_set_model = ChangeSetModel(
             before_template=before_template,
             after_template=after_template,
@@ -75,9 +75,18 @@ class TestChangeSetDescribeDetails:
             after_parameters=after_parameters,
         )
         update_model: NodeTemplate = change_set_model.get_update_model()
-        change_set_describer = ChangeSetModelDescriber(node_template=update_model)
+        change_set_describer = ChangeSetModelDescriber(
+            node_template=update_model, include_property_values=True
+        )
         changes = change_set_describer.get_changes()
-        # TODO
+        for change in changes:
+            resource_change = change["ResourceChange"]
+            before_context_str = resource_change.get("BeforeContext")
+            if before_context_str is not None:
+                resource_change["BeforeContext"] = json.loads(before_context_str)
+            after_context_str = resource_change.get("AfterContext")
+            if after_context_str is not None:
+                resource_change["AfterContext"] = json.loads(after_context_str)
         json_str = json.dumps(changes)
         return json.loads(json_str)
 
