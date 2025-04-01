@@ -90,10 +90,10 @@ def apply_patches():
         # to pass this to the generate method as {"Key": ..., "Value": ...}.  Take
         # care not to alter the original tags dict otherwise moto will not be able
         # to understand it.
-        subnetTags = None
+        subnet_tags = None
         if tags is not None:
-            subnetTags = tags.get("subnet", tags)
-        custom_id = resource_identifier.generate(tags=subnetTags)
+            subnet_tags = tags.get("subnet", tags)
+        custom_id = resource_identifier.generate(tags=subnet_tags)
 
         if custom_id:
             # Check if custom id is unique within a given VPC
