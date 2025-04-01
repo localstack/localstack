@@ -37,10 +37,11 @@ class RuntimeStatus(Enum):
     INACTIVE = auto()
     STARTING = auto()
     READY = auto()
-    RUNNING = auto()
+    INVOKING = auto()
     STARTUP_FAILED = auto()
     STARTUP_TIMED_OUT = auto()
     STOPPED = auto()
+    TIMING_OUT = auto()
 
 
 class InvalidStatusException(Exception):
@@ -246,7 +247,7 @@ class ExecutionEnvironment:
     def release(self) -> None:
         self.last_returned = datetime.now()
         with self.status_lock:
-            if self.status != RuntimeStatus.RUNNING:
+            if self.status != RuntimeStatus.INVOKING:
                 raise InvalidStatusException(
                     f"Execution environment {self.id} can only be set to status ready while running."
                     f" Current status: {self.status}"
@@ -264,7 +265,7 @@ class ExecutionEnvironment:
                     f"Execution environment {self.id} can only be reserved if ready. "
                     f" Current status: {self.status}"
                 )
-            self.status = RuntimeStatus.RUNNING
+            self.status = RuntimeStatus.INVOKING
 
         self.keepalive_timer.cancel()
 
@@ -274,6 +275,14 @@ class ExecutionEnvironment:
             self.id,
             self.function_version.qualified_arn,
         )
+        with self.status_lock:
+            if self.status != RuntimeStatus.READY:
+                LOG.debug(
+                    "Keepalive timer passed, but current runtime status is %s. Aborting keepalive stop.",
+                    self.status,
+                )
+                return
+            self.status = RuntimeStatus.TIMING_OUT
         self.stop()
         # Notify assignment service via callback to remove from environments list
         self.on_timeout(self.version_manager_id, self.id)
@@ -340,7 +349,7 @@ class ExecutionEnvironment:
         return f"{prefix}{prefixed_logs}"
 
     def invoke(self, invocation: Invocation) -> InvocationResult:
-        assert self.status == RuntimeStatus.RUNNING
+        assert self.status == RuntimeStatus.INVOKING
         # Async/event invokes might miss an aws_trace_header, then we need to create a new root trace id.
         aws_trace_header = (
             invocation.trace_context.get("aws_trace_header") or TraceHeader().ensure_root_exists()

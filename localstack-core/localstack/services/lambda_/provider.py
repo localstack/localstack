@@ -1597,10 +1597,19 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         except ServiceException:
             raise
         except EnvironmentStartupTimeoutException as e:
-            raise LambdaServiceException("Internal error while executing lambda") from e
+            raise LambdaServiceException(
+                f"[{context.request_id}] Timeout while starting up lambda environment for function {function_name}:{qualifier}"
+            ) from e
         except Exception as e:
-            LOG.error("Error while invoking lambda", exc_info=e)
-            raise LambdaServiceException("Internal error while executing lambda") from e
+            LOG.error(
+                "[%s] Error while invoking lambda %s",
+                context.request_id,
+                function_name,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+            raise LambdaServiceException(
+                f"[{context.request_id}] Internal error while executing lambda {function_name}:{qualifier}. Cause: {type(e)}"
+            ) from e
 
         if invocation_type == InvocationType.Event:
             # This happens when invocation type is event

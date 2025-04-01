@@ -86,7 +86,9 @@ class AssignmentService(OtherServiceEndpoint):
         except InvalidStatusException as invalid_e:
             LOG.error("InvalidStatusException: %s", invalid_e)
         except Exception as e:
-            LOG.error("Failed invocation %s", e)
+            LOG.error(
+                "Failed invocation <%s>: %s", type(e), e, exc_info=LOG.isEnabledFor(logging.DEBUG)
+            )
             self.stop_environment(execution_environment)
             raise e
 
