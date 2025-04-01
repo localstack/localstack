@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from mypy_boto3_cloudwatch import CloudWatchClient
     from mypy_boto3_codebuild import CodeBuildClient
     from mypy_boto3_codecommit import CodeCommitClient
+    from mypy_boto3_codeconnections import CodeConnectionsClient
     from mypy_boto3_codedeploy import CodeDeployClient
     from mypy_boto3_codepipeline import CodePipelineClient
     from mypy_boto3_codestar_connections import CodeStarconnectionsClient
@@ -139,6 +140,9 @@ class TypedServiceClientFactory(abc.ABC):
     cloudwatch: Union["CloudWatchClient", "MetadataRequestInjector[CloudWatchClient]"]
     codebuild: Union["CodeBuildClient", "MetadataRequestInjector[CodeBuildClient]"]
     codecommit: Union["CodeCommitClient", "MetadataRequestInjector[CodeCommitClient]"]
+    codeconnections: Union[
+        "CodeConnectionsClient", "MetadataRequestInjector[CodeConnectionsClient]"
+    ]
     codedeploy: Union["CodeDeployClient", "MetadataRequestInjector[CodeDeployClient]"]
     codepipeline: Union["CodePipelineClient", "MetadataRequestInjector[CodePipelineClient]"]
     codestar_connections: Union[
