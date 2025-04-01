@@ -1296,5 +1296,24 @@
         "exception_type": "<class 'botocore.errorfactory.InvalidEventPatternException'>"
       }
     }
+  },
+  "tests/aws/services/events/test_events_patterns.py::TestEventPattern::test_event_with_large_and_complex_payload": {
+    "recorded-date": "17-03-2025, 10:58:02",
+    "recorded-content": {
+      "complex-event-simple-pattern": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "complex-event-complex-pattern": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

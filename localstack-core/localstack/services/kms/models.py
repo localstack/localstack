@@ -693,6 +693,9 @@ class KmsKey:
         else:
             return request_key_usage or "ENCRYPT_DECRYPT"
 
+    def rotate_key_on_demand(self):
+        self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
+
 
 class KmsGrant:
     # AWS documentation doesn't seem to mention any metadata object for grants like it does mention KeyMetadata for

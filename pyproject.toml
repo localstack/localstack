@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "localstack-core"
 authors = [
-        { name = "LocalStack Contributors", email = "info@localstack.cloud" }
+    { name = "LocalStack Contributors", email = "info@localstack.cloud" }
 ]
 description = "The core library and runtime of LocalStack"
 requires-python = ">=3.9"
@@ -31,7 +31,7 @@ dynamic = ["version"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
-    "License :: OSI Approved :: Apache Software License",
+    "License-Expression :: OSI Approved :: Apache Software License",
     "Topic :: Internet",
     "Topic :: Software Development :: Testing",
     "Topic :: System :: Emulators",
@@ -53,9 +53,9 @@ Issues = "https://github.com/localstack/localstack/issues"
 # minimal required to actually run localstack on the host for services natively implemented in python
 base-runtime = [
     # pinned / updated by ASF update action
-    "boto3==1.36.21",
+    "boto3==1.37.23",
     # pinned / updated by ASF update action
-    "botocore==1.36.21",
+    "botocore==1.37.23",
     "awscrt>=0.13.14",
     "cbor2>=5.5.0",
     "dnspython>=1.16.0",
@@ -69,7 +69,7 @@ base-runtime = [
     "requests-aws4auth>=1.0",
     # explicitly set urllib3 to force its usage / ensure compatibility
     "urllib3>=2.0.7",
-    "Werkzeug>=3.0.0",
+    "Werkzeug>=3.1.3",
     "xmltodict>=0.13.0",
     "rolo>=0.7",
 ]
@@ -92,7 +92,7 @@ runtime = [
     "json5>=0.9.11",
     "jsonpath-ng>=1.6.1",
     "jsonpath-rw>=1.4.0",
-    "moto-ext[all]==5.0.28.post6",
+    "moto-ext[all]==5.1.1.post1",
     "opensearch-py>=2.4.1",
     "pymongo>=4.2.0",
     "pyopenssl>=23.0.0",
@@ -149,10 +149,10 @@ script-files = [
     "bin/localstack.bat",
     "bin/localstack-supervisor",
 ]
-package-dir = { "" = "localstack-core"}
+package-dir = { "" = "localstack-core" }
 
 [tool.setuptools.dynamic]
-readme = { file = ["README.md"], content-type = "text/markdown"}
+readme = { file = ["README.md"], content-type = "text/markdown" }
 
 [tool.setuptools.packages.find]
 where = ["localstack-core/"]
@@ -174,8 +174,8 @@ exclude = ["tests*"]
 ]
 
 [tool.ruff]
-# Always generate Python 3.9-compatible code.
-target-version = "py39"
+# Generate code compatible with version defined in .python-version
+target-version = "py311"
 line-length = 100
 src = ["localstack-core", "tests"]
 exclude = [
@@ -190,7 +190,18 @@ exclude = [
     "localstack-core/.filesystem",
     ".git",
     "localstack-core/localstack/services/stepfunctions/asl/antlr/runtime"
-    ]
+]
+
+[tool.ruff.per-file-target-version]
+# Only allow minimum version for code used in the CLI
+"localstack-core/localstack/cli/**" = "py39"
+"localstack-core/localstack/packages/**" = "py39"
+"localstack-core/localstack/config.py" = "py39"
+"localstack-core/localstack/constants.py" = "py39"
+"localstack-core/localstack/utils/analytics/**" = "py39"
+"localstack-core/localstack/utils/bootstrap.py" = "py39"
+"localstack-core/localstack/utils/json.py" = "py39"
+
 
 [tool.ruff.lint]
 ignore = [

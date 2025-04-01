@@ -570,7 +570,7 @@ class TestRoute53Resolver:
             aws_client.route53resolver.disassociate_resolver_rule(
                 ResolverRuleId="rslvr-123", VPCId="vpc-123"
             )
-        snapshot.match("resource_not_found_res", resource_not_found)
+        snapshot.match("resource_not_found_res", resource_not_found.value.response)
 
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -818,7 +818,7 @@ class TestRoute53Resolver:
         priorities = [1, 2, 3, 4]
         actions = [Action.ALLOW, Action.ALERT, Action.ALERT, Action.ALLOW]
 
-        for action, priority in zip(actions, priorities):
+        for action, priority in zip(actions, priorities, strict=False):
             domain_list_response = aws_client.route53resolver.create_firewall_domain_list(
                 Name=f"fw-domain-list-{short_uid()}"
             )

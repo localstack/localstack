@@ -93,7 +93,7 @@ class TestApiGatewayPaths:
     def test_path_matches(self, path, path_parts, expected):
         default_resource = {"resourceMethods": {"GET": {}}}
 
-        path_map = {path_part: default_resource for path_part in path_parts}
+        path_map = dict.fromkeys(path_parts, default_resource)
         matched_path, _ = get_resource_for_path(path, "GET", path_map)
         assert matched_path == expected
 

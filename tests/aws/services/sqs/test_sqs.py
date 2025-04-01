@@ -13,10 +13,13 @@ from localstack_snapshot.snapshots.transformer import GenericTransformer
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
+from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE, SQS_UUID_STRING_SEED
 from localstack.services.sqs.models import sqs_stores
 from localstack.services.sqs.provider import MAX_NUMBER_OF_MESSAGES
-from localstack.services.sqs.utils import parse_queue_url
+from localstack.services.sqs.utils import (
+    parse_queue_url,
+    token_generator,
+)
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.config import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
@@ -28,7 +31,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import get_partition
 from localstack.utils.aws.request_context import mock_aws_request_headers
-from localstack.utils.common import poll_condition, retry, short_uid, to_str
+from localstack.utils.common import poll_condition, retry, short_uid, short_uid_from_seed, to_str
 from localstack.utils.urls import localstack_host
 from tests.aws.services.lambda_.functions import lambda_integration
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON
@@ -144,6 +147,60 @@ class TestSqsProvider:
         assert "QueueUrls" not in result
 
     @markers.aws.validated
+    def test_list_queues_pagination(self, sqs_create_queue, aws_client, snapshot):
+        queue_list_length = 10
+        # ensures test is unique and prevents conflict in case of parrallel test runs
+        test_output_identifier = short_uid_from_seed(SQS_UUID_STRING_SEED)
+        max_result_1 = 2
+        max_result_2 = 10
+
+        queue_names = [f"{test_output_identifier}-test-queue-{i}" for i in range(queue_list_length)]
+
+        queue_urls = []
+        for name in queue_names:
+            sqs_create_queue(QueueName=name)
+            queue_url = aws_client.sqs.get_queue_url(QueueName=name)["QueueUrl"]
+            assert queue_url.endswith(name)
+            queue_urls.append(queue_url)
+
+        list_all = aws_client.sqs.list_queues(QueueNamePrefix=test_output_identifier)
+        assert "QueueUrls" in list_all
+        assert len(list_all["QueueUrls"]) == queue_list_length
+        snapshot.match("list_all", list_all)
+
+        list_two_max = aws_client.sqs.list_queues(
+            MaxResults=max_result_1, QueueNamePrefix=test_output_identifier
+        )
+        assert "QueueUrls" in list_two_max
+        assert "NextToken" in list_two_max
+        assert len(list_two_max["QueueUrls"]) == max_result_1
+        snapshot.match("list_two_max", list_two_max)
+        next_token = list_two_max["NextToken"]
+
+        list_remaining = aws_client.sqs.list_queues(
+            MaxResults=max_result_2, NextToken=next_token, QueueNamePrefix=test_output_identifier
+        )
+        assert "QueueUrls" in list_remaining
+        assert "NextToken" not in list_remaining
+        assert len(list_remaining["QueueUrls"]) == max_result_2 - max_result_1
+        snapshot.match("list_remaining", list_remaining)
+
+        snapshot.add_transformer(
+            snapshot.transform.regex(
+                r"https://sqs\.(.+?)\.amazonaws\.com",
+                r"http://sqs.\1.localhost.localstack.cloud:4566",
+            )
+        )
+
+        url = f"http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/{test_output_identifier}-test-queue-{max_result_1 - 1}"
+        snapshot.add_transformer(
+            snapshot.transform.regex(
+                r'("NextToken":\s*")[^"]*(")',
+                r"\1" + token_generator(url) + r"\2",
+            )
+        )
+
+    @markers.aws.validated
     def test_create_queue_and_get_attributes(self, sqs_queue, aws_sqs_client):
         result = aws_sqs_client.get_queue_attributes(
             QueueUrl=sqs_queue, AttributeNames=["QueueArn", "CreatedTimestamp", "VisibilityTimeout"]
@@ -234,6 +291,14 @@ class TestSqsProvider:
         assert message["Body"] == "message"
         assert message["MessageId"] == send_result["MessageId"]
         assert message["MD5OfBody"] == send_result["MD5OfMessageBody"]
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
+    def test_send_empty_message(self, sqs_queue, snapshot, aws_sqs_client):
+        with pytest.raises(ClientError) as e:
+            aws_sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="")
+
+        snapshot.match("send_empty_message", e.value.response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
@@ -1040,6 +1105,53 @@ class TestSqsProvider:
         assert message_receipt_0["ReceiptHandle"] != message_receipt_1["ReceiptHandle"], (
             "receipt handles should be different"
         )
+
+    @markers.aws.validated
+    def test_delete_after_visibility_timeout(self, sqs_create_queue, aws_sqs_client, snapshot):
+        timeout = 1
+        queue_url = sqs_create_queue(
+            QueueName=f"test-{short_uid()}", Attributes={"VisibilityTimeout": f"{timeout}"}
+        )
+
+        aws_sqs_client.send_message(QueueUrl=queue_url, MessageBody="foobar")
+        # receive the message
+        initial_receive = aws_sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)
+        assert "Messages" in initial_receive
+        receipt_handle = initial_receive["Messages"][0]["ReceiptHandle"]
+
+        # exceed the visibility timeout window
+        time.sleep(timeout)
+
+        aws_sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+
+        snapshot.match(
+            "delete_after_timeout_queue_empty", aws_sqs_client.receive_message(QueueUrl=queue_url)
+        )
+
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
+    @markers.aws.validated
+    def test_fifo_delete_after_visibility_timeout(self, sqs_create_queue, aws_sqs_client, snapshot):
+        timeout = 1
+        queue_url = sqs_create_queue(
+            QueueName=f"test-{short_uid()}.fifo",
+            Attributes={
+                "VisibilityTimeout": f"{timeout}",
+                "FifoQueue": "True",
+                "ContentBasedDeduplication": "True",
+            },
+        )
+
+        aws_sqs_client.send_message(QueueUrl=queue_url, MessageBody="foobar", MessageGroupId="1")
+        # receive the message
+        initial_receive = aws_sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)
+        snapshot.match("received_sqs_message", initial_receive)
+        receipt_handle = initial_receive["Messages"][0]["ReceiptHandle"]
+
+        # exceed the visibility timeout window
+        time.sleep(timeout)
+        with pytest.raises(ClientError) as e:
+            aws_sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+        snapshot.match("delete_after_timeout_fifo", e.value.response)
 
     @markers.aws.validated
     def test_receive_terminate_visibility_timeout(self, sqs_queue, aws_sqs_client):

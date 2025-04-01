@@ -1,7 +1,7 @@
 import logging
 
 from localstack.http import Response
-from localstack.utils.analytics.usage import UsageSetCounter
+from localstack.utils.analytics.metrics import Counter, LabeledCounterMetric
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import RestApiInvocationContext
@@ -10,10 +10,12 @@ LOG = logging.getLogger(__name__)
 
 
 class IntegrationUsageCounter(RestApiGatewayHandler):
-    counter: UsageSetCounter
+    counter: LabeledCounterMetric
 
-    def __init__(self, counter: UsageSetCounter = None):
-        self.counter = counter or UsageSetCounter(namespace="apigateway:invokedrest")
+    def __init__(self, counter: LabeledCounterMetric = None):
+        self.counter = counter or Counter(
+            namespace="apigateway", name="rest_api_execute", labels=["invocation_type"]
+        )
 
     def __call__(
         self,
@@ -31,7 +33,7 @@ class IntegrationUsageCounter(RestApiGatewayHandler):
             # hence we should count it as a NOT_FOUND invocation
             invocation_type = "NOT_FOUND"
 
-        self.counter.record(invocation_type)
+        self.counter.labels(invocation_type=invocation_type).increment()
 
     @staticmethod
     def _get_aws_integration_service(integration_uri: str) -> str:
@@ -41,4 +43,8 @@ class IntegrationUsageCounter(RestApiGatewayHandler):
         if len(split_arn := integration_uri.split(":", maxsplit=5)) < 4:
             return "null"
 
-        return split_arn[4]
+        service = split_arn[4]
+        # the URI can also contain some <api-id>.<service>-api kind of route like `execute-api` or `appsync-api`
+        # we need to make sure we do not pass the full value back
+        service = service.split(".")[-1]
+        return service

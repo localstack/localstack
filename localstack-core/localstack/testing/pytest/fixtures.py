@@ -67,6 +67,38 @@ if TYPE_CHECKING:
     from mypy_boto3_sqs.type_defs import MessageTypeDef
 
 
+@pytest.fixture(scope="session")
+def aws_client_no_retry(aws_client_factory):
+    """
+    This fixture can be used to obtain Boto clients with disabled retries for testing.
+    botocore docs: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/retries.html#configuring-a-retry-mode
+
+    Use this client when testing exceptions (i.e., with pytest.raises(...)) or expected errors (e.g., status code 500)
+    to avoid unnecessary retries and mitigate test flakiness if the tested error condition is time-bound.
+
+    This client is needed for the following errors, exceptions, and HTTP status codes defined by the legacy retry mode:
+    https://boto3.amazonaws.com/v1/documentation/api/latest/guide/retries.html#legacy-retry-mode
+    General socket/connection errors:
+    * ConnectionError
+    * ConnectionClosedError
+    * ReadTimeoutError
+    * EndpointConnectionError
+
+    Service-side throttling/limit errors and exceptions:
+    * Throttling
+    * ThrottlingException
+    * ThrottledException
+    * RequestThrottledException
+    * ProvisionedThroughputExceededException
+
+    HTTP status codes: 429, 500, 502, 503, 504, and 509
+
+    Hence, this client is not needed for a `ResourceNotFound` error (but it doesn't harm).
+    """
+    no_retry_config = botocore.config.Config(retries={"max_attempts": 1})
+    return aws_client_factory(config=no_retry_config)
+
+
 @pytest.fixture(scope="class")
 def aws_http_client_factory(aws_session):
     """
@@ -2054,30 +2086,33 @@ def sample_stores() -> AccountRegionBundle:
 @pytest.fixture
 def create_rest_apigw(aws_client_factory):
     rest_apis = []
+    retry_boto_config = None
+    if is_aws_cloud():
+        retry_boto_config = botocore.config.Config(
+            # Api gateway can throttle requests pretty heavily. Leading to potentially undeleted apis
+            retries={"max_attempts": 10, "mode": "adaptive"}
+        )
 
     def _create_apigateway_function(**kwargs):
-        region_name = kwargs.pop("region_name", None)
-        client_config = None
-        if is_aws_cloud():
-            client_config = botocore.config.Config(
-                # Api gateway can throttle requests pretty heavily. Leading to potentially undeleted apis
-                retries={"max_attempts": 10, "mode": "adaptive"}
-            )
+        client_region_name = kwargs.pop("region_name", None)
         apigateway_client = aws_client_factory(
-            region_name=region_name, config=client_config
+            region_name=client_region_name, config=retry_boto_config
         ).apigateway
         kwargs.setdefault("name", f"api-{short_uid()}")
 
         response = apigateway_client.create_rest_api(**kwargs)
         api_id = response.get("id")
-        rest_apis.append((api_id, region_name))
+        rest_apis.append((api_id, client_region_name))
 
         return api_id, response.get("name"), response.get("rootResourceId")
 
     yield _create_apigateway_function
 
-    for rest_api_id, region_name in rest_apis:
-        apigateway_client = aws_client_factory(region_name=region_name).apigateway
+    for rest_api_id, _client_region_name in rest_apis:
+        apigateway_client = aws_client_factory(
+            region_name=_client_region_name,
+            config=retry_boto_config,
+        ).apigateway
         # First, retrieve the usage plans associated with the REST API
         usage_plan_ids = []
         usage_plans = apigateway_client.get_usage_plans()
@@ -2170,11 +2205,16 @@ def echo_http_server(httpserver: HTTPServer):
     """Spins up a local HTTP echo server and returns the endpoint URL"""
 
     def _echo(request: Request) -> Response:
+        request_json = None
+        if request.is_json:
+            with contextlib.suppress(ValueError):
+                request_json = json.loads(request.data)
         result = {
             "data": request.data or "{}",
             "headers": dict(request.headers),
             "url": request.url,
             "method": request.method,
+            "json": request_json,
         }
         response_body = json.dumps(json_safe(result))
         return Response(response_body, status=200)

@@ -21,6 +21,9 @@ import logging
 from typing import Any, TypedDict
 from urllib.parse import quote_plus, unquote_plus
 
+import airspeed
+from airspeed.operators import dict_to_string
+
 from localstack import config
 from localstack.services.apigateway.next_gen.execute_api.variables import (
     ContextVariables,
@@ -48,6 +51,74 @@ class MappingTemplateVariables(TypedDict, total=False):
     context: ContextVariables
     input: MappingTemplateInput
     stageVariables: dict[str, str]
+
+
+def cast_to_vtl_object(value):
+    if isinstance(value, dict):
+        return VTLMap(value)
+    if isinstance(value, list):
+        return [cast_to_vtl_object(item) for item in value]
+    return value
+
+
+def cast_to_vtl_json_object(value: Any) -> Any:
+    if isinstance(value, dict):
+        return VTLJsonDict(value)
+    if isinstance(value, list):
+        return VTLJsonList(value)
+    return value
+
+
+class VTLMap(dict):
+    """Overrides __str__ of python dict (and all child dict) to return a Java like string representation"""
+
+    # TODO apply this class more generally through the template mappings
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.update(*args, **kwargs)
+
+    @staticmethod
+    def cast_factory(value: Any) -> Any:
+        return cast_to_vtl_object(value)
+
+    def update(self, *args, **kwargs):
+        for k, v in self.items():
+            self[k] = self.cast_factory(v)
+
+    def __str__(self) -> str:
+        return dict_to_string(self)
+
+
+class VTLJsonList(list):
+    """Some VTL List behave differently when being represented as string and everything
+    inside will be represented as a json string
+
+    Example: $input.path('$').b // Where path is {"a": 1, "b": [{"c": 5}]}
+    Results: '[{"c":5}]' // Where everything inside the list is a valid json object
+    """
+
+    def __init__(self, *args):
+        super(VTLJsonList, self).__init__(*args)
+        for idx, item in enumerate(self):
+            self[idx] = cast_to_vtl_json_object(item)
+
+    def __str__(self):
+        if isinstance(self, list):
+            return json.dumps(self, separators=(",", ":"))
+
+
+class VTLJsonDict(VTLMap):
+    """Some VTL Map behave differently when being represented as string and a list
+    encountered in the dictionary will be represented as a json string
+
+    Example: $input.path('$') // Where path is {"a": 1, "b": [{"c": 5}]}
+    Results: '{a=1, b=[{"c":5}]}' // Where everything inside the list is a valid json object
+    """
+
+    @staticmethod
+    def cast_factory(value: Any) -> Any:
+        return cast_to_vtl_json_object(value)
 
 
 class AttributeDict(dict):
@@ -138,21 +209,27 @@ class VelocityInput:
         self.parameters = params or {}
         self.value = body
 
-    def path(self, path):
+    def _extract_json_path(self, path):
         if not self.value:
             return {}
         value = self.value if isinstance(self.value, dict) else json.loads(self.value)
         return extract_jsonpath(value, path)
 
+    def path(self, path):
+        return cast_to_vtl_json_object(self._extract_json_path(path))
+
     def json(self, path):
         path = path or "$"
-        matching = self.path(path)
+        matching = self._extract_json_path(path)
         if isinstance(matching, (list, dict)):
             matching = json_safe(matching)
         return json.dumps(matching)
 
     @property
     def body(self):
+        if not self.value:
+            return "{}"
+
         return self.value
 
     def params(self, name=None):
@@ -202,3 +279,13 @@ class ApiGatewayVtlTemplate(VtlTemplate):
         )
         result = self.render_vtl(template=template.strip(), variables=variables_copy)
         return result, variables_copy["context"]["responseOverride"]
+
+
+# patches required to allow our custom class operations in VTL templates processed by airspeed
+airspeed.operators.__additional_methods__[VTLMap] = airspeed.operators.__additional_methods__[dict]
+airspeed.operators.__additional_methods__[VTLJsonDict] = airspeed.operators.__additional_methods__[
+    dict
+]
+airspeed.operators.__additional_methods__[VTLJsonList] = airspeed.operators.__additional_methods__[
+    list
+]

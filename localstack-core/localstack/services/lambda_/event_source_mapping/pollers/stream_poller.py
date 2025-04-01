@@ -2,6 +2,7 @@ import json
 import logging
 import threading
 from abc import abstractmethod
+from collections import defaultdict
 from datetime import datetime
 from typing import Iterator
 
@@ -29,8 +30,12 @@ from localstack.services.lambda_.event_source_mapping.pollers.poller import (
     get_batch_item_failures,
 )
 from localstack.services.lambda_.event_source_mapping.pollers.sqs_poller import get_queue_url
+from localstack.services.lambda_.event_source_mapping.senders.sender_utils import (
+    batched,
+)
 from localstack.utils.aws.arns import parse_arn, s3_bucket_name
 from localstack.utils.backoff import ExponentialBackoff
+from localstack.utils.batch_policy import Batcher
 from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
@@ -53,6 +58,9 @@ class StreamPoller(Poller):
     # Used for backing-off between retries and breaking the retry loop
     _is_shutdown: threading.Event
 
+    # Collects and flushes a batch of records based on a batching policy
+    shard_batcher: dict[str, Batcher[dict]]
+
     def __init__(
         self,
         source_arn: str,
@@ -69,6 +77,13 @@ class StreamPoller(Poller):
         self.iterator_over_shards = None
 
         self._is_shutdown = threading.Event()
+
+        self.shard_batcher = defaultdict(
+            lambda: Batcher(
+                max_count=self.stream_parameters.get("BatchSize", 100),
+                max_window=self.stream_parameters.get("MaximumBatchingWindowInSeconds", 0),
+            )
+        )
 
     @abstractmethod
     def transform_into_events(self, records: list[dict], shard_id) -> list[dict]:
@@ -135,6 +150,15 @@ class StreamPoller(Poller):
         if not self.shards:
             self.shards = self.initialize_shards()
 
+        if not self.shards:
+            LOG.debug("No shards found for %s.", self.source_arn)
+            raise EmptyPollResultsException(service=self.event_source(), source_arn=self.source_arn)
+        else:
+            LOG.debug("Event source %s has %d shards.", self.source_arn, len(self.shards))
+            # Remove all shard batchers without corresponding shards
+            for shard_id in self.shard_batcher.keys() - self.shards.keys():
+                self.shard_batcher.pop(shard_id, None)
+
         # TODO: improve efficiency because this currently limits the throughput to at most batch size per poll interval
         # Handle shards round-robin. Re-initialize current shard iterator once all shards are handled.
         if self.iterator_over_shards is None:
@@ -145,22 +169,46 @@ class StreamPoller(Poller):
             self.iterator_over_shards = iter(self.shards.items())
             current_shard_tuple = next(self.iterator_over_shards, None)
 
+        # TODO Better handling when shards are initialised and the iterator returns nothing
+        if not current_shard_tuple:
+            raise PipeInternalError(
+                "Failed to retrieve any shards for stream polling despite initialization."
+            )
+
         try:
             self.poll_events_from_shard(*current_shard_tuple)
-        # TODO: implement exponential back-off for errors in general
         except PipeInternalError:
             # TODO: standardize logging
             # Ignore and wait for the next polling interval, which will do retry
             pass
 
     def poll_events_from_shard(self, shard_id: str, shard_iterator: str):
-        abort_condition = None
         get_records_response = self.get_records(shard_iterator)
-        records = get_records_response["Records"]
-        polled_events = self.transform_into_events(records, shard_id)
-        if not polled_events:
-            raise EmptyPollResultsException(service=self.event_source, source_arn=self.source_arn)
+        records: list[dict] = get_records_response.get("Records", [])
+        next_shard_iterator = get_records_response["NextShardIterator"]
 
+        # We cannot reliably back-off when no records found since an iterator
+        # may have to move multiple times until records are returned.
+        # See https://docs.aws.amazon.com/streams/latest/dev/troubleshooting-consumers.html#getrecords-returns-empty
+        # However, we still need to check if batcher should be triggered due to time-based batching.
+        should_flush = self.shard_batcher[shard_id].add(records)
+        if not should_flush:
+            self.shards[shard_id] = next_shard_iterator
+            return
+
+        # Retrieve and drain all events in batcher
+        collected_records = self.shard_batcher[shard_id].flush()
+        # If there is overflow (i.e 1k BatchSize and 1.2K returned in flush), further split up the batch.
+        for batch in batched(collected_records, self.stream_parameters.get("BatchSize")):
+            # This could potentially lead to data loss if forward_events_to_target raises an exception after a flush
+            # which would otherwise be solved with checkpointing.
+            # TODO: Implement checkpointing, leasing, etc. from https://docs.aws.amazon.com/streams/latest/dev/kcl-concepts.html
+            self.forward_events_to_target(shard_id, next_shard_iterator, batch)
+
+    def forward_events_to_target(self, shard_id, next_shard_iterator, records):
+        polled_events = self.transform_into_events(records, shard_id)
+
+        abort_condition = None
         # Check MaximumRecordAgeInSeconds
         if maximum_record_age_in_seconds := self.stream_parameters.get("MaximumRecordAgeInSeconds"):
             arrival_timestamp_of_last_event = polled_events[-1]["approximateArrivalTimestamp"]
@@ -189,7 +237,7 @@ class StreamPoller(Poller):
         # Don't trigger upon empty events
         if len(matching_events_post_filter) == 0:
             # Update shard iterator if no records match the filter
-            self.shards[shard_id] = get_records_response["NextShardIterator"]
+            self.shards[shard_id] = next_shard_iterator
             return
         events = self.add_source_metadata(matching_events_post_filter)
         LOG.debug("Polled %d events from %s in shard %s", len(events), self.source_arn, shard_id)
@@ -202,7 +250,9 @@ class StreamPoller(Poller):
         attempts = 0
         error_payload = {}
 
-        boff = ExponentialBackoff(max_retries=attempts)
+        max_retries = self.stream_parameters.get("MaximumRetryAttempts", -1)
+        # NOTE: max_retries == 0 means exponential backoff is disabled
+        boff = ExponentialBackoff(max_retries=max_retries)
         while (
             not abort_condition
             and not self.max_retries_exceeded(attempts)
@@ -219,7 +269,7 @@ class StreamPoller(Poller):
                 boff.reset()
 
                 # Update shard iterator if execution is successful
-                self.shards[shard_id] = get_records_response["NextShardIterator"]
+                self.shards[shard_id] = next_shard_iterator
                 return
             except PartialBatchFailureError as ex:
                 # TODO: add tests for partial batch failure scenarios
@@ -285,7 +335,7 @@ class StreamPoller(Poller):
         )
         self.send_events_to_dlq(shard_id, events, context=failure_context)
         # Update shard iterator if the execution failed but the events are sent to a DLQ
-        self.shards[shard_id] = get_records_response["NextShardIterator"]
+        self.shards[shard_id] = next_shard_iterator
 
     def get_records(self, shard_iterator: str) -> dict:
         """Returns a GetRecordsOutput from the GetRecords endpoint of streaming services such as Kinesis or DynamoDB"""
@@ -324,7 +374,7 @@ class StreamPoller(Poller):
                         "Invalid ShardId in ShardIterator for %s. Re-initializing shards.",
                         self.source_arn,
                     )
-                    self.initialize_shards()
+                    self.shards = self.initialize_shards()
                 else:
                     LOG.warning(
                         "Source stream %s does not exist: %s",
@@ -338,10 +388,10 @@ class StreamPoller(Poller):
                     shard_iterator,
                     self.source_arn,
                 )
-                self.initialize_shards()
+                self.shards = self.initialize_shards()
             else:
                 LOG.debug("ClientError during get_records for stream %s: %s", self.source_arn, e)
-                raise PipeInternalError from e
+            raise PipeInternalError from e
 
     def send_events_to_dlq(self, shard_id, events, context) -> None:
         dlq_arn = self.stream_parameters.get("DeadLetterConfig", {}).get("Arn")

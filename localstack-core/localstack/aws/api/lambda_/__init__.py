@@ -266,6 +266,7 @@ class Runtime(StrEnum):
     java17 = "java17"
     ruby3_2 = "ruby3.2"
     ruby3_3 = "ruby3.3"
+    ruby3_4 = "ruby3.4"
     python3_11 = "python3.11"
     nodejs20_x = "nodejs20.x"
     provided_al2023 = "provided.al2023"

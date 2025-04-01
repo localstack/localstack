@@ -1,5 +1,5 @@
 <p align="center">
-:zap: We are thrilled to announce the release of <a href="https://blog.localstack.cloud/localstack-release-v-4-1-0/">LocalStack 4.1</a> :zap:
+:zap: We are thrilled to announce the release of <a href="https://blog.localstack.cloud/localstack-release-v-4-3-0/">LocalStack 4.3</a> :zap:
 </p>
 
 <p align="center">
@@ -93,7 +93,7 @@ Start LocalStack inside a Docker container by running:
   / /___/ /_/ / /__/ /_/ / /___/ / /_/ /_/ / /__/ ,<
  /_____/\____/\___/\__,_/_//____/\__/\__,_/\___/_/|_|
 
-- LocalStack CLI: 4.1.0
+- LocalStack CLI: 4.3.0
 - Profile: default
 - App: https://app.localstack.cloud
 

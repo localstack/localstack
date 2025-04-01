@@ -157,6 +157,7 @@ from localstack.utils.strings import (  # noqa
     long_uid,
     md5,
     short_uid,
+    short_uid_from_seed,
     snake_to_camel_case,
     str_insert,
     str_remove,

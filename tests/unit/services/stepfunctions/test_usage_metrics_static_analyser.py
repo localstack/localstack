@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from localstack.services.stepfunctions.asl.component.common.query_language import QueryLanguageMode
 from localstack.services.stepfunctions.asl.static_analyser.usage_metrics_static_analyser import (
     UsageMetricsStaticAnalyser,
 )
@@ -104,22 +105,40 @@ class TestUsageMetricsStaticAnalyser:
     )
     def test_jsonata(self, definition):
         analyser = UsageMetricsStaticAnalyser.process(definition)
-        assert analyser.has_jsonata
-        assert not analyser.has_variable_sampling
+        assert not analyser.uses_variables
+        assert QueryLanguageMode.JSONata in analyser.query_language_modes
+
+    @pytest.mark.parametrize(
+        "definition",
+        [
+            BASE_PASS_JSONATA_OVERRIDE,
+            BASE_PASS_JSONATA_OVERRIDE_DEFAULT,
+        ],
+        ids=[
+            "BASE_PASS_JSONATA_OVERRIDE",
+            "BASE_PASS_JSONATA_OVERRIDE_DEFAULT",
+        ],
+    )
+    def test_both_query_languages(self, definition):
+        analyser = UsageMetricsStaticAnalyser.process(definition)
+        assert not analyser.uses_variables
+        assert QueryLanguageMode.JSONata in analyser.query_language_modes
+        assert QueryLanguageMode.JSONPath in analyser.query_language_modes
 
     @pytest.mark.parametrize("definition", [BASE_PASS_JSONPATH], ids=["BASE_PASS_JSONPATH"])
     def test_jsonpath(self, definition):
         analyser = UsageMetricsStaticAnalyser.process(definition)
-        assert not analyser.has_jsonata
-        assert not analyser.has_variable_sampling
+        assert QueryLanguageMode.JSONata not in analyser.query_language_modes
+        assert not analyser.uses_variables
 
     @pytest.mark.parametrize(
         "definition", [JSONPATH_TO_JSONATA_DATAFLOW], ids=["JSONPATH_TO_JSONATA_DATAFLOW"]
     )
     def test_jsonata_and_variable_sampling(self, definition):
         analyser = UsageMetricsStaticAnalyser.process(definition)
-        assert analyser.has_jsonata
-        assert analyser.has_variable_sampling
+        assert QueryLanguageMode.JSONPath in analyser.query_language_modes
+        assert QueryLanguageMode.JSONata in analyser.query_language_modes
+        assert analyser.uses_variables
 
     @pytest.mark.parametrize(
         "definition",
@@ -134,5 +153,5 @@ class TestUsageMetricsStaticAnalyser:
     )
     def test_jsonpath_and_variable_sampling(self, definition):
         analyser = UsageMetricsStaticAnalyser.process(definition)
-        assert not analyser.has_jsonata
-        assert analyser.has_variable_sampling
+        assert QueryLanguageMode.JSONata not in analyser.query_language_modes
+        assert analyser.uses_variables

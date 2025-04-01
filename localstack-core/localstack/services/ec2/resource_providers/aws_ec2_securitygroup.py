@@ -66,6 +66,8 @@ def model_from_description(sg_description: dict) -> dict:
         "SecurityGroupEgress": [],
         "SecurityGroupIngress": [],
     }
+    if tags := sg_description.get("Tags"):
+        model["Tags"] = tags
 
     for i, egress in enumerate(sg_description.get("IpPermissionsEgress", [])):
         for ip_range in egress.get("IpRanges", []):

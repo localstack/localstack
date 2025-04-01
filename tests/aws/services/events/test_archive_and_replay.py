@@ -2,6 +2,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from botocore.exceptions import ClientError
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -272,7 +273,7 @@ class TestArchive:
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
             RetentionDays=1,
         )
-        with pytest.raises(Exception) as error:
+        with pytest.raises(ClientError) as error:
             aws_client.events.create_archive(
                 ArchiveName=archive_name,
                 EventSourceArn=event_bus_arn,
@@ -282,7 +283,7 @@ class TestArchive:
             )
 
         snapshot.add_transformer([snapshot.transform.regex(archive_name, "<archive-name>")])
-        snapshot.match("create-archive-duplicate-error", error)
+        snapshot.match("create-archive-duplicate-error", error.value.response)
 
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
@@ -291,7 +292,7 @@ class TestArchive:
         non_existing_event_bus_arn = (
             f"arn:aws:events:us-east-1:123456789012:event-bus/{not_existing_event_bus_name}"
         )
-        with pytest.raises(Exception) as error:
+        with pytest.raises(ClientError) as error:
             aws_client.events.create_archive(
                 ArchiveName="test-archive",
                 EventSourceArn=non_existing_event_bus_arn,
@@ -303,19 +304,19 @@ class TestArchive:
         snapshot.add_transformer(
             [snapshot.transform.regex(not_existing_event_bus_name, "<event-bus-name>")]
         )
-        snapshot.match("create-archive-unknown-event-bus-error", error)
+        snapshot.match("create-archive-unknown-event-bus-error", error.value.response)
 
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_describe_archive_error_unknown_archive(self, aws_client, snapshot):
         not_existing_archive_name = f"doesnotexist-{short_uid()}"
-        with pytest.raises(Exception) as error:
+        with pytest.raises(ClientError) as error:
             aws_client.events.describe_archive(ArchiveName=not_existing_archive_name)
 
         snapshot.add_transformer(
             [snapshot.transform.regex(not_existing_archive_name, "<archive-name>")]
         )
-        snapshot.match("describe-archive-unknown-archive-error", error)
+        snapshot.match("describe-archive-unknown-archive-error", error.value.response)
 
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
@@ -326,37 +327,37 @@ class TestArchive:
         non_existing_event_bus_arn = (
             f"arn:aws:events:{region_name}:{account_id}:event-bus/{not_existing_event_bus_name}"
         )
-        with pytest.raises(Exception) as error:
+        with pytest.raises(ClientError) as error:
             aws_client.events.list_archives(EventSourceArn=non_existing_event_bus_arn)
 
         snapshot.add_transformer(
             [snapshot.transform.regex(not_existing_event_bus_name, "<event-bus-name>")]
         )
-        snapshot.match("list-archives-unknown-event-bus-error", error)
+        snapshot.match("list-archives-unknown-event-bus-error", error.value.response)
 
     @markers.aws.validated
     @pytest.mark.skip(reason="not possible to test with localstack")
     def test_update_archive_error_unknown_archive(self, aws_client, snapshot):
         not_existing_archive_name = f"doesnotexist-{short_uid()}"
-        with pytest.raises(Exception) as error:
+        with pytest.raises(ClientError) as error:
             aws_client.events.update_archive(ArchiveName=not_existing_archive_name)
 
         snapshot.add_transformer(
             [snapshot.transform.regex(not_existing_archive_name, "<archive-name>")]
         )
-        snapshot.match("update-archive-unknown-archive-error", error)
+        snapshot.match("update-archive-unknown-archive-error", error.value.response)
 
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_delete_archive_error_unknown_archive(self, aws_client, snapshot):
         not_existing_archive_name = f"doesnotexist-{short_uid()}"
-        with pytest.raises(Exception) as error:
+        with pytest.raises(ClientError) as error:
             aws_client.events.delete_archive(ArchiveName=not_existing_archive_name)
 
         snapshot.add_transformer(
             [snapshot.transform.regex(not_existing_archive_name, "<archive-name>")]
         )
-        snapshot.match("delete-archive-unknown-archive-error", error)
+        snapshot.match("delete-archive-unknown-archive-error", error.value.response)
 
 
 class TestReplay:
@@ -669,7 +670,7 @@ class TestReplay:
         end_time = datetime.now(timezone.utc)
 
         replay_name = f"test-replay-{short_uid()}"
-        with pytest.raises(Exception) as error:
+        with pytest.raises(ClientError) as error:
             aws_client.events.start_replay(
                 ReplayName=replay_name,
                 Description="description of the replay",
@@ -684,11 +685,11 @@ class TestReplay:
         snapshot.add_transformer(
             [snapshot.transform.regex(not_existing_event_bus_name, "<event-bus-name>")]
         )
-        snapshot.match("start-replay-unknown-event-bus-error", error)
+        snapshot.match("start-replay-unknown-event-bus-error", error.value.response)
 
         event_bus_arn = events_create_event_bus(Name=not_existing_event_bus_name)["EventBusArn"]
 
-        with pytest.raises(Exception) as error:
+        with pytest.raises(ClientError) as error:
             aws_client.events.start_replay(
                 ReplayName=replay_name,
                 Description="description of the replay",
@@ -700,7 +701,7 @@ class TestReplay:
                 },  # the destination must be the exact same event bus the archive is created for
             )
 
-        snapshot.match("start-replay-wrong-event-bus-error", error)
+        snapshot.match("start-replay-wrong-event-bus-error", error.value.response)
 
     @markers.aws.validated
     def test_start_replay_error_unknown_archive(
@@ -709,7 +710,7 @@ class TestReplay:
         not_existing_archive_name = f"doesnotexist-{short_uid()}"
         start_time = datetime.now(timezone.utc) - timedelta(minutes=1)
         end_time = datetime.now(timezone.utc)
-        with pytest.raises(Exception) as error:
+        with pytest.raises(ClientError) as error:
             aws_client.events.start_replay(
                 ReplayName="test-replay",
                 Description="description of the replay",
@@ -724,7 +725,7 @@ class TestReplay:
         snapshot.add_transformer(
             [snapshot.transform.regex(not_existing_archive_name, "<archive-name>")]
         )
-        snapshot.match("start-replay-unknown-archive-error", error)
+        snapshot.match("start-replay-unknown-archive-error", error.value.response)
 
     @markers.aws.validated
     def test_start_replay_error_duplicate_name_same_archive(
@@ -751,7 +752,7 @@ class TestReplay:
             },
         )
 
-        with pytest.raises(Exception) as error:
+        with pytest.raises(ClientError) as error:
             aws_client.events.start_replay(
                 ReplayName=replay_name,
                 Description="description of the replay",
@@ -764,7 +765,7 @@ class TestReplay:
             )
 
         snapshot.add_transformer([snapshot.transform.regex(replay_name, "<replay-name>")])
-        snapshot.match("start-replay-duplicate-error", error)
+        snapshot.match("start-replay-duplicate-error", error.value.response)
 
     @markers.aws.validated
     def test_start_replay_error_duplicate_different_archive(
@@ -800,7 +801,7 @@ class TestReplay:
             },
         )
 
-        with pytest.raises(Exception) as error:
+        with pytest.raises(ClientError) as error:
             aws_client.events.start_replay(
                 ReplayName=replay_name,
                 Description="description of the replay",
@@ -813,7 +814,7 @@ class TestReplay:
             )
 
         snapshot.add_transformer([snapshot.transform.regex(replay_name, "<replay-name>")])
-        snapshot.match("start-replay-duplicate-error", error)
+        snapshot.match("start-replay-duplicate-error", error.value.response)
 
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
@@ -833,7 +834,7 @@ class TestReplay:
         )
 
         replay_name = f"test-replay-{short_uid()}"
-        with pytest.raises(Exception) as error:
+        with pytest.raises(ClientError) as error:
             aws_client.events.start_replay(
                 ReplayName=replay_name,
                 Description="description of the replay",
@@ -845,7 +846,7 @@ class TestReplay:
                 },
             )
 
-        snapshot.match("start-replay-invalid-end-time-error", error)
+        snapshot.match("start-replay-invalid-end-time-error", error.value.response)
 
     @markers.aws.validated
     @pytest.mark.skip(reason="currently no concurrency for replays in localstack")
@@ -881,7 +882,7 @@ class TestReplay:
             )
 
         # only 10 replays are allowed to be in state STARTING or RUNNING at the same time
-        with pytest.raises(Exception) as error:
+        with pytest.raises(ClientError) as error:
             replay_name = f"{replay_name_prefix}-test-replay-{num_replays}"
             aws_client.events.start_replay(
                 ReplayName=replay_name,
@@ -901,15 +902,15 @@ class TestReplay:
                 snapshot.transform.jsonpath("$..NextToken", "next_token"),
             ]
         )
-        snapshot.match("list-replays-with-limit", error)
+        snapshot.match("list-replays-with-limit", error.value.response)
 
     @markers.aws.validated
     def test_describe_replay_error_unknown_replay(self, aws_client, snapshot):
         not_existing_replay_name = f"doesnotexist-{short_uid()}"
-        with pytest.raises(Exception) as error:
+        with pytest.raises(ClientError) as error:
             aws_client.events.describe_replay(ReplayName=not_existing_replay_name)
 
         snapshot.add_transformer(
             [snapshot.transform.regex(not_existing_replay_name, "<replay-name>")]
         )
-        snapshot.match("describe-replay-unknown-replay-error", error)
+        snapshot.match("describe-replay-unknown-replay-error", error.value.response)

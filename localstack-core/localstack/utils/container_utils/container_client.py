@@ -297,7 +297,9 @@ class PortMappings:
                     bind_port(bind_address, host_port),
                 )
                 for container_port, host_port in zip(
-                    range(to_range[0], to_range[1] + 1), range(from_range[0], from_range[1] + 1)
+                    range(to_range[0], to_range[1] + 1),
+                    range(from_range[0], from_range[1] + 1),
+                    strict=False,
                 )
             ]
 
@@ -699,13 +701,14 @@ class ContainerClient(metaclass=ABCMeta):
         image_name: str,
         context_path: str = None,
         platform: Optional[DockerPlatform] = None,
-    ) -> None:
+    ) -> str:
         """Builds an image from the given Dockerfile
 
         :param dockerfile_path: Path to Dockerfile, or a directory that contains a Dockerfile
         :param image_name: Name of the image to be built
         :param context_path: Path for build context (defaults to dirname of Dockerfile)
         :param platform: Target platform for build (defaults to platform of Docker host)
+        :return: Build logs as a string.
         """
 
     @abstractmethod

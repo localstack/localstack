@@ -1,4 +1,5 @@
 import base64
+import copy
 import functools
 import json
 import logging
@@ -61,7 +62,6 @@ from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sns import constants as sns_constants
-from localstack.services.sns import usage
 from localstack.services.sns.certificate import SNS_SERVER_CERT
 from localstack.services.sns.filter import FilterPolicyValidator
 from localstack.services.sns.models import (
@@ -85,6 +85,8 @@ from localstack.utils.aws.arns import (
 )
 from localstack.utils.collections import PaginatedList, select_from_typed_dict
 from localstack.utils.strings import short_uid, to_bytes, to_str
+
+from .analytics import internal_api_calls
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -695,8 +697,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 "Invalid parameter: Invalid parameter: Endpoint Reason: FIFO SQS Queues can not be subscribed to standard SNS topics"
             )
 
-        if attributes:
-            for attr_name, attr_value in attributes.items():
+        sub_attributes = copy.deepcopy(attributes) if attributes else None
+        if sub_attributes:
+            for attr_name, attr_value in sub_attributes.items():
                 validate_subscription_attribute(
                     attribute_name=attr_name,
                     attribute_value=attr_value,
@@ -704,17 +707,19 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                     endpoint=endpoint,
                     is_subscribe_call=True,
                 )
+                if raw_msg_delivery := sub_attributes.get("RawMessageDelivery"):
+                    sub_attributes["RawMessageDelivery"] = raw_msg_delivery.lower()
 
         # An endpoint may only be subscribed to a topic once. Subsequent
         # subscribe calls do nothing (subscribe is idempotent), except if its attributes are different.
         for existing_topic_subscription in store.topic_subscriptions.get(topic_arn, []):
             sub = store.subscriptions.get(existing_topic_subscription, {})
             if sub.get("Endpoint") == endpoint:
-                if attributes:
+                if sub_attributes:
                     # validate the subscription attributes aren't different
                     for attr in sns_constants.VALID_SUBSCRIPTION_ATTR_NAME:
                         # if a new attribute is present and different from an existent one, raise
-                        if (new_attr := attributes.get(attr)) and sub.get(attr) != new_attr:
+                        if (new_attr := sub_attributes.get(attr)) and sub.get(attr) != new_attr:
                             raise InvalidParameterException(
                                 "Invalid parameter: Attributes Reason: Subscription already exists with different attributes"
                             )
@@ -737,25 +742,22 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             FilterPolicyScope="MessageAttributes",  # default value, will be overridden if set
             SubscriptionPrincipal=principal,  # dummy value, could be fetched with a call to STS?
         )
-        if attributes:
-            subscription.update(attributes)
-            if "FilterPolicy" in attributes:
+        if sub_attributes:
+            subscription.update(sub_attributes)
+            if "FilterPolicy" in sub_attributes:
                 filter_policy = (
-                    json.loads(attributes["FilterPolicy"]) if attributes["FilterPolicy"] else None
+                    json.loads(sub_attributes["FilterPolicy"])
+                    if sub_attributes["FilterPolicy"]
+                    else None
                 )
                 if filter_policy:
                     validator = FilterPolicyValidator(
-                        scope=attributes.get("FilterPolicyScope", "MessageAttributes"),
+                        scope=subscription.get("FilterPolicyScope", "MessageAttributes"),
                         is_subscribe_call=True,
                     )
                     validator.validate_filter_policy(filter_policy)
 
-                store.subscription_filter_policy[subscription_arn] = (
-                    json.loads(attributes["FilterPolicy"]) if attributes["FilterPolicy"] else None
-                )
-
-            if raw_msg_delivery := attributes.get("RawMessageDelivery"):
-                subscription["RawMessageDelivery"] = raw_msg_delivery.lower()
+                store.subscription_filter_policy[subscription_arn] = filter_policy
 
         store.subscriptions[subscription_arn] = subscription
 
@@ -1134,7 +1136,7 @@ class SNSInternalResource:
     """Base class with helper to properly track usage of internal endpoints"""
 
     def count_usage(self):
-        usage.internalapi.record(f"{self.resource_type}")
+        internal_api_calls.labels(resource_type=self.resource_type).increment()
 
 
 def count_usage(f):

@@ -68,6 +68,12 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_deduplication_interval[sqs_query]": {
     "last_validated_date": "2024-05-29T13:47:36+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_after_visibility_timeout[sqs]": {
+    "last_validated_date": "2025-03-28T13:46:27+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_after_visibility_timeout[sqs_query]": {
+    "last_validated_date": "2025-03-28T13:46:31+00:00"
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_invalid_msg_id[sqs-]": {
     "last_validated_date": "2024-04-30T13:48:34+00:00"
   },
@@ -128,6 +134,12 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_not_on_message_group_id[sqs_query-True]": {
     "last_validated_date": "2024-04-30T13:34:17+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_delete_after_visibility_timeout[sqs]": {
+    "last_validated_date": "2025-03-28T13:37:10+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_delete_after_visibility_timeout[sqs_query]": {
+    "last_validated_date": "2025-03-28T13:37:13+00:00"
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_empty_message_groups_added_back_to_queue[sqs]": {
     "last_validated_date": "2024-04-30T13:46:32+00:00"
   },
@@ -166,6 +178,9 @@
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_list_queues": {
     "last_validated_date": "2024-04-30T13:39:55+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_list_queues_pagination": {
+    "last_validated_date": "2025-03-19T21:04:33+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_marker_serialization_json_protocol[\"{\\\\\"foo\\\\\": \\\\\"ba\\\\rr\\\\\"}\"]": {
     "last_validated_date": "2024-05-07T13:33:39+00:00"
@@ -253,6 +268,12 @@
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_batch_receive_multiple[sqs_query]": {
     "last_validated_date": "2024-04-30T13:40:12+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_empty_message[sqs]": {
+    "last_validated_date": "2025-03-05T19:25:09+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_empty_message[sqs_query]": {
+    "last_validated_date": "2025-03-05T19:25:09+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch[sqs]": {
     "last_validated_date": "2024-04-30T13:40:08+00:00"

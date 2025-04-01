@@ -56,7 +56,8 @@ class LambdaVersionManager:
         self,
         function_arn: str,
         function_version: FunctionVersion,
-        function: Function,
+        # HACK allowing None for Lambda@Edge; only used in invoke for get_invocation_lease
+        function: Function | None,
         counting_service: CountingService,
         assignment_service: AssignmentService,
     ):
@@ -75,7 +76,8 @@ class LambdaVersionManager:
         # async state
         self.provisioned_state = None
         self.provisioned_state_lock = threading.RLock()
-        self.state = None
+        # https://aws.amazon.com/blogs/compute/coming-soon-expansion-of-aws-lambda-states-to-all-functions/
+        self.state = VersionState(state=State.Pending)
 
     def start(self) -> VersionState:
         try:
@@ -90,14 +92,14 @@ class LambdaVersionManager:
 
             # code and reason not set for success scenario because only failed states provide this field:
             # https://docs.aws.amazon.com/lambda/latest/dg/API_GetFunctionConfiguration.html#SSS-GetFunctionConfiguration-response-LastUpdateStatusReasonCode
-            new_state = VersionState(state=State.Active)
+            self.state = VersionState(state=State.Active)
             LOG.debug(
                 "Changing Lambda %s (id %s) to active",
                 self.function_arn,
                 self.function_version.config.internal_revision,
             )
         except Exception as e:
-            new_state = VersionState(
+            self.state = VersionState(
                 state=State.Failed,
                 code=StateReasonCode.InternalError,
                 reason=f"Error while creating lambda: {e}",
@@ -109,7 +111,7 @@ class LambdaVersionManager:
                 e,
                 exc_info=True,
             )
-        return new_state
+        return self.state
 
     def stop(self) -> None:
         LOG.debug("Stopping lambda version '%s'", self.function_arn)
@@ -219,18 +221,18 @@ class LambdaVersionManager:
         if invocation_result.is_error:
             start_thread(
                 lambda *args, **kwargs: record_cw_metric_error(
-                    function_name=self.function.function_name,
-                    account_id=self.function_version.id.account,
-                    region_name=self.function_version.id.region,
+                    function_name=function_id.function_name,
+                    account_id=function_id.account,
+                    region_name=function_id.region,
                 ),
                 name=f"record-cloudwatch-metric-error-{function_id.function_name}:{function_id.qualifier}",
             )
         else:
             start_thread(
                 lambda *args, **kwargs: record_cw_metric_invocation(
-                    function_name=self.function.function_name,
-                    account_id=self.function_version.id.account,
-                    region_name=self.function_version.id.region,
+                    function_name=function_id.function_name,
+                    account_id=function_id.account,
+                    region_name=function_id.region,
                 ),
                 name=f"record-cloudwatch-metric-{function_id.function_name}:{function_id.qualifier}",
             )

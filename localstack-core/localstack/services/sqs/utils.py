@@ -3,7 +3,7 @@ import itertools
 import json
 import re
 import time
-from typing import Literal, Optional, Tuple
+from typing import Literal, NamedTuple, Optional, Tuple
 from urllib.parse import urlparse
 
 from localstack.aws.api.sqs import QueueAttributeName, ReceiptHandleIsInvalid
@@ -116,16 +116,25 @@ def parse_queue_url(queue_url: str) -> Tuple[str, Optional[str], str]:
     return account_id, region, queue_name
 
 
-def decode_receipt_handle(receipt_handle: str) -> str:
+class ReceiptHandleInformation(NamedTuple):
+    identifier: str
+    queue_arn: str
+    message_id: str
+    last_received: str
+
+
+def extract_receipt_handle_info(receipt_handle: str) -> ReceiptHandleInformation:
     try:
         handle = base64.b64decode(receipt_handle).decode("utf-8")
-        _, queue_arn, message_id, last_received = handle.split(" ")
-        parse_arn(queue_arn)  # raises a ValueError if it is not an arn
-        return queue_arn
-    except (IndexError, ValueError):
+        parts = handle.split(" ")
+        if len(parts) != 4:
+            raise ValueError(f'The input receipt handle "{receipt_handle}" is incomplete.')
+        parse_arn(parts[1])
+        return ReceiptHandleInformation(*parts)
+    except (IndexError, ValueError) as e:
         raise ReceiptHandleIsInvalid(
             f'The input receipt handle "{receipt_handle}" is not a valid receipt handle.'
-        )
+        ) from e
 
 
 def encode_receipt_handle(queue_arn, message) -> str:
@@ -175,3 +184,9 @@ def global_message_sequence():
 
 def generate_message_id():
     return long_uid()
+
+
+def token_generator(item: str) -> str:
+    base64_bytes = base64.b64encode(item.encode("utf-8"))
+    next_token = base64_bytes.decode("utf-8")
+    return next_token

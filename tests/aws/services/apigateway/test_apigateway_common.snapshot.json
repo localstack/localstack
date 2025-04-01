@@ -1376,5 +1376,55 @@
         "message": "Invalid request body"
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_input_path_template_formatting": {
+    "recorded-date": "12-03-2025, 21:18:25",
+    "recorded-content": {
+      "dict-response": "{foo=bar}",
+      "json-list": "[{\"foo\":\"bar\"}]",
+      "nested-dict": "{foo=bar}",
+      "nested-list": "[{\"foo\":\"bar\"}]",
+      "dict-in-list": "{foo=bar}",
+      "list-with-nested-list": "[{\"foo\":\"bar\"}]",
+      "dict-with-nested-list": "{foo=[{\"nested\":\"bar\"}]}",
+      "bigger-dict": "{bigger=dict, to=test, with=separators}",
+      "to-string": "{foo=bar}",
+      "list-to-string": "{list=[{\"foo\":\"bar\"}]}"
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_input_body_formatting": {
+    "recorded-date": "19-03-2025, 17:03:40",
+    "recorded-content": {
+      "response-raw-body": {
+        "empty-body": "b'{}'",
+        "json-body": "b'{\"some\": \"value\"}'",
+        "str-body": "b'some raw data'"
+      },
+      "response-str-body-input": {
+        "empty-body": "b'Action=SendMessage&MessageBody={}'",
+        "json-body": "b'Action=SendMessage&MessageBody={\"some\": \"value\"}'",
+        "str-body": "b'Action=SendMessage&MessageBody=some raw data'"
+      },
+      "response-str-body-output": {
+        "empty-body": "b'Action=SendMessage&MessageBody={}'",
+        "json-body": "b'Action=SendMessage&MessageBody={\"some\": \"value\"}'",
+        "str-body": "b'Action=SendMessage&MessageBody=some raw data'"
+      },
+      "response-str-body-all": {
+        "empty-body": "b'Action=SendMessage&MessageBody=Action=SendMessage&MessageBody={}'",
+        "json-body": "b'Action=SendMessage&MessageBody=Action=SendMessage&MessageBody={\"some\": \"value\"}'",
+        "str-body": "b'Action=SendMessage&MessageBody=Action=SendMessage&MessageBody=some raw data'"
+      },
+      "response-body-attr-access": {
+        "empty-body": "b'{}'",
+        "json-body": "b'{}'",
+        "str-body": "b'{}'"
+      },
+      "response-url-encode": {
+        "empty-body": "b'EncodedBody=%7B%7D&EncodedBodyAccess='",
+        "json-body": "b'EncodedBody=%7B%22some%22%3A+%22value%22%7D&EncodedBodyAccess='",
+        "str-body": "b'EncodedBody=some+raw+data&EncodedBodyAccess='"
+      }
+    }
   }
 }

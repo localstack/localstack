@@ -2035,5 +2035,122 @@
         }
       }
     }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_modifies_key_material": {
+    "recorded-date": "08-03-2025, 09:24:16",
+    "recorded-content": {
+      "rotate-on-demand-response": {
+        "KeyId": "<key-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_disabled": {
+    "recorded-date": "12-03-2025, 19:05:50",
+    "recorded-content": {
+      "rotate-on-demand-response": {
+        "KeyId": "<key-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "rotation-status-response-after-rotation": {
+        "KeyId": "<key-id:1>",
+        "KeyRotationEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_enabled": {
+    "recorded-date": "12-03-2025, 19:07:01",
+    "recorded-content": {
+      "rotate-on-demand-response": {
+        "KeyId": "<key-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "rotation-status-response-after-rotation": {
+        "KeyId": "<key-id:1>",
+        "KeyRotationEnabled": true,
+        "NextRotationDate": "datetime",
+        "RotationPeriodInDays": 365,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_key_is_disabled": {
+    "recorded-date": "08-03-2025, 09:26:50",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "DisabledException",
+          "Message": "<key-arn> is disabled."
+        },
+        "message": "<key-arn> is disabled.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_key_that_does_not_exist": {
+    "recorded-date": "08-03-2025, 09:27:10",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Key '<key-arn>' does not exist"
+        },
+        "message": "Key '<key-arn>' does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_non_symmetric_key": {
+    "recorded-date": "08-03-2025, 09:27:44",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "UnsupportedOperationException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_key_with_imported_key_material": {
+    "recorded-date": "08-03-2025, 09:28:13",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "UnsupportedOperationException",
+          "Message": "<key-arn> origin is EXTERNAL which is not valid for this operation."
+        },
+        "message": "<key-arn> origin is EXTERNAL which is not valid for this operation.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

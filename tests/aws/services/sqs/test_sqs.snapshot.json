@@ -3806,5 +3806,173 @@
         }
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_empty_message[sqs]": {
+    "recorded-date": "05-03-2025, 19:25:09",
+    "recorded-content": {
+      "send_empty_message": {
+        "Error": {
+          "Code": "MissingParameter",
+          "Message": "The request must contain the parameter MessageBody.",
+          "QueryErrorCode": "MissingRequiredParameterException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_empty_message[sqs_query]": {
+    "recorded-date": "05-03-2025, 19:25:09",
+    "recorded-content": {
+      "send_empty_message": {
+        "Error": {
+          "Code": "MissingParameter",
+          "Detail": null,
+          "Message": "The request must contain the parameter MessageBody.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_list_queues_pagination": {
+    "recorded-date": "19-03-2025, 21:04:35",
+    "recorded-content": {
+      "list_all": {
+        "QueueUrls": [
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-0",
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-1",
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-2",
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-3",
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-4",
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-5",
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-6",
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-7",
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-8",
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-9"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_two_max": {
+        "NextToken": "aHR0cDovL3Nxcy48cmVnaW9uPi5sb2NhbGhvc3QubG9jYWxzdGFjay5jbG91ZDo0NTY2LzExMTExMTExMTExMS83ZjdkZjBmNS10ZXN0LXF1ZXVlLTE=",
+        "QueueUrls": [
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-0",
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-1"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_remaining": {
+        "QueueUrls": [
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-2",
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-3",
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-4",
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-5",
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-6",
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-7",
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-8",
+          "http://sqs.<region>.localhost.localstack.cloud:4566/111111111111/7f7df0f5-test-queue-9"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_after_visibility_timeout[sqs]": {
+    "recorded-date": "28-03-2025, 13:46:28",
+    "recorded-content": {
+      "delete_after_timeout_queue_empty": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_after_visibility_timeout[sqs_query]": {
+    "recorded-date": "28-03-2025, 13:46:31",
+    "recorded-content": {
+      "delete_after_timeout_queue_empty": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_delete_after_visibility_timeout[sqs]": {
+    "recorded-date": "28-03-2025, 13:28:19",
+    "recorded-content": {
+      "received_sqs_message": {
+        "Messages": [
+          {
+            "Body": "foobar",
+            "MD5OfBody": "3858f62230ac3c915f300c664312c63f",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_after_timeout_fifo": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Value <receipt-handle:1> for parameter ReceiptHandle is invalid. Reason: The receipt handle has expired.",
+          "QueryErrorCode": "InvalidParameterValueException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_delete_after_visibility_timeout[sqs_query]": {
+    "recorded-date": "28-03-2025, 13:28:23",
+    "recorded-content": {
+      "received_sqs_message": {
+        "Messages": [
+          {
+            "Body": "foobar",
+            "MD5OfBody": "3858f62230ac3c915f300c664312c63f",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_after_timeout_fifo": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "Value <receipt-handle:1> for parameter ReceiptHandle is invalid. Reason: The receipt handle has expired.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

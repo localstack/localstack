@@ -5,19 +5,21 @@ from enum import StrEnum
 from localstack.aws.api.lambda_ import (
     EventSourceMappingConfiguration,
 )
+from localstack.config import (
+    LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_EMPTY_POLL_SEC,
+    LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_ERROR_SEC,
+    LAMBDA_EVENT_SOURCE_MAPPING_POLL_INTERVAL_SEC,
+)
+from localstack.services.lambda_.analytics import EsmExecutionStatus, esm_counter
 from localstack.services.lambda_.event_source_mapping.pollers.poller import (
     EmptyPollResultsException,
     Poller,
 )
 from localstack.services.lambda_.invocation.models import LambdaStore, lambda_stores
 from localstack.services.lambda_.provider_utils import get_function_version_from_arn
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.backoff import ExponentialBackoff
 from localstack.utils.threads import FuncThread
-
-POLL_INTERVAL_SEC: float = 1
-MAX_BACKOFF_POLL_EMPTY_SEC: float = 10
-MAX_BACKOFF_POLL_ERROR_SEC: float = 60
-
 
 LOG = logging.getLogger(__name__)
 
@@ -144,10 +146,15 @@ class EsmWorker:
             self.update_esm_state_in_store(EsmState.ENABLED)
             self.state_transition_reason = self.user_state_reason
 
-        error_boff = ExponentialBackoff(initial_interval=2, max_interval=MAX_BACKOFF_POLL_ERROR_SEC)
-        empty_boff = ExponentialBackoff(initial_interval=1, max_interval=MAX_BACKOFF_POLL_EMPTY_SEC)
+        error_boff = ExponentialBackoff(
+            initial_interval=2, max_interval=LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_ERROR_SEC
+        )
+        empty_boff = ExponentialBackoff(
+            initial_interval=1,
+            max_interval=LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_EMPTY_POLL_SEC,
+        )
 
-        poll_interval_duration = POLL_INTERVAL_SEC
+        poll_interval_duration = LAMBDA_EVENT_SOURCE_MAPPING_POLL_INTERVAL_SEC
 
         while not self._shutdown_event.is_set():
             try:
@@ -159,12 +166,12 @@ class EsmWorker:
                 empty_boff.reset()
 
                 # Set the poll frequency back to the default
-                poll_interval_duration = POLL_INTERVAL_SEC
+                poll_interval_duration = LAMBDA_EVENT_SOURCE_MAPPING_POLL_INTERVAL_SEC
             except EmptyPollResultsException as miss_ex:
                 # If the event source is empty, backoff
                 poll_interval_duration = empty_boff.next_backoff()
                 LOG.debug(
-                    "The event source %s is empty. Backing off for %s seconds until next request.",
+                    "The event source %s is empty. Backing off for %.2f seconds until next request.",
                     miss_ex.source_arn,
                     poll_interval_duration,
                 )
@@ -176,6 +183,10 @@ class EsmWorker:
                     e,
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
+                event_source = parse_arn(self.esm_config.get("EventSourceArn")).get("service")
+                esm_counter.labels(
+                    source=event_source, status=EsmExecutionStatus.source_poller_error
+                ).increment()
                 # Wait some time between retries to avoid running into the problem right again
                 poll_interval_duration = error_boff.next_backoff()
             finally:

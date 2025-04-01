@@ -1045,7 +1045,7 @@ class TestSNSSubscriptionCrud:
 
         subscribe_resp = subscribe_queue_to_topic(
             {
-                "RawMessageDelivery": "true",
+                "RawMessageDelivery": "True",
             }
         )
         snapshot.match("subscribe", subscribe_resp)

@@ -67,6 +67,7 @@ class ReflectionStateLocator:
     def accept_state_visitor(self, visitor: StateVisitor):
         # needed for services like cognito-idp
         service_name: str = self.service.replace("-", "_")
+        LOG.debug("Visit stores for %s", service_name)
 
         # try to load AccountRegionBundle from predictable location
         attribute_name = f"{service_name}_stores"
@@ -79,7 +80,6 @@ class ReflectionStateLocator:
             attribute = _load_attribute_from_module(module_name, attribute_name)
 
         if attribute is not None:
-            LOG.debug("Visiting attribute %s in module %s", attribute_name, module_name)
             visitor.visit(attribute)
 
         # try to load BackendDict from predictable location
@@ -95,7 +95,6 @@ class ReflectionStateLocator:
             attribute = _load_attribute_from_module(module_name, attribute_name)
 
         if attribute is not None:
-            LOG.debug("Visiting attribute %s in module %s", attribute_name, module_name)
             visitor.visit(attribute)
 
 
@@ -106,9 +105,8 @@ def _load_attribute_from_module(module_name: str, attribute_name: str) -> Any | 
     """
     try:
         module = importlib.import_module(module_name)
-        return getattr(module, attribute_name)
-    except (ModuleNotFoundError, AttributeError) as e:
-        LOG.debug(
-            'Unable to get attribute "%s" for module "%s": "%s"', attribute_name, module_name, e
-        )
+        attr = getattr(module, attribute_name)
+        LOG.debug("Found attribute %s in module %s", attribute_name, module_name)
+        return attr
+    except (ModuleNotFoundError, AttributeError):
         return None

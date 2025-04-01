@@ -10,6 +10,7 @@ LOG = logging.getLogger(__name__)
 TRACKED_ENV_VAR = [
     "ALLOW_NONSTANDARD_REGIONS",
     "BEDROCK_PREWARM",
+    "CLOUDFRONT_LAMBDA_EDGE",
     "CONTAINER_RUNTIME",
     "DEBUG",
     "DEFAULT_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
@@ -48,6 +49,7 @@ TRACKED_ENV_VAR = [
     "LAMBDA_XRAY_INIT",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
     "LAMBDA_PREBUILD_IMAGES",
     "LAMBDA_RUNTIME_EXECUTOR",
+    "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT",
     "LEGACY_EDGE_PROXY",  # Not functional; deprecated in 1.0.0, removed in 2.0.0
     "LS_LOG",
     "MOCK_UNIMPLEMENTED",  # Not functional; deprecated in 1.3.0, removed in 3.0.0

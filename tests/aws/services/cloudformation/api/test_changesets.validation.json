@@ -1,4 +1,28 @@
 {
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_conditions": {
+    "last_validated_date": "2025-03-27T15:34:24+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_direct_update": {
+    "last_validated_date": "2025-03-27T15:27:22+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_dynamic_update": {
+    "last_validated_date": "2025-03-27T15:29:21+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_mappings_with_parameter_lookup": {
+    "last_validated_date": "2025-03-27T15:43:02+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_mappings_with_static_fields": {
+    "last_validated_date": "2025-03-27T15:33:23+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_parameter_changes": {
+    "last_validated_date": "2025-03-27T15:31:22+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_unrelated_changes_requires_replacement": {
+    "last_validated_date": "2025-03-27T15:35:20+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_unrelated_changes_update_propagation": {
+    "last_validated_date": "2025-03-27T15:34:51+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_create_change_set_update_without_parameters": {
     "last_validated_date": "2022-05-31T07:32:02+00:00"
   },
@@ -12,13 +36,13 @@
     "last_validated_date": "2023-11-22T07:49:15+00:00"
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_delete_change_set_exception": {
-    "last_validated_date": "2022-08-11T12:07:38+00:00"
+    "last_validated_date": "2025-03-12T10:14:25+00:00"
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_deleted_changeset": {
     "last_validated_date": "2022-08-11T09:11:47+00:00"
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_describe_change_set_nonexisting": {
-    "last_validated_date": "2022-08-11T11:22:01+00:00"
+    "last_validated_date": "2025-03-11T19:12:57+00:00"
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_describe_change_set_with_similarly_named_stacks": {
     "last_validated_date": "2024-03-06T13:56:47+00:00"

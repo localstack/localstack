@@ -8,6 +8,12 @@
   "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_api_gateway_request_validator_with_ref_one_ofmodels": {
     "last_validated_date": "2024-10-28T23:12:21+00:00"
   },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_input_body_formatting": {
+    "last_validated_date": "2025-03-19T17:03:40+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_input_path_template_formatting": {
+    "last_validated_date": "2025-03-12T21:18:25+00:00"
+  },
   "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_integration_request_parameters_mapping": {
     "last_validated_date": "2024-02-05T19:37:03+00:00"
   },

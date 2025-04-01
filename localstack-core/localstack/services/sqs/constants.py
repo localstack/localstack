@@ -48,3 +48,9 @@ LEGACY_STRATEGY_URL_REGEX = (
 # HTTP headers used to override internal SQS ReceiveMessage
 HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT = "x-localstack-sqs-override-message-count"
 HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS = "x-localstack-sqs-override-wait-time-seconds"
+
+# response includes a default maximum of 1,000 results
+MAX_RESULT_LIMIT = 1000
+
+# SQS string seed value for uuid generation
+SQS_UUID_STRING_SEED = "123e4567-e89b-12d3-a456-426614174000"

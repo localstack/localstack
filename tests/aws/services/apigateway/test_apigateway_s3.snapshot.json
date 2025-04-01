@@ -57,7 +57,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_s3.py::TestApiGatewayS3BinarySupport::test_apigw_s3_binary_support_request[None]": {
-    "recorded-date": "01-02-2025, 02:56:56",
+    "recorded-date": "17-03-2025, 20:09:05",
     "recorded-content": {
       "put-integration": {
         "cacheKeyParameters": [],
@@ -91,6 +91,8 @@
       "get-obj-no-binary-media-binary-raw": {
         "AcceptRanges": "bytes",
         "Body": "\u001f\ufffd\b\u0000\u0014l\ufffdc\u0002\ufffdK\ufffd\ufffd-(J-.NMQHI,I\ufffdQ(\ufffd\ufffd/\ufffdIQHJU\ufffd\ufffd+K\ufffd\ufffdLQ\b\rq\u04f5P(.)\ufffd\ufffdK\u0007\u0000\ufffd9\u0010W/\u0000\u0000\u0000",
+        "ChecksumCRC64NVME": "aFeROtBfStk=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 99,
         "ContentType": "image/png",
         "ETag": "\"7301f0a0e8fc87c6f03320bf795ffde7\"",
@@ -105,6 +107,8 @@
       "get-obj-no-binary-media-binary-encoded": {
         "AcceptRanges": "bytes",
         "Body": "H4sIABRs7mMC/0vOzy0oSi0uTk1RSEksSdRRKM7IL81JUUhKVcjMK0vMyUxRCA1x07VQKC4pysxLBwC4ORBXLwAAAA==",
+        "ChecksumCRC64NVME": "G1eWyXOlSSo=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 92,
         "ContentType": "image/png",
         "ETag": "\"76020056aa8e57ba307f9264167a34e4\"",
@@ -119,6 +123,8 @@
       "get-obj-no-binary-media-text": {
         "AcceptRanges": "bytes",
         "Body": "this is a UTF8 text typed object",
+        "ChecksumCRC64NVME": "+N2eX1bs1YE=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 32,
         "ContentType": "image/png",
         "ETag": "\"322a648674040849d29154aa1dce24a5\"",
@@ -133,6 +139,8 @@
       "get-obj-binary-type-binary-raw": {
         "AcceptRanges": "bytes",
         "Body": "b'\\x1f\\x8b\\x08\\x00\\x14l\\xeec\\x02\\xffK\\xce\\xcf-(J-.NMQHI,I\\xd4Q(\\xce\\xc8/\\xcdIQHJU\\xc8\\xcc+K\\xcc\\xc9LQ\\x08\\rq\\xd3\\xb5P(.)\\xca\\xccK\\x07\\x00\\xb89\\x10W/\\x00\\x00\\x00'",
+        "ChecksumCRC64NVME": "ZewzxBwEwiY=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 67,
         "ContentType": "image/png",
         "ETag": "\"1e5a1bfed5308938e5549848bab02ac6\"",
@@ -147,6 +155,8 @@
       "get-obj-binary-type-binary-encoded": {
         "AcceptRanges": "bytes",
         "Body": "b'H4sIABRs7mMC/0vOzy0oSi0uTk1RSEksSdRRKM7IL81JUUhKVcjMK0vMyUxRCA1x07VQKC4pysxLBwC4ORBXLwAAAA=='",
+        "ChecksumCRC64NVME": "G1eWyXOlSSo=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 92,
         "ContentType": "image/png",
         "ETag": "\"76020056aa8e57ba307f9264167a34e4\"",
@@ -161,6 +171,8 @@
       "get-obj-binary-type-text": {
         "AcceptRanges": "bytes",
         "Body": "b'this is a UTF8 text typed object'",
+        "ChecksumCRC64NVME": "+N2eX1bs1YE=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 32,
         "ContentType": "image/png",
         "ETag": "\"322a648674040849d29154aa1dce24a5\"",
@@ -175,6 +187,8 @@
       "get-obj-text-type-binary-raw": {
         "AcceptRanges": "bytes",
         "Body": "b'\\x1f\\xef\\xbf\\xbd\\x08\\x00\\x14l\\xef\\xbf\\xbdc\\x02\\xef\\xbf\\xbdK\\xef\\xbf\\xbd\\xef\\xbf\\xbd-(J-.NMQHI,I\\xef\\xbf\\xbdQ(\\xef\\xbf\\xbd\\xef\\xbf\\xbd/\\xef\\xbf\\xbdIQHJU\\xef\\xbf\\xbd\\xef\\xbf\\xbd+K\\xef\\xbf\\xbd\\xef\\xbf\\xbdLQ\\x08\\rq\\xd3\\xb5P(.)\\xef\\xbf\\xbd\\xef\\xbf\\xbdK\\x07\\x00\\xef\\xbf\\xbd9\\x10W/\\x00\\x00\\x00'",
+        "ChecksumCRC64NVME": "aFeROtBfStk=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 99,
         "ContentType": "text/plain",
         "ETag": "\"7301f0a0e8fc87c6f03320bf795ffde7\"",
@@ -189,6 +203,8 @@
       "get-obj-text-type-binary-encoded": {
         "AcceptRanges": "bytes",
         "Body": "b'H4sIABRs7mMC/0vOzy0oSi0uTk1RSEksSdRRKM7IL81JUUhKVcjMK0vMyUxRCA1x07VQKC4pysxLBwC4ORBXLwAAAA=='",
+        "ChecksumCRC64NVME": "G1eWyXOlSSo=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 92,
         "ContentType": "text/plain",
         "ETag": "\"76020056aa8e57ba307f9264167a34e4\"",
@@ -203,6 +219,8 @@
       "get-obj-text-type-text": {
         "AcceptRanges": "bytes",
         "Body": "b'this is a UTF8 text typed object'",
+        "ChecksumCRC64NVME": "+N2eX1bs1YE=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 32,
         "ContentType": "text/plain",
         "ETag": "\"322a648674040849d29154aa1dce24a5\"",
@@ -217,7 +235,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_s3.py::TestApiGatewayS3BinarySupport::test_apigw_s3_binary_support_request[CONVERT_TO_TEXT]": {
-    "recorded-date": "01-02-2025, 02:57:27",
+    "recorded-date": "17-03-2025, 20:09:38",
     "recorded-content": {
       "put-integration": {
         "cacheKeyParameters": [],
@@ -252,6 +270,8 @@
       "get-obj-no-binary-media-binary-raw": {
         "AcceptRanges": "bytes",
         "Body": "\u001f\ufffd\b\u0000\u0014l\ufffdc\u0002\ufffdK\ufffd\ufffd-(J-.NMQHI,I\ufffdQ(\ufffd\ufffd/\ufffdIQHJU\ufffd\ufffd+K\ufffd\ufffdLQ\b\rq\u04f5P(.)\ufffd\ufffdK\u0007\u0000\ufffd9\u0010W/\u0000\u0000\u0000",
+        "ChecksumCRC64NVME": "aFeROtBfStk=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 99,
         "ContentType": "image/png",
         "ETag": "\"7301f0a0e8fc87c6f03320bf795ffde7\"",
@@ -266,6 +286,8 @@
       "get-obj-no-binary-media-binary-encoded": {
         "AcceptRanges": "bytes",
         "Body": "H4sIABRs7mMC/0vOzy0oSi0uTk1RSEksSdRRKM7IL81JUUhKVcjMK0vMyUxRCA1x07VQKC4pysxLBwC4ORBXLwAAAA==",
+        "ChecksumCRC64NVME": "G1eWyXOlSSo=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 92,
         "ContentType": "image/png",
         "ETag": "\"76020056aa8e57ba307f9264167a34e4\"",
@@ -280,6 +302,8 @@
       "get-obj-no-binary-media-text": {
         "AcceptRanges": "bytes",
         "Body": "this is a UTF8 text typed object",
+        "ChecksumCRC64NVME": "+N2eX1bs1YE=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 32,
         "ContentType": "image/png",
         "ETag": "\"322a648674040849d29154aa1dce24a5\"",
@@ -294,6 +318,8 @@
       "get-obj-binary-type-binary-raw": {
         "AcceptRanges": "bytes",
         "Body": "b'H4sIABRs7mMC/0vOzy0oSi0uTk1RSEksSdRRKM7IL81JUUhKVcjMK0vMyUxRCA1x07VQKC4pysxLBwC4ORBXLwAAAA=='",
+        "ChecksumCRC64NVME": "G1eWyXOlSSo=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 92,
         "ContentType": "image/png",
         "ETag": "\"76020056aa8e57ba307f9264167a34e4\"",
@@ -308,6 +334,8 @@
       "get-obj-binary-type-binary-encoded": {
         "AcceptRanges": "bytes",
         "Body": "b'SDRzSUFCUnM3bU1DLzB2T3p5MG9TaTB1VGsxUlNFa3NTZFJSS003SUw4MUpVVWhLVmNqTUswdk15VXhSQ0ExeDA3VlFLQzRweXN4TEJ3QzRPUkJYTHdBQUFBPT0='",
+        "ChecksumCRC64NVME": "N9mFwtUSj/Y=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 124,
         "ContentType": "image/png",
         "ETag": "\"835317c6c047dd2a13bb05117594a71a\"",
@@ -322,6 +350,8 @@
       "get-obj-binary-type-text": {
         "AcceptRanges": "bytes",
         "Body": "b'dGhpcyBpcyBhIFVURjggdGV4dCB0eXBlZCBvYmplY3Q='",
+        "ChecksumCRC64NVME": "32RnczoRaNI=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 44,
         "ContentType": "image/png",
         "ETag": "\"1a39ff3d9eff87f24107669698573f35\"",
@@ -336,6 +366,8 @@
       "get-obj-text-type-binary-raw": {
         "AcceptRanges": "bytes",
         "Body": "b'\\x1f\\xef\\xbf\\xbd\\x08\\x00\\x14l\\xef\\xbf\\xbdc\\x02\\xef\\xbf\\xbdK\\xef\\xbf\\xbd\\xef\\xbf\\xbd-(J-.NMQHI,I\\xef\\xbf\\xbdQ(\\xef\\xbf\\xbd\\xef\\xbf\\xbd/\\xef\\xbf\\xbdIQHJU\\xef\\xbf\\xbd\\xef\\xbf\\xbd+K\\xef\\xbf\\xbd\\xef\\xbf\\xbdLQ\\x08\\rq\\xd3\\xb5P(.)\\xef\\xbf\\xbd\\xef\\xbf\\xbdK\\x07\\x00\\xef\\xbf\\xbd9\\x10W/\\x00\\x00\\x00'",
+        "ChecksumCRC64NVME": "aFeROtBfStk=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 99,
         "ContentType": "text/plain",
         "ETag": "\"7301f0a0e8fc87c6f03320bf795ffde7\"",
@@ -350,6 +382,8 @@
       "get-obj-text-type-binary-encoded": {
         "AcceptRanges": "bytes",
         "Body": "b'H4sIABRs7mMC/0vOzy0oSi0uTk1RSEksSdRRKM7IL81JUUhKVcjMK0vMyUxRCA1x07VQKC4pysxLBwC4ORBXLwAAAA=='",
+        "ChecksumCRC64NVME": "G1eWyXOlSSo=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 92,
         "ContentType": "text/plain",
         "ETag": "\"76020056aa8e57ba307f9264167a34e4\"",
@@ -364,6 +398,8 @@
       "get-obj-text-type-text": {
         "AcceptRanges": "bytes",
         "Body": "b'this is a UTF8 text typed object'",
+        "ChecksumCRC64NVME": "+N2eX1bs1YE=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 32,
         "ContentType": "text/plain",
         "ETag": "\"322a648674040849d29154aa1dce24a5\"",
@@ -378,7 +414,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_s3.py::TestApiGatewayS3BinarySupport::test_apigw_s3_binary_support_request_convert_to_binary": {
-    "recorded-date": "01-02-2025, 03:28:08",
+    "recorded-date": "17-03-2025, 20:10:12",
     "recorded-content": {
       "put-integration": {
         "cacheKeyParameters": [],
@@ -413,6 +449,8 @@
       "get-obj-no-binary-media-binary-encoded": {
         "AcceptRanges": "bytes",
         "Body": "b'\\x1f\\x8b\\x08\\x00\\x14l\\xeec\\x02\\xffK\\xce\\xcf-(J-.NMQHI,I\\xd4Q(\\xce\\xc8/\\xcdIQHJU\\xc8\\xcc+K\\xcc\\xc9LQ\\x08\\rq\\xd3\\xb5P(.)\\xca\\xccK\\x07\\x00\\xb89\\x10W/\\x00\\x00\\x00'",
+        "ChecksumCRC64NVME": "ZewzxBwEwiY=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 67,
         "ContentType": "image/png",
         "ETag": "\"1e5a1bfed5308938e5549848bab02ac6\"",
@@ -427,6 +465,8 @@
       "get-obj-binary-media-binary-raw": {
         "AcceptRanges": "bytes",
         "Body": "b'\\x1f\\x8b\\x08\\x00\\x14l\\xeec\\x02\\xffK\\xce\\xcf-(J-.NMQHI,I\\xd4Q(\\xce\\xc8/\\xcdIQHJU\\xc8\\xcc+K\\xcc\\xc9LQ\\x08\\rq\\xd3\\xb5P(.)\\xca\\xccK\\x07\\x00\\xb89\\x10W/\\x00\\x00\\x00'",
+        "ChecksumCRC64NVME": "ZewzxBwEwiY=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 67,
         "ContentType": "image/png",
         "ETag": "\"1e5a1bfed5308938e5549848bab02ac6\"",
@@ -441,6 +481,8 @@
       "get-obj-binary-media-binary-encoded": {
         "AcceptRanges": "bytes",
         "Body": "b'H4sIABRs7mMC/0vOzy0oSi0uTk1RSEksSdRRKM7IL81JUUhKVcjMK0vMyUxRCA1x07VQKC4pysxLBwC4ORBXLwAAAA=='",
+        "ChecksumCRC64NVME": "G1eWyXOlSSo=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 92,
         "ContentType": "image/png",
         "ETag": "\"76020056aa8e57ba307f9264167a34e4\"",
@@ -455,6 +497,8 @@
       "get-obj-binary-media-text": {
         "AcceptRanges": "bytes",
         "Body": "b'this is a UTF8 text typed object'",
+        "ChecksumCRC64NVME": "+N2eX1bs1YE=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 32,
         "ContentType": "image/png",
         "ETag": "\"322a648674040849d29154aa1dce24a5\"",
@@ -469,6 +513,8 @@
       "get-obj-text-type-binary-encoded": {
         "AcceptRanges": "bytes",
         "Body": "b'\\x1f\\x8b\\x08\\x00\\x14l\\xeec\\x02\\xffK\\xce\\xcf-(J-.NMQHI,I\\xd4Q(\\xce\\xc8/\\xcdIQHJU\\xc8\\xcc+K\\xcc\\xc9LQ\\x08\\rq\\xd3\\xb5P(.)\\xca\\xccK\\x07\\x00\\xb89\\x10W/\\x00\\x00\\x00'",
+        "ChecksumCRC64NVME": "ZewzxBwEwiY=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 67,
         "ContentType": "text/plain",
         "ETag": "\"1e5a1bfed5308938e5549848bab02ac6\"",
@@ -483,7 +529,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_s3.py::TestApiGatewayS3BinarySupport::test_apigw_s3_binary_support_request_convert_to_binary_with_request_template": {
-    "recorded-date": "01-02-2025, 04:24:02",
+    "recorded-date": "17-03-2025, 20:10:23",
     "recorded-content": {
       "put-integration": {
         "cacheKeyParameters": [],
@@ -541,6 +587,8 @@
       "get-obj-encoded": {
         "AcceptRanges": "bytes",
         "Body": "b'\\x1f\\x8b\\x08\\x00\\x14l\\xeec\\x02\\xffK\\xce\\xcf-(J-.NMQHI,I\\xd4Q(\\xce\\xc8/\\xcdIQHJU\\xc8\\xcc+K\\xcc\\xc9LQ\\x08\\rq\\xd3\\xb5P(.)\\xca\\xccK\\x07\\x00\\xb89\\x10W/\\x00\\x00\\x00'",
+        "ChecksumCRC64NVME": "ZewzxBwEwiY=",
+        "ChecksumType": "FULL_OBJECT",
         "ContentLength": 67,
         "ContentType": "image/png",
         "ETag": "\"1e5a1bfed5308938e5549848bab02ac6\"",
@@ -555,7 +603,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_s3.py::TestApiGatewayS3BinarySupport::test_apigw_s3_binary_support_response_no_content_handling": {
-    "recorded-date": "01-02-2025, 03:59:15",
+    "recorded-date": "17-03-2025, 20:11:02",
     "recorded-content": {
       "put-integration": {
         "cacheKeyParameters": [],
@@ -661,7 +709,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_s3.py::TestApiGatewayS3BinarySupport::test_apigw_s3_binary_support_response_convert_to_text": {
-    "recorded-date": "01-02-2025, 04:00:09",
+    "recorded-date": "17-03-2025, 20:11:38",
     "recorded-content": {
       "put-integration": {
         "cacheKeyParameters": [],
@@ -775,7 +823,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_s3.py::TestApiGatewayS3BinarySupport::test_apigw_s3_binary_support_response_convert_to_binary": {
-    "recorded-date": "01-02-2025, 02:45:46",
+    "recorded-date": "17-03-2025, 20:12:11",
     "recorded-content": {
       "put-integration": {
         "cacheKeyParameters": [],
@@ -865,7 +913,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_s3.py::TestApiGatewayS3BinarySupport::test_apigw_s3_binary_support_response_convert_to_binary_with_request_template": {
-    "recorded-date": "01-02-2025, 05:06:24",
+    "recorded-date": "17-03-2025, 20:12:45",
     "recorded-content": {
       "put-integration": {
         "cacheKeyParameters": [],

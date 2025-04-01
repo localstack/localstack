@@ -336,7 +336,7 @@ def serializedATN():
         1,0,0,0,836,834,1,0,0,0,837,838,5,6,0,0,838,141,1,0,0,0,839,844,
         3,6,3,0,840,844,3,16,8,0,841,844,3,8,4,0,842,844,3,128,64,0,843,
         839,1,0,0,0,843,840,1,0,0,0,843,841,1,0,0,0,843,842,1,0,0,0,844,
-        143,1,0,0,0,845,846,5,87,0,0,846,847,5,2,0,0,847,848,3,64,32,0,848,
+        143,1,0,0,0,845,846,5,87,0,0,846,847,5,2,0,0,847,848,3,80,40,0,848,
         145,1,0,0,0,849,850,5,102,0,0,850,851,5,2,0,0,851,852,5,5,0,0,852,
         857,3,148,74,0,853,854,5,1,0,0,854,856,3,148,74,0,855,853,1,0,0,
         0,856,859,1,0,0,0,857,855,1,0,0,0,857,858,1,0,0,0,858,860,1,0,0,
@@ -7873,8 +7873,8 @@ class ASLParser ( Parser ):
         def COLON(self):
             return self.getToken(ASLParser.COLON, 0)
 
-        def payload_tmpl_decl(self):
-            return self.getTypedRuleContext(ASLParser.Payload_tmpl_declContext,0)
+        def assign_template_value_object(self):
+            return self.getTypedRuleContext(ASLParser.Assign_template_value_objectContext,0)
 
 
         def getRuleIndex(self):
@@ -7908,7 +7908,7 @@ class ASLParser ( Parser ):
             self.state = 846
             self.match(ASLParser.COLON)
             self.state = 847
-            self.payload_tmpl_decl()
+            self.assign_template_value_object()
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)

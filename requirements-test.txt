@@ -6,7 +6,7 @@
 #
 airspeed-ext==0.6.7
     # via localstack-core
-amazon-kclpy==3.0.1
+amazon-kclpy==3.0.3
     # via localstack-core
 annotated-types==0.7.0
     # via pydantic
@@ -14,26 +14,26 @@ antlr4-python3-runtime==4.13.2
     # via
     #   localstack-core
     #   moto-ext
-anyio==4.8.0
+anyio==4.9.0
     # via httpx
 apispec==6.8.1
     # via localstack-core
 argparse==1.4.0
     # via amazon-kclpy
-attrs==25.1.0
+attrs==25.3.0
     # via
     #   cattrs
     #   jsii
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.226
+aws-cdk-asset-awscli-v1==2.2.230
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==39.2.20
+aws-cdk-cloud-assembly-schema==41.2.0
     # via aws-cdk-lib
-aws-cdk-lib==2.181.1
+aws-cdk-lib==2.187.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.95.0
     # via
@@ -41,17 +41,17 @@ aws-sam-translator==1.95.0
     #   localstack-core
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.37.21
+awscli==1.38.23
     # via localstack-core
-awscrt==0.23.10
+awscrt==0.25.4
     # via localstack-core
-boto3==1.36.21
+boto3==1.37.23
     # via
     #   amazon-kclpy
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-botocore==1.36.21
+botocore==1.37.23
     # via
     #   aws-xray-sdk
     #   awscli
@@ -68,7 +68,7 @@ cachetools==5.5.2
     #   airspeed-ext
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cattrs==24.1.2
+cattrs==24.1.3
     # via jsii
 cbor2==5.6.5
     # via localstack-core
@@ -80,7 +80,7 @@ certifi==2025.1.31
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.27.0
+cfn-lint==1.32.1
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -94,7 +94,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.4.2
     # via aws-cdk-lib
-coverage==7.6.12
+coverage==7.8.0
     # via localstack-core (pyproject.toml)
 crontab==1.0.1
     # via localstack-core
@@ -107,7 +107,7 @@ cryptography==44.0.2
     #   pyopenssl
 decorator==5.2.1
     # via jsonpath-rw
-deepdiff==8.2.0
+deepdiff==8.4.2
     # via
     #   localstack-core (pyproject.toml)
     #   localstack-snapshot
@@ -167,11 +167,11 @@ importlib-resources==6.5.2
     # via jsii
 incremental==24.7.2
     # via localstack-twisted
-iniconfig==2.0.0
+iniconfig==2.1.0
     # via pytest
 isodate==0.7.2
     # via openapi-core
-jinja2==3.1.5
+jinja2==3.1.6
     # via moto-ext
 jmespath==1.0.1
     # via
@@ -181,7 +181,7 @@ joserfc==1.0.4
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core
-jsii==1.108.0
+jsii==1.110.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
@@ -234,7 +234,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.6.0
     # via openapi-core
-moto-ext==5.0.28.post6
+moto-ext==5.1.1.post1
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -301,19 +301,19 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.10.6
+pydantic==2.11.1
     # via aws-sam-translator
-pydantic-core==2.27.2
+pydantic-core==2.33.0
     # via pydantic
 pygments==2.19.1
     # via rich
-pymongo==4.11.2
+pymongo==4.11.3
     # via localstack-core
 pyopenssl==25.0.0
     # via
     #   localstack-core
     #   localstack-twisted
-pyparsing==3.2.1
+pyparsing==3.2.3
     # via moto-ext
 pyproject-hooks==1.2.0
     # via build
@@ -337,7 +337,7 @@ python-dateutil==2.9.0.post0
     #   jsii
     #   moto-ext
     #   opensearch-py
-python-dotenv==1.0.1
+python-dotenv==1.1.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -373,23 +373,23 @@ requests==2.32.3
     #   rolo
 requests-aws4auth==1.3.1
     # via localstack-core
-responses==0.25.6
+responses==0.25.7
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
-rich==13.9.4
+rich==14.0.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
 rolo==0.7.5
     # via localstack-core
-rpds-py==0.23.1
+rpds-py==0.24.0
     # via
     #   jsonschema
     #   referencing
 rsa==4.7.2
     # via awscli
-s3transfer==0.11.3
+s3transfer==0.11.4
     # via
     #   awscli
     #   boto3
@@ -419,7 +419,7 @@ typeguard==2.13.3
     #   aws-cdk-lib
     #   constructs
     #   jsii
-typing-extensions==4.12.2
+typing-extensions==4.13.0
     # via
     #   anyio
     #   aws-sam-translator
@@ -431,6 +431,9 @@ typing-extensions==4.12.2
     #   pyopenssl
     #   readerwriterlock
     #   referencing
+    #   typing-inspection
+typing-inspection==0.4.0
+    # via pydantic
 urllib3==2.3.0
     # via
     #   botocore

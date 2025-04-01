@@ -352,3 +352,31 @@ def test_cfn_statemachine_default_s3_location(
     sfn_snapshot.match(
         "describe_state_machine_output_on_update", describe_state_machine_output_on_update
     )
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..encryptionConfiguration", "$..tracingConfiguration"]
+)
+def test_statemachine_create_with_logging_configuration(
+    deploy_cfn_template, aws_client, sfn_snapshot
+):
+    sfn_snapshot.add_transformers_list(
+        [
+            JsonpathTransformer("$..roleArn", "role-arn"),
+            JsonpathTransformer("$..stateMachineArn", "state-machine-arn"),
+            JsonpathTransformer("$..name", "state-machine-name"),
+            JsonpathTransformer("$..logGroupArn", "log-group-arn"),
+        ]
+    )
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__),
+            "../../../templates/statemachine_machine_logging_configuration.yml",
+        )
+    )
+    statemachine_arn = stack.outputs["StateMachineArnOutput"]
+    describe_state_machine_result = aws_client.stepfunctions.describe_state_machine(
+        stateMachineArn=statemachine_arn
+    )
+    sfn_snapshot.match("describe_state_machine_result", describe_state_machine_result)
