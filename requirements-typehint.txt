@@ -302,6 +302,8 @@ mypy-boto3-codebuild==1.37.23
     # via boto3-stubs
 mypy-boto3-codecommit==1.37.0
     # via boto3-stubs
+mypy-boto3-codeconnections==1.37.0
+    # via boto3-stubs
 mypy-boto3-codedeploy==1.37.0
     # via boto3-stubs
 mypy-boto3-codepipeline==1.37.0
@@ -696,6 +698,7 @@ typing-extensions==4.13.0
     #   mypy-boto3-cloudwatch
     #   mypy-boto3-codebuild
     #   mypy-boto3-codecommit
+    #   mypy-boto3-codeconnections
     #   mypy-boto3-codedeploy
     #   mypy-boto3-codepipeline
     #   mypy-boto3-codestar-connections
