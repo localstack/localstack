@@ -21,7 +21,7 @@ on:
 
 jobs:
   validate-features-files:
-      uses: .github/workflows/pr-validate-features-files.yml@main
+      uses: .github/workflows/pr-validate-features-files.yml@${{ inputs.localstack_meta_ref }}
       with:
         pr_number: ${{ inputs.pr_number }}
         localstack_meta_ref: ${{ inputs.localstack_meta_ref }}
