@@ -6,7 +6,7 @@
 #
 airspeed-ext==0.6.7
     # via localstack-core (pyproject.toml)
-amazon-kclpy==3.0.2
+amazon-kclpy==3.0.3
     # via localstack-core (pyproject.toml)
 annotated-types==0.7.0
     # via pydantic
@@ -64,7 +64,7 @@ certifi==2025.1.31
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.32.0
+cfn-lint==1.32.1
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -239,9 +239,9 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.10.6
+pydantic==2.11.1
     # via aws-sam-translator
-pydantic-core==2.27.2
+pydantic-core==2.33.0
     # via pydantic
 pygments==2.19.1
     # via rich
@@ -300,13 +300,13 @@ responses==0.25.7
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
-rich==13.9.4
+rich==14.0.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
 rolo==0.7.5
     # via localstack-core
-rpds-py==0.23.1
+rpds-py==0.24.0
     # via
     #   jsonschema
     #   referencing
@@ -332,7 +332,7 @@ tailer==0.4.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-typing-extensions==4.12.2
+typing-extensions==4.13.0
     # via
     #   aws-sam-translator
     #   cfn-lint
@@ -342,6 +342,9 @@ typing-extensions==4.12.2
     #   pyopenssl
     #   readerwriterlock
     #   referencing
+    #   typing-inspection
+typing-inspection==0.4.0
+    # via pydantic
 urllib3==2.3.0
     # via
     #   botocore

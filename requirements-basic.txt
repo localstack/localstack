@@ -48,7 +48,7 @@ pyyaml==6.0.2
     # via localstack-core (pyproject.toml)
 requests==2.32.3
     # via localstack-core (pyproject.toml)
-rich==13.9.4
+rich==14.0.0
     # via localstack-core (pyproject.toml)
 semver==3.0.4
     # via localstack-core (pyproject.toml)
