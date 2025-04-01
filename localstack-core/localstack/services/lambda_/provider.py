@@ -1608,7 +1608,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
             raise LambdaServiceException(
-                f"[{context.request_id}] Internal error while executing lambda {function_name}:{qualifier}. Cause: {type(e)}"
+                f"[{context.request_id}] Internal error while executing lambda {function_name}:{qualifier}. Caused by {type(e).__name__}: {e}"
             ) from e
 
         if invocation_type == InvocationType.Event:

@@ -109,7 +109,7 @@ class AssignmentService(OtherServiceEndpoint):
         except EnvironmentStartupTimeoutException:
             raise
         except Exception as e:
-            message = f"Could not start new environment: {e}"
+            message = f"Could not start new environment: {type(e).__name__}:{e}"
             raise AssignmentException(message) from e
         return execution_environment
 
