@@ -710,6 +710,12 @@
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_default_checksum": {
     "last_validated_date": "2025-03-17T21:46:24+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_casing[s3]": {
+    "last_validated_date": "2025-03-28T19:11:34+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_casing[s3v4]": {
+    "last_validated_date": "2025-03-28T19:11:36+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_conditions_validation_eq": {
     "last_validated_date": "2025-03-17T20:16:55+00:00"
   },

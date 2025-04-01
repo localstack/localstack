@@ -11150,6 +11150,55 @@ class TestS3PresignedPost:
         get_obj = aws_client.s3.get_object(Bucket=bucket_name, Key=object_key)
         snapshot.match("get-obj", get_obj)
 
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "signature_version",
+        ["s3", "s3v4"],
+    )
+    def test_post_object_policy_casing(self, s3_bucket, signature_version):
+        object_key = "validate-policy-casing"
+        presigned_client = _s3_client_pre_signed_client(
+            Config(signature_version=signature_version),
+            endpoint_url=_endpoint_url(),
+        )
+        presigned_request = presigned_client.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Conditions=[
+                {"bucket": s3_bucket},
+                ["content-length-range", 5, 10],
+            ],
+        )
+
+        # test that we can change the casing of the Policy field
+        fields = presigned_request["fields"]
+        fields["Policy"] = fields.pop("policy")
+        response = requests.post(
+            presigned_request["url"],
+            data=fields,
+            files={"file": "a" * 5},
+            verify=False,
+        )
+        assert response.status_code == 204
+
+        # test that we can change the casing of the credentials field
+        if signature_version == "s3":
+            field_name = "AWSAccessKeyId"
+            new_field_name = "awsaccesskeyid"
+        else:
+            field_name = "x-amz-credential"
+            new_field_name = "X-Amz-Credential"
+
+        fields[new_field_name] = fields.pop(field_name)
+        response = requests.post(
+            presigned_request["url"],
+            data=fields,
+            files={"file": "a" * 5},
+            verify=False,
+        )
+        assert response.status_code == 204
+
 
 # LocalStack does not apply encryption, so the ETag is different
 @markers.snapshot.skip_snapshot_verify(paths=["$..ETag"])

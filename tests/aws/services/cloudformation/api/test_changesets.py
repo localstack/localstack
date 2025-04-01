@@ -1,10 +1,14 @@
 import copy
 import json
 import os.path
+from collections import defaultdict
+from typing import Callable
 
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack import config
+from localstack.aws.api.cloudformation import StackEvent
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.aws.cloudformation_utils import (
     load_template_file,
@@ -13,11 +17,16 @@ from localstack.testing.aws.cloudformation_utils import (
 )
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, wait_until
 from tests.aws.services.cloudformation.api.test_stacks import (
     MINIMAL_TEMPLATE,
 )
+
+
+def is_v2_engine() -> bool:
+    return config.SERVICE_PROVIDER_CONFIG.get_provider("cloudformation") == "engine-v2"
 
 
 @markers.aws.unknown
@@ -1193,3 +1202,589 @@ def test_describe_change_set_with_similarly_named_stacks(deploy_cfn_template, aw
         )["ChangeSetId"]
         == response["Id"]
     )
+
+
+PerResourceStackEvents = dict[str, list[StackEvent]]
+
+
+@pytest.mark.skipif(condition=not is_v2_engine(), reason="Requires the V2 engine")
+class TestCaptureUpdateProcess:
+    @pytest.fixture
+    def capture_per_resource_events(
+        self,
+        aws_client: ServiceLevelClientFactory,
+    ) -> Callable[[str], PerResourceStackEvents]:
+        def capture(stack_name: str) -> PerResourceStackEvents:
+            events = aws_client.cloudformation.describe_stack_events(StackName=stack_name)[
+                "StackEvents"
+            ]
+            per_resource_events = defaultdict(list)
+            for event in events:
+                if logical_resource_id := event.get("LogicalResourceId"):
+                    per_resource_events[logical_resource_id].append(event)
+            return per_resource_events
+
+        return capture
+
+    @pytest.fixture
+    def capture_update_process(self, aws_client, snapshot, cleanups, capture_per_resource_events):
+        """
+        Fixture to deploy a new stack (via creating and executing a change set), then updating the
+        stack with a second template (via creating and executing a change set).
+        """
+
+        stack_name = f"stack-{short_uid()}"
+        change_set_name = f"cs-{short_uid()}"
+
+        def inner(t1: dict | str, t2: dict | str, p1: dict | None = None, p2: dict | None = None):
+            if isinstance(t1, dict):
+                t1 = json.dumps(t1)
+            elif isinstance(t1, str):
+                with open(t1) as infile:
+                    t1 = infile.read()
+            if isinstance(t2, dict):
+                t2 = json.dumps(t2)
+            elif isinstance(t2, str):
+                with open(t2) as infile:
+                    t2 = infile.read()
+
+            p1 = p1 or {}
+            p2 = p2 or {}
+
+            # deploy original stack
+            change_set_details = aws_client.cloudformation.create_change_set(
+                StackName=stack_name,
+                ChangeSetName=change_set_name,
+                TemplateBody=t1,
+                ChangeSetType="CREATE",
+                Parameters=[{"ParameterKey": k, "ParameterValue": v} for (k, v) in p1.items()],
+            )
+            snapshot.match("create-change-set-1", change_set_details)
+            stack_id = change_set_details["StackId"]
+            change_set_id = change_set_details["Id"]
+            aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+                ChangeSetName=change_set_id
+            )
+            cleanups.append(
+                lambda: call_safe(
+                    aws_client.cloudformation.delete_change_set,
+                    kwargs=dict(ChangeSetName=change_set_id),
+                )
+            )
+
+            describe_change_set_with_prop_values = aws_client.cloudformation.describe_change_set(
+                ChangeSetName=change_set_id, IncludePropertyValues=True
+            )
+            snapshot.match(
+                "describe-change-set-1-prop-values", describe_change_set_with_prop_values
+            )
+            describe_change_set_without_prop_values = aws_client.cloudformation.describe_change_set(
+                ChangeSetName=change_set_id, IncludePropertyValues=False
+            )
+            snapshot.match("describe-change-set-1", describe_change_set_without_prop_values)
+
+            execute_results = aws_client.cloudformation.execute_change_set(
+                ChangeSetName=change_set_id
+            )
+            snapshot.match("execute-change-set-1", execute_results)
+            aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_id)
+
+            # ensure stack deletion
+            cleanups.append(
+                lambda: call_safe(
+                    aws_client.cloudformation.delete_stack, kwargs=dict(StackName=stack_id)
+                )
+            )
+
+            describe = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0]
+            snapshot.match("post-create-1-describe", describe)
+
+            # update stack
+            change_set_details = aws_client.cloudformation.create_change_set(
+                StackName=stack_name,
+                ChangeSetName=change_set_name,
+                TemplateBody=t2,
+                ChangeSetType="UPDATE",
+                Parameters=[{"ParameterKey": k, "ParameterValue": v} for (k, v) in p2.items()],
+            )
+            snapshot.match("create-change-set-2", change_set_details)
+            stack_id = change_set_details["StackId"]
+            change_set_id = change_set_details["Id"]
+            aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+                ChangeSetName=change_set_id
+            )
+
+            describe_change_set_with_prop_values = aws_client.cloudformation.describe_change_set(
+                ChangeSetName=change_set_id, IncludePropertyValues=True
+            )
+            snapshot.match(
+                "describe-change-set-2-prop-values", describe_change_set_with_prop_values
+            )
+            describe_change_set_without_prop_values = aws_client.cloudformation.describe_change_set(
+                ChangeSetName=change_set_id, IncludePropertyValues=False
+            )
+            snapshot.match("describe-change-set-2", describe_change_set_without_prop_values)
+
+            execute_results = aws_client.cloudformation.execute_change_set(
+                ChangeSetName=change_set_id
+            )
+            snapshot.match("execute-change-set-2", execute_results)
+            aws_client.cloudformation.get_waiter("stack_update_complete").wait(StackName=stack_id)
+
+            describe = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0]
+            snapshot.match("post-create-2-describe", describe)
+
+            events = capture_per_resource_events(stack_name)
+            snapshot.match("per-resource-events", events)
+
+            # delete stack
+            aws_client.cloudformation.delete_stack(StackName=stack_id)
+            aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack_id)
+            describe = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0]
+            snapshot.match("delete-describe", describe)
+
+        yield inner
+
+    @markers.aws.validated
+    def test_direct_update(
+        self,
+        capture_update_process,
+    ):
+        """
+        Update a stack with a static change (i.e. in the text of the template).
+
+        Conclusions:
+        - A static change in the template that's not invoking an intrinsic function
+            (`Ref`, `Fn::GetAtt` etc.) is resolved by the deployment engine synchronously
+            during the `create_change_set` invocation
+        """
+        name1 = f"topic-1-{short_uid()}"
+        name2 = f"topic-2-{short_uid()}"
+        t1 = {
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": name1,
+                    },
+                },
+            },
+        }
+        t2 = {
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": name2,
+                    },
+                },
+            },
+        }
+
+        capture_update_process(t1, t2)
+
+    @markers.aws.validated
+    def test_dynamic_update(
+        self,
+        capture_update_process,
+    ):
+        """
+        Update a stack with two resources:
+        - A is changed statically
+        - B refers to the changed value of A via an intrinsic function
+
+        Conclusions:
+        - The value of B on creation is "known after apply" even though the resolved
+          property value is known statically
+        - The nature of the change to B is "known after apply"
+        - The CloudFormation engine does not resolve intrinsic function calls when determining the
+            nature of the update
+        """
+        name1 = f"topic-1-{short_uid()}"
+        name2 = f"topic-2-{short_uid()}"
+        t1 = {
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": name1,
+                    },
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::GetAtt": ["Foo", "TopicName"],
+                        },
+                    },
+                },
+            },
+        }
+        t2 = {
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": name2,
+                    },
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::GetAtt": ["Foo", "TopicName"],
+                        },
+                    },
+                },
+            },
+        }
+
+        capture_update_process(t1, t2)
+
+    @markers.aws.validated
+    def test_parameter_changes(
+        self,
+        capture_update_process,
+    ):
+        """
+        Update a stack with two resources:
+        - A is changed via a template parameter
+        - B refers to the changed value of A via an intrinsic function
+
+        Conclusions:
+        - The value of B on creation is "known after apply" even though the resolved
+          property value is known statically
+        - The nature of the change to B is "known after apply"
+        - The CloudFormation engine does not resolve intrinsic function calls when determining the
+            nature of the update
+        """
+        name1 = f"topic-1-{short_uid()}"
+        name2 = f"topic-2-{short_uid()}"
+        t1 = {
+            "Parameters": {
+                "TopicName": {
+                    "Type": "String",
+                },
+            },
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": {"Ref": "TopicName"},
+                    },
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::GetAtt": ["Foo", "TopicName"],
+                        },
+                    },
+                },
+            },
+        }
+
+        capture_update_process(t1, t1, p1={"TopicName": name1}, p2={"TopicName": name2})
+
+    @markers.aws.validated
+    def test_mappings_with_static_fields(
+        self,
+        capture_update_process,
+    ):
+        """
+        Update a stack with two resources:
+        - A is changed via looking up a static value in a mapping
+        - B refers to the changed value of A via an intrinsic function
+
+        Conclusions:
+        - On first deploy the contents of the map is resolved completely
+        - The nature of the change to B is "known after apply"
+        - The CloudFormation engine does not resolve intrinsic function calls when determining the
+            nature of the update
+        """
+        name1 = "key1"
+        name2 = "key2"
+        t1 = {
+            "Mappings": {
+                "MyMap": {
+                    "MyKey": {
+                        name1: "MyTopicName",
+                        name2: "MyNewTopicName",
+                    },
+                },
+            },
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": {
+                            "Fn::FindInMap": [
+                                "MyMap",
+                                "MyKey",
+                                name1,
+                            ],
+                        },
+                    },
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::GetAtt": ["Foo", "TopicName"],
+                        },
+                    },
+                },
+            },
+        }
+        t2 = {
+            "Mappings": {
+                "MyMap": {
+                    "MyKey": {
+                        name1: f"MyTopicName{short_uid()}",
+                        name2: f"MyNewTopicName{short_uid()}",
+                    },
+                },
+            },
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": {
+                            "Fn::FindInMap": [
+                                "MyMap",
+                                "MyKey",
+                                name2,
+                            ],
+                        },
+                    },
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::GetAtt": ["Foo", "TopicName"],
+                        },
+                    },
+                },
+            },
+        }
+
+        capture_update_process(t1, t2)
+
+    @markers.aws.validated
+    def test_mappings_with_parameter_lookup(
+        self,
+        capture_update_process,
+    ):
+        """
+        Update a stack with two resources:
+        - A is changed via looking up a static value in a mapping but the key comes from
+          a template parameter
+        - B refers to the changed value of A via an intrinsic function
+
+        Conclusions:
+        - The same conclusions as `test_mappings_with_static_fields`
+        """
+        name1 = "key1"
+        name2 = "key2"
+        t1 = {
+            "Parameters": {
+                "TopicName": {
+                    "Type": "String",
+                },
+            },
+            "Mappings": {
+                "MyMap": {
+                    "MyKey": {
+                        name1: f"topic-1-{short_uid()}",
+                        name2: f"topic-2-{short_uid()}",
+                    },
+                },
+            },
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": {
+                            "Fn::FindInMap": [
+                                "MyMap",
+                                "MyKey",
+                                {
+                                    "Ref": "TopicName",
+                                },
+                            ],
+                        },
+                    },
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::GetAtt": ["Foo", "TopicName"],
+                        },
+                    },
+                },
+            },
+        }
+
+        capture_update_process(t1, t1, p1={"TopicName": name1}, p2={"TopicName": name2})
+
+    @markers.aws.validated
+    def test_conditions(
+        self,
+        capture_update_process,
+    ):
+        """
+        Toggle a resource from present to not present via a condition
+
+        Conclusions:
+        - Adding the second resource creates an `Add` resource change
+        """
+        t1 = {
+            "Parameters": {
+                "EnvironmentType": {
+                    "Type": "String",
+                }
+            },
+            "Conditions": {
+                "IsProduction": {
+                    "Fn::Equals": [
+                        {"Ref": "EnvironmentType"},
+                        "prod",
+                    ],
+                }
+            },
+            "Resources": {
+                "Bucket": {
+                    "Type": "AWS::S3::Bucket",
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "test",
+                    },
+                    "Condition": "IsProduction",
+                },
+            },
+        }
+
+        capture_update_process(
+            t1, t1, p1={"EnvironmentType": "not-prod"}, p2={"EnvironmentType": "prod"}
+        )
+
+    @markers.aws.validated
+    def test_unrelated_changes_update_propagation(
+        self,
+        capture_update_process,
+    ):
+        """
+        - Resource B depends on resource A which is updated, but the referenced parameter does not
+          change
+
+        Conclusions:
+        - No update to resource B
+        """
+        topic_name = f"MyTopic{short_uid()}"
+        t1 = {
+            "Resources": {
+                "Parameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": topic_name,
+                        "Description": "original",
+                    },
+                },
+                "Parameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                    },
+                },
+            },
+        }
+
+        t2 = {
+            "Resources": {
+                "Parameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": topic_name,
+                        "Description": "changed",
+                    },
+                },
+                "Parameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                    },
+                },
+            },
+        }
+        capture_update_process(t1, t2)
+
+    @markers.aws.validated
+    def test_unrelated_changes_requires_replacement(
+        self,
+        capture_update_process,
+    ):
+        """
+        - Resource B depends on resource A which is updated, but the referenced parameter does not
+          change, however resource A requires replacement
+
+        Conclusions:
+        - Resource B is updated
+        """
+        parameter_name_1 = f"MyParameter{short_uid()}"
+        parameter_name_2 = f"MyParameter{short_uid()}"
+
+        t1 = {
+            "Resources": {
+                "Parameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": parameter_name_1,
+                        "Type": "String",
+                        "Value": "value",
+                    },
+                },
+                "Parameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                    },
+                },
+            },
+        }
+        t2 = {
+            "Resources": {
+                "Parameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": parameter_name_2,
+                        "Type": "String",
+                        "Value": "value",
+                    },
+                },
+                "Parameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                    },
+                },
+            },
+        }
+
+        capture_update_process(t1, t2)

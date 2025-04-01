@@ -124,6 +124,11 @@ class IntegrationType(StrEnum):
     AWS_PROXY = "AWS_PROXY"
 
 
+class IpAddressType(StrEnum):
+    ipv4 = "ipv4"
+    dualstack = "dualstack"
+
+
 class LocationStatusType(StrEnum):
     DOCUMENTED = "DOCUMENTED"
     UNDOCUMENTED = "UNDOCUMENTED"
@@ -449,6 +454,7 @@ ListOfEndpointType = List[EndpointType]
 
 class EndpointConfiguration(TypedDict, total=False):
     types: Optional[ListOfEndpointType]
+    ipAddressType: Optional[IpAddressType]
     vpcEndpointIds: Optional[ListOfString]
 
 
