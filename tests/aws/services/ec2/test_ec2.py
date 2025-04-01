@@ -510,6 +510,7 @@ class TestEc2Integrations:
                 }
             ],
         )
+        cleanups.append(lambda: aws_client.ec2.delete_subnet(SubnetId=subnet["Subnet"]["SubnetId"]))
         assert subnet["Subnet"]["VpcId"] == vpc_id
         subnet_id: str = subnet["Subnet"]["SubnetId"]
 
