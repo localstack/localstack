@@ -45,7 +45,7 @@ class TestTaskServiceSns:
     )
     def test_fifo_message_attribute(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         input_params,
@@ -67,7 +67,7 @@ class TestTaskServiceSns:
 
         exec_input = json.dumps(input_params)
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -81,7 +81,7 @@ class TestTaskServiceSns:
     )
     def test_publish_base(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sns_create_topic,
@@ -98,7 +98,7 @@ class TestTaskServiceSns:
 
         exec_input = json.dumps({"TopicArn": topic_arn, "Message": {"Message": "HelloWorld!"}})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -112,7 +112,7 @@ class TestTaskServiceSns:
     )
     def test_publish_message_attributes(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
@@ -128,10 +128,10 @@ class TestTaskServiceSns:
         topic_info = sns_create_topic()
         topic_arn = topic_info["TopicArn"]
         queue_url = sqs_create_queue()
-        queue_arn = aws_client_no_retry.sqs.get_queue_attributes(
+        queue_arn = aws_client.sqs.get_queue_attributes(
             QueueUrl=queue_url, AttributeNames=["QueueArn"]
         )["Attributes"]["QueueArn"]
-        aws_client_no_retry.sns.subscribe(
+        aws_client.sns.subscribe(
             TopicArn=topic_arn,
             Protocol="sqs",
             Endpoint=queue_arn,
@@ -162,7 +162,7 @@ class TestTaskServiceSns:
             }
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -175,7 +175,7 @@ class TestTaskServiceSns:
     @markers.aws.validated
     def test_publish_base_error_topic_arn(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sns_create_topic,
@@ -185,14 +185,14 @@ class TestTaskServiceSns:
 
         sns_topic = sns_create_topic()
         topic_arn = sns_topic["TopicArn"]
-        aws_client_no_retry.sns.delete_topic(TopicArn=topic_arn)
+        aws_client.sns.delete_topic(TopicArn=topic_arn)
 
         template = ST.load_sfn_template(ST.SNS_PUBLISH)
         definition = json.dumps(template)
 
         exec_input = json.dumps({"TopicArn": topic_arn, "Message": {"Message": "HelloWorld!"}})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

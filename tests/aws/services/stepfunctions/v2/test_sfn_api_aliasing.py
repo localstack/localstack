@@ -7,6 +7,7 @@ from localstack_snapshot.snapshots.transformer import RegexTransformer
 from localstack.aws.api.stepfunctions import Arn, RoutingConfigurationListItem
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.fixtures import aws_client_no_retry
 from localstack.testing.pytest.stepfunctions.utils import (
     await_execution_terminated,
     await_state_machine_alias_is_created,
@@ -32,9 +33,9 @@ class TestSfnApiAliasing:
         create_state_machine,
         create_state_machine_alias,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        sfn_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -42,7 +43,7 @@ class TestSfnApiAliasing:
 
         state_machine_name = f"state_machine_{short_uid()}"
         create_state_machine_response = create_state_machine(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             name=state_machine_name,
             definition=definition_str,
             roleArn=sfn_role_arn,
@@ -59,7 +60,7 @@ class TestSfnApiAliasing:
         )
 
         create_state_machine_alias_response = create_state_machine_alias(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             description="create state machine alias description",
             name=state_machine_alias_name,
             routingConfiguration=[
@@ -79,9 +80,10 @@ class TestSfnApiAliasing:
         create_state_machine,
         create_state_machine_alias,
         sfn_snapshot,
+        aws_client,
         aws_client_no_retry,
     ):
-        sfn_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -89,7 +91,7 @@ class TestSfnApiAliasing:
 
         state_machine_name = f"state_machine_{short_uid()}"
         create_state_machine_response = create_state_machine(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             name=state_machine_name,
             definition=definition_str,
             roleArn=sfn_role_arn,
@@ -122,16 +124,17 @@ class TestSfnApiAliasing:
         create_state_machine,
         create_state_machine_alias,
         sfn_snapshot,
+        aws_client,
         aws_client_no_retry,
     ):
-        sfn_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
 
         state_machine_name = f"state_machine_{short_uid()}"
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         create_state_machine_response = create_state_machine(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             name=state_machine_name,
             definition=json.dumps(definition),
             roleArn=sfn_role_arn,
@@ -144,7 +147,7 @@ class TestSfnApiAliasing:
         state_machine_version_arn_v0 = create_state_machine_response["stateMachineVersionArn"]
 
         definition["Comment"] = "Definition v1"
-        update_state_machine_response = aws_client_no_retry.stepfunctions.update_state_machine(
+        update_state_machine_response = aws_client.stepfunctions.update_state_machine(
             stateMachineArn=state_machine_arn, definition=json.dumps(definition), publish=True
         )
         state_machine_version_arn_v1 = update_state_machine_response["stateMachineVersionArn"]
@@ -160,7 +163,7 @@ class TestSfnApiAliasing:
             RegexTransformer(state_machine_alias_name, "state_machine_alias_name")
         )
         create_state_machine_alias_response = create_state_machine_alias(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             description=state_machine_alias_description,
             name=state_machine_alias_name,
             routingConfiguration=state_machine_alias_routing_configuration,
@@ -207,9 +210,9 @@ class TestSfnApiAliasing:
         create_state_machine,
         create_state_machine_alias,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        sfn_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -217,7 +220,7 @@ class TestSfnApiAliasing:
 
         state_machine_name = f"state_machine_{short_uid()}"
         create_state_machine_response = create_state_machine(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             name=state_machine_name,
             definition=definition_str,
             roleArn=sfn_role_arn,
@@ -236,7 +239,7 @@ class TestSfnApiAliasing:
 
         for attempt_number in range(2):
             create_state_machine_alias_response = create_state_machine_alias(
-                target_aws_client=aws_client_no_retry,
+                target_aws_client=aws_client,
                 description="create state machine alias description",
                 name=state_machine_alias_name,
                 routingConfiguration=[
@@ -251,7 +254,7 @@ class TestSfnApiAliasing:
             )
 
         create_state_machine_alias_response = create_state_machine_alias(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             description="create state machine alias description",
             name=f"{state_machine_alias_name}-second",
             routingConfiguration=[
@@ -265,10 +268,8 @@ class TestSfnApiAliasing:
             create_state_machine_alias_response,
         )
 
-        list_state_machine_aliases_response = (
-            aws_client_no_retry.stepfunctions.list_state_machine_aliases(
-                stateMachineArn=state_machine_arn
-            )
+        list_state_machine_aliases_response = aws_client.stepfunctions.list_state_machine_aliases(
+            stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match(
             "list_state_machine_aliases_response", list_state_machine_aliases_response
@@ -281,17 +282,18 @@ class TestSfnApiAliasing:
         create_state_machine,
         create_state_machine_alias,
         sfn_snapshot,
+        aws_client,
         aws_client_no_retry,
     ):
-        sfn_client = aws_client_no_retry.stepfunctions
+        sfn_client = aws_client.stepfunctions
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         state_machine_name = f"state_machine_{short_uid()}"
         create_state_machine_response = create_state_machine(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             name=state_machine_name,
             definition=json.dumps(definition),
             roleArn=sfn_role_arn,
@@ -447,9 +449,9 @@ class TestSfnApiAliasing:
         create_state_machine,
         create_state_machine_alias,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        sfn_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -457,7 +459,7 @@ class TestSfnApiAliasing:
 
         state_machine_name = f"state_machine_{short_uid()}"
         create_state_machine_response = create_state_machine(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             name=state_machine_name,
             definition=definition_str,
             roleArn=sfn_role_arn,
@@ -493,11 +495,11 @@ class TestSfnApiAliasing:
         create_state_machine,
         create_state_machine_alias,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        sfn_client = aws_client_no_retry.stepfunctions
+        sfn_client = aws_client.stepfunctions
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -505,7 +507,7 @@ class TestSfnApiAliasing:
 
         state_machine_name = f"state_machine_{short_uid()}"
         create_state_machine_response = create_state_machine(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             name=state_machine_name,
             definition=definition_str,
             roleArn=sfn_role_arn,
@@ -533,7 +535,7 @@ class TestSfnApiAliasing:
         for num in range(3):
             state_machine_alias_name = f"{state_machine_alias_base_name}-{num}"
             create_state_machine_alias_response = create_state_machine_alias(
-                target_aws_client=aws_client_no_retry,
+                target_aws_client=aws_client,
                 description="create state machine alias description",
                 name=state_machine_alias_name,
                 routingConfiguration=[
@@ -593,18 +595,19 @@ class TestSfnApiAliasing:
         create_state_machine,
         create_state_machine_alias,
         sfn_snapshot,
+        aws_client,
         aws_client_no_retry,
     ):
-        sfn_client = aws_client_no_retry.stepfunctions
+        sfn_client = aws_client.stepfunctions
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
 
         state_machine_name = f"state_machine_{short_uid()}"
         create_state_machine_response = create_state_machine(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             name=state_machine_name,
             definition=json.dumps(definition),
             roleArn=sfn_role_arn,
@@ -622,7 +625,7 @@ class TestSfnApiAliasing:
         )
 
         create_state_machine_alias_response = create_state_machine_alias(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             description="create state machine alias description",
             name=state_machine_alias_name,
             routingConfiguration=[
@@ -649,7 +652,7 @@ class TestSfnApiAliasing:
         )
 
         with pytest.raises(Exception) as exc:
-            sfn_client.update_state_machine_alias(
+            aws_client_no_retry.stepfunctions.update_state_machine_alias(
                 stateMachineAliasArn=state_machine_alias_arn,
                 description="Updated state machine alias description",
             )
@@ -665,11 +668,11 @@ class TestSfnApiAliasing:
         create_state_machine,
         create_state_machine_alias,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        sfn_client = aws_client_no_retry.stepfunctions
+        sfn_client = aws_client.stepfunctions
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -677,7 +680,7 @@ class TestSfnApiAliasing:
 
         state_machine_name = f"state_machine_{short_uid()}"
         create_state_machine_response = create_state_machine(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             name=state_machine_name,
             definition=definition_str,
             roleArn=sfn_role_arn,
@@ -703,7 +706,7 @@ class TestSfnApiAliasing:
         )
 
         create_state_machine_alias_response = create_state_machine_alias(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             description="create state machine alias description",
             name=state_machine_alias_name,
             routingConfiguration=[
@@ -763,18 +766,18 @@ class TestSfnApiAliasing:
         create_state_machine,
         create_state_machine_alias,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        sfn_client = aws_client_no_retry.stepfunctions
+        sfn_client = aws_client.stepfunctions
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
 
         state_machine_name = f"state_machine_{short_uid()}"
         create_state_machine_response = create_state_machine(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             name=state_machine_name,
             definition=json.dumps(definition),
             roleArn=sfn_role_arn,
@@ -801,7 +804,7 @@ class TestSfnApiAliasing:
         )
 
         create_state_machine_alias_response = create_state_machine_alias(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             description="create state machine alias description",
             name=state_machine_alias_name,
             routingConfiguration=[
@@ -864,18 +867,19 @@ class TestSfnApiAliasing:
         create_state_machine,
         create_state_machine_alias,
         sfn_snapshot,
+        aws_client,
         aws_client_no_retry,
     ):
-        sfn_client = aws_client_no_retry.stepfunctions
+        sfn_client = aws_client.stepfunctions
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
 
         state_machine_name = f"state_machine_{short_uid()}"
         create_state_machine_response = create_state_machine(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             name=state_machine_name,
             definition=json.dumps(definition),
             roleArn=sfn_role_arn,
@@ -893,7 +897,7 @@ class TestSfnApiAliasing:
         )
 
         create_state_machine_alias_response = create_state_machine_alias(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             description="create state machine alias description",
             name=state_machine_alias_name,
             routingConfiguration=[
@@ -913,7 +917,7 @@ class TestSfnApiAliasing:
         )
 
         with pytest.raises(Exception) as exc:
-            sfn_client.delete_state_machine_version(
+            aws_client_no_retry.stepfunctions.delete_state_machine_version(
                 stateMachineVersionArn=state_machine_version_arn
             )
         sfn_snapshot.match(
@@ -922,7 +926,7 @@ class TestSfnApiAliasing:
         )
 
         definition["Comment"] = "Definition v1"
-        update_state_machine_response = aws_client_no_retry.stepfunctions.update_state_machine(
+        update_state_machine_response = aws_client.stepfunctions.update_state_machine(
             stateMachineArn=state_machine_arn, definition=json.dumps(definition), publish=True
         )
         state_machine_version_arn_v1 = update_state_machine_response["stateMachineVersionArn"]
@@ -956,18 +960,18 @@ class TestSfnApiAliasing:
         create_state_machine,
         create_state_machine_alias,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        sfn_client = aws_client_no_retry.stepfunctions
+        sfn_client = aws_client.stepfunctions
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
 
         state_machine_name = f"state_machine_{short_uid()}"
         create_state_machine_response = create_state_machine(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             name=state_machine_name,
             definition=json.dumps(definition),
             roleArn=sfn_role_arn,
@@ -985,7 +989,7 @@ class TestSfnApiAliasing:
         )
 
         create_state_machine_alias_response = create_state_machine_alias(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             description="create state machine alias description",
             name=state_machine_alias_name,
             routingConfiguration=[
@@ -1016,18 +1020,18 @@ class TestSfnApiAliasing:
         create_state_machine,
         create_state_machine_alias,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        sfn_client = aws_client_no_retry.stepfunctions
+        sfn_client = aws_client.stepfunctions
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
 
         state_machine_name = f"state_machine_{short_uid()}"
         create_state_machine_response = create_state_machine(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             name=state_machine_name,
             definition=json.dumps(definition),
             roleArn=sfn_role_arn,
@@ -1045,7 +1049,7 @@ class TestSfnApiAliasing:
         )
 
         create_state_machine_alias_response = create_state_machine_alias(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             description="create state machine alias description",
             name=state_machine_alias_name,
             routingConfiguration=[

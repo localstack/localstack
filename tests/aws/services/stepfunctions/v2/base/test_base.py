@@ -21,7 +21,7 @@ class TestSnfBase:
     @markers.snapshot.skip_snapshot_verify(paths=["$..redriveCount", "$..redriveStatus"])
     def test_state_fail(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -31,7 +31,7 @@ class TestSnfBase:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -43,7 +43,7 @@ class TestSnfBase:
     @markers.aws.validated
     def test_state_fail_path(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -53,7 +53,7 @@ class TestSnfBase:
 
         exec_input = json.dumps({"Error": "error string", "Cause": "cause string"})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -64,7 +64,7 @@ class TestSnfBase:
     @markers.aws.validated
     def test_state_fail_intrinsic(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -74,7 +74,7 @@ class TestSnfBase:
 
         exec_input = json.dumps({"Error": "error string", "Cause": "cause string"})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -86,7 +86,7 @@ class TestSnfBase:
     @markers.snapshot.skip_snapshot_verify(paths=["$..redriveCount", "$..redriveStatus"])
     def test_state_fail_empty(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -96,7 +96,7 @@ class TestSnfBase:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -108,7 +108,7 @@ class TestSnfBase:
     @markers.aws.validated
     def test_state_pass_result(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -118,7 +118,7 @@ class TestSnfBase:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -129,7 +129,7 @@ class TestSnfBase:
     @markers.aws.validated
     def test_state_pass_result_jsonpaths(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -143,7 +143,7 @@ class TestSnfBase:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -166,7 +166,7 @@ class TestSnfBase:
         create_state_machine,
         events_to_sqs_queue,
         sfn_events_to_sqs_queue,
-        aws_client_no_retry,
+        aws_client,
         sfn_snapshot,
     ):
         template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_WAIT_1_MIN)
@@ -177,7 +177,7 @@ class TestSnfBase:
             create_state_machine_iam_role,
             create_state_machine,
             sfn_events_to_sqs_queue,
-            aws_client_no_retry,
+            aws_client,
             sfn_snapshot,
             definition,
             execution_input,
@@ -188,7 +188,7 @@ class TestSnfBase:
         self,
         create_state_machine_iam_role,
         create_state_machine,
-        aws_client_no_retry,
+        aws_client,
         sfn_snapshot,
     ):
         template = BaseTemplate.load_sfn_template(BaseTemplate.DECL_VERSION_1_0)
@@ -196,7 +196,7 @@ class TestSnfBase:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -211,7 +211,7 @@ class TestSnfBase:
         create_state_machine_iam_role,
         create_state_machine,
         sfn_events_to_sqs_queue,
-        aws_client_no_retry,
+        aws_client,
         sfn_snapshot,
     ):
         template = BaseTemplate.load_sfn_template(BaseTemplate.WAIT_AND_FAIL)
@@ -223,7 +223,7 @@ class TestSnfBase:
             create_state_machine_iam_role,
             create_state_machine,
             sfn_events_to_sqs_queue,
-            aws_client_no_retry,
+            aws_client,
             sfn_snapshot,
             definition,
             exec_input,
@@ -235,7 +235,7 @@ class TestSnfBase:
         self,
         create_state_machine_iam_role,
         create_state_machine,
-        aws_client_no_retry,
+        aws_client,
         sfn_snapshot,
     ):
         sfn_snapshot.add_transformer(
@@ -264,7 +264,7 @@ class TestSnfBase:
 
         exec_input = json.dumps({"message": "TestMessage"})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -275,7 +275,7 @@ class TestSnfBase:
     @markers.aws.validated
     def test_state_pass_result_null_input_output_paths(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -285,7 +285,7 @@ class TestSnfBase:
 
         exec_input = json.dumps({"InputValue": 0})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -296,7 +296,7 @@ class TestSnfBase:
     @markers.aws.validated
     def test_execution_dateformat(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
     ):
@@ -314,21 +314,17 @@ class TestSnfBase:
 
         sm_name = f"test-dateformat-machine-{short_uid()}"
         sm = create_state_machine(
-            aws_client_no_retry,
+            aws_client,
             name=sm_name,
             definition=definition,
-            roleArn=create_state_machine_iam_role(aws_client_no_retry),
+            roleArn=create_state_machine_iam_role(aws_client),
         )
 
         sm_arn = sm["stateMachineArn"]
-        execution = aws_client_no_retry.stepfunctions.start_execution(
-            stateMachineArn=sm_arn, input="{}"
-        )
+        execution = aws_client.stepfunctions.start_execution(stateMachineArn=sm_arn, input="{}")
         execution_arn = execution["executionArn"]
-        await_execution_success(aws_client_no_retry.stepfunctions, execution_arn)
-        execution_done = aws_client_no_retry.stepfunctions.describe_execution(
-            executionArn=execution_arn
-        )
+        await_execution_success(aws_client.stepfunctions, execution_arn)
+        execution_done = aws_client.stepfunctions.describe_execution(executionArn=execution_arn)
 
         # Since snapshots currently transform any timestamp-like value to a generic token,
         # we handle the assertions here manually
@@ -346,7 +342,7 @@ class TestSnfBase:
     @markers.aws.validated
     def test_state_pass_regex_json_path_base(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -363,7 +359,7 @@ class TestSnfBase:
             }
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -375,7 +371,7 @@ class TestSnfBase:
     @markers.aws.validated
     def test_state_pass_regex_json_path(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -395,7 +391,7 @@ class TestSnfBase:
             }
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -412,7 +408,7 @@ class TestSnfBase:
     )
     def test_json_path_array_access(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -424,7 +420,7 @@ class TestSnfBase:
 
         exec_input = json.dumps({"items": [{"item_key": i} for i in range(11)]})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

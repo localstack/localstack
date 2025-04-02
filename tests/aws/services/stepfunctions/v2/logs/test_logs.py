@@ -71,7 +71,7 @@ class TestLogs:
     )
     def test_base(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         sfn_create_log_group,
         create_state_machine,
@@ -85,7 +85,7 @@ class TestLogs:
 
         exec_input = json.dumps({})
         create_and_record_logs(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_create_log_group,
@@ -104,7 +104,7 @@ class TestLogs:
     )
     def test_partial_log_levels(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         sfn_create_log_group,
         create_state_machine,
@@ -114,9 +114,9 @@ class TestLogs:
         include_flag,
     ):
         log_group_name = sfn_create_log_group()
-        log_group_arn = aws_client_no_retry.logs.describe_log_groups(
-            logGroupNamePrefix=log_group_name
-        )["logGroups"][0]["arn"]
+        log_group_arn = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_name)[
+            "logGroups"
+        ][0]["arn"]
         logging_configuration = LoggingConfiguration(
             level=log_level,
             includeExecutionData=include_flag,
@@ -131,7 +131,7 @@ class TestLogs:
         definition = json.dumps(template)
 
         state_machine_arn = create_state_machine_with_iam_role(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -142,7 +142,7 @@ class TestLogs:
         execution_input = json.dumps({})
 
         launch_and_record_logs(
-            aws_client_no_retry,
+            aws_client,
             state_machine_arn,
             execution_input,
             log_level,
@@ -157,9 +157,9 @@ class TestLogs:
         create_state_machine,
         sfn_create_log_group,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        logs_client = aws_client_no_retry.logs
+        logs_client = aws_client.logs
         log_group_name = sfn_create_log_group()
         log_group_arn = logs_client.describe_log_groups(logGroupNamePrefix=log_group_name)[
             "logGroups"
@@ -173,14 +173,14 @@ class TestLogs:
             ],
         )
 
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition = json.dumps(template)
 
         state_machine_arn = create_state_machine_with_iam_role(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -199,7 +199,7 @@ class TestLogs:
 
         execution_input = json.dumps({})
         launch_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             sfn_snapshot,
             state_machine_arn,
             execution_input,
@@ -212,7 +212,7 @@ class TestLogs:
         create_state_machine,
         sfn_create_log_group,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
@@ -222,7 +222,7 @@ class TestLogs:
             )
         )
 
-        logs_client = aws_client_no_retry.logs
+        logs_client = aws_client.logs
         log_group_name = sfn_create_log_group()
         log_group_arn = logs_client.describe_log_groups(logGroupNamePrefix=log_group_name)[
             "logGroups"
@@ -236,14 +236,14 @@ class TestLogs:
             ],
         )
 
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition = json.dumps(template)
 
         state_machine_arn = create_state_machine_with_iam_role(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -254,7 +254,7 @@ class TestLogs:
         expected_events_count = 0
         for i in range(3):
             execution_input = json.dumps({"ExecutionNumber": i})
-            start_execution_response = aws_client_no_retry.stepfunctions.start_execution(
+            start_execution_response = aws_client.stepfunctions.start_execution(
                 stateMachineArn=state_machine_arn, input=execution_input
             )
             execution_arn = start_execution_response["executionArn"]
@@ -262,14 +262,14 @@ class TestLogs:
                 sfn_snapshot.transform.sfn_sm_exec_arn(start_execution_response, i)
             )
             await_execution_terminated(
-                stepfunctions_client=aws_client_no_retry.stepfunctions, execution_arn=execution_arn
+                stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
             )
-            execution_history = aws_client_no_retry.stepfunctions.get_execution_history(
+            execution_history = aws_client.stepfunctions.get_execution_history(
                 executionArn=execution_arn
             )
             expected_events_count += len(execution_history["events"])
 
-        logs_client = aws_client_no_retry.logs
+        logs_client = aws_client.logs
         log_events = list()
 
         def _collect_log_events():

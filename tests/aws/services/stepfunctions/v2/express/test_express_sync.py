@@ -132,7 +132,7 @@ class TestExpressSync:
     @markers.aws.validated
     def test_retry(
         self,
-        aws_client_no_retry,
+        aws_client,
         aws_client_no_sync_prefix,
         create_state_machine_iam_role,
         create_state_machine,

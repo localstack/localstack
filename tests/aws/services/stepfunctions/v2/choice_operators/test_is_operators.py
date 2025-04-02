@@ -13,10 +13,10 @@ from tests.aws.services.stepfunctions.v2.choice_operators.utils import (
 class TestIsOperators:
     @markers.aws.validated
     def test_is_boolean(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         create_and_test_comparison_function(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -26,10 +26,10 @@ class TestIsOperators:
 
     @markers.aws.validated
     def test_is_null(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         create_and_test_comparison_function(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -39,10 +39,10 @@ class TestIsOperators:
 
     @markers.aws.validated
     def test_is_numeric(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         create_and_test_comparison_function(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -52,10 +52,10 @@ class TestIsOperators:
 
     @markers.aws.validated
     def test_is_present(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         create_and_test_comparison_function(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -65,10 +65,10 @@ class TestIsOperators:
 
     @markers.aws.validated
     def test_is_string(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         create_and_test_comparison_function(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -81,10 +81,10 @@ class TestIsOperators:
     )
     @markers.aws.needs_fixing
     def test_is_timestamp(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         create_and_test_comparison_function(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

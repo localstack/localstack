@@ -47,14 +47,14 @@ class TestSnfApiLogs:
         create_state_machine,
         sfn_create_log_group,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
         logging_level,
         include_execution_data,
     ):
         log_group_name = sfn_create_log_group()
-        log_group_arn = aws_client_no_retry.logs.describe_log_groups(
-            logGroupNamePrefix=log_group_name
-        )["logGroups"][0]["arn"]
+        log_group_arn = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_name)[
+            "logGroups"
+        ][0]["arn"]
         logging_configuration = LoggingConfiguration(
             level=logging_level,
             includeExecutionData=include_execution_data,
@@ -65,7 +65,7 @@ class TestSnfApiLogs:
             ],
         )
 
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -73,7 +73,7 @@ class TestSnfApiLogs:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp = create_state_machine(
-            aws_client_no_retry,
+            aws_client,
             name=sm_name,
             definition=definition_str,
             roleArn=snf_role_arn,
@@ -83,7 +83,7 @@ class TestSnfApiLogs:
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
         sfn_snapshot.match("creation_resp", creation_resp)
 
-        describe_resp = aws_client_no_retry.stepfunctions.describe_state_machine(
+        describe_resp = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match("describe_resp", describe_resp)
@@ -96,10 +96,10 @@ class TestSnfApiLogs:
         create_state_machine,
         sfn_create_log_group,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
         logging_configuration,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -107,7 +107,7 @@ class TestSnfApiLogs:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp = create_state_machine(
-            aws_client_no_retry,
+            aws_client,
             name=sm_name,
             definition=definition_str,
             roleArn=snf_role_arn,
@@ -117,7 +117,7 @@ class TestSnfApiLogs:
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
         sfn_snapshot.match("creation_resp", creation_resp)
 
-        describe_resp = aws_client_no_retry.stepfunctions.describe_state_machine(
+        describe_resp = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match("describe_resp", describe_resp)
@@ -130,11 +130,11 @@ class TestSnfApiLogs:
         create_state_machine,
         sfn_create_log_group,
         sfn_snapshot,
+        aws_client,
         aws_client_no_retry,
-        aws_client_factory,
         logging_configuration,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -142,11 +142,8 @@ class TestSnfApiLogs:
 
         sm_name = f"statemachine_{short_uid()}"
 
-        stepfunctions_client = aws_client_factory(
-            config=Config(parameter_validation=False)
-        ).stepfunctions
         with pytest.raises(ClientError) as exc:
-            stepfunctions_client.create_state_machine(
+            aws_client_no_retry.stepfunctions.create_state_machine(
                 name=sm_name,
                 definition=definition,
                 roleArn=snf_role_arn,
@@ -163,9 +160,10 @@ class TestSnfApiLogs:
         create_state_machine,
         sfn_create_log_group,
         sfn_snapshot,
+        aws_client,
         aws_client_no_retry,
     ):
-        logs_client = aws_client_no_retry.logs
+        logs_client = aws_client.logs
         log_group_name = sfn_create_log_group()
         log_group_arn = logs_client.describe_log_groups(logGroupNamePrefix=log_group_name)[
             "logGroups"
@@ -187,7 +185,7 @@ class TestSnfApiLogs:
 
         assert poll_condition(condition=_log_group_is_deleted)
 
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -213,14 +211,15 @@ class TestSnfApiLogs:
         create_state_machine,
         sfn_create_log_group,
         sfn_snapshot,
+        aws_client,
         aws_client_no_retry,
     ):
         logging_configuration = LoggingConfiguration(level=LogLevel.ALL, destinations=[])
         for i in range(2):
             log_group_name = sfn_create_log_group()
-            log_group_arn = aws_client_no_retry.logs.describe_log_groups(
-                logGroupNamePrefix=log_group_name
-            )["logGroups"][0]["arn"]
+            log_group_arn = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_name)[
+                "logGroups"
+            ][0]["arn"]
             logging_configuration["destinations"].append(
                 LogDestination(
                     cloudWatchLogsLogGroup=CloudWatchLogsLogGroup(logGroupArn=log_group_arn)
@@ -250,17 +249,18 @@ class TestSnfApiLogs:
         create_state_machine,
         sfn_create_log_group,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
         aws_client_factory,
+        aws_client_no_retry,
     ):
         stepfunctions_client = aws_client_factory(
             config=Config(parameter_validation=False)
         ).stepfunctions
 
         log_group_name = sfn_create_log_group()
-        log_group_arn = aws_client_no_retry.logs.describe_log_groups(
-            logGroupNamePrefix=log_group_name
-        )["logGroups"][0]["arn"]
+        log_group_arn = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_name)[
+            "logGroups"
+        ][0]["arn"]
         base_logging_configuration = LoggingConfiguration(
             level=LogLevel.ALL,
             includeExecutionData=True,
@@ -271,7 +271,7 @@ class TestSnfApiLogs:
             ],
         )
 
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -279,7 +279,7 @@ class TestSnfApiLogs:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp = create_state_machine(
-            aws_client_no_retry,
+            aws_client,
             name=sm_name,
             definition=definition_str,
             roleArn=snf_role_arn,
@@ -325,16 +325,16 @@ class TestSnfApiLogs:
 
         # Add logging endpoints.
         log_group_name_2 = sfn_create_log_group()
-        log_group_arn_2 = aws_client_no_retry.logs.describe_log_groups(
-            logGroupNamePrefix=log_group_name_2
-        )["logGroups"][0]["arn"]
+        log_group_arn_2 = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_name_2)[
+            "logGroups"
+        ][0]["arn"]
         base_logging_configuration["destinations"].append(
             LogDestination(
                 cloudWatchLogsLogGroup=CloudWatchLogsLogGroup(logGroupArn=log_group_arn_2)
             )
         )
         with pytest.raises(ClientError) as exc:
-            stepfunctions_client.update_state_machine(
+            aws_client_no_retry.stepfunctions.update_state_machine(
                 stateMachineArn=state_machine_arn, loggingConfiguration=base_logging_configuration
             )
         sfn_snapshot.match(

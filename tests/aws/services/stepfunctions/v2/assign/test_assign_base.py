@@ -38,7 +38,7 @@ class TestAssignBase:
     )
     def test_base_cases(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -48,7 +48,7 @@ class TestAssignBase:
         definition = json.dumps(template)
         exec_input = json.dumps({"input_value": "input_value_literal"})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
@@ -72,7 +72,7 @@ class TestAssignBase:
     )
     def test_base_parallel_cases(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -83,7 +83,7 @@ class TestAssignBase:
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
@@ -106,7 +106,7 @@ class TestAssignBase:
     def test_assign_in_choice(
         self,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -116,7 +116,7 @@ class TestAssignBase:
         definition = json.dumps(template)
         exec_input = json.dumps(input_value)
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,

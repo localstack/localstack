@@ -40,7 +40,7 @@ class TestTaskServiceDynamoDB:
     )
     def test_base_integrations(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         dynamodb_create_table,
@@ -48,9 +48,7 @@ class TestTaskServiceDynamoDB:
         template_path,
     ):
         table_name = f"sfn_test_table_{short_uid()}"
-        dynamodb_create_table(
-            table_name=table_name, partition_key="id", client=aws_client_no_retry.dynamodb
-        )
+        dynamodb_create_table(table_name=table_name, partition_key="id", client=aws_client.dynamodb)
         sfn_snapshot.add_transformer(RegexTransformer(table_name, "table-name"))
 
         template = ST.load_sfn_template(template_path)
@@ -66,7 +64,7 @@ class TestTaskServiceDynamoDB:
             }
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

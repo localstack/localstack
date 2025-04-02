@@ -27,24 +27,22 @@ class TestSnfApiActivities:
         self,
         create_activity,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
         activity_base_name,
     ):
         activity_name = f"{activity_base_name}-{short_uid()}"
-        create_activity_response = aws_client_no_retry.stepfunctions.create_activity(
-            name=activity_name
-        )
+        create_activity_response = aws_client.stepfunctions.create_activity(name=activity_name)
         activity_arn = create_activity_response["activityArn"]
         sfn_snapshot.add_transformer(RegexTransformer(activity_arn, "activity_arn"))
         sfn_snapshot.add_transformer(RegexTransformer(activity_name, "activity_name"))
         sfn_snapshot.match("create_activity_response", create_activity_response)
 
-        create_activity_response_duplicate = aws_client_no_retry.stepfunctions.create_activity(
+        create_activity_response_duplicate = aws_client.stepfunctions.create_activity(
             name=activity_name
         )
         sfn_snapshot.match("create_activity_response_duplicate", create_activity_response_duplicate)
 
-        describe_activity_response = aws_client_no_retry.stepfunctions.describe_activity(
+        describe_activity_response = aws_client.stepfunctions.describe_activity(
             activityArn=activity_arn
         )
         sfn_snapshot.add_transformer(
@@ -54,12 +52,12 @@ class TestSnfApiActivities:
         )
         sfn_snapshot.match("describe_activity_response", describe_activity_response)
 
-        delete_activity_response = aws_client_no_retry.stepfunctions.delete_activity(
+        delete_activity_response = aws_client.stepfunctions.delete_activity(
             activityArn=activity_arn
         )
         sfn_snapshot.match("delete_activity_response", delete_activity_response)
 
-        delete_activity_response_2 = aws_client_no_retry.stepfunctions.delete_activity(
+        delete_activity_response_2 = aws_client.stepfunctions.delete_activity(
             activityArn=activity_arn
         )
         sfn_snapshot.match("delete_activity_response_2", delete_activity_response_2)
@@ -105,17 +103,14 @@ class TestSnfApiActivities:
 
     @markers.aws.validated
     def test_describe_deleted_activity(
-        self,
-        create_activity,
-        sfn_snapshot,
-        aws_client_no_retry,
+        self, create_activity, sfn_snapshot, aws_client, aws_client_no_retry
     ):
-        create_activity_response = aws_client_no_retry.stepfunctions.create_activity(
+        create_activity_response = aws_client.stepfunctions.create_activity(
             name=f"TestActivity-{short_uid()}"
         )
         activity_arn = create_activity_response["activityArn"]
         sfn_snapshot.add_transformer(RegexTransformer(activity_arn, "activity_arn"))
-        aws_client_no_retry.stepfunctions.delete_activity(activityArn=activity_arn)
+        aws_client.stepfunctions.delete_activity(activityArn=activity_arn)
         with pytest.raises(ClientError) as e:
             aws_client_no_retry.stepfunctions.describe_activity(activityArn=activity_arn)
         sfn_snapshot.match("no_such_activity", e.value.response)
@@ -135,17 +130,14 @@ class TestSnfApiActivities:
 
     @markers.aws.validated
     def test_get_activity_task_deleted(
-        self,
-        create_activity,
-        sfn_snapshot,
-        aws_client_no_retry,
+        self, create_activity, sfn_snapshot, aws_client, aws_client_no_retry
     ):
-        create_activity_response = aws_client_no_retry.stepfunctions.create_activity(
+        create_activity_response = aws_client.stepfunctions.create_activity(
             name=f"TestActivity-{short_uid()}"
         )
         activity_arn = create_activity_response["activityArn"]
         sfn_snapshot.add_transformer(RegexTransformer(activity_arn, "activity_arn"))
-        aws_client_no_retry.stepfunctions.delete_activity(activityArn=activity_arn)
+        aws_client.stepfunctions.delete_activity(activityArn=activity_arn)
         with pytest.raises(ClientError) as e:
             aws_client_no_retry.stepfunctions.get_activity_task(activityArn=activity_arn)
         sfn_snapshot.match("no_such_activity", e.value.response)
@@ -168,20 +160,18 @@ class TestSnfApiActivities:
         self,
         create_activity,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
         activity_arns = set()
         for i in range(3):
             activity_name = f"TestActivity-{i}-{short_uid()}"
-            create_activity_response = aws_client_no_retry.stepfunctions.create_activity(
-                name=activity_name
-            )
+            create_activity_response = aws_client.stepfunctions.create_activity(name=activity_name)
             activity_arn = create_activity_response["activityArn"]
             sfn_snapshot.add_transformer(RegexTransformer(activity_arn, f"activity_arn_{i}"))
             sfn_snapshot.add_transformer(RegexTransformer(activity_name, f"activity_name_{i}"))
             activity_arns.add(activity_arn)
 
-        list_activities_response = aws_client_no_retry.stepfunctions.list_activities()
+        list_activities_response = aws_client.stepfunctions.list_activities()
         activities = list_activities_response["activities"]
         activities = list(
             filter(lambda activity: activity["activityArn"] in activity_arns, activities)

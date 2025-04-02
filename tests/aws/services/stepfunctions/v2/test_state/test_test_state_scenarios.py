@@ -61,7 +61,7 @@ class TestStateCaseScenarios:
     )
     def test_base_inspection_level_info(
         self,
-        aws_client_no_retry,
+        aws_client,
         aws_client_no_sync_prefix,
         create_state_machine_iam_role,
         create_state_machine,
@@ -69,7 +69,7 @@ class TestStateCaseScenarios:
         tct_template,
         execution_input,
     ):
-        sfn_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
 
         template = TST.load_sfn_template(tct_template)
         definition = json.dumps(template)
@@ -101,7 +101,7 @@ class TestStateCaseScenarios:
     )
     def test_base_inspection_level_debug(
         self,
-        aws_client_no_retry,
+        aws_client,
         aws_client_no_sync_prefix,
         create_state_machine_iam_role,
         create_state_machine,
@@ -109,7 +109,7 @@ class TestStateCaseScenarios:
         tct_template,
         execution_input,
     ):
-        sfn_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
 
         template = TST.load_sfn_template(tct_template)
         definition = json.dumps(template)
@@ -141,7 +141,7 @@ class TestStateCaseScenarios:
     )
     def test_base_inspection_level_trace(
         self,
-        aws_client_no_retry,
+        aws_client,
         aws_client_no_sync_prefix,
         create_state_machine_iam_role,
         create_state_machine,
@@ -149,7 +149,7 @@ class TestStateCaseScenarios:
         tct_template,
         execution_input,
     ):
-        sfn_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
 
         template = TST.load_sfn_template(tct_template)
         definition = json.dumps(template)
@@ -178,7 +178,7 @@ class TestStateCaseScenarios:
     )
     def test_base_lambda_task_state(
         self,
-        aws_client_no_retry,
+        aws_client,
         aws_client_no_sync_prefix,
         create_state_machine_iam_role,
         create_state_machine,
@@ -199,7 +199,7 @@ class TestStateCaseScenarios:
         definition = json.dumps(template)
         exec_input = json.dumps({"inputData": "HelloWorld"})
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
         test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
             roleArn=sfn_role_arn,
@@ -222,7 +222,7 @@ class TestStateCaseScenarios:
     )
     def test_base_lambda_service_task_state(
         self,
-        aws_client_no_retry,
+        aws_client,
         aws_client_no_sync_prefix,
         create_state_machine_iam_role,
         create_state_machine,
@@ -242,7 +242,7 @@ class TestStateCaseScenarios:
         definition = json.dumps(template)
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
         test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
             roleArn=sfn_role_arn,

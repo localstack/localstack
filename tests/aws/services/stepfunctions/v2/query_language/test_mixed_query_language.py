@@ -34,7 +34,7 @@ class TestMixedQueryLanguageFlow:
     @markers.aws.validated
     def test_variable_sampling(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -43,7 +43,7 @@ class TestMixedQueryLanguageFlow:
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
@@ -62,7 +62,7 @@ class TestMixedQueryLanguageFlow:
     @markers.aws.validated
     def test_output_to_state(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -71,7 +71,7 @@ class TestMixedQueryLanguageFlow:
         definition = json.dumps(template)
         exec_input = json.dumps({"input_data": "test"})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
@@ -82,7 +82,7 @@ class TestMixedQueryLanguageFlow:
     @markers.aws.validated
     def test_task_dataflow_to_state(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -103,7 +103,7 @@ class TestMixedQueryLanguageFlow:
         definition = json.dumps(template)
         exec_input = json.dumps({"functionName": function_arn})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
@@ -129,7 +129,7 @@ class TestMixedQueryLanguageFlow:
     @markers.aws.validated
     def test_lambda_task_resource_data_flow(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -154,7 +154,7 @@ class TestMixedQueryLanguageFlow:
         )
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,

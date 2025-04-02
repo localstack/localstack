@@ -18,7 +18,7 @@ class TestComments:
     @markers.aws.validated
     def test_comments_as_per_docs(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -40,7 +40,7 @@ class TestComments:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -51,7 +51,7 @@ class TestComments:
     @markers.aws.validated
     def test_comment_in_parameters(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -61,7 +61,7 @@ class TestComments:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

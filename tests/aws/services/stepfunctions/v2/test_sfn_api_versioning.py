@@ -23,9 +23,9 @@ class TestSnfApiVersioning:
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -33,7 +33,7 @@ class TestSnfApiVersioning:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
-            aws_client_no_retry,
+            aws_client,
             name=sm_name,
             definition=definition_str,
             roleArn=snf_role_arn,
@@ -48,9 +48,9 @@ class TestSnfApiVersioning:
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -58,7 +58,7 @@ class TestSnfApiVersioning:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
-            aws_client_no_retry,
+            aws_client,
             name=sm_name,
             definition=definition_str,
             roleArn=snf_role_arn,
@@ -74,9 +74,10 @@ class TestSnfApiVersioning:
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
+        aws_client,
         aws_client_no_retry,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -99,9 +100,9 @@ class TestSnfApiVersioning:
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -109,7 +110,7 @@ class TestSnfApiVersioning:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
-            aws_client_no_retry,
+            aws_client,
             name=sm_name,
             definition=definition_str,
             roleArn=snf_role_arn,
@@ -120,12 +121,12 @@ class TestSnfApiVersioning:
         state_machine_arn = creation_resp_1["stateMachineArn"]
         state_machine_version_arn = creation_resp_1["stateMachineVersionArn"]
 
-        describe_resp_version = aws_client_no_retry.stepfunctions.describe_state_machine(
+        describe_resp_version = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=state_machine_version_arn
         )
         sfn_snapshot.match("describe_resp_version", describe_resp_version)
 
-        describe_resp = aws_client_no_retry.stepfunctions.describe_state_machine(
+        describe_resp = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match("describe_resp", describe_resp)
@@ -136,9 +137,9 @@ class TestSnfApiVersioning:
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -146,7 +147,7 @@ class TestSnfApiVersioning:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
-            aws_client_no_retry,
+            aws_client,
             name=sm_name,
             definition=definition_str,
             roleArn=snf_role_arn,
@@ -158,12 +159,12 @@ class TestSnfApiVersioning:
         state_machine_arn = creation_resp_1["stateMachineArn"]
         state_machine_version_arn = creation_resp_1["stateMachineVersionArn"]
 
-        describe_resp_version = aws_client_no_retry.stepfunctions.describe_state_machine(
+        describe_resp_version = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=state_machine_version_arn
         )
         sfn_snapshot.match("describe_resp_version", describe_resp_version)
 
-        describe_resp = aws_client_no_retry.stepfunctions.describe_state_machine(
+        describe_resp = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match("describe_resp", describe_resp)
@@ -174,9 +175,10 @@ class TestSnfApiVersioning:
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
+        aws_client,
         aws_client_no_retry,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -184,7 +186,7 @@ class TestSnfApiVersioning:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
-            aws_client_no_retry, name=sm_name, definition=definition_str, roleArn=snf_role_arn
+            aws_client, name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
         sfn_snapshot.match("creation_resp_1", creation_resp_1)
@@ -195,7 +197,7 @@ class TestSnfApiVersioning:
             definition["Comment"] = f"{definition['Comment']}-R{revision_no}"
             definition_raw_str = json.dumps(definition)
 
-            update_resp_1 = aws_client_no_retry.stepfunctions.update_state_machine(
+            update_resp_1 = aws_client.stepfunctions.update_state_machine(
                 stateMachineArn=state_machine_arn, definition=definition_raw_str, publish=True
             )
 
@@ -205,26 +207,22 @@ class TestSnfApiVersioning:
             state_machine_version_arns.append(state_machine_version_arn)
 
             await_state_machine_version_listed(
-                aws_client_no_retry.stepfunctions,
+                aws_client.stepfunctions,
                 state_machine_arn,
                 update_resp_1["stateMachineVersionArn"],
             )
 
-        page_1_state_machine_versions = (
-            aws_client_no_retry.stepfunctions.list_state_machine_versions(
-                stateMachineArn=state_machine_arn,
-                maxResults=10,
-            )
+        page_1_state_machine_versions = aws_client.stepfunctions.list_state_machine_versions(
+            stateMachineArn=state_machine_arn,
+            maxResults=10,
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.key_value("nextToken"))
         sfn_snapshot.match("list-state-machine-versions-page-1", page_1_state_machine_versions)
 
-        page_2_state_machine_versions = (
-            aws_client_no_retry.stepfunctions.list_state_machine_versions(
-                stateMachineArn=state_machine_arn,
-                maxResults=3,
-                nextToken=page_1_state_machine_versions["nextToken"],
-            )
+        page_2_state_machine_versions = aws_client.stepfunctions.list_state_machine_versions(
+            stateMachineArn=state_machine_arn,
+            maxResults=3,
+            nextToken=page_1_state_machine_versions["nextToken"],
         )
         sfn_snapshot.match("list-state-machine-versions-page-2", page_2_state_machine_versions)
 
@@ -266,26 +264,24 @@ class TestSnfApiVersioning:
         )
 
         # where maxResults is 0, the default of 100 should be returned
-        state_machines_default_all_returned = (
-            aws_client_no_retry.stepfunctions.list_state_machine_versions(
-                stateMachineArn=state_machine_arn, maxResults=0
-            )
+        state_machines_default_all_returned = aws_client.stepfunctions.list_state_machine_versions(
+            stateMachineArn=state_machine_arn, maxResults=0
         )
         assert len(state_machines_default_all_returned["stateMachineVersions"]) == 13
         assert "nextToken" not in state_machines_default_all_returned
 
         for state_machine_version_arn in state_machine_version_arns:
-            aws_client_no_retry.stepfunctions.delete_state_machine_version(
+            aws_client.stepfunctions.delete_state_machine_version(
                 stateMachineVersionArn=state_machine_version_arn,
             )
 
         for state_machine_version_arn in state_machine_version_arns:
             await_state_machine_version_not_listed(
-                aws_client_no_retry.stepfunctions, state_machine_arn, state_machine_version_arn
+                aws_client.stepfunctions, state_machine_arn, state_machine_version_arn
             )
 
         ls_with_no_state_machine_versions_present = (
-            aws_client_no_retry.stepfunctions.list_state_machine_versions(
+            aws_client.stepfunctions.list_state_machine_versions(
                 stateMachineArn=state_machine_arn, maxResults=len(state_machine_version_arns)
             )
         )
@@ -298,9 +294,9 @@ class TestSnfApiVersioning:
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -308,7 +304,7 @@ class TestSnfApiVersioning:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
-            aws_client_no_retry,
+            aws_client,
             name=sm_name,
             definition=definition_str,
             roleArn=snf_role_arn,
@@ -319,38 +315,36 @@ class TestSnfApiVersioning:
         state_machine_arn = creation_resp_1["stateMachineArn"]
         state_machine_version_arn = creation_resp_1["stateMachineVersionArn"]
 
-        describe_resp_version = aws_client_no_retry.stepfunctions.describe_state_machine(
+        describe_resp_version = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=state_machine_version_arn
         )
         sfn_snapshot.match("describe_resp_version", describe_resp_version)
 
         await_state_machine_version_listed(
-            aws_client_no_retry.stepfunctions, state_machine_arn, state_machine_version_arn
+            aws_client.stepfunctions, state_machine_arn, state_machine_version_arn
         )
 
-        list_versions_resp_1 = aws_client_no_retry.stepfunctions.list_state_machine_versions(
+        list_versions_resp_1 = aws_client.stepfunctions.list_state_machine_versions(
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match("list_versions_resp_1", list_versions_resp_1)
 
-        delete_version_resp = aws_client_no_retry.stepfunctions.delete_state_machine_version(
+        delete_version_resp = aws_client.stepfunctions.delete_state_machine_version(
             stateMachineVersionArn=state_machine_version_arn
         )
         sfn_snapshot.match("delete_version_resp", delete_version_resp)
 
         await_state_machine_version_not_listed(
-            aws_client_no_retry.stepfunctions, state_machine_arn, state_machine_version_arn
+            aws_client.stepfunctions, state_machine_arn, state_machine_version_arn
         )
 
-        list_versions_resp_2 = aws_client_no_retry.stepfunctions.list_state_machine_versions(
+        list_versions_resp_2 = aws_client.stepfunctions.list_state_machine_versions(
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match("list_versions_resp_2", list_versions_resp_2)
 
-        delete_version_resp_after_del = (
-            aws_client_no_retry.stepfunctions.delete_state_machine_version(
-                stateMachineVersionArn=state_machine_version_arn
-            )
+        delete_version_resp_after_del = aws_client.stepfunctions.delete_state_machine_version(
+            stateMachineVersionArn=state_machine_version_arn
         )
         sfn_snapshot.match("delete_version_resp_after_del", delete_version_resp_after_del)
 
@@ -360,9 +354,10 @@ class TestSnfApiVersioning:
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
+        aws_client,
         aws_client_no_retry,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -370,7 +365,7 @@ class TestSnfApiVersioning:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
-            aws_client_no_retry, name=sm_name, definition=definition_str, roleArn=snf_role_arn
+            aws_client, name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
         sfn_snapshot.match("creation_resp_1", creation_resp_1)
@@ -380,18 +375,18 @@ class TestSnfApiVersioning:
         definition_r1["Comment"] = f"{definition_r1['Comment']}-R1"
         definition_r1_str = json.dumps(definition_r1)
 
-        update_resp_1 = aws_client_no_retry.stepfunctions.update_state_machine(
+        update_resp_1 = aws_client.stepfunctions.update_state_machine(
             stateMachineArn=state_machine_arn, definition=definition_r1_str, publish=True
         )
         sfn_snapshot.match("update_resp_1", update_resp_1)
 
         await_state_machine_version_listed(
-            aws_client_no_retry.stepfunctions,
+            aws_client.stepfunctions,
             state_machine_arn,
             update_resp_1["stateMachineVersionArn"],
         )
 
-        list_versions_resp_1 = aws_client_no_retry.stepfunctions.list_state_machine_versions(
+        list_versions_resp_1 = aws_client.stepfunctions.list_state_machine_versions(
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match("list_versions_resp_1", list_versions_resp_1)
@@ -400,19 +395,19 @@ class TestSnfApiVersioning:
         definition_r2["Comment"] = f"{definition_r2['Comment']}-R2"
         definition_r2_str = json.dumps(definition_r2)
 
-        update_resp_2 = aws_client_no_retry.stepfunctions.update_state_machine(
+        update_resp_2 = aws_client.stepfunctions.update_state_machine(
             stateMachineArn=state_machine_arn, definition=definition_r2_str, publish=True
         )
         sfn_snapshot.match("update_resp_2", update_resp_2)
         state_machine_version_2_arn = update_resp_2["stateMachineVersionArn"]
 
         await_state_machine_version_listed(
-            aws_client_no_retry.stepfunctions,
+            aws_client.stepfunctions,
             state_machine_arn,
             update_resp_2["stateMachineVersionArn"],
         )
 
-        list_versions_resp_2 = aws_client_no_retry.stepfunctions.list_state_machine_versions(
+        list_versions_resp_2 = aws_client.stepfunctions.list_state_machine_versions(
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match("list_versions_resp_2", list_versions_resp_2)
@@ -441,9 +436,10 @@ class TestSnfApiVersioning:
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
+        aws_client,
         aws_client_no_retry,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -451,7 +447,7 @@ class TestSnfApiVersioning:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
-            aws_client_no_retry, name=sm_name, definition=definition_str, roleArn=snf_role_arn
+            aws_client, name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
         sfn_snapshot.match("creation_resp_1", creation_resp_1)
@@ -461,27 +457,27 @@ class TestSnfApiVersioning:
         definition_r1["Comment"] = f"{definition_r1['Comment']}-R1"
         definition_r1_str = json.dumps(definition_r1)
 
-        update_resp_1 = aws_client_no_retry.stepfunctions.update_state_machine(
+        update_resp_1 = aws_client.stepfunctions.update_state_machine(
             stateMachineArn=state_machine_arn, definition=definition_r1_str
         )
         sfn_snapshot.match("update_resp_1", update_resp_1)
 
-        publish_v1 = aws_client_no_retry.stepfunctions.publish_state_machine_version(
+        publish_v1 = aws_client.stepfunctions.publish_state_machine_version(
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match("publish_v1", publish_v1)
         state_machine_v1_arn = publish_v1["stateMachineVersionArn"]
 
         await_state_machine_version_listed(
-            aws_client_no_retry.stepfunctions, state_machine_arn, state_machine_v1_arn
+            aws_client.stepfunctions, state_machine_arn, state_machine_v1_arn
         )
 
-        list_versions_resp_1 = aws_client_no_retry.stepfunctions.list_state_machine_versions(
+        list_versions_resp_1 = aws_client.stepfunctions.list_state_machine_versions(
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match("list_versions_resp_1", list_versions_resp_1)
 
-        describe_v1 = aws_client_no_retry.stepfunctions.describe_state_machine(
+        describe_v1 = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=state_machine_v1_arn
         )
         sfn_snapshot.match("describe_v1", describe_v1)
@@ -490,28 +486,28 @@ class TestSnfApiVersioning:
         definition_r2["Comment"] = f"{definition_r2['Comment']}-R2"
         definition_r2_str = json.dumps(definition_r2)
 
-        update_resp_2 = aws_client_no_retry.stepfunctions.update_state_machine(
+        update_resp_2 = aws_client.stepfunctions.update_state_machine(
             stateMachineArn=state_machine_arn, definition=definition_r2_str
         )
         sfn_snapshot.match("update_resp_2", update_resp_2)
         revision_id_r2 = update_resp_2["revisionId"]
 
-        publish_v2 = aws_client_no_retry.stepfunctions.publish_state_machine_version(
+        publish_v2 = aws_client.stepfunctions.publish_state_machine_version(
             stateMachineArn=state_machine_arn, description="PublishedV2Description"
         )
         sfn_snapshot.match("publish_v2", publish_v2)
         state_machine_v2_arn = publish_v2["stateMachineVersionArn"]
 
         await_state_machine_version_listed(
-            aws_client_no_retry.stepfunctions, state_machine_arn, state_machine_v2_arn
+            aws_client.stepfunctions, state_machine_arn, state_machine_v2_arn
         )
 
-        list_versions_resp_2 = aws_client_no_retry.stepfunctions.list_state_machine_versions(
+        list_versions_resp_2 = aws_client.stepfunctions.list_state_machine_versions(
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match("list_versions_resp_2", list_versions_resp_2)
 
-        describe_v2 = aws_client_no_retry.stepfunctions.describe_state_machine(
+        describe_v2 = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=state_machine_v2_arn
         )
         sfn_snapshot.match("describe_v2", describe_v2)
@@ -520,7 +516,7 @@ class TestSnfApiVersioning:
         definition_r3["Comment"] = f"{definition_r3['Comment']}-R3"
         definition_r3_str = json.dumps(definition_r3)
 
-        update_resp_3 = aws_client_no_retry.stepfunctions.update_state_machine(
+        update_resp_3 = aws_client.stepfunctions.update_state_machine(
             stateMachineArn=state_machine_arn, definition=definition_r3_str
         )
         sfn_snapshot.match("update_resp_3", update_resp_3)
@@ -537,9 +533,9 @@ class TestSnfApiVersioning:
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -547,7 +543,7 @@ class TestSnfApiVersioning:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
-            aws_client_no_retry,
+            aws_client,
             name=sm_name,
             definition=definition_str,
             roleArn=snf_role_arn,
@@ -558,29 +554,25 @@ class TestSnfApiVersioning:
         state_machine_arn = creation_resp_1["stateMachineArn"]
         state_machine_version_arn = creation_resp_1["stateMachineVersionArn"]
 
-        execution_resp = aws_client_no_retry.stepfunctions.start_execution(
-            stateMachineArn=state_machine_arn
-        )
+        execution_resp = aws_client.stepfunctions.start_execution(stateMachineArn=state_machine_arn)
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(execution_resp, 0))
         sfn_snapshot.match("execution_resp", execution_resp)
         execution_arn = execution_resp["executionArn"]
 
         await_execution_terminated(
-            stepfunctions_client=aws_client_no_retry.stepfunctions, execution_arn=execution_arn
+            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
         )
 
         await_execution_lists_terminated(
-            stepfunctions_client=aws_client_no_retry.stepfunctions,
+            stepfunctions_client=aws_client.stepfunctions,
             state_machine_arn=state_machine_arn,
             execution_arn=execution_arn,
         )
 
-        exec_list_resp = aws_client_no_retry.stepfunctions.list_executions(
-            stateMachineArn=state_machine_arn
-        )
+        exec_list_resp = aws_client.stepfunctions.list_executions(stateMachineArn=state_machine_arn)
         sfn_snapshot.match("exec_list_resp", exec_list_resp)
 
-        execution_version_resp = aws_client_no_retry.stepfunctions.start_execution(
+        execution_version_resp = aws_client.stepfunctions.start_execution(
             stateMachineArn=state_machine_version_arn
         )
         sfn_snapshot.add_transformer(
@@ -590,17 +582,17 @@ class TestSnfApiVersioning:
         version_execution_arn = execution_version_resp["executionArn"]
 
         await_execution_terminated(
-            stepfunctions_client=aws_client_no_retry.stepfunctions,
+            stepfunctions_client=aws_client.stepfunctions,
             execution_arn=version_execution_arn,
         )
 
         await_execution_lists_terminated(
-            stepfunctions_client=aws_client_no_retry.stepfunctions,
+            stepfunctions_client=aws_client.stepfunctions,
             state_machine_arn=state_machine_version_arn,
             execution_arn=version_execution_arn,
         )
 
-        exec_version_list_resp = aws_client_no_retry.stepfunctions.list_executions(
+        exec_version_list_resp = aws_client.stepfunctions.list_executions(
             stateMachineArn=state_machine_version_arn
         )
         sfn_snapshot.match("exec_version_list_resp", exec_version_list_resp)
@@ -611,9 +603,9 @@ class TestSnfApiVersioning:
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -621,7 +613,7 @@ class TestSnfApiVersioning:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
-            aws_client_no_retry,
+            aws_client,
             name=sm_name,
             definition=definition_str,
             roleArn=snf_role_arn,
@@ -633,27 +625,27 @@ class TestSnfApiVersioning:
         state_machine_arn_v1 = f"{state_machine_arn}:1"
         state_machine_arn_v2 = f"{state_machine_arn}:2"
         await_state_machine_version_listed(
-            aws_client_no_retry.stepfunctions, state_machine_arn, state_machine_arn_v1
+            aws_client.stepfunctions, state_machine_arn, state_machine_arn_v1
         )
 
         definition_r2 = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_r2["Comment"] = f"{definition_r2['Comment']}-R2"
         definition_r2_str = json.dumps(definition_r2)
-        aws_client_no_retry.stepfunctions.update_state_machine(
+        aws_client.stepfunctions.update_state_machine(
             stateMachineArn=state_machine_arn, definition=definition_r2_str, publish=True
         )
         await_state_machine_version_listed(
-            aws_client_no_retry.stepfunctions, state_machine_arn, state_machine_arn_v2
+            aws_client.stepfunctions, state_machine_arn, state_machine_arn_v2
         )
 
-        aws_client_no_retry.stepfunctions.delete_state_machine_version(
+        aws_client.stepfunctions.delete_state_machine_version(
             stateMachineVersionArn=state_machine_arn_v2
         )
         await_state_machine_version_not_listed(
-            aws_client_no_retry.stepfunctions, state_machine_arn, state_machine_arn_v2
+            aws_client.stepfunctions, state_machine_arn, state_machine_arn_v2
         )
 
-        publish_res_v2_2 = aws_client_no_retry.stepfunctions.publish_state_machine_version(
+        publish_res_v2_2 = aws_client.stepfunctions.publish_state_machine_version(
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match("publish_res_v2_2", publish_res_v2_2)
@@ -664,9 +656,9 @@ class TestSnfApiVersioning:
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -674,35 +666,40 @@ class TestSnfApiVersioning:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
-            aws_client_no_retry, name=sm_name, definition=definition_str, roleArn=snf_role_arn
+            aws_client, name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
         sfn_snapshot.match("creation_resp_1", creation_resp_1)
         state_machine_arn = creation_resp_1["stateMachineArn"]
 
-        publish_v1_1 = aws_client_no_retry.stepfunctions.publish_state_machine_version(
+        publish_v1_1 = aws_client.stepfunctions.publish_state_machine_version(
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match("publish_v1_1", publish_v1_1)
         await_state_machine_version_listed(
-            aws_client_no_retry.stepfunctions, state_machine_arn, f"{state_machine_arn}:1"
+            aws_client.stepfunctions, state_machine_arn, f"{state_machine_arn}:1"
         )
 
-        publish_v1_2 = aws_client_no_retry.stepfunctions.publish_state_machine_version(
+        publish_v1_2 = aws_client.stepfunctions.publish_state_machine_version(
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match("publish_v1_2", publish_v1_2)
 
-        list_versions_resp = aws_client_no_retry.stepfunctions.list_state_machine_versions(
+        list_versions_resp = aws_client.stepfunctions.list_state_machine_versions(
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match("list_versions_resp", list_versions_resp)
 
     @markers.aws.validated
     def test_publish_state_machine_version_no_such_machine(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+        aws_client_no_retry,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -710,7 +707,7 @@ class TestSnfApiVersioning:
         sm_name = f"statemachine_{short_uid()}"
 
         creation_resp_1 = create_state_machine(
-            aws_client_no_retry, name=sm_name, definition=definition_str, roleArn=snf_role_arn
+            aws_client, name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
         state_machine_arn: str = creation_resp_1["stateMachineArn"]
 
@@ -743,9 +740,9 @@ class TestSnfApiVersioning:
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -753,7 +750,7 @@ class TestSnfApiVersioning:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
-            aws_client_no_retry,
+            aws_client,
             name=sm_name,
             definition=definition_str,
             roleArn=snf_role_arn,
@@ -763,12 +760,12 @@ class TestSnfApiVersioning:
         sfn_snapshot.match("creation_resp_1", creation_resp_1)
         state_machine_arn = creation_resp_1["stateMachineArn"]
 
-        update_resp = aws_client_no_retry.stepfunctions.update_state_machine(
+        update_resp = aws_client.stepfunctions.update_state_machine(
             stateMachineArn=state_machine_arn, definition=definition_str, publish=True
         )
         sfn_snapshot.match("update_resp_1", update_resp)
 
-        update_resp_2 = aws_client_no_retry.stepfunctions.update_state_machine(
+        update_resp_2 = aws_client.stepfunctions.update_state_machine(
             stateMachineArn=state_machine_arn, definition=definition_str, publish=True
         )
         sfn_snapshot.match("update_resp_2", update_resp_2)
@@ -779,9 +776,9 @@ class TestSnfApiVersioning:
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -789,18 +786,18 @@ class TestSnfApiVersioning:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
-            aws_client_no_retry, name=sm_name, definition=definition_str, roleArn=snf_role_arn
+            aws_client, name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
         sfn_snapshot.match("creation_resp_1", creation_resp_1)
         state_machine_arn = creation_resp_1["stateMachineArn"]
 
-        update_resp = aws_client_no_retry.stepfunctions.update_state_machine(
+        update_resp = aws_client.stepfunctions.update_state_machine(
             stateMachineArn=state_machine_arn, definition=definition_str, publish=True
         )
         sfn_snapshot.match("update_resp_1", update_resp)
 
-        update_resp_2 = aws_client_no_retry.stepfunctions.update_state_machine(
+        update_resp_2 = aws_client.stepfunctions.update_state_machine(
             stateMachineArn=state_machine_arn, definition=definition_str, publish=True
         )
         sfn_snapshot.match("update_resp_2", update_resp_2)
@@ -811,9 +808,9 @@ class TestSnfApiVersioning:
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -821,7 +818,7 @@ class TestSnfApiVersioning:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
-            aws_client_no_retry,
+            aws_client,
             name=sm_name,
             definition=definition_str,
             roleArn=snf_role_arn,
@@ -831,7 +828,7 @@ class TestSnfApiVersioning:
         sfn_snapshot.match("creation_resp_1", creation_resp_1)
         state_machine_version_arn = creation_resp_1["stateMachineVersionArn"]
 
-        execution_resp = aws_client_no_retry.stepfunctions.start_execution(
+        execution_resp = aws_client.stepfunctions.start_execution(
             stateMachineArn=state_machine_version_arn
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(execution_resp, 0))
@@ -839,10 +836,10 @@ class TestSnfApiVersioning:
         execution_arn = execution_resp["executionArn"]
 
         await_execution_terminated(
-            stepfunctions_client=aws_client_no_retry.stepfunctions, execution_arn=execution_arn
+            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
         )
 
-        describe_resp = aws_client_no_retry.stepfunctions.describe_state_machine_for_execution(
+        describe_resp = aws_client.stepfunctions.describe_state_machine_for_execution(
             executionArn=execution_arn
         )
         sfn_snapshot.match("describe_resp", describe_resp)
@@ -853,9 +850,9 @@ class TestSnfApiVersioning:
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -863,7 +860,7 @@ class TestSnfApiVersioning:
 
         sm_name = f"statemachine_{short_uid()}"
         creation_resp_1 = create_state_machine(
-            aws_client_no_retry, name=sm_name, definition=definition_str, roleArn=snf_role_arn
+            aws_client, name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
         sfn_snapshot.match("creation_resp_1", creation_resp_1)
@@ -873,15 +870,15 @@ class TestSnfApiVersioning:
         definition_r1["Comment"] = f"{definition_r1['Comment']}-R2"
         definition_r1_str = json.dumps(definition_r1)
         state_machine_arn_v1 = f"{state_machine_arn}:1"
-        update_resp = aws_client_no_retry.stepfunctions.update_state_machine(
+        update_resp = aws_client.stepfunctions.update_state_machine(
             stateMachineArn=state_machine_arn, definition=definition_r1_str, publish=True
         )
         sfn_snapshot.match("update_resp", update_resp)
         await_state_machine_version_listed(
-            aws_client_no_retry.stepfunctions, state_machine_arn, state_machine_arn_v1
+            aws_client.stepfunctions, state_machine_arn, state_machine_arn_v1
         )
 
-        execution_resp = aws_client_no_retry.stepfunctions.start_execution(
+        execution_resp = aws_client.stepfunctions.start_execution(
             stateMachineArn=state_machine_arn_v1
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(execution_resp, 0))
@@ -889,10 +886,10 @@ class TestSnfApiVersioning:
         execution_arn = execution_resp["executionArn"]
 
         await_execution_terminated(
-            stepfunctions_client=aws_client_no_retry.stepfunctions, execution_arn=execution_arn
+            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
         )
 
-        describe_resp = aws_client_no_retry.stepfunctions.describe_state_machine_for_execution(
+        describe_resp = aws_client.stepfunctions.describe_state_machine_for_execution(
             executionArn=execution_arn
         )
         sfn_snapshot.match("describe_resp", describe_resp)

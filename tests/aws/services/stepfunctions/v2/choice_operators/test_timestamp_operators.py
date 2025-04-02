@@ -33,7 +33,7 @@ class TestTimestamps:
     @markers.aws.validated
     def test_timestamp_equals(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -43,7 +43,7 @@ class TestTimestamps:
             type_equals.append((var, T0))
 
         create_and_test_comparison_function(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -54,13 +54,13 @@ class TestTimestamps:
     @markers.aws.validated
     def test_timestamp_equals_path(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -72,13 +72,13 @@ class TestTimestamps:
     @markers.aws.validated
     def test_timestamp_greater_than(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -89,13 +89,13 @@ class TestTimestamps:
     @markers.aws.validated
     def test_timestamp_greater_than_path(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -107,13 +107,13 @@ class TestTimestamps:
     @markers.aws.validated
     def test_timestamp_greater_than_equals(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -124,13 +124,13 @@ class TestTimestamps:
     @markers.aws.validated
     def test_timestamp_greater_than_equals_path(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -142,13 +142,13 @@ class TestTimestamps:
     @markers.aws.validated
     def test_timestamp_less_than(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -159,13 +159,13 @@ class TestTimestamps:
     @markers.aws.validated
     def test_timestamp_less_than_path(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -177,13 +177,13 @@ class TestTimestamps:
     @markers.aws.validated
     def test_timestamp_less_than_equals(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -194,13 +194,13 @@ class TestTimestamps:
     @markers.aws.validated
     def test_timestamp_less_than_equals_path(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
         create_and_test_comparison_function(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

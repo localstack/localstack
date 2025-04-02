@@ -39,7 +39,7 @@ class TestStateVariablesTemplate:
     @markers.aws.validated
     def test_task_catch_error_output(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -64,7 +64,7 @@ class TestStateVariablesTemplate:
         )
         exec_input = json.dumps({"inputData": "dummy"})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
@@ -86,7 +86,7 @@ class TestStateVariablesTemplate:
     @markers.aws.validated
     def test_catch_error_variable_sampling(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -111,7 +111,7 @@ class TestStateVariablesTemplate:
         )
         exec_input = json.dumps({"inputData": "dummy"})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
@@ -133,7 +133,7 @@ class TestStateVariablesTemplate:
     @markers.aws.validated
     def test_task_catch_error_with_retry(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -158,7 +158,7 @@ class TestStateVariablesTemplate:
         )
         exec_input = json.dumps({"inputData": "dummy"})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
@@ -183,7 +183,7 @@ class TestStateVariablesTemplate:
     @markers.aws.validated
     def test_map_catch_error(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -208,7 +208,7 @@ class TestStateVariablesTemplate:
         )
         exec_input = json.dumps({"items": [1, 2, 3]})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,
@@ -233,7 +233,7 @@ class TestStateVariablesTemplate:
     @markers.aws.validated
     def test_parallel_catch_error(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -259,7 +259,7 @@ class TestStateVariablesTemplate:
         )
         exec_input = json.dumps({"inputData": "dummy"})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role=create_state_machine_iam_role,
             create_state_machine=create_state_machine,
             sfn_snapshot=sfn_snapshot,

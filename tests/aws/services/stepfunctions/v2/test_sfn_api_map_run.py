@@ -18,7 +18,7 @@ class TestSnfApiMapRun:
     @markers.aws.validated
     def test_list_map_runs_and_describe_map_run(
         self,
-        aws_client_no_retry,
+        aws_client,
         s3_create_bucket,
         create_state_machine_iam_role,
         create_state_machine,
@@ -40,7 +40,7 @@ class TestSnfApiMapRun:
 
         key = "file.csv"
         csv_file = "Col1,Col2,Col3\nValue1,Value2,Value3\nValue4,Value5,Value6"
-        aws_client_no_retry.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_HEADERS_FIRST_LINE)
         definition = json.dumps(template)
@@ -48,24 +48,24 @@ class TestSnfApiMapRun:
         exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
 
         state_machine_arn = create_state_machine_with_iam_role(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
         )
 
-        exec_resp = aws_client_no_retry.stepfunctions.start_execution(
+        exec_resp = aws_client.stepfunctions.start_execution(
             stateMachineArn=state_machine_arn, input=exec_input
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
         execution_arn = exec_resp["executionArn"]
 
         await_execution_terminated(
-            stepfunctions_client=aws_client_no_retry.stepfunctions, execution_arn=execution_arn
+            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
         )
 
-        list_map_runs = aws_client_no_retry.stepfunctions.list_map_runs(executionArn=execution_arn)
+        list_map_runs = aws_client.stepfunctions.list_map_runs(executionArn=execution_arn)
 
         for i, map_run in enumerate(list_map_runs["mapRuns"]):
             sfn_snapshot.add_transformer(
@@ -75,7 +75,7 @@ class TestSnfApiMapRun:
         sfn_snapshot.match("list_map_runs", list_map_runs)
 
         map_run_arn = list_map_runs["mapRuns"][0]["mapRunArn"]
-        describe_map_run = aws_client_no_retry.stepfunctions.describe_map_run(mapRunArn=map_run_arn)
+        describe_map_run = aws_client.stepfunctions.describe_map_run(mapRunArn=map_run_arn)
         sfn_snapshot.match("describe_map_run", describe_map_run)
 
     @markers.aws.validated
@@ -132,7 +132,7 @@ class TestSnfApiMapRun:
 
         with pytest.raises(Exception) as err:
             create_state_machine_with_iam_role(
-                aws_client_no_retry,
+                aws_client_no_retry(),
                 create_state_machine_iam_role,
                 create_state_machine,
                 sfn_snapshot,

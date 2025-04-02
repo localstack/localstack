@@ -16,9 +16,9 @@ from tests.aws.services.stepfunctions.v2.intrinsic_functions.utils import create
 class TestMathOperations:
     @markers.aws.validated
     def test_math_random(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
@@ -40,7 +40,7 @@ class TestMathOperations:
         definition_str = json.dumps(definition)
 
         creation_resp = create_state_machine(
-            aws_client_no_retry, name=sm_name, definition=definition_str, roleArn=snf_role_arn
+            aws_client, name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
         state_machine_arn = creation_resp["stateMachineArn"]
@@ -52,26 +52,26 @@ class TestMathOperations:
             exec_input_dict = {IFT.FUNCTION_INPUT_KEY: input_value}
             exec_input = json.dumps(exec_input_dict)
 
-            exec_resp = aws_client_no_retry.stepfunctions.start_execution(
+            exec_resp = aws_client.stepfunctions.start_execution(
                 stateMachineArn=state_machine_arn, input=exec_input
             )
             sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, i))
             execution_arn = exec_resp["executionArn"]
 
             await_execution_success(
-                stepfunctions_client=aws_client_no_retry.stepfunctions, execution_arn=execution_arn
+                stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
             )
 
-            exec_hist_resp = aws_client_no_retry.stepfunctions.get_execution_history(
+            exec_hist_resp = aws_client.stepfunctions.get_execution_history(
                 executionArn=execution_arn
             )
             sfn_snapshot.match(f"exec_hist_resp_{i}", exec_hist_resp)
 
     @markers.aws.validated
     def test_math_random_seeded(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
@@ -93,7 +93,7 @@ class TestMathOperations:
         definition_str = json.dumps(definition)
 
         creation_resp = create_state_machine(
-            aws_client_no_retry, name=sm_name, definition=definition_str, roleArn=snf_role_arn
+            aws_client, name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
         state_machine_arn = creation_resp["stateMachineArn"]
@@ -102,24 +102,22 @@ class TestMathOperations:
         exec_input_dict = {IFT.FUNCTION_INPUT_KEY: input_value}
         exec_input = json.dumps(exec_input_dict)
 
-        exec_resp = aws_client_no_retry.stepfunctions.start_execution(
+        exec_resp = aws_client.stepfunctions.start_execution(
             stateMachineArn=state_machine_arn, input=exec_input
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
         execution_arn = exec_resp["executionArn"]
 
         await_execution_success(
-            stepfunctions_client=aws_client_no_retry.stepfunctions, execution_arn=execution_arn
+            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
         )
 
-        exec_hist_resp = aws_client_no_retry.stepfunctions.get_execution_history(
-            executionArn=execution_arn
-        )
+        exec_hist_resp = aws_client.stepfunctions.get_execution_history(executionArn=execution_arn)
         sfn_snapshot.match("exec_hist_resp", exec_hist_resp)
 
     @markers.aws.validated
     def test_math_add(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         add_tuples = [
             (-9, 3),
@@ -150,7 +148,7 @@ class TestMathOperations:
         for fst, snd in add_tuples:
             input_values.append({"fst": fst, "snd": snd})
         create_and_test_on_inputs(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

@@ -22,7 +22,7 @@ class TestHeartbeats:
     @markers.aws.validated
     def test_heartbeat_timeout(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
@@ -49,7 +49,7 @@ class TestHeartbeats:
         message_txt = "test_message_txt"
         exec_input = json.dumps({"QueueUrl": queue_url, "Message": message_txt})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -60,7 +60,7 @@ class TestHeartbeats:
     @markers.aws.validated
     def test_heartbeat_path_timeout(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
@@ -91,7 +91,7 @@ class TestHeartbeats:
             {"QueueUrl": queue_url, "Message": message_txt, "HeartbeatSecondsPath": 5}
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -102,7 +102,7 @@ class TestHeartbeats:
     @markers.aws.validated
     def test_heartbeat_no_timeout(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sqs_create_queue,
@@ -130,7 +130,7 @@ class TestHeartbeats:
         message_txt = "test_message_txt"
         exec_input = json.dumps({"QueueUrl": queue_url, "Message": message_txt})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

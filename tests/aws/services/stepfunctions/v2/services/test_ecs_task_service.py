@@ -57,7 +57,7 @@ class TestTaskServiceECS:
     STACK_NAME = "StepFunctionsEcsTaskStack"
 
     @pytest.fixture(scope="class", autouse=False)
-    def infrastructure_test_run_task(self, aws_client_no_retry, infrastructure_setup):
+    def infrastructure_test_run_task(self, aws_client, infrastructure_setup):
         infra = infrastructure_setup(namespace="StepFunctionsEcsTask", force_synth=False)
         stack = cdk.Stack(infra.cdk_app, self.STACK_NAME)
 
@@ -104,7 +104,7 @@ class TestTaskServiceECS:
             yield prov
 
     @pytest.fixture(scope="class", autouse=False)
-    def infrastructure_test_run_task_raise_failure(self, aws_client_no_retry, infrastructure_setup):
+    def infrastructure_test_run_task_raise_failure(self, aws_client, infrastructure_setup):
         infra = infrastructure_setup(namespace="StepFunctionsEcsTask", force_synth=False)
         stack = cdk.Stack(infra.cdk_app, self.STACK_NAME)
 
@@ -151,7 +151,7 @@ class TestTaskServiceECS:
             yield prov
 
     @pytest.fixture(scope="class", autouse=False)
-    def infrastructure_test_run_task_sync(self, aws_client_no_retry, infrastructure_setup):
+    def infrastructure_test_run_task_sync(self, aws_client, infrastructure_setup):
         infra = infrastructure_setup(namespace="StepFunctionsEcsTask", force_synth=False)
         stack = cdk.Stack(infra.cdk_app, self.STACK_NAME)
 
@@ -198,9 +198,7 @@ class TestTaskServiceECS:
             yield prov
 
     @pytest.fixture(scope="class", autouse=False)
-    def infrastructure_test_run_task_sync_raise_failure(
-        self, aws_client_no_retry, infrastructure_setup
-    ):
+    def infrastructure_test_run_task_sync_raise_failure(self, aws_client, infrastructure_setup):
         infra = infrastructure_setup(namespace="StepFunctionsEcsTask", force_synth=False)
         stack = cdk.Stack(infra.cdk_app, self.STACK_NAME)
 
@@ -248,7 +246,7 @@ class TestTaskServiceECS:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=[*_ECS_SNAPSHOT_SKIP_PATHS, "$..StartedBy"])
-    def test_run_task(self, aws_client_no_retry, infrastructure_test_run_task, sfn_ecs_snapshot):
+    def test_run_task(self, aws_client, infrastructure_test_run_task, sfn_ecs_snapshot):
         stack_outputs = infrastructure_test_run_task.get_stack_outputs(stack_name=self.STACK_NAME)
         state_machine_arn = stack_outputs["StateMachineArn"]
 
@@ -275,7 +273,7 @@ class TestTaskServiceECS:
         sfn_ecs_snapshot.add_transformer(RegexTransformer(state_machine_arn, "state_machine_arn"))
 
         launch_and_record_execution(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             sfn_snapshot=sfn_ecs_snapshot,
             state_machine_arn=state_machine_arn,
             execution_input=json.dumps({}),
@@ -285,7 +283,7 @@ class TestTaskServiceECS:
     @markers.snapshot.skip_snapshot_verify(paths=_ECS_SNAPSHOT_SKIP_PATHS)
     @pytest.mark.skip(reason="ECS Provider doesn't raise failure on invalid image.")
     def test_run_task_raise_failure(
-        self, aws_client_no_retry, infrastructure_test_run_task_raise_failure, sfn_ecs_snapshot
+        self, aws_client, infrastructure_test_run_task_raise_failure, sfn_ecs_snapshot
     ):
         stack_outputs = infrastructure_test_run_task_raise_failure.get_stack_outputs(
             stack_name=self.STACK_NAME
@@ -315,7 +313,7 @@ class TestTaskServiceECS:
         sfn_ecs_snapshot.add_transformer(RegexTransformer(state_machine_arn, "state_machine_arn"))
 
         launch_and_record_execution(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             sfn_snapshot=sfn_ecs_snapshot,
             state_machine_arn=state_machine_arn,
             execution_input=json.dumps({}),
@@ -323,9 +321,7 @@ class TestTaskServiceECS:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=_ECS_SNAPSHOT_SKIP_PATHS)
-    def test_run_task_sync(
-        self, aws_client_no_retry, infrastructure_test_run_task_sync, sfn_ecs_snapshot
-    ):
+    def test_run_task_sync(self, aws_client, infrastructure_test_run_task_sync, sfn_ecs_snapshot):
         stack_outputs = infrastructure_test_run_task_sync.get_stack_outputs(
             stack_name=self.STACK_NAME
         )
@@ -354,7 +350,7 @@ class TestTaskServiceECS:
         sfn_ecs_snapshot.add_transformer(RegexTransformer(state_machine_arn, "state_machine_arn"))
 
         launch_and_record_execution(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             sfn_snapshot=sfn_ecs_snapshot,
             state_machine_arn=state_machine_arn,
             execution_input=json.dumps({}),
@@ -364,7 +360,7 @@ class TestTaskServiceECS:
     @markers.snapshot.skip_snapshot_verify(paths=_ECS_SNAPSHOT_SKIP_PATHS)
     @pytest.mark.skip(reason="ECS Provider doesn't raise failure on invalid image.")
     def test_run_task_sync_raise_failure(
-        self, aws_client_no_retry, infrastructure_test_run_task_sync_raise_failure, sfn_ecs_snapshot
+        self, aws_client, infrastructure_test_run_task_sync_raise_failure, sfn_ecs_snapshot
     ):
         stack_outputs = infrastructure_test_run_task_sync_raise_failure.get_stack_outputs(
             stack_name=self.STACK_NAME
@@ -394,7 +390,7 @@ class TestTaskServiceECS:
         sfn_ecs_snapshot.add_transformer(RegexTransformer(state_machine_arn, "state_machine_arn"))
 
         launch_and_record_execution(
-            target_aws_client=aws_client_no_retry,
+            target_aws_client=aws_client,
             sfn_snapshot=sfn_ecs_snapshot,
             state_machine_arn=state_machine_arn,
             execution_input=json.dumps({}),

@@ -184,7 +184,7 @@ class TestTaskApiGateway:
     @markers.aws.validated
     def test_invoke_base(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_lambda_function,
         create_role_with_policy,
         create_state_machine_iam_role,
@@ -198,7 +198,7 @@ class TestTaskApiGateway:
         part_path = "get_constant"
 
         api_url, api_stage = self._create_lambda_api_response(
-            apigw_client=aws_client_no_retry.apigateway,
+            apigw_client=aws_client.apigateway,
             create_lambda_function=create_lambda_function,
             create_role_with_policy=create_role_with_policy,
             lambda_function_filename=ST.LAMBDA_ID_FUNCTION,
@@ -214,7 +214,7 @@ class TestTaskApiGateway:
             {"ApiEndpoint": api_url, "Method": http_method, "Path": part_path, "Stage": api_stage}
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -234,7 +234,7 @@ class TestTaskApiGateway:
     @markers.aws.validated
     def test_invoke_with_body_post(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_lambda_function,
         create_role_with_policy,
         create_state_machine_iam_role,
@@ -249,7 +249,7 @@ class TestTaskApiGateway:
         part_path = "id_func"
 
         api_url, api_stage = self._create_lambda_api_response(
-            apigw_client=aws_client_no_retry.apigateway,
+            apigw_client=aws_client.apigateway,
             create_lambda_function=create_lambda_function,
             create_role_with_policy=create_role_with_policy,
             lambda_function_filename=ST.LAMBDA_ID_FUNCTION,
@@ -271,7 +271,7 @@ class TestTaskApiGateway:
             }
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -294,7 +294,7 @@ class TestTaskApiGateway:
     @markers.aws.validated
     def test_invoke_with_headers(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_lambda_function,
         create_role_with_policy,
         create_state_machine_iam_role,
@@ -309,7 +309,7 @@ class TestTaskApiGateway:
         part_path = "id_func"
 
         api_url, api_stage = self._create_lambda_api_response(
-            apigw_client=aws_client_no_retry.apigateway,
+            apigw_client=aws_client.apigateway,
             create_lambda_function=create_lambda_function,
             create_role_with_policy=create_role_with_policy,
             lambda_function_filename=ST.LAMBDA_ID_FUNCTION,
@@ -332,7 +332,7 @@ class TestTaskApiGateway:
             }
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -350,7 +350,7 @@ class TestTaskApiGateway:
     @markers.aws.validated
     def test_invoke_with_query_parameters(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_lambda_function,
         create_role_with_policy,
         create_state_machine_iam_role,
@@ -364,7 +364,7 @@ class TestTaskApiGateway:
         part_path = "id_func"
 
         api_url, api_stage = self._create_lambda_api_response(
-            apigw_client=aws_client_no_retry.apigateway,
+            apigw_client=aws_client.apigateway,
             create_lambda_function=create_lambda_function,
             create_role_with_policy=create_role_with_policy,
             lambda_function_filename=ST.LAMBDA_ID_FUNCTION,
@@ -389,7 +389,7 @@ class TestTaskApiGateway:
             }
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -408,7 +408,7 @@ class TestTaskApiGateway:
     @markers.aws.validated
     def test_invoke_error(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_lambda_function,
         create_role_with_policy,
         create_state_machine_iam_role,
@@ -422,7 +422,7 @@ class TestTaskApiGateway:
         part_path = "id_func"
 
         api_url, api_stage = self._create_lambda_api_response(
-            apigw_client=aws_client_no_retry.apigateway,
+            apigw_client=aws_client.apigateway,
             create_lambda_function=create_lambda_function,
             create_role_with_policy=create_role_with_policy,
             lambda_function_filename=ST.LAMBDA_ID_FUNCTION,
@@ -444,7 +444,7 @@ class TestTaskApiGateway:
             }
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

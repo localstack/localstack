@@ -80,18 +80,18 @@ class TestSfnApiVariableReferences:
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
         template_path,
     ):
         sfn_snapshot.add_transformer(_SfnSortVariableReferences())
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "sfn_role_arn"))
 
         definition = AT.load_sfn_template(template_path)
         definition_str = json.dumps(definition)
 
         creation_response = create_state_machine(
-            aws_client_no_retry,
+            aws_client,
             name=f"sm-{short_uid()}",
             definition=definition_str,
             roleArn=snf_role_arn,
@@ -99,23 +99,23 @@ class TestSfnApiVariableReferences:
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_response, 0))
         state_machine_arn = creation_response["stateMachineArn"]
 
-        describe_response = aws_client_no_retry.stepfunctions.describe_state_machine(
+        describe_response = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=creation_response["stateMachineArn"]
         )
         sfn_snapshot.match("describe_response", describe_response)
 
-        execution_response = aws_client_no_retry.stepfunctions.start_execution(
+        execution_response = aws_client.stepfunctions.start_execution(
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(execution_response, 0))
         execution_arn = execution_response["executionArn"]
 
         await_execution_terminated(
-            stepfunctions_client=aws_client_no_retry.stepfunctions, execution_arn=execution_arn
+            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
         )
 
         describe_for_execution_response = (
-            aws_client_no_retry.stepfunctions.describe_state_machine_for_execution(
+            aws_client.stepfunctions.describe_state_machine_for_execution(
                 executionArn=execution_arn
             )
         )
@@ -138,25 +138,25 @@ class TestSfnApiVariableReferences:
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
-        aws_client_no_retry,
+        aws_client,
         template_path,
     ):
         # This test checks that variable references within jsonata expression are not included.
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "sfn_role_arn"))
 
         definition = AT.load_sfn_template(template_path)
         definition_str = json.dumps(definition)
 
         creation_response = create_state_machine(
-            aws_client_no_retry,
+            aws_client,
             name=f"sm-{short_uid()}",
             definition=definition_str,
             roleArn=snf_role_arn,
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_response, 0))
 
-        describe_response = aws_client_no_retry.stepfunctions.describe_state_machine(
+        describe_response = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=creation_response["stateMachineArn"]
         )
         sfn_snapshot.match("describe_response", describe_response)

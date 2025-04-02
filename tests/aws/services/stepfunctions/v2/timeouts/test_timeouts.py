@@ -27,19 +27,19 @@ class TestTimeouts:
     @markers.aws.validated
     def test_global_timeout(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
 
         template = TT.load_sfn_template(BaseTemplate.BASE_WAIT_1_MIN)
         template["TimeoutSeconds"] = 5
         definition = json.dumps(template)
 
         creation_resp = create_state_machine(
-            aws_client_no_retry,
+            aws_client,
             name=f"test_global_timeout-{short_uid()}",
             definition=definition,
             roleArn=snf_role_arn,
@@ -50,24 +50,22 @@ class TestTimeouts:
         execution_name = f"exec_of-test_global_timeout-{short_uid()}"
         sfn_snapshot.add_transformer(RegexTransformer(execution_name, "<execution-name>"))
 
-        exec_resp = aws_client_no_retry.stepfunctions.start_execution(
+        exec_resp = aws_client.stepfunctions.start_execution(
             stateMachineArn=state_machine_arn, name=execution_name
         )
         execution_arn = exec_resp["executionArn"]
 
         await_execution_terminated(
-            stepfunctions_client=aws_client_no_retry.stepfunctions, execution_arn=execution_arn
+            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
         )
 
-        describe_execution = aws_client_no_retry.stepfunctions.describe_execution(
-            executionArn=execution_arn
-        )
+        describe_execution = aws_client.stepfunctions.describe_execution(executionArn=execution_arn)
         sfn_snapshot.match("describe_execution", describe_execution)
 
     @markers.aws.validated
     def test_fixed_timeout_service_lambda(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -88,7 +86,7 @@ class TestTimeouts:
             {"FunctionName": function_name, "Payload": None, "TimeoutSecondsValue": 5}
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -99,7 +97,7 @@ class TestTimeouts:
     @markers.aws.validated
     def test_fixed_timeout_service_lambda_with_path(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -122,7 +120,7 @@ class TestTimeouts:
             {"TimeoutSecondsValue": 5, "FunctionName": function_name, "Payload": None}
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -133,7 +131,7 @@ class TestTimeouts:
     @markers.aws.validated
     def test_fixed_timeout_lambda(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -154,7 +152,7 @@ class TestTimeouts:
 
         exec_input = json.dumps({"Payload": None})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -168,7 +166,7 @@ class TestTimeouts:
     @markers.aws.needs_fixing
     def test_service_lambda_map_timeout(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -196,7 +194,7 @@ class TestTimeouts:
             }
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

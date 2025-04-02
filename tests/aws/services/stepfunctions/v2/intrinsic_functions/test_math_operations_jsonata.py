@@ -12,9 +12,9 @@ class TestMathOperationsJSONata:
     @pytest.mark.skip(reason="AWS does not compute function randomSeeded")
     @markers.aws.validated
     def test_math_random_seeded(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
-        snf_role_arn = create_state_machine_iam_role(aws_client_no_retry)
+        snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
@@ -32,7 +32,7 @@ class TestMathOperationsJSONata:
         )
         input_values = list({"fst": 3})
         create_and_test_on_inputs(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

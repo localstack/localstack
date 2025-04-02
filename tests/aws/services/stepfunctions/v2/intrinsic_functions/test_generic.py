@@ -12,11 +12,11 @@ from tests.aws.services.stepfunctions.v2.intrinsic_functions.utils import create
 class TestGeneric:
     @markers.aws.validated
     def test_format_1(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         input_values = ["", " ", "HelloWorld", None, 1, 1.1, '{"Arg1": 1, "Arg2": []}']
         create_and_test_on_inputs(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -26,7 +26,7 @@ class TestGeneric:
 
     @markers.aws.validated
     def test_format_2(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         values = [
             "",
@@ -43,7 +43,7 @@ class TestGeneric:
             input_values.append({"fst": value, "snd": value})
 
         create_and_test_on_inputs(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -53,11 +53,11 @@ class TestGeneric:
 
     @markers.aws.validated
     def test_context_json_path(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         input_values = [None]
         create_and_test_on_inputs(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -67,11 +67,11 @@ class TestGeneric:
 
     @markers.aws.validated
     def test_nested_calls_1(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         input_values = [None]
         create_and_test_on_inputs(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -81,11 +81,11 @@ class TestGeneric:
 
     @markers.aws.validated
     def test_nested_calls_2(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         input_values = [None]
         create_and_test_on_inputs(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -95,11 +95,11 @@ class TestGeneric:
 
     @markers.aws.validated
     def test_escape_sequence(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client_no_retry
+        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
     ):
         input_values = [None]
         create_and_test_on_inputs(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

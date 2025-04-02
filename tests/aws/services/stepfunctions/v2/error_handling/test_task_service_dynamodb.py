@@ -24,7 +24,7 @@ class TestTaskServiceDynamoDB:
     @markers.aws.validated
     def test_invalid_param(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         dynamodb_create_table,
@@ -39,7 +39,7 @@ class TestTaskServiceDynamoDB:
             {"TableName": f"no_such_sfn_test_table_{short_uid()}", "Key": None, "Item": None}
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             snapshot,
@@ -50,7 +50,7 @@ class TestTaskServiceDynamoDB:
     @markers.aws.validated
     def test_put_item_no_such_table(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         snapshot,
@@ -69,7 +69,7 @@ class TestTaskServiceDynamoDB:
             }
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             snapshot,
@@ -85,7 +85,7 @@ class TestTaskServiceDynamoDB:
     @markers.aws.validated
     def test_put_item_invalid_table_name(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         snapshot,
@@ -104,7 +104,7 @@ class TestTaskServiceDynamoDB:
             }
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             snapshot,

@@ -183,8 +183,8 @@ LOG = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def setup_and_tear_down(aws_client_no_retry):
-    lambda_client = aws_client_no_retry.lambda_
+def setup_and_tear_down(aws_client):
+    lambda_client = aws_client.lambda_
 
     zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_ENV), get_content=True)
     zip_file2 = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
@@ -192,35 +192,35 @@ def setup_and_tear_down(aws_client_no_retry):
         func_name=TEST_LAMBDA_NAME_1,
         zip_file=zip_file,
         envvars={"Hello": TEST_RESULT_VALUE},
-        client=aws_client_no_retry.lambda_,
-        s3_client=aws_client_no_retry.s3,
+        client=aws_client.lambda_,
+        s3_client=aws_client.s3,
     )
     testutil.create_lambda_function(
         func_name=TEST_LAMBDA_NAME_2,
         zip_file=zip_file,
         envvars={"Hello": TEST_RESULT_VALUE_2},
-        client=aws_client_no_retry.lambda_,
-        s3_client=aws_client_no_retry.s3,
+        client=aws_client.lambda_,
+        s3_client=aws_client.s3,
     )
     testutil.create_lambda_function(
         func_name=TEST_LAMBDA_NAME_3,
         zip_file=zip_file,
         envvars={"Hello": "Replace Value"},
-        client=aws_client_no_retry.lambda_,
-        s3_client=aws_client_no_retry.s3,
+        client=aws_client.lambda_,
+        s3_client=aws_client.s3,
     )
     testutil.create_lambda_function(
         func_name=TEST_LAMBDA_NAME_4,
         zip_file=zip_file,
         envvars={"Hello": TEST_RESULT_VALUE_4},
-        client=aws_client_no_retry.lambda_,
-        s3_client=aws_client_no_retry.s3,
+        client=aws_client.lambda_,
+        s3_client=aws_client.s3,
     )
     testutil.create_lambda_function(
         func_name=TEST_LAMBDA_NAME_5,
         zip_file=zip_file2,
-        client=aws_client_no_retry.lambda_,
-        s3_client=aws_client_no_retry.s3,
+        client=aws_client.lambda_,
+        s3_client=aws_client.s3,
     )
 
     active_waiter = lambda_client.get_waiter("function_active_v2")
@@ -232,11 +232,11 @@ def setup_and_tear_down(aws_client_no_retry):
 
     yield
 
-    aws_client_no_retry.lambda_.delete_function(FunctionName=TEST_LAMBDA_NAME_1)
-    aws_client_no_retry.lambda_.delete_function(FunctionName=TEST_LAMBDA_NAME_2)
-    aws_client_no_retry.lambda_.delete_function(FunctionName=TEST_LAMBDA_NAME_3)
-    aws_client_no_retry.lambda_.delete_function(FunctionName=TEST_LAMBDA_NAME_4)
-    aws_client_no_retry.lambda_.delete_function(FunctionName=TEST_LAMBDA_NAME_5)
+    aws_client.lambda_.delete_function(FunctionName=TEST_LAMBDA_NAME_1)
+    aws_client.lambda_.delete_function(FunctionName=TEST_LAMBDA_NAME_2)
+    aws_client.lambda_.delete_function(FunctionName=TEST_LAMBDA_NAME_3)
+    aws_client.lambda_.delete_function(FunctionName=TEST_LAMBDA_NAME_4)
+    aws_client.lambda_.delete_function(FunctionName=TEST_LAMBDA_NAME_5)
 
 
 def _assert_machine_instances(expected_instances, sfn_client):
@@ -279,10 +279,8 @@ def get_machine_arn(sm_name, sfn_client):
 @pytest.mark.usefixtures("setup_and_tear_down")
 class TestStateMachine:
     @markers.aws.needs_fixing
-    def test_create_choice_state_machine(self, aws_client_no_retry, account_id, region_name):
-        state_machines_before = aws_client_no_retry.stepfunctions.list_state_machines()[
-            "stateMachines"
-        ]
+    def test_create_choice_state_machine(self, aws_client, account_id, region_name):
+        state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
         role_arn = arns.iam_role_arn("sfn_role", account_id, region_name)
 
         definition = clone(STATE_MACHINE_CHOICE)
@@ -290,17 +288,17 @@ class TestStateMachine:
         definition["States"]["Add"]["Resource"] = lambda_arn_4
         definition = json.dumps(definition)
         sm_name = f"choice-{short_uid()}"
-        aws_client_no_retry.stepfunctions.create_state_machine(
+        aws_client.stepfunctions.create_state_machine(
             name=sm_name, definition=definition, roleArn=role_arn
         )
 
         # assert that the SM has been created
-        assert_machine_created(state_machines_before, aws_client_no_retry.stepfunctions)
+        assert_machine_created(state_machines_before, aws_client.stepfunctions)
 
         # run state machine
-        sm_arn = get_machine_arn(sm_name, aws_client_no_retry.stepfunctions)
+        sm_arn = get_machine_arn(sm_name, aws_client.stepfunctions)
         input = {"x": "1", "y": "2"}
-        result = aws_client_no_retry.stepfunctions.start_execution(
+        result = aws_client.stepfunctions.start_execution(
             stateMachineArn=sm_arn, input=json.dumps(input)
         )
         assert result.get("executionArn")
@@ -309,23 +307,21 @@ class TestStateMachine:
         test_output = {**input, "added": {"Hello": TEST_RESULT_VALUE_4}}
 
         def check_result():
-            result = _get_execution_results(sm_arn, aws_client_no_retry.stepfunctions)
+            result = _get_execution_results(sm_arn, aws_client.stepfunctions)
             assert test_output == result
 
         # assert that the result is correct
         retry(check_result, sleep=2, retries=10)
 
         # clean up
-        cleanup(sm_arn, state_machines_before, sfn_client=aws_client_no_retry.stepfunctions)
+        cleanup(sm_arn, state_machines_before, sfn_client=aws_client.stepfunctions)
 
     @markers.aws.needs_fixing
-    def test_create_run_map_state_machine(self, aws_client_no_retry, account_id, region_name):
+    def test_create_run_map_state_machine(self, aws_client, account_id, region_name):
         names = ["Bob", "Meg", "Joe"]
         test_input = [{"map": name} for name in names]
         test_output = [{"Hello": name} for name in names]
-        state_machines_before = aws_client_no_retry.stepfunctions.list_state_machines()[
-            "stateMachines"
-        ]
+        state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
 
         role_arn = arns.iam_role_arn("sfn_role", account_id, region_name)
         definition = clone(STATE_MACHINE_MAP)
@@ -335,36 +331,34 @@ class TestStateMachine:
         ] = lambda_arn_3
         definition = json.dumps(definition)
         sm_name = f"map-{short_uid()}"
-        aws_client_no_retry.stepfunctions.create_state_machine(
+        aws_client.stepfunctions.create_state_machine(
             name=sm_name, definition=definition, roleArn=role_arn
         )
 
         # assert that the SM has been created
-        assert_machine_created(state_machines_before, aws_client_no_retry.stepfunctions)
+        assert_machine_created(state_machines_before, aws_client.stepfunctions)
 
         # run state machine
-        sm_arn = get_machine_arn(sm_name, aws_client_no_retry.stepfunctions)
-        result = aws_client_no_retry.stepfunctions.start_execution(
+        sm_arn = get_machine_arn(sm_name, aws_client.stepfunctions)
+        result = aws_client.stepfunctions.start_execution(
             stateMachineArn=sm_arn, input=json.dumps(test_input)
         )
         assert result.get("executionArn")
 
         def check_invocations():
             # assert that the result is correct
-            result = _get_execution_results(sm_arn, aws_client_no_retry.stepfunctions)
+            result = _get_execution_results(sm_arn, aws_client.stepfunctions)
             assert result == test_output
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=1, retries=10)
 
         # clean up
-        cleanup(sm_arn, state_machines_before, aws_client_no_retry.stepfunctions)
+        cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
 
     @markers.aws.needs_fixing
-    def test_create_run_state_machine(self, aws_client_no_retry, account_id, region_name):
-        state_machines_before = aws_client_no_retry.stepfunctions.list_state_machines()[
-            "stateMachines"
-        ]
+    def test_create_run_state_machine(self, aws_client, account_id, region_name):
+        state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
 
         # create state machine
         role_arn = arns.iam_role_arn("sfn_role", account_id, region_name)
@@ -375,34 +369,32 @@ class TestStateMachine:
         definition["States"]["step2"]["Resource"] = lambda_arn_2
         definition = json.dumps(definition)
         sm_name = f"basic-{short_uid()}"
-        aws_client_no_retry.stepfunctions.create_state_machine(
+        aws_client.stepfunctions.create_state_machine(
             name=sm_name, definition=definition, roleArn=role_arn
         )
 
         # assert that the SM has been created
-        assert_machine_created(state_machines_before, aws_client_no_retry.stepfunctions)
+        assert_machine_created(state_machines_before, aws_client.stepfunctions)
 
         # run state machine
-        sm_arn = get_machine_arn(sm_name, aws_client_no_retry.stepfunctions)
-        result = aws_client_no_retry.stepfunctions.start_execution(stateMachineArn=sm_arn)
+        sm_arn = get_machine_arn(sm_name, aws_client.stepfunctions)
+        result = aws_client.stepfunctions.start_execution(stateMachineArn=sm_arn)
         assert result.get("executionArn")
 
         def check_invocations():
             # assert that the result is correct
-            result = _get_execution_results(sm_arn, aws_client_no_retry.stepfunctions)
+            result = _get_execution_results(sm_arn, aws_client.stepfunctions)
             assert {"Hello": TEST_RESULT_VALUE_2} == result["result_value"]
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=0.7, retries=25)
 
         # clean up
-        cleanup(sm_arn, state_machines_before, aws_client_no_retry.stepfunctions)
+        cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
 
     @markers.aws.needs_fixing
-    def test_try_catch_state_machine(self, aws_client_no_retry, account_id, region_name):
-        state_machines_before = aws_client_no_retry.stepfunctions.list_state_machines()[
-            "stateMachines"
-        ]
+    def test_try_catch_state_machine(self, aws_client, account_id, region_name):
+        state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
 
         # create state machine
         role_arn = arns.iam_role_arn("sfn_role", account_id, region_name)
@@ -414,31 +406,29 @@ class TestStateMachine:
         definition["States"]["Final"]["Resource"] = lambda_arn_2
         definition = json.dumps(definition)
         sm_name = f"catch-{short_uid()}"
-        aws_client_no_retry.stepfunctions.create_state_machine(
+        aws_client.stepfunctions.create_state_machine(
             name=sm_name, definition=definition, roleArn=role_arn
         )
 
         # run state machine
-        sm_arn = get_machine_arn(sm_name, aws_client_no_retry.stepfunctions)
-        result = aws_client_no_retry.stepfunctions.start_execution(stateMachineArn=sm_arn)
+        sm_arn = get_machine_arn(sm_name, aws_client.stepfunctions)
+        result = aws_client.stepfunctions.start_execution(stateMachineArn=sm_arn)
         assert result.get("executionArn")
 
         def check_invocations():
             # assert that the result is correct
-            result = _get_execution_results(sm_arn, aws_client_no_retry.stepfunctions)
+            result = _get_execution_results(sm_arn, aws_client.stepfunctions)
             assert {"Hello": TEST_RESULT_VALUE_2} == result.get("handled")
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=10, retries=1000000)
 
         # clean up
-        cleanup(sm_arn, state_machines_before, aws_client_no_retry.stepfunctions)
+        cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
 
     @markers.aws.needs_fixing
-    def test_intrinsic_functions(self, aws_client_no_retry, account_id, region_name):
-        state_machines_before = aws_client_no_retry.stepfunctions.list_state_machines()[
-            "stateMachines"
-        ]
+    def test_intrinsic_functions(self, aws_client, account_id, region_name):
+        state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
 
         # create state machine
         role_arn = arns.iam_role_arn("sfn_role", account_id, region_name)
@@ -452,38 +442,36 @@ class TestStateMachine:
             definition["States"]["state3"]["Resource"] = lambda_arn_2
         definition = json.dumps(definition)
         sm_name = f"intrinsic-{short_uid()}"
-        aws_client_no_retry.stepfunctions.create_state_machine(
+        aws_client.stepfunctions.create_state_machine(
             name=sm_name, definition=definition, roleArn=role_arn
         )
 
         # run state machine
-        sm_arn = get_machine_arn(sm_name, aws_client_no_retry.stepfunctions)
+        sm_arn = get_machine_arn(sm_name, aws_client.stepfunctions)
         input = {}
-        result = aws_client_no_retry.stepfunctions.start_execution(
+        result = aws_client.stepfunctions.start_execution(
             stateMachineArn=sm_arn, input=json.dumps(input)
         )
         assert result.get("executionArn")
 
         def check_invocations():
             # assert that the result is correct
-            result = _get_execution_results(sm_arn, aws_client_no_retry.stepfunctions)
+            result = _get_execution_results(sm_arn, aws_client.stepfunctions)
             assert result.get("Payload") == {"values": [1, "v2"]}
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=1, retries=10)
 
         # clean up
-        cleanup(sm_arn, state_machines_before, aws_client_no_retry.stepfunctions)
+        cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
 
     @pytest.mark.skipif(
         condition=not is_aws_cloud(), reason="Accurate events reporting not yet supported."
     )
     @markers.aws.needs_fixing
-    def test_events_state_machine(self, aws_client_no_retry, account_id, region_name):
-        events = aws_client_no_retry.events
-        state_machines_before = aws_client_no_retry.stepfunctions.list_state_machines()[
-            "stateMachines"
-        ]
+    def test_events_state_machine(self, aws_client, account_id, region_name):
+        events = aws_client.events
+        state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
 
         # create event bus
         bus_name = f"bus-{short_uid()}"
@@ -495,14 +483,14 @@ class TestStateMachine:
         definition = json.dumps(definition)
         sm_name = f"events-{short_uid()}"
         role_arn = arns.iam_role_arn("sfn_role", account_id, region_name)
-        aws_client_no_retry.stepfunctions.create_state_machine(
+        aws_client.stepfunctions.create_state_machine(
             name=sm_name, definition=definition, roleArn=role_arn
         )
 
         # run state machine
         events_before = len(TEST_EVENTS_CACHE)
-        sm_arn = get_machine_arn(sm_name, aws_client_no_retry.stepfunctions)
-        result = aws_client_no_retry.stepfunctions.start_execution(stateMachineArn=sm_arn)
+        sm_arn = get_machine_arn(sm_name, aws_client.stepfunctions)
+        result = aws_client.stepfunctions.start_execution(stateMachineArn=sm_arn)
         assert result.get("executionArn")
 
         def check_invocations():
@@ -518,13 +506,11 @@ class TestStateMachine:
         retry(check_invocations, sleep=1, retries=10)
 
         # clean up
-        cleanup(sm_arn, state_machines_before, aws_client_no_retry.stepfunctions)
+        cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
         events.delete_event_bus(Name=bus_name)
 
     @markers.aws.needs_fixing
-    def test_create_state_machines_in_parallel(
-        self, cleanups, aws_client_no_retry, account_id, region_name
-    ):
+    def test_create_state_machines_in_parallel(self, cleanups, aws_client, account_id, region_name):
         """
         Perform a test that creates a series of state machines in parallel. Without concurrency control, using
         StepFunctions-Local, the following error is pretty consistently reproducible:
@@ -542,17 +528,17 @@ class TestStateMachine:
 
         def _create_sm(*_):
             sm_name = f"sm-{short_uid()}"
-            result = aws_client_no_retry.stepfunctions.create_state_machine(
+            result = aws_client.stepfunctions.create_state_machine(
                 name=sm_name, definition=definition, roleArn=role_arn
             )
             assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
             cleanups.append(
-                lambda: aws_client_no_retry.stepfunctions.delete_state_machine(
+                lambda: aws_client.stepfunctions.delete_state_machine(
                     stateMachineArn=result["stateMachineArn"]
                 )
             )
             results.append(result)
-            aws_client_no_retry.stepfunctions.describe_state_machine(
+            aws_client.stepfunctions.describe_state_machine(
                 stateMachineArn=result["stateMachineArn"]
             )
             # TODO: implement list_tags_for_resource
@@ -674,10 +660,10 @@ def test_multiregion_nested(aws_client_factory, account_id, region_name, statema
 
 
 @markers.aws.validated
-def test_default_logging_configuration(create_state_machine, aws_client_no_retry):
+def test_default_logging_configuration(create_state_machine, aws_client):
     role_name = f"role_name-{short_uid()}"
     try:
-        role_arn = aws_client_no_retry.iam.create_role(
+        role_arn = aws_client.iam.create_role(
             RoleName=role_name,
             AssumeRolePolicyDocument=json.dumps(STS_ROLE_POLICY_DOC),
         )["Role"]["Arn"]
@@ -687,11 +673,11 @@ def test_default_logging_configuration(create_state_machine, aws_client_no_retry
 
         sm_name = f"sts-logging-{short_uid()}"
         result = create_state_machine(
-            aws_client_no_retry, name=sm_name, definition=definition, roleArn=role_arn
+            aws_client, name=sm_name, definition=definition, roleArn=role_arn
         )
 
         assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
-        result = aws_client_no_retry.stepfunctions.describe_state_machine(
+        result = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=result["stateMachineArn"]
         )
         assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -699,11 +685,11 @@ def test_default_logging_configuration(create_state_machine, aws_client_no_retry
         # TODO: add support for loggingConfiguration.
         # assert result["loggingConfiguration"] == {"level": "OFF", "includeExecutionData": False}
     finally:
-        aws_client_no_retry.iam.delete_role(RoleName=role_name)
+        aws_client.iam.delete_role(RoleName=role_name)
 
 
 @markers.aws.validated
-def test_aws_sdk_task(aws_client_no_retry):
+def test_aws_sdk_task(aws_client):
     statemachine_definition = {
         "StartAt": "CreateTopicTask",
         "States": {
@@ -722,19 +708,19 @@ def test_aws_sdk_task(aws_client_no_retry):
     role_name = f"role-{short_uid()}"
     topic_name = f"topic-{short_uid()}"
 
-    role = aws_client_no_retry.iam.create_role(
+    role = aws_client.iam.create_role(
         RoleName=role_name,
         AssumeRolePolicyDocument='{"Version": "2012-10-17", "Statement": {"Action": "sts:AssumeRole", "Effect": "Allow", "Principal": {"Service": "states.amazonaws.com"}}}',
     )
-    policy = aws_client_no_retry.iam.create_policy(
+    policy = aws_client.iam.create_policy(
         PolicyDocument='{"Version": "2012-10-17", "Statement": {"Action": "sns:createTopic", "Effect": "Allow", "Resource": "*"}}',
         PolicyName=policy_name,
     )
-    aws_client_no_retry.iam.attach_role_policy(
+    aws_client.iam.attach_role_policy(
         RoleName=role["Role"]["RoleName"], PolicyArn=policy["Policy"]["Arn"]
     )
 
-    result = aws_client_no_retry.stepfunctions.create_state_machine(
+    result = aws_client.stepfunctions.create_state_machine(
         name=name,
         definition=json.dumps(statemachine_definition),
         roleArn=role["Role"]["Arn"],
@@ -742,15 +728,15 @@ def test_aws_sdk_task(aws_client_no_retry):
     machine_arn = result["stateMachineArn"]
 
     try:
-        result = aws_client_no_retry.stepfunctions.list_state_machines()["stateMachines"]
+        result = aws_client.stepfunctions.list_state_machines()["stateMachines"]
         assert len(result) > 0
         assert len([sm for sm in result if sm["name"] == name]) == 1
 
         def assert_execution_success(executionArn: str):
             def _assert_execution_success():
-                status = aws_client_no_retry.stepfunctions.describe_execution(
-                    executionArn=executionArn
-                )["status"]
+                status = aws_client.stepfunctions.describe_execution(executionArn=executionArn)[
+                    "status"
+                ]
                 if status == "FAILED":
                     raise ShortCircuitWaitException("Statemachine execution failed")
                 else:
@@ -762,11 +748,11 @@ def test_aws_sdk_task(aws_client_no_retry):
             # start state machine execution
             # AWS initially straight up fails until the permissions seem to take effect
             # so we wait until the statemachine is at least running
-            result = aws_client_no_retry.stepfunctions.start_execution(
+            result = aws_client.stepfunctions.start_execution(
                 stateMachineArn=machine_arn, input=f'{{"Name": "{topic_name}"}}'
             )
             assert wait_until(assert_execution_success(result["executionArn"]))
-            describe_result = aws_client_no_retry.stepfunctions.describe_execution(
+            describe_result = aws_client.stepfunctions.describe_execution(
                 executionArn=result["executionArn"]
             )
             output = describe_result["output"]
@@ -779,25 +765,23 @@ def test_aws_sdk_task(aws_client_no_retry):
             # assert result["stateMachineArn"] == machine_arn
 
             topic_arn = json.loads(describe_result["output"])["TopicArn"]
-            topics = aws_client_no_retry.sns.list_topics()
+            topics = aws_client.sns.list_topics()
             assert topic_arn in [t["TopicArn"] for t in topics["Topics"]]
-            aws_client_no_retry.sns.delete_topic(TopicArn=topic_arn)
+            aws_client.sns.delete_topic(TopicArn=topic_arn)
             return True
 
         assert wait_until(_retry_execution, max_retries=3, strategy="linear", wait=3.0)
 
     finally:
-        aws_client_no_retry.iam.detach_role_policy(
-            RoleName=role_name, PolicyArn=policy["Policy"]["Arn"]
-        )
-        aws_client_no_retry.iam.delete_role(RoleName=role_name)
-        aws_client_no_retry.iam.delete_policy(PolicyArn=policy["Policy"]["Arn"])
-        aws_client_no_retry.stepfunctions.delete_state_machine(stateMachineArn=machine_arn)
+        aws_client.iam.detach_role_policy(RoleName=role_name, PolicyArn=policy["Policy"]["Arn"])
+        aws_client.iam.delete_role(RoleName=role_name)
+        aws_client.iam.delete_policy(PolicyArn=policy["Policy"]["Arn"])
+        aws_client.stepfunctions.delete_state_machine(stateMachineArn=machine_arn)
 
 
 @markers.aws.needs_fixing
-def test_run_aws_sdk_secrets_manager(aws_client_no_retry, account_id, region_name):
-    state_machines_before = aws_client_no_retry.stepfunctions.list_state_machines()["stateMachines"]
+def test_run_aws_sdk_secrets_manager(aws_client, account_id, region_name):
+    state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
 
     # create state machine
     role_arn = arns.iam_role_arn("sfn_role", account_id, region_name)
@@ -826,21 +810,21 @@ def test_run_aws_sdk_secrets_manager(aws_client_no_retry, account_id, region_nam
     }
     definition = json.dumps(definition)
     sm_name = f"basic-{short_uid()}"
-    aws_client_no_retry.stepfunctions.create_state_machine(
+    aws_client.stepfunctions.create_state_machine(
         name=sm_name, definition=definition, roleArn=role_arn
     )
 
     # assert that the SM has been created
-    assert_machine_created(state_machines_before, aws_client_no_retry.stepfunctions)
+    assert_machine_created(state_machines_before, aws_client.stepfunctions)
 
     # run state machine
-    sm_arn = get_machine_arn(sm_name, aws_client_no_retry.stepfunctions)
-    result = aws_client_no_retry.stepfunctions.start_execution(stateMachineArn=sm_arn)
+    sm_arn = get_machine_arn(sm_name, aws_client.stepfunctions)
+    result = aws_client.stepfunctions.start_execution(stateMachineArn=sm_arn)
     assert result.get("executionArn")
 
     def check_invocations():
         # assert that the result is correct
-        result = _get_execution_results(sm_arn, aws_client_no_retry.stepfunctions)
+        result = _get_execution_results(sm_arn, aws_client.stepfunctions)
         assert result["SecretString"] == "Something"
         return True
 
@@ -848,5 +832,5 @@ def test_run_aws_sdk_secrets_manager(aws_client_no_retry, account_id, region_nam
     wait_until(check_invocations, max_retries=3, strategy="linear", wait=3.0)
 
     # clean up
-    cleanup(sm_arn, state_machines_before, aws_client_no_retry.stepfunctions)
+    cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
     # TODO also clean up other resources (like secrets)

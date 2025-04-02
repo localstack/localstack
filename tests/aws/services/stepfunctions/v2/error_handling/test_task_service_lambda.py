@@ -21,7 +21,7 @@ class TestTaskServiceLambda:
     @markers.aws.validated
     def test_raise_exception(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -40,7 +40,7 @@ class TestTaskServiceLambda:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -51,7 +51,7 @@ class TestTaskServiceLambda:
     @markers.aws.validated
     def test_raise_custom_exception(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -71,7 +71,7 @@ class TestTaskServiceLambda:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -82,7 +82,7 @@ class TestTaskServiceLambda:
     @markers.aws.validated
     def test_raise_exception_catch(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -101,7 +101,7 @@ class TestTaskServiceLambda:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -113,7 +113,7 @@ class TestTaskServiceLambda:
     @pytest.mark.parametrize("output_path_value", [None, "$.Payload", "$.no.such.path"])
     def test_raise_exception_catch_output_path(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -136,7 +136,7 @@ class TestTaskServiceLambda:
             {"FunctionName": function_name, "Payload": {"payload_input_value_0": 0}}
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -147,7 +147,7 @@ class TestTaskServiceLambda:
     @markers.aws.validated
     def test_no_such_function(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -166,7 +166,7 @@ class TestTaskServiceLambda:
 
         exec_input = json.dumps({"FunctionName": f"no_such_{function_name}", "Payload": None})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -177,7 +177,7 @@ class TestTaskServiceLambda:
     @markers.aws.validated
     def test_no_such_function_catch(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -196,7 +196,7 @@ class TestTaskServiceLambda:
 
         exec_input = json.dumps({"FunctionName": f"no_such_{function_name}", "Payload": None})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -207,7 +207,7 @@ class TestTaskServiceLambda:
     @markers.aws.validated
     def test_invoke_timeout(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -226,7 +226,7 @@ class TestTaskServiceLambda:
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,

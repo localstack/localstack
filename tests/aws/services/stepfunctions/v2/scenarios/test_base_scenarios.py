@@ -31,7 +31,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_catch_states_runtime(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -52,7 +52,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -63,7 +63,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_catch_empty(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -84,7 +84,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -103,7 +103,7 @@ class TestBaseScenarios:
     )
     def test_parallel_state(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -113,7 +113,7 @@ class TestBaseScenarios:
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -125,7 +125,7 @@ class TestBaseScenarios:
     @pytest.mark.parametrize("max_concurrency_value", [dict(), "NoNumber", 0, 1])
     def test_max_concurrency_path(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -141,7 +141,7 @@ class TestBaseScenarios:
             {"MaxConcurrencyValue": max_concurrency_value, "Values": ["HelloWorld"]}
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -181,7 +181,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_parallel_state_order(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -192,7 +192,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -203,7 +203,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_parallel_state_fail(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -213,7 +213,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -233,7 +233,7 @@ class TestBaseScenarios:
     )
     def test_parallel_state_nested(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -244,7 +244,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps([[1, 2, 3], [4, 5, 6]])
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -255,7 +255,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_parallel_state_catch(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -265,7 +265,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -276,7 +276,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_parallel_state_retry(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -286,7 +286,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -297,7 +297,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -307,7 +307,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -325,7 +325,7 @@ class TestBaseScenarios:
     )
     def test_map_state_nested(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -340,7 +340,7 @@ class TestBaseScenarios:
             ]
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -351,7 +351,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_no_processor_config(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -361,7 +361,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -372,7 +372,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_legacy(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -382,7 +382,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -400,7 +400,7 @@ class TestBaseScenarios:
     )
     def test_map_state_legacy_config_inline(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -410,7 +410,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps(["Hello", "World"])
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -428,7 +428,7 @@ class TestBaseScenarios:
     )
     def test_map_state_legacy_config_distributed(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -438,7 +438,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps(["Hello", "World"])
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -456,7 +456,7 @@ class TestBaseScenarios:
     )
     def test_map_state_legacy_config_distributed_parameters(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -466,7 +466,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps(["Hello", "World"])
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -484,7 +484,7 @@ class TestBaseScenarios:
     )
     def test_map_state_legacy_config_distributed_item_selector(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -494,7 +494,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps(["Hello", "World"])
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -512,7 +512,7 @@ class TestBaseScenarios:
     )
     def test_map_state_legacy_config_inline_parameters(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -522,7 +522,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps(["Hello", "World"])
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -540,7 +540,7 @@ class TestBaseScenarios:
     )
     def test_map_state_legacy_config_inline_item_selector(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -550,7 +550,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps(["Hello", "World"])
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -568,7 +568,7 @@ class TestBaseScenarios:
     )
     def test_map_state_config_distributed_item_selector(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -578,7 +578,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps(["Hello", "World"])
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -596,7 +596,7 @@ class TestBaseScenarios:
     )
     def test_map_state_config_distributed_item_selector_parameters(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -606,7 +606,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -617,7 +617,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_legacy_reentrant(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -627,7 +627,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -638,7 +638,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_config_distributed_reentrant(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -655,7 +655,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -666,7 +666,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_config_distributed_reentrant_lambda(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -694,7 +694,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -712,7 +712,7 @@ class TestBaseScenarios:
     )
     def test_map_state_config_distributed_parameters(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -722,7 +722,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps(["Hello", "World"])
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -740,7 +740,7 @@ class TestBaseScenarios:
     )
     def test_map_state_config_inline_item_selector(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -750,7 +750,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps(["Hello", "World"])
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -768,7 +768,7 @@ class TestBaseScenarios:
     )
     def test_map_state_config_inline_parameters(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -778,7 +778,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps(["Hello", "World"])
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -794,7 +794,7 @@ class TestBaseScenarios:
     )
     def test_map_state_item_selector(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -804,7 +804,7 @@ class TestBaseScenarios:
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -835,7 +835,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_items_eval_jsonata_fail(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -847,7 +847,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -863,7 +863,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_items_eval_jsonata(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -875,7 +875,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -893,7 +893,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_items_eval_jsonata_variable_sampling_fail(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -905,7 +905,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -930,7 +930,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_items_input_types(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -941,7 +941,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({"items": items_value})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -957,7 +957,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_items_input_array(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -968,7 +968,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({"items": items_value})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -985,7 +985,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_items_variable_sampling(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -997,7 +997,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1008,7 +1008,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_item_selector_parameters(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1018,7 +1018,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1029,7 +1029,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_parameters_legacy(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1039,7 +1039,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1050,7 +1050,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_item_selector_singleton(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1060,7 +1060,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1071,7 +1071,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_parameters_singleton_legacy(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1081,7 +1081,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1092,7 +1092,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_catch(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1102,7 +1102,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1113,7 +1113,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_catch_empty_fail(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1123,7 +1123,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1134,7 +1134,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_catch_legacy(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1144,7 +1144,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1155,7 +1155,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_retry(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1165,7 +1165,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1176,7 +1176,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_retry_multiple_retriers(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1186,7 +1186,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1197,7 +1197,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_retry_legacy(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1207,7 +1207,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1218,7 +1218,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_break_condition(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1228,7 +1228,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1239,7 +1239,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_break_condition_legacy(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1249,7 +1249,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1265,7 +1265,7 @@ class TestBaseScenarios:
     )
     def test_map_state_tolerated_failure_values(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1276,7 +1276,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps([0])
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1288,7 +1288,7 @@ class TestBaseScenarios:
     @pytest.mark.parametrize("tolerated_failure_count_value", [dict(), "NoNumber", -1, 0, 1])
     def test_map_state_tolerated_failure_count_path(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1301,7 +1301,7 @@ class TestBaseScenarios:
             {"Items": [0], "ToleratedFailureCount": tolerated_failure_count_value}
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1315,7 +1315,7 @@ class TestBaseScenarios:
     )
     def test_map_state_tolerated_failure_percentage_path(
         self,
-        aws_client_no_retry,
+        aws_client,
         s3_create_bucket,
         create_state_machine_iam_role,
         create_state_machine,
@@ -1329,7 +1329,7 @@ class TestBaseScenarios:
             {"Items": [0], "ToleratedFailurePercentage": tolerated_failure_percentage_value}
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1340,7 +1340,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_label(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1350,7 +1350,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps(["Hello", "World"])
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1362,7 +1362,7 @@ class TestBaseScenarios:
     @markers.snapshot.skip_snapshot_verify(paths=["$..events[8].previousEventId"])
     def test_map_state_nested_config_distributed(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1372,7 +1372,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1384,7 +1384,7 @@ class TestBaseScenarios:
     @markers.snapshot.skip_snapshot_verify(paths=["$..events[8].previousEventId"])
     def test_map_state_nested_config_distributed_no_max_max_concurrency(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -1404,7 +1404,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1415,7 +1415,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_state_result_writer(
         self,
-        aws_client_no_retry,
+        aws_client,
         s3_create_bucket,
         create_state_machine_iam_role,
         create_state_machine,
@@ -1429,7 +1429,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps(["Hello", "World"])
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1445,7 +1445,7 @@ class TestBaseScenarios:
             ]["output"]
         )["MapRunArn"]
         map_run_uuid = map_run_arn.split(":")[-1]
-        resp = aws_client_no_retry.s3.get_object(
+        resp = aws_client.s3.get_object(
             Bucket=bucket_name, Key=f"mapJobs/{map_run_uuid}/manifest.json"
         )
         manifest_data = json.loads(resp["Body"].read().decode("utf-8"))
@@ -1469,7 +1469,7 @@ class TestBaseScenarios:
     )
     def test_choice_unsorted_parameters_positive(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1478,7 +1478,7 @@ class TestBaseScenarios:
         template = ST.load_sfn_template(template_path)
         definition = json.dumps(template)
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1500,7 +1500,7 @@ class TestBaseScenarios:
     )
     def test_choice_unsorted_parameters_negative(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1509,7 +1509,7 @@ class TestBaseScenarios:
         template = ST.load_sfn_template(template_path)
         definition = json.dumps(template)
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1520,7 +1520,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_choice_condition_constant_jsonata(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1529,7 +1529,7 @@ class TestBaseScenarios:
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1545,7 +1545,7 @@ class TestBaseScenarios:
     )
     def test_choice_aws_docs_scenario(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1555,7 +1555,7 @@ class TestBaseScenarios:
         definition = json.dumps(template)
         exec_input = json.dumps({"type": "Private", "value": 22})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1579,7 +1579,7 @@ class TestBaseScenarios:
     )
     def test_choice_singleton_composite(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -1589,7 +1589,7 @@ class TestBaseScenarios:
         definition = json.dumps(template)
         exec_input = json.dumps({"type": "Public", "value": 22})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1600,7 +1600,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_item_reader_base_list_objects_v2(
         self,
-        aws_client_no_retry,
+        aws_client,
         s3_create_bucket,
         create_state_machine_iam_role,
         create_state_machine,
@@ -1609,7 +1609,7 @@ class TestBaseScenarios:
         bucket_name = s3_create_bucket()
         sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket_name"))
         for i in range(3):
-            aws_client_no_retry.s3.put_object(
+            aws_client.s3.put_object(
                 Bucket=bucket_name, Key=f"file_{i}.txt", Body=f"{i}HelloWorld!"
             )
 
@@ -1619,24 +1619,24 @@ class TestBaseScenarios:
         exec_input = json.dumps({"Bucket": bucket_name})
 
         state_machine_arn = create_state_machine_with_iam_role(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
             definition,
         )
 
-        exec_resp = aws_client_no_retry.stepfunctions.start_execution(
+        exec_resp = aws_client.stepfunctions.start_execution(
             stateMachineArn=state_machine_arn, input=exec_input
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
         execution_arn = exec_resp["executionArn"]
 
         await_execution_terminated(
-            stepfunctions_client=aws_client_no_retry.stepfunctions, execution_arn=execution_arn
+            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
         )
 
-        execution_history = aws_client_no_retry.stepfunctions.get_execution_history(
+        execution_history = aws_client.stepfunctions.get_execution_history(
             executionArn=execution_arn
         )
         map_run_arn = extract_json("$..mapRunStartedEventDetails.mapRunArn", execution_history)
@@ -1668,7 +1668,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_item_reader_base_csv_headers_first_line(
         self,
-        aws_client_no_retry,
+        aws_client,
         s3_create_bucket,
         create_state_machine_iam_role,
         create_state_machine,
@@ -1687,14 +1687,14 @@ class TestBaseScenarios:
             "Null,None,\n"
             "   \n"
         )
-        aws_client_no_retry.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_HEADERS_FIRST_LINE)
         definition = json.dumps(template)
 
         exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1709,7 +1709,7 @@ class TestBaseScenarios:
     )
     def test_map_item_reader_csv_max_items(
         self,
-        aws_client_no_retry,
+        aws_client,
         s3_create_bucket,
         create_state_machine_iam_role,
         create_state_machine,
@@ -1721,7 +1721,7 @@ class TestBaseScenarios:
 
         key = "file.csv"
         csv_file = "Col1,Col2\nValue1,Value2\nValue3,Value4\nValue5,Value6\nValue7,Value8\n"
-        aws_client_no_retry.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_MAX_ITEMS)
         template["States"]["MapState"]["ItemReader"]["ReaderConfig"]["MaxItems"] = max_items_value
@@ -1729,7 +1729,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1743,7 +1743,7 @@ class TestBaseScenarios:
     )  # The Distributed Map state stops reading items beyond 100_000_000.
     def test_map_item_reader_csv_max_items_paths(
         self,
-        aws_client_no_retry,
+        aws_client,
         s3_create_bucket,
         create_state_machine_iam_role,
         create_state_machine,
@@ -1761,14 +1761,14 @@ class TestBaseScenarios:
 
         key = "file.csv"
         csv_file = "Col1,Col2\nValue1,Value2\nValue3,Value4\nValue5,Value6\nValue7,Value8\n"
-        aws_client_no_retry.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_MAX_ITEMS_PATH)
         definition = json.dumps(template)
 
         exec_input = json.dumps({"Bucket": bucket_name, "Key": key, "MaxItems": max_items_value})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1780,7 +1780,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_item_reader_base_json_max_items_jsonata(
         self,
-        aws_client_no_retry,
+        aws_client,
         s3_create_bucket,
         create_state_machine_iam_role,
         create_state_machine,
@@ -1805,14 +1805,14 @@ class TestBaseScenarios:
                 },
             ]
         )
-        aws_client_no_retry.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_JSON_MAX_ITEMS_JSONATA)
         definition = json.dumps(template)
 
         exec_input = json.dumps({"Bucket": bucket_name, "Key": key, "MaxItems": 2})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1826,7 +1826,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_item_batching_base_json_max_per_batch_jsonata(
         self,
-        aws_client_no_retry,
+        aws_client,
         s3_create_bucket,
         create_state_machine_iam_role,
         create_state_machine,
@@ -1851,7 +1851,7 @@ class TestBaseScenarios:
                 },
             ]
         )
-        aws_client_no_retry.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_BATCHER_BASE_JSON_MAX_PER_BATCH_JSONATA)
         definition = json.dumps(template)
@@ -1865,7 +1865,7 @@ class TestBaseScenarios:
             }
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1876,7 +1876,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_item_reader_base_csv_headers_decl(
         self,
-        aws_client_no_retry,
+        aws_client,
         s3_create_bucket,
         create_state_machine_iam_role,
         create_state_machine,
@@ -1895,7 +1895,7 @@ class TestBaseScenarios:
             "Null,None,\n"
             "   \n"
         )
-        aws_client_no_retry.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_HEADERS_DECL)
         template["States"]["MapState"]["ItemReader"]["ReaderConfig"]["CSVHeaders"] = csv_headers
@@ -1903,7 +1903,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1914,7 +1914,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_item_reader_csv_headers_decl_duplicate_headers(
         self,
-        aws_client_no_retry,
+        aws_client,
         s3_create_bucket,
         create_state_machine_iam_role,
         create_state_machine,
@@ -1933,7 +1933,7 @@ class TestBaseScenarios:
             "Null,None,\n"
             "   \n"
         )
-        aws_client_no_retry.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_HEADERS_DECL)
         template["States"]["MapState"]["ItemReader"]["ReaderConfig"]["CSVHeaders"] = csv_headers
@@ -1941,7 +1941,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1952,7 +1952,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_item_reader_csv_headers_first_row_typed_headers(
         self,
-        aws_client_no_retry,
+        aws_client,
         s3_create_bucket,
         create_state_machine_iam_role,
         create_state_machine,
@@ -1963,14 +1963,14 @@ class TestBaseScenarios:
 
         key = "file.csv"
         csv_file = "0,True,{}\nValue4,Value5,Value6\n,,,\ntrue,1,'HelloWorld'\nNull,None,\n   \n"
-        aws_client_no_retry.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_HEADERS_FIRST_LINE)
         definition = json.dumps(template)
 
         exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -1981,7 +1981,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_item_reader_csv_headers_decl_extra_fields(
         self,
-        aws_client_no_retry,
+        aws_client,
         s3_create_bucket,
         create_state_machine_iam_role,
         create_state_machine,
@@ -2000,7 +2000,7 @@ class TestBaseScenarios:
             "Null,None,\n"
             "   \n"
         )
-        aws_client_no_retry.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_HEADERS_DECL)
         template["States"]["MapState"]["ItemReader"]["ReaderConfig"]["CSVHeaders"] = csv_headers
@@ -2008,7 +2008,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2019,7 +2019,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_item_reader_csv_first_row_extra_fields(
         self,
-        aws_client_no_retry,
+        aws_client,
         s3_create_bucket,
         create_state_machine_iam_role,
         create_state_machine,
@@ -2030,14 +2030,14 @@ class TestBaseScenarios:
 
         key = "file.csv"
         csv_file = "H1,\nValue4,Value5,Value6\n,,,\ntrue,1,'HelloWorld'\nNull,None,\n   \n"
-        aws_client_no_retry.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_HEADERS_FIRST_LINE)
         definition = json.dumps(template)
 
         exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2048,7 +2048,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_item_reader_base_json(
         self,
-        aws_client_no_retry,
+        aws_client,
         s3_create_bucket,
         create_state_machine_iam_role,
         create_state_machine,
@@ -2073,14 +2073,14 @@ class TestBaseScenarios:
                 },
             ]
         )
-        aws_client_no_retry.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_JSON)
         definition = json.dumps(template)
 
         exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2105,7 +2105,7 @@ class TestBaseScenarios:
     @markers.snapshot.skip_snapshot_verify(paths=["$..previousEventId"])
     def test_map_item_reader_base_json_with_items_path(
         self,
-        aws_client_no_retry,
+        aws_client,
         s3_create_bucket,
         create_state_machine_iam_role,
         create_state_machine,
@@ -2117,7 +2117,7 @@ class TestBaseScenarios:
 
         key = "file.json"
         json_file = json.dumps([["from-bucket-item-0"]])
-        aws_client_no_retry.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_JSON_WITH_ITEMS_PATH)
         template["States"]["MapState"]["ItemsPath"] = items_path
@@ -2127,7 +2127,7 @@ class TestBaseScenarios:
             {"Bucket": bucket_name, "Key": key, "from_input_items": ["input-item-0"]}
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2139,7 +2139,7 @@ class TestBaseScenarios:
     @markers.snapshot.skip_snapshot_verify(paths=["$..previousEventId"])
     def test_map_state_config_distributed_items_path_from_previous(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -2148,7 +2148,7 @@ class TestBaseScenarios:
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2159,7 +2159,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_item_reader_json_no_json_list_object(
         self,
-        aws_client_no_retry,
+        aws_client,
         s3_create_bucket,
         create_state_machine_iam_role,
         create_state_machine,
@@ -2170,14 +2170,14 @@ class TestBaseScenarios:
 
         key = "file.json"
         json_file = json.dumps({"Hello": "world"})
-        aws_client_no_retry.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_JSON)
         definition = json.dumps(template)
 
         exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2188,7 +2188,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_map_item_reader_base_json_max_items(
         self,
-        aws_client_no_retry,
+        aws_client,
         s3_create_bucket,
         create_state_machine_iam_role,
         create_state_machine,
@@ -2204,14 +2204,14 @@ class TestBaseScenarios:
             ]
             * 3
         )
-        aws_client_no_retry.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_JSON_MAX_ITEMS)
         definition = json.dumps(template)
 
         exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2223,7 +2223,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_lambda_empty_retry(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -2244,7 +2244,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2256,7 +2256,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_lambda_invoke_with_retry_base(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -2278,7 +2278,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({"Value1": "HelloWorld!", "Value2": None})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2290,7 +2290,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_lambda_invoke_with_retry_extended_input(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -2323,7 +2323,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({"Value1": "HelloWorld!", "Value2": None})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2335,7 +2335,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_lambda_service_invoke_with_retry_extended_input(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -2367,7 +2367,7 @@ class TestBaseScenarios:
             {"FunctionName": function_1_name, "Value1": "HelloWorld!", "Value2": None}
         )
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2378,7 +2378,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_retry_interval_features(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -2399,7 +2399,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2410,7 +2410,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_retry_interval_features_jitter_none(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -2431,7 +2431,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2442,7 +2442,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_retry_interval_features_max_attempts_zero(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         create_lambda_function,
@@ -2461,7 +2461,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({"FunctionName": function_name})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2480,7 +2480,7 @@ class TestBaseScenarios:
     )
     def test_wait_timestamp(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -2491,7 +2491,7 @@ class TestBaseScenarios:
         definition = json.dumps(template)
         exec_input = json.dumps({})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2560,7 +2560,7 @@ class TestBaseScenarios:
     )
     def test_wait_timestamp_path(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -2570,7 +2570,7 @@ class TestBaseScenarios:
         definition = json.dumps(template)
         exec_input = json.dumps({"TimestampValue": timestamp_value})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2627,7 +2627,7 @@ class TestBaseScenarios:
     )
     def test_wait_timestamp_jsonata(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -2637,7 +2637,7 @@ class TestBaseScenarios:
         definition = json.dumps(template)
         exec_input = json.dumps({"TimestampValue": timestamp_value})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2648,7 +2648,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_wait_seconds_jsonata(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -2658,7 +2658,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({"waitSeconds": 0})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2669,7 +2669,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_fail_error_jsonata(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -2679,7 +2679,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({"error": "Exception"})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2690,7 +2690,7 @@ class TestBaseScenarios:
     @markers.aws.validated
     def test_fail_cause_jsonata(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -2700,7 +2700,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({"cause": "This failed to due an Exception."})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2746,7 +2746,7 @@ class TestBaseScenarios:
     )
     def test_invalid_jsonpath(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -2755,7 +2755,7 @@ class TestBaseScenarios:
         definition = json.dumps(template)
         exec_input = json.dumps({"int-literal": 0})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
@@ -2781,7 +2781,7 @@ class TestBaseScenarios:
     )
     def test_escape_sequence_parsing(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -2791,7 +2791,7 @@ class TestBaseScenarios:
         definition = json.dumps(template)
         exec_input = json.dumps({'Test\\""Name"': 'Value"\\'})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
