@@ -50,7 +50,9 @@ class LogHandler:
             log_item = self.log_queue.get()
             if log_item is QUEUE_SHUTDOWN:
                 return
-            logs = log_item.logs.splitlines()
+            # we need to split by newline - but keep the newlines in the strings
+            # strips empty lines, as they are not accepted by cloudwatch
+            logs = [line + "\n" for line in log_item.logs.split("\n") if line]
             # until we have a better way to have timestamps, log events have the same time for a single invocation
             log_events = [
                 {"timestamp": int(time.time() * 1000), "message": log_line} for log_line in logs
