@@ -275,6 +275,9 @@ class ExecutionEnvironment:
             self.id,
             self.function_version.qualified_arn,
         )
+        # The stop() method allows to interrupt invocations (on purpose), which might cancel running invocations
+        # which we should not do when the keepalive timer passed.
+        # The new TIMING_OUT state prevents this race condition
         with self.status_lock:
             if self.status != RuntimeStatus.READY:
                 LOG.debug(
