@@ -7,7 +7,6 @@ from localstack_snapshot.snapshots.transformer import RegexTransformer
 from localstack.aws.api.stepfunctions import Arn, RoutingConfigurationListItem
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.pytest.fixtures import aws_client_no_retry
 from localstack.testing.pytest.stepfunctions.utils import (
     await_execution_terminated,
     await_state_machine_alias_is_created,
@@ -450,6 +449,7 @@ class TestSfnApiAliasing:
         create_state_machine_alias,
         sfn_snapshot,
         aws_client,
+        aws_client_no_retry,
     ):
         sfn_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
