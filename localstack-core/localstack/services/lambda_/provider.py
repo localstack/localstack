@@ -223,6 +223,7 @@ from localstack.services.lambda_.runtimes import (
     DEPRECATED_RUNTIMES,
     DEPRECATED_RUNTIMES_UPGRADES,
     RUNTIMES_AGGREGATED,
+    SNAP_START_SUPPORTED_RUNTIMES,
     VALID_RUNTIMES,
 )
 from localstack.services.lambda_.urlrouter import FunctionUrlRouter
@@ -716,6 +717,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         ]:
             raise ValidationException(
                 f"1 validation error detected: Value '{apply_on}' at 'snapStart.applyOn' failed to satisfy constraint: Member must satisfy enum value set: [PublishedVersions, None]"
+            )
+
+        if runtime not in SNAP_START_SUPPORTED_RUNTIMES:
+            raise InvalidParameterValueException(
+                f"{runtime} is not supported for SnapStart enabled functions.", Type="User"
             )
 
     def _validate_layers(self, new_layers: list[str], region: str, account_id: str):
@@ -1597,10 +1603,19 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         except ServiceException:
             raise
         except EnvironmentStartupTimeoutException as e:
-            raise LambdaServiceException("Internal error while executing lambda") from e
+            raise LambdaServiceException(
+                f"[{context.request_id}] Timeout while starting up lambda environment for function {function_name}:{qualifier}"
+            ) from e
         except Exception as e:
-            LOG.error("Error while invoking lambda", exc_info=e)
-            raise LambdaServiceException("Internal error while executing lambda") from e
+            LOG.error(
+                "[%s] Error while invoking lambda %s",
+                context.request_id,
+                function_name,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+            raise LambdaServiceException(
+                f"[{context.request_id}] Internal error while executing lambda {function_name}:{qualifier}. Caused by {type(e).__name__}: {e}"
+            ) from e
 
         if invocation_type == InvocationType.Event:
             # This happens when invocation type is event

@@ -297,6 +297,10 @@ class Stack:
         """Return dict of resources"""
         return dict(self.template_resources)
 
+    @resources.setter
+    def resources(self, resources: dict):
+        self.template["Resources"] = resources
+
     @property
     def template_resources(self):
         return self.template.setdefault("Resources", {})
@@ -370,8 +374,17 @@ class Stack:
 # TODO: what functionality of the Stack object do we rely on here?
 class StackChangeSet(Stack):
     update_graph: NodeTemplate | None
+    change_set_type: ChangeSetType | None
 
-    def __init__(self, account_id: str, region_name: str, stack: Stack, params=None, template=None):
+    def __init__(
+        self,
+        account_id: str,
+        region_name: str,
+        stack: Stack,
+        params=None,
+        template=None,
+        change_set_type: ChangeSetType | None = None,
+    ):
         if template is None:
             template = {}
         if params is None:
@@ -389,6 +402,7 @@ class StackChangeSet(Stack):
         self.stack = stack
         self.metadata["StackId"] = stack.stack_id
         self.metadata["Status"] = "CREATE_PENDING"
+        self.change_set_type = change_set_type
 
     @property
     def change_set_id(self):
@@ -408,17 +422,12 @@ class StackChangeSet(Stack):
         return result
 
     # V2 only
-    def populate_update_graph(
-        self,
-        before_template: Optional[dict],
-        after_template: Optional[dict],
-        before_parameters: Optional[dict],
-        after_parameters: Optional[dict],
-    ) -> None:
+    def populate_update_graph(self, before_template: dict | None, after_template: dict | None):
         change_set_model = ChangeSetModel(
             before_template=before_template,
             after_template=after_template,
-            before_parameters=before_parameters,
-            after_parameters=after_parameters,
+            # TODO
+            before_parameters=None,
+            after_parameters=None,
         )
         self.update_graph = change_set_model.get_update_model()

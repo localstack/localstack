@@ -1,3 +1,4 @@
+import logging
 from copy import deepcopy
 from typing import Any
 
@@ -7,12 +8,18 @@ from localstack.aws.api.cloudformation import (
     ChangeSetNameOrId,
     ChangeSetNotFoundException,
     ChangeSetType,
+    ClientRequestToken,
     CreateChangeSetInput,
     CreateChangeSetOutput,
     DescribeChangeSetOutput,
+    DisableRollback,
+    ExecuteChangeSetOutput,
+    ExecutionStatus,
     IncludePropertyValues,
+    InvalidChangeSetStatusException,
     NextToken,
     Parameter,
+    RetainExceptOnCreate,
     StackNameOrId,
     StackStatus,
 )
@@ -29,6 +36,9 @@ from localstack.services.cloudformation.engine.template_utils import resolve_sta
 from localstack.services.cloudformation.engine.v2.change_set_model_describer import (
     ChangeSetModelDescriber,
 )
+from localstack.services.cloudformation.engine.v2.change_set_model_executor import (
+    ChangeSetModelExecutor,
+)
 from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.provider import (
     ARN_CHANGESET_REGEX,
@@ -42,6 +52,8 @@ from localstack.services.cloudformation.stores import (
     get_cloudformation_store,
 )
 from localstack.utils.collections import remove_attributes
+
+LOG = logging.getLogger(__name__)
 
 
 class CloudformationProviderV2(CloudformationProvider):
@@ -127,7 +139,6 @@ class CloudformationProviderV2(CloudformationProvider):
             )
 
         old_parameters: dict[str, Parameter] = {}
-        # TODO: move this masking logic to the ChangeSetModelPreproc
         match change_set_type:
             case ChangeSetType.UPDATE:
                 # add changeset to existing stack
@@ -151,7 +162,6 @@ class CloudformationProviderV2(CloudformationProvider):
             request.get("Parameters")
         )
         parameter_declarations = param_resolver.extract_stack_parameter_declarations(template)
-        # TODO: move this logic of parameter resolution with metadata to the ChangeSetModelPreproc or Executor
         resolved_parameters = param_resolver.resolve_parameters(
             account_id=context.account_id,
             region_name=context.region,
@@ -206,7 +216,12 @@ class CloudformationProviderV2(CloudformationProvider):
 
         # create change set for the stack and apply changes
         change_set = StackChangeSet(
-            context.account_id, context.region, stack, req_params, transformed_template
+            context.account_id,
+            context.region,
+            stack,
+            req_params,
+            transformed_template,
+            change_set_type=change_set_type,
         )
         # only set parameters for the changeset, then switch to stack on execute_change_set
         change_set.template_body = template_body
@@ -266,16 +281,64 @@ class CloudformationProviderV2(CloudformationProvider):
 
         return CreateChangeSetOutput(StackId=change_set.stack_id, Id=change_set.change_set_id)
 
+    @handler("ExecuteChangeSet")
+    def execute_change_set(
+        self,
+        context: RequestContext,
+        change_set_name: ChangeSetNameOrId,
+        stack_name: StackNameOrId | None = None,
+        client_request_token: ClientRequestToken | None = None,
+        disable_rollback: DisableRollback | None = None,
+        retain_except_on_create: RetainExceptOnCreate | None = None,
+        **kwargs,
+    ) -> ExecuteChangeSetOutput:
+        change_set = find_change_set(
+            context.account_id,
+            context.region,
+            change_set_name,
+            stack_name=stack_name,
+            active_only=True,
+        )
+        if not change_set:
+            raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
+        if change_set.metadata.get("ExecutionStatus") != ExecutionStatus.AVAILABLE:
+            LOG.debug("Change set %s not in execution status 'AVAILABLE'", change_set_name)
+            raise InvalidChangeSetStatusException(
+                f"ChangeSet [{change_set.metadata['ChangeSetId']}] cannot be executed in its current status of [{change_set.metadata.get('Status')}]"
+            )
+        stack_name = change_set.stack.stack_name
+        LOG.debug(
+            'Executing change set "%s" for stack "%s" with %s resources ...',
+            change_set_name,
+            stack_name,
+            len(change_set.template_resources),
+        )
+        if not change_set.update_graph:
+            raise RuntimeError("Programming error: no update graph found for change set")
+
+        change_set_executor = ChangeSetModelExecutor(
+            change_set.update_graph,
+            account_id=context.account_id,
+            region=context.region,
+            stack_name=change_set.stack.stack_name,
+            stack_id=change_set.stack.stack_id,
+        )
+        new_resources = change_set_executor.execute()
+        change_set.stack.set_stack_status(f"{change_set.change_set_type or 'UPDATE'}_COMPLETE")
+        change_set.stack.resources = new_resources
+        return ExecuteChangeSetOutput()
+
     @handler("DescribeChangeSet")
     def describe_change_set(
         self,
         context: RequestContext,
         change_set_name: ChangeSetNameOrId,
-        stack_name: StackNameOrId = None,
-        next_token: NextToken = None,
-        include_property_values: IncludePropertyValues = None,
+        stack_name: StackNameOrId | None = None,
+        next_token: NextToken | None = None,
+        include_property_values: IncludePropertyValues | None = None,
         **kwargs,
     ) -> DescribeChangeSetOutput:
+        # TODO add support for include_property_values
         # only relevant if change_set_name isn't an ARN
         if not ARN_CHANGESET_REGEX.match(change_set_name):
             if not stack_name:

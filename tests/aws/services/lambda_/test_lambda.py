@@ -1908,7 +1908,7 @@ class TestLambdaErrors:
         reason="Can only induce Lambda-internal Docker error in LocalStack"
     )
     def test_lambda_runtime_startup_timeout(
-        self, aws_client_factory, create_lambda_function, monkeypatch
+        self, aws_client_no_retry, create_lambda_function, monkeypatch
     ):
         """Test Lambda that times out during runtime startup"""
         monkeypatch.setattr(
@@ -1924,24 +1924,20 @@ class TestLambdaErrors:
             runtime=Runtime.python3_12,
         )
 
-        client_config = Config(
-            retries={"max_attempts": 0},
-        )
-        no_retry_lambda_client = aws_client_factory.get_client("lambda", config=client_config)
-        with pytest.raises(no_retry_lambda_client.exceptions.ServiceException) as e:
-            no_retry_lambda_client.invoke(
+        with pytest.raises(aws_client_no_retry.lambda_.exceptions.ServiceException) as e:
+            aws_client_no_retry.lambda_.invoke(
                 FunctionName=function_name,
             )
         assert e.match(
             r"An error occurred \(ServiceException\) when calling the Invoke operation \(reached max "
-            r"retries: \d\): Internal error while executing lambda"
+            r"retries: \d\): \[[^]]*\] Timeout while starting up lambda environment .*"
         )
 
     @markers.aws.only_localstack(
         reason="Can only induce Lambda-internal Docker error in LocalStack"
     )
     def test_lambda_runtime_startup_error(
-        self, aws_client_factory, create_lambda_function, monkeypatch
+        self, aws_client_no_retry, create_lambda_function, monkeypatch
     ):
         """Test Lambda that errors during runtime startup"""
         monkeypatch.setattr(config, "LAMBDA_DOCKER_FLAGS", "invalid_flags")
@@ -1954,17 +1950,13 @@ class TestLambdaErrors:
             runtime=Runtime.python3_12,
         )
 
-        client_config = Config(
-            retries={"max_attempts": 0},
-        )
-        no_retry_lambda_client = aws_client_factory.get_client("lambda", config=client_config)
-        with pytest.raises(no_retry_lambda_client.exceptions.ServiceException) as e:
-            no_retry_lambda_client.invoke(
+        with pytest.raises(aws_client_no_retry.lambda_.exceptions.ServiceException) as e:
+            aws_client_no_retry.lambda_.invoke(
                 FunctionName=function_name,
             )
         assert e.match(
             r"An error occurred \(ServiceException\) when calling the Invoke operation \(reached max "
-            r"retries: \d\): Internal error while executing lambda"
+            r"retries: \d\): \[[^]]*\] Internal error while executing lambda"
         )
 
     @markers.aws.validated

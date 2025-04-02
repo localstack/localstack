@@ -23,6 +23,9 @@
   "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_unrelated_changes_update_propagation": {
     "last_validated_date": "2025-04-01T16:40:03+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestUpdates::test_simple_update_two_resources": {
+    "last_validated_date": "2025-04-02T10:05:26+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_create_change_set_update_without_parameters": {
     "last_validated_date": "2022-05-31T07:32:02+00:00"
   },

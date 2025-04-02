@@ -38,6 +38,7 @@ from localstack.services.lambda_.provider_utils import LambdaLayerVersionIdentif
 from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
     DEPRECATED_RUNTIMES,
+    SNAP_START_SUPPORTED_RUNTIMES,
 )
 from localstack.testing.aws.lambda_utils import (
     _await_dynamodb_table_active,
@@ -6827,14 +6828,12 @@ class TestLambdaLayer:
 class TestLambdaSnapStart:
     @markers.aws.validated
     @markers.lambda_runtime_update
-    @markers.multiruntime(scenario="echo")
+    @markers.multiruntime(scenario="echo", runtimes=SNAP_START_SUPPORTED_RUNTIMES)
     def test_snapstart_lifecycle(self, multiruntime_lambda, snapshot, aws_client):
         """Test the API of the SnapStart feature. The optimization behavior is not supported in LocalStack.
         Slow (~1-2min) against AWS.
         """
-        create_function_response = multiruntime_lambda.create_function(
-            MemorySize=1024, Timeout=5, SnapStart={"ApplyOn": "PublishedVersions"}
-        )
+        create_function_response = multiruntime_lambda.create_function(MemorySize=1024, Timeout=5)
         function_name = create_function_response["FunctionName"]
         snapshot.match("create_function_response", create_function_response)
 
@@ -6856,7 +6855,7 @@ class TestLambdaSnapStart:
 
     @markers.aws.validated
     @markers.lambda_runtime_update
-    @markers.multiruntime(scenario="echo")
+    @markers.multiruntime(scenario="echo", runtimes=SNAP_START_SUPPORTED_RUNTIMES)
     def test_snapstart_update_function_configuration(
         self, multiruntime_lambda, snapshot, aws_client
     ):
