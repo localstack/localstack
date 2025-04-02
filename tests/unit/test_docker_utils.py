@@ -1,6 +1,6 @@
 from unittest import mock
 
-from localstack.utils.container_utils.container_client import VolumeInfo
+from localstack.utils.container_utils.container_client import VolumeDirMount, VolumeInfo
 from localstack.utils.docker_utils import get_host_path_for_path_in_docker
 
 
@@ -75,3 +75,28 @@ class TestDockerUtils:
             assert result == "/var/lib/localstacktest"
             result = get_host_path_for_path_in_docker("/etc/some/path")
             assert result == "/etc/some/path"
+
+    def test_volume_dir_mount_linux(self):
+        with (
+            mock.patch("localstack.utils.docker_utils.get_default_volume_dir_mount") as get_volume,
+            mock.patch("localstack.config.is_in_docker", True),
+        ):
+            get_volume.return_value = VolumeInfo(
+                type="bind",
+                source="/home/some-user/.cache/localstack/volume",
+                destination="/var/lib/localstack",
+                mode="rw",
+                rw=True,
+                propagation="rprivate",
+            )
+            volume_dir_mount = VolumeDirMount(
+                "/var/lib/localstack/some/test/file", "/target/file", read_only=False
+            )
+            result = volume_dir_mount.to_dict()
+            get_volume.assert_called_once()
+            assert result == {
+                "/home/some-user/.cache/localstack/volume/some/test/file": {
+                    "bind": "/target/file",
+                    "mode": "rw",
+                }
+            }
