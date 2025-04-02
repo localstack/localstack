@@ -1,3 +1,4 @@
+import copy
 import json
 import os.path
 from collections import defaultdict
@@ -26,6 +27,131 @@ from tests.aws.services.cloudformation.api.test_stacks import (
 
 def is_v2_engine() -> bool:
     return config.SERVICE_PROVIDER_CONFIG.get_provider("cloudformation") == "engine-v2"
+
+
+class TestUpdates:
+    @markers.aws.validated
+    def test_simple_update_single_resource(
+        self, aws_client: ServiceLevelClientFactory, deploy_cfn_template
+    ):
+        parameter_name = "my-parameter"
+        value1 = "foo"
+        value2 = "bar"
+        stack_name = f"stack-{short_uid()}"
+
+        t1 = {
+            "Resources": {
+                "MyParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": parameter_name,
+                        "Type": "String",
+                        "Value": value1,
+                    },
+                },
+            },
+        }
+
+        res = deploy_cfn_template(stack_name=stack_name, template=json.dumps(t1), is_update=False)
+
+        found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+        assert found_value == value1
+
+        t2 = copy.deepcopy(t1)
+        t2["Resources"]["MyParameter"]["Properties"]["Value"] = value2
+
+        deploy_cfn_template(stack_name=stack_name, template=json.dumps(t2), is_update=True)
+        found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+        assert found_value == value2
+
+        res.destroy()
+
+    # @pytest.mark.skipif(
+    #     condition=not is_v2_engine() and not is_aws_cloud(), reason="Not working in v2 yet"
+    # )
+    @markers.aws.validated
+    def test_simple_update_two_resources(
+        self, aws_client: ServiceLevelClientFactory, deploy_cfn_template
+    ):
+        parameter_name = "my-parameter"
+        value1 = "foo"
+        value2 = "bar"
+        stack_name = f"stack-{short_uid()}"
+
+        t1 = {
+            "Resources": {
+                "MyParameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": value1,
+                    },
+                },
+                "MyParameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": parameter_name,
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["MyParameter1", "Value"]},
+                    },
+                },
+            },
+        }
+
+        res = deploy_cfn_template(stack_name=stack_name, template=json.dumps(t1), is_update=False)
+        found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+        assert found_value == value1
+
+        t2 = copy.deepcopy(t1)
+        t2["Resources"]["MyParameter1"]["Properties"]["Value"] = value2
+
+        deploy_cfn_template(stack_name=stack_name, template=json.dumps(t2), is_update=True)
+        found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+        assert found_value == value2
+
+        res.destroy()
+
+    @markers.aws.needs_fixing
+    @pytest.mark.skip(reason="WIP")
+    def test_deleting_resource(self, aws_client: ServiceLevelClientFactory, deploy_cfn_template):
+        parameter_name = "my-parameter"
+        value1 = "foo"
+        stack_name = f"stack-{short_uid()}"
+
+        t1 = {
+            "Resources": {
+                "MyParameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": value1,
+                    },
+                },
+                "MyParameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": parameter_name,
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["MyParameter1", "Value"]},
+                    },
+                },
+            },
+        }
+
+        res = deploy_cfn_template(stack_name=stack_name, template=json.dumps(t1), is_update=False)
+        found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+        assert found_value == value1
+
+        t2 = copy.deepcopy(t1)
+        del t2["Resources"]["MyParameter2"]
+
+        deploy_cfn_template(stack_name=stack_name, template=json.dumps(t2), is_update=True)
+        with pytest.raises(ClientError) as exc_info:
+            aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+
+        assert f"Parameter {parameter_name} not found" in str(exc_info.value)
+
+        res.destroy()
 
 
 @markers.aws.validated

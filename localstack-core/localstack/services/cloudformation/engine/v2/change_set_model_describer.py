@@ -52,14 +52,20 @@ class ChangeSetModelDescriber(ChangeSetModelVisitor):
     _node_template: Final[NodeTemplate]
     _changes: Final[cfn_api.Changes]
     _describe_unit_cache: dict[Scope, DescribeUnit]
+    _include_property_values: Final[cfn_api.IncludePropertyValues | None]
 
-    def __init__(self, node_template: NodeTemplate):
+    def __init__(
+        self,
+        node_template: NodeTemplate,
+        include_property_values: cfn_api.IncludePropertyValues | None = None,
+    ):
         self._node_template = node_template
         self._changes = list()
         self._describe_unit_cache = dict()
-        self.visit(self._node_template)
+        self._include_property_values = include_property_values
 
     def get_changes(self) -> cfn_api.Changes:
+        self.visit(self._node_template)
         return self._changes
 
     @staticmethod

@@ -7,6 +7,7 @@ from typing import Any, Final, Generator, Optional, Union, cast
 
 from typing_extensions import TypeVar
 
+from localstack.aws.api.cloudformation import ChangeAction
 from localstack.utils.strings import camel_to_snake_case
 
 T = TypeVar("T")
@@ -65,6 +66,15 @@ class ChangeType(enum.Enum):
 
     def __str__(self):
         return self.value
+
+    def to_action(self) -> ChangeAction | None:
+        match self:
+            case self.CREATED:
+                return ChangeAction.Add
+            case self.MODIFIED:
+                return ChangeAction.Modify
+            case self.REMOVED:
+                return ChangeAction.Remove
 
     def for_child(self, child_change_type: ChangeType) -> ChangeType:
         if child_change_type == self:
@@ -686,24 +696,24 @@ class ChangeSetModel:
         if isinstance(node_property, NodeProperty):
             return node_property
 
+        value = self._visit_value(
+            scope=scope, before_value=before_property, after_value=after_property
+        )
         if self._is_created(before=before_property, after=after_property):
             node_property = NodeProperty(
                 scope=scope,
                 change_type=ChangeType.CREATED,
                 name=property_name,
-                value=TerminalValueCreated(scope=scope, value=after_property),
+                value=value,
             )
         elif self._is_removed(before=before_property, after=after_property):
             node_property = NodeProperty(
                 scope=scope,
                 change_type=ChangeType.REMOVED,
                 name=property_name,
-                value=TerminalValueRemoved(scope=scope, value=before_property),
+                value=value,
             )
         else:
-            value = self._visit_value(
-                scope=scope, before_value=before_property, after_value=after_property
-            )
             node_property = NodeProperty(
                 scope=scope, change_type=value.change_type, name=property_name, value=value
             )
@@ -757,7 +767,7 @@ class ChangeSetModel:
             change_type = ChangeType.UNCHANGED
 
         # TODO: investigate behaviour with type changes, for now this is filler code.
-        _, type_str = self._safe_access_in(scope, TypeKey, before_resource)
+        _, type_str = self._safe_access_in(scope, TypeKey, after_resource)
 
         condition_reference = None
         scope_condition, (before_condition, after_condition) = self._safe_access_in(
