@@ -725,7 +725,6 @@ class CloudformationProvider(CloudformationApi):
         # only set parameters for the changeset, then switch to stack on execute_change_set
         change_set.set_resolved_parameters(resolved_parameters)
         change_set.template_body = template_body
-        change_set.template_original = template
 
         # TODO: evaluate conditions
         raw_conditions = transformed_template.get("Conditions", {})
@@ -888,7 +887,6 @@ class CloudformationProvider(CloudformationApi):
         try:
             deployer.apply_change_set(change_set)
             change_set.stack.metadata["ChangeSetId"] = change_set.change_set_id
-            change_set.stack.template_original = change_set.template_original
         except NoStackUpdates:
             # TODO: parity-check if this exception should be re-raised or swallowed
             raise ValidationError("No updates to be performed for stack change set")
