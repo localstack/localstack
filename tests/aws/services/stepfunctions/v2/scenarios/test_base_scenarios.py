@@ -160,7 +160,7 @@ class TestBaseScenarios:
     )
     def test_max_concurrency_path_negative(
         self,
-        aws_client_no_retry,
+        aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -170,7 +170,7 @@ class TestBaseScenarios:
 
         exec_input = json.dumps({"MaxConcurrencyValue": -1, "Values": ["HelloWorld"]})
         create_and_record_execution(
-            aws_client_no_retry,
+            aws_client,
             create_state_machine_iam_role,
             create_state_machine,
             sfn_snapshot,
