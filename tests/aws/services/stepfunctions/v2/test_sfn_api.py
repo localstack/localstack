@@ -179,7 +179,7 @@ class TestSnfApi:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..exception_value"])
-    def test_describe_invalid_arn_sm(self, sfn_snapshot, aws_client, aws_client_no_retry):
+    def test_describe_invalid_arn_sm(self, sfn_snapshot, aws_client_no_retry):
         with pytest.raises(Exception) as exc:
             aws_client_no_retry.stepfunctions.describe_state_machine(
                 stateMachineArn="not_a_valid_arn"
