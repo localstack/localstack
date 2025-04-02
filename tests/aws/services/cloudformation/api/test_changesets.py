@@ -29,9 +29,11 @@ def is_v2_engine() -> bool:
     return config.SERVICE_PROVIDER_CONFIG.get_provider("cloudformation") == "engine-v2"
 
 
-@markers.aws.unknown
 class TestUpdates:
-    def test_foo(self, aws_client: ServiceLevelClientFactory, deploy_cfn_template):
+    @markers.aws.validated
+    def test_simple_update_single_resource(
+        self, aws_client: ServiceLevelClientFactory, deploy_cfn_template
+    ):
         parameter_name = "my-parameter"
         value1 = "foo"
         value2 = "bar"
@@ -64,7 +66,13 @@ class TestUpdates:
 
         res.destroy()
 
-    def test_bar(self, aws_client: ServiceLevelClientFactory, deploy_cfn_template):
+    # @pytest.mark.skipif(
+    #     condition=not is_v2_engine() and not is_aws_cloud(), reason="Not working in v2 yet"
+    # )
+    @markers.aws.validated
+    def test_simple_update_two_resources(
+        self, aws_client: ServiceLevelClientFactory, deploy_cfn_template
+    ):
         parameter_name = "my-parameter"
         value1 = "foo"
         value2 = "bar"
@@ -103,6 +111,8 @@ class TestUpdates:
 
         res.destroy()
 
+    @markers.aws.needs_fixing
+    @pytest.mark.skip(reason="WIP")
     def test_deleting_resource(self, aws_client: ServiceLevelClientFactory, deploy_cfn_template):
         parameter_name = "my-parameter"
         value1 = "foo"

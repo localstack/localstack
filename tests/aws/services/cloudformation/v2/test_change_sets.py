@@ -10,7 +10,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 pytestmark = pytest.mark.skipif(
-    not is_aws_cloud() and config.SERVICE_PROVIDER_CONFIG["cloudformation"] != "engine-v2",
+    not is_aws_cloud() and config.SERVICE_PROVIDER_CONFIG["cloudformation"] == "engine-v2",
     reason="Only targeting the new engine",
 )
 

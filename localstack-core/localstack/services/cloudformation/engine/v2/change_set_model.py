@@ -279,12 +279,6 @@ class NodeResource(ChangeSetNode):
         self.condition_reference = condition_reference
         self.properties = properties
 
-    def as_dict(self) -> dict[str, Any]:
-        return {
-            "Type": cast(TerminalValue, self.type_).value,
-            "Properties": self.properties.as_dict(),
-        }
-
 
 class NodeProperties(ChangeSetNode):
     properties: Final[list[NodeProperty]]
@@ -292,9 +286,6 @@ class NodeProperties(ChangeSetNode):
     def __init__(self, scope: Scope, change_type: ChangeType, properties: list[NodeProperty]):
         super().__init__(scope=scope, change_type=change_type)
         self.properties = properties
-
-    def as_dict(self) -> dict[str, Any]:
-        return {prop.name: cast(TerminalValue, prop.value).value for prop in self.properties}
 
 
 class NodeProperty(ChangeSetNode):
