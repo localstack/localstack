@@ -59,6 +59,7 @@ IMAGE_MAPPING: dict[Runtime, str] = {
     Runtime.dotnet6: "dotnet:6",
     Runtime.dotnetcore3_1: "dotnet:core3.1",  # deprecated Apr 3, 2023 => Apr 3, 2023 => May 3, 2023
     Runtime.go1_x: "go:1",  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
+    Runtime.ruby3_4: "ruby:3.4",
     Runtime.ruby3_3: "ruby:3.3",
     Runtime.ruby3_2: "ruby:3.2",
     Runtime.ruby2_7: "ruby:2.7",  # deprecated Dec 7, 2023 => Jan 9, 2024 => Feb 8, 2024
@@ -133,6 +134,7 @@ RUNTIMES_AGGREGATED = {
     "ruby": [
         Runtime.ruby3_2,
         Runtime.ruby3_3,
+        Runtime.ruby3_4,
     ],
     "dotnet": [
         Runtime.dotnet6,
@@ -149,7 +151,18 @@ TESTED_RUNTIMES: list[Runtime] = [
     runtime for runtime_group in RUNTIMES_AGGREGATED.values() for runtime in runtime_group
 ]
 
+# An unordered list of snapstart-enabled runtimes. Related to snapshots in test_snapstart_exceptions
+# https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html
+SNAP_START_SUPPORTED_RUNTIMES = [
+    Runtime.java11,
+    Runtime.java17,
+    Runtime.java21,
+    Runtime.python3_12,
+    Runtime.python3_13,
+    Runtime.dotnet8,
+]
+
 # An ordered list of all Lambda runtimes considered valid by AWS. Matching snapshots in test_create_lambda_exceptions
-VALID_RUNTIMES: str = "[nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9]"
+VALID_RUNTIMES: str = "[nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9]"
 # An ordered list of all Lambda runtimes for layers considered valid by AWS. Matching snapshots in test_layer_exceptions
-VALID_LAYER_RUNTIMES: str = "[ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, java21, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, dotnet8, java17, nodejs, nodejs4.3, java8.al2, go1.x, nodejs20.x, go1.9, byol, nodejs10.x, provided.al2023, nodejs22.x, python3.10, java8, nodejs12.x, python3.11, nodejs8.x, python3.12, nodejs14.x, nodejs8.9, python3.13, nodejs16.x, provided.al2, nodejs4.3-edge, nodejs18.x, ruby3.2, python3.4, ruby3.3, ruby2.5, python3.6, python2.7]"
+VALID_LAYER_RUNTIMES: str = "[ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, java21, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, dotnet8, java25, java17, nodejs, nodejs4.3, java8.al2, go1.x, dotnet10, nodejs20.x, go1.9, byol, nodejs10.x, provided.al2023, nodejs22.x, python3.10, java8, nodejs12.x, python3.11, nodejs24.x, nodejs8.x, python3.12, nodejs14.x, nodejs8.9, python3.13, python3.14, nodejs16.x, provided.al2, nodejs4.3-edge, nodejs18.x, ruby3.2, python3.4, ruby3.3, ruby3.4, ruby2.5, python3.6, python2.7]"
