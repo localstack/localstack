@@ -132,7 +132,7 @@ class TestSnfApiMapRun:
 
         with pytest.raises(Exception) as err:
             create_state_machine_with_iam_role(
-                aws_client_no_retry(),
+                aws_client_no_retry,
                 create_state_machine_iam_role,
                 create_state_machine,
                 sfn_snapshot,
