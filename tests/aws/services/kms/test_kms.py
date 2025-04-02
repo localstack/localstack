@@ -10,7 +10,7 @@ import pytest
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from cryptography.hazmat.primitives import hashes, hmac, serialization
-from cryptography.hazmat.primitives.asymmetric import ec, padding
+from cryptography.hazmat.primitives.asymmetric import ec, padding, utils
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack.services.kms.models import IV_LEN, Ciphertext, _serialize_ciphertext_blob
@@ -24,6 +24,27 @@ from localstack.utils.sync import poll_condition
 
 def create_tags(**kwargs):
     return [{"TagKey": key, "TagValue": value} for key, value in kwargs.items()]
+
+
+def get_signature_kwargs(signing_algorithm, message_type):
+    algo_map = {
+        "SHA_256": (hashes.SHA256(), 32),
+        "SHA_384": (hashes.SHA384(), 48),
+        "SHA_512": (hashes.SHA512(), 64),
+    }
+    hasher, salt = next((h, s) for k, (h, s) in algo_map.items() if k in signing_algorithm)
+    algorithm = utils.Prehashed(hasher) if message_type == "DIGEST" else hasher
+    kwargs = {}
+
+    if signing_algorithm.startswith("ECDSA"):
+        kwargs["signature_algorithm"] = ec.ECDSA(algorithm)
+    elif signing_algorithm.startswith("RSA"):
+        if "PKCS" in signing_algorithm:
+            kwargs["padding"] = padding.PKCS1v15()
+        elif "PSS" in signing_algorithm:
+            kwargs["padding"] = padding.PSS(mgf=padding.MGF1(hasher), salt_length=salt)
+        kwargs["algorithm"] = algorithm
+    return kwargs
 
 
 @pytest.fixture(scope="class")
@@ -723,6 +744,40 @@ class TestKMS:
                 **kwargs,
             )
         assert exc.match("ValidationException")
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "key_spec,sign_algo",
+        [
+            ("RSA_2048", "RSASSA_PSS_SHA_256"),
+            ("RSA_2048", "RSASSA_PSS_SHA_384"),
+            ("RSA_2048", "RSASSA_PSS_SHA_512"),
+            ("RSA_4096", "RSASSA_PKCS1_V1_5_SHA_256"),
+            ("RSA_4096", "RSASSA_PKCS1_V1_5_SHA_512"),
+            ("ECC_NIST_P256", "ECDSA_SHA_256"),
+            ("ECC_NIST_P384", "ECDSA_SHA_384"),
+            ("ECC_SECG_P256K1", "ECDSA_SHA_256"),
+        ],
+    )
+    def test_verify_salt_length(self, aws_client, kms_create_key, key_spec, sign_algo):
+        plaintext = b"test message !%$@ 1234567890"
+
+        hash_algo = get_hash_algorithm(sign_algo)
+        hasher = getattr(hashlib, hash_algo.replace("_", "").lower())
+        digest = hasher(plaintext).digest()
+
+        key_id = kms_create_key(KeyUsage="SIGN_VERIFY", KeySpec=key_spec)["KeyId"]
+        public_key = aws_client.kms.get_public_key(KeyId=key_id)["PublicKey"]
+        key = load_der_public_key(public_key)
+
+        kwargs = {"KeyId": key_id, "SigningAlgorithm": sign_algo}
+
+        for msg_type, message in [("RAW", plaintext), ("DIGEST", digest)]:
+            signature = aws_client.kms.sign(MessageType=msg_type, Message=message, **kwargs)[
+                "Signature"
+            ]
+            vargs = get_signature_kwargs(sign_algo, msg_type)
+            key.verify(signature=signature, data=message, **vargs)
 
     @markers.aws.validated
     def test_invalid_key_usage(self, kms_create_key, aws_client):
