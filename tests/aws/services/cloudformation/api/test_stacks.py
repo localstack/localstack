@@ -833,9 +833,9 @@ def test_name_conflicts(aws_client, snapshot, cleanups):
         pytest.param("with_underscores", id="with-underscores"),
     ],
 )
+# TODO: test update stack
 @pytest.mark.parametrize("deploy_method", ["create_change_set", "create_stack"])
 @markers.aws.validated
-@pytest.mark.skipif(condition=not is_aws_cloud(), reason="WIP")
 def test_validate_resource_names(aws_client, snapshot, resource_name, deploy_method):
     template = {
         "Resources": {
