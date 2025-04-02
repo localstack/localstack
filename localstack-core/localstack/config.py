@@ -1149,7 +1149,7 @@ SNS_CERT_URL_HOST = os.environ.get("SNS_CERT_URL_HOST", "").strip()
 APIGW_NEXT_GEN_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_APIGATEWAY", "") in ("next_gen", "")
 
 # Whether the DynamoDBStreams native provider is enabled
-DDB_STREAMS_PROVIDER_V2 = os.environ.get("PROVIDER_OVERRIDE_DYNAMODBSTREAMS", "") == "v2"
+DDB_STREAMS_PROVIDER_V2 = os.environ.get("PROVIDER_OVERRIDE_DYNAMODBSTREAMS", "v2") == "v2"
 _override_dynamodb_v2 = os.environ.get("PROVIDER_OVERRIDE_DYNAMODB", "")
 if DDB_STREAMS_PROVIDER_V2:
     # in order to not have conflicts between the 2 implementations, as they are tightly coupled, we need to set DDB
