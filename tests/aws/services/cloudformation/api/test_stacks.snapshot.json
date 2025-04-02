@@ -2286,5 +2286,149 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_validate_resource_names[with-hyphens]": {
+    "recorded-date": "02-04-2025, 08:38:32",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Resource name invalid-resource-name is non alphanumeric.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_validate_resource_names[with-colons]": {
+    "recorded-date": "02-04-2025, 08:38:32",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Resource name with:colons is non alphanumeric.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_validate_resource_names[with-underscores]": {
+    "recorded-date": "02-04-2025, 08:38:32",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Resource name with_underscores is non alphanumeric.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_validate_resource_names[create_change_set-with-hyphens]": {
+    "recorded-date": "02-04-2025, 08:41:35",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Resource name invalid-resource-name is non alphanumeric.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_validate_resource_names[create_change_set-with-colons]": {
+    "recorded-date": "02-04-2025, 08:41:36",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Resource name with:colons is non alphanumeric.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_validate_resource_names[create_change_set-with-underscores]": {
+    "recorded-date": "02-04-2025, 08:41:36",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Resource name with_underscores is non alphanumeric.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_validate_resource_names[create_stack-with-hyphens]": {
+    "recorded-date": "02-04-2025, 08:41:36",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Resource name invalid-resource-name is non alphanumeric.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_validate_resource_names[create_stack-with-colons]": {
+    "recorded-date": "02-04-2025, 08:41:36",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Resource name with:colons is non alphanumeric.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_validate_resource_names[create_stack-with-underscores]": {
+    "recorded-date": "02-04-2025, 08:41:36",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Resource name with_underscores is non alphanumeric.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

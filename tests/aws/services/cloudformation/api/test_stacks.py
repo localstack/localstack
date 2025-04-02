@@ -825,6 +825,52 @@ def test_name_conflicts(aws_client, snapshot, cleanups):
     snapshot.match("deleted_second_stack_desc", deleted_stack_desc)
 
 
+@pytest.mark.parametrize(
+    "resource_name",
+    [
+        pytest.param("invalid-resource-name", id="with-hyphens"),
+        pytest.param("with:colons", id="with-colons"),
+        pytest.param("with_underscores", id="with-underscores"),
+    ],
+)
+@pytest.mark.parametrize("deploy_method", ["create_change_set", "create_stack"])
+@markers.aws.validated
+@pytest.mark.skipif(condition=not is_aws_cloud(), reason="WIP")
+def test_validate_resource_names(aws_client, snapshot, resource_name, deploy_method):
+    template = {
+        "Resources": {
+            resource_name: {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": short_uid(),
+                },
+            },
+        },
+    }
+
+    stack_name = f"stack-{short_uid()}"
+    change_set_name = f"cs-{short_uid()}"
+
+    match deploy_method:
+        case "create_change_set":
+            with pytest.raises(botocore.exceptions.ClientError) as exc_info:
+                aws_client.cloudformation.create_change_set(
+                    TemplateBody=json.dumps(template),
+                    StackName=stack_name,
+                    ChangeSetName=change_set_name,
+                    ChangeSetType="CREATE",
+                )
+        case "create_stack":
+            with pytest.raises(botocore.exceptions.ClientError) as exc_info:
+                aws_client.cloudformation.create_stack(
+                    TemplateBody=json.dumps(template),
+                    StackName=stack_name,
+                )
+
+    snapshot.match("error-response", exc_info.value.response)
+
+
 @markers.aws.validated
 def test_describe_stack_events_errors(aws_client, snapshot):
     with pytest.raises(aws_client.cloudformation.exceptions.ClientError) as e:
