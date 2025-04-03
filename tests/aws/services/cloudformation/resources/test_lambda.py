@@ -253,6 +253,40 @@ def test_lambda_alias(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("Alias", alias)
 
 
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..StackResources..PhysicalResourceId",  # TODO: compatibility between AWS URL and localstack URL
+    ]
+)
+def test_lambda_logging_config(deploy_cfn_template, snapshot, aws_client):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.lambda_api())
+    snapshot.add_transformer(
+        SortingTransformer("StackResources", lambda x: x["LogicalResourceId"]), priority=-1
+    )
+
+    function_name = f"function{short_uid()}"
+    snapshot.add_transformer(snapshot.transform.regex(function_name, "<function-name>"))
+
+    deployment = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/cfn_lambda_logging_config.yaml"
+        ),
+        parameters={"FunctionName": function_name},
+    )
+
+    description = aws_client.cloudformation.describe_stack_resources(
+        StackName=deployment.stack_name
+    )
+    snapshot.match("stack_resource_descriptions", description)
+
+    logging_config = aws_client.lambda_.get_function(FunctionName=function_name)["Configuration"][
+        "LoggingConfig"
+    ]
+    snapshot.match("logging_config", logging_config)
+
+
 @pytest.mark.skipif(
     not in_default_partition(), reason="Test not applicable in non-default partitions"
 )

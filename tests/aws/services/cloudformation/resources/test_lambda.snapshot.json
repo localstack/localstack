@@ -1606,5 +1606,60 @@
         "LayerVersionRef": "arn:<partition>:lambda:<region>:111111111111:layer:<layer-name:1>:1"
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_logging_config": {
+    "recorded-date": "03-04-2025, 17:34:50",
+    "recorded-content": {
+      "stack_resource_descriptions": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "LambdaFunction",
+            "PhysicalResourceId": "<function-name>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Function",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "MyFnServiceRole",
+            "PhysicalResourceId": "<stack-name:1>-MyFnServiceRole-IVwvF4i3Fcqy",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "Version",
+            "PhysicalResourceId": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Version",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "logging_config": {
+        "ApplicationLogLevel": "INFO",
+        "LogFormat": "JSON",
+        "LogGroup": "/aws/lambda/<function-name>",
+        "SystemLogLevel": "INFO"
+      }
+    }
   }
 }
