@@ -1,13 +1,13 @@
 import dataclasses
 import logging
 import threading
+import time
 from queue import Queue
 from typing import Optional, Union
 
 from localstack.aws.connect import connect_to
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.bootstrap import is_api_enabled
-from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.threads import FuncThread
 
 LOG = logging.getLogger(__name__)
@@ -50,10 +50,34 @@ class LogHandler:
             log_item = self.log_queue.get()
             if log_item is QUEUE_SHUTDOWN:
                 return
+            # we need to split by newline - but keep the newlines in the strings
+            # strips empty lines, as they are not accepted by cloudwatch
+            logs = [line + "\n" for line in log_item.logs.split("\n") if line]
+            # until we have a better way to have timestamps, log events have the same time for a single invocation
+            log_events = [
+                {"timestamp": int(time.time() * 1000), "message": log_line} for log_line in logs
+            ]
             try:
-                store_cloudwatch_logs(
-                    logs_client, log_item.log_group, log_item.log_stream, log_item.logs
-                )
+                try:
+                    logs_client.put_log_events(
+                        logGroupName=log_item.log_group,
+                        logStreamName=log_item.log_stream,
+                        logEvents=log_events,
+                    )
+                except logs_client.exceptions.ResourceNotFoundException:
+                    # create new log group
+                    try:
+                        logs_client.create_log_group(logGroupName=log_item.log_group)
+                    except logs_client.exceptions.ResourceAlreadyExistsException:
+                        pass
+                    logs_client.create_log_stream(
+                        logGroupName=log_item.log_group, logStreamName=log_item.log_stream
+                    )
+                    logs_client.put_log_events(
+                        logGroupName=log_item.log_group,
+                        logStreamName=log_item.log_stream,
+                        logEvents=log_events,
+                    )
             except Exception as e:
                 LOG.warning(
                     "Error saving logs to group %s in region %s: %s",

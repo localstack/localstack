@@ -127,6 +127,7 @@ TEST_LAMBDA_PYTHON_MULTIPLE_HANDLERS = os.path.join(
     THIS_FOLDER, "functions/lambda_multiple_handlers.py"
 )
 TEST_LAMBDA_NOTIFIER = os.path.join(THIS_FOLDER, "functions/lambda_notifier.py")
+TEST_LAMBDA_CLOUDWATCH_LOGS = os.path.join(THIS_FOLDER, "functions/lambda_cloudwatch_logs.py")
 
 PYTHON_TEST_RUNTIMES = RUNTIMES_AGGREGATED["python"]
 NODE_TEST_RUNTIMES = RUNTIMES_AGGREGATED["nodejs"]

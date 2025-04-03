@@ -1208,5 +1208,68 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestCloudwatchLogs::test_multi_line_prints": {
+    "recorded-date": "02-04-2025, 12:35:33",
+    "recorded-content": {
+      "log-events": [
+        {
+          "logStreamName": "<log-stream-name:1>",
+          "timestamp": "timestamp",
+          "message": "INIT_START Runtime Version: python:3.13.v<version>\tRuntime Version ARN: arn:<partition>:lambda:<region>::runtime:<runtime-id>\n",
+          "ingestionTime": "timestamp",
+          "eventId": "event-id"
+        },
+        {
+          "logStreamName": "<log-stream-name:1>",
+          "timestamp": "timestamp",
+          "message": "START RequestId: <request-id> Version: $LATEST\n",
+          "ingestionTime": "timestamp",
+          "eventId": "event-id"
+        },
+        {
+          "logStreamName": "<log-stream-name:1>",
+          "timestamp": "timestamp",
+          "message": "multi\n",
+          "ingestionTime": "timestamp",
+          "eventId": "event-id"
+        },
+        {
+          "logStreamName": "<log-stream-name:1>",
+          "timestamp": "timestamp",
+          "message": "line\n",
+          "ingestionTime": "timestamp",
+          "eventId": "event-id"
+        },
+        {
+          "logStreamName": "<log-stream-name:1>",
+          "timestamp": "timestamp",
+          "message": "string\n",
+          "ingestionTime": "timestamp",
+          "eventId": "event-id"
+        },
+        {
+          "logStreamName": "<log-stream-name:1>",
+          "timestamp": "timestamp",
+          "message": "another\rline\n",
+          "ingestionTime": "timestamp",
+          "eventId": "event-id"
+        },
+        {
+          "logStreamName": "<log-stream-name:1>",
+          "timestamp": "timestamp",
+          "message": "END RequestId: <request-id>\n",
+          "ingestionTime": "timestamp",
+          "eventId": "event-id"
+        },
+        {
+          "logStreamName": "<log-stream-name:1>",
+          "timestamp": "timestamp",
+          "message": "REPORT RequestId: <request-id>\tDuration: <duration> ms\tBilled Duration: <duration> ms\tMemory Size: 128 MB\tMax Memory Used: <memory> MB\tInit Duration: <duration> ms\t\n",
+          "ingestionTime": "timestamp",
+          "eventId": "event-id"
+        }
+      ]
+    }
   }
 }
