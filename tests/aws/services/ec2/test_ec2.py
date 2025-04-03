@@ -482,7 +482,7 @@ class TestEc2Integrations:
         assert e.value.response["Error"]["Code"] == "InvalidVpc.DuplicateCustomId"
 
     @markers.aws.only_localstack
-    def test_create_subnet_with_tags(self, aws_client, create_vpc):
+    def test_create_subnet_with_tags(self, cleanups, aws_client, create_vpc):
         # Create a VPC.
         vpc: dict = create_vpc(
             cidr_block="10.0.0.0/16",
@@ -525,7 +525,7 @@ class TestEc2Integrations:
         assert subnet["Tags"][0]["Value"] == "main-subnet"
 
     @markers.aws.only_localstack
-    def test_create_subnet_with_custom_id(self, aws_client, create_vpc):
+    def test_create_subnet_with_custom_id(self, cleanups, aws_client, create_vpc):
         custom_id = random_subnet_id()
 
         # Create necessary VPC resource
@@ -545,6 +545,7 @@ class TestEc2Integrations:
                 }
             ],
         )
+        cleanups.append(lambda: aws_client.ec2.delete_subnet(SubnetId=subnet["Subnet"]["SubnetId"]))
         assert subnet["Subnet"]["SubnetId"] == custom_id
 
         # Check if the custom ID is present in the describe_subnets response as well
@@ -572,7 +573,7 @@ class TestEc2Integrations:
         assert e.value.response["Error"]["Code"] == "InvalidSubnet.DuplicateCustomId"
 
     @markers.aws.only_localstack
-    def test_create_subnet_with_custom_id_and_vpc_id(self, aws_client, create_vpc):
+    def test_create_subnet_with_custom_id_and_vpc_id(self, cleanups, aws_client, create_vpc):
         custom_subnet_id = random_subnet_id()
         custom_vpc_id = random_vpc_id()
 
@@ -603,6 +604,7 @@ class TestEc2Integrations:
                 }
             ],
         )
+        cleanups.append(lambda: aws_client.ec2.delete_subnet(SubnetId=custom_subnet_id))
         assert subnet["Subnet"]["SubnetId"] == custom_subnet_id
 
         # Check if the custom ID is present in the describe_subnets response as well
@@ -616,7 +618,7 @@ class TestEc2Integrations:
         assert subnet["Tags"][0]["Value"] == custom_subnet_id
 
     @markers.aws.only_localstack
-    def test_create_security_group_with_custom_id(self, aws_client, create_vpc):
+    def test_create_security_group_with_custom_id(self, cleanups, aws_client, create_vpc):
         custom_id = random_security_group_id()
 
         # Create necessary VPC resource
@@ -639,6 +641,7 @@ class TestEc2Integrations:
                 }
             ],
         )
+        cleanups.append(lambda: aws_client.ec2.delete_security_group(GroupId=custom_id))
         assert security_group["GroupId"] == custom_id, (
             f"Security group ID does not match custom ID: {security_group}"
         )
