@@ -44,6 +44,10 @@ from localstack.utils.http import download
 from localstack.utils.run import run
 from localstack.utils.threads import start_thread
 
+
+# Amazon Transcribe service calls are limited to four hours (or 2 GB) per API call for our batch service.
+# The streaming service can accommodate open connections up to four hours long.
+# See https://aws.amazon.com/transcribe/faqs/
 MAX_AUDIO_DURATION_SECONDS = 60 * 60 * 4
 
 LOG = logging.getLogger(__name__)
