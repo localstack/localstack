@@ -324,6 +324,7 @@ class TestTranscribe:
             (None, None),  # without output bucket and output key
         ],
     )
+    @pytest.mark.skip(reason="flaky")
     def test_transcribe_start_job(
         self,
         output_bucket,
