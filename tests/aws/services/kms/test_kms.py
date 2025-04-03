@@ -13,7 +13,12 @@ from cryptography.hazmat.primitives import hashes, hmac, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, utils
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
-from localstack.services.kms.models import IV_LEN, Ciphertext, _serialize_ciphertext_blob
+from localstack.services.kms.models import (
+    IV_LEN,
+    ON_DEMAND_ROTATION_LIMIT,
+    Ciphertext,
+    _serialize_ciphertext_blob,
+)
 from localstack.services.kms.utils import get_hash_algorithm
 from localstack.testing.aws.util import in_default_partition
 from localstack.testing.pytest import markers
@@ -1153,6 +1158,63 @@ class TestKMS:
         assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is True
         aws_client.kms.disable_key_rotation(KeyId=key_id)
         assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is False
+
+    @markers.aws.validated
+    def test_key_rotations_encryption_decryption(self, kms_create_key, aws_client, snapshot):
+        key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")["KeyId"]
+        message = b"test message 123 !%$@ 1234567890"
+
+        ciphertext = aws_client.kms.encrypt(
+            KeyId=key_id,
+            Plaintext=base64.b64encode(message),
+            EncryptionAlgorithm="SYMMETRIC_DEFAULT",
+        )["CiphertextBlob"]
+
+        deciphered_text_before = aws_client.kms.decrypt(
+            KeyId=key_id,
+            CiphertextBlob=ciphertext,
+            EncryptionAlgorithm="SYMMETRIC_DEFAULT",
+        )["Plaintext"]
+
+        aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+
+        deciphered_text_after = aws_client.kms.decrypt(
+            KeyId=key_id,
+            CiphertextBlob=ciphertext,
+            EncryptionAlgorithm="SYMMETRIC_DEFAULT",
+        )["Plaintext"]
+
+        assert deciphered_text_after == deciphered_text_before
+
+        # checking for the exception
+        bad_ciphertext = ciphertext + b"bad_data"
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.decrypt(
+                KeyId=key_id,
+                CiphertextBlob=bad_ciphertext,
+                EncryptionAlgorithm="SYMMETRIC_DEFAULT",
+            )
+
+        snapshot.match("bad-ciphertext", e.value)
+
+    @markers.aws.validated
+    def test_key_rotations_limits(self, kms_create_key, aws_client, snapshot):
+        key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")["KeyId"]
+
+        def _assert_on_demand_rotation_completed():
+            response = aws_client.kms.get_key_rotation_status(KeyId=key_id)
+            return "OnDemandRotationStartDate" not in response
+
+        for _ in range(ON_DEMAND_ROTATION_LIMIT):
+            aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+            assert poll_condition(
+                condition=_assert_on_demand_rotation_completed, timeout=10, interval=1
+            )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+        snapshot.match("error-response", e.value.response)
 
     @markers.aws.validated
     def test_rotate_key_on_demand_modifies_key_material(self, kms_create_key, aws_client, snapshot):
