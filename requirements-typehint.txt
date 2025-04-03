@@ -460,6 +460,8 @@ mypy-boto3-timestream-write==1.37.0
     # via boto3-stubs
 mypy-boto3-transcribe==1.37.5
     # via boto3-stubs
+mypy-boto3-verifiedpermissions==1.37.0
+    # via boto3-stubs
 mypy-boto3-wafv2==1.37.21
     # via boto3-stubs
 mypy-boto3-xray==1.37.0
@@ -777,6 +779,7 @@ typing-extensions==4.13.0
     #   mypy-boto3-timestream-query
     #   mypy-boto3-timestream-write
     #   mypy-boto3-transcribe
+    #   mypy-boto3-verifiedpermissions
     #   mypy-boto3-wafv2
     #   mypy-boto3-xray
     #   pydantic
