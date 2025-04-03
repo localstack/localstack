@@ -110,6 +110,7 @@ if TYPE_CHECKING:
     from mypy_boto3_timestream_query import TimestreamQueryClient
     from mypy_boto3_timestream_write import TimestreamWriteClient
     from mypy_boto3_transcribe import TranscribeServiceClient
+    from mypy_boto3_verifiedpermissions import VerifiedPermissionsClient
     from mypy_boto3_wafv2 import WAFV2Client
     from mypy_boto3_xray import XRayClient
 
@@ -259,6 +260,9 @@ class TypedServiceClientFactory(abc.ABC):
         "TimestreamWriteClient", "MetadataRequestInjector[TimestreamWriteClient]"
     ]
     transcribe: Union["TranscribeServiceClient", "MetadataRequestInjector[TranscribeServiceClient]"]
+    verifiedpermissions: Union[
+        "VerifiedPermissionsClient", "MetadataRequestInjector[VerifiedPermissionsClient]"
+    ]
     wafv2: Union["WAFV2Client", "MetadataRequestInjector[WAFV2Client]"]
     xray: Union["XRayClient", "MetadataRequestInjector[XRayClient]"]
 
