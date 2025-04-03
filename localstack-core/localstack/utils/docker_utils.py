@@ -156,14 +156,14 @@ def container_ports_can_be_bound(
     except Exception as e:
         if "port is already allocated" not in str(e) and "address already in use" not in str(e):
             LOG.warning(
-                "Unexpected error when attempting to determine container port status: %s", e
+                "Unexpected error when attempting to determine container port status", exc_info=e
             )
         return False
     # TODO(srw): sometimes the command output from the docker container is "None", particularly when this function is
     #  invoked multiple times consecutively. Work out why.
     if to_str(result[0] or "").strip() != "test123":
         LOG.warning(
-            "Unexpected output when attempting to determine container port status: %s", result[0]
+            "Unexpected output when attempting to determine container port status: %s", result
         )
     return True
 
