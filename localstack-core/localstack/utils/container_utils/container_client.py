@@ -437,21 +437,19 @@ class VolumeDirMount:
     def _validate(self):
         if not self.volume_path:
             raise ValueError("no volume dir specified")
-        if not self.volume_path.startswith(DEFAULT_VOLUME_DIR):
+        if config.is_in_docker and not self.volume_path.startswith(DEFAULT_VOLUME_DIR):
             raise ValueError(f"volume dir not starting with {DEFAULT_VOLUME_DIR}")
         if not self.container_path:
             raise ValueError("no container dir specified")
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> tuple[str, dict]:
         self._validate()
         from localstack.utils.docker_utils import get_host_path_for_path_in_docker
 
         host_dir = get_host_path_for_path_in_docker(self.volume_path)
-        return {
-            host_dir: {
-                "bind": self.container_path,
-                "mode": "ro" if self.read_only else "rw",
-            }
+        return host_dir, {
+            "bind": self.container_path,
+            "mode": "ro" if self.read_only else "rw",
         }
 
 

@@ -94,9 +94,10 @@ class TestDockerUtils:
             )
             result = volume_dir_mount.to_dict()
             get_volume.assert_called_once()
-            assert result == {
-                "/home/some-user/.cache/localstack/volume/some/test/file": {
+            assert result == (
+                "/home/some-user/.cache/localstack/volume/some/test/file",
+                {
                     "bind": "/target/file",
                     "mode": "rw",
-                }
-            }
+                },
+            )
