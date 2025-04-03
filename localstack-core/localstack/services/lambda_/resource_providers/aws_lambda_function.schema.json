@@ -1,4 +1,11 @@
 {
+  "tagging": {
+    "taggable": true,
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "tagProperty": "/properties/Tags",
+    "cloudFormationSystemTags": true
+  },
   "handlers": {
     "read": {
       "permissions": [
@@ -17,11 +24,22 @@
         "ec2:DescribeSecurityGroups",
         "ec2:DescribeSubnets",
         "ec2:DescribeVpcs",
+        "elasticfilesystem:DescribeMountTargets",
+        "kms:CreateGrant",
         "kms:Decrypt",
+        "kms:Encrypt",
+        "kms:GenerateDataKey",
         "lambda:GetCodeSigningConfig",
         "lambda:GetFunctionCodeSigningConfig",
+        "lambda:GetLayerVersion",
         "lambda:GetRuntimeManagementConfig",
-        "lambda:PutRuntimeManagementConfig"
+        "lambda:PutRuntimeManagementConfig",
+        "lambda:TagResource",
+        "lambda:GetPolicy",
+        "lambda:AddPermission",
+        "lambda:RemovePermission",
+        "lambda:GetResourcePolicy",
+        "lambda:PutResourcePolicy"
       ]
     },
     "update": {
@@ -40,13 +58,22 @@
         "ec2:DescribeSecurityGroups",
         "ec2:DescribeSubnets",
         "ec2:DescribeVpcs",
+        "elasticfilesystem:DescribeMountTargets",
+        "kms:CreateGrant",
         "kms:Decrypt",
+        "kms:GenerateDataKey",
+        "lambda:GetRuntimeManagementConfig",
+        "lambda:PutRuntimeManagementConfig",
         "lambda:PutFunctionCodeSigningConfig",
         "lambda:DeleteFunctionCodeSigningConfig",
         "lambda:GetCodeSigningConfig",
         "lambda:GetFunctionCodeSigningConfig",
-        "lambda:GetRuntimeManagementConfig",
-        "lambda:PutRuntimeManagementConfig"
+        "lambda:GetPolicy",
+        "lambda:AddPermission",
+        "lambda:RemovePermission",
+        "lambda:GetResourcePolicy",
+        "lambda:PutResourcePolicy",
+        "lambda:DeleteResourcePolicy"
       ]
     },
     "list": {
@@ -63,13 +90,15 @@
   },
   "typeName": "AWS::Lambda::Function",
   "readOnlyProperties": [
-    "/properties/Arn",
     "/properties/SnapStartResponse",
     "/properties/SnapStartResponse/ApplyOn",
-    "/properties/SnapStartResponse/OptimizationStatus"
+    "/properties/SnapStartResponse/OptimizationStatus",
+    "/properties/Arn"
   ],
-  "description": "Resource Type definition for AWS::Lambda::Function",
+  "description": "Resource Type definition for AWS::Lambda::Function in region",
   "writeOnlyProperties": [
+    "/properties/SnapStart",
+    "/properties/SnapStart/ApplyOn",
     "/properties/Code",
     "/properties/Code/ImageUri",
     "/properties/Code/S3Bucket",
@@ -133,6 +162,10 @@
       "additionalProperties": false,
       "type": "object",
       "properties": {
+        "Ipv6AllowedForDualStack": {
+          "description": "A boolean indicating whether IPv6 protocols will be allowed for dual stack subnets",
+          "type": "boolean"
+        },
         "SecurityGroupIds": {
           "maxItems": 5,
           "uniqueItems": false,
@@ -258,6 +291,49 @@
         "ImageUri": {
           "description": "ImageUri.",
           "type": "string"
+        }
+      }
+    },
+    "LoggingConfig": {
+      "description": "The function's logging configuration.",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "LogFormat": {
+          "description": "Log delivery format for the lambda function",
+          "type": "string",
+          "enum": [
+            "Text",
+            "JSON"
+          ]
+        },
+        "ApplicationLogLevel": {
+          "description": "Application log granularity level, can only be used when LogFormat is set to JSON",
+          "type": "string",
+          "enum": [
+            "TRACE",
+            "DEBUG",
+            "INFO",
+            "WARN",
+            "ERROR",
+            "FATAL"
+          ]
+        },
+        "LogGroup": {
+          "minLength": 1,
+          "pattern": "[\\.\\-_/#A-Za-z0-9]+",
+          "description": "The log group name.",
+          "type": "string",
+          "maxLength": 512
+        },
+        "SystemLogLevel": {
+          "description": "System log granularity level, can only be used when LogFormat is set to JSON",
+          "type": "string",
+          "enum": [
+            "DEBUG",
+            "INFO",
+            "WARN"
+          ]
         }
       }
     },
@@ -456,6 +532,10 @@
       "pattern": "^arn:(aws[a-zA-Z-]*)?:iam::\\d{12}:role/?[a-zA-Z_0-9+=,.@\\-_/]+$",
       "description": "The Amazon Resource Name (ARN) of the function's execution role.",
       "type": "string"
+    },
+    "LoggingConfig": {
+      "description": "The logging configuration of your function",
+      "$ref": "#/definitions/LoggingConfig"
     },
     "Environment": {
       "description": "Environment variables that are accessible from function code during execution.",
