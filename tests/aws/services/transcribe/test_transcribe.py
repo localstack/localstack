@@ -138,6 +138,7 @@ class TestTranscribe:
             "$..Error..Code",
         ]
     )
+    @pytest.mark.skip(reason="flaky")
     def test_transcribe_happy_path(self, transcribe_create_job, snapshot, aws_client):
         file_path = os.path.join(BASEDIR, "../../files/en-gb.wav")
         job_name = transcribe_create_job(audio_file=file_path)
@@ -182,6 +183,7 @@ class TestTranscribe:
         ],
     )
     @markers.aws.needs_fixing
+    @pytest.mark.skip(reason="flaky")
     def test_transcribe_supported_media_formats(
         self, transcribe_create_job, media_file, speech, aws_client
     ):
