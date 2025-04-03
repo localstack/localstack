@@ -246,6 +246,7 @@ class CloudformationProviderV2(CloudformationProvider):
             stack_name=stack_name,
         )
         change_set.set_resolved_stack_conditions(resolved_stack_conditions)
+        change_set.set_resolved_parameters(resolved_parameters)
 
         # a bit gross but use the template ordering to validate missing resources
         try:
