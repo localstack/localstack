@@ -200,12 +200,10 @@ class CloudformationProviderV2(CloudformationProvider):
             parameter["ParameterKey"]: parameter["ParameterValue"]
             for parameter in request_parameters
         }
-        # TODO: old_parameters are always empty.
-        # before_parameters: dict[str, Any] = {
-        #     parameter["ParameterKey"]: parameter["ParameterValue"]
-        #     for parameter in old_parameters.values()
-        # }
-        before_parameters = after_parameters
+        before_parameters: dict[str, Any] = {
+            parameter["ParameterKey"]: parameter["ParameterValue"]
+            for parameter in old_parameters.values()
+        }
 
         # TODO: update this logic to always pass the clean template object if one exists. The
         #  current issue with relaying on stack.template_original is that this appears to have
