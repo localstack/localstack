@@ -422,12 +422,17 @@ class StackChangeSet(Stack):
         return result
 
     # V2 only
-    def populate_update_graph(self, before_template: dict | None, after_template: dict | None):
+    def populate_update_graph(
+        self,
+        before_template: Optional[dict],
+        after_template: Optional[dict],
+        before_parameters: Optional[dict],
+        after_parameters: Optional[dict],
+    ) -> None:
         change_set_model = ChangeSetModel(
             before_template=before_template,
             after_template=after_template,
-            # TODO
-            before_parameters=None,
-            after_parameters=None,
+            before_parameters=before_parameters,
+            after_parameters=after_parameters,
         )
         self.update_graph = change_set_model.get_update_model()

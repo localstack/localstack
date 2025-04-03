@@ -1,3 +1,4 @@
+import json
 import logging
 from copy import deepcopy
 from typing import Any
@@ -211,7 +212,9 @@ class CloudformationProviderV2(CloudformationProvider):
         #  its parameters and conditions populated.
         before_template = None
         if change_set_type == ChangeSetType.UPDATE:
-            before_template = stack.template_original
+            before_template = json.loads(
+                stack.template_body
+            )  # template_original is sometimes invalid
         after_template = template
 
         # create change set for the stack and apply changes

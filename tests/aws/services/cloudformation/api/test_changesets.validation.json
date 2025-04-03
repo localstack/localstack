@@ -1,4 +1,19 @@
 {
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_base_dynamic_parameter_scenarios[change_dynamic]": {
+    "last_validated_date": "2025-04-03T07:11:44+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_base_dynamic_parameter_scenarios[change_parameter_for_condition_create_resource]": {
+    "last_validated_date": "2025-04-03T07:13:00+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_base_dynamic_parameter_scenarios[change_unrelated_property]": {
+    "last_validated_date": "2025-04-03T07:12:11+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_base_dynamic_parameter_scenarios[change_unrelated_property_not_create_only]": {
+    "last_validated_date": "2025-04-03T07:12:37+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_base_mapping_scenarios[update_string_referencing_resource]": {
+    "last_validated_date": "2025-04-03T07:23:48+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_conditions": {
     "last_validated_date": "2025-04-01T14:34:35+00:00"
   },
