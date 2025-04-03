@@ -80,6 +80,7 @@ class TestSfnApiAliasing:
         create_state_machine_alias,
         sfn_snapshot,
         aws_client,
+        aws_client_no_retry,
     ):
         sfn_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
@@ -102,7 +103,7 @@ class TestSfnApiAliasing:
 
         with pytest.raises(Exception) as exc:
             create_state_machine_alias(
-                target_aws_client=aws_client,
+                target_aws_client=aws_client_no_retry,
                 description="create state machine alias description",
                 name=f"AliasName-{short_uid()}",
                 routingConfiguration=[
@@ -123,6 +124,7 @@ class TestSfnApiAliasing:
         create_state_machine_alias,
         sfn_snapshot,
         aws_client,
+        aws_client_no_retry,
     ):
         sfn_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
@@ -171,7 +173,7 @@ class TestSfnApiAliasing:
 
         with pytest.raises(Exception) as exc:
             create_state_machine_alias(
-                target_aws_client=aws_client,
+                target_aws_client=aws_client_no_retry,
                 description="This is a different description",
                 name=state_machine_alias_name,
                 routingConfiguration=state_machine_alias_routing_configuration,
@@ -183,7 +185,7 @@ class TestSfnApiAliasing:
 
         with pytest.raises(Exception) as exc:
             create_state_machine_alias(
-                target_aws_client=aws_client,
+                target_aws_client=aws_client_no_retry,
                 description=state_machine_alias_description,
                 name=state_machine_alias_name,
                 routingConfiguration=[
@@ -280,6 +282,7 @@ class TestSfnApiAliasing:
         create_state_machine_alias,
         sfn_snapshot,
         aws_client,
+        aws_client_no_retry,
     ):
         sfn_client = aws_client.stepfunctions
 
@@ -312,7 +315,7 @@ class TestSfnApiAliasing:
 
         with pytest.raises(Exception) as exc:
             create_state_machine_alias(
-                target_aws_client=aws_client,
+                target_aws_client=aws_client_no_retry,
                 name=f"AliasName-{short_uid()}",
                 routingConfiguration=[],
             )
@@ -322,7 +325,7 @@ class TestSfnApiAliasing:
 
         with pytest.raises(Exception) as exc:
             create_state_machine_alias(
-                target_aws_client=aws_client,
+                target_aws_client=aws_client_no_retry,
                 name=f"AliasName-{short_uid()}",
                 routingConfiguration=[
                     RoutingConfigurationListItem(
@@ -342,7 +345,7 @@ class TestSfnApiAliasing:
 
         with pytest.raises(Exception) as exc:
             create_state_machine_alias(
-                target_aws_client=aws_client,
+                target_aws_client=aws_client_no_retry,
                 name=f"AliasName-{short_uid()}",
                 routingConfiguration=[
                     RoutingConfigurationListItem(
@@ -359,7 +362,7 @@ class TestSfnApiAliasing:
 
         with pytest.raises(Exception) as exc:
             create_state_machine_alias(
-                target_aws_client=aws_client,
+                target_aws_client=aws_client_no_retry,
                 name=f"AliasName-{short_uid()}",
                 routingConfiguration=[
                     RoutingConfigurationListItem(
@@ -376,7 +379,7 @@ class TestSfnApiAliasing:
 
         with pytest.raises(Exception) as exc:
             create_state_machine_alias(
-                target_aws_client=aws_client,
+                target_aws_client=aws_client_no_retry,
                 name=f"AliasName-{short_uid()}",
                 routingConfiguration=[
                     RoutingConfigurationListItem(
@@ -390,7 +393,7 @@ class TestSfnApiAliasing:
 
         with pytest.raises(Exception) as exc:
             create_state_machine_alias(
-                target_aws_client=aws_client,
+                target_aws_client=aws_client_no_retry,
                 name=f"AliasName-{short_uid()}",
                 routingConfiguration=[
                     RoutingConfigurationListItem(
@@ -404,7 +407,7 @@ class TestSfnApiAliasing:
 
         with pytest.raises(Exception) as exc:
             create_state_machine_alias(
-                target_aws_client=aws_client,
+                target_aws_client=aws_client_no_retry,
                 name=f"AliasName-{short_uid()}",
                 routingConfiguration=[
                     RoutingConfigurationListItem(
@@ -422,7 +425,7 @@ class TestSfnApiAliasing:
 
         with pytest.raises(Exception) as exc:
             create_state_machine_alias(
-                target_aws_client=aws_client,
+                target_aws_client=aws_client_no_retry,
                 name=f"AliasName-{short_uid()}",
                 routingConfiguration=[
                     RoutingConfigurationListItem(
@@ -446,6 +449,7 @@ class TestSfnApiAliasing:
         create_state_machine_alias,
         sfn_snapshot,
         aws_client,
+        aws_client_no_retry,
     ):
         sfn_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
@@ -470,7 +474,7 @@ class TestSfnApiAliasing:
         for invalid_name in invalid_names:
             with pytest.raises(Exception) as exc:
                 create_state_machine_alias(
-                    target_aws_client=aws_client,
+                    target_aws_client=aws_client_no_retry,
                     description="create state machine alias description",
                     name=invalid_name,
                     routingConfiguration=[
@@ -592,6 +596,7 @@ class TestSfnApiAliasing:
         create_state_machine_alias,
         sfn_snapshot,
         aws_client,
+        aws_client_no_retry,
     ):
         sfn_client = aws_client.stepfunctions
 
@@ -647,7 +652,7 @@ class TestSfnApiAliasing:
         )
 
         with pytest.raises(Exception) as exc:
-            sfn_client.update_state_machine_alias(
+            aws_client_no_retry.stepfunctions.update_state_machine_alias(
                 stateMachineAliasArn=state_machine_alias_arn,
                 description="Updated state machine alias description",
             )
@@ -863,6 +868,7 @@ class TestSfnApiAliasing:
         create_state_machine_alias,
         sfn_snapshot,
         aws_client,
+        aws_client_no_retry,
     ):
         sfn_client = aws_client.stepfunctions
 
@@ -911,7 +917,7 @@ class TestSfnApiAliasing:
         )
 
         with pytest.raises(Exception) as exc:
-            sfn_client.delete_state_machine_version(
+            aws_client_no_retry.stepfunctions.delete_state_machine_version(
                 stateMachineVersionArn=state_machine_version_arn
             )
         sfn_snapshot.match(

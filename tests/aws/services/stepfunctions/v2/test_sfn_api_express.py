@@ -73,6 +73,7 @@ class TestSfnApiExpress:
         sfn_create_log_group,
         sfn_snapshot,
         aws_client,
+        aws_client_no_retry,
     ):
         definition = ServicesTemplates.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_str = json.dumps(definition)
@@ -88,19 +89,19 @@ class TestSfnApiExpress:
         )
 
         with pytest.raises(Exception) as ex:
-            aws_client.stepfunctions.list_executions(stateMachineArn=state_machine_arn)
+            aws_client_no_retry.stepfunctions.list_executions(stateMachineArn=state_machine_arn)
         sfn_snapshot.match("list_executions_error", ex.value.response)
 
         with pytest.raises(Exception) as ex:
-            aws_client.stepfunctions.describe_execution(executionArn=execution_arn)
+            aws_client_no_retry.stepfunctions.describe_execution(executionArn=execution_arn)
         sfn_snapshot.match("describe_execution_error", ex.value.response)
 
         with pytest.raises(Exception) as ex:
-            aws_client.stepfunctions.stop_execution(executionArn=execution_arn)
+            aws_client_no_retry.stepfunctions.stop_execution(executionArn=execution_arn)
         sfn_snapshot.match("stop_execution_error", ex.value.response)
 
         with pytest.raises(Exception) as ex:
-            aws_client.stepfunctions.get_execution_history(executionArn=execution_arn)
+            aws_client_no_retry.stepfunctions.get_execution_history(executionArn=execution_arn)
         sfn_snapshot.match("get_execution_history_error", ex.value.response)
 
     @markers.aws.validated
@@ -137,6 +138,7 @@ class TestSfnApiExpress:
     def test_illegal_callbacks(
         self,
         aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -150,7 +152,7 @@ class TestSfnApiExpress:
 
         with pytest.raises(Exception) as ex:
             create_state_machine(
-                aws_client,
+                aws_client_no_retry,
                 name=f"express_statemachine_{short_uid()}",
                 definition=definition,
                 roleArn=snf_role_arn,
@@ -163,6 +165,7 @@ class TestSfnApiExpress:
     def test_illegal_activity_task(
         self,
         aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         create_activity,
@@ -185,7 +188,7 @@ class TestSfnApiExpress:
 
         with pytest.raises(Exception) as ex:
             create_state_machine(
-                aws_client,
+                aws_client_no_retry,
                 name=f"express_statemachine_{short_uid()}",
                 definition=definition,
                 roleArn=snf_role_arn,

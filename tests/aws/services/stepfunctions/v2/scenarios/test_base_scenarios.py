@@ -2515,7 +2515,7 @@ class TestBaseScenarios:
     )
     def test_wait_timestamp_invalid(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -2526,7 +2526,7 @@ class TestBaseScenarios:
         definition = json.dumps(template)
         with pytest.raises(Exception) as ex:
             create_state_machine_with_iam_role(
-                aws_client,
+                aws_client_no_retry,
                 create_state_machine_iam_role,
                 create_state_machine,
                 sfn_snapshot,
@@ -2819,7 +2819,7 @@ class TestBaseScenarios:
     )
     def test_illegal_escapes(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -2829,7 +2829,7 @@ class TestBaseScenarios:
         definition = json.dumps(template)
         with pytest.raises(Exception) as ex:
             create_state_machine_with_iam_role(
-                aws_client,
+                aws_client_no_retry,
                 create_state_machine_iam_role,
                 create_state_machine,
                 sfn_snapshot,

@@ -76,7 +76,7 @@ class TestTaskServiceDynamoDB:
     @markers.snapshot.skip_snapshot_verify(paths=["$..exception_value"])
     def test_invalid_integration(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -85,7 +85,7 @@ class TestTaskServiceDynamoDB:
         definition = json.dumps(template)
         with pytest.raises(Exception) as ex:
             create_state_machine_with_iam_role(
-                aws_client,
+                aws_client_no_retry,
                 create_state_machine_iam_role,
                 create_state_machine,
                 sfn_snapshot,

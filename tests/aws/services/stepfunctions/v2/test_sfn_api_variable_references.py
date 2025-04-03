@@ -91,7 +91,10 @@ class TestSfnApiVariableReferences:
         definition_str = json.dumps(definition)
 
         creation_response = create_state_machine(
-            aws_client, name=f"sm-{short_uid()}", definition=definition_str, roleArn=snf_role_arn
+            aws_client,
+            name=f"sm-{short_uid()}",
+            definition=definition_str,
+            roleArn=snf_role_arn,
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_response, 0))
         state_machine_arn = creation_response["stateMachineArn"]
@@ -146,7 +149,10 @@ class TestSfnApiVariableReferences:
         definition_str = json.dumps(definition)
 
         creation_response = create_state_machine(
-            aws_client, name=f"sm-{short_uid()}", definition=definition_str, roleArn=snf_role_arn
+            aws_client,
+            name=f"sm-{short_uid()}",
+            definition=definition_str,
+            roleArn=snf_role_arn,
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_response, 0))
 

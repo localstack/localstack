@@ -142,7 +142,12 @@ class TestLogs:
         execution_input = json.dumps({})
 
         launch_and_record_logs(
-            aws_client, state_machine_arn, execution_input, log_level, log_group_name, sfn_snapshot
+            aws_client,
+            state_machine_arn,
+            execution_input,
+            log_level,
+            log_group_name,
+            sfn_snapshot,
         )
 
     @markers.aws.validated

@@ -529,7 +529,8 @@ class TestCallback:
         sfn_snapshot.add_transformer(RegexTransformer(queue_name, "sqs_queue_name"))
 
         task_token_consumer_thread = threading.Thread(
-            target=_handle_sqs_task_token_with_heartbeats_and_success, args=(aws_client, queue_url)
+            target=_handle_sqs_task_token_with_heartbeats_and_success,
+            args=(aws_client, queue_url),
         )
         task_token_consumer_thread.start()
 
