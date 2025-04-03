@@ -64,7 +64,6 @@ base-runtime = [
     "hypercorn>=0.14.4",
     "localstack-twisted>=23.0",
     "openapi-core>=0.19.2",
-    "pyopenssl>=23.0.0",
     "readerwriterlock>=1.0.7",
     "requests-aws4auth>=1.0",
     # explicitly set urllib3 to force its usage / ensure compatibility
@@ -95,7 +94,6 @@ runtime = [
     "moto-ext[all]==5.1.3.post1",
     "opensearch-py>=2.4.1",
     "pymongo>=4.2.0",
-    "pyopenssl>=23.0.0",
 ]
 
 # for running tests and coverage analysis
