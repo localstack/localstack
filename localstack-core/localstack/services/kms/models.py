@@ -705,7 +705,7 @@ class KmsKey:
             return request_key_usage or "ENCRYPT_DECRYPT"
 
     def rotate_key_on_demand(self):
-        if len(self.previous_keys) == ON_DEMAND_ROTATION_LIMIT:
+        if len(self.previous_keys) >= ON_DEMAND_ROTATION_LIMIT:
             raise LimitExceededException(
                 f"The on-demand rotations limit has been reached for the given keyId. "
                 f"No more on-demand rotations can be performed for this key: {self.metadata['Arn']}"
