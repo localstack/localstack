@@ -2152,5 +2152,37 @@
         }
       }
     }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_2048-RSASSA_PSS_SHA_256]": {
+    "recorded-date": "02-04-2025, 06:06:52",
+    "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_2048-RSASSA_PSS_SHA_384]": {
+    "recorded-date": "02-04-2025, 06:06:54",
+    "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_2048-RSASSA_PSS_SHA_512]": {
+    "recorded-date": "02-04-2025, 06:06:57",
+    "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_4096-RSASSA_PKCS1_V1_5_SHA_256]": {
+    "recorded-date": "02-04-2025, 06:06:59",
+    "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_4096-RSASSA_PKCS1_V1_5_SHA_512]": {
+    "recorded-date": "02-04-2025, 06:07:01",
+    "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[ECC_NIST_P256-ECDSA_SHA_256]": {
+    "recorded-date": "02-04-2025, 06:07:03",
+    "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[ECC_NIST_P384-ECDSA_SHA_384]": {
+    "recorded-date": "02-04-2025, 06:07:06",
+    "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[ECC_SECG_P256K1-ECDSA_SHA_256]": {
+    "recorded-date": "02-04-2025, 06:07:08",
+    "recorded-content": {}
   }
 }
