@@ -4,8 +4,8 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
+from aws_xray_sdk.core import xray_recorder
 from botocore.utils import ArnParser
-from werkzeug.datastructures import Headers
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.events import (
@@ -20,11 +20,6 @@ from localstack.aws.api.events import (
     RuleArn,
     Timestamp,
 )
-from localstack.services.apigateway.next_gen.execute_api.helpers import (
-    generate_trace_id,
-    generate_trace_parent,
-    parse_trace_id,
-)
 from localstack.services.events.models import (
     FormattedEvent,
     ResourceType,
@@ -33,6 +28,7 @@ from localstack.services.events.models import (
 )
 from localstack.utils.aws.arns import ARN_PARTITION_REGEX, parse_arn
 from localstack.utils.strings import long_uid
+from localstack.utils.xray.trace_header import TraceHeader
 
 LOG = logging.getLogger(__name__)
 
@@ -301,16 +297,27 @@ def is_nested_in_string(template: str, match: re.Match[str]) -> bool:
     return left_quote != -1
 
 
-def populate_trace_id(headers: Headers) -> str:
-    """
-    Populates the trace header for the request xray header if present.
-    If not present, it generates a new trace_id
-    """
-    incoming_trace = parse_trace_id(headers.get("X-Amzn-Trace-Id", ""))
-    # parse_trace_id always return capitalized keys
+def create_segment_from_trace_header(trace_header: TraceHeader) -> None:
+    segment = xray_recorder.begin_segment(name="events.put_events")
+    segment.trace_id = trace_header.root
+    segment.parent_id = trace_header.parent
+    if trace_header.sampled == "1":
+        segment.sampled = True
+    elif trace_header.sampled == "0":
+        segment.sampled = False
 
-    trace = incoming_trace.get("Root", generate_trace_id())
-    incoming_parent = incoming_trace.get("Parent")
-    parent = incoming_parent or generate_trace_parent()
-    sampled = incoming_trace.get("Sampled", "1" if incoming_parent else "0")
-    return f"Root={trace};Parent={parent};Sampled={sampled}"
+
+def get_trace_header_str_from_segment():
+    # Get the current segment
+    segment = xray_recorder.current_segment()
+
+    if segment:
+        # Construct the trace header manually
+        trace_id = segment.trace_id
+        parent_id = segment.id  # Use the segment's own ID as the parent for downstream calls
+        sampled = "1" if segment.sampled else "0"
+
+        # Format according to X-Ray trace header specification
+        trace_header_str = f"Root={trace_id};Parent={parent_id};Sampled={sampled}"
+
+        return trace_header_str

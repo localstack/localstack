@@ -8,6 +8,7 @@ from typing import Any, Dict, Set, Type
 from urllib.parse import urlencode
 
 import requests
+from aws_xray_sdk.core import patch
 from botocore.client import BaseClient
 
 from localstack import config
@@ -28,6 +29,7 @@ from localstack.services.events.models import (
 from localstack.services.events.utils import (
     event_time_to_time_string,
     get_trace_header_encoded_region_account,
+    get_trace_header_str_from_segment,
     is_nested_in_string,
     to_json_str,
 )
@@ -169,6 +171,8 @@ class TargetSender(ABC):
         self._validate_input(target)
         self._client: BaseClient | None = None
 
+        self._x_ray_segment = None
+
     @property
     def arn(self):
         return self.target["Arn"]
@@ -193,10 +197,10 @@ class TargetSender(ABC):
         return self._client
 
     @abstractmethod
-    def send_event(self, event: FormattedEvent | TransformedEvent, trace_id: str | None = None):
+    def send_event(self, event: FormattedEvent | TransformedEvent):
         pass
 
-    def process_event(self, event: FormattedEvent, trace_id: str | None = None):
+    def process_event(self, event: FormattedEvent):
         """Processes the event and send it to the target."""
         if input_ := self.target.get("Input"):
             event = json.loads(input_)
@@ -208,7 +212,7 @@ class TargetSender(ABC):
             if input_transformer := self.target.get("InputTransformer"):
                 event = self.transform_event_with_target_input_transformer(input_transformer, event)
         if event:
-            self.send_event(event, trace_id)
+            self.send_event(event)
         else:
             LOG.info("No event to send to target %s", self.target.get("Id"))
 
@@ -316,7 +320,7 @@ class ApiGatewayTargetSender(TargetSender):
 
     ALLOWED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
 
-    def send_event(self, event, trace_id):
+    def send_event(self, event):
         # Parse the ARN to extract api_id, stage_name, http_method, and resource path
         # Example ARN: arn:{partition}:execute-api:{region}:{account_id}:{api_id}/{stage_name}/{method}/{resource_path}
         arn_parts = parse_arn(self.target["Arn"])
@@ -383,9 +387,8 @@ class ApiGatewayTargetSender(TargetSender):
         # Serialize the event, converting datetime objects to strings
         event_json = json.dumps(event, default=str)
 
-        # Set x-ray trace header
-        if trace_id:
-            headers["X-Amzn-Trace-Id"] = trace_id
+        trace_header_str = get_trace_header_str_from_segment()
+        headers["X-Amzn-Trace-Id"] = trace_header_str
 
         # Send the HTTP request
         response = requests.request(
@@ -468,6 +471,10 @@ class EventsTargetSender(TargetSender):
             event, self.region, self.account_id, self.target_region, self.target_account_id
         ):
             entries[0]["TraceHeader"] = encoded_original_id
+
+        # Patch the boto3 client to automatically include X-Ray trace headers
+        patch(self.client)
+
         self.client.put_events(Entries=entries)
 
     def _get_source(self, event: FormattedEvent | TransformedEvent) -> str:
@@ -524,6 +531,10 @@ class EventsApiDestinationTargetSender(TargetSender):
         if http_parameters := self.target.get("HttpParameters"):
             endpoint = add_target_http_parameters(http_parameters, endpoint, headers, event)
 
+        # add trace header
+        trace_header_str = get_trace_header_str_from_segment()
+        headers["X-Amzn-Trace-Id"] = trace_header_str
+
         result = requests.request(
             method=method, url=endpoint, data=json.dumps(event or {}), headers=headers
         )
@@ -538,6 +549,8 @@ class EventsApiDestinationTargetSender(TargetSender):
 class FirehoseTargetSender(TargetSender):
     def send_event(self, event):
         delivery_stream_name = firehose_name(self.target["Arn"])
+        # Patch the boto3 client to automatically include X-Ray trace headers
+        patch(self.client)
         self.client.put_record(
             DeliveryStreamName=delivery_stream_name,
             Record={"Data": to_bytes(to_json_str(event))},
@@ -553,6 +566,8 @@ class KinesisTargetSender(TargetSender):
         )
         stream_name = self.target["Arn"].split("/")[-1]
         partition_key = collections.get_safe(event, partition_key_path, event["id"])
+        # Patch the boto3 client to automatically include X-Ray trace headers
+        patch(self.client)
         self.client.put_record(
             StreamName=stream_name,
             Data=to_bytes(to_json_str(event)),
@@ -570,6 +585,8 @@ class KinesisTargetSender(TargetSender):
 
 class LambdaTargetSender(TargetSender):
     def send_event(self, event):
+        # Patch the boto3 client to automatically include X-Ray trace headers
+        patch(self.client)
         self.client.invoke(
             FunctionName=self.target["Arn"],
             Payload=to_bytes(to_json_str(event)),
@@ -581,6 +598,8 @@ class LogsTargetSender(TargetSender):
     def send_event(self, event):
         log_group_name = self.target["Arn"].split(":")[6]
         log_stream_name = str(uuid.uuid4())  # Unique log stream name
+        # Patch the boto3 client to automatically include X-Ray trace headers
+        patch(self.client)
         self.client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)
         self.client.put_log_events(
             logGroupName=log_group_name,
@@ -612,6 +631,8 @@ class SagemakerTargetSender(TargetSender):
 
 class SnsTargetSender(TargetSender):
     def send_event(self, event):
+        # Patch the boto3 client to automatically include X-Ray trace headers
+        patch(self.client)
         self.client.publish(TopicArn=self.target["Arn"], Message=to_json_str(event))
 
 
@@ -620,6 +641,8 @@ class SqsTargetSender(TargetSender):
         queue_url = sqs_queue_url_for_arn(self.target["Arn"])
         msg_group_id = self.target.get("SqsParameters", {}).get("MessageGroupId", None)
         kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
+        # Patch the boto3 client to automatically include X-Ray trace headers
+        patch(self.client)
         self.client.send_message(
             QueueUrl=queue_url,
             MessageBody=to_json_str(event),
@@ -632,6 +655,8 @@ class StatesTargetSender(TargetSender):
 
     def send_event(self, event):
         self.service = "stepfunctions"
+        # Patch the boto3 client to automatically include X-Ray trace headers
+        patch(self.client)
         self.client.start_execution(
             stateMachineArn=self.target["Arn"], name=event["id"], input=to_json_str(event)
         )
