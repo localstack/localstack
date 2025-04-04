@@ -648,6 +648,19 @@ class TransformerUtility:
                 ),
                 "version_uuid",
             ),
+            KeyValueBasedTransformer(
+                lambda k, v: (
+                    v
+                    if (
+                        isinstance(k, str)
+                        and k == "RotationLambdaARN"
+                        and isinstance(v, str)
+                        and re.match(PATTERN_ARN, v)
+                    )
+                    else None
+                ),
+                "lambda-arn",
+            ),
             SortingTransformer("VersionStages"),
             SortingTransformer("Versions", lambda e: e.get("CreatedDate")),
         ]

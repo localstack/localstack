@@ -224,3 +224,14 @@ def finish_secret(service_client, arn, token):
         token,
         arn,
     )
+    if "AWSPENDING" in metadata["VersionIdsToStages"].get(token, []):
+        service_client.update_secret_version_stage(
+            SecretId=arn,
+            VersionStage="AWSPENDING",
+            RemoveFromVersionId=token,
+        )
+        logger.info(
+            "finishSecret: Successfully removed AWSPENDING stage from version %s for secret %s.",
+            token,
+            arn,
+        )
