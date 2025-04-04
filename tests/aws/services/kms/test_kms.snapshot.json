@@ -2184,5 +2184,27 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[ECC_SECG_P256K1-ECDSA_SHA_256]": {
     "recorded-date": "02-04-2025, 06:07:08",
     "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_key_rotations_encryption_decryption": {
+    "recorded-date": "03-04-2025, 09:34:48",
+    "recorded-content": {
+      "bad-ciphertext": "An error occurred (InvalidCiphertextException) when calling the Decrypt operation: "
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_key_rotations_limits": {
+    "recorded-date": "03-04-2025, 11:10:33",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "LimitExceededException",
+          "Message": "The on-demand rotations limit has been reached for the given keyId. No more on-demand rotations can be performed for this key: <key-arn>"
+        },
+        "message": "The on-demand rotations limit has been reached for the given keyId. No more on-demand rotations can be performed for this key: <key-arn>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
