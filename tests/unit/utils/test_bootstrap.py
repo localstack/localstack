@@ -12,7 +12,7 @@ from localstack.utils.bootstrap import (
     get_gateway_port,
     get_preloaded_services,
 )
-from localstack.utils.container_utils.container_client import ContainerConfiguration, VolumeBind
+from localstack.utils.container_utils.container_client import BindMount, ContainerConfiguration
 
 
 @contextmanager
@@ -246,5 +246,5 @@ class TestContainerConfigurators:
             "53/udp": 53,
             "6000/tcp": 5000,
         }
-        assert VolumeBind(host_dir="foo", container_dir="/tmp/foo", read_only=False) in c.volumes
-        assert VolumeBind(host_dir="/bar", container_dir="/tmp/bar", read_only=True) in c.volumes
+        assert BindMount(host_dir="foo", container_dir="/tmp/foo", read_only=False) in c.volumes
+        assert BindMount(host_dir="/bar", container_dir="/tmp/bar", read_only=True) in c.volumes
