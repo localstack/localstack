@@ -6,7 +6,8 @@ import os
 import re
 import shlex
 import subprocess
-from typing import Dict, List, Optional, Tuple, Union
+from datetime import datetime
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from localstack import config
 from localstack.utils.collections import ensure_list
@@ -39,10 +40,14 @@ LOG = logging.getLogger(__name__)
 
 class CancellableProcessStream(CancellableStream):
     process: subprocess.Popen
+    map_fn: Optional[Callable[[str], Any]]
 
-    def __init__(self, process: subprocess.Popen) -> None:
+    def __init__(
+        self, process: subprocess.Popen, map_fn: Optional[Callable[[str], Any]] = None
+    ) -> None:
         super().__init__()
         self.process = process
+        self.map_fn = map_fn
 
     def __iter__(self):
         return self
@@ -51,7 +56,10 @@ class CancellableProcessStream(CancellableStream):
         line = self.process.stdout.readline()
         if not line:
             raise StopIteration
-        return line
+        if self.map_fn:
+            return self.map_fn(line)
+        else:
+            return line
 
     def close(self):
         return self.process.terminate()
@@ -477,6 +485,41 @@ class CmdDockerClient(ContainerClient):
         )
 
         return CancellableProcessStream(process)
+
+    def events(
+        self,
+        since: Optional[Union[datetime, int]] = None,
+        until: Optional[Union[datetime, int]] = None,
+        filters: Optional[Dict] = None,
+    ) -> CancellableStream:
+        cmd = self._docker_cmd()
+        cmd += ["events", "--format", "{{json .}}"]
+
+        def _to_timestamp(value: Union[datetime, int]):
+            if isinstance(value, datetime):
+                return value.timestamp()
+            else:
+                return value
+
+        if since:
+            cmd += [_to_timestamp(since)]
+        if until:
+            cmd += ["--until", _to_timestamp(until)]
+        if filters:
+            filter_pairs = [f"{key}={value}" for (key, value) in filters.items()]
+            cmd += ["--filter", ",".join(filter_pairs)]
+
+        process: subprocess.Popen = run(
+            cmd, asynchronous=True, outfile=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
+
+        def decode_fn(line: str):
+            try:
+                return json.loads(line)
+            except json.JSONDecodeError as e:
+                LOG.warning("Error decoding docker event %s: %s", line, e)
+
+        return CancellableProcessStream(process, map_fn=decode_fn)
 
     def _inspect_object(self, object_name_or_id: str) -> Dict[str, Union[dict, list, str]]:
         cmd = self._docker_cmd()

@@ -3,6 +3,7 @@ import ipaddress
 import json
 import logging
 import os
+import queue
 import re
 import textwrap
 import time
@@ -45,7 +46,7 @@ from localstack.utils.docker_utils import (
 from localstack.utils.net import Port, PortNotAvailableException, get_free_tcp_port
 from localstack.utils.strings import to_bytes
 from localstack.utils.sync import retry
-from localstack.utils.threads import FuncThread
+from localstack.utils.threads import FuncThread, start_thread
 from tests.integration.docker_utils.conftest import is_podman_test, skip_for_podman
 
 ContainerInfo = NamedTuple(
@@ -1050,6 +1051,72 @@ class TestDockerClient:
         assert "" == docker_client.get_container_logs(
             "container_hopefully_does_not_exist", safe=True
         )
+
+    def test_events(self, docker_client: ContainerClient):
+        # create background thread watching for events
+        q = queue.Queue()
+
+        should_stop = False
+        container_name = _random_container_name()
+
+        def stream_messages(*_):
+            stream = docker_client.events(filters={"container": container_name})
+            for event in stream:
+                if should_stop:
+                    break
+                q.put(event)
+
+        start_thread(stream_messages, name="docker-events-poller")
+
+        # run a container to generate some events
+        id = docker_client.create_container(
+            "alpine",
+            name=container_name,
+            detach=False,
+            command=["sh", "-c", "sleep 1"],
+        )
+        try:
+            docker_client.start_container(
+                id,
+                attach=True,
+            )
+        except Exception as e:
+            raise AssertionError("Error when starting container") from e
+        finally:
+            docker_client.remove_container(container_name)
+
+        should_stop = True
+
+        # flags to indicate that expected messages have been observed
+        # running a container and then removing the container should at least
+        # contain the following:
+        #
+        # - {"status": "create", ...}
+        # - {"status": "destroy", ...}
+        received_create = False
+        received_destroy = False
+
+        max_messages = 50
+        for _ in range(max_messages):
+            if received_create and received_destroy:
+                break
+
+            msg = q.get()
+
+            # filter out only events for this container
+            if msg.get("id") != id:
+                continue
+
+            # update test state based on message content
+            match msg.get("status"):
+                case "create":
+                    received_create = True
+                case "destroy":
+                    received_destroy = True
+
+            q.task_done()
+
+        assert received_create and received_destroy
 
     def test_get_logs(self, docker_client: ContainerClient):
         container_name = _random_container_name()
