@@ -241,7 +241,7 @@ class TranscribeProvider(TranscribeApi):
 
         with _DL_LOCK:
             if model_path.exists():
-                return
+                return model_path
             else:
                 model_path.mkdir(parents=True)
 
@@ -266,6 +266,8 @@ class TranscribeProvider(TranscribeApi):
                 model_ref.extractall(model_path.parent)
 
             Path(model_zip_path).unlink()
+
+        return model_path
 
     #
     # Threads
@@ -338,10 +340,10 @@ class TranscribeProvider(TranscribeApi):
             language_code = job["LanguageCode"]
             model_name = LANGUAGE_MODELS[language_code]
             self._setup_vosk()
-            self.download_model(model_name)
+            model_path = self.download_model(model_name)
             from vosk import KaldiRecognizer, Model  # noqa
 
-            model = Model(model_name=model_name)
+            model = Model(model_path=str(model_path), model_name=model_name)
 
             tc = KaldiRecognizer(model, audio.getframerate())
             tc.SetWords(True)
