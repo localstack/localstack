@@ -156,6 +156,7 @@ from localstack.services.events.target import (
 )
 from localstack.services.events.utils import (
     TARGET_ID_PATTERN,
+    create_segment_from_trace_header,
     extract_connection_name,
     extract_event_bus_name,
     extract_region_and_account_id,
@@ -163,7 +164,6 @@ from localstack.services.events.utils import (
     get_resource_type,
     get_trace_header_encoded_region_account,
     is_archive_arn,
-    populate_trace_id,
     recursive_remove_none_values_from_dict,
 )
 from localstack.services.plugins import ServiceLifecycleHook
@@ -1811,7 +1811,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
         region, account_id = extract_region_and_account_id(event_bus_name_or_arn, context)
 
-        trace_id = populate_trace_id(context.request.headers)
+        # Set x-ray segment from trace header
+        create_segment_from_trace_header(context.trace_context["aws_trace_header"])
 
         # TODO check interference with x-ray trace header
         if encoded_trace_header := get_trace_header_encoded_region_account(
@@ -1844,7 +1845,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
         if configured_rules := list(event_bus.rules.values()):
             for rule in configured_rules:
-                self._process_rules(rule, region, account_id, event_formatted, trace_id)
+                self._process_rules(rule, region, account_id, event_formatted)
         else:
             LOG.info(
                 json.dumps(
@@ -1865,7 +1866,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         region: str,
         account_id: str,
         event_formatted: FormattedEvent,
-        trace_id: str,
     ) -> None:
         """Process rules for an event. Note that we no longer handle entries here as AWS returns success regardless of target failures."""
         event_pattern = rule.event_pattern
@@ -1895,7 +1895,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     target_unique_id = f"{rule.arn}-{target_id}"
                     target_sender = self._target_sender_store[target_unique_id]
                     try:
-                        target_sender.process_event(event_formatted.copy(), trace_id)
+                        target_sender.process_event(event_formatted.copy())
                         rule_invocation.labels(
                             status=InvocationStatus.success,
                             service=target_sender.service,
