@@ -460,6 +460,9 @@ class TestEc2Integrations:
         # Check if the custom ID is present in the describe_vpcs response as well
         vpc: dict = aws_client.ec2.describe_vpcs(VpcIds=[custom_id])["Vpcs"][0]
         assert vpc["VpcId"] == custom_id
+        assert len(vpc["Tags"]) == 1
+        assert vpc["Tags"][0]["Key"] == TAG_KEY_CUSTOM_ID
+        assert vpc["Tags"][0]["Value"] == custom_id
 
         # Check if an duplicate custom ID exception is thrown if we try to recreate the VPC with the same custom ID
         with pytest.raises(ClientError) as e:
@@ -479,7 +482,50 @@ class TestEc2Integrations:
         assert e.value.response["Error"]["Code"] == "InvalidVpc.DuplicateCustomId"
 
     @markers.aws.only_localstack
-    def test_create_subnet_with_custom_id(self, aws_client, create_vpc):
+    def test_create_subnet_with_tags(self, cleanups, aws_client, create_vpc):
+        # Create a VPC.
+        vpc: dict = create_vpc(
+            cidr_block="10.0.0.0/16",
+            tag_specifications=[
+                {
+                    "ResourceType": "vpc",
+                    "Tags": [
+                        {"Key": "Name", "Value": "main-vpc"},
+                    ],
+                }
+            ],
+        )
+        vpc_id: str = vpc["Vpc"]["VpcId"]
+
+        # Create a subnet with a tag.
+        subnet: dict = aws_client.ec2.create_subnet(
+            VpcId=vpc_id,
+            CidrBlock="10.0.0.0/24",
+            TagSpecifications=[
+                {
+                    "ResourceType": "subnet",
+                    "Tags": [
+                        {"Key": "Name", "Value": "main-subnet"},
+                    ],
+                }
+            ],
+        )
+        cleanups.append(lambda: aws_client.ec2.delete_subnet(SubnetId=subnet["Subnet"]["SubnetId"]))
+        assert subnet["Subnet"]["VpcId"] == vpc_id
+        subnet_id: str = subnet["Subnet"]["SubnetId"]
+
+        # Now check that the tags make it back on the describe subnets call.
+        subnet: dict = aws_client.ec2.describe_subnets(
+            SubnetIds=[subnet_id],
+        )["Subnets"][0]
+        assert subnet["SubnetId"] == subnet_id
+        assert subnet["VpcId"] == vpc_id
+        assert len(subnet["Tags"]) == 1
+        assert subnet["Tags"][0]["Key"] == "Name"
+        assert subnet["Tags"][0]["Value"] == "main-subnet"
+
+    @markers.aws.only_localstack
+    def test_create_subnet_with_custom_id(self, cleanups, aws_client, create_vpc):
         custom_id = random_subnet_id()
 
         # Create necessary VPC resource
@@ -499,6 +545,7 @@ class TestEc2Integrations:
                 }
             ],
         )
+        cleanups.append(lambda: aws_client.ec2.delete_subnet(SubnetId=subnet["Subnet"]["SubnetId"]))
         assert subnet["Subnet"]["SubnetId"] == custom_id
 
         # Check if the custom ID is present in the describe_subnets response as well
@@ -526,7 +573,7 @@ class TestEc2Integrations:
         assert e.value.response["Error"]["Code"] == "InvalidSubnet.DuplicateCustomId"
 
     @markers.aws.only_localstack
-    def test_create_subnet_with_custom_id_and_vpc_id(self, aws_client, create_vpc):
+    def test_create_subnet_with_custom_id_and_vpc_id(self, cleanups, aws_client, create_vpc):
         custom_subnet_id = random_subnet_id()
         custom_vpc_id = random_vpc_id()
 
@@ -557,6 +604,7 @@ class TestEc2Integrations:
                 }
             ],
         )
+        cleanups.append(lambda: aws_client.ec2.delete_subnet(SubnetId=custom_subnet_id))
         assert subnet["Subnet"]["SubnetId"] == custom_subnet_id
 
         # Check if the custom ID is present in the describe_subnets response as well
@@ -565,9 +613,12 @@ class TestEc2Integrations:
         )["Subnets"][0]
         assert subnet["SubnetId"] == custom_subnet_id
         assert subnet["VpcId"] == custom_vpc_id
+        assert len(subnet["Tags"]) == 1
+        assert subnet["Tags"][0]["Key"] == TAG_KEY_CUSTOM_ID
+        assert subnet["Tags"][0]["Value"] == custom_subnet_id
 
     @markers.aws.only_localstack
-    def test_create_security_group_with_custom_id(self, aws_client, create_vpc):
+    def test_create_security_group_with_custom_id(self, cleanups, aws_client, create_vpc):
         custom_id = random_security_group_id()
 
         # Create necessary VPC resource
@@ -590,6 +641,7 @@ class TestEc2Integrations:
                 }
             ],
         )
+        cleanups.append(lambda: aws_client.ec2.delete_security_group(GroupId=custom_id))
         assert security_group["GroupId"] == custom_id, (
             f"Security group ID does not match custom ID: {security_group}"
         )
@@ -604,6 +656,9 @@ class TestEc2Integrations:
             (sg for sg in security_groups if sg["VpcId"] == vpc["Vpc"]["VpcId"]), None
         )
         assert security_group["GroupId"] == custom_id
+        assert len(security_group["Tags"]) == 1
+        assert security_group["Tags"][0]["Key"] == TAG_KEY_CUSTOM_ID
+        assert security_group["Tags"][0]["Value"] == custom_id
 
         # Check if a duplicate custom ID exception is thrown if we try to recreate the security group with the same custom ID
         with pytest.raises(ClientError) as e:
