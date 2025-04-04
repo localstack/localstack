@@ -164,6 +164,7 @@ from localstack.services.events.utils import (
     get_resource_type,
     get_trace_header_encoded_region_account,
     is_archive_arn,
+    populate_trace_id,
     recursive_remove_none_values_from_dict,
 )
 from localstack.services.plugins import ServiceLifecycleHook
@@ -1814,6 +1815,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             return
 
         region, account_id = extract_region_and_account_id(event_bus_name_or_arn, context)
+
+        trace_id = populate_trace_id(context.request.headers)
+
+        # TODO check interference with x-ray trace header
         if encoded_trace_header := get_trace_header_encoded_region_account(
             entry, context.region, context.account_id, region, account_id
         ):
@@ -1844,7 +1849,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
         if configured_rules := list(event_bus.rules.values()):
             for rule in configured_rules:
-                self._process_rules(rule, region, account_id, event_formatted)
+                self._process_rules(rule, region, account_id, event_formatted, trace_id)
         else:
             LOG.info(
                 json.dumps(
@@ -1865,6 +1870,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         region: str,
         account_id: str,
         event_formatted: FormattedEvent,
+        trace_id: str,
     ) -> None:
         """Process rules for an event. Note that we no longer handle entries here as AWS returns success regardless of target failures."""
         event_pattern = rule.event_pattern
@@ -1894,7 +1900,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     target_unique_id = f"{rule.arn}-{target_id}"
                     target_sender = self._target_sender_store[target_unique_id]
                     try:
-                        target_sender.process_event(event_formatted.copy())
+                        target_sender.process_event(event_formatted.copy(), trace_id)
                         rule_invocation.labels(
                             status=InvocationStatus.success,
                             service=target_sender.service,
