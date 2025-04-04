@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from botocore.utils import ArnParser
+from werkzeug.datastructures import Headers
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.events import (
@@ -18,6 +19,11 @@ from localstack.aws.api.events import (
     PutEventsRequestEntry,
     RuleArn,
     Timestamp,
+)
+from localstack.services.apigateway.next_gen.execute_api.helpers import (
+    generate_trace_id,
+    generate_trace_parent,
+    parse_trace_id,
 )
 from localstack.services.events.models import (
     FormattedEvent,
@@ -293,3 +299,18 @@ def is_nested_in_string(template: str, match: re.Match[str]) -> bool:
         return False
 
     return left_quote != -1
+
+
+def populate_trace_id(headers: Headers) -> str:
+    """
+    Populates the trace header for the request xray header if present.
+    If not present, it generates a new trace_id
+    """
+    incoming_trace = parse_trace_id(headers.get("X-Amzn-Trace-Id", ""))
+    # parse_trace_id always return capitalized keys
+
+    trace = incoming_trace.get("Root", generate_trace_id())
+    incoming_parent = incoming_trace.get("Parent")
+    parent = incoming_parent or generate_trace_parent()
+    sampled = incoming_trace.get("Sampled", "1" if incoming_parent else "0")
+    return f"Root={trace};Parent={parent};Sampled={sampled}"
