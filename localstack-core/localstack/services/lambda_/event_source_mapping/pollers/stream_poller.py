@@ -185,7 +185,10 @@ class StreamPoller(Poller):
     def poll_events_from_shard(self, shard_id: str, shard_iterator: str):
         get_records_response = self.get_records(shard_iterator)
         records: list[dict] = get_records_response.get("Records", [])
-        next_shard_iterator = get_records_response["NextShardIterator"]
+        if not (next_shard_iterator := get_records_response.get("NextShardIterator")):
+            # If the next shard iterator is None, we can assume the shard is closed or
+            # has expired on the DynamoDB Local server, hence we should re-initialize.
+            self.shards = self.initialize_shards()
 
         # We cannot reliably back-off when no records found since an iterator
         # may have to move multiple times until records are returned.
