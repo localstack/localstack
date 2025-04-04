@@ -154,7 +154,6 @@ class StreamPoller(Poller):
             LOG.debug("No shards found for %s.", self.source_arn)
             raise EmptyPollResultsException(service=self.event_source(), source_arn=self.source_arn)
         else:
-            LOG.debug("Event source %s has %d shards.", self.source_arn, len(self.shards))
             # Remove all shard batchers without corresponding shards
             for shard_id in self.shard_batcher.keys() - self.shards.keys():
                 self.shard_batcher.pop(shard_id, None)
