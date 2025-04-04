@@ -193,10 +193,10 @@ class TargetSender(ABC):
         return self._client
 
     @abstractmethod
-    def send_event(self, event: FormattedEvent | TransformedEvent):
+    def send_event(self, event: FormattedEvent | TransformedEvent, trace_id: str | None = None):
         pass
 
-    def process_event(self, event: FormattedEvent):
+    def process_event(self, event: FormattedEvent, trace_id: str | None = None):
         """Processes the event and send it to the target."""
         if input_ := self.target.get("Input"):
             event = json.loads(input_)
@@ -208,7 +208,7 @@ class TargetSender(ABC):
             if input_transformer := self.target.get("InputTransformer"):
                 event = self.transform_event_with_target_input_transformer(input_transformer, event)
         if event:
-            self.send_event(event)
+            self.send_event(event, trace_id)
         else:
             LOG.info("No event to send to target %s", self.target.get("Id"))
 
@@ -316,7 +316,7 @@ class ApiGatewayTargetSender(TargetSender):
 
     ALLOWED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
 
-    def send_event(self, event):
+    def send_event(self, event, trace_id):
         # Parse the ARN to extract api_id, stage_name, http_method, and resource path
         # Example ARN: arn:{partition}:execute-api:{region}:{account_id}:{api_id}/{stage_name}/{method}/{resource_path}
         arn_parts = parse_arn(self.target["Arn"])
@@ -382,6 +382,10 @@ class ApiGatewayTargetSender(TargetSender):
 
         # Serialize the event, converting datetime objects to strings
         event_json = json.dumps(event, default=str)
+
+        # Set x-ray trace header
+        if trace_id:
+            headers["X-Amzn-Trace-Id"] = trace_id
 
         # Send the HTTP request
         response = requests.request(
