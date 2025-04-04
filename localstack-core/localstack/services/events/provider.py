@@ -156,6 +156,7 @@ from localstack.services.events.target import (
 )
 from localstack.services.events.utils import (
     TARGET_ID_PATTERN,
+    create_segment_from_trace_header,
     extract_connection_name,
     extract_event_bus_name,
     extract_region_and_account_id,
@@ -1809,6 +1810,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             return
 
         region, account_id = extract_region_and_account_id(event_bus_name_or_arn, context)
+
+        # Set x-ray segment from trace header
+        create_segment_from_trace_header(context.trace_context["aws_trace_header"])
+
+        # TODO check interference with x-ray trace header
         if encoded_trace_header := get_trace_header_encoded_region_account(
             entry, context.region, context.account_id, region, account_id
         ):
