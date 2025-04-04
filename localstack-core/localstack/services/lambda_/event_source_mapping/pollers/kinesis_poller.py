@@ -84,6 +84,8 @@ class KinesisPoller(StreamPoller):
                 **kwargs,
             )
             shards[shard_id] = get_shard_iterator_response["ShardIterator"]
+
+        LOG.debug("Event source %s has %d shards.", self.source_arn, len(self.shards))
         return shards
 
     def stream_arn_param(self) -> dict:

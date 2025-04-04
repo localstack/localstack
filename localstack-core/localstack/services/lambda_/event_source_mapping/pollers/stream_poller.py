@@ -154,7 +154,6 @@ class StreamPoller(Poller):
             LOG.debug("No shards found for %s.", self.source_arn)
             raise EmptyPollResultsException(service=self.event_source(), source_arn=self.source_arn)
         else:
-            LOG.debug("Event source %s has %d shards.", self.source_arn, len(self.shards))
             # Remove all shard batchers without corresponding shards
             for shard_id in self.shard_batcher.keys() - self.shards.keys():
                 self.shard_batcher.pop(shard_id, None)
@@ -185,7 +184,10 @@ class StreamPoller(Poller):
     def poll_events_from_shard(self, shard_id: str, shard_iterator: str):
         get_records_response = self.get_records(shard_iterator)
         records: list[dict] = get_records_response.get("Records", [])
-        next_shard_iterator = get_records_response["NextShardIterator"]
+        if not (next_shard_iterator := get_records_response.get("NextShardIterator")):
+            # If the next shard iterator is None, we can assume the shard is closed or
+            # has expired on the DynamoDB Local server, hence we should re-initialize.
+            self.shards = self.initialize_shards()
 
         # We cannot reliably back-off when no records found since an iterator
         # may have to move multiple times until records are returned.
