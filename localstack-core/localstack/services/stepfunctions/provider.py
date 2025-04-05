@@ -152,8 +152,10 @@ from localstack.services.stepfunctions.backend.test_state.execution import (
 )
 from localstack.services.stepfunctions.stepfunctions_utils import (
     assert_pagination_parameters_valid,
+    assert_token_valid,
     get_next_page_token_from_arn,
     normalise_max_results,
+    validate_max_results_limit,
 )
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import (
@@ -1057,7 +1059,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         max_results: PageSize = None,
         **kwargs,
     ) -> ListStateMachineAliasesOutput:
-        # TODO: add pagination support.
+        validate_max_results_limit(max_results)
+
         self._validate_state_machine_arn(state_machine_arn)
         state_machines = self.get_store(context).state_machines
         state_machine_revision = state_machines.get(state_machine_arn)
@@ -1065,11 +1068,33 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             raise InvalidArn(f"Invalid arn: {state_machine_arn}")
 
         state_machine_aliases: StateMachineAliasList = list()
+        valid_token_exists = next_token is None
+
         for alias in state_machine_revision.aliases:
             state_machine_aliases.append(alias.to_item())
+            if next_token and assert_token_valid(
+                alias.to_item().get("stateMachineAliasArn"), next_token
+            ):
+                valid_token_exists = True
+
+        if not valid_token_exists:
+            raise InvalidToken("Invalid Token: 'Invalid token'")
+
         state_machine_aliases.sort(key=lambda item: item["creationDate"])
 
-        return ListStateMachineAliasesOutput(stateMachineAliases=state_machine_aliases)
+        paginated_list = PaginatedList(state_machine_aliases)
+
+        paginated_aliases, next_token = paginated_list.get_page(
+            token_generator=lambda item: get_next_page_token_from_arn(
+                item.get("stateMachineAliasArn")
+            ),
+            next_token=next_token,
+            page_size=None if max_results == 0 else max_results,
+        )
+
+        return ListStateMachineAliasesOutput(
+            stateMachineAliases=paginated_aliases, nextToken=next_token
+        )
 
     def list_state_machine_versions(
         self,
