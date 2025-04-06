@@ -230,7 +230,7 @@ class TranscribeProvider(TranscribeApi):
     #
 
     @staticmethod
-    def download_model(name: str):
+    def download_model(name: str) -> Path:
         """
         Download a Vosk language model to LocalStack cache directory. Do nothing if model is already downloaded.
 
