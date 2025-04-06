@@ -121,8 +121,7 @@ class Alias:
 
     def to_item(self) -> StateMachineAliasListItem:
         return StateMachineAliasListItem(
-            stateMachineAliasArn=self.state_machine_alias_arn,
-            creationDate=self.create_date,
+            stateMachineAliasArn=self.state_machine_alias_arn, creationDate=self.create_date
         )
 
     def get_token(self) -> PageToken:
