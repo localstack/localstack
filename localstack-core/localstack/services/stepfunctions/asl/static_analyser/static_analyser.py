@@ -25,15 +25,13 @@ class StaticAnalyser(ASLParserVisitor, abc.ABC):
         _, parser_rule_context = AmazonStateLanguageParser.parse(definition)
         self.visit(parser_rule_context)
 
-        self._assert_missing_transitions()
         if len(self._error_messages) > 0:
             error_msg = ", ".join(self._error_messages)
             raise ValueError(self._ERROR_MSG_PREFIX + error_msg)
 
-    def _assert_missing_transitions(self) -> None:
-        for scope in self._state_names_scope:
-            self._assert_all_targets_found(scope)
-            self._assert_all_states_targetted(scope)
+    def _assert_missing_transitions(self, scope: StateNamesScope) -> None:
+        self._assert_all_targets_found(scope)
+        self._assert_all_states_targetted(scope)
 
     def _assert_all_targets_found(self, scope: StateNamesScope) -> None:
         for target_state_name, target_type in scope.target_states:
@@ -64,4 +62,6 @@ class StaticAnalyser(ASLParserVisitor, abc.ABC):
     def visitProgram_decl(self, ctx:ASLParser.Program_declContext):
         self._state_names_scope.append(StateNamesScope())
         super().visitProgram_decl(ctx=ctx)
+        scope = self._state_names_scope.pop()
+        self._assert_missing_transitions(scope)
 
