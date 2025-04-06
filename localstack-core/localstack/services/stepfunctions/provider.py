@@ -1072,10 +1072,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
         for alias in state_machine_revision.aliases:
             state_machine_aliases.append(alias.to_item())
-            if (
-                next_token
-                and not valid_token_exists
-                and assert_token_valid(alias.to_item().get("stateMachineAliasArn"), next_token)
+            if not valid_token_exists and assert_token_valid(
+                alias.to_item().get("stateMachineAliasArn"), next_token
             ):
                 valid_token_exists = True
 
