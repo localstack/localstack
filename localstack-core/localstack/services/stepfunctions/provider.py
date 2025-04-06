@@ -1069,8 +1069,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         valid_token_found = next_token is None
 
         for alias in state_machine_revision.aliases:
-            state_machine_alias_list_item = alias.to_item()
-            state_machine_aliases.append(state_machine_alias_list_item)
+            state_machine_aliases.append(alias.to_item())
             if alias.get_token() == next_token:
                 valid_token_found = True
 
