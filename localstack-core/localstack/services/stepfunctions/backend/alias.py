@@ -11,9 +11,9 @@ from localstack.aws.api.stepfunctions import (
     Arn,
     CharacterRestrictedName,
     DescribeStateMachineAliasOutput,
+    PageToken,
     RoutingConfigurationList,
     StateMachineAliasListItem,
-    PageToken
 )
 from localstack.services.stepfunctions.stepfunctions_utils import tokenize_item
 
