@@ -1128,7 +1128,6 @@ class ListStateMachineAliasesInput(ServiceRequest):
 class StateMachineAliasListItem(TypedDict, total=False):
     stateMachineAliasArn: LongArn
     creationDate: Timestamp
-    token: PageToken
 
 
 StateMachineAliasList = List[StateMachineAliasListItem]

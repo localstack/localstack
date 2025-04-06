@@ -13,6 +13,7 @@ from localstack.aws.api.stepfunctions import (
     DescribeStateMachineAliasOutput,
     RoutingConfigurationList,
     StateMachineAliasListItem,
+    PageToken
 )
 from localstack.services.stepfunctions.stepfunctions_utils import tokenize_item
 
@@ -26,7 +27,7 @@ class Alias:
     _state_machine_version_arns: list[Arn]
     _execution_probability_distribution: list[int]
     state_machine_alias_arn: Final[Arn]
-    tokenized_state_machine_alias_arn: str
+    _tokenized_state_machine_alias_arn: PageToken
     create_date: datetime.datetime
 
     def __init__(
@@ -41,7 +42,7 @@ class Alias:
         self.name = name
         self._description = None
         self.state_machine_alias_arn = f"{state_machine_arn}:{name}"
-        self.tokenized_state_machine_alias_arn = tokenize_item(self.state_machine_alias_arn)
+        self._tokenized_state_machine_alias_arn = tokenize_item(self.state_machine_alias_arn)
         self.update(description=description, routing_configuration_list=routing_configuration_list)
         self.create_date = self._get_mutex_date()
 
@@ -122,5 +123,7 @@ class Alias:
         return StateMachineAliasListItem(
             stateMachineAliasArn=self.state_machine_alias_arn,
             creationDate=self.create_date,
-            token=self.tokenized_state_machine_alias_arn,
         )
+
+    def get_token(self) -> PageToken:
+        return self._tokenized_state_machine_alias_arn
