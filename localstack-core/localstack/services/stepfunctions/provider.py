@@ -1089,7 +1089,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                 item.get("stateMachineAliasArn")
             ),
             next_token=next_token,
-            page_size=None if max_results == 0 else max_results,
+            page_size=None if max_results == 0 else max_results
         )
 
         return ListStateMachineAliasesOutput(
