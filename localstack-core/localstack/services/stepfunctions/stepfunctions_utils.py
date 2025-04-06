@@ -2,9 +2,8 @@ import base64
 import logging
 from typing import Dict
 
-from localstack.aws.api.stepfunctions import PageSize, ValidationException
+from localstack.aws.api.stepfunctions import ValidationException
 from localstack.aws.connect import connect_to
-from localstack.services.stepfunctions.constants import MAX_RESULTS_LIMIT
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.common import retry
 from localstack.utils.strings import to_bytes, to_str
@@ -47,7 +46,7 @@ def assert_pagination_parameters_valid(
     next_token: str,
     next_token_length_limit: int = 1024,
     max_results_upper_limit: int = 1000,
-) -> tuple[int, str]:
+):
     validation_errors = []
 
     match max_results:
@@ -70,17 +69,7 @@ def assert_pagination_parameters_valid(
         raise ValidationException(message)
 
 
-def assert_token_valid(item: str, incoming_token: str) -> bool:
+def tokenize_item(item: str) -> str:
     base64_bytes = base64.b64encode(item.encode("utf-8"))
-    current_token = base64_bytes.decode("utf-8")
-    return True if incoming_token == current_token else False
-
-
-def validate_max_results_limit(max_results: PageSize):
-    if max_results and max_results > MAX_RESULTS_LIMIT:
-        raise ValidationException(
-            f"1 validation error detected: "
-            f"Value '{max_results}' at 'maxResults' "
-            f"failed to satisfy constraint: "
-            f"Member must have value less than or equal to {MAX_RESULTS_LIMIT}"
-        )
+    token = base64_bytes.decode("utf-8")
+    return token

@@ -152,10 +152,8 @@ from localstack.services.stepfunctions.backend.test_state.execution import (
 )
 from localstack.services.stepfunctions.stepfunctions_utils import (
     assert_pagination_parameters_valid,
-    assert_token_valid,
     get_next_page_token_from_arn,
     normalise_max_results,
-    validate_max_results_limit,
 )
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import (
@@ -1059,7 +1057,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         max_results: PageSize = None,
         **kwargs,
     ) -> ListStateMachineAliasesOutput:
-        validate_max_results_limit(max_results)
+        assert_pagination_parameters_valid(max_results, next_token)
 
         self._validate_state_machine_arn(state_machine_arn)
         state_machines = self.get_store(context).state_machines
@@ -1068,16 +1066,15 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             raise InvalidArn(f"Invalid arn: {state_machine_arn}")
 
         state_machine_aliases: StateMachineAliasList = list()
-        valid_token_exists = next_token is None
+        valid_token_found = next_token is None
 
         for alias in state_machine_revision.aliases:
-            state_machine_aliases.append(alias.to_item())
-            if not valid_token_exists and assert_token_valid(
-                alias.to_item().get("stateMachineAliasArn"), next_token
-            ):
-                valid_token_exists = True
+            state_machine_alias_list_item = alias.to_item()
+            state_machine_aliases.append(state_machine_alias_list_item)
+            if not valid_token_found and state_machine_alias_list_item.get("token") == next_token:
+                valid_token_found = True
 
-        if not valid_token_exists:
+        if not valid_token_found:
             raise InvalidToken("Invalid Token: 'Invalid token'")
 
         state_machine_aliases.sort(key=lambda item: item["creationDate"])
@@ -1089,7 +1086,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                 item.get("stateMachineAliasArn")
             ),
             next_token=next_token,
-            page_size=None if max_results == 0 else max_results
+            page_size=None if max_results == 0 else max_results,
         )
 
         return ListStateMachineAliasesOutput(
