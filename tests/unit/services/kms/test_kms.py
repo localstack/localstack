@@ -1,7 +1,7 @@
 import pytest
 
 from localstack.services.kms.exceptions import DryRunOperationException
-from localstack.services.kms.provider import KmsProvider
+from localstack.services.kms.provider import KmsProvider, kms_stores
 from localstack.services.kms.models import KmsKey
 from localstack.aws.api.kms import (
     CreateKeyRequest
@@ -38,10 +38,13 @@ def test_generate_data_key_pair_real_key(provider):
     context.account_id = account_id
     context.region = region_name
 
-    # Create a real KMS key via internal method
+    # Note: we're using `provider.create_key` to set up the test, which introduces a hidden dependency.
+    # If `create_key` fails or changes its behavior, this test might fail incorrectly even if the logic
+    # under test (`generate_data_key_pair`) is still correct. Ideally, we would decouple the store
+    # through dependency injection (e.g., by abstracting the KMS store), so that
+    # we could stub it or inject a pre-populated instance directly in the test setup.
     key_request = CreateKeyRequest(Description="Test key")
     key = provider.create_key(context, key_request)
-    print("[test] Created key:", key)
     key_id = key["KeyMetadata"]["KeyId"]
 
     # # Act
@@ -51,7 +54,6 @@ def test_generate_data_key_pair_real_key(provider):
         key_pair_spec="RSA_2048",
         dry_run=False,
     )
-    print (response)
 
     # # Assert
     assert response["KeyId"] == key["KeyMetadata"]["Arn"]
@@ -65,7 +67,11 @@ def test_generate_data_key_pair_dry_run(provider):
     context.account_id = account_id
     context.region = region_name
 
-    # Create a real KMS key via internal method
+    # Note: we're using `provider.create_key` to set up the test, which introduces a hidden dependency.
+    # If `create_key` fails or changes its behavior, this test might fail incorrectly even if the logic
+    # under test (`generate_data_key_pair`) is still correct. Ideally, we would decouple the store
+    # through dependency injection (e.g., by abstracting the KMS store), so that
+    # we could stub it or inject a pre-populated instance directly in the test setup.
     key_request = CreateKeyRequest(Description="Test key")
     key = provider.create_key(context, key_request)
     key_id = key["KeyMetadata"]["KeyId"]
