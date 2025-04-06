@@ -2184,5 +2184,21 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[ECC_SECG_P256K1-ECDSA_SHA_256]": {
     "recorded-date": "02-04-2025, 06:07:08",
     "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_pair_dry_run": {
+    "recorded-date": "06-04-2025, 11:54:20",
+    "recorded-content": {
+      "dryrun_exception": {
+        "Error": {
+          "Code": "DryRunOperationException",
+          "Message": "The request would have succeeded, but the DryRun option is set."
+        },
+        "message": "The request would have succeeded, but the DryRun option is set.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
