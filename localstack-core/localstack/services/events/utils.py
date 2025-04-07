@@ -318,6 +318,6 @@ def get_trace_header_str_from_segment():
         sampled = "1" if segment.sampled else "0"
 
         # Format according to X-Ray trace header specification
-        trace_header_str = f"Root={trace_id};Parent={parent_id};Sampled={sampled}"
+        xray_trace_header = TraceHeader(root=trace_id, parent=parent_id, sampled=sampled)
 
-        return trace_header_str
+        return xray_trace_header.to_header_str()
