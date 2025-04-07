@@ -9,6 +9,7 @@ authors = [
     { name = "LocalStack Contributors", email = "info@localstack.cloud" }
 ]
 description = "The core library and runtime of LocalStack"
+license = "Apache-2.0"
 requires-python = ">=3.9"
 dependencies = [
     "build",
@@ -31,7 +32,6 @@ dynamic = ["version"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
-    "License-Expression :: OSI Approved :: Apache Software License",
     "Topic :: Internet",
     "Topic :: Software Development :: Testing",
     "Topic :: System :: Emulators",
