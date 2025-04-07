@@ -41,6 +41,9 @@
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_list_state_machine_aliases_pagination_invalid_next_token": {
     "last_validated_date": "2025-04-07T16:48:15+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_list_state_machine_aliases_pagination_max_results_0": {
+    "last_validated_date": "2025-04-07T21:11:20+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_update_no_such_alias_arn": {
     "last_validated_date": "2025-04-07T13:33:04+00:00"
   }

@@ -585,7 +585,7 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_list_state_machine_aliases_pagination": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_list_state_machine_aliases_pagination_max_results_1_next_token": {
     "recorded-date": "07-04-2025, 16:51:07",
     "recorded-content": {
       "create_state_machine_alias_response-1": {
@@ -634,6 +634,31 @@
           {
             "creationDate": "datetime",
             "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:AliasName-3"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_list_state_machine_aliases_pagination_max_results_0": {
+    "recorded-date": "07-04-2025, 21:11:20",
+    "recorded-content": {
+      "create_state_machine_alias_response": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_state_machine_alias_max_results_0_response": {
+        "stateMachineAliases": [
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name"
           }
         ],
         "ResponseMetadata": {
