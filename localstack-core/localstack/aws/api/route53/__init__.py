@@ -277,6 +277,8 @@ class ResourceRecordSetRegion(StrEnum):
     ap_southeast_5 = "ap-southeast-5"
     mx_central_1 = "mx-central-1"
     ap_southeast_7 = "ap-southeast-7"
+    us_gov_east_1 = "us-gov-east-1"
+    us_gov_west_1 = "us-gov-west-1"
 
 
 class ReusableDelegationSetLimitType(StrEnum):

@@ -405,6 +405,17 @@ class S3StorageClass(StrEnum):
     GLACIER_IR = "GLACIER_IR"
 
 
+class ScopePermission(StrEnum):
+    GetObject = "GetObject"
+    GetObjectAttributes = "GetObjectAttributes"
+    ListMultipartUploadParts = "ListMultipartUploadParts"
+    ListBucket = "ListBucket"
+    ListBucketMultipartUploads = "ListBucketMultipartUploads"
+    PutObject = "PutObject"
+    DeleteObject = "DeleteObject"
+    AbortMultipartUpload = "AbortMultipartUpload"
+
+
 class SseKmsEncryptedObjectsStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
@@ -824,6 +835,15 @@ class CreateAccessPointForObjectLambdaResult(TypedDict, total=False):
     Alias: Optional[ObjectLambdaAccessPointAlias]
 
 
+ScopePermissionList = List[ScopePermission]
+PrefixesList = List[Prefix]
+
+
+class Scope(TypedDict, total=False):
+    Prefixes: Optional[PrefixesList]
+    Permissions: Optional[ScopePermissionList]
+
+
 class CreateAccessPointRequest(ServiceRequest):
     AccountId: AccountId
     Name: AccessPointName
@@ -831,6 +851,7 @@ class CreateAccessPointRequest(ServiceRequest):
     VpcConfiguration: Optional[VpcConfiguration]
     PublicAccessBlockConfiguration: Optional[PublicAccessBlockConfiguration]
     BucketAccountId: Optional[AccountId]
+    Scope: Optional[Scope]
 
 
 class CreateAccessPointResult(TypedDict, total=False):
@@ -1222,6 +1243,11 @@ class DeleteAccessPointRequest(ServiceRequest):
     Name: AccessPointName
 
 
+class DeleteAccessPointScopeRequest(ServiceRequest):
+    AccountId: AccountId
+    Name: AccessPointName
+
+
 class DeleteBucketLifecycleConfigurationRequest(ServiceRequest):
     AccountId: AccountId
     Bucket: BucketName
@@ -1559,6 +1585,15 @@ class GetAccessPointResult(TypedDict, total=False):
     AccessPointArn: Optional[S3AccessPointArn]
     Endpoints: Optional[Endpoints]
     BucketAccountId: Optional[AccountId]
+
+
+class GetAccessPointScopeRequest(ServiceRequest):
+    AccountId: AccountId
+    Name: AccessPointName
+
+
+class GetAccessPointScopeResult(TypedDict, total=False):
+    Scope: Optional[Scope]
 
 
 class GetBucketLifecycleConfigurationRequest(ServiceRequest):
@@ -1965,6 +2000,18 @@ class ListAccessGrantsResult(TypedDict, total=False):
     AccessGrantsList: Optional[AccessGrantsList]
 
 
+class ListAccessPointsForDirectoryBucketsRequest(ServiceRequest):
+    AccountId: AccountId
+    DirectoryBucket: Optional[BucketName]
+    NextToken: Optional[NonEmptyMaxLength1024String]
+    MaxResults: Optional[MaxResults]
+
+
+class ListAccessPointsForDirectoryBucketsResult(TypedDict, total=False):
+    AccessPointList: Optional[AccessPointList]
+    NextToken: Optional[NonEmptyMaxLength1024String]
+
+
 class ListAccessPointsForObjectLambdaRequest(ServiceRequest):
     AccountId: AccountId
     NextToken: Optional[NonEmptyMaxLength1024String]
@@ -2135,6 +2182,12 @@ class PutAccessPointPolicyRequest(ServiceRequest):
     AccountId: AccountId
     Name: AccessPointName
     Policy: Policy
+
+
+class PutAccessPointScopeRequest(ServiceRequest):
+    AccountId: AccountId
+    Name: AccessPointName
+    Scope: Scope
 
 
 class PutBucketLifecycleConfigurationRequest(ServiceRequest):
@@ -2360,6 +2413,7 @@ class S3ControlApi:
         vpc_configuration: VpcConfiguration = None,
         public_access_block_configuration: PublicAccessBlockConfiguration = None,
         bucket_account_id: AccountId = None,
+        scope: Scope = None,
         **kwargs,
     ) -> CreateAccessPointResult:
         raise NotImplementedError
@@ -2495,6 +2549,12 @@ class S3ControlApi:
         account_id: AccountId,
         name: ObjectLambdaAccessPointName,
         **kwargs,
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteAccessPointScope")
+    def delete_access_point_scope(
+        self, context: RequestContext, account_id: AccountId, name: AccessPointName, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -2687,6 +2747,12 @@ class S3ControlApi:
     ) -> GetAccessPointPolicyStatusForObjectLambdaResult:
         raise NotImplementedError
 
+    @handler("GetAccessPointScope")
+    def get_access_point_scope(
+        self, context: RequestContext, account_id: AccountId, name: AccessPointName, **kwargs
+    ) -> GetAccessPointScopeResult:
+        raise NotImplementedError
+
     @handler("GetBucket")
     def get_bucket(
         self, context: RequestContext, account_id: AccountId, bucket: BucketName, **kwargs
@@ -2858,6 +2924,18 @@ class S3ControlApi:
     ) -> ListAccessPointsResult:
         raise NotImplementedError
 
+    @handler("ListAccessPointsForDirectoryBuckets")
+    def list_access_points_for_directory_buckets(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        directory_bucket: BucketName = None,
+        next_token: NonEmptyMaxLength1024String = None,
+        max_results: MaxResults = None,
+        **kwargs,
+    ) -> ListAccessPointsForDirectoryBucketsResult:
+        raise NotImplementedError
+
     @handler("ListAccessPointsForObjectLambda")
     def list_access_points_for_object_lambda(
         self,
@@ -2983,6 +3061,17 @@ class S3ControlApi:
         account_id: AccountId,
         name: ObjectLambdaAccessPointName,
         policy: ObjectLambdaPolicy,
+        **kwargs,
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("PutAccessPointScope")
+    def put_access_point_scope(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        name: AccessPointName,
+        scope: Scope,
         **kwargs,
     ) -> None:
         raise NotImplementedError
