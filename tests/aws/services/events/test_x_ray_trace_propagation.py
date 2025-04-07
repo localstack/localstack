@@ -313,10 +313,14 @@ def test_xray_trace_propagation_events_lambda(
     lambda_trace_header = events[0]["trace_id_inside_handler"]
     assert lambda_trace_header is not None
     lambda_trace_id = re.search(r"Root=([^;]+)", lambda_trace_header).group(1)
+    lambda_trace_parent = re.search(r"Parent=([^;]+)", lambda_trace_header).group(1)
     assert lambda_trace_id == trace_id
 
-    snapshot.add_transformer(
-        snapshot.transform.regex(lambda_trace_id, "trace_id_root"),
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.regex(lambda_trace_id, "trace_id_root"),
+            snapshot.transform.regex(lambda_trace_parent, "trace_id_parent"),
+        ]
     )
 
     snapshot.match("lambda_logs", events)
