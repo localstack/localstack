@@ -5,6 +5,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
+from localstack.utils.xray.trace_header import TraceHeader
 
 APIGATEWAY_ASSUME_ROLE_POLICY = {
     "Statement": {
@@ -17,7 +18,6 @@ APIGATEWAY_ASSUME_ROLE_POLICY = {
 import re
 
 import pytest
-from aws_xray_sdk.core import patch, xray_recorder
 
 from localstack.testing.aws.util import is_aws_cloud
 from tests.aws.services.events.helper_functions import is_old_provider
@@ -90,6 +90,7 @@ def test_xray_trace_propagation_events_api_gateway(
     events_create_event_bus,
     events_put_rule,
     region_name,
+    cleanups,
     account_id,
     snapshot,
 ):
@@ -197,10 +198,18 @@ def test_xray_trace_propagation_events_api_gateway(
     events_client = aws_client.events
 
     # Enable X-Ray tracing for the aws_client
-    segment = xray_recorder.begin_segment(name="put_events")
-    trace_id = segment.trace_id
-    libraries = ["botocore"]
-    patch(libraries)
+    trace_id = "1-67f4141f-e1cd7672871da115129f8b19"
+    parent_id = "d0ee9531727135a0"
+    xray_trace_header = TraceHeader(root=trace_id, parent=parent_id, sampled=1)
+
+    def add_xray_header(request, **kwargs):
+        request.headers["X-Amzn-Trace-Id"] = xray_trace_header.to_header_str()
+
+    event_name = "before-send.events.*"
+    aws_client.events.meta.events.register(event_name, add_xray_header)
+
+    # make sure the hook gets cleaned up after the test
+    cleanups.append(lambda: aws_client.events.meta.events.unregister(event_name, add_xray_header))
 
     event_entry = {
         "EventBusName": event_bus_name,
@@ -222,15 +231,16 @@ def test_xray_trace_propagation_events_api_gateway(
         logs_client=aws_client.logs,
     )
 
-    # TODO how to assert X-Ray trace ID correct propagation from eventbridge to api gateway
+    # TODO how to assert X-Ray trace ID correct propagation from eventbridge to api gateway if no X-Ray trace id is present in the event
 
     lambda_trace_header = events[0]["headers"].get("X-Amzn-Trace-Id")
     assert lambda_trace_header is not None
     lambda_trace_id = re.search(r"Root=([^;]+)", lambda_trace_header).group(1)
     assert lambda_trace_id == trace_id
+    lambda_trace_parent = re.search(r"Parent=([^;]+)", lambda_trace_header).group(1)
 
     snapshot.add_transformer(
-        snapshot.transform.regex(lambda_trace_id, "trace_id_root"),
+        snapshot.transform.regex(lambda_trace_parent, "trace_id_parent"),
     )
 
     snapshot.match("lambda_logs", events)
@@ -245,6 +255,7 @@ def test_xray_trace_propagation_events_lambda(
     create_lambda_function,
     events_create_event_bus,
     events_put_rule,
+    cleanups,
     aws_client,
     snapshot,
 ):
@@ -282,10 +293,17 @@ def test_xray_trace_propagation_events_lambda(
     )
 
     # Enable X-Ray tracing for the aws_client
-    segment = xray_recorder.begin_segment(name="put_events")
-    trace_id = segment.trace_id
-    libraries = ["botocore"]
-    patch(libraries)
+    trace_id = "1-67f4141f-e1cd7672871da115129f8b19"
+    parent_id = "d0ee9531727135a0"
+    xray_trace_header = TraceHeader(root=trace_id, parent=parent_id, sampled=1)
+
+    def add_xray_header(request, **kwargs):
+        request.headers["X-Amzn-Trace-Id"] = xray_trace_header.to_header_str()
+
+    event_name = "before-send.events.*"
+    aws_client.events.meta.events.register(event_name, add_xray_header)
+    # make sure the hook gets cleaned up after the test
+    cleanups.append(lambda: aws_client.events.meta.events.unregister(event_name, add_xray_header))
 
     aws_client.events.put_events(
         Entries=[
@@ -308,7 +326,7 @@ def test_xray_trace_propagation_events_lambda(
         logs_client=aws_client.logs,
     )
 
-    # TODO how to assert X-Ray trace ID correct propagation from eventbridge to api gateway
+    # TODO how to assert X-Ray trace ID correct propagation from eventbridge to api gateway if no X-Ray trace id is present in the event
 
     lambda_trace_header = events[0]["trace_id_inside_handler"]
     assert lambda_trace_header is not None
@@ -318,7 +336,6 @@ def test_xray_trace_propagation_events_lambda(
 
     snapshot.add_transformers_list(
         [
-            snapshot.transform.regex(lambda_trace_id, "trace_id_root"),
             snapshot.transform.regex(lambda_trace_parent, "trace_id_parent"),
         ]
     )

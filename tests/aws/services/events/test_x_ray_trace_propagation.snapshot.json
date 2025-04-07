@@ -1,6 +1,6 @@
 {
   "tests/aws/services/events/test_x_ray_trace_propagation.py::test_xray_trace_propagation_events_api_gateway": {
-    "recorded-date": "07-04-2025, 14:08:19",
+    "recorded-date": "07-04-2025, 18:30:52",
     "recorded-content": {
       "put_events_response": {
         "Entries": [
@@ -20,9 +20,9 @@
             "User-Agent": "python-requests/2.32.3",
             "Accept-Encoding": "gzip, deflate",
             "Accept": "*/*",
-            "Host": "t72nlybios.execute-api.localhost.localstack.cloud",
+            "Host": "7mjwvnuh5e.execute-api.localhost.localstack.cloud",
             "Content-Type": "application/json",
-            "X-Amzn-Trace-Id": "Root=trace_id_root;Parent=1111111111110000;Sampled=0",
+            "X-Amzn-Trace-Id": "Root=1-67f4141f-e1cd7672871da115129f8b19;Parent=trace_id_parent;Sampled=1",
             "X-Forwarded-For": "127.0.0.1",
             "X-Forwarded-Port": "4566",
             "X-Forwarded-Proto": "HTTP"
@@ -38,13 +38,13 @@
               "*/*"
             ],
             "Host": [
-              "t72nlybios.execute-api.localhost.localstack.cloud"
+              "7mjwvnuh5e.execute-api.localhost.localstack.cloud"
             ],
             "Content-Type": [
               "application/json"
             ],
             "X-Amzn-Trace-Id": [
-              "Root=trace_id_root;Parent=1111111111110000;Sampled=0"
+              "Root=1-67f4141f-e1cd7672871da115129f8b19;Parent=trace_id_parent;Sampled=1"
             ],
             "X-Forwarded-For": [
               "127.0.0.1"
@@ -62,11 +62,11 @@
           "isBase64Encoded": false,
           "requestContext": {
             "accountId": "111111111111",
-            "apiId": "t72nlybios",
-            "deploymentId": "wpv6qsijdu",
-            "domainName": "t72nlybios.execute-api.localhost.localstack.cloud",
-            "domainPrefix": "t72nlybios",
-            "extendedRequestId": "897696d2",
+            "apiId": "7mjwvnuh5e",
+            "deploymentId": "s3rzz4h271",
+            "domainName": "7mjwvnuh5e.execute-api.localhost.localstack.cloud",
+            "domainPrefix": "7mjwvnuh5e",
+            "extendedRequestId": "5c344ece",
             "httpMethod": "POST",
             "identity": {
               "accountId": null,
@@ -85,11 +85,11 @@
             "path": "/test-api-stage-name/test/",
             "protocol": "HTTP/1.1",
             "requestId": "<uuid:2>",
-            "requestTime": "07/Apr/2025:16:08:13 ",
-            "requestTimeEpoch": 1744034893964,
+            "requestTime": "07/Apr/2025:20:30:48 ",
+            "requestTimeEpoch": 1744050648151,
             "stage": "test-api-stage-name",
             "resourcePath": "/{proxy+}",
-            "resourceId": "2oz6s7aidy"
+            "resourceId": "ovsfuu76bu"
           },
           "stageVariables": null,
           "queryStringParameters": null,
@@ -105,12 +105,12 @@
     }
   },
   "tests/aws/services/events/test_x_ray_trace_propagation.py::test_xray_trace_propagation_events_lambda": {
-    "recorded-date": "07-04-2025, 16:27:59",
+    "recorded-date": "07-04-2025, 18:22:40",
     "recorded-content": {
       "lambda_logs": [
         {
           "trace_id_outside_handler": "None",
-          "trace_id_inside_handler": "Root=trace_id_root;Parent=trace_id_parent;Sampled=1"
+          "trace_id_inside_handler": "Root=1-67f4141f-e1cd7672871da115129f8b19;Parent=trace_id_parent;Sampled=1"
         }
       ]
     }
