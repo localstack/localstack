@@ -8,7 +8,6 @@ from typing import Any, Dict, Set, Type
 from urllib.parse import urlencode
 
 import requests
-from aws_xray_sdk.core import patch
 from botocore.client import BaseClient
 
 from localstack import config
@@ -472,9 +471,6 @@ class EventsTargetSender(TargetSender):
         ):
             entries[0]["TraceHeader"] = encoded_original_id
 
-        # Patch the boto3 client to automatically include X-Ray trace headers
-        patch(["botocore"])
-
         self.client.put_events(Entries=entries)
 
     def _get_source(self, event: FormattedEvent | TransformedEvent) -> str:
@@ -549,8 +545,7 @@ class EventsApiDestinationTargetSender(TargetSender):
 class FirehoseTargetSender(TargetSender):
     def send_event(self, event):
         delivery_stream_name = firehose_name(self.target["Arn"])
-        # Patch the boto3 client to automatically include X-Ray trace headers
-        patch(["botocore"])
+
         self.client.put_record(
             DeliveryStreamName=delivery_stream_name,
             Record={"Data": to_bytes(to_json_str(event))},
@@ -566,8 +561,7 @@ class KinesisTargetSender(TargetSender):
         )
         stream_name = self.target["Arn"].split("/")[-1]
         partition_key = collections.get_safe(event, partition_key_path, event["id"])
-        # Patch the boto3 client to automatically include X-Ray trace headers
-        patch(["botocore"])
+
         self.client.put_record(
             StreamName=stream_name,
             Data=to_bytes(to_json_str(event)),
@@ -585,8 +579,6 @@ class KinesisTargetSender(TargetSender):
 
 class LambdaTargetSender(TargetSender):
     def send_event(self, event):
-        # Patch the boto3 client to automatically include X-Ray trace headers
-        patch(["botocore"])
         self.client.invoke(
             FunctionName=self.target["Arn"],
             Payload=to_bytes(to_json_str(event)),
@@ -598,8 +590,7 @@ class LogsTargetSender(TargetSender):
     def send_event(self, event):
         log_group_name = self.target["Arn"].split(":")[6]
         log_stream_name = str(uuid.uuid4())  # Unique log stream name
-        # Patch the boto3 client to automatically include X-Ray trace headers
-        patch(["botocore"])
+
         self.client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)
         self.client.put_log_events(
             logGroupName=log_group_name,
@@ -631,8 +622,6 @@ class SagemakerTargetSender(TargetSender):
 
 class SnsTargetSender(TargetSender):
     def send_event(self, event):
-        # Patch the boto3 client to automatically include X-Ray trace headers
-        patch(["botocore"])
         self.client.publish(TopicArn=self.target["Arn"], Message=to_json_str(event))
 
 
@@ -641,8 +630,7 @@ class SqsTargetSender(TargetSender):
         queue_url = sqs_queue_url_for_arn(self.target["Arn"])
         msg_group_id = self.target.get("SqsParameters", {}).get("MessageGroupId", None)
         kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
-        # Patch the boto3 client to automatically include X-Ray trace headers
-        patch(["botocore"])
+
         self.client.send_message(
             QueueUrl=queue_url,
             MessageBody=to_json_str(event),
@@ -655,8 +643,7 @@ class StatesTargetSender(TargetSender):
 
     def send_event(self, event):
         self.service = "stepfunctions"
-        # Patch the boto3 client to automatically include X-Ray trace headers
-        patch(["botocore"])
+
         self.client.start_execution(
             stateMachineArn=self.target["Arn"], name=event["id"], input=to_json_str(event)
         )
