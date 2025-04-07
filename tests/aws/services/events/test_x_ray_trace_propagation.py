@@ -1,6 +1,5 @@
 import json
 
-from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -15,7 +14,10 @@ APIGATEWAY_ASSUME_ROLE_POLICY = {
         "Action": "sts:AssumeRole",
     }
 }
+import re
+
 import pytest
+from aws_xray_sdk.core import patch, xray_recorder
 
 from localstack.testing.aws.util import is_aws_cloud
 from tests.aws.services.events.helper_functions import is_old_provider
@@ -55,18 +57,19 @@ from tests.aws.services.lambda_.test_lambda import (
         # sent by `requests` library by default
         "$..headers.Accept-Encoding",
         "$..headers.Accept",
-    ]
-)
-@markers.snapshot.skip_snapshot_verify(
-    condition=lambda: not config.APIGW_NEXT_GEN_PROVIDER,
-    paths=[
-        # parity issue from previous APIGW implementation
+        "$..headers.Host",
+        "$..multiValueHeaders.Host",
+        "$..requestContext.apiId",
+        "$..requestContext.domainName",
+        "$..requestContext.domainPrefix",
+        "$..requestContext.requestTime",
+        "$..requestContext.requestTimeEpoch",
+        "$..requestContext.resourceId",
         "$..headers.x-localstack-edge",
         "$..headers.Connection",
         "$..headers.Content-Length",
         "$..headers.accept-encoding",
         "$..headers.accept",
-        "$..headers.X-Amzn-Trace-Id",
         "$..headers.X-Forwarded-Port",
         "$..headers.X-Forwarded-Proto",
         "$..pathParameters",
@@ -85,7 +88,6 @@ def test_xray_trace_propagation_events_api_gateway(
     create_rest_apigw,
     events_create_event_bus,
     events_put_rule,
-    events_put_targets,
     region_name,
     account_id,
     snapshot,
@@ -191,13 +193,21 @@ def test_xray_trace_propagation_events_api_gateway(
     ######
     # Test
     ######
+    events_client = aws_client.events
+
+    # Enable X-Ray tracing for the aws_client
+    segment = xray_recorder.begin_segment(name="put_events")
+    trace_id = segment.trace_id
+    libraries = ["botocore"]
+    patch(libraries)
+
     event_entry = {
         "EventBusName": event_bus_name,
         "Source": "test.source",
         "DetailType": "test.detail.type",
         "Detail": json.dumps({"message": "Hello from EventBridge"}),
     }
-    put_events_response = aws_client.events.put_events(Entries=[event_entry])
+    put_events_response = events_client.put_events(Entries=[event_entry])
     snapshot.match("put_events_response", put_events_response)
     assert put_events_response["FailedEntryCount"] == 0
 
@@ -211,9 +221,19 @@ def test_xray_trace_propagation_events_api_gateway(
         expected_length=1,
         logs_client=aws_client.logs,
     )
+
+    # TODO how to assert X-Ray trace ID correct propagation from eventbridge to api gateway
+
+    lambda_trace_header = events[0]["headers"].get("X-Amzn-Trace-Id")
+    assert lambda_trace_header is not None
+    lambda_trace_id = re.search(r"Root=([^;]+)", lambda_trace_header).group(1)
+    assert lambda_trace_id == trace_id
+
+    snapshot.add_transformer(
+        snapshot.transform.regex(lambda_trace_id, "trace_id_root"),
+    )
+
     snapshot.match("lambda_logs", events)
-    # TODO assert that the X-Ray trace ID is present in the logs
-    # TODO how to assert X-Ray trace ID correct propagation
 
 
 # def test_xray_trace_propagation_events_lambda():
