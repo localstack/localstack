@@ -240,7 +240,9 @@ class TranscribeProvider(TranscribeApi):
         model_path = LANGUAGE_MODEL_DIR / name
 
         with _DL_LOCK:
-            if model_path.exists():
+            # check if model path exists and is not empty
+            if model_path.exists() and any(model_path.iterdir()):
+                LOG.debug("Using a pre-downloaded language model: %s", model_path)
                 return str(model_path)
             else:
                 model_path.mkdir(parents=True)
