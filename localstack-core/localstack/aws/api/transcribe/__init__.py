@@ -177,6 +177,7 @@ class LanguageCode(StrEnum):
     uk_UA = "uk-UA"
     uz_UZ = "uz-UZ"
     wo_SN = "wo-SN"
+    zh_HK = "zh-HK"
     zu_ZA = "zu-ZA"
 
 

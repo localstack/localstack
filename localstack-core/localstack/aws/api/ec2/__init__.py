@@ -299,6 +299,10 @@ RetentionPeriodRequestDays = int
 RetentionPeriodResponseDays = int
 RoleId = str
 RouteGatewayId = str
+RouteServerEndpointId = str
+RouteServerId = str
+RouteServerMaxResults = int
+RouteServerPeerId = str
 RouteTableAssociationId = str
 RouteTableId = str
 RunInstancesUserData = str
@@ -3016,6 +3020,9 @@ class ResourceType(StrEnum):
     verified_access_trust_provider = "verified-access-trust-provider"
     vpn_connection_device_type = "vpn-connection-device-type"
     vpc_block_public_access_exclusion = "vpc-block-public-access-exclusion"
+    route_server = "route-server"
+    route_server_endpoint = "route-server-endpoint"
+    route_server_peer = "route-server-peer"
     ipam_resource_discovery = "ipam-resource-discovery"
     ipam_resource_discovery_association = "ipam-resource-discovery-association"
     instance_connect_endpoint = "instance-connect-endpoint"
@@ -3032,6 +3039,85 @@ class RouteOrigin(StrEnum):
     CreateRouteTable = "CreateRouteTable"
     CreateRoute = "CreateRoute"
     EnableVgwRoutePropagation = "EnableVgwRoutePropagation"
+
+
+class RouteServerAssociationState(StrEnum):
+    associating = "associating"
+    associated = "associated"
+    disassociating = "disassociating"
+
+
+class RouteServerBfdState(StrEnum):
+    up = "up"
+    down = "down"
+
+
+class RouteServerBgpState(StrEnum):
+    up = "up"
+    down = "down"
+
+
+class RouteServerEndpointState(StrEnum):
+    pending = "pending"
+    available = "available"
+    deleting = "deleting"
+    deleted = "deleted"
+    failing = "failing"
+    failed = "failed"
+    delete_failed = "delete-failed"
+
+
+class RouteServerPeerLivenessMode(StrEnum):
+    bfd = "bfd"
+    bgp_keepalive = "bgp-keepalive"
+
+
+class RouteServerPeerState(StrEnum):
+    pending = "pending"
+    available = "available"
+    deleting = "deleting"
+    deleted = "deleted"
+    failing = "failing"
+    failed = "failed"
+
+
+class RouteServerPersistRoutesAction(StrEnum):
+    enable = "enable"
+    disable = "disable"
+    reset = "reset"
+
+
+class RouteServerPersistRoutesState(StrEnum):
+    enabling = "enabling"
+    enabled = "enabled"
+    resetting = "resetting"
+    disabling = "disabling"
+    disabled = "disabled"
+    modifying = "modifying"
+
+
+class RouteServerPropagationState(StrEnum):
+    pending = "pending"
+    available = "available"
+    deleting = "deleting"
+
+
+class RouteServerRouteInstallationStatus(StrEnum):
+    installed = "installed"
+    rejected = "rejected"
+
+
+class RouteServerRouteStatus(StrEnum):
+    in_rib = "in-rib"
+    in_fib = "in-fib"
+
+
+class RouteServerState(StrEnum):
+    pending = "pending"
+    available = "available"
+    modifying = "modifying"
+    deleting = "deleting"
+    deleted = "deleted"
 
 
 class RouteState(StrEnum):
@@ -3632,6 +3718,8 @@ class VpcEncryptionControlState(StrEnum):
     deleting = "deleting"
     deleted = "deleted"
     available = "available"
+    creating = "creating"
+    delete_failed = "delete-failed"
 
 
 class VpcEndpointType(StrEnum):
@@ -4527,6 +4615,7 @@ class ApplySecurityGroupsToClientVpnTargetNetworkResult(TypedDict, total=False):
 ArchitectureTypeList = List[ArchitectureType]
 ArchitectureTypeSet = List[ArchitectureType]
 ArnList = List[ResourceArn]
+AsPath = List[String]
 
 
 class AsnAuthorizationContext(TypedDict, total=False):
@@ -4791,6 +4880,22 @@ class AssociateNatGatewayAddressRequest(ServiceRequest):
 class AssociateNatGatewayAddressResult(TypedDict, total=False):
     NatGatewayId: Optional[NatGatewayId]
     NatGatewayAddresses: Optional[NatGatewayAddressList]
+
+
+class AssociateRouteServerRequest(ServiceRequest):
+    RouteServerId: RouteServerId
+    VpcId: VpcId
+    DryRun: Optional[Boolean]
+
+
+class RouteServerAssociation(TypedDict, total=False):
+    RouteServerId: Optional[RouteServerId]
+    VpcId: Optional[VpcId]
+    State: Optional[RouteServerAssociationState]
+
+
+class AssociateRouteServerResult(TypedDict, total=False):
+    RouteServerAssociation: Optional[RouteServerAssociation]
 
 
 class AssociateRouteTableRequest(ServiceRequest):
@@ -5459,6 +5564,7 @@ class BlockPublicAccessStates(TypedDict, total=False):
 
 
 BootModeTypeList = List[BootModeType]
+BoxedLong = int
 BundleIdStringList = List[BundleId]
 
 
@@ -8477,6 +8583,102 @@ class CreateRouteResult(TypedDict, total=False):
     Return: Optional[Boolean]
 
 
+class CreateRouteServerEndpointRequest(ServiceRequest):
+    RouteServerId: RouteServerId
+    SubnetId: SubnetId
+    ClientToken: Optional[String]
+    DryRun: Optional[Boolean]
+    TagSpecifications: Optional[TagSpecificationList]
+
+
+class RouteServerEndpoint(TypedDict, total=False):
+    RouteServerId: Optional[RouteServerId]
+    RouteServerEndpointId: Optional[RouteServerEndpointId]
+    VpcId: Optional[VpcId]
+    SubnetId: Optional[SubnetId]
+    EniId: Optional[NetworkInterfaceId]
+    EniAddress: Optional[String]
+    State: Optional[RouteServerEndpointState]
+    FailureReason: Optional[String]
+    Tags: Optional[TagList]
+
+
+class CreateRouteServerEndpointResult(TypedDict, total=False):
+    RouteServerEndpoint: Optional[RouteServerEndpoint]
+
+
+class RouteServerBgpOptionsRequest(TypedDict, total=False):
+    PeerAsn: Long
+    PeerLivenessDetection: Optional[RouteServerPeerLivenessMode]
+
+
+class CreateRouteServerPeerRequest(ServiceRequest):
+    RouteServerEndpointId: RouteServerEndpointId
+    PeerAddress: String
+    BgpOptions: RouteServerBgpOptionsRequest
+    DryRun: Optional[Boolean]
+    TagSpecifications: Optional[TagSpecificationList]
+
+
+class RouteServerBfdStatus(TypedDict, total=False):
+    Status: Optional[RouteServerBfdState]
+
+
+class RouteServerBgpStatus(TypedDict, total=False):
+    Status: Optional[RouteServerBgpState]
+
+
+class RouteServerBgpOptions(TypedDict, total=False):
+    PeerAsn: Optional[Long]
+    PeerLivenessDetection: Optional[RouteServerPeerLivenessMode]
+
+
+class RouteServerPeer(TypedDict, total=False):
+    RouteServerPeerId: Optional[RouteServerPeerId]
+    RouteServerEndpointId: Optional[RouteServerEndpointId]
+    RouteServerId: Optional[RouteServerId]
+    VpcId: Optional[VpcId]
+    SubnetId: Optional[SubnetId]
+    State: Optional[RouteServerPeerState]
+    FailureReason: Optional[String]
+    EndpointEniId: Optional[NetworkInterfaceId]
+    EndpointEniAddress: Optional[String]
+    PeerAddress: Optional[String]
+    BgpOptions: Optional[RouteServerBgpOptions]
+    BgpStatus: Optional[RouteServerBgpStatus]
+    BfdStatus: Optional[RouteServerBfdStatus]
+    Tags: Optional[TagList]
+
+
+class CreateRouteServerPeerResult(TypedDict, total=False):
+    RouteServerPeer: Optional[RouteServerPeer]
+
+
+class CreateRouteServerRequest(ServiceRequest):
+    AmazonSideAsn: Long
+    ClientToken: Optional[String]
+    DryRun: Optional[Boolean]
+    PersistRoutes: Optional[RouteServerPersistRoutesAction]
+    PersistRoutesDuration: Optional[BoxedLong]
+    SnsNotificationsEnabled: Optional[Boolean]
+    TagSpecifications: Optional[TagSpecificationList]
+
+
+class RouteServer(TypedDict, total=False):
+    RouteServerId: Optional[RouteServerId]
+    AmazonSideAsn: Optional[Long]
+    State: Optional[RouteServerState]
+    Tags: Optional[TagList]
+    PersistRoutesState: Optional[RouteServerPersistRoutesState]
+    PersistRoutesDuration: Optional[BoxedLong]
+    SnsNotificationsEnabled: Optional[Boolean]
+    SnsTopicArn: Optional[String]
+
+
+class CreateRouteServerResult(TypedDict, total=False):
+    RouteServer: Optional[RouteServer]
+
+
 class CreateRouteTableRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
     ClientToken: Optional[String]
@@ -10410,6 +10612,33 @@ class DeleteRouteRequest(ServiceRequest):
     RouteTableId: RouteTableId
     DestinationCidrBlock: Optional[String]
     DestinationIpv6CidrBlock: Optional[String]
+
+
+class DeleteRouteServerEndpointRequest(ServiceRequest):
+    RouteServerEndpointId: RouteServerEndpointId
+    DryRun: Optional[Boolean]
+
+
+class DeleteRouteServerEndpointResult(TypedDict, total=False):
+    RouteServerEndpoint: Optional[RouteServerEndpoint]
+
+
+class DeleteRouteServerPeerRequest(ServiceRequest):
+    RouteServerPeerId: RouteServerPeerId
+    DryRun: Optional[Boolean]
+
+
+class DeleteRouteServerPeerResult(TypedDict, total=False):
+    RouteServerPeer: Optional[RouteServerPeer]
+
+
+class DeleteRouteServerRequest(ServiceRequest):
+    RouteServerId: RouteServerId
+    DryRun: Optional[Boolean]
+
+
+class DeleteRouteServerResult(TypedDict, total=False):
+    RouteServer: Optional[RouteServer]
 
 
 class DeleteRouteTableRequest(ServiceRequest):
@@ -13748,6 +13977,63 @@ class DescribeReservedInstancesResult(TypedDict, total=False):
     ReservedInstances: Optional[ReservedInstancesList]
 
 
+RouteServerEndpointIdsList = List[RouteServerEndpointId]
+
+
+class DescribeRouteServerEndpointsRequest(ServiceRequest):
+    RouteServerEndpointIds: Optional[RouteServerEndpointIdsList]
+    NextToken: Optional[String]
+    MaxResults: Optional[RouteServerMaxResults]
+    Filters: Optional[FilterList]
+    DryRun: Optional[Boolean]
+
+
+RouteServerEndpointsList = List[RouteServerEndpoint]
+
+
+class DescribeRouteServerEndpointsResult(TypedDict, total=False):
+    RouteServerEndpoints: Optional[RouteServerEndpointsList]
+    NextToken: Optional[String]
+
+
+RouteServerPeerIdsList = List[RouteServerPeerId]
+
+
+class DescribeRouteServerPeersRequest(ServiceRequest):
+    RouteServerPeerIds: Optional[RouteServerPeerIdsList]
+    NextToken: Optional[String]
+    MaxResults: Optional[RouteServerMaxResults]
+    Filters: Optional[FilterList]
+    DryRun: Optional[Boolean]
+
+
+RouteServerPeersList = List[RouteServerPeer]
+
+
+class DescribeRouteServerPeersResult(TypedDict, total=False):
+    RouteServerPeers: Optional[RouteServerPeersList]
+    NextToken: Optional[String]
+
+
+RouteServerIdsList = List[RouteServerId]
+
+
+class DescribeRouteServersRequest(ServiceRequest):
+    RouteServerIds: Optional[RouteServerIdsList]
+    NextToken: Optional[String]
+    MaxResults: Optional[RouteServerMaxResults]
+    Filters: Optional[FilterList]
+    DryRun: Optional[Boolean]
+
+
+RouteServersList = List[RouteServer]
+
+
+class DescribeRouteServersResult(TypedDict, total=False):
+    RouteServers: Optional[RouteServersList]
+    NextToken: Optional[String]
+
+
 RouteTableIdStringList = List[RouteTableId]
 
 
@@ -15593,6 +15879,22 @@ class DisableIpamOrganizationAdminAccountResult(TypedDict, total=False):
     Success: Optional[Boolean]
 
 
+class DisableRouteServerPropagationRequest(ServiceRequest):
+    RouteServerId: RouteServerId
+    RouteTableId: RouteTableId
+    DryRun: Optional[Boolean]
+
+
+class RouteServerPropagation(TypedDict, total=False):
+    RouteServerId: Optional[RouteServerId]
+    RouteTableId: Optional[RouteTableId]
+    State: Optional[RouteServerPropagationState]
+
+
+class DisableRouteServerPropagationResult(TypedDict, total=False):
+    RouteServerPropagation: Optional[RouteServerPropagation]
+
+
 class DisableSerialConsoleAccessRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
@@ -15745,6 +16047,16 @@ class DisassociateNatGatewayAddressRequest(ServiceRequest):
 class DisassociateNatGatewayAddressResult(TypedDict, total=False):
     NatGatewayId: Optional[NatGatewayId]
     NatGatewayAddresses: Optional[NatGatewayAddressList]
+
+
+class DisassociateRouteServerRequest(ServiceRequest):
+    RouteServerId: RouteServerId
+    VpcId: VpcId
+    DryRun: Optional[Boolean]
+
+
+class DisassociateRouteServerResult(TypedDict, total=False):
+    RouteServerAssociation: Optional[RouteServerAssociation]
 
 
 class DisassociateRouteTableRequest(ServiceRequest):
@@ -16035,6 +16347,16 @@ class EnableReachabilityAnalyzerOrganizationSharingRequest(ServiceRequest):
 
 class EnableReachabilityAnalyzerOrganizationSharingResult(TypedDict, total=False):
     ReturnValue: Optional[Boolean]
+
+
+class EnableRouteServerPropagationRequest(ServiceRequest):
+    RouteServerId: RouteServerId
+    RouteTableId: RouteTableId
+    DryRun: Optional[Boolean]
+
+
+class EnableRouteServerPropagationResult(TypedDict, total=False):
+    RouteServerPropagation: Optional[RouteServerPropagation]
 
 
 class EnableSerialConsoleAccessRequest(ServiceRequest):
@@ -16864,6 +17186,68 @@ class GetReservedInstancesExchangeQuoteResult(TypedDict, total=False):
     TargetConfigurationValueRollup: Optional[ReservationValue]
     TargetConfigurationValueSet: Optional[TargetReservationValueSet]
     ValidationFailureReason: Optional[String]
+
+
+class GetRouteServerAssociationsRequest(ServiceRequest):
+    RouteServerId: RouteServerId
+    DryRun: Optional[Boolean]
+
+
+RouteServerAssociationsList = List[RouteServerAssociation]
+
+
+class GetRouteServerAssociationsResult(TypedDict, total=False):
+    RouteServerAssociations: Optional[RouteServerAssociationsList]
+
+
+class GetRouteServerPropagationsRequest(ServiceRequest):
+    RouteServerId: RouteServerId
+    RouteTableId: Optional[RouteTableId]
+    DryRun: Optional[Boolean]
+
+
+RouteServerPropagationsList = List[RouteServerPropagation]
+
+
+class GetRouteServerPropagationsResult(TypedDict, total=False):
+    RouteServerPropagations: Optional[RouteServerPropagationsList]
+
+
+class GetRouteServerRoutingDatabaseRequest(ServiceRequest):
+    RouteServerId: RouteServerId
+    NextToken: Optional[String]
+    MaxResults: Optional[RouteServerMaxResults]
+    DryRun: Optional[Boolean]
+    Filters: Optional[FilterList]
+
+
+class RouteServerRouteInstallationDetail(TypedDict, total=False):
+    RouteTableId: Optional[RouteTableId]
+    RouteInstallationStatus: Optional[RouteServerRouteInstallationStatus]
+    RouteInstallationStatusReason: Optional[String]
+
+
+RouteServerRouteInstallationDetails = List[RouteServerRouteInstallationDetail]
+
+
+class RouteServerRoute(TypedDict, total=False):
+    RouteServerEndpointId: Optional[RouteServerEndpointId]
+    RouteServerPeerId: Optional[RouteServerPeerId]
+    RouteInstallationDetails: Optional[RouteServerRouteInstallationDetails]
+    RouteStatus: Optional[RouteServerRouteStatus]
+    Prefix: Optional[String]
+    AsPaths: Optional[AsPath]
+    Med: Optional[Integer]
+    NextHopIp: Optional[String]
+
+
+RouteServerRouteList = List[RouteServerRoute]
+
+
+class GetRouteServerRoutingDatabaseResult(TypedDict, total=False):
+    AreRoutesPersisted: Optional[Boolean]
+    Routes: Optional[RouteServerRouteList]
+    NextToken: Optional[String]
 
 
 class GetSecurityGroupsForVpcRequest(ServiceRequest):
@@ -18110,6 +18494,18 @@ class ModifyReservedInstancesRequest(ServiceRequest):
 
 class ModifyReservedInstancesResult(TypedDict, total=False):
     ReservedInstancesModificationId: Optional[String]
+
+
+class ModifyRouteServerRequest(ServiceRequest):
+    RouteServerId: RouteServerId
+    PersistRoutes: Optional[RouteServerPersistRoutesAction]
+    PersistRoutesDuration: Optional[BoxedLong]
+    SnsNotificationsEnabled: Optional[Boolean]
+    DryRun: Optional[Boolean]
+
+
+class ModifyRouteServerResult(TypedDict, total=False):
+    RouteServer: Optional[RouteServer]
 
 
 class SecurityGroupRuleRequest(TypedDict, total=False):
@@ -20095,6 +20491,17 @@ class Ec2Api:
     ) -> AssociateNatGatewayAddressResult:
         raise NotImplementedError
 
+    @handler("AssociateRouteServer")
+    def associate_route_server(
+        self,
+        context: RequestContext,
+        route_server_id: RouteServerId,
+        vpc_id: VpcId,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> AssociateRouteServerResult:
+        raise NotImplementedError
+
     @handler("AssociateRouteTable")
     def associate_route_table(
         self,
@@ -21177,6 +21584,47 @@ class Ec2Api:
     ) -> CreateRouteResult:
         raise NotImplementedError
 
+    @handler("CreateRouteServer")
+    def create_route_server(
+        self,
+        context: RequestContext,
+        amazon_side_asn: Long,
+        client_token: String = None,
+        dry_run: Boolean = None,
+        persist_routes: RouteServerPersistRoutesAction = None,
+        persist_routes_duration: BoxedLong = None,
+        sns_notifications_enabled: Boolean = None,
+        tag_specifications: TagSpecificationList = None,
+        **kwargs,
+    ) -> CreateRouteServerResult:
+        raise NotImplementedError
+
+    @handler("CreateRouteServerEndpoint")
+    def create_route_server_endpoint(
+        self,
+        context: RequestContext,
+        route_server_id: RouteServerId,
+        subnet_id: SubnetId,
+        client_token: String = None,
+        dry_run: Boolean = None,
+        tag_specifications: TagSpecificationList = None,
+        **kwargs,
+    ) -> CreateRouteServerEndpointResult:
+        raise NotImplementedError
+
+    @handler("CreateRouteServerPeer")
+    def create_route_server_peer(
+        self,
+        context: RequestContext,
+        route_server_endpoint_id: RouteServerEndpointId,
+        peer_address: String,
+        bgp_options: RouteServerBgpOptionsRequest,
+        dry_run: Boolean = None,
+        tag_specifications: TagSpecificationList = None,
+        **kwargs,
+    ) -> CreateRouteServerPeerResult:
+        raise NotImplementedError
+
     @handler("CreateRouteTable")
     def create_route_table(
         self,
@@ -22137,6 +22585,36 @@ class Ec2Api:
         destination_ipv6_cidr_block: String = None,
         **kwargs,
     ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteRouteServer")
+    def delete_route_server(
+        self,
+        context: RequestContext,
+        route_server_id: RouteServerId,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> DeleteRouteServerResult:
+        raise NotImplementedError
+
+    @handler("DeleteRouteServerEndpoint")
+    def delete_route_server_endpoint(
+        self,
+        context: RequestContext,
+        route_server_endpoint_id: RouteServerEndpointId,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> DeleteRouteServerEndpointResult:
+        raise NotImplementedError
+
+    @handler("DeleteRouteServerPeer")
+    def delete_route_server_peer(
+        self,
+        context: RequestContext,
+        route_server_peer_id: RouteServerPeerId,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> DeleteRouteServerPeerResult:
         raise NotImplementedError
 
     @handler("DeleteRouteTable")
@@ -23844,6 +24322,45 @@ class Ec2Api:
     ) -> DescribeReservedInstancesOfferingsResult:
         raise NotImplementedError
 
+    @handler("DescribeRouteServerEndpoints")
+    def describe_route_server_endpoints(
+        self,
+        context: RequestContext,
+        route_server_endpoint_ids: RouteServerEndpointIdsList = None,
+        next_token: String = None,
+        max_results: RouteServerMaxResults = None,
+        filters: FilterList = None,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> DescribeRouteServerEndpointsResult:
+        raise NotImplementedError
+
+    @handler("DescribeRouteServerPeers")
+    def describe_route_server_peers(
+        self,
+        context: RequestContext,
+        route_server_peer_ids: RouteServerPeerIdsList = None,
+        next_token: String = None,
+        max_results: RouteServerMaxResults = None,
+        filters: FilterList = None,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> DescribeRouteServerPeersResult:
+        raise NotImplementedError
+
+    @handler("DescribeRouteServers")
+    def describe_route_servers(
+        self,
+        context: RequestContext,
+        route_server_ids: RouteServerIdsList = None,
+        next_token: String = None,
+        max_results: RouteServerMaxResults = None,
+        filters: FilterList = None,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> DescribeRouteServersResult:
+        raise NotImplementedError
+
     @handler("DescribeRouteTables")
     def describe_route_tables(
         self,
@@ -24759,6 +25276,17 @@ class Ec2Api:
     ) -> DisableIpamOrganizationAdminAccountResult:
         raise NotImplementedError
 
+    @handler("DisableRouteServerPropagation")
+    def disable_route_server_propagation(
+        self,
+        context: RequestContext,
+        route_server_id: RouteServerId,
+        route_table_id: RouteTableId,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> DisableRouteServerPropagationResult:
+        raise NotImplementedError
+
     @handler("DisableSerialConsoleAccess")
     def disable_serial_console_access(
         self, context: RequestContext, dry_run: Boolean = None, **kwargs
@@ -24893,6 +25421,17 @@ class Ec2Api:
         dry_run: Boolean = None,
         **kwargs,
     ) -> DisassociateNatGatewayAddressResult:
+        raise NotImplementedError
+
+    @handler("DisassociateRouteServer")
+    def disassociate_route_server(
+        self,
+        context: RequestContext,
+        route_server_id: RouteServerId,
+        vpc_id: VpcId,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> DisassociateRouteServerResult:
         raise NotImplementedError
 
     @handler("DisassociateRouteTable")
@@ -25090,6 +25629,17 @@ class Ec2Api:
     def enable_reachability_analyzer_organization_sharing(
         self, context: RequestContext, dry_run: Boolean = None, **kwargs
     ) -> EnableReachabilityAnalyzerOrganizationSharingResult:
+        raise NotImplementedError
+
+    @handler("EnableRouteServerPropagation")
+    def enable_route_server_propagation(
+        self,
+        context: RequestContext,
+        route_server_id: RouteServerId,
+        route_table_id: RouteTableId,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> EnableRouteServerPropagationResult:
         raise NotImplementedError
 
     @handler("EnableSerialConsoleAccess")
@@ -25577,6 +26127,40 @@ class Ec2Api:
         target_configurations: TargetConfigurationRequestSet = None,
         **kwargs,
     ) -> GetReservedInstancesExchangeQuoteResult:
+        raise NotImplementedError
+
+    @handler("GetRouteServerAssociations")
+    def get_route_server_associations(
+        self,
+        context: RequestContext,
+        route_server_id: RouteServerId,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> GetRouteServerAssociationsResult:
+        raise NotImplementedError
+
+    @handler("GetRouteServerPropagations")
+    def get_route_server_propagations(
+        self,
+        context: RequestContext,
+        route_server_id: RouteServerId,
+        route_table_id: RouteTableId = None,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> GetRouteServerPropagationsResult:
+        raise NotImplementedError
+
+    @handler("GetRouteServerRoutingDatabase")
+    def get_route_server_routing_database(
+        self,
+        context: RequestContext,
+        route_server_id: RouteServerId,
+        next_token: String = None,
+        max_results: RouteServerMaxResults = None,
+        dry_run: Boolean = None,
+        filters: FilterList = None,
+        **kwargs,
+    ) -> GetRouteServerRoutingDatabaseResult:
         raise NotImplementedError
 
     @handler("GetSecurityGroupsForVpc")
@@ -26392,6 +26976,19 @@ class Ec2Api:
         client_token: String = None,
         **kwargs,
     ) -> ModifyReservedInstancesResult:
+        raise NotImplementedError
+
+    @handler("ModifyRouteServer")
+    def modify_route_server(
+        self,
+        context: RequestContext,
+        route_server_id: RouteServerId,
+        persist_routes: RouteServerPersistRoutesAction = None,
+        persist_routes_duration: BoxedLong = None,
+        sns_notifications_enabled: Boolean = None,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> ModifyRouteServerResult:
         raise NotImplementedError
 
     @handler("ModifySecurityGroupRules")
