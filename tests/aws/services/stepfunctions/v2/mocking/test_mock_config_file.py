@@ -1,7 +1,9 @@
-from aws.services.stepfunctions.mocked_responses.mocked_response_loader import MockedResponseLoader
 from localstack import config
 from localstack.services.stepfunctions.mocking.mock_config import load_sfn_mock_config_file
 from localstack.testing.pytest import markers
+from tests.aws.services.stepfunctions.mocked_responses.mocked_response_loader import (
+    MockedResponseLoader,
+)
 
 
 class TestMockConfigFile:
