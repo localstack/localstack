@@ -92,7 +92,7 @@ class TestDockerUtils:
             volume_dir_mount = VolumeDirMount(
                 "/var/lib/localstack/some/test/file", "/target/file", read_only=False
             )
-            result = volume_dir_mount.to_dict()
+            result = volume_dir_mount.to_docker_sdk_parameters()
             get_volume.assert_called_once()
             assert result == (
                 "/home/some-user/.cache/localstack/volume/some/test/file",
@@ -101,3 +101,5 @@ class TestDockerUtils:
                     "mode": "rw",
                 },
             )
+            result = volume_dir_mount.to_str()
+            assert result == "/home/some-user/.cache/localstack/volume/some/test/file:/target/file"
