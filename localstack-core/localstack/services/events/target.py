@@ -579,11 +579,22 @@ class KinesisTargetSender(TargetSender):
 
 class LambdaTargetSender(TargetSender):
     def send_event(self, event):
+        # instrument boto client to add x-ray trace header
+        trace_header_str = get_trace_header_str_from_segment()
+
+        def add_xray_header(request, **kwargs):
+            request.headers["X-Amzn-Trace-Id"] = trace_header_str
+
+        event_name = "before-send.lambda.*"
+        self.client.meta.events.register(event_name, add_xray_header)
+
         self.client.invoke(
             FunctionName=self.target["Arn"],
             Payload=to_bytes(to_json_str(event)),
             InvocationType="Event",
         )
+
+        self.client.meta.events.unregister(event_name, add_xray_header)
 
 
 class LogsTargetSender(TargetSender):
