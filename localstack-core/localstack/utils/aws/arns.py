@@ -525,6 +525,16 @@ def route53_resolver_query_log_config_arn(id: str, account_id: str, region_name:
 
 
 #
+# SES
+#
+
+
+def ses_identity_arn(email: str, account_id: str, region_name: str) -> str:
+    pattern = "arn:%s:ses:%s:%s:identity/%s"
+    return _resource_arn(email, pattern, account_id=account_id, region_name=region_name)
+
+
+#
 # Other ARN related helpers
 #
 
