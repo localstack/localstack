@@ -1075,3 +1075,150 @@ class TestSfnApiAliasing:
         sfn_snapshot.match(
             "delete_state_machine_alias_response", delete_state_machine_alias_response
         )
+
+    @markers.aws.validated
+    def test_list_state_machine_aliases_pagination_invalid_next_token(
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        create_state_machine_alias,
+        sfn_snapshot,
+        aws_client,
+    ):
+        sfn_client = aws_client.stepfunctions
+
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
+        sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
+
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+
+        state_machine_name = f"state_machine_{short_uid()}"
+        create_state_machine_response = create_state_machine(
+            target_aws_client=aws_client,
+            name=state_machine_name,
+            definition=json.dumps(definition),
+            roleArn=sfn_role_arn,
+            publish=True,
+        )
+
+        sfn_snapshot.add_transformer(
+            sfn_snapshot.transform.sfn_sm_create_arn(create_state_machine_response, 0)
+        )
+
+        state_machine_arn = create_state_machine_response["stateMachineArn"]
+        state_machine_version_arn = create_state_machine_response["stateMachineVersionArn"]
+
+        state_machine_alias_name = f"AliasName-{short_uid()}"
+
+        sfn_snapshot.add_transformer(
+            RegexTransformer(state_machine_alias_name, "state_machine_alias_name")
+        )
+
+        create_state_machine_alias_response = create_state_machine_alias(
+            target_aws_client=aws_client,
+            description="create state machine alias description",
+            name=state_machine_alias_name,
+            routingConfiguration=[
+                RoutingConfigurationListItem(
+                    stateMachineVersionArn=state_machine_version_arn, weight=100
+                )
+            ],
+        )
+
+        sfn_snapshot.match(
+            "create_state_machine_alias_response", create_state_machine_alias_response
+        )
+
+        state_machine_alias_arn = create_state_machine_alias_response["stateMachineAliasArn"]
+        await_state_machine_alias_is_created(
+            stepfunctions_client=sfn_client,
+            state_machine_arn=state_machine_arn,
+            state_machine_alias_arn=state_machine_alias_arn,
+        )
+
+        with pytest.raises(Exception) as exc:
+            sfn_client.list_state_machine_aliases(
+                stateMachineArn=state_machine_arn, nextToken="InvalidToken"
+            )
+
+        sfn_snapshot.match(
+            "invalidTokenException",
+            {"exception_typename": exc.typename, "exception_value": exc.value},
+        )
+
+    @markers.aws.validated
+    def test_list_state_machine_aliases_pagination(
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        create_state_machine_alias,
+        sfn_snapshot,
+        aws_client,
+    ):
+        sfn_client = aws_client.stepfunctions
+
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
+        sfn_snapshot.add_transformer(RegexTransformer(sfn_role_arn, "sfn_role_arn"))
+
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+
+        state_machine_name = "state_machine_test"
+        create_state_machine_response = create_state_machine(
+            target_aws_client=aws_client,
+            name=state_machine_name,
+            definition=json.dumps(definition),
+            roleArn=sfn_role_arn,
+            publish=True,
+        )
+
+        sfn_snapshot.add_transformer(
+            sfn_snapshot.transform.sfn_sm_create_arn(create_state_machine_response, 0)
+        )
+
+        state_machine_arn = create_state_machine_response["stateMachineArn"]
+        state_machine_version_arn = create_state_machine_response["stateMachineVersionArn"]
+
+        for i in range(3):
+            create_state_machine_alias_response = create_state_machine_alias(
+                target_aws_client=aws_client,
+                description=f"Description {i + 1} - create state machine alias",
+                name=f"AliasName-{i + 1}",
+                routingConfiguration=[
+                    RoutingConfigurationListItem(
+                        stateMachineVersionArn=state_machine_version_arn, weight=100
+                    )
+                ],
+            )
+
+            sfn_snapshot.match(
+                f"create_state_machine_alias_response-{i + 1}", create_state_machine_alias_response
+            )
+
+            definition["Comment"] = f"Comment {i + 1}"
+            sfn_client.update_state_machine(
+                stateMachineArn=state_machine_arn, definition=json.dumps(definition)
+            )
+
+            state_machine_alias_arn = create_state_machine_alias_response["stateMachineAliasArn"]
+            await_state_machine_alias_is_created(
+                stepfunctions_client=sfn_client,
+                state_machine_arn=state_machine_arn,
+                state_machine_alias_arn=state_machine_alias_arn,
+            )
+
+        list_state_machine_aliases_response = sfn_client.list_state_machine_aliases(
+            stateMachineArn=state_machine_arn, maxResults=1
+        )
+
+        sfn_snapshot.match(
+            "list_state_machine_aliases_max_results_1_response", list_state_machine_aliases_response
+        )
+
+        list_state_machine_aliases_response = sfn_client.list_state_machine_aliases(
+            stateMachineArn=state_machine_arn,
+            nextToken=list_state_machine_aliases_response.get("nextToken"),
+        )
+
+        sfn_snapshot.match(
+            "list_state_machine_aliases_next_token_response", list_state_machine_aliases_response
+        )

@@ -567,5 +567,80 @@
         "exception_value": "An error occurred (ResourceNotFound) when calling the UpdateStateMachineAlias operation: Request references a resource that does not exist."
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_list_state_machine_aliases_pagination_invalid_next_token": {
+    "recorded-date": "07-04-2025, 16:48:15",
+    "recorded-content": {
+      "create_state_machine_alias_response": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invalidTokenException": {
+        "exception_typename": "InvalidToken",
+        "exception_value": "An error occurred (InvalidToken) when calling the ListStateMachineAliases operation: Invalid Token: 'Invalid token'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_list_state_machine_aliases_pagination": {
+    "recorded-date": "07-04-2025, 16:51:07",
+    "recorded-content": {
+      "create_state_machine_alias_response-1": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:AliasName-1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_state_machine_alias_response-2": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:AliasName-2",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_state_machine_alias_response-3": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:AliasName-3",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_state_machine_aliases_max_results_1_response": {
+        "nextToken": "YXJuOmF3czpzdGF0ZXM6dXMtZWFzdC0xOjAwMDAwMDAwMDAwMDpzdGF0ZU1hY2hpbmU6c3RhdGVfbWFjaGluZV90ZXN0OkFsaWFzTmFtZS0y",
+        "stateMachineAliases": [
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:AliasName-1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_state_machine_aliases_next_token_response": {
+        "stateMachineAliases": [
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:AliasName-2"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:AliasName-3"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
