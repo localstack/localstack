@@ -237,6 +237,10 @@ def test_xray_trace_propagation_events_api_gateway(
 
 
 @markers.aws.unknown
+@pytest.mark.skipif(
+    condition=is_old_provider() and not is_aws_cloud(),
+    reason="not supported by the old provider",
+)
 def test_xray_trace_propagation_events_lambda(
     create_lambda_function,
     events_create_event_bus,
