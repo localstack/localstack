@@ -4,6 +4,7 @@ import os
 import sys
 import traceback
 from typing import Dict, List, Optional, Tuple, TypedDict
+import functools
 
 import click
 import requests
@@ -144,6 +145,13 @@ _click_format_option = click.option(
     help="The formatting style for the command output.",
 )
 
+# Common global options for all commands.
+def common_options(func):
+    @click.option("-p", "--profile", type=str, help="Set the configuration profile", hidden=True)
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
 
 @click.group(
     name="localstack",
@@ -187,7 +195,8 @@ def localstack(debug, profile) -> None:
     name="config",
     short_help="Manage your LocalStack config",
 )
-def localstack_config() -> None:
+@common_options
+def localstack_config(profile: str) -> None:
     """
     Inspect and validate your LocalStack configuration.
     """
@@ -196,8 +205,9 @@ def localstack_config() -> None:
 
 @localstack_config.command(name="show", short_help="Show your config")
 @_click_format_option
+@common_options
 @publish_invocation
-def cmd_config_show(format_: str) -> None:
+def cmd_config_show(format_: str, profile: str) -> None:
     """
     Print the current LocalStack config values.
 
@@ -230,6 +240,7 @@ def cmd_config_show(format_: str) -> None:
 
 
 @localstack_config.command(name="validate", short_help="Validate your config")
+@common_options
 @click.option(
     "-f",
     "--file",
@@ -238,7 +249,7 @@ def cmd_config_show(format_: str) -> None:
     type=click.Path(exists=True, file_okay=True, readable=True),
 )
 @publish_invocation
-def cmd_config_validate(file: str) -> None:
+def cmd_config_validate(profile: str, file: str) -> None:
     """
     Validate your LocalStack configuration (docker compose).
 
@@ -295,7 +306,8 @@ def _print_config_table() -> None:
     invoke_without_command=True,
 )
 @click.pass_context
-def localstack_status(ctx: click.Context) -> None:
+@common_options
+def localstack_status(ctx: click.Context, profile: str) -> None:
     """
     Query status information about the currently running LocalStack instance.
     """
@@ -305,7 +317,8 @@ def localstack_status(ctx: click.Context) -> None:
 
 @localstack_status.command(name="docker", short_help="Query LocalStack Docker status")
 @_click_format_option
-def cmd_status_docker(format_: str) -> None:
+@common_options
+def cmd_status_docker(format_: str, profile: str) -> None:
     """
     Query information about the currently running LocalStack Docker image, its container,
     and the LocalStack runtime.
@@ -380,7 +393,8 @@ def _print_docker_status_table(status: DockerStatus) -> None:
 
 @localstack_status.command(name="services", short_help="Query LocalStack services status")
 @_click_format_option
-def cmd_status_services(format_: str) -> None:
+@common_options
+def cmd_status_services(format_: str, profile: str) -> None:
     """
     Query information about the services of the currently running LocalStack instance.
     """
@@ -432,6 +446,7 @@ def _print_service_table(services: Dict[str, str]) -> None:
 
 
 @localstack.command(name="start", short_help="Start LocalStack")
+@common_options
 @click.option("--docker", is_flag=True, help="Start LocalStack in a docker container [default]")
 @click.option("--host", is_flag=True, help="Start LocalStack directly on the host")
 @click.option("--no-banner", is_flag=True, help="Disable LocalStack banner", default=False)
@@ -474,6 +489,7 @@ def _print_service_table(services: Dict[str, str]) -> None:
 )
 @publish_invocation
 def cmd_start(
+    profile: str,
     docker: bool,
     host: bool,
     no_banner: bool,
@@ -563,8 +579,9 @@ def cmd_start(
 
 
 @localstack.command(name="stop", short_help="Stop LocalStack")
+@common_options
 @publish_invocation
-def cmd_stop() -> None:
+def cmd_stop(profile: str) -> None:
     """
     Stops the current LocalStack runtime.
 
@@ -590,8 +607,9 @@ def cmd_stop() -> None:
 
 
 @localstack.command(name="restart", short_help="Restart LocalStack")
+@common_options
 @publish_invocation
-def cmd_restart() -> None:
+def cmd_restart(profile: str) -> None:
     """
     Restarts the current LocalStack runtime.
     """
@@ -614,6 +632,7 @@ def cmd_restart() -> None:
     name="logs",
     short_help="Show LocalStack logs",
 )
+@common_options
 @click.option(
     "-f",
     "--follow",
@@ -630,7 +649,7 @@ def cmd_restart() -> None:
     metavar="N",
 )
 @publish_invocation
-def cmd_logs(follow: bool, tail: int) -> None:
+def cmd_logs(profile: str, follow: bool, tail: int) -> None:
     """
     Show the logs of the current LocalStack runtime.
 
@@ -670,6 +689,7 @@ def cmd_logs(follow: bool, tail: int) -> None:
 
 
 @localstack.command(name="wait", short_help="Wait for LocalStack")
+@common_options
 @click.option(
     "-t",
     "--timeout",
@@ -679,7 +699,7 @@ def cmd_logs(follow: bool, tail: int) -> None:
     metavar="N",
 )
 @publish_invocation
-def cmd_wait(timeout: Optional[float] = None) -> None:
+def cmd_wait(profile: str, timeout: Optional[float] = None) -> None:
     """
     Wait for the LocalStack runtime to be up and running.
 
@@ -697,8 +717,9 @@ def cmd_wait(timeout: Optional[float] = None) -> None:
 
 
 @localstack.command(name="ssh", short_help="Obtain a shell in LocalStack")
+@common_options
 @publish_invocation
-def cmd_ssh() -> None:
+def cmd_ssh(profile: str) -> None:
     """
     Obtain a shell in the current LocalStack runtime.
 
@@ -718,7 +739,8 @@ def cmd_ssh() -> None:
 
 
 @localstack.group(name="update", short_help="Update LocalStack")
-def localstack_update() -> None:
+@common_options
+def localstack_update(profile: str) -> None:
     """
     Update different LocalStack components.
     """
@@ -727,8 +749,9 @@ def localstack_update() -> None:
 
 @localstack_update.command(name="all", short_help="Update all LocalStack components")
 @click.pass_context
+@common_options
 @publish_invocation
-def cmd_update_all(ctx: click.Context) -> None:
+def cmd_update_all(ctx: click.Context, profile: str) -> None:
     """
     Update all LocalStack components.
 
@@ -743,8 +766,9 @@ def cmd_update_all(ctx: click.Context) -> None:
 
 
 @localstack_update.command(name="localstack-cli", short_help="Update LocalStack CLI")
+@common_options
 @publish_invocation
-def cmd_update_localstack_cli() -> None:
+def cmd_update_localstack_cli(profile: str) -> None:
     """
     Update the LocalStack CLI.
 
@@ -776,8 +800,9 @@ def cmd_update_localstack_cli() -> None:
 @localstack_update.command(
     name="docker-images", short_help="Update docker images LocalStack depends on"
 )
+@common_options
 @publish_invocation
-def cmd_update_docker_images() -> None:
+def cmd_update_docker_images(profile: str) -> None:
     """
     Update all Docker images LocalStack depends on.
 
@@ -849,11 +874,12 @@ def update_images(image_list: List[str]) -> None:
 
 @localstack.command(name="completion", short_help="CLI shell completion")
 @click.pass_context
+@common_options
 @click.argument(
     "shell", required=True, type=click.Choice(["bash", "zsh", "fish"], case_sensitive=False)
 )
 @publish_invocation
-def localstack_completion(ctx: click.Context, shell: str) -> None:
+def localstack_completion(ctx: click.Context, profile: str, shell: str) -> None:
     """
      Print shell completion code for the specified shell (bash, zsh, or fish).
      The shell code must be evaluated to enable the interactive shell completion of LocalStack CLI commands.

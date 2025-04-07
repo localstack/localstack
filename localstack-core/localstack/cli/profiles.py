@@ -34,7 +34,7 @@ def parse_profile_argument(args) -> Optional[str]:
             # otherwise use the next arg in the args list as value
             try:
                 return args[i + 1]
-            except KeyError:
+            except IndexError:
                 return None
 
     return None
