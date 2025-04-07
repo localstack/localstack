@@ -68,8 +68,8 @@ class SecurityGroupIdentifier(ResourceIdentifier):
     service = "ec2"
     resource = "securitygroup"
 
-    def __init__(self, account_id: str, region: str, group_name: str):
-        super().__init__(account_id, region, name=group_name)
+    def __init__(self, account_id: str, region: str, vpc_id: str, group_name: str):
+        super().__init__(account_id, region, name=f"sg-{vpc_id}-{group_name}")
 
     def generate(self, existing_ids: ExistingIds = None, tags: Tags = None) -> str:
         return generate_security_group_id(
@@ -151,11 +151,15 @@ def apply_patches():
         self: ec2_models.security_groups.SecurityGroupBackend,
         name: str,
         *args,
+        vpc_id: Optional[str] = None,
         tags: Optional[dict[str, str]] = None,
         force: bool = False,
         **kwargs,
     ):
-        resource_identifier = SecurityGroupIdentifier(self.account_id, self.region_name, name)
+        vpc_id = vpc_id or self.default_vpc.id
+        resource_identifier = SecurityGroupIdentifier(
+            self.account_id, self.region_name, vpc_id, name
+        )
         custom_id = resource_identifier.generate(tags=tags)
 
         if not force and self.get_security_group_from_id(custom_id):
@@ -163,7 +167,7 @@ def apply_patches():
 
         # Generate security group with moto library
         result: ec2_models.security_groups.SecurityGroup = fn(
-            self, name, *args, tags=tags, force=force, **kwargs
+            self, name, *args, vpc_id=vpc_id, tags=tags, force=force, **kwargs
         )
 
         if custom_id:
