@@ -115,14 +115,14 @@ class TestAccessibleStatesStaticAnalyser:
                 MISSING_NEXT_TARGET_SINGLE_SCOPE,
                 [
                     "MISSING_TRANSITION_TARGET: Missing 'Next' target: pass3 at /States/pass1/Next",
-                    'MISSING_TRANSITION_TARGET: State "pass2" is not reachable. at FIXME',
+                    'MISSING_TRANSITION_TARGET: State "pass2" is not reachable. at /States/pass2',
                 ],
             ),
             (
                 MISSING_START_AT_TARGET_SINGLE_SCOPE,
                 [
                     "MISSING_TRANSITION_TARGET: Missing 'StartAt' target: pass3 at /StartAt",
-                    'MISSING_TRANSITION_TARGET: State "pass1" is not reachable. at FIXME',
+                    'MISSING_TRANSITION_TARGET: State "pass1" is not reachable. at /States/pass1',
                 ],
             ),
             (

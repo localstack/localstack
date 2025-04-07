@@ -11,9 +11,15 @@ class TargetState:
     source_tree_path: str
 
 
+@dataclass(frozen=True)
+class FoundState:
+    state_name: str
+    source_tree_path: str
+
+
 @dataclass
 class StateNamesScope:
-    found_state_names: Set[str] = field(default_factory=set)
+    found_states: Set[FoundState] = field(default_factory=set)
     target_states: Set[TargetState] = field(default_factory=set)
 
 
@@ -43,8 +49,9 @@ class AccessibleStatesStaticAnalyser(StaticAnalyser):
         self._assert_all_states_targetted(scope)
 
     def _assert_all_targets_found(self, scope: StateNamesScope) -> None:
+        found_state_names = {found_state.state_name for found_state in scope.found_states}
         for state in scope.target_states:
-            if state.target_state not in scope.found_state_names:
+            if state.target_state not in found_state_names:
                 target_type = self._path_leaf(state.source_tree_path)
                 self._error_messages.append(
                     f"MISSING_TRANSITION_TARGET: Missing '{target_type}' target: {state.target_state} at {state.source_tree_path}"
@@ -52,10 +59,11 @@ class AccessibleStatesStaticAnalyser(StaticAnalyser):
 
     def _assert_all_states_targetted(self, scope: StateNamesScope) -> None:
         target_state_names = {state.target_state for state in scope.target_states}
-        for state_name in scope.found_state_names - target_state_names:
-            self._error_messages.append(
-                f'MISSING_TRANSITION_TARGET: State "{state_name}" is not reachable. at FIXME'
-            )
+        for found_state in scope.found_states:
+            if found_state.state_name not in target_state_names:
+                self._error_messages.append(
+                    f'MISSING_TRANSITION_TARGET: State "{found_state.state_name}" is not reachable. at {found_state.source_tree_path}'
+                )
 
     def _current_scope(self) -> StateNamesScope:
         return self._state_names_scope[-1]
@@ -96,7 +104,7 @@ class AccessibleStatesStaticAnalyser(StaticAnalyser):
     def visitState_decl(self, ctx: ASLParser.State_declContext):
         state_name: str = ctx.string_literal().getText()[1:-1]
         self._tree_path.append(state_name)
-        self._current_scope().found_state_names.add(state_name)
+        self._current_scope().found_states.add(FoundState(state_name, self._current_tree_path()))
         super().visitState_decl(ctx=ctx)
         self._tree_path.pop()
 
