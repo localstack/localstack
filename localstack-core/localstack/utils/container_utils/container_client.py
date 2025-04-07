@@ -396,7 +396,7 @@ class BindMount:
 
         return ":".join(args)
 
-    def to_dict(self):
+    def to_docker_sdk_parameters(self) -> tuple[str, dict[str, str]]:
         return str(self.host_dir), {
             "bind": self.container_dir,
             "mode": "ro" if self.read_only else "rw",
@@ -442,7 +442,7 @@ class VolumeDirMount:
         if not self.container_path:
             raise ValueError("no container dir specified")
 
-    def to_dict(self) -> tuple[str, dict]:
+    def to_docker_sdk_parameters(self) -> tuple[str, dict[str, str]]:
         self._validate()
         from localstack.utils.docker_utils import get_host_path_for_path_in_docker
 
@@ -1495,7 +1495,7 @@ class Util:
 
         def _map_to_dict(paths: SimpleVolumeBind | BindMount | VolumeDirMount):
             if isinstance(paths, (BindMount, VolumeDirMount)):
-                return paths.to_dict()
+                return paths.to_docker_sdk_parameters()
             else:
                 return str(paths[0]), {"bind": paths[1], "mode": "rw"}
 
