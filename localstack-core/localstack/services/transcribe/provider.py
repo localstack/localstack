@@ -230,7 +230,7 @@ class TranscribeProvider(TranscribeApi):
     #
 
     @staticmethod
-    def download_model(name: str) -> Path:
+    def download_model(name: str) -> str:
         """
         Download a Vosk language model to LocalStack cache directory. Do nothing if model is already downloaded.
 
@@ -241,7 +241,7 @@ class TranscribeProvider(TranscribeApi):
 
         with _DL_LOCK:
             if model_path.exists():
-                return model_path
+                return str(model_path)
             else:
                 model_path.mkdir(parents=True)
 
@@ -267,7 +267,7 @@ class TranscribeProvider(TranscribeApi):
 
             Path(model_zip_path).unlink()
 
-        return model_path
+        return str(model_path)
 
     #
     # Threads
@@ -343,7 +343,7 @@ class TranscribeProvider(TranscribeApi):
             model_path = self.download_model(model_name)
             from vosk import KaldiRecognizer, Model  # noqa
 
-            model = Model(model_path=str(model_path), model_name=model_name)
+            model = Model(model_path=model_path, model_name=model_name)
 
             tc = KaldiRecognizer(model, audio.getframerate())
             tc.SetWords(True)
