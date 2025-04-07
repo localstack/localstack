@@ -35,11 +35,21 @@ NO_MISSING_TARGET_PARALLEL_SCOPE = json.dumps(
     }
 )
 
-MISSING_TARGET_SINGLE_SCOPE = json.dumps(
+MISSING_NEXT_TARGET_SINGLE_SCOPE = json.dumps(
     {
         "StartAt": "pass1",
         "States": {
             "pass1": {"Type": "Pass", "Next": "pass3"},
+            "pass2": {"Type": "Pass", "End": True},
+        },
+    }
+)
+
+MISSING_START_AT_TARGET_SINGLE_SCOPE = json.dumps(
+    {
+        "StartAt": "pass3",
+        "States": {
+            "pass1": {"Type": "Pass", "Next": "pass2"},
             "pass2": {"Type": "Pass", "End": True},
         },
     }
@@ -54,8 +64,9 @@ MISSING_TARGET_ROOT_SCOPE_UNREACHABLE_FROM_PARALLEL = json.dumps(
             "parallel": {
                 "Type": "Parallel",
                 "Branches": [
-                    {"StartAt": "pass1p", "States": {"pass1p": {"Type": "Pass", "Next": "pass2"}}},
-                    {"StartAt": "pass2p", "States": {"pass2p": {"Type": "Pass", "End": True}}},
+                    {"StartAt": "pass1p", "States": {"pass1p": {"Type": "Pass", "End": True}}},
+                    {"StartAt": "pass2p", "States": {"pass2p": {"Type": "Pass", "Next": "pass2"}}},
+                    {"StartAt": "pass3p", "States": {"pass3p": {"Type": "Pass", "End": True}}},
                 ],
                 "End": True,
             },
@@ -101,23 +112,35 @@ class TestAccessibleStatesStaticAnalyser:
         "definition,expected_messages",
         [
             (
-                MISSING_TARGET_SINGLE_SCOPE,
+                MISSING_NEXT_TARGET_SINGLE_SCOPE,
                 [
-                    "MISSING_TRANSITION_TARGET: Missing Next target: pass3 at FIXME",
-                    "MISSING_TRANSITION_TARGET: State pass2 is not reachable. at FIXME",
+                    "MISSING_TRANSITION_TARGET: Missing 'Next' target: pass3 at /States/pass1/Next",
+                    'MISSING_TRANSITION_TARGET: State "pass2" is not reachable. at FIXME',
+                ],
+            ),
+            (
+                MISSING_START_AT_TARGET_SINGLE_SCOPE,
+                [
+                    "MISSING_TRANSITION_TARGET: Missing 'StartAt' target: pass3 at /StartAt",
+                    'MISSING_TRANSITION_TARGET: State "pass1" is not reachable. at FIXME',
                 ],
             ),
             (
                 MISSING_TARGET_ROOT_SCOPE_UNREACHABLE_FROM_PARALLEL,
-                ["MISSING_TRANSITION_TARGET: Missing Next target: pass2 at FIXME"],
+                [
+                    "MISSING_TRANSITION_TARGET: Missing 'Next' target: pass2 at /States/parallel/Branches[1]/States/pass2p/Next"
+                ],
             ),
             (
                 MISSING_TARGET_OTHER_BRANCH_SCOPE_UNREACHABLE_FROM_PARALLEL,
-                ["MISSING_TRANSITION_TARGET: Missing Next target: pass2p at FIXME"],
+                [
+                    "MISSING_TRANSITION_TARGET: Missing 'Next' target: pass2p at /States/parallel/Branches[0]/States/pass1p/Next"
+                ],
             ),
         ],
         ids=[
-            "MISSING_TARGET_SINGLE_SCOPE",
+            "MISSING_NEXT_TARGET_SINGLE_SCOPE",
+            "MISSING_START_AT_TARGET_SINGLE_SCOPE",
             "MISSING_TARGET_ROOT_SCOPE_UNREACHABLE_FROM_PARALLEL",
             "MISSING_TARGET_OTHER_BRANCH_SCOPE_UNREACHABLE_FROM_PARALLEL",
         ],
