@@ -737,6 +737,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         account_id, region_name, key_id = self._parse_key_id(key_id, context)
         key = self._get_kms_key(account_id, region_name, key_id)
         self._validate_key_for_encryption_decryption(context, key)
+        KmsCryptoKey.assert_valid(key_pair_spec)
         return execute_dry_run_capable(self._build_data_key_pair_response, dry_run, key, key_pair_spec, encryption_context)
 
     def _build_data_key_pair_response(
@@ -768,7 +769,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> GenerateDataKeyPairResponse:
         # TODO add support for "dry_run"
-        print(f"[handler] dry_run = {dry_run}")
         result = self._generate_data_key_pair(context, key_id, key_pair_spec, encryption_context, dry_run)
         return GenerateDataKeyPairResponse(**result)
 
@@ -806,7 +806,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> GenerateDataKeyPairWithoutPlaintextResponse:
         # TODO add support for "dry_run"
-        result = self._generate_data_key_pair(context, key_id, key_pair_spec, encryption_context)
+        result = self._generate_data_key_pair(context, key_id, key_pair_spec, encryption_context, dry_run)
         result.pop("PrivateKeyPlaintext")
         return GenerateDataKeyPairResponse(**result)
 

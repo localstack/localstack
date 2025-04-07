@@ -178,6 +178,32 @@ class KmsCryptoKey:
     key_material: bytes
     key_spec: str
 
+    @staticmethod
+    def assert_valid(key_spec: str):
+        """
+        Validates that the given key_spec is supported in the current context.
+
+        LocalStack supports additional key specs beyond what AWS officially allows.
+        For example, AWS's GenerateDataKeyPair operation supports only the following:
+            - RSA_2048, RSA_3072, RSA_4096
+            - ECC_NIST_P256, ECC_NIST_P384, ECC_NIST_P521, ECC_SECG_P256K1, SM2
+
+        Raises:
+            ValidationException: If key_spec is not in the supported list.
+        """
+        valid_specs = (
+            list(RSA_CRYPTO_KEY_LENGTHS.keys()) +
+            list(ECC_CURVES.keys()) +
+            list(HMAC_RANGE_KEY_LENGTHS.keys())
+        )
+
+        if key_spec not in valid_specs:
+            raise ValidationException(
+                f"1 validation error detected: Value '{key_spec}' at 'keySpec' "
+                f"failed to satisfy constraint: Member must satisfy enum value set: "
+                f"{valid_specs}"
+            )
+
     def __init__(self, key_spec: str, key_material: Optional[bytes] = None):
         self.private_key = None
         self.public_key = None
