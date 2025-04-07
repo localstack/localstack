@@ -21,9 +21,10 @@ from aws_xray_sdk.core import patch, xray_recorder
 
 from localstack.testing.aws.util import is_aws_cloud
 from tests.aws.services.events.helper_functions import is_old_provider
-from tests.aws.services.lambda_.test_lambda import (
-    TEST_LAMBDA_PYTHON_ECHO,
-)
+from tests.aws.services.events.test_events import TEST_EVENT_DETAIL, TEST_EVENT_PATTERN
+from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO, TEST_LAMBDA_XRAY_TRACEID
+
+# currently only API Gateway v2 and Lambda support X-Ray tracing
 
 
 @markers.aws.unknown
@@ -216,7 +217,6 @@ def test_xray_trace_propagation_events_api_gateway(
         check_expected_lambda_log_events_length,
         retries=10,
         sleep=10,
-        sleep_before=10 if is_aws_cloud() else 1,
         function_name=function_name,
         expected_length=1,
         logs_client=aws_client.logs,
@@ -236,4 +236,83 @@ def test_xray_trace_propagation_events_api_gateway(
     snapshot.match("lambda_logs", events)
 
 
-# def test_xray_trace_propagation_events_lambda():
+@markers.aws.unknown
+def test_xray_trace_propagation_events_lambda(
+    create_lambda_function,
+    events_create_event_bus,
+    events_put_rule,
+    aws_client,
+    snapshot,
+):
+    function_name = f"lambda-func-{short_uid()}"
+    create_lambda_response = create_lambda_function(
+        handler_file=TEST_LAMBDA_XRAY_TRACEID,
+        func_name=function_name,
+        runtime=Runtime.python3_12,
+    )
+    lambda_function_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
+
+    bus_name = f"bus-{short_uid()}"
+    events_create_event_bus(Name=bus_name)
+
+    rule_name = f"rule-{short_uid()}"
+    rule_arn = events_put_rule(
+        Name=rule_name,
+        EventBusName=bus_name,
+        EventPattern=json.dumps(TEST_EVENT_PATTERN),
+    )["RuleArn"]
+
+    aws_client.lambda_.add_permission(
+        FunctionName=function_name,
+        StatementId=f"{rule_name}-Event",
+        Action="lambda:InvokeFunction",
+        Principal="events.amazonaws.com",
+        SourceArn=rule_arn,
+    )
+
+    target_id = f"target-{short_uid()}"
+    aws_client.events.put_targets(
+        Rule=rule_name,
+        EventBusName=bus_name,
+        Targets=[{"Id": target_id, "Arn": lambda_function_arn}],
+    )
+
+    # Enable X-Ray tracing for the aws_client
+    segment = xray_recorder.begin_segment(name="put_events")
+    trace_id = segment.trace_id
+    libraries = ["botocore"]
+    patch(libraries)
+
+    aws_client.events.put_events(
+        Entries=[
+            {
+                "EventBusName": bus_name,
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": json.dumps(TEST_EVENT_DETAIL),
+            }
+        ]
+    )
+
+    # Verify the Lambda invocation
+    events = retry(
+        check_expected_lambda_log_events_length,
+        retries=10,
+        sleep=10,
+        function_name=function_name,
+        expected_length=1,
+        logs_client=aws_client.logs,
+    )
+
+    # TODO how to assert X-Ray trace ID correct propagation from eventbridge to api gateway
+
+    lambda_trace_header = events[0]["trace_id_inside_handler"]
+    assert lambda_trace_header is not None
+    lambda_trace_id = re.search(r"Root=([^;]+)", lambda_trace_header).group(1)
+    assert lambda_trace_id == trace_id
+
+    snapshot.add_transformer(
+        snapshot.transform.regex(lambda_trace_id, "trace_id_root"),
+    )
+
+    snapshot.match("lambda_logs", events)
