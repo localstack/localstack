@@ -15,6 +15,7 @@ class TagException(CommonServiceException):
     def __init__(self, message=None):
         super().__init__("TagException", status_code=400, message=message)
 
+
 class DryRunOperationException(CommonServiceException):
     def __init__(self, message="The request would have succeeded, but the DryRun option is set."):
         super().__init__("DryRunOperationException", status_code=400, message=message)
