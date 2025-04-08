@@ -3,9 +3,8 @@ import pytest
 from localstack.aws.api import RequestContext
 from localstack.aws.api.kms import CreateKeyRequest
 from localstack.services.kms.exceptions import DryRunOperationException, ValidationException
-from localstack.services.kms.models import KmsKey
 from localstack.services.kms.provider import KmsProvider
-from localstack.services.kms.utils import validate_alias_name
+from localstack.services.kms.utils import execute_dry_run_capable, validate_alias_name
 
 
 def test_alias_name_validator():
@@ -17,15 +16,14 @@ def test_alias_name_validator():
 def provider():
     return KmsProvider()
 
+def test_execute_dry_run_capable_runs_when_not_dry():
+    result = execute_dry_run_capable(lambda: 1 + 1, dry_run=False)
+    assert result == 2
 
-@pytest.fixture
-def mock_key():
-    # You can mock this more fully based on what _get_kms_key expects
-    return KmsKey(
-        metadata={
-            "Arn": "arn:aws:kms:us-east-1:000000000000:key/abc123",
-        }
-    )
+
+def test_execute_dry_run_capable_raises_when_dry():
+    with pytest.raises(DryRunOperationException):
+        execute_dry_run_capable(lambda: "should not run", dry_run=True)
 
 
 @pytest.mark.parametrize(
