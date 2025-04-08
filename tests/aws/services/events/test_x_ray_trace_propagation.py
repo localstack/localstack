@@ -1,4 +1,5 @@
 import json
+import time
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.pytest import markers
@@ -110,13 +111,13 @@ def test_xray_trace_propagation_events_api_gateway(
     )
 
     resource_id = aws_client.apigateway.create_resource(
-        restApiId=api_id, parentId=root, pathPart="{proxy+}"
+        restApiId=api_id, parentId=root, pathPart="test"
     )["id"]
 
     aws_client.apigateway.put_method(
         restApiId=api_id,
         resourceId=resource_id,
-        httpMethod="ANY",
+        httpMethod="POST",
         authorizationType="NONE",
     )
 
@@ -129,11 +130,21 @@ def test_xray_trace_propagation_events_api_gateway(
     aws_client.apigateway.put_integration(
         restApiId=api_id,
         resourceId=resource_id,
-        httpMethod="ANY",
+        httpMethod="POST",
         type="AWS_PROXY",
         integrationHttpMethod="POST",
-        uri=f"arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/{function_arn}/invocations",
+        uri=f"arn:aws:apigateway:{region_name}:lambda:path/2015-03-31/functions/{function_arn}/invocations",
         credentials=role_arn,
+    )
+
+    # Give permission to API Gateway to invoke Lambda
+    source_arn = f"arn:aws:execute-api:{region_name}:{account_id}:{api_id}/*/POST/test"
+    aws_client.lambda_.add_permission(
+        FunctionName=function_name,
+        StatementId=f"sid-{short_uid()}",
+        Action="lambda:InvokeFunction",
+        Principal="apigateway.amazonaws.com",
+        SourceArn=source_arn,
     )
 
     stage_name = "test-api-stage-name"
@@ -163,7 +174,7 @@ def test_xray_trace_propagation_events_api_gateway(
             }
         ],
     }
-    source_arn = f"arn:aws:execute-api:{region_name}:{account_id}:{api_id}/*/POST/test"
+
     role_name, role_arn = create_role_with_policy(
         effect="Allow",
         actions="execute-api:Invoke",
@@ -171,6 +182,10 @@ def test_xray_trace_propagation_events_api_gateway(
         resource=source_arn,
         attach=False,  # Since we're using put_role_policy, not attach_role_policy
     )
+
+    # Allow some time for IAM role propagation (only needed in AWS)
+    if is_aws_cloud():
+        time.sleep(10)
 
     # Add the API Gateway as a target with the RoleArn
     target_id = f"target-{short_uid()}"
@@ -195,8 +210,6 @@ def test_xray_trace_propagation_events_api_gateway(
     ######
     # Test
     ######
-    events_client = aws_client.events
-
     # Enable X-Ray tracing for the aws_client
     trace_id = "1-67f4141f-e1cd7672871da115129f8b19"
     parent_id = "d0ee9531727135a0"
@@ -217,7 +230,7 @@ def test_xray_trace_propagation_events_api_gateway(
         "DetailType": "test.detail.type",
         "Detail": json.dumps({"message": "Hello from EventBridge"}),
     }
-    put_events_response = events_client.put_events(Entries=[event_entry])
+    put_events_response = aws_client.events.put_events(Entries=[event_entry])
     snapshot.match("put_events_response", put_events_response)
     assert put_events_response["FailedEntryCount"] == 0
 
@@ -226,6 +239,7 @@ def test_xray_trace_propagation_events_api_gateway(
         check_expected_lambda_log_events_length,
         retries=10,
         sleep=10,
+        sleep_before=10 if is_aws_cloud() else 1,
         function_name=function_name,
         expected_length=1,
         logs_client=aws_client.logs,
@@ -246,9 +260,9 @@ def test_xray_trace_propagation_events_api_gateway(
     snapshot.match("lambda_logs", events)
 
 
-@markers.aws.unknown
+@markers.aws.validated
 @pytest.mark.skipif(
-    condition=is_old_provider() and not is_aws_cloud(),
+    condition=is_old_provider(),
     reason="not supported by the old provider",
 )
 def test_xray_trace_propagation_events_lambda(

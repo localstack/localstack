@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/events/test_x_ray_trace_propagation.py::test_xray_trace_propagation_events_lambda": {
+    "last_validated_date": "2025-04-08T10:31:19+00:00"
+  }
+}
