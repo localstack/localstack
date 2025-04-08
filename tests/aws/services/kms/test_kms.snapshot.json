@@ -2222,5 +2222,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_pair_without_plaintext_dry_run": {
+    "recorded-date": "07-04-2025, 17:12:37",
+    "recorded-content": {
+      "dryrun_exception": {
+        "Error": {
+          "Code": "DryRunOperationException",
+          "Message": "The request would have succeeded, but the DryRun option is set."
+        },
+        "message": "The request would have succeeded, but the DryRun option is set.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

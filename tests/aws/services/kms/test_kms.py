@@ -2052,7 +2052,7 @@ class TestKMSGenerateKeys:
             aws_client.kms.decrypt(CiphertextBlob=result["PrivateKeyCiphertextBlob"], KeyId=key_id)
         snapshot.match("decrypt-without-encryption-context", e.value.response)
 
-    @markers.aws.needs_fixing
+    @markers.aws.validated
     def test_generate_data_key_pair_dry_run(
             self, kms_key, aws_client, snapshot):
         snapshot.add_transformer(
@@ -2069,6 +2069,33 @@ class TestKMSGenerateKeys:
 
         with pytest.raises(ClientError) as exc:
             aws_client.kms.generate_data_key_pair(
+                KeyId=key_id,
+                KeyPairSpec="RSA_2048",
+                DryRun=True
+            )
+
+        err = exc.value.response
+        assert err["Error"]["Code"] == "DryRunOperationException"
+
+        # Optional: match the exception with snapshot
+        snapshot.match("dryrun_exception", err)
+
+    @markers.aws.validated
+    def test_generate_data_key_pair_without_plaintext_dry_run(self, kms_key, aws_client, snapshot):
+        snapshot.add_transformer(
+            snapshot.transform.key_value("PrivateKeyCiphertextBlob", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("PublicKey", reference_replacement=False)
+        )
+
+        key_id = kms_key["KeyId"]
+        result = aws_client.kms.generate_data_key_pair_without_plaintext(
+            KeyId=key_id, KeyPairSpec="RSA_2048"
+        )
+
+        with pytest.raises(ClientError) as exc:
+            aws_client.kms.generate_data_key_pair_without_plaintext(
                 KeyId=key_id,
                 KeyPairSpec="RSA_2048",
                 DryRun=True
