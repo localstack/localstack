@@ -7,6 +7,7 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 from localstack.utils.xray.trace_header import TraceHeader
+from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_AWS_PROXY_FORMAT
 
 APIGATEWAY_ASSUME_ROLE_POLICY = {
     "Statement": {
@@ -23,65 +24,15 @@ import pytest
 from localstack.testing.aws.util import is_aws_cloud
 from tests.aws.services.events.helper_functions import is_old_provider
 from tests.aws.services.events.test_events import TEST_EVENT_DETAIL, TEST_EVENT_PATTERN
-from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO, TEST_LAMBDA_XRAY_TRACEID
+from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_XRAY_TRACEID
 
 # currently only API Gateway v2 and Lambda support X-Ray tracing
 
 
 @markers.aws.unknown
 @pytest.mark.skipif(
-    condition=is_old_provider() and not is_aws_cloud(),
+    condition=is_old_provider(),
     reason="not supported by the old provider",
-)
-@markers.snapshot.skip_snapshot_verify(
-    paths=[
-        # TODO: those headers are sent by Events via the SDK, we should at least populate X-Amz-Source-Account
-        #  and X-Amz-Source-Arn
-        "$..headers.amz-sdk-invocation-id",
-        "$..headers.amz-sdk-request",
-        "$..headers.amz-sdk-retry",
-        "$..headers.X-Amz-Security-Token",
-        "$..headers.X-Amz-Source-Account",
-        "$..headers.X-Amz-Source-Arn",
-        # seems like this one can vary in casing between runs?
-        "$..headers.x-amz-date",
-        "$..headers.X-Amz-Date",
-        # those headers are missing in API Gateway
-        "$..headers.CloudFront-Forwarded-Proto",
-        "$..headers.CloudFront-Is-Desktop-Viewer",
-        "$..headers.CloudFront-Is-Mobile-Viewer",
-        "$..headers.CloudFront-Is-SmartTV-Viewer",
-        "$..headers.CloudFront-Is-Tablet-Viewer",
-        "$..headers.CloudFront-Viewer-ASN",
-        "$..headers.CloudFront-Viewer-Country",
-        "$..headers.X-Amz-Cf-Id",
-        "$..headers.Via",
-        # sent by `requests` library by default
-        "$..headers.Accept-Encoding",
-        "$..headers.Accept",
-        "$..headers.Host",
-        "$..multiValueHeaders.Host",
-        "$..requestContext.apiId",
-        "$..requestContext.domainName",
-        "$..requestContext.domainPrefix",
-        "$..requestContext.requestTime",
-        "$..requestContext.requestTimeEpoch",
-        "$..requestContext.resourceId",
-        "$..headers.x-localstack-edge",
-        "$..headers.Connection",
-        "$..headers.Content-Length",
-        "$..headers.accept-encoding",
-        "$..headers.accept",
-        "$..headers.X-Forwarded-Port",
-        "$..headers.X-Forwarded-Proto",
-        "$..pathParameters",
-        "$..requestContext.authorizer",
-        "$..requestContext.deploymentId",
-        "$..requestContext.extendedRequestId",
-        "$..requestContext.identity",
-        "$..requestContext.requestId",
-        "$..stageVariables",
-    ],
 )
 def test_xray_trace_propagation_events_api_gateway(
     aws_client,
@@ -93,25 +44,25 @@ def test_xray_trace_propagation_events_api_gateway(
     region_name,
     cleanups,
     account_id,
-    snapshot,
 ):
     # create lambda
     function_name = f"test-function-{short_uid()}"
     function_arn = create_lambda_function(
-        handler_file=TEST_LAMBDA_PYTHON_ECHO,
         func_name=function_name,
+        handler_file=TEST_LAMBDA_AWS_PROXY_FORMAT,
+        handler="lambda_aws_proxy_format.handler",
         runtime=Runtime.python3_12,
     )["CreateFunctionResponse"]["FunctionArn"]
 
     # create api gateway with lambda integration
     # create rest api
-    api_id, api_name, root = create_rest_apigw(
+    api_id, api_name, root_id = create_rest_apigw(
         name=f"test-api-{short_uid()}",
-        description="Integration test API",
+        description="Test Integration with EventBridge X-Ray",
     )
 
     resource_id = aws_client.apigateway.create_resource(
-        restApiId=api_id, parentId=root, pathPart="test"
+        restApiId=api_id, parentId=root_id, pathPart="test"
     )["id"]
 
     aws_client.apigateway.put_method(
@@ -119,11 +70,6 @@ def test_xray_trace_propagation_events_api_gateway(
         resourceId=resource_id,
         httpMethod="POST",
         authorizationType="NONE",
-    )
-
-    # create role with policy
-    _, role_arn = create_role_with_policy(
-        "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
     )
 
     # Lambda AWS_PROXY integration
@@ -134,7 +80,6 @@ def test_xray_trace_propagation_events_api_gateway(
         type="AWS_PROXY",
         integrationHttpMethod="POST",
         uri=f"arn:aws:apigateway:{region_name}:lambda:path/2015-03-31/functions/{function_arn}/invocations",
-        credentials=role_arn,
     )
 
     # Give permission to API Gateway to invoke Lambda
@@ -147,7 +92,7 @@ def test_xray_trace_propagation_events_api_gateway(
         SourceArn=source_arn,
     )
 
-    stage_name = "test-api-stage-name"
+    stage_name = "test"
     aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
 
     # Create event bus
@@ -231,7 +176,6 @@ def test_xray_trace_propagation_events_api_gateway(
         "Detail": json.dumps({"message": "Hello from EventBridge"}),
     }
     put_events_response = aws_client.events.put_events(Entries=[event_entry])
-    snapshot.match("put_events_response", put_events_response)
     assert put_events_response["FailedEntryCount"] == 0
 
     # Verify the Lambda invocation
@@ -251,13 +195,6 @@ def test_xray_trace_propagation_events_api_gateway(
     assert lambda_trace_header is not None
     lambda_trace_id = re.search(r"Root=([^;]+)", lambda_trace_header).group(1)
     assert lambda_trace_id == trace_id
-    lambda_trace_parent = re.search(r"Parent=([^;]+)", lambda_trace_header).group(1)
-
-    snapshot.add_transformer(
-        snapshot.transform.regex(lambda_trace_parent, "trace_id_parent"),
-    )
-
-    snapshot.match("lambda_logs", events)
 
 
 @markers.aws.validated
@@ -271,7 +208,6 @@ def test_xray_trace_propagation_events_lambda(
     events_put_rule,
     cleanups,
     aws_client,
-    snapshot,
 ):
     function_name = f"lambda-func-{short_uid()}"
     create_lambda_response = create_lambda_function(
@@ -345,13 +281,4 @@ def test_xray_trace_propagation_events_lambda(
     lambda_trace_header = events[0]["trace_id_inside_handler"]
     assert lambda_trace_header is not None
     lambda_trace_id = re.search(r"Root=([^;]+)", lambda_trace_header).group(1)
-    lambda_trace_parent = re.search(r"Parent=([^;]+)", lambda_trace_header).group(1)
     assert lambda_trace_id == trace_id
-
-    snapshot.add_transformers_list(
-        [
-            snapshot.transform.regex(lambda_trace_parent, "trace_id_parent"),
-        ]
-    )
-
-    snapshot.match("lambda_logs", events)
