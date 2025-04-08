@@ -772,7 +772,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         dry_run: NullableBooleanType = None,
         **kwargs,
     ) -> GenerateDataKeyPairResponse:
-        # TODO add support for "dry_run"
         result = self._generate_data_key_pair(
             context, key_id, key_pair_spec, encryption_context, dry_run
         )
@@ -811,7 +810,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         dry_run: NullableBooleanType = None,
         **kwargs,
     ) -> GenerateDataKeyPairWithoutPlaintextResponse:
-        # TODO add support for "dry_run"
         result = self._generate_data_key_pair(
             context, key_id, key_pair_spec, encryption_context, dry_run
         )
