@@ -16,6 +16,7 @@ pytest_plugins = [
     "localstack.testing.pytest.validation_tracking",
     "localstack.testing.pytest.path_filter",
     "localstack.testing.pytest.stepfunctions.fixtures",
+    "localstack.testing.pytest.cloudformation.fixtures",
 ]
 
 

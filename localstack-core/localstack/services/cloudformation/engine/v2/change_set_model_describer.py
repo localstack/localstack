@@ -37,14 +37,43 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
     def visit_node_intrinsic_function_fn_get_att(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        delta = super().visit_node_intrinsic_function_fn_get_att(
-            node_intrinsic_function=node_intrinsic_function
-        )
-        if delta.after is not None and delta.after != delta.before:
-            # The value needs computing, simulate aws's describe
-            # limitation by masking the new value.
-            delta.after = CHANGESET_KNOWN_AFTER_APPLY
-        return delta
+        # TODO: If we can properly compute the before and after value, why should we
+        #  artificially limit the precision of our output to match AWS's?
+
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        before_argument_list = arguments_delta.before
+        after_argument_list = arguments_delta.after
+
+        before = None
+        if before_argument_list:
+            before_logical_name_of_resource = before_argument_list[0]
+            before_attribute_name = before_argument_list[1]
+            before_node_resource = self._get_node_resource_for(
+                resource_name=before_logical_name_of_resource, node_template=self._node_template
+            )
+            before_node_property = self._get_node_property_for(
+                property_name=before_attribute_name, node_resource=before_node_resource
+            )
+            before_property_delta = self.visit(before_node_property)
+            before = before_property_delta.before
+
+        after = None
+        if after_argument_list:
+            after_logical_name_of_resource = after_argument_list[0]
+            after_attribute_name = after_argument_list[1]
+            after_node_resource = self._get_node_resource_for(
+                resource_name=after_logical_name_of_resource, node_template=self._node_template
+            )
+            after_node_property = self._get_node_property_for(
+                property_name=after_attribute_name, node_resource=after_node_resource
+            )
+            after_property_delta = self.visit(after_node_property)
+            if after_property_delta.before == after_property_delta.after:
+                after = after_property_delta.after
+            else:
+                after = CHANGESET_KNOWN_AFTER_APPLY
+
+        return PreprocEntityDelta(before=before, after=after)
 
     def _register_resource_change(
         self,

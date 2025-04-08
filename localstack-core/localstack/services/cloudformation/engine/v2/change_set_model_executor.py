@@ -173,6 +173,14 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             "secretAccessKey": INTERNAL_AWS_SECRET_ACCESS_KEY,
             "sessionToken": "",
         }
+        before_properties_value = before_properties.properties if before_properties else None
+        if action == ChangeAction.Remove:
+            resource_properties = before_properties_value
+            previous_resource_properties = None
+        else:
+            after_properties_value = after_properties.properties if after_properties else None
+            resource_properties = after_properties_value
+            previous_resource_properties = before_properties_value
         resource_provider_payload: ResourceProviderPayload = {
             "awsAccountId": self.account_id,
             "callbackContext": {},
@@ -186,10 +194,8 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             "requestData": {
                 "logicalResourceId": logical_resource_id,
                 # TODO: assign before and previous according on the action type.
-                "resourceProperties": after_properties.properties if after_properties else None,
-                "previousResourceProperties": before_properties.properties
-                if before_properties
-                else None,
+                "resourceProperties": resource_properties,
+                "previousResourceProperties": previous_resource_properties,
                 "callerCredentials": creds,
                 "providerCredentials": creds,
                 "systemTags": {},

@@ -1,0 +1,17 @@
+{
+  "tests/aws/services/cloudformation/v2/test_change_set_ref.py::TestChangeSetRef::test_direct_attribute_value_change": {
+    "last_validated_date": "2025-04-08T15:36:44+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_ref.py::TestChangeSetRef::test_direct_attribute_value_change_in_ref_chain": {
+    "last_validated_date": "2025-04-08T15:45:54+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_ref.py::TestChangeSetRef::test_direct_attribute_value_change_with_dependent_addition": {
+    "last_validated_date": "2025-04-08T15:51:05+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_ref.py::TestChangeSetRef::test_immutable_property_update_causes_resource_replacement": {
+    "last_validated_date": "2025-04-08T16:00:20+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_ref.py::TestChangeSetRef::test_resource_addition": {
+    "last_validated_date": "2025-04-08T15:22:37+00:00"
+  }
+}

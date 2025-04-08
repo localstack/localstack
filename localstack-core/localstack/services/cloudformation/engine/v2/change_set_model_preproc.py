@@ -128,8 +128,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         self._processed.clear()
         self.visit(self._node_template)
 
-    @staticmethod
-    def _get_node_resource_for(resource_name: str, node_template: NodeTemplate) -> NodeResource:
+    def _get_node_resource_for(
+        self, resource_name: str, node_template: NodeTemplate
+    ) -> NodeResource:
         # TODO: this could be improved with hashmap lookups if the Node contained bindings and not lists.
         for node_resource in node_template.resources.resources:
             if node_resource.name == resource_name:
@@ -137,8 +138,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         # TODO
         raise RuntimeError()
 
-    @staticmethod
-    def _get_node_property_for(property_name: str, node_resource: NodeResource) -> NodeProperty:
+    def _get_node_property_for(
+        self, property_name: str, node_resource: NodeResource
+    ) -> NodeProperty:
         # TODO: this could be improved with hashmap lookups if the Node contained bindings and not lists.
         for node_property in node_resource.properties.properties:
             if node_property.name == property_name:
@@ -442,13 +444,16 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 after.append(delta.after)
         return PreprocEntityDelta(before=before, after=after)
 
+    def visit_node_property(self, node_property: NodeProperty) -> PreprocEntityDelta:
+        return self.visit(node_property.value)
+
     def visit_node_properties(
         self, node_properties: NodeProperties
     ) -> PreprocEntityDelta[PreprocProperties, PreprocProperties]:
         before_bindings: dict[str, Any] = dict()
         after_bindings: dict[str, Any] = dict()
         for node_property in node_properties.properties:
-            delta = self.visit(node_property.value)
+            delta = self.visit(node_property)
             property_name = node_property.name
             if node_property.change_type != ChangeType.CREATED:
                 before_bindings[property_name] = delta.before
