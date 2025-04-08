@@ -192,9 +192,9 @@ class KmsCryptoKey:
             ValidationException: If key_spec is not in the supported list.
         """
         valid_specs = (
-            list(RSA_CRYPTO_KEY_LENGTHS.keys()) +
-            list(ECC_CURVES.keys()) +
-            list(HMAC_RANGE_KEY_LENGTHS.keys())
+            list(RSA_CRYPTO_KEY_LENGTHS.keys())
+            + list(ECC_CURVES.keys())
+            + list(HMAC_RANGE_KEY_LENGTHS.keys())
         )
 
         if key_spec not in valid_specs:

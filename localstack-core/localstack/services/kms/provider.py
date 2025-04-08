@@ -123,7 +123,12 @@ from localstack.services.kms.models import (
     deserialize_ciphertext_blob,
     kms_stores,
 )
-from localstack.services.kms.utils import execute_dry_run_capable, is_valid_key_arn, parse_key_arn, validate_alias_name
+from localstack.services.kms.utils import (
+    execute_dry_run_capable,
+    is_valid_key_arn,
+    parse_key_arn,
+    validate_alias_name,
+)
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.arns import get_partition, kms_alias_arn, parse_arn
 from localstack.utils.collections import PaginatedList
@@ -732,19 +737,18 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key_id: str,
         key_pair_spec: str,
         encryption_context: EncryptionContextType = None,
-        dry_run: NullableBooleanType = None
+        dry_run: NullableBooleanType = None,
     ):
         account_id, region_name, key_id = self._parse_key_id(key_id, context)
         key = self._get_kms_key(account_id, region_name, key_id)
         self._validate_key_for_encryption_decryption(context, key)
         KmsCryptoKey.assert_valid(key_pair_spec)
-        return execute_dry_run_capable(self._build_data_key_pair_response, dry_run, key, key_pair_spec, encryption_context)
+        return execute_dry_run_capable(
+            self._build_data_key_pair_response, dry_run, key, key_pair_spec, encryption_context
+        )
 
     def _build_data_key_pair_response(
-        self,
-        key: KmsKey,
-        key_pair_spec: str,
-        encryption_context: EncryptionContextType = None
+        self, key: KmsKey, key_pair_spec: str, encryption_context: EncryptionContextType = None
     ):
         crypto_key = KmsCryptoKey(key_pair_spec)
 
@@ -769,7 +773,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> GenerateDataKeyPairResponse:
         # TODO add support for "dry_run"
-        result = self._generate_data_key_pair(context, key_id, key_pair_spec, encryption_context, dry_run)
+        result = self._generate_data_key_pair(
+            context, key_id, key_pair_spec, encryption_context, dry_run
+        )
         return GenerateDataKeyPairResponse(**result)
 
     @handler("GenerateRandom", expand=False)
@@ -806,7 +812,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> GenerateDataKeyPairWithoutPlaintextResponse:
         # TODO add support for "dry_run"
-        result = self._generate_data_key_pair(context, key_id, key_pair_spec, encryption_context, dry_run)
+        result = self._generate_data_key_pair(
+            context, key_id, key_pair_spec, encryption_context, dry_run
+        )
         result.pop("PrivateKeyPlaintext")
         return GenerateDataKeyPairResponse(**result)
 

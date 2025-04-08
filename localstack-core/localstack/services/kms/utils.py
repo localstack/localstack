@@ -1,8 +1,8 @@
 import re
 from typing import Callable, Tuple, TypeVar
 
-from localstack.aws.api.kms import  Tag, TagException
-from localstack.services.kms.exceptions import DryRunOperationException,ValidationException
+from localstack.aws.api.kms import Tag, TagException
+from localstack.services.kms.exceptions import DryRunOperationException, ValidationException
 from localstack.utils.aws.arns import ARN_PARTITION_REGEX
 
 T = TypeVar("T")
@@ -60,6 +60,7 @@ def validate_tag(tag_position: int, tag: Tag) -> None:
 
     if tag_key.lower().startswith("aws:"):
         raise TagException("Tags beginning with aws: are reserved")
+
 
 def execute_dry_run_capable(func: Callable[..., T], dry_run: bool, *args, **kwargs) -> T:
     """
