@@ -105,12 +105,12 @@
     }
   },
   "tests/aws/services/events/test_x_ray_trace_propagation.py::test_xray_trace_propagation_events_lambda": {
-    "recorded-date": "07-04-2025, 18:22:40",
+    "recorded-date": "08-04-2025, 10:31:19",
     "recorded-content": {
       "lambda_logs": [
         {
           "trace_id_outside_handler": "None",
-          "trace_id_inside_handler": "Root=1-67f4141f-e1cd7672871da115129f8b19;Parent=trace_id_parent;Sampled=1"
+          "trace_id_inside_handler": "Root=1-67f4141f-e1cd7672871da115129f8b19;Parent=trace_id_parent;Sampled=1;Lineage=1:c88b76bb:0"
         }
       ]
     }
