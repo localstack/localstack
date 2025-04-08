@@ -28,18 +28,17 @@ Resources:
       FunctionName: !Ref FunctionName
       Code:
         ZipFile: |
-          exports.handler = function(event) {
+          def handler(event, context):
             return {
               statusCode: 200,
               body: "Hello, World!" 
-            };
-          };
+            }
       Role:
         Fn::GetAtt:
           - MyFnServiceRole
           - Arn
       Handler: index.handler
-      Runtime: nodejs18.x
+      Runtime: python3.12
       LoggingConfig:
         LogFormat: JSON
     DependsOn:

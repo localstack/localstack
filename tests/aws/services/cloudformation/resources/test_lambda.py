@@ -254,19 +254,17 @@ def test_lambda_alias(deploy_cfn_template, snapshot, aws_client):
 
 
 @markers.aws.validated
-@markers.snapshot.skip_snapshot_verify(
-    paths=[
-        "$..StackResources..PhysicalResourceId",  # TODO: compatibility between AWS URL and localstack URL
-    ]
-)
 def test_lambda_logging_config(deploy_cfn_template, snapshot, aws_client):
-    snapshot.add_transformer(snapshot.transform.cloudformation_api())
-    snapshot.add_transformer(snapshot.transform.lambda_api())
-    snapshot.add_transformer(
-        SortingTransformer("StackResources", lambda x: x["LogicalResourceId"]), priority=-1
-    )
-
     function_name = f"function{short_uid()}"
+
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(SortingTransformer("StackResources", lambda x: x["LogicalResourceId"]))
+    snapshot.add_transformer(
+        snapshot.transform.key_value("LogicalResourceId", reference_replacement=False)
+    )
+    snapshot.add_transformer(
+        snapshot.transform.key_value("PhysicalResourceId", reference_replacement=False)
+    )
     snapshot.add_transformer(snapshot.transform.regex(function_name, "<function-name>"))
 
     deployment = deploy_cfn_template(
