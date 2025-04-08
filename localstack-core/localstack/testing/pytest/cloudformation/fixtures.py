@@ -4,10 +4,12 @@ from typing import Callable
 
 import pytest
 
-from aws.services.cloudformation.api.test_changesets import PerResourceStackEvents
+from localstack.aws.api.cloudformation import StackEvent
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
+
+PerResourceStackEvents = dict[str, list[StackEvent]]
 
 
 @pytest.fixture

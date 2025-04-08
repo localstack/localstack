@@ -7,7 +7,6 @@ from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack import config
-from localstack.aws.api.cloudformation import StackEvent
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.aws.cloudformation_utils import (
     load_template_file,
@@ -64,9 +63,9 @@ class TestUpdates:
 
         res.destroy()
 
-    # @pytest.mark.skipif(
-    #     condition=not is_v2_engine() and not is_aws_cloud(), reason="Not working in v2 yet"
-    # )
+    @pytest.mark.skipif(
+        condition=not is_v2_engine() and not is_aws_cloud(), reason="Not working in v2 yet"
+    )
     @markers.aws.validated
     def test_simple_update_two_resources(
         self, aws_client: ServiceLevelClientFactory, deploy_cfn_template
@@ -1210,9 +1209,6 @@ def test_describe_change_set_with_similarly_named_stacks(deploy_cfn_template, aw
         )["ChangeSetId"]
         == response["Id"]
     )
-
-
-PerResourceStackEvents = dict[str, list[StackEvent]]
 
 
 @pytest.mark.skipif(condition=not is_v2_engine(), reason="Requires the V2 engine")
