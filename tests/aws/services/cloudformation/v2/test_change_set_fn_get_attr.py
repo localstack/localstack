@@ -1,7 +1,7 @@
 import pytest
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
-from aws.services.cloudformation.api.test_changesets import is_v2_engine
+from localstack.services.cloudformation.v2.utils import is_v2_engine
 from localstack.testing.pytest import markers
 from localstack.utils.strings import long_uid
 

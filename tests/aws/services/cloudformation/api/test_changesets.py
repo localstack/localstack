@@ -6,8 +6,8 @@ import pytest
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
-from localstack import config
 from localstack.aws.connect import ServiceLevelClientFactory
+from localstack.services.cloudformation.v2.utils import is_v2_engine
 from localstack.testing.aws.cloudformation_utils import (
     load_template_file,
     load_template_raw,
@@ -20,10 +20,6 @@ from localstack.utils.sync import ShortCircuitWaitException, poll_condition, wai
 from tests.aws.services.cloudformation.api.test_stacks import (
     MINIMAL_TEMPLATE,
 )
-
-
-def is_v2_engine() -> bool:
-    return config.SERVICE_PROVIDER_CONFIG.get_provider("cloudformation") == "engine-v2"
 
 
 class TestUpdates:
