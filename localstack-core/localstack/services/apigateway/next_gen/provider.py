@@ -37,6 +37,7 @@ from .execute_api.gateway_response import (
 )
 from .execute_api.helpers import freeze_rest_api
 from .execute_api.router import ApiGatewayEndpoint, ApiGatewayRouter
+from .execute_api.test_invoke import run_test_invocation
 
 
 class ApigatewayNextGenProvider(ApigatewayProvider):
@@ -242,8 +243,28 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
     def test_invoke_method(
         self, context: RequestContext, request: TestInvokeMethodRequest
     ) -> TestInvokeMethodResponse:
-        # TODO: rewrite and migrate to NextGen
-        return super().test_invoke_method(context, request)
+        rest_api_id = request["restApiId"]
+        moto_rest_api = get_moto_rest_api(context=context, rest_api_id=rest_api_id)
+        resource = moto_rest_api.resources.get(request["resourceId"])
+        if not resource:
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        # test httpMethod
+
+        rest_api_container = get_rest_api_container(context, rest_api_id=rest_api_id)
+        frozen_deployment = freeze_rest_api(
+            account_id=context.account_id,
+            region=context.region,
+            moto_rest_api=moto_rest_api,
+            localstack_rest_api=rest_api_container,
+        )
+
+        response = run_test_invocation(
+            test_request=request,
+            deployment=frozen_deployment,
+        )
+
+        return response
 
 
 def _get_gateway_response_or_default(

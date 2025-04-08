@@ -3,7 +3,6 @@ import copy
 import hashlib
 import json
 import logging
-from datetime import datetime
 from typing import List, Optional, TypedDict, Union
 from urllib import parse as urlparse
 
@@ -60,7 +59,6 @@ INVOKE_TEST_LOG_TEMPLATE = """Execution log for request {request_id}
         {formatted_date} : Successfully completed execution
         {formatted_date} : Method completed with status: {status_code}
         """
-
 
 EMPTY_MODEL = "Empty"
 ERROR_MODEL = "Error"
@@ -982,35 +980,6 @@ def is_greedy_path(path_part: str) -> bool:
 
 def is_variable_path(path_part: str) -> bool:
     return path_part.startswith("{") and path_part.endswith("}")
-
-
-def log_template(
-    request_id: str,
-    date: datetime,
-    http_method: str,
-    resource_path: str,
-    request_path: str,
-    query_string: str,
-    request_headers: str,
-    request_body: str,
-    response_body: str,
-    response_headers: str,
-    status_code: str,
-):
-    formatted_date = date.strftime("%a %b %d %H:%M:%S %Z %Y")
-    return INVOKE_TEST_LOG_TEMPLATE.format(
-        request_id=request_id,
-        formatted_date=formatted_date,
-        http_method=http_method,
-        resource_path=resource_path,
-        request_path=request_path,
-        query_string=query_string,
-        request_headers=request_headers,
-        request_body=request_body,
-        response_body=response_body,
-        response_headers=response_headers,
-        status_code=status_code,
-    )
 
 
 def get_domain_name_hash(domain_name: str) -> str:

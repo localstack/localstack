@@ -98,6 +98,7 @@ from localstack.services.apigateway.exporter import OpenApiExporter
 from localstack.services.apigateway.helpers import (
     EMPTY_MODEL,
     ERROR_MODEL,
+    INVOKE_TEST_LOG_TEMPLATE,
     OpenAPIExt,
     apply_json_patch_safe,
     get_apigateway_store,
@@ -108,7 +109,6 @@ from localstack.services.apigateway.helpers import (
     import_api_from_openapi_spec,
     is_greedy_path,
     is_variable_path,
-    log_template,
     resolve_references,
 )
 from localstack.services.apigateway.legacy.helpers import multi_value_dict_for_list
@@ -217,9 +217,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         # TODO: add the missing fields to the log. Next iteration will add helpers to extract the missing fields
         # from the apicontext
-        log = log_template(
+        formatted_date = req_start_time.strftime("%a %b %d %H:%M:%S %Z %Y")
+        log = INVOKE_TEST_LOG_TEMPLATE.format(
             request_id=invocation_context.context["requestId"],
-            date=req_start_time,
+            formatted_date=formatted_date,
             http_method=invocation_context.method,
             resource_path=invocation_context.invocation_path,
             request_path="",
@@ -230,6 +231,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             response_headers=result.headers,
             status_code=result.status_code,
         )
+
         return TestInvokeMethodResponse(
             status=result.status_code,
             headers=dict(result.headers),
