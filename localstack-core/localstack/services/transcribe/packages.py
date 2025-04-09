@@ -3,7 +3,7 @@ from typing import List
 from localstack.packages import Package, PackageInstaller
 from localstack.packages.core import PythonPackageInstaller
 
-_VOSK_DEFAULT_VERSION = "0.3.43"
+_VOSK_DEFAULT_VERSION = "0.3.45"
 
 
 class VoskPackage(Package):
