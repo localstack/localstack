@@ -1,0 +1,14 @@
+name: Validate AWS features files
+
+on:
+  pull_request:
+    paths:
+      - localstack-core/localstack/services/**
+    branches:
+      - master
+
+jobs:
+  validate-features-files:
+      uses: localstack/meta/.github/workflows/pr-validate-features-files.yml@main
+      with:
+        aws_services_path: 'localstack-core/localstack/services'

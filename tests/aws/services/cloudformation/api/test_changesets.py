@@ -1,8 +1,13 @@
+import copy
+import json
 import os.path
 
 import pytest
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots.transformer import RegexTransformer
 
+from localstack.aws.connect import ServiceLevelClientFactory
+from localstack.services.cloudformation.v2.utils import is_v2_engine
 from localstack.testing.aws.cloudformation_utils import (
     load_template_file,
     load_template_raw,
@@ -15,6 +20,131 @@ from localstack.utils.sync import ShortCircuitWaitException, poll_condition, wai
 from tests.aws.services.cloudformation.api.test_stacks import (
     MINIMAL_TEMPLATE,
 )
+
+
+class TestUpdates:
+    @markers.aws.validated
+    def test_simple_update_single_resource(
+        self, aws_client: ServiceLevelClientFactory, deploy_cfn_template
+    ):
+        parameter_name = "my-parameter"
+        value1 = "foo"
+        value2 = "bar"
+        stack_name = f"stack-{short_uid()}"
+
+        t1 = {
+            "Resources": {
+                "MyParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": parameter_name,
+                        "Type": "String",
+                        "Value": value1,
+                    },
+                },
+            },
+        }
+
+        res = deploy_cfn_template(stack_name=stack_name, template=json.dumps(t1), is_update=False)
+
+        found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+        assert found_value == value1
+
+        t2 = copy.deepcopy(t1)
+        t2["Resources"]["MyParameter"]["Properties"]["Value"] = value2
+
+        deploy_cfn_template(stack_name=stack_name, template=json.dumps(t2), is_update=True)
+        found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+        assert found_value == value2
+
+        res.destroy()
+
+    @pytest.mark.skipif(
+        condition=not is_v2_engine() and not is_aws_cloud(), reason="Not working in v2 yet"
+    )
+    @markers.aws.validated
+    def test_simple_update_two_resources(
+        self, aws_client: ServiceLevelClientFactory, deploy_cfn_template
+    ):
+        parameter_name = "my-parameter"
+        value1 = "foo"
+        value2 = "bar"
+        stack_name = f"stack-{short_uid()}"
+
+        t1 = {
+            "Resources": {
+                "MyParameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": value1,
+                    },
+                },
+                "MyParameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": parameter_name,
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["MyParameter1", "Value"]},
+                    },
+                },
+            },
+        }
+
+        res = deploy_cfn_template(stack_name=stack_name, template=json.dumps(t1), is_update=False)
+        found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+        assert found_value == value1
+
+        t2 = copy.deepcopy(t1)
+        t2["Resources"]["MyParameter1"]["Properties"]["Value"] = value2
+
+        deploy_cfn_template(stack_name=stack_name, template=json.dumps(t2), is_update=True)
+        found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+        assert found_value == value2
+
+        res.destroy()
+
+    @markers.aws.needs_fixing
+    @pytest.mark.skip(reason="WIP")
+    def test_deleting_resource(self, aws_client: ServiceLevelClientFactory, deploy_cfn_template):
+        parameter_name = "my-parameter"
+        value1 = "foo"
+        stack_name = f"stack-{short_uid()}"
+
+        t1 = {
+            "Resources": {
+                "MyParameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": value1,
+                    },
+                },
+                "MyParameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": parameter_name,
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["MyParameter1", "Value"]},
+                    },
+                },
+            },
+        }
+
+        res = deploy_cfn_template(stack_name=stack_name, template=json.dumps(t1), is_update=False)
+        found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+        assert found_value == value1
+
+        t2 = copy.deepcopy(t1)
+        del t2["Resources"]["MyParameter2"]
+
+        deploy_cfn_template(stack_name=stack_name, template=json.dumps(t2), is_update=True)
+        with pytest.raises(ClientError) as exc_info:
+            aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
+
+        assert f"Parameter {parameter_name} not found" in str(exc_info.value)
+
+        res.destroy()
 
 
 @markers.aws.validated
@@ -1075,3 +1205,671 @@ def test_describe_change_set_with_similarly_named_stacks(deploy_cfn_template, aw
         )["ChangeSetId"]
         == response["Id"]
     )
+
+
+@pytest.mark.skipif(condition=not is_v2_engine(), reason="Requires the V2 engine")
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "per-resource-events..*",
+        "delete-describe..*",
+        #
+        "$..ChangeSetId",  # An issue for the WIP executor
+        # Before/After Context
+        "$..Capabilities",
+        "$..NotificationARNs",
+        "$..IncludeNestedStacks",
+        "$..Scope",
+        "$..Details",
+        "$..Parameters",
+        "$..Replacement",
+        "$..PolicyAction",
+        "$..PhysicalResourceId",
+    ]
+)
+class TestCaptureUpdateProcess:
+    @markers.aws.validated
+    def test_direct_update(
+        self,
+        snapshot,
+        capture_update_process,
+    ):
+        """
+        Update a stack with a static change (i.e. in the text of the template).
+
+        Conclusions:
+        - A static change in the template that's not invoking an intrinsic function
+            (`Ref`, `Fn::GetAtt` etc.) is resolved by the deployment engine synchronously
+            during the `create_change_set` invocation
+        """
+        name1 = f"topic-1-{short_uid()}"
+        name2 = f"topic-2-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(name1, "topic-1"))
+        snapshot.add_transformer(RegexTransformer(name2, "topic-2"))
+        t1 = {
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": name1,
+                    },
+                },
+            },
+        }
+        t2 = {
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": name2,
+                    },
+                },
+            },
+        }
+        capture_update_process(snapshot, t1, t2)
+
+    @markers.aws.validated
+    @pytest.mark.skip("Deployment fails, as executor is WIP")
+    def test_dynamic_update(
+        self,
+        snapshot,
+        capture_update_process,
+    ):
+        """
+        Update a stack with two resources:
+        - A is changed statically
+        - B refers to the changed value of A via an intrinsic function
+
+        Conclusions:
+        - The value of B on creation is "known after apply" even though the resolved
+          property value is known statically
+        - The nature of the change to B is "known after apply"
+        - The CloudFormation engine does not resolve intrinsic function calls when determining the
+            nature of the update
+        """
+        name1 = f"topic-1-{short_uid()}"
+        name2 = f"topic-2-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(name1, "topic-1"))
+        snapshot.add_transformer(RegexTransformer(name2, "topic-2"))
+        t1 = {
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": name1,
+                    },
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::GetAtt": ["Foo", "TopicName"],
+                        },
+                    },
+                },
+            },
+        }
+        t2 = {
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": name2,
+                    },
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::GetAtt": ["Foo", "TopicName"],
+                        },
+                    },
+                },
+            },
+        }
+        capture_update_process(snapshot, t1, t2)
+
+    @markers.aws.validated
+    @pytest.mark.skip(
+        "Template deployment appears to fail on v2 due to unresolved resource dependencies; "
+        "this should be addressed in the development of the v2 engine executor."
+    )
+    def test_parameter_changes(
+        self,
+        snapshot,
+        capture_update_process,
+    ):
+        """
+        Update a stack with two resources:
+        - A is changed via a template parameter
+        - B refers to the changed value of A via an intrinsic function
+
+        Conclusions:
+        - The value of B on creation is "known after apply" even though the resolved
+          property value is known statically
+        - The nature of the change to B is "known after apply"
+        - The CloudFormation engine does not resolve intrinsic function calls when determining the
+            nature of the update
+        """
+        name1 = f"topic-1-{short_uid()}"
+        name2 = f"topic-2-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(name1, "topic-1"))
+        snapshot.add_transformer(RegexTransformer(name2, "topic-2"))
+        t1 = {
+            "Parameters": {
+                "TopicName": {
+                    "Type": "String",
+                },
+            },
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": {"Ref": "TopicName"},
+                    },
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::GetAtt": ["Foo", "TopicName"],
+                        },
+                    },
+                },
+            },
+        }
+        capture_update_process(snapshot, t1, t1, p1={"TopicName": name1}, p2={"TopicName": name2})
+
+    @markers.aws.validated
+    @pytest.mark.skip("Deployment fails, as executor is WIP")
+    def test_mappings_with_static_fields(
+        self,
+        snapshot,
+        capture_update_process,
+    ):
+        """
+        Update a stack with two resources:
+        - A is changed via looking up a static value in a mapping
+        - B refers to the changed value of A via an intrinsic function
+
+        Conclusions:
+        - On first deploy the contents of the map is resolved completely
+        - The nature of the change to B is "known after apply"
+        - The CloudFormation engine does not resolve intrinsic function calls when determining the
+            nature of the update
+        """
+        name1 = f"topic-1-{short_uid()}"
+        name2 = f"topic-2-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(name1, "topic-name-1"))
+        snapshot.add_transformer(RegexTransformer(name2, "topic-name-2"))
+        t1 = {
+            "Mappings": {
+                "MyMap": {
+                    "MyKey": {"key1": name1, "key2": name2},
+                },
+            },
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": {
+                            "Fn::FindInMap": [
+                                "MyMap",
+                                "MyKey",
+                                "key1",
+                            ],
+                        },
+                    },
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::GetAtt": ["Foo", "TopicName"],
+                        },
+                    },
+                },
+            },
+        }
+        t2 = {
+            "Mappings": {
+                "MyMap": {
+                    "MyKey": {
+                        "key1": name1,
+                        "key2": name2,
+                    },
+                },
+            },
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": {
+                            "Fn::FindInMap": [
+                                "MyMap",
+                                "MyKey",
+                                "key2",
+                            ],
+                        },
+                    },
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::GetAtt": ["Foo", "TopicName"],
+                        },
+                    },
+                },
+            },
+        }
+        capture_update_process(snapshot, t1, t2)
+
+    @markers.aws.validated
+    @pytest.mark.skip(
+        "Template deployment appears to fail on v2 due to unresolved resource dependencies; "
+        "this should be addressed in the development of the v2 engine executor."
+    )
+    def test_mappings_with_parameter_lookup(
+        self,
+        snapshot,
+        capture_update_process,
+    ):
+        """
+        Update a stack with two resources:
+        - A is changed via looking up a static value in a mapping but the key comes from
+          a template parameter
+        - B refers to the changed value of A via an intrinsic function
+
+        Conclusions:
+        - The same conclusions as `test_mappings_with_static_fields`
+        """
+        name1 = f"topic-1-{short_uid()}"
+        name2 = f"topic-2-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(name1, "topic-name-1"))
+        snapshot.add_transformer(RegexTransformer(name2, "topic-name-2"))
+        t1 = {
+            "Parameters": {
+                "TopicName": {
+                    "Type": "String",
+                },
+            },
+            "Mappings": {
+                "MyMap": {
+                    "MyKey": {"key1": name1, "key2": name2},
+                },
+            },
+            "Resources": {
+                "Foo": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": {
+                            "Fn::FindInMap": [
+                                "MyMap",
+                                "MyKey",
+                                {
+                                    "Ref": "TopicName",
+                                },
+                            ],
+                        },
+                    },
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::GetAtt": ["Foo", "TopicName"],
+                        },
+                    },
+                },
+            },
+        }
+        capture_update_process(snapshot, t1, t1, p1={"TopicName": "key1"}, p2={"TopicName": "key2"})
+
+    @markers.aws.validated
+    @pytest.mark.skip(
+        "Template deployment appears to fail on v2 due to unresolved resource dependencies; "
+        "this should be addressed in the development of the v2 engine executor."
+    )
+    def test_conditions(
+        self,
+        snapshot,
+        capture_update_process,
+    ):
+        """
+        Toggle a resource from present to not present via a condition
+
+        Conclusions:
+        - Adding the second resource creates an `Add` resource change
+        """
+        t1 = {
+            "Parameters": {
+                "EnvironmentType": {
+                    "Type": "String",
+                }
+            },
+            "Conditions": {
+                "IsProduction": {
+                    "Fn::Equals": [
+                        {"Ref": "EnvironmentType"},
+                        "prod",
+                    ],
+                }
+            },
+            "Resources": {
+                "Bucket": {
+                    "Type": "AWS::S3::Bucket",
+                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "test",
+                    },
+                    "Condition": "IsProduction",
+                },
+            },
+        }
+
+        capture_update_process(
+            snapshot, t1, t1, p1={"EnvironmentType": "not-prod"}, p2={"EnvironmentType": "prod"}
+        )
+
+    @markers.aws.validated
+    @pytest.mark.skip(
+        "Unlike AWS CFN, the update graph understands the dependent resource does not "
+        "need modification also when the IncludePropertyValues flag is off."
+        # TODO: we may achieve the same limitation by pruning the resolution of traversals.
+    )
+    def test_unrelated_changes_update_propagation(
+        self,
+        snapshot,
+        capture_update_process,
+    ):
+        """
+        - Resource B depends on resource A which is updated, but the referenced parameter does not
+          change
+
+        Conclusions:
+        - No update to resource B
+        """
+        topic_name = f"MyTopic{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(topic_name, "topic-name"))
+        t1 = {
+            "Resources": {
+                "Parameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": topic_name,
+                        "Description": "original",
+                    },
+                },
+                "Parameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                    },
+                },
+            },
+        }
+        t2 = {
+            "Resources": {
+                "Parameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": topic_name,
+                        "Description": "changed",
+                    },
+                },
+                "Parameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                    },
+                },
+            },
+        }
+        capture_update_process(snapshot, t1, t2)
+
+    @markers.aws.validated
+    @pytest.mark.skip(
+        "Deployment fails however this appears to be unrelated from the update graph building and describe"
+    )
+    def test_unrelated_changes_requires_replacement(
+        self,
+        snapshot,
+        capture_update_process,
+    ):
+        """
+        - Resource B depends on resource A which is updated, but the referenced parameter does not
+          change, however resource A requires replacement
+
+        Conclusions:
+        - Resource B is updated
+        """
+        parameter_name_1 = f"MyParameter{short_uid()}"
+        parameter_name_2 = f"MyParameter{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(parameter_name_1, "parameter-1-name"))
+        snapshot.add_transformer(RegexTransformer(parameter_name_2, "parameter-2-name"))
+        t1 = {
+            "Resources": {
+                "Parameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": parameter_name_1,
+                        "Type": "String",
+                        "Value": "value",
+                    },
+                },
+                "Parameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                    },
+                },
+            },
+        }
+        t2 = {
+            "Resources": {
+                "Parameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": parameter_name_2,
+                        "Type": "String",
+                        "Value": "value",
+                    },
+                },
+                "Parameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["Parameter1", "Value"]},
+                    },
+                },
+            },
+        }
+        capture_update_process(snapshot, t1, t2)
+
+    @markers.aws.validated
+    @pytest.mark.skip("Executor is WIP")
+    @pytest.mark.parametrize(
+        "template",
+        [
+            {
+                "Parameters": {
+                    "ParameterValue": {
+                        "Type": "String",
+                    },
+                },
+                "Resources": {
+                    "Parameter": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Ref": "ParameterValue"},
+                        },
+                    }
+                },
+            },
+            {
+                "Parameters": {
+                    "ParameterValue": {
+                        "Type": "String",
+                    },
+                },
+                "Resources": {
+                    "Parameter1": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Name": "param-name",
+                            "Type": "String",
+                            "Value": {"Ref": "ParameterValue"},
+                        },
+                    },
+                    "Parameter2": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["Parameter1", "Name"]},
+                        },
+                    },
+                },
+            },
+            {
+                "Parameters": {
+                    "ParameterValue": {
+                        "Type": "String",
+                    },
+                },
+                "Resources": {
+                    "Parameter1": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Ref": "ParameterValue"},
+                        },
+                    },
+                    "Parameter2": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Fn::GetAtt": ["Parameter1", "Type"]},
+                        },
+                    },
+                },
+            },
+            {
+                "Parameters": {
+                    "ParameterValue": {
+                        "Type": "String",
+                        "Default": "value-1",
+                        "AllowedValues": ["value-1", "value-2"],
+                    }
+                },
+                "Conditions": {
+                    "ShouldCreateParameter": {"Fn::Equals": [{"Ref": "ParameterValue"}, "value-2"]}
+                },
+                "Resources": {
+                    "SSMParameter1": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": "first",
+                        },
+                    },
+                    "SSMParameter2": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Condition": "ShouldCreateParameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": "first",
+                        },
+                    },
+                },
+            },
+        ],
+        ids=[
+            "change_dynamic",
+            "change_unrelated_property",
+            "change_unrelated_property_not_create_only",
+            "change_parameter_for_condition_create_resource",
+        ],
+    )
+    def test_base_dynamic_parameter_scenarios(
+        self,
+        snapshot,
+        capture_update_process,
+        template,
+    ):
+        capture_update_process(
+            snapshot,
+            template,
+            template,
+            {"ParameterValue": "value-1"},
+            {"ParameterValue": "value-2"},
+        )
+
+    @markers.aws.validated
+    @pytest.mark.skip("Executor is WIP")
+    @pytest.mark.parametrize(
+        "template_1, template_2",
+        [
+            (
+                {
+                    "Mappings": {"GenericMapping": {"EnvironmentA": {"ParameterValue": "value-1"}}},
+                    "Resources": {
+                        "MySSMParameter": {
+                            "Type": "AWS::SSM::Parameter",
+                            "Properties": {
+                                "Type": "String",
+                                "Value": {
+                                    "Fn::FindInMap": [
+                                        "GenericMapping",
+                                        "EnvironmentA",
+                                        "ParameterValue",
+                                    ]
+                                },
+                            },
+                        }
+                    },
+                },
+                {
+                    "Mappings": {"GenericMapping": {"EnvironmentA": {"ParameterValue": "value-2"}}},
+                    "Resources": {
+                        "MySSMParameter": {
+                            "Type": "AWS::SSM::Parameter",
+                            "Properties": {
+                                "Type": "String",
+                                "Value": {
+                                    "Fn::FindInMap": [
+                                        "GenericMapping",
+                                        "EnvironmentA",
+                                        "ParameterValue",
+                                    ]
+                                },
+                            },
+                        }
+                    },
+                },
+            )
+        ],
+        ids=["update_string_referencing_resource"],
+    )
+    def test_base_mapping_scenarios(
+        self,
+        snapshot,
+        capture_update_process,
+        template_1,
+        template_2,
+    ):
+        capture_update_process(snapshot, template_1, template_2)

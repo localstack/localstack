@@ -95,18 +95,15 @@ class TestSnfApiActivities:
         ],
     )
     def test_create_activity_invalid_name(
-        self, create_activity, sfn_snapshot, aws_client, activity_name
+        self, create_activity, sfn_snapshot, aws_client_no_retry, activity_name
     ):
         with pytest.raises(ClientError) as e:
-            aws_client.stepfunctions.create_activity(name=activity_name)
+            aws_client_no_retry.stepfunctions.create_activity(name=activity_name)
         sfn_snapshot.match("invalid_name", e.value.response)
 
     @markers.aws.validated
     def test_describe_deleted_activity(
-        self,
-        create_activity,
-        sfn_snapshot,
-        aws_client,
+        self, create_activity, sfn_snapshot, aws_client, aws_client_no_retry
     ):
         create_activity_response = aws_client.stepfunctions.create_activity(
             name=f"TestActivity-{short_uid()}"
@@ -115,7 +112,7 @@ class TestSnfApiActivities:
         sfn_snapshot.add_transformer(RegexTransformer(activity_arn, "activity_arn"))
         aws_client.stepfunctions.delete_activity(activityArn=activity_arn)
         with pytest.raises(ClientError) as e:
-            aws_client.stepfunctions.describe_activity(activityArn=activity_arn)
+            aws_client_no_retry.stepfunctions.describe_activity(activityArn=activity_arn)
         sfn_snapshot.match("no_such_activity", e.value.response)
 
     @markers.aws.validated
@@ -123,20 +120,17 @@ class TestSnfApiActivities:
     def test_describe_activity_invalid_arn(
         self,
         sfn_snapshot,
-        aws_client,
+        aws_client_no_retry,
     ):
         with pytest.raises(ClientError) as exc:
-            aws_client.stepfunctions.describe_activity(activityArn="no_an_activity_arn")
+            aws_client_no_retry.stepfunctions.describe_activity(activityArn="no_an_activity_arn")
         sfn_snapshot.match(
             "exception", {"exception_typename": exc.typename, "exception_value": exc.value}
         )
 
     @markers.aws.validated
     def test_get_activity_task_deleted(
-        self,
-        create_activity,
-        sfn_snapshot,
-        aws_client,
+        self, create_activity, sfn_snapshot, aws_client, aws_client_no_retry
     ):
         create_activity_response = aws_client.stepfunctions.create_activity(
             name=f"TestActivity-{short_uid()}"
@@ -145,7 +139,7 @@ class TestSnfApiActivities:
         sfn_snapshot.add_transformer(RegexTransformer(activity_arn, "activity_arn"))
         aws_client.stepfunctions.delete_activity(activityArn=activity_arn)
         with pytest.raises(ClientError) as e:
-            aws_client.stepfunctions.get_activity_task(activityArn=activity_arn)
+            aws_client_no_retry.stepfunctions.get_activity_task(activityArn=activity_arn)
         sfn_snapshot.match("no_such_activity", e.value.response)
 
     @markers.aws.validated
@@ -153,10 +147,10 @@ class TestSnfApiActivities:
     def test_get_activity_task_invalid_arn(
         self,
         sfn_snapshot,
-        aws_client,
+        aws_client_no_retry,
     ):
         with pytest.raises(ClientError) as exc:
-            aws_client.stepfunctions.get_activity_task(activityArn="no_an_activity_arn")
+            aws_client_no_retry.stepfunctions.get_activity_task(activityArn="no_an_activity_arn")
         sfn_snapshot.match(
             "exception", {"exception_typename": exc.typename, "exception_value": exc.value}
         )

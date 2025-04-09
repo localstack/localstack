@@ -1,16 +1,26 @@
+import json
+import logging
 from copy import deepcopy
+from typing import Any
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.cloudformation import (
+    Changes,
     ChangeSetNameOrId,
     ChangeSetNotFoundException,
     ChangeSetType,
+    ClientRequestToken,
     CreateChangeSetInput,
     CreateChangeSetOutput,
     DescribeChangeSetOutput,
+    DisableRollback,
+    ExecuteChangeSetOutput,
+    ExecutionStatus,
     IncludePropertyValues,
+    InvalidChangeSetStatusException,
     NextToken,
     Parameter,
+    RetainExceptOnCreate,
     StackNameOrId,
     StackStatus,
 )
@@ -27,6 +37,9 @@ from localstack.services.cloudformation.engine.template_utils import resolve_sta
 from localstack.services.cloudformation.engine.v2.change_set_model_describer import (
     ChangeSetModelDescriber,
 )
+from localstack.services.cloudformation.engine.v2.change_set_model_executor import (
+    ChangeSetModelExecutor,
+)
 from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.provider import (
     ARN_CHANGESET_REGEX,
@@ -40,6 +53,8 @@ from localstack.services.cloudformation.stores import (
     get_cloudformation_store,
 )
 from localstack.utils.collections import remove_attributes
+
+LOG = logging.getLogger(__name__)
 
 
 class CloudformationProviderV2(CloudformationProvider):
@@ -176,15 +191,49 @@ class CloudformationProviderV2(CloudformationProvider):
             resolved_parameters=resolved_parameters,
         )
 
+        # TODO: reconsider the way parameters are modelled in the update graph process.
+        #  The options might be reduce to using the current style, or passing the extra information
+        #  as a metadata object. The choice should be made considering when the extra information
+        #  is needed for the update graph building, or only looked up in downstream tasks (metadata).
+        request_parameters = request.get("Parameters", list())
+        after_parameters: dict[str, Any] = {
+            parameter["ParameterKey"]: parameter["ParameterValue"]
+            for parameter in request_parameters
+        }
+        before_parameters: dict[str, Any] = {
+            parameter["ParameterKey"]: parameter["ParameterValue"]
+            for parameter in old_parameters.values()
+        }
+
+        # TODO: update this logic to always pass the clean template object if one exists. The
+        #  current issue with relaying on stack.template_original is that this appears to have
+        #  its parameters and conditions populated.
+        before_template = None
+        if change_set_type == ChangeSetType.UPDATE:
+            before_template = json.loads(
+                stack.template_body
+            )  # template_original is sometimes invalid
+        after_template = template
+
         # create change set for the stack and apply changes
         change_set = StackChangeSet(
-            context.account_id, context.region, stack, req_params, transformed_template
+            context.account_id,
+            context.region,
+            stack,
+            req_params,
+            transformed_template,
+            change_set_type=change_set_type,
         )
         # only set parameters for the changeset, then switch to stack on execute_change_set
         change_set.template_body = template_body
-        change_set.populate_update_graph(stack.template, transformed_template)
+        change_set.populate_update_graph(
+            before_template=before_template,
+            after_template=after_template,
+            before_parameters=before_parameters,
+            after_parameters=after_parameters,
+        )
 
-        # TODO: evaluate conditions
+        # TODO: move this logic of condition resolution with metadata to the ChangeSetModelPreproc or Executor
         raw_conditions = transformed_template.get("Conditions", {})
         resolved_stack_conditions = resolve_stack_conditions(
             account_id=context.account_id,
@@ -195,6 +244,7 @@ class CloudformationProviderV2(CloudformationProvider):
             stack_name=stack_name,
         )
         change_set.set_resolved_stack_conditions(resolved_stack_conditions)
+        change_set.set_resolved_parameters(resolved_parameters)
 
         # a bit gross but use the template ordering to validate missing resources
         try:
@@ -233,14 +283,61 @@ class CloudformationProviderV2(CloudformationProvider):
 
         return CreateChangeSetOutput(StackId=change_set.stack_id, Id=change_set.change_set_id)
 
+    @handler("ExecuteChangeSet")
+    def execute_change_set(
+        self,
+        context: RequestContext,
+        change_set_name: ChangeSetNameOrId,
+        stack_name: StackNameOrId | None = None,
+        client_request_token: ClientRequestToken | None = None,
+        disable_rollback: DisableRollback | None = None,
+        retain_except_on_create: RetainExceptOnCreate | None = None,
+        **kwargs,
+    ) -> ExecuteChangeSetOutput:
+        change_set = find_change_set(
+            context.account_id,
+            context.region,
+            change_set_name,
+            stack_name=stack_name,
+            active_only=True,
+        )
+        if not change_set:
+            raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
+        if change_set.metadata.get("ExecutionStatus") != ExecutionStatus.AVAILABLE:
+            LOG.debug("Change set %s not in execution status 'AVAILABLE'", change_set_name)
+            raise InvalidChangeSetStatusException(
+                f"ChangeSet [{change_set.metadata['ChangeSetId']}] cannot be executed in its current status of [{change_set.metadata.get('Status')}]"
+            )
+        stack_name = change_set.stack.stack_name
+        LOG.debug(
+            'Executing change set "%s" for stack "%s" with %s resources ...',
+            change_set_name,
+            stack_name,
+            len(change_set.template_resources),
+        )
+        if not change_set.update_graph:
+            raise RuntimeError("Programming error: no update graph found for change set")
+
+        change_set_executor = ChangeSetModelExecutor(
+            change_set.update_graph,
+            account_id=context.account_id,
+            region=context.region,
+            stack_name=change_set.stack.stack_name,
+            stack_id=change_set.stack.stack_id,
+        )
+        new_resources = change_set_executor.execute()
+        change_set.stack.set_stack_status(f"{change_set.change_set_type or 'UPDATE'}_COMPLETE")
+        change_set.stack.resources = new_resources
+        return ExecuteChangeSetOutput()
+
     @handler("DescribeChangeSet")
     def describe_change_set(
         self,
         context: RequestContext,
         change_set_name: ChangeSetNameOrId,
-        stack_name: StackNameOrId = None,
-        next_token: NextToken = None,
-        include_property_values: IncludePropertyValues = None,
+        stack_name: StackNameOrId | None = None,
+        next_token: NextToken | None = None,
+        include_property_values: IncludePropertyValues | None = None,
         **kwargs,
     ) -> DescribeChangeSetOutput:
         # TODO add support for include_property_values
@@ -261,8 +358,11 @@ class CloudformationProviderV2(CloudformationProvider):
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
 
-        change_set_describer = ChangeSetModelDescriber(node_template=change_set.update_graph)
-        resource_changes = change_set_describer.get_resource_changes()
+        change_set_describer = ChangeSetModelDescriber(
+            node_template=change_set.update_graph,
+            include_property_values=bool(include_property_values),
+        )
+        changes: Changes = change_set_describer.get_changes()
 
         attrs = [
             "ChangeSetType",
@@ -277,5 +377,5 @@ class CloudformationProviderV2(CloudformationProvider):
         result["Parameters"] = [
             mask_no_echo(strip_parameter_type(p)) for p in result.get("Parameters", [])
         ]
-        result["Changes"] = resource_changes
+        result["Changes"] = changes
         return result

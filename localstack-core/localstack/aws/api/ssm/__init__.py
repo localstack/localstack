@@ -252,6 +252,7 @@ ParameterValue = str
 ParametersFilterValue = str
 PatchAdvisoryId = str
 PatchArch = str
+PatchAvailableSecurityUpdateCount = int
 PatchBaselineMaxResults = int
 PatchBugzillaId = str
 PatchCVEId = str
@@ -960,6 +961,7 @@ class PatchComplianceDataState(StrEnum):
     MISSING = "MISSING"
     NOT_APPLICABLE = "NOT_APPLICABLE"
     FAILED = "FAILED"
+    AVAILABLE_SECURITY_UPDATE = "AVAILABLE_SECURITY_UPDATE"
 
 
 class PatchComplianceLevel(StrEnum):
@@ -969,6 +971,11 @@ class PatchComplianceLevel(StrEnum):
     LOW = "LOW"
     INFORMATIONAL = "INFORMATIONAL"
     UNSPECIFIED = "UNSPECIFIED"
+
+
+class PatchComplianceStatus(StrEnum):
+    COMPLIANT = "COMPLIANT"
+    NON_COMPLIANT = "NON_COMPLIANT"
 
 
 class PatchDeploymentStatus(StrEnum):
@@ -2510,6 +2517,7 @@ class BaselineOverride(TypedDict, total=False):
     RejectedPatchesAction: Optional[PatchAction]
     ApprovedPatchesEnableNonSecurity: Optional[Boolean]
     Sources: Optional[PatchSourceList]
+    AvailableSecurityUpdatesComplianceStatus: Optional[PatchComplianceStatus]
 
 
 InstanceIdList = List[InstanceId]
@@ -2970,6 +2978,7 @@ class CreatePatchBaselineRequest(ServiceRequest):
     RejectedPatchesAction: Optional[PatchAction]
     Description: Optional[BaselineDescription]
     Sources: Optional[PatchSourceList]
+    AvailableSecurityUpdatesComplianceStatus: Optional[PatchComplianceStatus]
     ClientToken: Optional[ClientToken]
     Tags: Optional[TagList]
 
@@ -3547,6 +3556,7 @@ class InstancePatchState(TypedDict, total=False):
     FailedCount: Optional[PatchFailedCount]
     UnreportedNotApplicableCount: Optional[PatchUnreportedNotApplicableCount]
     NotApplicableCount: Optional[PatchNotApplicableCount]
+    AvailableSecurityUpdateCount: Optional[PatchAvailableSecurityUpdateCount]
     OperationStartTime: DateTime
     OperationEndTime: DateTime
     Operation: PatchOperationType
@@ -4089,6 +4099,7 @@ class DescribePatchGroupStateResult(TypedDict, total=False):
     InstancesWithCriticalNonCompliantPatches: Optional[InstancesCount]
     InstancesWithSecurityNonCompliantPatches: Optional[InstancesCount]
     InstancesWithOtherNonCompliantPatches: Optional[InstancesCount]
+    InstancesWithAvailableSecurityUpdates: Optional[Integer]
 
 
 class DescribePatchGroupsRequest(ServiceRequest):
@@ -4857,6 +4868,7 @@ class GetPatchBaselineResult(TypedDict, total=False):
     ModifiedDate: Optional[DateTime]
     Description: Optional[BaselineDescription]
     Sources: Optional[PatchSourceList]
+    AvailableSecurityUpdatesComplianceStatus: Optional[PatchComplianceStatus]
 
 
 class GetResourcePoliciesRequest(ServiceRequest):
@@ -5835,6 +5847,7 @@ class UpdatePatchBaselineRequest(ServiceRequest):
     RejectedPatchesAction: Optional[PatchAction]
     Description: Optional[BaselineDescription]
     Sources: Optional[PatchSourceList]
+    AvailableSecurityUpdatesComplianceStatus: Optional[PatchComplianceStatus]
     Replace: Optional[Boolean]
 
 
@@ -5853,6 +5866,7 @@ class UpdatePatchBaselineResult(TypedDict, total=False):
     ModifiedDate: Optional[DateTime]
     Description: Optional[BaselineDescription]
     Sources: Optional[PatchSourceList]
+    AvailableSecurityUpdatesComplianceStatus: Optional[PatchComplianceStatus]
 
 
 class UpdateResourceDataSyncRequest(ServiceRequest):
@@ -6055,6 +6069,7 @@ class SsmApi:
         rejected_patches_action: PatchAction = None,
         description: BaselineDescription = None,
         sources: PatchSourceList = None,
+        available_security_updates_compliance_status: PatchComplianceStatus = None,
         client_token: ClientToken = None,
         tags: TagList = None,
         **kwargs,
@@ -7522,6 +7537,7 @@ class SsmApi:
         rejected_patches_action: PatchAction = None,
         description: BaselineDescription = None,
         sources: PatchSourceList = None,
+        available_security_updates_compliance_status: PatchComplianceStatus = None,
         replace: Boolean = None,
         **kwargs,
     ) -> UpdatePatchBaselineResult:

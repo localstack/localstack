@@ -30,7 +30,10 @@ from localstack.testing.aws.lambda_utils import (
     get_invoke_init_type,
     update_done,
 )
-from localstack.testing.aws.util import create_client_with_keys, is_aws_cloud
+from localstack.testing.aws.util import (
+    create_client_with_keys,
+    is_aws_cloud,
+)
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
 from localstack.utils import files, platform, testutil
@@ -123,6 +126,8 @@ TEST_LAMBDA_CUSTOM_RESPONSE_SIZE = os.path.join(THIS_FOLDER, "functions/lambda_r
 TEST_LAMBDA_PYTHON_MULTIPLE_HANDLERS = os.path.join(
     THIS_FOLDER, "functions/lambda_multiple_handlers.py"
 )
+TEST_LAMBDA_NOTIFIER = os.path.join(THIS_FOLDER, "functions/lambda_notifier.py")
+TEST_LAMBDA_CLOUDWATCH_LOGS = os.path.join(THIS_FOLDER, "functions/lambda_cloudwatch_logs.py")
 
 PYTHON_TEST_RUNTIMES = RUNTIMES_AGGREGATED["python"]
 NODE_TEST_RUNTIMES = RUNTIMES_AGGREGATED["nodejs"]
@@ -1904,7 +1909,7 @@ class TestLambdaErrors:
         reason="Can only induce Lambda-internal Docker error in LocalStack"
     )
     def test_lambda_runtime_startup_timeout(
-        self, aws_client_factory, create_lambda_function, monkeypatch
+        self, aws_client_no_retry, create_lambda_function, monkeypatch
     ):
         """Test Lambda that times out during runtime startup"""
         monkeypatch.setattr(
@@ -1920,24 +1925,20 @@ class TestLambdaErrors:
             runtime=Runtime.python3_12,
         )
 
-        client_config = Config(
-            retries={"max_attempts": 0},
-        )
-        no_retry_lambda_client = aws_client_factory.get_client("lambda", config=client_config)
-        with pytest.raises(no_retry_lambda_client.exceptions.ServiceException) as e:
-            no_retry_lambda_client.invoke(
+        with pytest.raises(aws_client_no_retry.lambda_.exceptions.ServiceException) as e:
+            aws_client_no_retry.lambda_.invoke(
                 FunctionName=function_name,
             )
         assert e.match(
             r"An error occurred \(ServiceException\) when calling the Invoke operation \(reached max "
-            r"retries: \d\): Internal error while executing lambda"
+            r"retries: \d\): \[[^]]*\] Timeout while starting up lambda environment .*"
         )
 
     @markers.aws.only_localstack(
         reason="Can only induce Lambda-internal Docker error in LocalStack"
     )
     def test_lambda_runtime_startup_error(
-        self, aws_client_factory, create_lambda_function, monkeypatch
+        self, aws_client_no_retry, create_lambda_function, monkeypatch
     ):
         """Test Lambda that errors during runtime startup"""
         monkeypatch.setattr(config, "LAMBDA_DOCKER_FLAGS", "invalid_flags")
@@ -1950,17 +1951,13 @@ class TestLambdaErrors:
             runtime=Runtime.python3_12,
         )
 
-        client_config = Config(
-            retries={"max_attempts": 0},
-        )
-        no_retry_lambda_client = aws_client_factory.get_client("lambda", config=client_config)
-        with pytest.raises(no_retry_lambda_client.exceptions.ServiceException) as e:
-            no_retry_lambda_client.invoke(
+        with pytest.raises(aws_client_no_retry.lambda_.exceptions.ServiceException) as e:
+            aws_client_no_retry.lambda_.invoke(
                 FunctionName=function_name,
             )
         assert e.match(
             r"An error occurred \(ServiceException\) when calling the Invoke operation \(reached max "
-            r"retries: \d\): Internal error while executing lambda"
+            r"retries: \d\): \[[^]]*\] Internal error while executing lambda"
         )
 
     @markers.aws.validated
@@ -2614,18 +2611,37 @@ class TestLambdaConcurrency:
         assert not errored
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="flaky")
-    def test_reserved_concurrency_async_queue(self, create_lambda_function, snapshot, aws_client):
+    def test_reserved_concurrency_async_queue(
+        self,
+        create_lambda_function,
+        sqs_create_queue,
+        sqs_collect_messages,
+        snapshot,
+        aws_client,
+        aws_client_no_retry,
+    ):
+        """Test async/event invoke retry behavior due to limited reserved concurrency.
+        Timeline:
+        1) Set ReservedConcurrentExecutions=1
+        2) sync_invoke_warm_up => ok
+        3) async_invoke_one => ok
+        4) async_invoke_two => gets retried
+        5) sync invoke => fails with TooManyRequestsException
+        6) Set ReservedConcurrentExecutions=3
+        7) sync_invoke_final => ok
+        """
         min_concurrent_executions = 10 + 3
         check_concurrency_quota(aws_client, min_concurrent_executions)
+
+        queue_url = sqs_create_queue()
 
         func_name = f"test_lambda_{short_uid()}"
         create_lambda_function(
             func_name=func_name,
-            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
+            handler_file=TEST_LAMBDA_NOTIFIER,
             runtime=Runtime.python3_12,
             client=aws_client.lambda_,
-            timeout=20,
+            timeout=30,
         )
 
         fn = aws_client.lambda_.get_function_configuration(
@@ -2641,24 +2657,46 @@ class TestLambdaConcurrency:
         snapshot.match("put_fn_concurrency", put_fn_concurrency)
 
         # warm up the Lambda function to mitigate flakiness due to cold start
-        aws_client.lambda_.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
-
-        # simultaneously queue two event invocations
-        # The first event invoke gets executed immediately
-        aws_client.lambda_.invoke(
-            FunctionName=fn_arn, InvocationType="Event", Payload=json.dumps({"wait": 15})
+        sync_invoke_warm_up = aws_client.lambda_.invoke(
+            FunctionName=fn_arn, InvocationType="RequestResponse"
         )
-        # The second event invoke gets throttled and re-scheduled with an internal retry
-        aws_client.lambda_.invoke(
-            FunctionName=fn_arn, InvocationType="Event", Payload=json.dumps({"wait": 10})
-        )
+        assert "FunctionError" not in sync_invoke_warm_up
 
-        # Ensure one event invocation is being executed and the other one is in the queue.
-        time.sleep(5)
+        # Immediately queue two event invocations:
+        # 1) The first event invoke gets executed immediately
+        async_invoke_one = aws_client.lambda_.invoke(
+            FunctionName=fn_arn,
+            InvocationType="Event",
+            Payload=json.dumps({"notify": queue_url, "wait": 15}),
+        )
+        assert "FunctionError" not in async_invoke_one
+        # 2) The second event invoke gets throttled and re-scheduled with an internal retry
+        async_invoke_two = aws_client.lambda_.invoke(
+            FunctionName=fn_arn,
+            InvocationType="Event",
+            Payload=json.dumps({"notify": queue_url}),
+        )
+        assert "FunctionError" not in async_invoke_two
+
+        # Wait until the first async invoke is being executed while the second async invoke is in the queue.
+        messages = sqs_collect_messages(
+            queue_url,
+            expected=1,
+            timeout=15,
+        )
+        async_invoke_one_notification = json.loads(messages[0]["Body"])
+        assert (
+            async_invoke_one_notification["request_id"]
+            == async_invoke_one["ResponseMetadata"]["RequestId"]
+        )
 
         # Synchronous invocations raise an exception because insufficient reserved concurrency is available
+        # It is important to disable botocore retries because the concurrency limit is time-bound because it only
+        # triggers as long as the first async invoke is processing!
         with pytest.raises(aws_client.lambda_.exceptions.TooManyRequestsException) as e:
-            aws_client.lambda_.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
+            aws_client_no_retry.lambda_.invoke(
+                FunctionName=fn_arn, InvocationType="RequestResponse"
+            )
         snapshot.match("too_many_requests_exc", e.value.response)
 
         # ReservedConcurrentExecutions=2 is insufficient because the throttled async event invoke might be
@@ -2666,21 +2704,28 @@ class TestLambdaConcurrency:
         aws_client.lambda_.put_function_concurrency(
             FunctionName=func_name, ReservedConcurrentExecutions=3
         )
-        aws_client.lambda_.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
+        # Invocations succeed after raising reserved concurrency
+        sync_invoke_final = aws_client.lambda_.invoke(
+            FunctionName=fn_arn,
+            InvocationType="RequestResponse",
+            Payload=json.dumps({"notify": queue_url}),
+        )
+        assert "FunctionError" not in sync_invoke_final
 
-        def assert_events():
-            log_events = aws_client.logs.filter_log_events(
-                logGroupName=f"/aws/lambda/{func_name}",
-            )["events"]
-            invocation_count = len(
-                [event["message"] for event in log_events if event["message"].startswith("REPORT")]
-            )
-            assert invocation_count == 4
-
-        retry(assert_events, retries=120, sleep=2)
-
-        # TODO: snapshot logs & request ID for correlation after request id gets propagated
-        #  https://github.com/localstack/localstack/pull/7874
+        # Contains the re-queued `async_invoke_two` and the `sync_invoke_final`, but the order might differ
+        # depending on whether invoke_two gets re-schedule before or after the final invoke.
+        # AWS docs: https://docs.aws.amazon.com/lambda/latest/dg/invocation-async-error-handling.html
+        # "The retry interval increases exponentially from 1 second after the first attempt to a maximum of 5 minutes."
+        final_messages = sqs_collect_messages(
+            queue_url,
+            expected=2,
+            timeout=20,
+        )
+        invoked_request_ids = {json.loads(msg["Body"])["request_id"] for msg in final_messages}
+        assert {
+            async_invoke_two["ResponseMetadata"]["RequestId"],
+            sync_invoke_final["ResponseMetadata"]["RequestId"],
+        } == invoked_request_ids
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..Attributes.AWSTraceHeader"])
     @markers.aws.validated

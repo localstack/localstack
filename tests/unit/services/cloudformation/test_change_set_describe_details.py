@@ -3,14 +3,59 @@ from typing import Optional
 
 import pytest
 
-from localstack.aws.api.cloudformation import ResourceChange
+from localstack.aws.api.cloudformation import Changes
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetModel,
+    ChangeType,
+    NodeOutput,
     NodeTemplate,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_describer import (
     ChangeSetModelDescriber,
 )
+from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
+    ChangeSetModelPreproc,
+    PreprocEntityDelta,
+    PreprocOutput,
+)
+
+
+# TODO: the following is used to debug the logic of the ChangeSetModelPreproc in the
+#  following temporary test suite. This logic should be removed and the tests on output
+#  management ported to integration tests using the snapshot strategy.
+class DebugOutputPreProc(ChangeSetModelPreproc):
+    outputs_before: list[dict]
+    outputs_after: list[dict]
+
+    def __init__(self, node_template: NodeTemplate):
+        super().__init__(node_template=node_template)
+        self.outputs_before = list()
+        self.outputs_after = list()
+
+    @staticmethod
+    def _to_debug_output(change_type: ChangeType, preproc_output: PreprocOutput) -> dict:
+        debug_object = {
+            "ChangeType": change_type.value,
+            "Name": preproc_output.name,
+            "Value": preproc_output.value,
+        }
+        if preproc_output.condition:
+            debug_object["Condition"] = preproc_output.condition
+        if preproc_output.export:
+            debug_object["Export"] = preproc_output.export
+        return debug_object
+
+    def visit_node_output(
+        self, node_output: NodeOutput
+    ) -> PreprocEntityDelta[PreprocOutput, PreprocOutput]:
+        delta = super().visit_node_output(node_output)
+        if delta.before:
+            debug_object = self._to_debug_output(node_output.change_type, delta.before)
+            self.outputs_before.append(debug_object)
+        if delta.after:
+            debug_object = self._to_debug_output(node_output.change_type, delta.after)
+            self.outputs_after.append(debug_object)
+        return delta
 
 
 # TODO: this is a temporary test suite for the v2 CFN update engine change set description logic.
@@ -22,7 +67,7 @@ class TestChangeSetDescribeDetails:
         after_template: dict,
         before_parameters: Optional[dict] = None,
         after_parameters: Optional[dict] = None,
-    ) -> list[ResourceChange]:
+    ) -> Changes:
         change_set_model = ChangeSetModel(
             before_template=before_template,
             after_template=after_template,
@@ -30,11 +75,38 @@ class TestChangeSetDescribeDetails:
             after_parameters=after_parameters,
         )
         update_model: NodeTemplate = change_set_model.get_update_model()
-        change_set_describer = ChangeSetModelDescriber(node_template=update_model)
+        change_set_describer = ChangeSetModelDescriber(
+            node_template=update_model, include_property_values=True
+        )
         changes = change_set_describer.get_changes()
-        # TODO
+        for change in changes:
+            resource_change = change["ResourceChange"]
+            before_context_str = resource_change.get("BeforeContext")
+            if before_context_str is not None:
+                resource_change["BeforeContext"] = json.loads(before_context_str)
+            after_context_str = resource_change.get("AfterContext")
+            if after_context_str is not None:
+                resource_change["AfterContext"] = json.loads(after_context_str)
         json_str = json.dumps(changes)
         return json.loads(json_str)
+
+    @staticmethod
+    def debug_output_preproc(
+        before_template: Optional[dict],
+        after_template: Optional[dict],
+        before_parameters: Optional[dict] = None,
+        after_parameters: Optional[dict] = None,
+    ) -> tuple[list[dict], list[dict]]:
+        change_set_model = ChangeSetModel(
+            before_template=before_template,
+            after_template=after_template,
+            before_parameters=before_parameters,
+            after_parameters=after_parameters,
+        )
+        update_model: NodeTemplate = change_set_model.get_update_model()
+        preproc_output = DebugOutputPreProc(update_model)
+        preproc_output.visit(update_model.outputs)
+        return preproc_output.outputs_before, preproc_output.outputs_after
 
     @staticmethod
     def compare_changes(computed: list, target: list) -> None:
@@ -517,6 +589,7 @@ class TestChangeSetDescribeDetails:
                 "Parameter1": {
                     "Type": "AWS::SSM::Parameter",
                     "Properties": {
+                        "Name": "param-name",
                         "Type": "String",
                         "Value": {"Ref": "ParameterValue"},
                     },
@@ -574,8 +647,12 @@ class TestChangeSetDescribeDetails:
                     #         "ChangeSource": "DirectModification"
                     #     }
                     # ],
-                    "BeforeContext": {"Properties": {"Value": "value-1", "Type": "String"}},
-                    "AfterContext": {"Properties": {"Value": "value-2", "Type": "String"}},
+                    "BeforeContext": {
+                        "Properties": {"Name": "param-name", "Value": "value-1", "Type": "String"}
+                    },
+                    "AfterContext": {
+                        "Properties": {"Name": "param-name", "Value": "value-2", "Type": "String"}
+                    },
                 },
             }
         ]
@@ -1222,3 +1299,448 @@ class TestChangeSetDescribeDetails:
             }
         ]
         self.compare_changes(changes, target)
+
+    def test_mappings_update_string_referencing_resource(self):
+        t1 = {
+            "Mappings": {"GenericMapping": {"EnvironmentA": {"ParameterValue": "value-1"}}},
+            "Resources": {
+                "MySSMParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::FindInMap": ["GenericMapping", "EnvironmentA", "ParameterValue"]
+                        },
+                    },
+                }
+            },
+        }
+        t2 = {
+            "Mappings": {"GenericMapping": {"EnvironmentA": {"ParameterValue": "value-2"}}},
+            "Resources": {
+                "MySSMParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::FindInMap": ["GenericMapping", "EnvironmentA", "ParameterValue"]
+                        },
+                    },
+                }
+            },
+        }
+        changes = self.eval_change_set(t1, t2)
+        target = [
+            {
+                "Type": "Resource",
+                "ResourceChange": {
+                    "Action": "Modify",
+                    "LogicalResourceId": "MySSMParameter",
+                    # "PhysicalResourceId": "<physical-resource-id:1>",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Replacement": "False",
+                    # "Scope": [
+                    #   "Properties"
+                    # ],
+                    # "Details": [
+                    #   {
+                    #     "Target": {
+                    #       "Attribute": "Properties",
+                    #       "Name": "Value",
+                    #       "RequiresRecreation": "Never",
+                    #       "Path": "/Properties/Value",
+                    #       "BeforeValue": "value-1",
+                    #       "AfterValue": "value-2",
+                    #       "AttributeChangeType": "Modify"
+                    #     },
+                    #     "Evaluation": "Static",
+                    #     "ChangeSource": "DirectModification"
+                    #   }
+                    # ],
+                    "BeforeContext": {"Properties": {"Value": "value-1", "Type": "String"}},
+                    "AfterContext": {"Properties": {"Value": "value-2", "Type": "String"}},
+                },
+            }
+        ]
+        self.compare_changes(changes, target)
+
+    def test_mappings_update_type_referencing_resource(self):
+        t1 = {
+            "Mappings": {"GenericMapping": {"EnvironmentA": {"ParameterValue": "value-1"}}},
+            "Resources": {
+                "MySSMParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::FindInMap": ["GenericMapping", "EnvironmentA", "ParameterValue"]
+                        },
+                    },
+                }
+            },
+        }
+        t2 = {
+            "Mappings": {
+                "GenericMapping": {"EnvironmentA": {"ParameterValue": ["value-1", "value-2"]}}
+            },
+            "Resources": {
+                "MySSMParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::FindInMap": ["GenericMapping", "EnvironmentA", "ParameterValue"]
+                        },
+                    },
+                }
+            },
+        }
+        changes = self.eval_change_set(t1, t2)
+        target = [
+            {
+                "Type": "Resource",
+                "ResourceChange": {
+                    "Action": "Modify",
+                    "LogicalResourceId": "MySSMParameter",
+                    # "PhysicalResourceId": "<physical-resource-id:1>",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Replacement": "False",
+                    # "Scope": [
+                    #     "Properties"
+                    # ],
+                    # "Details": [
+                    #     {
+                    #         "Target": {
+                    #             "Attribute": "Properties",
+                    #             "Name": "Value",
+                    #             "RequiresRecreation": "Never",
+                    #             "Path": "/Properties/Value",
+                    #             "BeforeValue": "value-1",
+                    #             "AfterValue": "[value-1, value-2]",
+                    #             "AttributeChangeType": "Modify"
+                    #         },
+                    #         "Evaluation": "Static",
+                    #         "ChangeSource": "DirectModification"
+                    #     }
+                    # ],
+                    "BeforeContext": {"Properties": {"Value": "value-1", "Type": "String"}},
+                    "AfterContext": {
+                        "Properties": {"Value": ["value-1", "value-2"], "Type": "String"}
+                    },
+                },
+            }
+        ]
+        self.compare_changes(changes, target)
+
+    @pytest.mark.skip(reason="Add support for nested intrinsic functions")
+    def test_mappings_update_referencing_resource_through_parameter(self):
+        t1 = {
+            "Parameters": {
+                "Environment": {
+                    "Type": "String",
+                    "AllowedValues": [
+                        "EnvironmentA",
+                    ],
+                }
+            },
+            "Mappings": {
+                "GenericMapping": {
+                    "EnvironmentA": {"ParameterValue": "value-1"},
+                    "EnvironmentB": {"ParameterValue": "value-2"},
+                }
+            },
+            "Resources": {
+                "MySSMParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::FindInMap": [
+                                "GenericMapping",
+                                {"Ref": "Environment"},
+                                "ParameterValue",
+                            ]
+                        },
+                    },
+                }
+            },
+        }
+        t2 = {
+            "Parameters": {
+                "Environment": {
+                    "Type": "String",
+                    "AllowedValues": ["EnvironmentA", "EnvironmentB"],
+                    "Default": "EnvironmentA",
+                }
+            },
+            "Mappings": {
+                "GenericMapping": {
+                    "EnvironmentA": {"ParameterValue": "value-1-2"},
+                    "EnvironmentB": {"ParameterValue": "value-2"},
+                }
+            },
+            "Resources": {
+                "MySSMParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Fn::FindInMap": [
+                                "GenericMapping",
+                                {"Ref": "Environment"},
+                                "ParameterValue",
+                            ]
+                        },
+                    },
+                }
+            },
+        }
+        changes = self.eval_change_set(
+            t1, t2, {"Environment": "EnvironmentA"}, {"Environment": "EnvironmentA"}
+        )
+        target = [
+            {
+                "Type": "Resource",
+                "ResourceChange": {
+                    "Action": "Modify",
+                    "LogicalResourceId": "MySSMParameter",
+                    # "PhysicalResourceId": "<physical-resource-id:1>",
+                    "ResourceType": "AWS::SSM::Parameter",
+                    # "Replacement": "False",
+                    # "Scope": [
+                    #     "Properties"
+                    # ],
+                    # "Details": [
+                    #     {
+                    #         "Target": {
+                    #             "Attribute": "Properties",
+                    #             "Name": "Value",
+                    #             "RequiresRecreation": "Never",
+                    #             "Path": "/Properties/Value",
+                    #             "BeforeValue": "value-1",
+                    #             "AfterValue": "value-1-2",
+                    #             "AttributeChangeType": "Modify"
+                    #         },
+                    #         "Evaluation": "Static",
+                    #         "ChangeSource": "DirectModification"
+                    #     }
+                    # ],
+                    "BeforeContext": {"Properties": {"Value": "value-1", "Type": "String"}},
+                    "AfterContext": {"Properties": {"Value": "value-1-2", "Type": "String"}},
+                },
+            }
+        ]
+        self.compare_changes(changes, target)
+
+    def test_output_new_resource_and_output(self):
+        t1 = {
+            "Resources": {
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                }
+            }
+        }
+        t2 = {
+            "Resources": {
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+                "NewParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "param-name", "Type": "String", "Value": "value-1"},
+                },
+            },
+            "Outputs": {"NewParamName": {"Value": {"Ref": "NewParam"}}},
+        }
+        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        # NOTE: Outputs are currently evaluated by the describer using the entity name as a proxy,
+        #  as the executor logic is not yet implemented.
+        assert not outputs_before
+        assert outputs_after == [
+            {"ChangeType": "Created", "Name": "NewParamName", "Value": "NewParam"}
+        ]
+
+    def test_output_and_resource_removed(self):
+        t1 = {
+            "Resources": {
+                "FeatureToggle": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": "app-feature-toggle",
+                        "Type": "String",
+                        "Value": "enabled",
+                    },
+                },
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+            },
+            "Outputs": {"FeatureToggleName": {"Value": {"Ref": "FeatureToggle"}}},
+        }
+        t2 = {
+            "Resources": {
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                }
+            }
+        }
+        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        # NOTE: Outputs are currently evaluated by the describer using the entity name as a proxy,
+        #  as the executor logic is not yet implemented.
+        assert outputs_before == [
+            {"ChangeType": "Removed", "Name": "FeatureToggleName", "Value": "FeatureToggle"}
+        ]
+        assert outputs_after == []
+
+    def test_output_resource_changed(self):
+        t1 = {
+            "Resources": {
+                "LogLevelParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "app-log-level", "Type": "String", "Value": "info"},
+                },
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+            },
+            "Outputs": {"LogLevelOutput": {"Value": {"Ref": "LogLevelParam"}}},
+        }
+        t2 = {
+            "Resources": {
+                "LogLevelParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "app-log-level", "Type": "String", "Value": "debug"},
+                },
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+            },
+            "Outputs": {"LogLevelOutput": {"Value": {"Ref": "LogLevelParam"}}},
+        }
+        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        assert outputs_before == [
+            {"ChangeType": "Modified", "Name": "LogLevelOutput", "Value": "LogLevelParam"}
+        ]
+        assert outputs_after == [
+            {"ChangeType": "Modified", "Name": "LogLevelOutput", "Value": "LogLevelParam"}
+        ]
+
+    def test_output_update(self):
+        t1 = {
+            "Resources": {
+                "EnvParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "app-env", "Type": "String", "Value": "prod"},
+                },
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+            },
+            "Outputs": {"EnvParamRef": {"Value": {"Ref": "EnvParam"}}},
+        }
+
+        t2 = {
+            "Resources": {
+                "EnvParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "app-env", "Type": "String", "Value": "prod"},
+                },
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+            },
+            "Outputs": {"EnvParamRef": {"Value": {"Fn::GetAtt": ["EnvParam", "Name"]}}},
+        }
+        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        # NOTE: Outputs are currently evaluated by the describer using the entity name as a proxy,
+        #  as the executor logic is not yet implemented.
+        assert outputs_before == [
+            {"ChangeType": "Modified", "Name": "EnvParamRef", "Value": "EnvParam"}
+        ]
+        assert outputs_after == [
+            {"ChangeType": "Modified", "Name": "EnvParamRef", "Value": "app-env"}
+        ]
+
+    def test_output_renamed(self):
+        t1 = {
+            "Resources": {
+                "SSMParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "some-param", "Type": "String", "Value": "value"},
+                },
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+            },
+            "Outputs": {"OldSSMOutput": {"Value": {"Ref": "SSMParam"}}},
+        }
+        t2 = {
+            "Resources": {
+                "SSMParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "some-param", "Type": "String", "Value": "value"},
+                },
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+            },
+            "Outputs": {"NewSSMOutput": {"Value": {"Ref": "SSMParam"}}},
+        }
+        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        assert outputs_before == [
+            {"ChangeType": "Removed", "Name": "OldSSMOutput", "Value": "SSMParam"}
+        ]
+        assert outputs_after == [
+            {"ChangeType": "Created", "Name": "NewSSMOutput", "Value": "SSMParam"}
+        ]
+
+    def test_output_and_resource_renamed(self):
+        t1 = {
+            "Resources": {
+                "DBPasswordParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "db-password", "Type": "String", "Value": "secret"},
+                },
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+            },
+            "Outputs": {"DBPasswordOutput": {"Value": {"Ref": "DBPasswordParam"}}},
+        }
+        t2 = {
+            "Resources": {
+                "DatabaseSecretParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "db-password", "Type": "String", "Value": "secret"},
+                },
+                "UnrelatedParam": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": "unrelated-param", "Type": "String", "Value": "foo"},
+                },
+            },
+            "Outputs": {"DatabaseSecretOutput": {"Value": {"Ref": "DatabaseSecretParam"}}},
+        }
+        outputs_before, outputs_after = self.debug_output_preproc(t1, t2)
+        # NOTE: Outputs are currently evaluated by the describer using the entity name as a proxy,
+        #  as the executor logic is not yet implemented.
+        assert outputs_before == [
+            {"ChangeType": "Removed", "Name": "DBPasswordOutput", "Value": "DBPasswordParam"}
+        ]
+        assert outputs_after == [
+            {
+                "ChangeType": "Created",
+                "Name": "DatabaseSecretOutput",
+                "Value": "DatabaseSecretParam",
+            }
+        ]

@@ -44,6 +44,7 @@ from localstack.aws.api.events import (
     DescribeReplayResponse,
     DescribeRuleResponse,
     EndpointId,
+    EventBusArn,
     EventBusDescription,
     EventBusList,
     EventBusName,
@@ -921,12 +922,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         archive_name: ArchiveName,
-        event_source_arn: Arn,
+        event_source_arn: EventBusArn,
         description: ArchiveDescription = None,
         event_pattern: EventPattern = None,
         retention_days: RetentionDays = None,
+        kms_key_identifier: KmsKeyIdentifier = None,
         **kwargs,
     ) -> CreateArchiveResponse:
+        # TODO add support for kms_key_identifier
         region = context.region
         account_id = context.account_id
         store = self.get_store(region, account_id)
@@ -1022,8 +1025,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         description: ArchiveDescription = None,
         event_pattern: EventPattern = None,
         retention_days: RetentionDays = None,
+        kms_key_identifier: KmsKeyIdentifier = None,
         **kwargs,
     ) -> UpdateArchiveResponse:
+        # TODO add support for kms_key_identifier
         region = context.region
         account_id = context.account_id
         store = self.get_store(region, account_id)

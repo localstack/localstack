@@ -86,7 +86,7 @@ class TestSnfApiMapRun:
     )
     def test_map_state_label_invalid_char_fail(
         self,
-        aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -98,7 +98,7 @@ class TestSnfApiMapRun:
 
         with pytest.raises(Exception) as err:
             create_state_machine_with_iam_role(
-                aws_client,
+                aws_client_no_retry,
                 create_state_machine_iam_role,
                 create_state_machine,
                 sfn_snapshot,
@@ -108,14 +108,14 @@ class TestSnfApiMapRun:
 
     @markers.aws.validated
     def test_map_state_label_empty_fail(
-        self, aws_client, create_state_machine_iam_role, create_state_machine, sfn_snapshot
+        self, aws_client_no_retry, create_state_machine_iam_role, create_state_machine, sfn_snapshot
     ):
         template = ST.load_sfn_template(ST.MAP_STATE_LABEL_EMPTY_FAIL)
         definition = json.dumps(template)
 
         with pytest.raises(Exception) as err:
             create_state_machine_with_iam_role(
-                aws_client,
+                aws_client_no_retry,
                 create_state_machine_iam_role,
                 create_state_machine,
                 sfn_snapshot,
@@ -125,14 +125,14 @@ class TestSnfApiMapRun:
 
     @markers.aws.validated
     def test_map_state_label_too_long_fail(
-        self, aws_client, create_state_machine_iam_role, create_state_machine, sfn_snapshot
+        self, aws_client_no_retry, create_state_machine_iam_role, create_state_machine, sfn_snapshot
     ):
         template = ST.load_sfn_template(ST.MAP_STATE_LABEL_TOO_LONG_FAIL)
         definition = json.dumps(template)
 
         with pytest.raises(Exception) as err:
             create_state_machine_with_iam_role(
-                aws_client,
+                aws_client_no_retry,
                 create_state_machine_iam_role,
                 create_state_machine,
                 sfn_snapshot,

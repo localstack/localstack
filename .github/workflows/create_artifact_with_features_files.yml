@@ -1,0 +1,14 @@
+name: AWS / Archive feature files
+
+on:
+  schedule:
+    - cron: 0 9 * * TUE
+  workflow_dispatch:
+
+jobs:
+  validate-features-files:
+      name: Create artifact with features files
+      uses: localstack/meta/.github/workflows/create-artifact-with-features-files.yml@main
+      with:
+        artifact_name: 'features-files'
+        aws_services_path: 'localstack-core/localstack/services'

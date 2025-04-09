@@ -18,7 +18,12 @@ class TestSfnWait:
     @markers.aws.validated
     @pytest.mark.parametrize("days", [24855, 24856])
     def test_timestamp_too_far_in_future_boundary(
-        self, aws_client, create_state_machine_iam_role, create_state_machine, sfn_snapshot, days
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        days,
     ):
         """
         seems this seems to correlate with "2147483648" as the maximum integer value for the seconds stepfunctions internally uses to represent dates

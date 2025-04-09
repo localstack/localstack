@@ -177,11 +177,7 @@ class SSMParameterProvider(ResourceProvider[SSMParameterProperties]):
 
         ssm.put_parameter(Overwrite=True, Tags=[], **update_config_props)
 
-        return ProgressEvent(
-            status=OperationStatus.SUCCESS,
-            resource_model=model,
-            custom_context=request.custom_context,
-        )
+        return self.read(request)
 
     def update_tags(self, ssm, model, new_tags):
         current_tags = ssm.list_tags_for_resource(

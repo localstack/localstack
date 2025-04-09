@@ -78,6 +78,10 @@ def snake_to_camel_case(string: str, capitalize_first: bool = True) -> str:
     return "".join(components)
 
 
+def hyphen_to_snake_case(string: str) -> str:
+    return string.replace("-", "_")
+
+
 def canonicalize_bool_to_str(val: bool) -> str:
     return "true" if str(val).lower() == "true" else "false"
 

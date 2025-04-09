@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from mypy_boto3_cloudwatch import CloudWatchClient
     from mypy_boto3_codebuild import CodeBuildClient
     from mypy_boto3_codecommit import CodeCommitClient
+    from mypy_boto3_codeconnections import CodeConnectionsClient
     from mypy_boto3_codedeploy import CodeDeployClient
     from mypy_boto3_codepipeline import CodePipelineClient
     from mypy_boto3_codestar_connections import CodeStarconnectionsClient
@@ -109,6 +110,7 @@ if TYPE_CHECKING:
     from mypy_boto3_timestream_query import TimestreamQueryClient
     from mypy_boto3_timestream_write import TimestreamWriteClient
     from mypy_boto3_transcribe import TranscribeServiceClient
+    from mypy_boto3_verifiedpermissions import VerifiedPermissionsClient
     from mypy_boto3_wafv2 import WAFV2Client
     from mypy_boto3_xray import XRayClient
 
@@ -139,6 +141,9 @@ class TypedServiceClientFactory(abc.ABC):
     cloudwatch: Union["CloudWatchClient", "MetadataRequestInjector[CloudWatchClient]"]
     codebuild: Union["CodeBuildClient", "MetadataRequestInjector[CodeBuildClient]"]
     codecommit: Union["CodeCommitClient", "MetadataRequestInjector[CodeCommitClient]"]
+    codeconnections: Union[
+        "CodeConnectionsClient", "MetadataRequestInjector[CodeConnectionsClient]"
+    ]
     codedeploy: Union["CodeDeployClient", "MetadataRequestInjector[CodeDeployClient]"]
     codepipeline: Union["CodePipelineClient", "MetadataRequestInjector[CodePipelineClient]"]
     codestar_connections: Union[
@@ -255,6 +260,9 @@ class TypedServiceClientFactory(abc.ABC):
         "TimestreamWriteClient", "MetadataRequestInjector[TimestreamWriteClient]"
     ]
     transcribe: Union["TranscribeServiceClient", "MetadataRequestInjector[TranscribeServiceClient]"]
+    verifiedpermissions: Union[
+        "VerifiedPermissionsClient", "MetadataRequestInjector[VerifiedPermissionsClient]"
+    ]
     wafv2: Union["WAFV2Client", "MetadataRequestInjector[WAFV2Client]"]
     xray: Union["XRayClient", "MetadataRequestInjector[XRayClient]"]
 

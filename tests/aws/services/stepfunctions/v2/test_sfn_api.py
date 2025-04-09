@@ -77,7 +77,12 @@ class TestSnfApi:
     )
     @markers.aws.validated
     def test_create_delete_invalid_sm(
-        self, aws_client, create_state_machine_iam_role, create_state_machine, sfn_snapshot
+        self,
+        aws_client,
+        aws_client_no_retry,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
     ):
         snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
@@ -89,7 +94,7 @@ class TestSnfApi:
 
         with pytest.raises(Exception) as resource_not_found:
             create_state_machine(
-                aws_client, name=sm_name, definition=definition_str, roleArn=snf_role_arn
+                aws_client_no_retry, name=sm_name, definition=definition_str, roleArn=snf_role_arn
             )
         sfn_snapshot.match("invalid_definition_1", resource_not_found.value.response)
 
@@ -119,7 +124,12 @@ class TestSnfApi:
 
     @markers.aws.validated
     def test_describe_nonexistent_sm(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+        aws_client_no_retry,
     ):
         snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
@@ -138,7 +148,9 @@ class TestSnfApi:
         sfn_snapshot.add_transformer(RegexTransformer(sm_nonexistent_arn, "sm_nonexistent_arn"))
 
         with pytest.raises(Exception) as exc:
-            aws_client.stepfunctions.describe_state_machine(stateMachineArn=sm_nonexistent_arn)
+            aws_client_no_retry.stepfunctions.describe_state_machine(
+                stateMachineArn=sm_nonexistent_arn
+            )
         sfn_snapshot.match("describe_nonexistent_sm", exc.value)
 
     @markers.aws.validated
@@ -167,9 +179,11 @@ class TestSnfApi:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..exception_value"])
-    def test_describe_invalid_arn_sm(self, sfn_snapshot, aws_client):
+    def test_describe_invalid_arn_sm(self, sfn_snapshot, aws_client_no_retry):
         with pytest.raises(Exception) as exc:
-            aws_client.stepfunctions.describe_state_machine(stateMachineArn="not_a_valid_arn")
+            aws_client_no_retry.stepfunctions.describe_state_machine(
+                stateMachineArn="not_a_valid_arn"
+            )
         sfn_snapshot.match(
             "exception", {"exception_typename": exc.typename, "exception_value": exc.value}
         )
@@ -216,7 +230,12 @@ class TestSnfApi:
 
     @markers.aws.validated
     def test_create_duplicate_definition_format_sm(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+        aws_client_no_retry,
     ):
         snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
@@ -240,13 +259,18 @@ class TestSnfApi:
         definition_str_2 = json.dumps(definition, indent=4)
         with pytest.raises(Exception) as resource_not_found:
             create_state_machine(
-                aws_client, name=sm_name, definition=definition_str_2, roleArn=snf_role_arn
+                aws_client_no_retry, name=sm_name, definition=definition_str_2, roleArn=snf_role_arn
             )
         sfn_snapshot.match("already_exists_1", resource_not_found.value.response)
 
     @markers.aws.validated
     def test_create_duplicate_sm_name(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+        aws_client_no_retry,
     ):
         snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
@@ -273,7 +297,7 @@ class TestSnfApi:
 
         with pytest.raises(Exception) as resource_not_found:
             create_state_machine(
-                aws_client, name=sm_name, definition=definition_str_2, roleArn=snf_role_arn
+                aws_client_no_retry, name=sm_name, definition=definition_str_2, roleArn=snf_role_arn
             )
         sfn_snapshot.match("already_exists_1", resource_not_found.value.response)
 
@@ -307,7 +331,8 @@ class TestSnfApi:
             state_machine_arns.append(state_machine_arn)
 
             await_state_machine_listed(
-                stepfunctions_client=aws_client.stepfunctions, state_machine_arn=state_machine_arn
+                stepfunctions_client=aws_client.stepfunctions,
+                state_machine_arn=state_machine_arn,
             )
 
         lst_resp = aws_client.stepfunctions.list_state_machines()
@@ -321,7 +346,8 @@ class TestSnfApi:
             sfn_snapshot.match(f"deletion_resp_{i}", deletion_resp)
 
             await_state_machine_not_listed(
-                stepfunctions_client=aws_client.stepfunctions, state_machine_arn=state_machine_arn
+                stepfunctions_client=aws_client.stepfunctions,
+                state_machine_arn=state_machine_arn,
             )
 
         lst_resp = aws_client.stepfunctions.list_state_machines()
@@ -330,7 +356,12 @@ class TestSnfApi:
 
     @markers.aws.validated
     def test_list_sms_pagination(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+        aws_client_no_retry,
     ):
         snf_role_arn = create_state_machine_iam_role(aws_client)
 
@@ -393,12 +424,12 @@ class TestSnfApi:
 
         # maxResults value is out of bounds
         with pytest.raises(Exception) as err:
-            aws_client.stepfunctions.list_state_machines(maxResults=1001)
+            aws_client_no_retry.stepfunctions.list_state_machines(maxResults=1001)
         sfn_snapshot.match("list-state-machines-invalid-param-too-large", err.value.response)
 
         # nextToken is too short
         with pytest.raises(Exception) as err:
-            aws_client.stepfunctions.list_state_machines(nextToken="")
+            aws_client_no_retry.stepfunctions.list_state_machines(nextToken="")
         sfn_snapshot.match(
             "list-state-machines-invalid-param-short-nextToken",
             {"exception_typename": err.typename, "exception_value": err.value},
@@ -407,7 +438,7 @@ class TestSnfApi:
         # nextToken is too long
         invalid_long_token = "x" * 1025
         with pytest.raises(Exception) as err:
-            aws_client.stepfunctions.list_state_machines(nextToken=invalid_long_token)
+            aws_client_no_retry.stepfunctions.list_state_machines(nextToken=invalid_long_token)
         sfn_snapshot.add_transformer(
             RegexTransformer(invalid_long_token, f"<invalid_token_{len(invalid_long_token)}_chars>")
         )
@@ -435,6 +466,7 @@ class TestSnfApi:
         sqs_create_queue,
         sfn_snapshot,
         aws_client,
+        aws_client_no_retry,
     ):
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
         sfn_snapshot.add_transformer(
@@ -488,7 +520,7 @@ class TestSnfApi:
 
         # Should fail because the execution has the same 'name' as another but a different 'input'.
         with pytest.raises(Exception) as err:
-            aws_client.stepfunctions.start_execution(
+            aws_client_no_retry.stepfunctions.start_execution(
                 stateMachineArn=state_machine_arn,
                 input='{"body" : "different-data"}',
                 name=execution_name,
@@ -542,7 +574,12 @@ class TestSnfApi:
 
     @markers.aws.validated
     def test_list_execution_no_such_state_machine(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+        aws_client_no_retry,
     ):
         snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
@@ -561,16 +598,18 @@ class TestSnfApi:
         sfn_snapshot.add_transformer(RegexTransformer(sm_nonexistent_arn, "ssm_nonexistent_arn"))
 
         with pytest.raises(Exception) as exc:
-            aws_client.stepfunctions.list_executions(stateMachineArn=sm_nonexistent_arn)
+            aws_client_no_retry.stepfunctions.list_executions(stateMachineArn=sm_nonexistent_arn)
         sfn_snapshot.match(
             "exception", {"exception_typename": exc.typename, "exception_value": exc.value}
         )
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..exception_value"])
-    def test_list_execution_invalid_arn(self, sfn_snapshot, aws_client):
+    def test_list_execution_invalid_arn(self, sfn_snapshot, aws_client, aws_client_no_retry):
         with pytest.raises(Exception) as exc:
-            aws_client.stepfunctions.list_executions(stateMachineArn="invalid_state_machine_arn")
+            aws_client_no_retry.stepfunctions.list_executions(
+                stateMachineArn="invalid_state_machine_arn"
+            )
         sfn_snapshot.match(
             "exception", {"exception_typename": exc.typename, "exception_value": exc.value}
         )
@@ -578,7 +617,12 @@ class TestSnfApi:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..exception_value", "$..redriveCount"])
     def test_list_executions_pagination(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+        aws_client_no_retry,
     ):
         snf_role_arn = create_state_machine_iam_role(aws_client)
 
@@ -598,7 +642,8 @@ class TestSnfApi:
         state_machine_arn = creation_resp["stateMachineArn"]
 
         await_state_machine_listed(
-            stepfunctions_client=aws_client.stepfunctions, state_machine_arn=state_machine_arn
+            stepfunctions_client=aws_client.stepfunctions,
+            state_machine_arn=state_machine_arn,
         )
 
         execution_arns = list()
@@ -638,14 +683,14 @@ class TestSnfApi:
 
         # maxResults value is out of bounds
         with pytest.raises(Exception) as err:
-            aws_client.stepfunctions.list_executions(
+            aws_client_no_retry.stepfunctions.list_executions(
                 stateMachineArn=state_machine_arn, maxResults=1001
             )
         sfn_snapshot.match("list-executions-invalid-param-too-large", err.value.response)
 
         # nextToken is too short
         with pytest.raises(Exception) as err:
-            aws_client.stepfunctions.list_executions(
+            aws_client_no_retry.stepfunctions.list_executions(
                 stateMachineArn=state_machine_arn, nextToken=""
             )
         sfn_snapshot.match(
@@ -656,7 +701,7 @@ class TestSnfApi:
         # nextToken is too long
         invalid_long_token = "x" * 3097
         with pytest.raises(Exception) as err:
-            aws_client.stepfunctions.list_executions(
+            aws_client_no_retry.stepfunctions.list_executions(
                 stateMachineArn=state_machine_arn, nextToken=invalid_long_token
             )
         sfn_snapshot.add_transformer(
@@ -679,7 +724,12 @@ class TestSnfApi:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..exception_value", "$..redriveCount"])
     def test_list_executions_versions_pagination(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+        aws_client_no_retry,
     ):
         snf_role_arn = create_state_machine_iam_role(aws_client)
 
@@ -691,7 +741,11 @@ class TestSnfApi:
         sm_name = f"statemachine_{short_uid()}"
 
         creation_resp = create_state_machine(
-            aws_client, name=sm_name, definition=definition_str, roleArn=snf_role_arn, publish=True
+            aws_client,
+            name=sm_name,
+            definition=definition_str,
+            roleArn=snf_role_arn,
+            publish=True,
         )
 
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
@@ -742,14 +796,14 @@ class TestSnfApi:
 
         # maxResults value is out of bounds
         with pytest.raises(Exception) as err:
-            aws_client.stepfunctions.list_executions(
+            aws_client_no_retry.stepfunctions.list_executions(
                 stateMachineArn=state_machine_version_arn, maxResults=1001
             )
         sfn_snapshot.match("list-executions-invalid-param-too-large", err.value.response)
 
         # nextToken is too short
         with pytest.raises(Exception) as err:
-            aws_client.stepfunctions.list_executions(
+            aws_client_no_retry.stepfunctions.list_executions(
                 stateMachineArn=state_machine_version_arn, nextToken=""
             )
         sfn_snapshot.match(
@@ -760,7 +814,7 @@ class TestSnfApi:
         # nextToken is too long
         invalid_long_token = "x" * 3097
         with pytest.raises(Exception) as err:
-            aws_client.stepfunctions.list_executions(
+            aws_client_no_retry.stepfunctions.list_executions(
                 stateMachineArn=state_machine_version_arn, nextToken=invalid_long_token
             )
         sfn_snapshot.add_transformer(
@@ -812,7 +866,12 @@ class TestSnfApi:
 
     @markers.aws.validated
     def test_invalid_start_execution_arn(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+        aws_client_no_retry,
     ):
         snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
@@ -834,13 +893,20 @@ class TestSnfApi:
         aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
 
         with pytest.raises(Exception) as resource_not_found:
-            aws_client.stepfunctions.start_execution(stateMachineArn=state_machine_arn_invalid)
+            aws_client_no_retry.stepfunctions.start_execution(
+                stateMachineArn=state_machine_arn_invalid
+            )
         sfn_snapshot.match("start_exec_of_deleted", resource_not_found.value.response)
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
     @markers.aws.validated
     def test_invalid_start_execution_input(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+        aws_client_no_retry,
     ):
         snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
@@ -857,19 +923,21 @@ class TestSnfApi:
         state_machine_arn = creation_resp["stateMachineArn"]
 
         with pytest.raises(Exception) as err:
-            aws_client.stepfunctions.start_execution(
+            aws_client_no_retry.stepfunctions.start_execution(
                 stateMachineArn=state_machine_arn, input="not some json"
             )
         sfn_snapshot.match("start_exec_str_inp", err.value.response)
 
         with pytest.raises(Exception) as err:
-            aws_client.stepfunctions.start_execution(
+            aws_client_no_retry.stepfunctions.start_execution(
                 stateMachineArn=state_machine_arn, input="{'not': 'json'"
             )
         sfn_snapshot.match("start_exec_not_json_inp", err.value.response)
 
         with pytest.raises(Exception) as err:
-            aws_client.stepfunctions.start_execution(stateMachineArn=state_machine_arn, input="")
+            aws_client_no_retry.stepfunctions.start_execution(
+                stateMachineArn=state_machine_arn, input=""
+            )
         sfn_snapshot.match("start_res_empty", err.value.response)
 
         start_res_num = aws_client.stepfunctions.start_execution(
@@ -1097,7 +1165,12 @@ class TestSnfApi:
 
     @markers.aws.validated
     def test_create_update_state_machine_base_update_none(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+        aws_client_no_retry,
     ):
         snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
@@ -1119,11 +1192,13 @@ class TestSnfApi:
         sfn_snapshot.match("describe_resp_t0", describe_resp_t0)
 
         with pytest.raises(Exception) as missing_required_parameter:
-            aws_client.stepfunctions.update_state_machine(stateMachineArn=state_machine_arn)
+            aws_client_no_retry.stepfunctions.update_state_machine(
+                stateMachineArn=state_machine_arn
+            )
         sfn_snapshot.match("missing_required_parameter", missing_required_parameter.value.response)
 
         with pytest.raises(Exception) as null_required_parameter:
-            aws_client.stepfunctions.update_state_machine(
+            aws_client_no_retry.stepfunctions.update_state_machine(
                 stateMachineArn=state_machine_arn, definition=None, roleArn=None
             )
         sfn_snapshot.match("null_required_parameter", null_required_parameter.value)
@@ -1358,7 +1433,12 @@ class TestSnfApi:
 
     @markers.aws.validated
     def test_describe_execution_no_such_state_machine(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+        aws_client_no_retry,
     ):
         snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
@@ -1386,16 +1466,18 @@ class TestSnfApi:
         )
 
         with pytest.raises(Exception) as exc:
-            aws_client.stepfunctions.describe_execution(executionArn=invalid_execution_arn)
+            aws_client_no_retry.stepfunctions.describe_execution(executionArn=invalid_execution_arn)
         sfn_snapshot.match(
             "exception", {"exception_typename": exc.typename, "exception_value": exc.value}
         )
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..exception_value"])
-    def test_describe_execution_invalid_arn(self, sfn_snapshot, aws_client):
+    def test_describe_execution_invalid_arn(self, sfn_snapshot, aws_client_no_retry):
         with pytest.raises(Exception) as exc:
-            aws_client.stepfunctions.describe_execution(executionArn="invalid_state_machine_arn")
+            aws_client_no_retry.stepfunctions.describe_execution(
+                executionArn="invalid_state_machine_arn"
+            )
         sfn_snapshot.match(
             "exception", {"exception_typename": exc.typename, "exception_value": exc.value}
         )
@@ -1438,7 +1520,12 @@ class TestSnfApi:
 
     @markers.aws.needs_fixing
     def test_get_execution_history_no_such_execution(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+        aws_client_no_retry,
     ):
         snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
@@ -1461,16 +1548,20 @@ class TestSnfApi:
         )
 
         with pytest.raises(Exception) as exc:
-            aws_client.stepfunctions.get_execution_history(executionArn=invalid_execution_arn)
+            aws_client_no_retry.stepfunctions.get_execution_history(
+                executionArn=invalid_execution_arn
+            )
         sfn_snapshot.match(
             "exception", {"exception_typename": exc.typename, "exception_value": exc.value}
         )
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..exception_value"])
-    def test_get_execution_history_invalid_arn(self, sfn_snapshot, aws_client):
+    def test_get_execution_history_invalid_arn(self, sfn_snapshot, aws_client_no_retry):
         with pytest.raises(Exception) as exc:
-            aws_client.stepfunctions.get_execution_history(executionArn="invalid_state_machine_arn")
+            aws_client_no_retry.stepfunctions.get_execution_history(
+                executionArn="invalid_state_machine_arn"
+            )
         sfn_snapshot.match(
             "exception", {"exception_typename": exc.typename, "exception_value": exc.value}
         )
@@ -1478,7 +1569,12 @@ class TestSnfApi:
     @markers.snapshot.skip_snapshot_verify(paths=["$..redriveCount"])
     @markers.aws.validated
     def test_state_machine_status_filter(
-        self, create_state_machine_iam_role, create_state_machine, sfn_snapshot, aws_client
+        self,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+        aws_client_no_retry,
     ):
         snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
@@ -1522,7 +1618,7 @@ class TestSnfApi:
         sfn_snapshot.match("list_running_when_complete", list_response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.stepfunctions.list_executions(
+            aws_client_no_retry.stepfunctions.list_executions(
                 stateMachineArn=state_machine_arn, statusFilter="succeeded"
             )
         sfn_snapshot.match("list_executions_filter_exc", e.value.response)

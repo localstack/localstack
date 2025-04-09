@@ -69,6 +69,7 @@ class TestSnfApiTagging:
         create_state_machine,
         sfn_snapshot,
         aws_client,
+        aws_client_no_retry,
         tag_list,
     ):
         snf_role_arn = create_state_machine_iam_role(aws_client)
@@ -86,7 +87,9 @@ class TestSnfApiTagging:
         sfn_snapshot.match("creation_resp_1", creation_resp_1)
 
         with pytest.raises(Exception) as error:
-            aws_client.stepfunctions.tag_resource(resourceArn=state_machine_arn, tags=tag_list)
+            aws_client_no_retry.stepfunctions.tag_resource(
+                resourceArn=state_machine_arn, tags=tag_list
+            )
         sfn_snapshot.match("error", error.value)
 
     @markers.aws.validated
@@ -96,6 +99,7 @@ class TestSnfApiTagging:
         create_state_machine,
         sfn_snapshot,
         aws_client,
+        aws_client_no_retry,
     ):
         snf_role_arn = create_state_machine_iam_role(aws_client)
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
@@ -118,7 +122,7 @@ class TestSnfApiTagging:
         sfn_snapshot.match("publish_resp", publish_resp)
 
         with pytest.raises(Exception) as error:
-            aws_client.stepfunctions.tag_resource(
+            aws_client_no_retry.stepfunctions.tag_resource(
                 resourceArn=state_machine_version_arn, tags=[Tag(key="key1", value="value1")]
             )
         sfn_snapshot.match("error", error.value)

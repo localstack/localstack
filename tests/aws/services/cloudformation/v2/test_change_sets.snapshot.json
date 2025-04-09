@@ -1,0 +1,97 @@
+{
+  "tests/aws/services/cloudformation/v2/test_change_sets.py::test_single_resource_static_update": {
+    "recorded-date": "18-03-2025, 16:52:36",
+    "recorded-content": {
+      "describe-1": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetName": "<change-set-name:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "MyParameter",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "parameter-1": {
+        "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/<resource:3>",
+        "DataType": "text",
+        "LastModifiedDate": "datetime",
+        "Name": "<resource:3>",
+        "Type": "String",
+        "Value": "foo",
+        "Version": 1
+      },
+      "describe-2": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:4>",
+        "ChangeSetName": "<change-set-name:2>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Modify",
+              "Details": [
+                {
+                  "ChangeSource": "DirectModification",
+                  "Evaluation": "Static",
+                  "Target": {
+                    "Attribute": "Properties",
+                    "Name": "Value",
+                    "RequiresRecreation": "Never"
+                  }
+                }
+              ],
+              "LogicalResourceId": "MyParameter",
+              "PhysicalResourceId": "<resource:3>",
+              "Replacement": "False",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": [
+                "Properties"
+              ]
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "parameter-2": {
+        "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/<resource:3>",
+        "DataType": "text",
+        "LastModifiedDate": "datetime",
+        "Name": "<resource:3>",
+        "Type": "String",
+        "Value": "bar",
+        "Version": 2
+      }
+    }
+  }
+}

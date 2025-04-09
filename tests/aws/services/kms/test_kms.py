@@ -10,10 +10,15 @@ import pytest
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from cryptography.hazmat.primitives import hashes, hmac, serialization
-from cryptography.hazmat.primitives.asymmetric import ec, padding
+from cryptography.hazmat.primitives.asymmetric import ec, padding, utils
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
-from localstack.services.kms.models import IV_LEN, Ciphertext, _serialize_ciphertext_blob
+from localstack.services.kms.models import (
+    IV_LEN,
+    ON_DEMAND_ROTATION_LIMIT,
+    Ciphertext,
+    _serialize_ciphertext_blob,
+)
 from localstack.services.kms.utils import get_hash_algorithm
 from localstack.testing.aws.util import in_default_partition
 from localstack.testing.pytest import markers
@@ -24,6 +29,27 @@ from localstack.utils.sync import poll_condition
 
 def create_tags(**kwargs):
     return [{"TagKey": key, "TagValue": value} for key, value in kwargs.items()]
+
+
+def get_signature_kwargs(signing_algorithm, message_type):
+    algo_map = {
+        "SHA_256": (hashes.SHA256(), 32),
+        "SHA_384": (hashes.SHA384(), 48),
+        "SHA_512": (hashes.SHA512(), 64),
+    }
+    hasher, salt = next((h, s) for k, (h, s) in algo_map.items() if k in signing_algorithm)
+    algorithm = utils.Prehashed(hasher) if message_type == "DIGEST" else hasher
+    kwargs = {}
+
+    if signing_algorithm.startswith("ECDSA"):
+        kwargs["signature_algorithm"] = ec.ECDSA(algorithm)
+    elif signing_algorithm.startswith("RSA"):
+        if "PKCS" in signing_algorithm:
+            kwargs["padding"] = padding.PKCS1v15()
+        elif "PSS" in signing_algorithm:
+            kwargs["padding"] = padding.PSS(mgf=padding.MGF1(hasher), salt_length=salt)
+        kwargs["algorithm"] = algorithm
+    return kwargs
 
 
 @pytest.fixture(scope="class")
@@ -725,6 +751,40 @@ class TestKMS:
         assert exc.match("ValidationException")
 
     @markers.aws.validated
+    @pytest.mark.parametrize(
+        "key_spec,sign_algo",
+        [
+            ("RSA_2048", "RSASSA_PSS_SHA_256"),
+            ("RSA_2048", "RSASSA_PSS_SHA_384"),
+            ("RSA_2048", "RSASSA_PSS_SHA_512"),
+            ("RSA_4096", "RSASSA_PKCS1_V1_5_SHA_256"),
+            ("RSA_4096", "RSASSA_PKCS1_V1_5_SHA_512"),
+            ("ECC_NIST_P256", "ECDSA_SHA_256"),
+            ("ECC_NIST_P384", "ECDSA_SHA_384"),
+            ("ECC_SECG_P256K1", "ECDSA_SHA_256"),
+        ],
+    )
+    def test_verify_salt_length(self, aws_client, kms_create_key, key_spec, sign_algo):
+        plaintext = b"test message !%$@ 1234567890"
+
+        hash_algo = get_hash_algorithm(sign_algo)
+        hasher = getattr(hashlib, hash_algo.replace("_", "").lower())
+        digest = hasher(plaintext).digest()
+
+        key_id = kms_create_key(KeyUsage="SIGN_VERIFY", KeySpec=key_spec)["KeyId"]
+        public_key = aws_client.kms.get_public_key(KeyId=key_id)["PublicKey"]
+        key = load_der_public_key(public_key)
+
+        kwargs = {"KeyId": key_id, "SigningAlgorithm": sign_algo}
+
+        for msg_type, message in [("RAW", plaintext), ("DIGEST", digest)]:
+            signature = aws_client.kms.sign(MessageType=msg_type, Message=message, **kwargs)[
+                "Signature"
+            ]
+            vargs = get_signature_kwargs(sign_algo, msg_type)
+            key.verify(signature=signature, data=message, **vargs)
+
+    @markers.aws.validated
     def test_invalid_key_usage(self, kms_create_key, aws_client):
         key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="RSA_4096")["KeyId"]
         with pytest.raises(ClientError) as exc:
@@ -1098,6 +1158,63 @@ class TestKMS:
         assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is True
         aws_client.kms.disable_key_rotation(KeyId=key_id)
         assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is False
+
+    @markers.aws.validated
+    def test_key_rotations_encryption_decryption(self, kms_create_key, aws_client, snapshot):
+        key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")["KeyId"]
+        message = b"test message 123 !%$@ 1234567890"
+
+        ciphertext = aws_client.kms.encrypt(
+            KeyId=key_id,
+            Plaintext=base64.b64encode(message),
+            EncryptionAlgorithm="SYMMETRIC_DEFAULT",
+        )["CiphertextBlob"]
+
+        deciphered_text_before = aws_client.kms.decrypt(
+            KeyId=key_id,
+            CiphertextBlob=ciphertext,
+            EncryptionAlgorithm="SYMMETRIC_DEFAULT",
+        )["Plaintext"]
+
+        aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+
+        deciphered_text_after = aws_client.kms.decrypt(
+            KeyId=key_id,
+            CiphertextBlob=ciphertext,
+            EncryptionAlgorithm="SYMMETRIC_DEFAULT",
+        )["Plaintext"]
+
+        assert deciphered_text_after == deciphered_text_before
+
+        # checking for the exception
+        bad_ciphertext = ciphertext + b"bad_data"
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.decrypt(
+                KeyId=key_id,
+                CiphertextBlob=bad_ciphertext,
+                EncryptionAlgorithm="SYMMETRIC_DEFAULT",
+            )
+
+        snapshot.match("bad-ciphertext", e.value)
+
+    @markers.aws.validated
+    def test_key_rotations_limits(self, kms_create_key, aws_client, snapshot):
+        key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")["KeyId"]
+
+        def _assert_on_demand_rotation_completed():
+            response = aws_client.kms.get_key_rotation_status(KeyId=key_id)
+            return "OnDemandRotationStartDate" not in response
+
+        for _ in range(ON_DEMAND_ROTATION_LIMIT):
+            aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+            assert poll_condition(
+                condition=_assert_on_demand_rotation_completed, timeout=10, interval=1
+            )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+        snapshot.match("error-response", e.value.response)
 
     @markers.aws.validated
     def test_rotate_key_on_demand_modifies_key_material(self, kms_create_key, aws_client, snapshot):

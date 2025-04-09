@@ -311,6 +311,20 @@ DEPRECATIONS = [
         " is faster, achieves great AWS parity, and fixes compatibility issues with the StepFunctions JSONata feature."
         " Please remove EVENT_RULE_ENGINE.",
     ),
+    EnvVarDeprecation(
+        "STEPFUNCTIONS_LAMBDA_ENDPOINT",
+        "4.0.0",
+        "This is only supported for the legacy provider. URL to use as the Lambda service endpoint in Step Functions. "
+        "By default this is the LocalStack Lambda endpoint. Use default to select the original AWS Lambda endpoint.",
+    ),
+    EnvVarDeprecation(
+        "LOCAL_PORT_STEPFUNCTIONS",
+        "4.0.0",
+        "This is only supported for the legacy provider."
+        "It defines the local port to which Step Functions traffic is redirected."
+        "By default, LocalStack routes Step Functions traffic to its internal runtime. "
+        "Use this variable only if you need to redirect traffic to a different local Step Functions runtime.",
+    ),
 ]
 
 

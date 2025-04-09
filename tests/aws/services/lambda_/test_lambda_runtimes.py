@@ -6,6 +6,7 @@ See `test_lambda_common.py` for tests focusing on common functionality across al
 import json
 import os
 import shutil
+import textwrap
 from typing import List
 
 import pytest
@@ -26,6 +27,7 @@ from tests.aws.services.lambda_.test_lambda import (
     JAVA_TEST_RUNTIMES,
     NODE_TEST_RUNTIMES,
     PYTHON_TEST_RUNTIMES,
+    TEST_LAMBDA_CLOUDWATCH_LOGS,
     TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS,
     TEST_LAMBDA_JAVA_WITH_LIB,
     TEST_LAMBDA_NODEJS_ES6,
@@ -484,3 +486,61 @@ class TestGoProvidedRuntimes:
             FunctionName=create_function_result["FunctionName"],
         )
         assert "FunctionError" not in invocation_result
+
+
+class TestCloudwatchLogs:
+    @pytest.fixture(autouse=True)
+    def snapshot_transformers(self, snapshot):
+        snapshot.add_transformer(snapshot.transform.lambda_report_logs())
+        snapshot.add_transformer(
+            snapshot.transform.key_value("eventId", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.regex(r"::runtime:\w+", "::runtime:<runtime-id>")
+        )
+        snapshot.add_transformer(snapshot.transform.regex("\\.v\\d{2}", ".v<version>"))
+
+    @markers.aws.validated
+    # skip all snapshots - the logs are too different
+    # TODO add INIT_START to make snapshotting of logs possible
+    @markers.snapshot.skip_snapshot_verify()
+    def test_multi_line_prints(self, aws_client, create_lambda_function, snapshot):
+        function_name = f"test_lambda_{short_uid()}"
+        log_group_name = f"/aws/lambda/{function_name}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_CLOUDWATCH_LOGS,
+            runtime=Runtime.python3_13,
+        )
+
+        payload = {
+            "body": textwrap.dedent("""
+                multi
+                line
+                string
+                another\rline
+            """)
+        }
+        invoke_response = aws_client.lambda_.invoke(
+            FunctionName=function_name, Payload=json.dumps(payload)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.regex(
+                invoke_response["ResponseMetadata"]["RequestId"], "<request-id>"
+            )
+        )
+
+        def fetch_logs():
+            log_events_result = aws_client.logs.filter_log_events(logGroupName=log_group_name)
+            assert any("REPORT" in e["message"] for e in log_events_result["events"])
+            return log_events_result["events"]
+
+        log_events = retry(fetch_logs, retries=10, sleep=2)
+        snapshot.match("log-events", log_events)
+
+        log_messages = [log["message"] for log in log_events]
+        # some manual assertions until we can actually use the snapshot
+        assert "multi\n" in log_messages
+        assert "line\n" in log_messages
+        assert "string\n" in log_messages
+        assert "another\rline\n" in log_messages

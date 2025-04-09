@@ -45,6 +45,7 @@ class TestCredentialsBase:
     def test_invalid_credentials_field(
         self,
         aws_client,
+        aws_client_no_retry,
         create_state_machine_iam_role,
         create_state_machine,
         sfn_snapshot,
@@ -60,7 +61,7 @@ class TestCredentialsBase:
 
         with pytest.raises(Exception) as ex:
             create_state_machine(
-                aws_client, name=sm_name, definition=definition_str, roleArn=snf_role_arn
+                aws_client_no_retry, name=sm_name, definition=definition_str, roleArn=snf_role_arn
             )
         sfn_snapshot.match("invalid_definition", ex.value.response)
 

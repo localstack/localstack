@@ -131,7 +131,7 @@ class TestSnfApiLogs:
         sfn_create_log_group,
         sfn_snapshot,
         aws_client,
-        aws_client_factory,
+        aws_client_no_retry,
         logging_configuration,
     ):
         snf_role_arn = create_state_machine_iam_role(aws_client)
@@ -142,11 +142,8 @@ class TestSnfApiLogs:
 
         sm_name = f"statemachine_{short_uid()}"
 
-        stepfunctions_client = aws_client_factory(
-            config=Config(parameter_validation=False)
-        ).stepfunctions
         with pytest.raises(ClientError) as exc:
-            stepfunctions_client.create_state_machine(
+            aws_client_no_retry.stepfunctions.create_state_machine(
                 name=sm_name,
                 definition=definition,
                 roleArn=snf_role_arn,
@@ -164,6 +161,7 @@ class TestSnfApiLogs:
         sfn_create_log_group,
         sfn_snapshot,
         aws_client,
+        aws_client_no_retry,
     ):
         logs_client = aws_client.logs
         log_group_name = sfn_create_log_group()
@@ -195,7 +193,7 @@ class TestSnfApiLogs:
 
         with pytest.raises(ClientError) as exc:
             create_state_machine_with_iam_role(
-                aws_client,
+                aws_client_no_retry,
                 create_state_machine_iam_role,
                 create_state_machine,
                 sfn_snapshot,
@@ -214,6 +212,7 @@ class TestSnfApiLogs:
         sfn_create_log_group,
         sfn_snapshot,
         aws_client,
+        aws_client_no_retry,
     ):
         logging_configuration = LoggingConfiguration(level=LogLevel.ALL, destinations=[])
         for i in range(2):
@@ -232,7 +231,7 @@ class TestSnfApiLogs:
 
         with pytest.raises(ClientError) as exc:
             create_state_machine_with_iam_role(
-                aws_client,
+                aws_client_no_retry,
                 create_state_machine_iam_role,
                 create_state_machine,
                 sfn_snapshot,
@@ -252,6 +251,7 @@ class TestSnfApiLogs:
         sfn_snapshot,
         aws_client,
         aws_client_factory,
+        aws_client_no_retry,
     ):
         stepfunctions_client = aws_client_factory(
             config=Config(parameter_validation=False)
@@ -334,7 +334,7 @@ class TestSnfApiLogs:
             )
         )
         with pytest.raises(ClientError) as exc:
-            stepfunctions_client.update_state_machine(
+            aws_client_no_retry.stepfunctions.update_state_machine(
                 stateMachineArn=state_machine_arn, loggingConfiguration=base_logging_configuration
             )
         sfn_snapshot.match(

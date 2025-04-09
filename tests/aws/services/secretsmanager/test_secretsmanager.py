@@ -70,6 +70,62 @@ class TestSecretsManager:
         snapshot.add_transformers_list(snapshot.transform.secretsmanager_api())
         return snapshot
 
+    @pytest.fixture
+    def setup_invalid_rotation_secret(self, secret_name, aws_client, account_id, sm_snapshot):
+        def _setup(invalid_arn: str | None):
+            create_secret = aws_client.secretsmanager.create_secret(
+                Name=secret_name, SecretString="init"
+            )
+            sm_snapshot.add_transformer(
+                sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret, 0)
+            )
+            sm_snapshot.match("create_secret", create_secret)
+            rotation_config = {
+                "SecretId": secret_name,
+                "RotationRules": {
+                    "AutomaticallyAfterDays": 1,
+                },
+            }
+            if invalid_arn:
+                rotation_config["RotationLambdaARN"] = invalid_arn
+            aws_client.secretsmanager.rotate_secret(**rotation_config)
+
+        return _setup
+
+    @pytest.fixture
+    def setup_rotation_secret(
+        self,
+        sm_snapshot,
+        secret_name,
+        create_secret,
+        create_lambda_function,
+        aws_client,
+    ):
+        cre_res = create_secret(
+            Name=secret_name,
+            SecretString="my_secret",
+            Description="testing rotation of secrets",
+        )
+
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(cre_res, 0)
+        )
+
+        function_name = f"s-{short_uid()}"
+        function_arn = create_lambda_function(
+            handler_file=TEST_LAMBDA_ROTATE_SECRET,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+        )["CreateFunctionResponse"]["FunctionArn"]
+
+        aws_client.lambda_.add_permission(
+            FunctionName=function_name,
+            StatementId="secretsManagerPermission",
+            Action="lambda:InvokeFunction",
+            Principal="secretsmanager.amazonaws.com",
+        )
+        return cre_res["VersionId"], function_arn
+
     @staticmethod
     def _wait_created_is_listed(client, secret_id: str):
         def _is_secret_in_list():
@@ -527,49 +583,27 @@ class TestSecretsManager:
         create_secret,
         create_lambda_function,
         aws_client,
+        setup_rotation_secret,
         rotate_immediately,
     ):
         """
         Tests secret rotation via a lambda function.
         Parametrization ensures we test the default behavior which is an immediate rotation.
         """
-        cre_res = create_secret(
-            Name=secret_name,
-            SecretString="my_secret",
-            Description="testing rotation of secrets",
-        )
+        rotation_config = {
+            "RotationRules": {"AutomaticallyAfterDays": 1},
+        }
+        if rotate_immediately:
+            rotation_config["RotateImmediately"] = rotate_immediately
+        initial_secret_version, function_arn = setup_rotation_secret
 
-        sm_snapshot.add_transformer(
-            sm_snapshot.transform.key_value("RotationLambdaARN", "lambda-arn")
-        )
-        sm_snapshot.add_transformers_list(
-            sm_snapshot.transform.secretsmanager_secret_id_arn(cre_res, 0)
-        )
+        rotation_config = rotation_config or {}
+        if function_arn:
+            rotation_config["RotationLambdaARN"] = function_arn
 
-        function_name = f"s-{short_uid()}"
-        function_arn = create_lambda_function(
-            handler_file=TEST_LAMBDA_ROTATE_SECRET,
-            func_name=function_name,
-            runtime=Runtime.python3_12,
-        )["CreateFunctionResponse"]["FunctionArn"]
-
-        aws_client.lambda_.add_permission(
-            FunctionName=function_name,
-            StatementId="secretsManagerPermission",
-            Action="lambda:InvokeFunction",
-            Principal="secretsmanager.amazonaws.com",
-        )
-
-        rotation_kwargs = {}
-        if rotate_immediately is not None:
-            rotation_kwargs["RotateImmediately"] = rotate_immediately
         rot_res = aws_client.secretsmanager.rotate_secret(
             SecretId=secret_name,
-            RotationLambdaARN=function_arn,
-            RotationRules={
-                "AutomaticallyAfterDays": 1,
-            },
-            **rotation_kwargs,
+            **rotation_config,
         )
 
         sm_snapshot.match("rotate_secret_immediately", rot_res)
@@ -585,31 +619,75 @@ class TestSecretsManager:
 
         sm_snapshot.match("list_secret_versions_rotated_1", list_secret_versions_1)
 
+        # As a result of the Lambda invocations. current version should be
+        # pointed to `AWSCURRENT` & previous version to `AWSPREVIOUS`
+        assert response["VersionIdsToStages"][initial_secret_version] == ["AWSPREVIOUS"]
+        assert response["VersionIdsToStages"][rot_res["VersionId"]] == ["AWSCURRENT"]
+
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..VersionIdsToStages", "$..Versions", "$..VersionId"]
+    )
+    @markers.aws.validated
+    def test_rotate_secret_multiple_times_with_lambda_success(
+        self,
+        sm_snapshot,
+        secret_name,
+        create_secret,
+        create_lambda_function,
+        aws_client,
+        setup_rotation_secret,
+    ):
+        secret_initial_version, function_arn = setup_rotation_secret
+        runs_config = {
+            1: {
+                "RotationRules": {"AutomaticallyAfterDays": 1},
+                "RotateImmediately": True,
+                "RotationLambdaARN": function_arn,
+            },
+            2: {},
+        }
+
+        for index in range(1, 3):
+            rotation_config = runs_config[index]
+
+            rot_res = aws_client.secretsmanager.rotate_secret(
+                SecretId=secret_name,
+                **rotation_config,
+            )
+
+            sm_snapshot.match(f"rotate_secret_immediately_{index}", rot_res)
+
+            self._wait_rotation(aws_client.secretsmanager, secret_name, rot_res["VersionId"])
+
+            response = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
+            sm_snapshot.match(f"describe_secret_rotated_{index}", response)
+
+            list_secret_versions_1 = aws_client.secretsmanager.list_secret_version_ids(
+                SecretId=secret_name
+            )
+
+            sm_snapshot.match(f"list_secret_versions_rotated_1_{index}", list_secret_versions_1)
+
+            # As a result of the Lambda invocations. current version should be
+            # pointed to `AWSCURRENT` & previous version to `AWSPREVIOUS`
+            assert response["VersionIdsToStages"][secret_initial_version] == ["AWSPREVIOUS"]
+            assert response["VersionIdsToStages"][rot_res["VersionId"]] == ["AWSCURRENT"]
+
+            secret_initial_version = aws_client.secretsmanager.get_secret_value(
+                SecretId=secret_name
+            )["VersionId"]
+
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error", "$..Message"])
     @markers.aws.validated
     def test_rotate_secret_invalid_lambda_arn(
-        self, secret_name, aws_client, account_id, sm_snapshot
+        self, setup_invalid_rotation_secret, aws_client, sm_snapshot, secret_name, account_id
     ):
-        create_secret = aws_client.secretsmanager.create_secret(
-            Name=secret_name, SecretString="init"
-        )
-        sm_snapshot.add_transformer(
-            sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret, 0)
-        )
-        sm_snapshot.match("create_secret", create_secret)
-
         region_name = aws_client.secretsmanager.meta.region_name
         invalid_arn = (
             f"arn:aws:lambda:{region_name}:{account_id}:function:rotate_secret_invalid_lambda_arn"
         )
         with pytest.raises(Exception) as e:
-            aws_client.secretsmanager.rotate_secret(
-                SecretId=secret_name,
-                RotationLambdaARN=invalid_arn,
-                RotationRules={
-                    "AutomaticallyAfterDays": 1,
-                },
-            )
+            setup_invalid_rotation_secret(invalid_arn)
         sm_snapshot.match("rotate_secret_invalid_arn_exc", e.value.response)
 
         describe_secret = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
@@ -617,6 +695,14 @@ class TestSecretsManager:
         assert "RotationEnabled" not in describe_secret
         assert "RotationRules" not in describe_secret
         assert "RotationLambdaARN" not in describe_secret
+
+    @markers.aws.validated
+    def test_first_rotate_secret_with_missing_lambda_arn(
+        self, setup_invalid_rotation_secret, sm_snapshot
+    ):
+        with pytest.raises(Exception) as e:
+            setup_invalid_rotation_secret(None)
+        sm_snapshot.match("rotate_secret_no_arn_exc", e.value.response)
 
     @markers.aws.validated
     def test_put_secret_value_with_version_stages(self, sm_snapshot, secret_name, aws_client):

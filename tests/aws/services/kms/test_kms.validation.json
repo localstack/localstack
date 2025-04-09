@@ -176,6 +176,12 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_rotation_status": {
     "last_validated_date": "2024-04-11T15:53:48+00:00"
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_key_rotations_encryption_decryption": {
+    "last_validated_date": "2025-04-03T09:34:47+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_key_rotations_limits": {
+    "last_validated_date": "2025-04-03T11:10:33+00:00"
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_with_long_tag_value_raises_error": {
     "last_validated_date": "2025-01-21T17:18:18+00:00"
   },
@@ -274,6 +280,30 @@
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_update_key_description": {
     "last_validated_date": "2024-04-11T15:53:46+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[ECC_NIST_P256-ECDSA_SHA_256]": {
+    "last_validated_date": "2025-04-02T06:07:03+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[ECC_NIST_P384-ECDSA_SHA_384]": {
+    "last_validated_date": "2025-04-02T06:07:05+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[ECC_SECG_P256K1-ECDSA_SHA_256]": {
+    "last_validated_date": "2025-04-02T06:07:08+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_2048-RSASSA_PSS_SHA_256]": {
+    "last_validated_date": "2025-04-02T06:06:52+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_2048-RSASSA_PSS_SHA_384]": {
+    "last_validated_date": "2025-04-02T06:06:54+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_2048-RSASSA_PSS_SHA_512]": {
+    "last_validated_date": "2025-04-02T06:06:56+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_4096-RSASSA_PKCS1_V1_5_SHA_256]": {
+    "last_validated_date": "2025-04-02T06:06:58+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_4096-RSASSA_PKCS1_V1_5_SHA_512]": {
+    "last_validated_date": "2025-04-02T06:07:01+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key": {
     "last_validated_date": "2024-04-11T15:54:32+00:00"

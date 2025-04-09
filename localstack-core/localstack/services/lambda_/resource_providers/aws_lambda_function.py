@@ -99,6 +99,13 @@ class Code(TypedDict):
     ZipFile: Optional[str]
 
 
+class LoggingConfig(TypedDict):
+    ApplicationLogLevel: Optional[str]
+    LogFormat: Optional[str]
+    LogGroup: Optional[str]
+    SystemLogLevel: Optional[str]
+
+
 class Environment(TypedDict):
     Variables: Optional[dict]
 
@@ -333,11 +340,22 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
           - ec2:DescribeSecurityGroups
           - ec2:DescribeSubnets
           - ec2:DescribeVpcs
+          - elasticfilesystem:DescribeMountTargets
+          - kms:CreateGrant
           - kms:Decrypt
+          - kms:Encrypt
+          - kms:GenerateDataKey
           - lambda:GetCodeSigningConfig
           - lambda:GetFunctionCodeSigningConfig
+          - lambda:GetLayerVersion
           - lambda:GetRuntimeManagementConfig
           - lambda:PutRuntimeManagementConfig
+          - lambda:TagResource
+          - lambda:GetPolicy
+          - lambda:AddPermission
+          - lambda:RemovePermission
+          - lambda:GetResourcePolicy
+          - lambda:PutResourcePolicy
 
         """
         model = request.desired_state
@@ -368,6 +386,7 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
                     "Timeout",
                     "TracingConfig",
                     "VpcConfig",
+                    "LoggingConfig",
                 ],
             )
             if "Timeout" in kwargs:
@@ -481,13 +500,22 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
           - ec2:DescribeSecurityGroups
           - ec2:DescribeSubnets
           - ec2:DescribeVpcs
+          - elasticfilesystem:DescribeMountTargets
+          - kms:CreateGrant
           - kms:Decrypt
+          - kms:GenerateDataKey
+          - lambda:GetRuntimeManagementConfig
+          - lambda:PutRuntimeManagementConfig
           - lambda:PutFunctionCodeSigningConfig
           - lambda:DeleteFunctionCodeSigningConfig
           - lambda:GetCodeSigningConfig
           - lambda:GetFunctionCodeSigningConfig
-          - lambda:GetRuntimeManagementConfig
-          - lambda:PutRuntimeManagementConfig
+          - lambda:GetPolicy
+          - lambda:AddPermission
+          - lambda:RemovePermission
+          - lambda:GetResourcePolicy
+          - lambda:PutResourcePolicy
+          - lambda:DeleteResourcePolicy
         """
         client = request.aws_client_factory.lambda_
 
@@ -512,6 +540,7 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
             "Timeout",
             "TracingConfig",
             "VpcConfig",
+            "LoggingConfig",
         ]
         update_config_props = util.select_attributes(request.desired_state, config_keys)
         function_name = request.previous_state["FunctionName"]

@@ -11,6 +11,42 @@
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_access[$.items[10]]": {
     "last_validated_date": "2024-08-16T15:53:06+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.item.items[*]]": {
+    "last_validated_date": "2025-04-01T20:52:58+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.item.items[1:5].itemValue]": {
+    "last_validated_date": "2025-04-01T20:54:31+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.item.items[1:5]]": {
+    "last_validated_date": "2025-04-01T20:53:38+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.item.items[1:]]": {
+    "last_validated_date": "2025-04-01T20:53:12+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.item.items[:1]]": {
+    "last_validated_date": "2025-04-01T20:53:25+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.items[*].itemValue]": {
+    "last_validated_date": "2025-04-01T20:53:51+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.items[*]]": {
+    "last_validated_date": "2025-04-01T20:52:20+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.items[1:].itemValue]": {
+    "last_validated_date": "2025-04-01T20:54:04+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.items[1:]]": {
+    "last_validated_date": "2025-04-01T20:52:33+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.items[:1].itemValue]": {
+    "last_validated_date": "2025-04-01T20:54:18+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$.items[:1]]": {
+    "last_validated_date": "2025-04-01T20:52:46+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_json_path_array_wildcard_or_slice_with_no_input[$[*]]": {
+    "last_validated_date": "2025-04-01T20:52:06+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_query_context_object_values": {
     "last_validated_date": "2024-07-15T13:00:19+00:00"
   },
