@@ -28,7 +28,6 @@ from localstack.services.events.models import (
 from localstack.services.events.utils import (
     event_time_to_time_string,
     get_trace_header_encoded_region_account,
-    get_trace_header_str_from_segment,
     is_nested_in_string,
     to_json_str,
 )
@@ -261,6 +260,7 @@ class TargetSender(ABC):
         client = client.request_metadata(
             service_principal=service_principal, source_arn=self.rule_arn
         )
+        self._register_client_hooks()
         return client
 
     def _validate_input_transformer(self, input_transformer: InputTransformer):
@@ -290,6 +290,13 @@ class TargetSender(ABC):
         predefined_template_replacements["aws.events.event.json"] = event
 
         return predefined_template_replacements
+
+    def _register_client_hooks(self):
+        def handle_inject_headers(params, context, **kwargs):
+            if trace_header := context.trace_context["aws_trace_header"]:
+                params["headers"]["X-Amzn-Trace-Id"] = trace_header.to_header_str()
+
+        self._client.register(f"before-call.{self.service}.*", handle_inject_headers)
 
 
 TargetSenderDict = dict[str, TargetSender]  # rule_arn-target_id as global unique id
@@ -387,6 +394,7 @@ class ApiGatewayTargetSender(TargetSender):
         # Serialize the event, converting datetime objects to strings
         event_json = json.dumps(event, default=str)
 
+        # Add trace header
         headers["X-Amzn-Trace-Id"] = trace_header.to_header_str()
 
         # Send the HTTP request
@@ -471,7 +479,6 @@ class EventsTargetSender(TargetSender):
         ):
             entries[0]["TraceHeader"] = encoded_original_id
 
-        # TODO instrument to send x-ray trace header
         self.client.put_events(Entries=entries)
 
     def _get_source(self, event: FormattedEvent | TransformedEvent) -> str:
@@ -529,8 +536,7 @@ class EventsApiDestinationTargetSender(TargetSender):
             endpoint = add_target_http_parameters(http_parameters, endpoint, headers, event)
 
         # add trace header
-        trace_header_str = get_trace_header_str_from_segment()
-        headers["X-Amzn-Trace-Id"] = trace_header_str
+        headers["X-Amzn-Trace-Id"] = trace_header.to_header_str()
 
         result = requests.request(
             method=method, url=endpoint, data=json.dumps(event or {}), headers=headers
@@ -580,23 +586,11 @@ class KinesisTargetSender(TargetSender):
 
 class LambdaTargetSender(TargetSender):
     def send_event(self, event, trace_header):
-        # instrument boto client to add x-ray trace header
-        trace_header_str = get_trace_header_str_from_segment()
-
-        def add_xray_header(request, **kwargs):
-            request.headers["X-Amzn-Trace-Id"] = trace_header_str
-
-        event_name = "before-send.lambda.*"
-        self.client.meta.events.register(event_name, add_xray_header)
-
-        # TODO instrument to send x-ray trace header
         self.client.invoke(
             FunctionName=self.target["Arn"],
             Payload=to_bytes(to_json_str(event)),
             InvocationType="Event",
         )
-
-        self.client.meta.events.unregister(event_name, add_xray_header)
 
 
 class LogsTargetSender(TargetSender):

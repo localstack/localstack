@@ -1860,7 +1860,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 )
             )
 
-    def _proxy_capture_input_event(self, event: FormattedEvent) -> None:
+    def _proxy_capture_input_event(self, event: FormattedEvent, trace_header: TraceHeader) -> None:
         # only required for eventstudio to capture input event if no rule is configured
         pass
 
