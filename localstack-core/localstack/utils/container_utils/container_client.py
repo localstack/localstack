@@ -392,7 +392,9 @@ class BindMount:
         args.append(self.container_dir)
 
         if self.read_only:
-            args.append("ro")
+            args.append("ro,Z")
+       	else:
+            args.append("Z")
 
         return ":".join(args)
 
