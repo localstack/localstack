@@ -1095,7 +1095,7 @@ LOCAL_PORT_STEPFUNCTIONS = int(os.environ.get("LOCAL_PORT_STEPFUNCTIONS") or 808
 STEPFUNCTIONS_LAMBDA_ENDPOINT = os.environ.get("STEPFUNCTIONS_LAMBDA_ENDPOINT", "").strip()
 
 # Specifies the path to the mock configuration file for Step Functions, commonly named MockConfigFile.json.
-SFN_MOCK_CONFIG = os.environ.get("SFN_MOCK_CONFIG")
+SFN_MOCK_CONFIG = os.environ.get("SFN_MOCK_CONFIG", "").strip()
 
 # path prefix for windows volume mounting
 WINDOWS_DOCKER_MOUNT_PREFIX = os.environ.get("WINDOWS_DOCKER_MOUNT_PREFIX", "/host_mnt")

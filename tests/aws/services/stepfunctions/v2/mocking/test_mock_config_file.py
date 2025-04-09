@@ -8,7 +8,7 @@ from tests.aws.services.stepfunctions.mocked_responses.mocked_response_loader im
 
 class TestMockConfigFile:
     @markers.aws.only_localstack
-    def test_is_mock_config_flag_detected_unset(self, mock_config_file, monkeypatch):
+    def test_is_mock_config_flag_detected_unset(self, mock_config_file):
         loaded_mock_config_file = load_sfn_mock_config_file()
         assert loaded_mock_config_file is None
 
