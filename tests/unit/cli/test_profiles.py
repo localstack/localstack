@@ -1,13 +1,13 @@
 import os
 import sys
 
-from localstack.cli.profiles import set_profile_from_sys_argv
+from localstack.cli.profiles import set_and_remove_profile_from_sys_argv
 
 
 def profile_test(monkeypatch, input_args, expected_profile, expected_argv):
     monkeypatch.setattr(sys, "argv", input_args)
     monkeypatch.setenv("CONFIG_PROFILE", "")
-    set_profile_from_sys_argv()
+    set_and_remove_profile_from_sys_argv()
     assert os.environ["CONFIG_PROFILE"] == expected_profile
     assert sys.argv == expected_argv
 

@@ -5,22 +5,32 @@ from typing import Optional
 # important: this needs to be free of localstack imports
 
 
-def set_profile_from_sys_argv():
+def set_and_remove_profile_from_sys_argv():
     """
     Reads the --profile flag from sys.argv and then sets the 'CONFIG_PROFILE' os variable accordingly. This is later
     picked up by ``localstack.config``.
+
+    WARNING:  Any profile options are REMOVED from sys.argv, so that they are not passed to the localstack CLI.
+              This allows the profile option to be set at any point on the command line.
     """
-    profile = parse_profile_argument()
+    profile = extract_profile_argument()
     if profile:
         os.environ["CONFIG_PROFILE"] = profile.strip()
 
 
-def parse_profile_argument() -> Optional[str]:
+def extract_profile_argument() -> Optional[str]:
     """
-    Lightweight arg parsing to find ``--profile <config>``, or ``--profile=<config>`` and return the value of
-    ``<config>`` from the given arguments.
+    Lightweight arg parsing to find one of the following patterns for the profile argument:
 
-    :param args: list of CLI arguments
+    ``--profile <config>``, or
+    ``--profile=<config>``, or
+    ``-p <config>``, or
+    ``-p=<config>``
+
+    ... and return the value of ``<config>`` from the given arguments.
+
+    WARNING:  This function modifies sys.argv to remove the profile argument.
+
     :returns: the value of ``--profile``.
     """
     args_without_profile = []
