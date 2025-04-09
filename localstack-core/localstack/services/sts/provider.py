@@ -1,6 +1,6 @@
 import logging
 
-from localstack.aws.api import RequestContext
+from localstack.aws.api import RequestContext, ServiceException
 from localstack.aws.api.sts import (
     AssumeRoleResponse,
     GetCallerIdentityResponse,
@@ -21,10 +21,17 @@ from localstack.aws.api.sts import (
 from localstack.services.iam.iam_patches import apply_iam_patches
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.services.sts.models import sts_stores
+from localstack.services.sts.models import SessionTaggingConfig, sts_stores
 from localstack.utils.aws.arns import extract_account_id_from_arn
+from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
 
 LOG = logging.getLogger(__name__)
+
+
+class InvalidParameterValueError(ServiceException):
+    code = "InvalidParameterValue"
+    status_code = 400
+    sender_fault = True
 
 
 class StsProvider(StsApi, ServiceLifecycleHook):
@@ -54,15 +61,41 @@ class StsProvider(StsApi, ServiceLifecycleHook):
         provided_contexts: ProvidedContextsListType = None,
         **kwargs,
     ) -> AssumeRoleResponse:
+        target_account_id = extract_account_id_from_arn(role_arn)
+        access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
+        store = sts_stores[target_account_id]["us-east-1"]
+        existing_tagging_config = store.session_tags.get(access_key_id)
+
+        # prevent transitive tags from being overridden
+        if existing_tagging_config and tags:
+            tag_keys = {tag["Key"].lower() for tag in tags}
+            if set(existing_tagging_config["transitive_tags"]).intersection(tag_keys):
+                raise InvalidParameterValueError(
+                    "One of the specified transitive tag keys can't be set because it conflicts with a transitive tag key from the calling session."
+                )
+        if transitive_tag_keys:
+            tag_keys = {tag["Key"].lower() for tag in tags}
+            transitive_tag_key_set = {key.lower() for key in transitive_tag_keys}
+            if not transitive_tag_key_set <= tag_keys:
+                raise InvalidParameterValueError(
+                    "The specified transitive tag key must be included in the requested tags."
+                )
+
         response: AssumeRoleResponse = call_moto(context)
 
-        if tags:
-            transformed_tags = {tag["Key"]: tag["Value"] for tag in tags}
-            # we should save it in the store of the role account, not the requester
-            account_id = extract_account_id_from_arn(role_arn)
-            # the region is hardcoded to "us-east-1" as IAM/STS are global services
-            # this will only differ for other partitions, which are not yet supported
-            store = sts_stores[account_id]["us-east-1"]
+        transitive_tag_keys = transitive_tag_keys or []
+        tags = tags or []
+        transformed_tags = {tag["Key"].lower(): tag["Value"].lower() for tag in tags}
+        # propagate transitive tags
+        if existing_tagging_config:
+            for tag in existing_tagging_config["transitive_tags"]:
+                transformed_tags[tag] = existing_tagging_config["tags"][tag]
+            transitive_tag_keys += existing_tagging_config["transitive_tags"]
+        if transformed_tags:
+            # store session tagging config
             access_key_id = response["Credentials"]["AccessKeyId"]
-            store.session_tags[access_key_id] = transformed_tags
+            store.session_tags[access_key_id] = SessionTaggingConfig(
+                tags=transformed_tags,
+                transitive_tags=[tag_key.lower() for tag_key in transitive_tag_keys],
+            )
         return response
