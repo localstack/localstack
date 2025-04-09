@@ -1,7 +1,6 @@
 import datetime
 import json
 import logging
-import os
 import threading
 import wave
 from functools import cache
@@ -124,8 +123,6 @@ class TranscribeProvider(TranscribeApi):
         # Install and configure vosk
         vosk_package.install()
 
-        # Vosk must be imported only after setting the required env vars
-        os.environ["VOSK_MODEL_PATH"] = str(LANGUAGE_MODEL_DIR)
         from vosk import SetLogLevel  # noqa
 
         # Suppress Vosk logging
