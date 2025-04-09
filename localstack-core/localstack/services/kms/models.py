@@ -181,15 +181,11 @@ class KmsCryptoKey:
     @staticmethod
     def assert_valid(key_spec: str):
         """
-        Validates that the given key_spec is supported in the current context.
+        Validates that the given ``key_spec`` is supported in the current context.
 
-        LocalStack supports additional key specs beyond what AWS officially allows.
-        For example, AWS's GenerateDataKeyPair operation supports only the following:
-            - RSA_2048, RSA_3072, RSA_4096
-            - ECC_NIST_P256, ECC_NIST_P384, ECC_NIST_P521, ECC_SECG_P256K1, SM2
-
-        Raises:
-            ValidationException: If key_spec is not in the supported list.
+        :param key_spec: The key specification to validate.
+        :type key_spec: str
+        :raises ValidationException: If ``key_spec`` is not in the supported list.
         """
         valid_specs = (
             list(RSA_CRYPTO_KEY_LENGTHS.keys())
