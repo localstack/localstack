@@ -292,7 +292,7 @@ class PythonPackageInstaller(PackageInstaller):
         python_bin = os.path.join(venv.venv_dir, "bin/python")
 
         # run pip via the python binary of the venv
-        run([python_bin, "-m", "pip", "install", f"{self.name}=={self.version}"], print_error=False)
+        run([python_bin, "-m", "pip", "install", f"{self.name}=={self.version}"], print_error=True)
 
     def _setup_existing_installation(self, target: InstallTarget) -> None:
         """If the venv is already present, it just needs to be initialized once."""
