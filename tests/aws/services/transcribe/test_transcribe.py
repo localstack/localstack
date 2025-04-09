@@ -29,7 +29,7 @@ vosk_installed = threading.Event()
 ffmpeg_installed = threading.Event()
 installation_errored = threading.Event()
 
-INSTALLATION_TIMEOUT = 5 * 60
+INSTALLATION_TIMEOUT = 1 * 60
 PRE_DOWNLOAD_LANGUAGE_CODE_MODELS = ["en-GB"]
 
 
