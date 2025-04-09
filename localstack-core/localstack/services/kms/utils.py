@@ -66,20 +66,19 @@ def execute_dry_run_capable(func: Callable[..., T], dry_run: bool, *args, **kwar
     """
     Executes a function unless dry run mode is enabled.
 
-    If `dry_run` is True, the function is not executed and a `DryRunOperationException` is raised.
-    Otherwise, the provided function is called with the given arguments and keyword arguments.
+    If ``dry_run`` is ``True``, the function is not executed and a
+    ``DryRunOperationException`` is raised. Otherwise, the provided
+    function is called with the given positional and keyword arguments.
 
-    Args:
-        func (Callable[..., T]): The function to be executed.
-        dry_run (bool): Flag indicating whether the execution is a dry run.
-        *args: Positional arguments to pass to the function.
-        **kwargs: Keyword arguments to pass to the function.
-
-    Returns:
-        T: The result of the function call if `dry_run` is False.
-
-    Raises:
-        DryRunOperationException: If `dry_run` is True.
+    :param func: The function to be executed.
+    :type func: Callable[..., T]
+    :param dry_run: Flag indicating whether the execution is a dry run.
+    :type dry_run: bool
+    :param args: Positional arguments to pass to the function.
+    :param kwargs: Keyword arguments to pass to the function.
+    :returns: The result of the function call if ``dry_run`` is ``False``.
+    :rtype: T
+    :raises DryRunOperationException: If ``dry_run`` is ``True``.
     """
     if dry_run:
         raise DryRunOperationException()
