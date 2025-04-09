@@ -404,16 +404,17 @@ class TestKMS:
 
         # Do a sign/verify cycle
         plaintext = b"test message 123 !%$@ 1234567890"
-        sign_algo = "ECDSA_SHA_256"
 
-        signed_data = aws_client.kms.sign(
-            Message=plaintext, MessageType="RAW", SigningAlgorithm=sign_algo, KeyId=key_id
+        signature = crypto_key.sign(
+            plaintext,
+            ec.ECDSA(hashes.SHA256()),
         )
+
         verify_data = aws_client.kms.verify(
             Message=plaintext,
-            Signature=signed_data["Signature"],
+            Signature=signature,
             MessageType="RAW",
-            SigningAlgorithm=sign_algo,
+            SigningAlgorithm="ECDSA_SHA_256",
             KeyId=key_id,
         )
         assert verify_data["SignatureValid"]
