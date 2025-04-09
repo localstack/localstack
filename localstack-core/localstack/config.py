@@ -1089,6 +1089,9 @@ LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_EMPTY_POLL_SEC = float(
     os.environ.get("LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_EMPTY_POLL_SEC") or 10
 )
 
+# Specifies the path to the mock configuration file for Step Functions, commonly named MockConfigFile.json.
+SFN_MOCK_CONFIG = os.environ.get("SFN_MOCK_CONFIG", "").strip()
+
 # path prefix for windows volume mounting
 WINDOWS_DOCKER_MOUNT_PREFIX = os.environ.get("WINDOWS_DOCKER_MOUNT_PREFIX", "/host_mnt")
 

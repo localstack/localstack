@@ -1,5 +1,8 @@
 import json
 import logging
+import os
+import shutil
+import tempfile
 from typing import Final
 
 import pytest
@@ -142,6 +145,34 @@ def aws_client_no_sync_prefix(aws_client_factory):
     # For StartSyncExecution and TestState calls, boto will prepend "sync-" to the endpoint string.
     # As we operate on localhost, this function creates a new stepfunctions client with that functionality disabled.
     return aws_client_factory(config=Config(inject_host_prefix=is_aws_cloud()))
+
+
+@pytest.fixture
+def mock_config_file():
+    tmp_dir = tempfile.mkdtemp()
+    file_path = os.path.join(tmp_dir, "MockConfigFile.json")
+
+    def write_json_to_mock_file(mock_config):
+        with open(file_path, "w") as df:
+            json.dump(mock_config, df)  # noqa
+            df.flush()
+        return file_path
+
+    try:
+        yield write_json_to_mock_file
+    finally:
+        try:
+            os.remove(file_path)
+        except Exception as ex:
+            LOG.error("Error removing temporary MockConfigFile.json: %s", ex)
+        finally:
+            shutil.rmtree(
+                tmp_dir,
+                ignore_errors=True,
+                onerror=lambda _, path, exc_info: LOG.error(
+                    "Error removing temporary MockConfigFile.json: %s, %s", path, exc_info
+                ),
+            )
 
 
 @pytest.fixture
