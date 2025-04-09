@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_create_alias_single_router_config": {
-    "recorded-date": "09-04-2025, 19:11:50",
+    "recorded-date": "09-04-2025, 20:23:57",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -13,7 +13,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_with_state_machine_arn": {
-    "recorded-date": "09-04-2025, 19:12:05",
+    "recorded-date": "09-04-2025, 20:24:12",
     "recorded-content": {
       "exception": {
         "exception_typename": "ValidationException",
@@ -22,7 +22,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_not_idempotent": {
-    "recorded-date": "09-04-2025, 19:12:21",
+    "recorded-date": "09-04-2025, 20:24:29",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -43,7 +43,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_idempotent_create_alias": {
-    "recorded-date": "09-04-2025, 19:12:37",
+    "recorded-date": "09-04-2025, 20:24:44",
     "recorded-content": {
       "create_state_machine_alias_response_attempt_0": {
         "creationDate": "datetime",
@@ -88,7 +88,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_invalid_router_configs": {
-    "recorded-date": "09-04-2025, 19:12:56",
+    "recorded-date": "09-04-2025, 20:25:01",
     "recorded-content": {
       "no_routing": {
         "exception_typename": "ParamValidationError",
@@ -125,7 +125,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_invalid_name": {
-    "recorded-date": "09-04-2025, 19:13:10",
+    "recorded-date": "09-04-2025, 20:25:16",
     "recorded-content": {
       "exception_for_name123": {
         "exception_typename": "ValidationException",
@@ -154,7 +154,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_lifecycle_create_delete_list": {
-    "recorded-date": "09-04-2025, 19:13:43",
+    "recorded-date": "09-04-2025, 20:25:46",
     "recorded-content": {
       "list_state_machine_aliases_response_empty": {
         "stateMachineAliases": [],
@@ -291,7 +291,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_lifecycle_create_invoke_describe_list": {
-    "recorded-date": "09-04-2025, 19:14:20",
+    "recorded-date": "09-04-2025, 20:26:23",
     "recorded-content": {
       "list_state_machine_aliases_response_empty": {
         "stateMachineAliases": [],
@@ -409,7 +409,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_lifecycle_create_update_describe": {
-    "recorded-date": "09-04-2025, 19:15:37",
+    "recorded-date": "09-04-2025, 20:27:40",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -474,7 +474,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_delete_version_with_alias": {
-    "recorded-date": "09-04-2025, 19:16:26",
+    "recorded-date": "09-04-2025, 20:28:26",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -514,7 +514,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_delete_revision_with_alias": {
-    "recorded-date": "09-04-2025, 19:16:41",
+    "recorded-date": "09-04-2025, 20:28:41",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -533,7 +533,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_delete_no_such_alias_arn": {
-    "recorded-date": "09-04-2025, 19:16:59",
+    "recorded-date": "09-04-2025, 20:28:58",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -552,7 +552,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_update_no_such_alias_arn": {
-    "recorded-date": "09-04-2025, 19:14:02",
+    "recorded-date": "09-04-2025, 20:26:04",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -569,7 +569,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_list_state_machine_aliases_pagination_invalid_next_token": {
-    "recorded-date": "09-04-2025, 19:17:17",
+    "recorded-date": "09-04-2025, 20:29:13",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -644,7 +644,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_list_state_machine_aliases_pagination_max_results[0]": {
-    "recorded-date": "09-04-2025, 19:17:36",
+    "recorded-date": "09-04-2025, 20:29:33",
     "recorded-content": {
       "create_state_machine_alias_response-1": {
         "creationDate": "datetime",
@@ -668,6 +668,18 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "list_state_machine_aliases_max_results_-1_response": "Parameter validation failed:\nInvalid value for parameter maxResults, value: -1, valid min value: 0",
+      "list_state_machine_aliases_max_results_1001_response": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '1001' at 'maxResults' failed to satisfy constraint: Member must have value less than or equal to 1000"
+        },
+        "message": "1 validation error detected: Value '1001' at 'maxResults' failed to satisfy constraint: Member must have value less than or equal to 1000",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       },
       "list_state_machine_aliases_max_results_0_response": {
@@ -693,7 +705,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_list_state_machine_aliases_pagination_max_results[1]": {
-    "recorded-date": "09-04-2025, 19:17:56",
+    "recorded-date": "09-04-2025, 20:29:54",
     "recorded-content": {
       "create_state_machine_alias_response-1": {
         "creationDate": "datetime",
@@ -717,6 +729,18 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "list_state_machine_aliases_max_results_-1_response": "Parameter validation failed:\nInvalid value for parameter maxResults, value: -1, valid min value: 0",
+      "list_state_machine_aliases_max_results_1001_response": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '1001' at 'maxResults' failed to satisfy constraint: Member must have value less than or equal to 1000"
+        },
+        "message": "1 validation error detected: Value '1001' at 'maxResults' failed to satisfy constraint: Member must have value less than or equal to 1000",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       },
       "list_state_machine_aliases_max_results_1_response": {

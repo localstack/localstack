@@ -1208,13 +1208,28 @@ class TestSfnApiAliasing:
                 state_machine_alias_arn=state_machine_alias_arn,
             )
 
+        with pytest.raises(Exception) as err:
+            sfn_client.list_state_machine_aliases(stateMachineArn=state_machine_arn, maxResults=-1)
+
+        sfn_snapshot.match("list_state_machine_aliases_max_results_-1_response", err.value)
+
+        with pytest.raises(Exception) as err:
+            sfn_client.list_state_machine_aliases(
+                stateMachineArn=state_machine_arn, maxResults=1001
+            )
+
+        sfn_snapshot.match(
+            "list_state_machine_aliases_max_results_1001_response", err.value.response
+        )
+
         if max_results == 0:
             list_state_machine_aliases_response = sfn_client.list_state_machine_aliases(
                 stateMachineArn=state_machine_arn, maxResults=0
             )
 
             sfn_snapshot.match(
-                "list_state_machine_aliases_max_results_0_response", list_state_machine_aliases_response
+                "list_state_machine_aliases_max_results_0_response",
+                list_state_machine_aliases_response,
             )
 
         else:
@@ -1223,7 +1238,8 @@ class TestSfnApiAliasing:
             )
 
             sfn_snapshot.match(
-                "list_state_machine_aliases_max_results_1_response", list_state_machine_aliases_response
+                "list_state_machine_aliases_max_results_1_response",
+                list_state_machine_aliases_response,
             )
 
             list_state_machine_aliases_response = sfn_client.list_state_machine_aliases(
@@ -1234,7 +1250,6 @@ class TestSfnApiAliasing:
             sfn_snapshot.add_transformer(sfn_snapshot.transform.key_value("nextToken"))
 
             sfn_snapshot.match(
-                "list_state_machine_aliases_next_token_response", list_state_machine_aliases_response
+                "list_state_machine_aliases_next_token_response",
+                list_state_machine_aliases_response,
             )
-
-
