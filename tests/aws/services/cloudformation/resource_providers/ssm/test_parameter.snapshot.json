@@ -69,5 +69,40 @@
         "error-message": "An error occurred (ParameterNotFound) when calling the GetParameter operation: "
       }
     }
+  },
+  "tests/aws/services/cloudformation/resource_providers/ssm/test_parameter.py::TestUpdates::test_ssm_parameter_update": {
+    "recorded-date": "09-04-2025, 20:17:46",
+    "recorded-content": {
+      "describe-resource-before-update": {
+        "Parameter": {
+          "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/<parameter-name>",
+          "DataType": "text",
+          "LastModifiedDate": "datetime",
+          "Name": "<parameter-name>",
+          "Type": "String",
+          "Value": "<value-1>",
+          "Version": 1
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-resource-after-update": {
+        "Parameter": {
+          "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/<parameter-name>",
+          "DataType": "text",
+          "LastModifiedDate": "datetime",
+          "Name": "<parameter-name>",
+          "Type": "String",
+          "Value": "<value-2>",
+          "Version": 2
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -156,28 +156,44 @@ class SSMParameterProvider(ResourceProvider[SSMParameterProperties]):
         model = request.desired_state
         ssm = request.aws_client_factory.ssm
 
-        if not model.get("Name"):
-            model["Name"] = request.previous_state["Name"]
-        parameters_to_select = [
-            "AllowedPattern",
-            "DataType",
-            "Description",
-            "Name",
-            "Policies",
-            "Tags",
-            "Tier",
-            "Type",
-            "Value",
-        ]
-        update_config_props = util.select_attributes(model, parameters_to_select)
+        # TODO: tags
+        if self.are_resource_model_same(request.desired_state, request.previous_state):
+            return self.read(request)
 
-        # tag handling
-        new_tags = update_config_props.pop("Tags", {})
-        self.update_tags(ssm, model, new_tags)
 
-        ssm.put_parameter(Overwrite=True, Tags=[], **update_config_props)
 
-        return self.read(request)
+        # if not model.get("Name"):
+        #     model["Name"] = request.previous_state["Name"]
+        # parameters_to_select = [
+        #     "AllowedPattern",
+        #     "DataType",
+        #     "Description",
+        #     "Name",
+        #     "Policies",
+        #     "Tags",
+        #     "Tier",
+        #     "Type",
+        #     "Value",
+        # ]
+        # update_config_props = util.select_attributes(model, parameters_to_select)
+        #
+        # # tag handling
+        # new_tags = update_config_props.pop("Tags", {})
+        # self.update_tags(ssm, model, new_tags)
+        #
+        # ssm.put_parameter(Overwrite=True, Tags=[], **update_config_props)
+        #
+        # return self.read(request)
+
+    @staticmethod
+    def are_resource_model_same(
+        current_resource_model: SSMParameterProperties,
+        previous_resource_model: SSMParameterProperties | None,
+    ) -> bool:
+        if previous_resource_model is None:
+            return False
+
+        return previous_resource_model == current_resource_model
 
     def update_tags(self, ssm, model, new_tags):
         current_tags = ssm.list_tags_for_resource(
