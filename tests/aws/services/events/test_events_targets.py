@@ -163,7 +163,7 @@ class TestEventsTargetApiDestination:
         clean_up(rule_name=rule_name, target_ids=target_id)
 
         to_recv = 2 if auth["type"] == "OAUTH_CLIENT_CREDENTIALS" else 1
-        poll_condition(lambda: len(httpserver.log) >= to_recv, timeout=5)
+        assert poll_condition(lambda: len(httpserver.log) >= to_recv, timeout=5)
 
         event_request, _ = httpserver.log[-1]
         event = event_request.get_json(force=True)
