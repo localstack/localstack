@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_create_alias_single_router_config": {
-    "recorded-date": "09-04-2025, 17:31:14",
+    "recorded-date": "09-04-2025, 19:11:50",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -13,7 +13,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_with_state_machine_arn": {
-    "recorded-date": "09-04-2025, 17:31:29",
+    "recorded-date": "09-04-2025, 19:12:05",
     "recorded-content": {
       "exception": {
         "exception_typename": "ValidationException",
@@ -22,7 +22,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_not_idempotent": {
-    "recorded-date": "09-04-2025, 17:31:44",
+    "recorded-date": "09-04-2025, 19:12:21",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -43,7 +43,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_idempotent_create_alias": {
-    "recorded-date": "09-04-2025, 17:32:01",
+    "recorded-date": "09-04-2025, 19:12:37",
     "recorded-content": {
       "create_state_machine_alias_response_attempt_0": {
         "creationDate": "datetime",
@@ -88,7 +88,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_invalid_router_configs": {
-    "recorded-date": "09-04-2025, 17:32:17",
+    "recorded-date": "09-04-2025, 19:12:56",
     "recorded-content": {
       "no_routing": {
         "exception_typename": "ParamValidationError",
@@ -125,7 +125,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_invalid_name": {
-    "recorded-date": "09-04-2025, 17:32:32",
+    "recorded-date": "09-04-2025, 19:13:10",
     "recorded-content": {
       "exception_for_name123": {
         "exception_typename": "ValidationException",
@@ -154,7 +154,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_lifecycle_create_delete_list": {
-    "recorded-date": "09-04-2025, 17:33:02",
+    "recorded-date": "09-04-2025, 19:13:43",
     "recorded-content": {
       "list_state_machine_aliases_response_empty": {
         "stateMachineAliases": [],
@@ -291,7 +291,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_lifecycle_create_invoke_describe_list": {
-    "recorded-date": "09-04-2025, 17:33:38",
+    "recorded-date": "09-04-2025, 19:14:20",
     "recorded-content": {
       "list_state_machine_aliases_response_empty": {
         "stateMachineAliases": [],
@@ -409,7 +409,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_lifecycle_create_update_describe": {
-    "recorded-date": "09-04-2025, 17:34:55",
+    "recorded-date": "09-04-2025, 19:15:37",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -474,7 +474,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_delete_version_with_alias": {
-    "recorded-date": "09-04-2025, 17:35:41",
+    "recorded-date": "09-04-2025, 19:16:26",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -514,7 +514,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_delete_revision_with_alias": {
-    "recorded-date": "09-04-2025, 17:35:56",
+    "recorded-date": "09-04-2025, 19:16:41",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -533,7 +533,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_delete_no_such_alias_arn": {
-    "recorded-date": "09-04-2025, 17:36:14",
+    "recorded-date": "09-04-2025, 19:16:59",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -552,7 +552,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_update_no_such_alias_arn": {
-    "recorded-date": "09-04-2025, 17:33:19",
+    "recorded-date": "09-04-2025, 19:14:02",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -569,7 +569,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_list_state_machine_aliases_pagination_invalid_next_token": {
-    "recorded-date": "09-04-2025, 17:36:44",
+    "recorded-date": "09-04-2025, 19:17:17",
     "recorded-content": {
       "create_state_machine_alias_response": {
         "creationDate": "datetime",
@@ -586,7 +586,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_list_state_machine_aliases_pagination_max_results_1_next_token": {
-    "recorded-date": "09-04-2025, 17:37:03",
+    "recorded-date": "09-04-2025, 18:46:18",
     "recorded-content": {
       "create_state_machine_alias_response-1": {
         "creationDate": "datetime",
@@ -643,22 +643,104 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_list_state_machine_aliases_pagination_max_results_0": {
-    "recorded-date": "09-04-2025, 17:36:29",
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_list_state_machine_aliases_pagination_max_results[0]": {
+    "recorded-date": "09-04-2025, 19:17:36",
     "recorded-content": {
-      "create_state_machine_alias_response": {
+      "create_state_machine_alias_response-1": {
         "creationDate": "datetime",
-        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:AliasName-1",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
-      "list_state_machine_alias_max_results_0_response": {
+      "create_state_machine_alias_response-2": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:AliasName-2",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_state_machine_alias_response-3": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:AliasName-3",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_state_machine_aliases_max_results_0_response": {
         "stateMachineAliases": [
           {
             "creationDate": "datetime",
-            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:state_machine_alias_name"
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:AliasName-1"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:AliasName-2"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:AliasName-3"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_list_state_machine_aliases_pagination_max_results[1]": {
+    "recorded-date": "09-04-2025, 19:17:56",
+    "recorded-content": {
+      "create_state_machine_alias_response-1": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:AliasName-1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_state_machine_alias_response-2": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:AliasName-2",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_state_machine_alias_response-3": {
+        "creationDate": "datetime",
+        "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:AliasName-3",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_state_machine_aliases_max_results_1_response": {
+        "nextToken": "<next-token:1>",
+        "stateMachineAliases": [
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:AliasName-1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_state_machine_aliases_next_token_response": {
+        "stateMachineAliases": [
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:AliasName-2"
+          },
+          {
+            "creationDate": "datetime",
+            "stateMachineAliasArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:AliasName-3"
           }
         ],
         "ResponseMetadata": {
