@@ -1089,11 +1089,6 @@ LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_EMPTY_POLL_SEC = float(
     os.environ.get("LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_EMPTY_POLL_SEC") or 10
 )
 
-# Adding Stepfunctions default port
-LOCAL_PORT_STEPFUNCTIONS = int(os.environ.get("LOCAL_PORT_STEPFUNCTIONS") or 8083)
-# Stepfunctions lambda endpoint override
-STEPFUNCTIONS_LAMBDA_ENDPOINT = os.environ.get("STEPFUNCTIONS_LAMBDA_ENDPOINT", "").strip()
-
 # Specifies the path to the mock configuration file for Step Functions, commonly named MockConfigFile.json.
 SFN_MOCK_CONFIG = os.environ.get("SFN_MOCK_CONFIG", "").strip()
 

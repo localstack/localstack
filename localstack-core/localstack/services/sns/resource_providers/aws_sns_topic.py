@@ -148,6 +148,7 @@ class SNSTopicProvider(ResourceProvider[SNSTopicProperties]):
         IAM permissions required:
           - sns:DeleteTopic
         """
+        # FIXME: This appears to incorrectly assume TopicArn would be provided.
         model = request.desired_state
         sns = request.aws_client_factory.sns
         sns.delete_topic(TopicArn=model["TopicArn"])

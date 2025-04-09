@@ -1,18 +1,18 @@
 import logging
 import uuid
-from typing import Final
+from typing import Any, Final, Optional
 
 from localstack.aws.api.cloudformation import ChangeAction
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.engine.v2.change_set_model import (
-    NodeIntrinsicFunction,
     NodeResource,
     NodeTemplate,
-    TerminalValue,
 )
-from localstack.services.cloudformation.engine.v2.change_set_model_describer import (
-    ChangeSetModelDescriber,
-    DescribeUnit,
+from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
+    ChangeSetModelPreproc,
+    PreprocEntityDelta,
+    PreprocProperties,
+    PreprocResource,
 )
 from localstack.services.cloudformation.resource_provider import (
     Credentials,
@@ -26,7 +26,7 @@ from localstack.services.cloudformation.resource_provider import (
 LOG = logging.getLogger(__name__)
 
 
-class ChangeSetModelExecutor(ChangeSetModelDescriber):
+class ChangeSetModelExecutor(ChangeSetModelPreproc):
     account_id: Final[str]
     region: Final[str]
 
@@ -46,31 +46,94 @@ class ChangeSetModelExecutor(ChangeSetModelDescriber):
         self.resources = {}
 
     def execute(self) -> dict:
-        self.visit(self._node_template)
+        self.process()
         return self.resources
 
-    def visit_node_resource(self, node_resource: NodeResource) -> DescribeUnit:
+    def visit_node_resource(
+        self, node_resource: NodeResource
+    ) -> PreprocEntityDelta[PreprocResource, PreprocResource]:
+        delta = super().visit_node_resource(node_resource=node_resource)
+        self._execute_on_resource_change(
+            name=node_resource.name, before=delta.before, after=delta.after
+        )
+        return delta
+
+    def _reduce_intrinsic_function_ref_value(self, preproc_value: Any) -> Any:
+        # TODO: this should be implemented to compute the runtime reference value for node entities.
+        return super()._reduce_intrinsic_function_ref_value(preproc_value=preproc_value)
+
+    def _execute_on_resource_change(
+        self, name: str, before: Optional[PreprocResource], after: Optional[PreprocResource]
+    ) -> None:
+        # TODO: this logic is a POC and should be revised.
+        if before is not None and after is not None:
+            # Case: change on same type.
+            if before.resource_type == after.resource_type:
+                # Register a Modified if changed.
+                self._execute_resource_action(
+                    action=ChangeAction.Modify,
+                    logical_resource_id=name,
+                    resource_type=before.resource_type,
+                    before_properties=before.properties,
+                    after_properties=after.properties,
+                )
+            # Case: type migration.
+            # TODO: Add test to assert that on type change the resources are replaced.
+            else:
+                # Register a Removed for the previous type.
+                self._execute_resource_action(
+                    action=ChangeAction.Remove,
+                    logical_resource_id=name,
+                    resource_type=before.resource_type,
+                    before_properties=before.properties,
+                    after_properties=None,
+                )
+                # Register a Create for the next type.
+                self._execute_resource_action(
+                    action=ChangeAction.Add,
+                    logical_resource_id=name,
+                    resource_type=after.resource_type,
+                    before_properties=None,
+                    after_properties=after.properties,
+                )
+        elif before is not None:
+            # Case: removal
+            self._execute_resource_action(
+                action=ChangeAction.Remove,
+                logical_resource_id=name,
+                resource_type=before.resource_type,
+                before_properties=before.properties,
+                after_properties=None,
+            )
+        elif after is not None:
+            # Case: addition
+            self._execute_resource_action(
+                action=ChangeAction.Add,
+                logical_resource_id=name,
+                resource_type=after.resource_type,
+                before_properties=None,
+                after_properties=after.properties,
+            )
+
+    def _execute_resource_action(
+        self,
+        action: ChangeAction,
+        logical_resource_id: str,
+        resource_type: str,
+        before_properties: Optional[PreprocProperties],
+        after_properties: Optional[PreprocProperties],
+    ) -> None:
         resource_provider_executor = ResourceProviderExecutor(
             stack_name=self.stack_name, stack_id=self.stack_id
         )
-
-        # TODO: investigate effects on type changes
-        properties_describe_unit = self.visit_node_properties(node_resource.properties)
-        LOG.info("SRW: describe unit: %s", properties_describe_unit)
-
-        action = node_resource.change_type.to_action()
-        if action is None:
-            raise RuntimeError(
-                f"Action should always be present, got change type: {node_resource.change_type}"
-            )
-
         # TODO
-        resource_type = get_resource_type({"Type": "AWS::SSM::Parameter"})
+        resource_type = get_resource_type({"Type": resource_type})
         payload = self.create_resource_provider_payload(
-            properties_describe_unit,
-            action,
-            node_resource.name,
-            resource_type,
+            action=action,
+            logical_resource_id=logical_resource_id,
+            resource_type=resource_type,
+            before_properties=before_properties,
+            after_properties=after_properties,
         )
         resource_provider = resource_provider_executor.try_load_resource_provider(resource_type)
 
@@ -83,68 +146,41 @@ class ChangeSetModelExecutor(ChangeSetModelDescriber):
         else:
             event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
 
-        self.resources.setdefault(node_resource.name, {"Properties": {}})
+        self.resources.setdefault(logical_resource_id, {"Properties": {}})
         match event.status:
             case OperationStatus.SUCCESS:
                 # merge the resources state with the external state
                 # TODO: this is likely a duplicate of updating from extra_resource_properties
-                self.resources[node_resource.name]["Properties"].update(event.resource_model)
-                self.resources[node_resource.name].update(extra_resource_properties)
+                self.resources[logical_resource_id]["Properties"].update(event.resource_model)
+                self.resources[logical_resource_id].update(extra_resource_properties)
                 # XXX for legacy delete_stack compatibility
-                self.resources[node_resource.name]["LogicalResourceId"] = node_resource.name
-                self.resources[node_resource.name]["Type"] = resource_type
+                self.resources[logical_resource_id]["LogicalResourceId"] = logical_resource_id
+                self.resources[logical_resource_id]["Type"] = resource_type
             case any:
                 raise NotImplementedError(f"Event status '{any}' not handled")
 
-        return DescribeUnit(before_context=None, after_context={})
-
-    def visit_node_intrinsic_function_fn_get_att(
-        self, node_intrinsic_function: NodeIntrinsicFunction
-    ) -> DescribeUnit:
-        arguments_unit = self.visit(node_intrinsic_function.arguments)
-        before_arguments_list = arguments_unit.before_context
-        after_arguments_list = arguments_unit.after_context
-        if before_arguments_list:
-            logical_name_of_resource = before_arguments_list[0]
-            attribute_name = before_arguments_list[1]
-            before_node_resource = self._get_node_resource_for(
-                resource_name=logical_name_of_resource, node_template=self._node_template
-            )
-            node_property: TerminalValue = self._get_node_property_for(
-                property_name=attribute_name, node_resource=before_node_resource
-            )
-            before_context = self.visit(node_property.value).before_context
-        else:
-            before_context = None
-
-        if after_arguments_list:
-            logical_name_of_resource = after_arguments_list[0]
-            attribute_name = after_arguments_list[1]
-            after_node_resource = self._get_node_resource_for(
-                resource_name=logical_name_of_resource, node_template=self._node_template
-            )
-            node_property: TerminalValue = self._get_node_property_for(
-                property_name=attribute_name, node_resource=after_node_resource
-            )
-            after_context = self.visit(node_property.value).after_context
-        else:
-            after_context = None
-
-        return DescribeUnit(before_context=before_context, after_context=after_context)
-
     def create_resource_provider_payload(
         self,
-        describe_unit: DescribeUnit,
         action: ChangeAction,
         logical_resource_id: str,
         resource_type: str,
-    ) -> ResourceProviderPayload:
+        before_properties: Optional[PreprocProperties],
+        after_properties: Optional[PreprocProperties],
+    ) -> Optional[ResourceProviderPayload]:
         # FIXME: use proper credentials
         creds: Credentials = {
             "accessKeyId": self.account_id,
             "secretAccessKey": INTERNAL_AWS_SECRET_ACCESS_KEY,
             "sessionToken": "",
         }
+        before_properties_value = before_properties.properties if before_properties else None
+        if action == ChangeAction.Remove:
+            resource_properties = before_properties_value
+            previous_resource_properties = None
+        else:
+            after_properties_value = after_properties.properties if after_properties else None
+            resource_properties = after_properties_value
+            previous_resource_properties = before_properties_value
         resource_provider_payload: ResourceProviderPayload = {
             "awsAccountId": self.account_id,
             "callbackContext": {},
@@ -157,8 +193,9 @@ class ChangeSetModelExecutor(ChangeSetModelDescriber):
             "action": str(action),
             "requestData": {
                 "logicalResourceId": logical_resource_id,
-                "resourceProperties": describe_unit.after_context["Properties"],
-                "previousResourceProperties": describe_unit.before_context["Properties"],
+                # TODO: assign before and previous according on the action type.
+                "resourceProperties": resource_properties,
+                "previousResourceProperties": previous_resource_properties,
                 "callerCredentials": creds,
                 "providerCredentials": creds,
                 "systemTags": {},

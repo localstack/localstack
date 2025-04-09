@@ -6,7 +6,7 @@ import requests
 from localstack.config import in_docker
 from localstack.testing.pytest.container import ContainerFactory
 from localstack.utils.bootstrap import ContainerConfigurators
-from localstack.utils.container_utils.container_client import VolumeBind
+from localstack.utils.container_utils.container_client import BindMount
 
 pytestmarks = pytest.mark.skipif(
     condition=in_docker(), reason="cannot run bootstrap tests in docker"
@@ -43,7 +43,7 @@ class TestInitHooks:
                 ContainerConfigurators.default_gateway_port,
                 ContainerConfigurators.mount_localstack_volume(volume),
                 ContainerConfigurators.volume(
-                    VolumeBind(str(shutdown_hooks), "/etc/localstack/init/shutdown.d")
+                    BindMount(str(shutdown_hooks), "/etc/localstack/init/shutdown.d")
                 ),
             ]
         )

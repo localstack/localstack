@@ -27,15 +27,15 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.230
+aws-cdk-asset-awscli-v1==2.2.231
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==41.2.0
     # via aws-cdk-lib
-aws-cdk-lib==2.187.0
+aws-cdk-lib==2.188.0
     # via localstack-core
-aws-sam-translator==1.95.0
+aws-sam-translator==1.96.0
     # via
     #   cfn-lint
     #   localstack-core
@@ -43,7 +43,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.38.28
     # via localstack-core
-awscrt==0.25.4
+awscrt==0.25.7
     # via localstack-core
 boto3==1.37.28
     # via
@@ -82,7 +82,7 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.32.1
+cfn-lint==1.32.4
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -197,14 +197,14 @@ joserfc==1.0.4
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core
-jsii==1.110.0
+jsii==1.111.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
     #   aws-cdk-cloud-assembly-schema
     #   aws-cdk-lib
     #   constructs
-json5==0.10.0
+json5==0.12.0
     # via localstack-core
 jsonpatch==1.33
     # via
@@ -250,7 +250,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.6.0
     # via openapi-core
-moto-ext==5.1.1.post1
+moto-ext==5.1.1.post2
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -275,7 +275,7 @@ openapi-spec-validator==0.7.1
     #   openapi-core
 opensearch-py==2.8.0
     # via localstack-core
-orderly-set==5.3.0
+orderly-set==5.3.1
     # via deepdiff
 packaging==24.2
     # via
@@ -331,9 +331,9 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.11.1
+pydantic==2.11.2
     # via aws-sam-translator
-pydantic-core==2.33.0
+pydantic-core==2.33.1
     # via pydantic
 pygments==2.19.1
     # via rich
@@ -425,7 +425,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.11.2
+ruff==0.11.4
     # via localstack-core (pyproject.toml)
 s3transfer==0.11.4
     # via
@@ -457,7 +457,7 @@ typeguard==2.13.3
     #   aws-cdk-lib
     #   constructs
     #   jsii
-typing-extensions==4.13.0
+typing-extensions==4.13.1
     # via
     #   anyio
     #   aws-sam-translator

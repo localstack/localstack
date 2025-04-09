@@ -1,8 +1,11 @@
+import json
 import logging
 from copy import deepcopy
+from typing import Any
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.cloudformation import (
+    Changes,
     ChangeSetNameOrId,
     ChangeSetNotFoundException,
     ChangeSetType,
@@ -188,6 +191,30 @@ class CloudformationProviderV2(CloudformationProvider):
             resolved_parameters=resolved_parameters,
         )
 
+        # TODO: reconsider the way parameters are modelled in the update graph process.
+        #  The options might be reduce to using the current style, or passing the extra information
+        #  as a metadata object. The choice should be made considering when the extra information
+        #  is needed for the update graph building, or only looked up in downstream tasks (metadata).
+        request_parameters = request.get("Parameters", list())
+        after_parameters: dict[str, Any] = {
+            parameter["ParameterKey"]: parameter["ParameterValue"]
+            for parameter in request_parameters
+        }
+        before_parameters: dict[str, Any] = {
+            parameter["ParameterKey"]: parameter["ParameterValue"]
+            for parameter in old_parameters.values()
+        }
+
+        # TODO: update this logic to always pass the clean template object if one exists. The
+        #  current issue with relaying on stack.template_original is that this appears to have
+        #  its parameters and conditions populated.
+        before_template = None
+        if change_set_type == ChangeSetType.UPDATE:
+            before_template = json.loads(
+                stack.template_body
+            )  # template_original is sometimes invalid
+        after_template = template
+
         # create change set for the stack and apply changes
         change_set = StackChangeSet(
             context.account_id,
@@ -199,9 +226,14 @@ class CloudformationProviderV2(CloudformationProvider):
         )
         # only set parameters for the changeset, then switch to stack on execute_change_set
         change_set.template_body = template_body
-        change_set.populate_update_graph(stack.template, transformed_template)
+        change_set.populate_update_graph(
+            before_template=before_template,
+            after_template=after_template,
+            before_parameters=before_parameters,
+            after_parameters=after_parameters,
+        )
 
-        # TODO: evaluate conditions
+        # TODO: move this logic of condition resolution with metadata to the ChangeSetModelPreproc or Executor
         raw_conditions = transformed_template.get("Conditions", {})
         resolved_stack_conditions = resolve_stack_conditions(
             account_id=context.account_id,
@@ -212,6 +244,7 @@ class CloudformationProviderV2(CloudformationProvider):
             stack_name=stack_name,
         )
         change_set.set_resolved_stack_conditions(resolved_stack_conditions)
+        change_set.set_resolved_parameters(resolved_parameters)
 
         # a bit gross but use the template ordering to validate missing resources
         try:
@@ -326,9 +359,10 @@ class CloudformationProviderV2(CloudformationProvider):
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
 
         change_set_describer = ChangeSetModelDescriber(
-            node_template=change_set.update_graph, include_property_values=include_property_values
+            node_template=change_set.update_graph,
+            include_property_values=bool(include_property_values),
         )
-        resource_changes = change_set_describer.get_changes()
+        changes: Changes = change_set_describer.get_changes()
 
         attrs = [
             "ChangeSetType",
@@ -343,5 +377,5 @@ class CloudformationProviderV2(CloudformationProvider):
         result["Parameters"] = [
             mask_no_echo(strip_parameter_type(p)) for p in result.get("Parameters", [])
         ]
-        result["Changes"] = resource_changes
+        result["Changes"] = changes
         return result

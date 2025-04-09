@@ -12,7 +12,7 @@ from collections import namedtuple
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
 
-from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
+from cryptography.exceptions import InvalidSignature, InvalidTag, UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.primitives import serialization as crypto_serialization
@@ -29,6 +29,7 @@ from localstack.aws.api.kms import (
     CreateGrantRequest,
     CreateKeyRequest,
     EncryptionContextType,
+    InvalidCiphertextException,
     InvalidKeyUsageException,
     KeyMetadata,
     KeySpec,
@@ -36,6 +37,7 @@ from localstack.aws.api.kms import (
     KeyUsageType,
     KMSInvalidMacException,
     KMSInvalidSignatureException,
+    LimitExceededException,
     MacAlgorithmSpec,
     MessageType,
     MultiRegionConfiguration,
@@ -84,6 +86,7 @@ HMAC_RANGE_KEY_LENGTHS = {
     "HMAC_512": (64, 128),
 }
 
+ON_DEMAND_ROTATION_LIMIT = 10
 KEY_ID_LEN = 36
 # Moto uses IV_LEN of 12, as it is fine for GCM encryption mode, but we use CBC, so have to set it to 16.
 IV_LEN = 16
@@ -249,6 +252,7 @@ class KmsKey:
     is_key_rotation_enabled: bool
     rotation_period_in_days: int
     next_rotation_date: datetime.datetime
+    previous_keys = [str]
 
     def __init__(
         self,
@@ -257,6 +261,7 @@ class KmsKey:
         region: str = None,
     ):
         create_key_request = create_key_request or CreateKeyRequest()
+        self.previous_keys = []
 
         # Please keep in mind that tags of a key could be present in the request, they are not a part of metadata. At
         # least in the sense of DescribeKey not returning them with the rest of the metadata. Instead, tags are more
@@ -319,9 +324,15 @@ class KmsKey:
         self, ciphertext: Ciphertext, encryption_context: EncryptionContextType = None
     ) -> bytes:
         aad = _serialize_encryption_context(encryption_context=encryption_context)
-        return decrypt(
-            self.crypto_key.key_material, ciphertext.ciphertext, ciphertext.iv, ciphertext.tag, aad
-        )
+        keys_to_try = [self.crypto_key.key_material] + self.previous_keys
+
+        for key in keys_to_try:
+            try:
+                return decrypt(key, ciphertext.ciphertext, ciphertext.iv, ciphertext.tag, aad)
+            except (InvalidTag, InvalidSignature):
+                continue
+
+        raise InvalidCiphertextException()
 
     def decrypt_rsa(self, encrypted: bytes) -> bytes:
         private_key = crypto_serialization.load_der_private_key(
@@ -694,6 +705,12 @@ class KmsKey:
             return request_key_usage or "ENCRYPT_DECRYPT"
 
     def rotate_key_on_demand(self):
+        if len(self.previous_keys) >= ON_DEMAND_ROTATION_LIMIT:
+            raise LimitExceededException(
+                f"The on-demand rotations limit has been reached for the given keyId. "
+                f"No more on-demand rotations can be performed for this key: {self.metadata['Arn']}"
+            )
+        self.previous_keys.append(self.crypto_key.key_material)
         self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
 
 
