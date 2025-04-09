@@ -49,17 +49,17 @@ class ChangeSetModelVisitor(abc.ABC):
     def visit_node_template(self, node_template: NodeTemplate):
         self.visit_children(node_template)
 
-    def visit_node_mapping(self, node_mapping: NodeMapping):
-        self.visit_children(node_mapping)
-
-    def visit_node_mappings(self, node_mappings: NodeMappings):
-        self.visit_children(node_mappings)
-
     def visit_node_outputs(self, node_outputs: NodeOutputs):
         self.visit_children(node_outputs)
 
     def visit_node_output(self, node_output: NodeOutput):
         self.visit_children(node_output)
+
+    def visit_node_mapping(self, node_mapping: NodeMapping):
+        self.visit_children(node_mapping)
+
+    def visit_node_mappings(self, node_mappings: NodeMappings):
+        self.visit_children(node_mappings)
 
     def visit_node_parameters(self, node_parameters: NodeParameters):
         self.visit_children(node_parameters)
