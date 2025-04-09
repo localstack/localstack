@@ -27,7 +27,7 @@ class Alias:
     _state_machine_version_arns: list[Arn]
     _execution_probability_distribution: list[int]
     state_machine_alias_arn: Final[Arn]
-    _tokenized_state_machine_alias_arn: PageToken
+    tokenized_state_machine_alias_arn: Final[PageToken]
     create_date: datetime.datetime
 
     def __init__(
@@ -42,7 +42,7 @@ class Alias:
         self.name = name
         self._description = None
         self.state_machine_alias_arn = f"{state_machine_arn}:{name}"
-        self._tokenized_state_machine_alias_arn = token_generator(self.state_machine_alias_arn)
+        self.tokenized_state_machine_alias_arn = token_generator(self.state_machine_alias_arn)
         self.update(description=description, routing_configuration_list=routing_configuration_list)
         self.create_date = self._get_mutex_date()
 
@@ -123,6 +123,3 @@ class Alias:
         return StateMachineAliasListItem(
             stateMachineAliasArn=self.state_machine_alias_arn, creationDate=self.create_date
         )
-
-    def get_token(self) -> PageToken:
-        return self._tokenized_state_machine_alias_arn
