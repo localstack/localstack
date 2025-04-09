@@ -48,6 +48,7 @@ from localstack.utils.aws.message_forwarding import (
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_bytes
 from localstack.utils.time import now_utc
+from localstack.utils.xray.trace_header import TraceHeader
 
 LOG = logging.getLogger(__name__)
 
@@ -196,10 +197,10 @@ class TargetSender(ABC):
         return self._client
 
     @abstractmethod
-    def send_event(self, event: FormattedEvent | TransformedEvent):
+    def send_event(self, event: FormattedEvent | TransformedEvent, trace_header: TraceHeader):
         pass
 
-    def process_event(self, event: FormattedEvent):
+    def process_event(self, event: FormattedEvent, trace_header: TraceHeader):
         """Processes the event and send it to the target."""
         if input_ := self.target.get("Input"):
             event = json.loads(input_)
@@ -211,7 +212,7 @@ class TargetSender(ABC):
             if input_transformer := self.target.get("InputTransformer"):
                 event = self.transform_event_with_target_input_transformer(input_transformer, event)
         if event:
-            self.send_event(event)
+            self.send_event(event, trace_header)
         else:
             LOG.info("No event to send to target %s", self.target.get("Id"))
 
@@ -319,7 +320,7 @@ class ApiGatewayTargetSender(TargetSender):
 
     ALLOWED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
 
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         # Parse the ARN to extract api_id, stage_name, http_method, and resource path
         # Example ARN: arn:{partition}:execute-api:{region}:{account_id}:{api_id}/{stage_name}/{method}/{resource_path}
         arn_parts = parse_arn(self.target["Arn"])
@@ -386,8 +387,7 @@ class ApiGatewayTargetSender(TargetSender):
         # Serialize the event, converting datetime objects to strings
         event_json = json.dumps(event, default=str)
 
-        trace_header_str = get_trace_header_str_from_segment()
-        headers["X-Amzn-Trace-Id"] = trace_header_str
+        headers["X-Amzn-Trace-Id"] = trace_header.to_header_str()
 
         # Send the HTTP request
         response = requests.request(
@@ -421,12 +421,12 @@ class ApiGatewayTargetSender(TargetSender):
 
 
 class AppSyncTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         raise NotImplementedError("AppSync target is not yet implemented")
 
 
 class BatchTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         raise NotImplementedError("Batch target is not yet implemented")
 
     def _validate_input(self, target: Target):
@@ -439,7 +439,7 @@ class BatchTargetSender(TargetSender):
 
 
 class ECSTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         raise NotImplementedError("ECS target is a pro feature, please use LocalStack Pro")
 
     def _validate_input(self, target: Target):
@@ -450,7 +450,7 @@ class ECSTargetSender(TargetSender):
 
 
 class EventsTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         # TODO add validation and tests for eventbridge to eventbridge requires Detail, DetailType, and Source
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/events/client/put_events.html
         source = self._get_source(event)
@@ -471,6 +471,7 @@ class EventsTargetSender(TargetSender):
         ):
             entries[0]["TraceHeader"] = encoded_original_id
 
+        # TODO instrument to send x-ray trace header
         self.client.put_events(Entries=entries)
 
     def _get_source(self, event: FormattedEvent | TransformedEvent) -> str:
@@ -493,7 +494,7 @@ class EventsTargetSender(TargetSender):
 
 
 class EventsApiDestinationTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         """Send an event to an EventBridge API destination
         See https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-destinations.html"""
         target_arn = self.target["Arn"]
@@ -543,7 +544,7 @@ class EventsApiDestinationTargetSender(TargetSender):
 
 
 class FirehoseTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         delivery_stream_name = firehose_name(self.target["Arn"])
 
         self.client.put_record(
@@ -553,7 +554,7 @@ class FirehoseTargetSender(TargetSender):
 
 
 class KinesisTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         partition_key_path = collections.get_safe(
             self.target,
             "$.KinesisParameters.PartitionKeyPath",
@@ -578,7 +579,7 @@ class KinesisTargetSender(TargetSender):
 
 
 class LambdaTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         # instrument boto client to add x-ray trace header
         trace_header_str = get_trace_header_str_from_segment()
 
@@ -588,6 +589,7 @@ class LambdaTargetSender(TargetSender):
         event_name = "before-send.lambda.*"
         self.client.meta.events.register(event_name, add_xray_header)
 
+        # TODO instrument to send x-ray trace header
         self.client.invoke(
             FunctionName=self.target["Arn"],
             Payload=to_bytes(to_json_str(event)),
@@ -598,7 +600,7 @@ class LambdaTargetSender(TargetSender):
 
 
 class LogsTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         log_group_name = self.target["Arn"].split(":")[6]
         log_stream_name = str(uuid.uuid4())  # Unique log stream name
 
@@ -616,7 +618,7 @@ class LogsTargetSender(TargetSender):
 
 
 class RedshiftTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         raise NotImplementedError("Redshift target is not yet implemented")
 
     def _validate_input(self, target: Target):
@@ -627,17 +629,17 @@ class RedshiftTargetSender(TargetSender):
 
 
 class SagemakerTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         raise NotImplementedError("Sagemaker target is not yet implemented")
 
 
 class SnsTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         self.client.publish(TopicArn=self.target["Arn"], Message=to_json_str(event))
 
 
 class SqsTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         queue_url = sqs_queue_url_for_arn(self.target["Arn"])
         msg_group_id = self.target.get("SqsParameters", {}).get("MessageGroupId", None)
         kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
@@ -652,7 +654,7 @@ class SqsTargetSender(TargetSender):
 class StatesTargetSender(TargetSender):
     """Step Functions Target Sender"""
 
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         self.service = "stepfunctions"
 
         self.client.start_execution(
@@ -669,7 +671,7 @@ class StatesTargetSender(TargetSender):
 class SystemsManagerSender(TargetSender):
     """EC2 Run Command Target Sender"""
 
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         raise NotImplementedError("Systems Manager target is not yet implemented")
 
     def _validate_input(self, target: Target):

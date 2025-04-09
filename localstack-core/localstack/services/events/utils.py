@@ -4,7 +4,6 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-from aws_xray_sdk.core import xray_recorder
 from botocore.utils import ArnParser
 
 from localstack.aws.api import RequestContext
@@ -28,7 +27,6 @@ from localstack.services.events.models import (
 )
 from localstack.utils.aws.arns import ARN_PARTITION_REGEX, parse_arn
 from localstack.utils.strings import long_uid
-from localstack.utils.xray.trace_header import TraceHeader
 
 LOG = logging.getLogger(__name__)
 
@@ -295,29 +293,3 @@ def is_nested_in_string(template: str, match: re.Match[str]) -> bool:
         return False
 
     return left_quote != -1
-
-
-def create_segment_from_trace_header(trace_header: TraceHeader) -> None:
-    segment = xray_recorder.begin_segment(name="events.put_events")
-    segment.trace_id = trace_header.root
-    segment.parent_id = trace_header.parent
-    if trace_header.sampled == "1":
-        segment.sampled = True
-    elif trace_header.sampled == "0":
-        segment.sampled = False
-
-
-def get_trace_header_str_from_segment():
-    # Get the current segment
-    segment = xray_recorder.current_segment()
-
-    if segment:
-        # Construct the trace header manually
-        trace_id = segment.trace_id
-        parent_id = segment.id  # Use the segment's own ID as the parent for downstream calls
-        sampled = "1" if segment.sampled else "0"
-
-        # Format according to X-Ray trace header specification
-        xray_trace_header = TraceHeader(root=trace_id, parent=parent_id, sampled=sampled)
-
-        return xray_trace_header.to_header_str()
