@@ -16,6 +16,7 @@ def test_alias_name_validator():
 def provider():
     return KmsProvider()
 
+
 def test_execute_dry_run_capable_runs_when_not_dry():
     result = execute_dry_run_capable(lambda: 1 + 1, dry_run=False)
     assert result == 2
