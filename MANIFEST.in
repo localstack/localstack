@@ -1,4 +1,10 @@
+exclude .github/**
+exclude .circleci/**
+exclude docs/**
 exclude tests/**
 exclude .test_durations
+exclude .gitignore
+exclude .pre-commit-config.yaml
+exclude .python-version
 include Makefile
 include LICENSE.txt

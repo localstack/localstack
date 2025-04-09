@@ -27,27 +27,27 @@ class StateLifecycleHook:
     - load: the state is injected into the service, or state directories on disk are restored
     """
 
-    def on_before_state_reset(self):
+    def on_before_state_reset(self) -> None:
         """Hook triggered before the provider's state containers are reset/cleared."""
         pass
 
-    def on_after_state_reset(self):
+    def on_after_state_reset(self) -> None:
         """Hook triggered after the provider's state containers have been reset/cleared."""
         pass
 
-    def on_before_state_save(self):
+    def on_before_state_save(self) -> None:
         """Hook triggered before the provider's state containers are saved."""
         pass
 
-    def on_after_state_save(self):
+    def on_after_state_save(self) -> None:
         """Hook triggered after the provider's state containers have been saved."""
         pass
 
-    def on_before_state_load(self):
+    def on_before_state_load(self) -> None:
         """Hook triggered before a previously serialized state is loaded into the provider's state containers."""
         pass
 
-    def on_after_state_load(self):
+    def on_after_state_load(self) -> None:
         """Hook triggered after a previously serialized state has been loaded into the provider's state containers."""
         pass
 
