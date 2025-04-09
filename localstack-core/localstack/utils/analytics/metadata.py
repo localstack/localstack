@@ -237,11 +237,11 @@ def prepare_host_machine_id():
 
 @hooks.configure_localstack_container()
 def _mount_machine_file(container: Container):
-    from localstack.utils.container_utils.container_client import VolumeBind
+    from localstack.utils.container_utils.container_client import BindMount
 
     # mount tha machine file from the host's CLI cache directory into the appropriate location in the
     # container
     machine_file = os.path.join(config.dirs.cache, "machine.json")
     if os.path.isfile(machine_file):
         target = os.path.join(config.dirs.for_container().cache, "machine.json")
-        container.config.volumes.add(VolumeBind(machine_file, target, read_only=True))
+        container.config.volumes.add(BindMount(machine_file, target, read_only=True))

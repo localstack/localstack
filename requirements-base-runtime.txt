@@ -9,7 +9,7 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.25.4
+awscrt==0.25.7
     # via localstack-core (pyproject.toml)
 boto3==1.37.28
     # via localstack-core (pyproject.toml)
@@ -180,7 +180,7 @@ six==1.17.0
     #   rfc3339-validator
 tailer==0.4.1
     # via localstack-core (pyproject.toml)
-typing-extensions==4.13.0
+typing-extensions==4.13.1
     # via
     #   localstack-twisted
     #   pyopenssl

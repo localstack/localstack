@@ -24,6 +24,7 @@ from localstack.constants import VERSION
 from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
+    BindMount,
     CancellableStream,
     ContainerClient,
     ContainerConfiguration,
@@ -33,7 +34,7 @@ from localstack.utils.container_utils.container_client import (
     NoSuchImage,
     NoSuchNetwork,
     PortMappings,
-    VolumeBind,
+    VolumeDirMount,
     VolumeMappings,
 )
 from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
@@ -491,7 +492,7 @@ class ContainerConfigurators:
         target = "/var/run/docker.sock"
         if cfg.volumes.find_target_mapping(target):
             return
-        cfg.volumes.add(VolumeBind(source, target))
+        cfg.volumes.add(BindMount(source, target))
         cfg.env_vars["DOCKER_HOST"] = f"unix://{target}"
 
     @staticmethod
@@ -501,7 +502,7 @@ class ContainerConfigurators:
         def _cfg(cfg: ContainerConfiguration):
             if cfg.volumes.find_target_mapping(constants.DEFAULT_VOLUME_DIR):
                 return
-            cfg.volumes.add(VolumeBind(str(host_path), constants.DEFAULT_VOLUME_DIR))
+            cfg.volumes.add(BindMount(str(host_path), constants.DEFAULT_VOLUME_DIR))
 
         return _cfg
 
@@ -679,7 +680,7 @@ class ContainerConfigurators:
         return _cfg
 
     @staticmethod
-    def volume(volume: VolumeBind):
+    def volume(volume: BindMount | VolumeDirMount):
         def _cfg(cfg: ContainerConfiguration):
             cfg.volumes.add(volume)
 
@@ -807,7 +808,7 @@ class ContainerConfigurators:
 
         def _cfg(cfg: ContainerConfiguration):
             for param in params:
-                cfg.volumes.append(VolumeBind.parse(param))
+                cfg.volumes.append(BindMount.parse(param))
 
         return _cfg
 

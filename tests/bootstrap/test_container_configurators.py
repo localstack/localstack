@@ -9,7 +9,7 @@ from localstack.utils.bootstrap import (
     get_gateway_url,
 )
 from localstack.utils.common import external_service_ports
-from localstack.utils.container_utils.container_client import VolumeBind
+from localstack.utils.container_utils.container_client import BindMount
 
 
 def test_common_container_fixture_configurators(
@@ -96,7 +96,7 @@ def test_custom_command_configurator(container_factory, tmp_path, stream_contain
             ContainerConfigurators.custom_command(
                 ["/tmp/pytest-tmp-path/my-command.sh", "hello", "world"]
             ),
-            ContainerConfigurators.volume(VolumeBind(str(tmp_path), "/tmp/pytest-tmp-path")),
+            ContainerConfigurators.volume(BindMount(str(tmp_path), "/tmp/pytest-tmp-path")),
         ],
         remove=False,
     )
