@@ -1,8 +1,8 @@
 import pytest
 
 from localstack.aws.api import RequestContext
-from localstack.aws.api.kms import CreateKeyRequest
-from localstack.services.kms.exceptions import DryRunOperationException, ValidationException
+from localstack.aws.api.kms import CreateKeyRequest, DryRunOperationException
+from localstack.services.kms.exceptions import ValidationException
 from localstack.services.kms.provider import KmsProvider
 from localstack.services.kms.utils import execute_dry_run_capable, validate_alias_name
 
