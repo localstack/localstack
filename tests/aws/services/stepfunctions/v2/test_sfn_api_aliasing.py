@@ -1230,7 +1230,7 @@ class TestSfnApiAliasing:
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
 
-        state_machine_name = "state_machine_test"
+        state_machine_name = f"state_machine_test-{short_uid()}"
         create_state_machine_response = create_state_machine(
             target_aws_client=aws_client,
             name=state_machine_name,
