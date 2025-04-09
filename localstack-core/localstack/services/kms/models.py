@@ -193,7 +193,10 @@ class KmsCryptoKey:
             key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
         elif key_spec.startswith("ECC"):
             curve = ECC_CURVES.get(key_spec)
-            key = ec.generate_private_key(curve)
+            if key_material:
+                key = crypto_serialization.load_der_private_key(key_material, password=None)
+            else:
+                key = ec.generate_private_key(curve)
         elif key_spec.startswith("HMAC"):
             if key_spec not in HMAC_RANGE_KEY_LENGTHS:
                 raise ValidationException(
