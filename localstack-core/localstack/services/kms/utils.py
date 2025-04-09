@@ -1,8 +1,8 @@
 import re
 from typing import Callable, Tuple, TypeVar
 
-from localstack.aws.api.kms import Tag, TagException
-from localstack.services.kms.exceptions import DryRunOperationException, ValidationException
+from localstack.aws.api.kms import DryRunOperationException, Tag, TagException
+from localstack.services.kms.exceptions import ValidationException
 from localstack.utils.aws.arns import ARN_PARTITION_REGEX
 
 T = TypeVar("T")
