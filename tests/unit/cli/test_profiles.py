@@ -3,10 +3,8 @@ import sys
 
 from localstack.cli.profiles import set_profile_from_sys_argv
 
-def profile_test(monkeypatch,
-                 input_args,
-                 expected_profile,
-                 expected_argv):
+
+def profile_test(monkeypatch, input_args, expected_profile, expected_argv):
     monkeypatch.setattr(sys, "argv", input_args)
     monkeypatch.setenv("CONFIG_PROFILE", "")
     set_profile_from_sys_argv()
@@ -19,7 +17,8 @@ def test_profiles_equals_notation(monkeypatch):
         monkeypatch,
         input_args=["--profile=non-existing-test-profile"],
         expected_profile="non-existing-test-profile",
-        expected_argv=[])
+        expected_argv=[],
+    )
 
 
 def test_profiles_separate_args_notation(monkeypatch):
@@ -27,7 +26,8 @@ def test_profiles_separate_args_notation(monkeypatch):
         monkeypatch,
         input_args=["--profile", "non-existing-test-profile"],
         expected_profile="non-existing-test-profile",
-        expected_argv=[])
+        expected_argv=[],
+    )
 
 
 def test_p_equals_notation(monkeypatch):
@@ -35,7 +35,8 @@ def test_p_equals_notation(monkeypatch):
         monkeypatch,
         input_args=["-p=non-existing-test-profile"],
         expected_profile="non-existing-test-profile",
-        expected_argv=[])
+        expected_argv=[],
+    )
 
 
 def test_p_separate_args_notation(monkeypatch):
@@ -43,7 +44,8 @@ def test_p_separate_args_notation(monkeypatch):
         monkeypatch,
         input_args=["-p", "non-existing-test-profile"],
         expected_profile="non-existing-test-profile",
-        expected_argv=[])
+        expected_argv=[],
+    )
 
 
 def test_profiles_args_before_and_after(monkeypatch):
@@ -51,7 +53,8 @@ def test_profiles_args_before_and_after(monkeypatch):
         monkeypatch,
         input_args=["cli", "-D", "--profile=non-existing-test-profile", "start"],
         expected_profile="non-existing-test-profile",
-        expected_argv=["cli", "-D", "start"])
+        expected_argv=["cli", "-D", "start"],
+    )
 
 
 def test_profiles_args_before_and_after_separate(monkeypatch):
@@ -59,14 +62,21 @@ def test_profiles_args_before_and_after_separate(monkeypatch):
         monkeypatch,
         input_args=["cli", "-D", "--profile", "non-existing-test-profile", "start"],
         expected_profile="non-existing-test-profile",
-        expected_argv=["cli", "-D", "start"])
+        expected_argv=["cli", "-D", "start"],
+    )
 
 
 def test_profiles_args_multiple_profile_args(monkeypatch):
     profile_test(
         monkeypatch,
-        input_args=["cli", "--profile", "non-existing-test-profile", "start", "--profile", "another-profile"],
+        input_args=[
+            "cli",
+            "--profile",
+            "non-existing-test-profile",
+            "start",
+            "--profile",
+            "another-profile",
+        ],
         expected_profile="another-profile",
-        expected_argv=["cli", "start"])
-
-
+        expected_argv=["cli", "start"],
+    )
