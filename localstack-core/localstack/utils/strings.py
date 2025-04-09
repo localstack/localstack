@@ -234,3 +234,9 @@ def key_value_pairs_to_dict(pairs: str, delimiter: str = ",", separator: str = "
     """
     splits = [split_pair.partition(separator) for split_pair in pairs.split(delimiter)]
     return {key.strip(): value.strip() for key, _, value in splits}
+
+
+def token_generator(item: str) -> str:
+    base64_bytes = base64.b64encode(item.encode("utf-8"))
+    token = base64_bytes.decode("utf-8")
+    return token

@@ -15,7 +15,7 @@ from localstack.aws.api.stepfunctions import (
     RoutingConfigurationList,
     StateMachineAliasListItem,
 )
-from localstack.services.stepfunctions.stepfunctions_utils import tokenize_item
+from localstack.utils.strings import token_generator
 
 
 class Alias:
@@ -42,7 +42,7 @@ class Alias:
         self.name = name
         self._description = None
         self.state_machine_alias_arn = f"{state_machine_arn}:{name}"
-        self._tokenized_state_machine_alias_arn = tokenize_item(self.state_machine_alias_arn)
+        self._tokenized_state_machine_alias_arn = token_generator(self.state_machine_alias_arn)
         self.update(description=description, routing_configuration_list=routing_configuration_list)
         self.create_date = self._get_mutex_date()
 

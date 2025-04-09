@@ -67,9 +67,3 @@ def assert_pagination_parameters_valid(
         errors_message = "; ".join(validation_errors)
         message = f"{len(validation_errors)} validation {'errors' if len(validation_errors) > 1 else 'error'} detected: {errors_message}"
         raise ValidationException(message)
-
-
-def tokenize_item(item: str) -> str:
-    base64_bytes = base64.b64encode(item.encode("utf-8"))
-    token = base64_bytes.decode("utf-8")
-    return token

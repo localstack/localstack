@@ -102,7 +102,6 @@ from localstack.services.sqs.utils import (
     is_fifo_queue,
     is_message_deduplication_id_required,
     parse_queue_url,
-    token_generator,
 )
 from localstack.services.stores import AccountRegionBundle
 from localstack.utils.aws.arns import parse_arn
@@ -116,7 +115,7 @@ from localstack.utils.cloudwatch.cloudwatch_util import (
 from localstack.utils.collections import PaginatedList
 from localstack.utils.run import FuncThread
 from localstack.utils.scheduler import Scheduler
-from localstack.utils.strings import md5
+from localstack.utils.strings import md5, token_generator
 from localstack.utils.threads import start_thread
 from localstack.utils.time import now
 
