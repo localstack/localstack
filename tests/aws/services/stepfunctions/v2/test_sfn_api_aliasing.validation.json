@@ -1,50 +1,53 @@
 {
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_create_alias_single_router_config": {
-    "last_validated_date": "2025-04-07T13:30:58+00:00"
+    "last_validated_date": "2025-04-09T17:31:14+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_lifecycle_create_delete_list": {
-    "last_validated_date": "2025-04-07T13:32:46+00:00"
+    "last_validated_date": "2025-04-09T17:33:02+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_lifecycle_create_invoke_describe_list": {
-    "last_validated_date": "2025-04-07T13:33:23+00:00"
+    "last_validated_date": "2025-04-09T17:33:38+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_base_lifecycle_create_update_describe": {
-    "last_validated_date": "2025-04-07T13:34:39+00:00"
+    "last_validated_date": "2025-04-09T17:34:55+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_delete_no_such_alias_arn": {
-    "last_validated_date": "2025-04-07T13:35:58+00:00"
+    "last_validated_date": "2025-04-09T17:36:14+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_delete_revision_with_alias": {
-    "last_validated_date": "2025-04-07T13:35:40+00:00"
+    "last_validated_date": "2025-04-09T17:35:56+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_delete_version_with_alias": {
-    "last_validated_date": "2025-04-07T13:35:26+00:00"
+    "last_validated_date": "2025-04-09T17:35:41+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_invalid_name": {
-    "last_validated_date": "2025-04-07T13:32:16+00:00"
+    "last_validated_date": "2025-04-09T17:32:32+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_invalid_router_configs": {
-    "last_validated_date": "2025-04-07T13:32:01+00:00"
+    "last_validated_date": "2025-04-09T17:32:17+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_not_idempotent": {
-    "last_validated_date": "2025-04-07T13:31:29+00:00"
+    "last_validated_date": "2025-04-09T17:31:44+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_error_create_alias_with_state_machine_arn": {
-    "last_validated_date": "2025-04-07T13:31:13+00:00"
+    "last_validated_date": "2025-04-09T17:31:29+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_idempotent_create_alias": {
-    "last_validated_date": "2025-04-07T13:31:44+00:00"
+    "last_validated_date": "2025-04-09T17:32:01+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_list_state_machine_aliases_pagination": {
     "last_validated_date": "2025-04-07T16:51:07+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_list_state_machine_aliases_pagination_invalid_next_token": {
-    "last_validated_date": "2025-04-07T16:48:15+00:00"
+    "last_validated_date": "2025-04-09T17:36:44+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_list_state_machine_aliases_pagination_max_results_0": {
-    "last_validated_date": "2025-04-07T21:11:20+00:00"
+    "last_validated_date": "2025-04-09T17:36:29+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_list_state_machine_aliases_pagination_max_results_1_next_token": {
+    "last_validated_date": "2025-04-09T17:37:03+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_aliasing.py::TestSfnApiAliasing::test_update_no_such_alias_arn": {
-    "last_validated_date": "2025-04-07T13:33:04+00:00"
+    "last_validated_date": "2025-04-09T17:33:19+00:00"
   }
 }

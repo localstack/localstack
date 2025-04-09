@@ -1287,6 +1287,8 @@ class TestSfnApiAliasing:
             nextToken=list_state_machine_aliases_response.get("nextToken"),
         )
 
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.key_value("nextToken"))
+
         sfn_snapshot.match(
             "list_state_machine_aliases_next_token_response", list_state_machine_aliases_response
         )
