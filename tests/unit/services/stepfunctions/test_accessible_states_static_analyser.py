@@ -16,6 +16,17 @@ NO_MISSING_TARGET_SINGLE_SCOPE = json.dumps(
     }
 )
 
+NO_MISSING_TARGET_SINGLE_SCOPE_OUT_OF_ORDER_STATES_AND_START = json.dumps(
+    {
+        "States": {
+            "pass1": {"Type": "Pass", "Next": "pass2"},
+            "pass3": {"Type": "Pass", "End": True},
+            "pass2": {"Type": "Pass", "Next": "pass3"},
+        },
+        "StartAt": "pass1",
+    }
+)
+
 NO_MISSING_TARGET_PARALLEL_SCOPE = json.dumps(
     {
         "StartAt": "pass1",
@@ -25,7 +36,10 @@ NO_MISSING_TARGET_PARALLEL_SCOPE = json.dumps(
             "parallel": {
                 "Type": "Parallel",
                 "Branches": [
-                    {"StartAt": "pass1p", "States": {"pass1p": {"Type": "Pass", "End": True}}},
+                    {
+                        "States": {"pass1p": {"Type": "Pass", "End": True}},
+                        "StartAt": "pass1p",
+                    },
                     {"StartAt": "pass2p", "States": {"pass2p": {"Type": "Pass", "End": True}}},
                 ],
                 "Next": "pass3",
@@ -83,7 +97,13 @@ MISSING_TARGET_OTHER_BRANCH_SCOPE_UNREACHABLE_FROM_PARALLEL = json.dumps(
             "parallel": {
                 "Type": "Parallel",
                 "Branches": [
-                    {"StartAt": "pass1p", "States": {"pass1p": {"Type": "Pass", "Next": "pass2p"}}},
+                    {
+                        "StartAt": "pass1p",
+                        "States": {
+                            "pass1pp": {"Type": "Pass", "Next": "pass2p"},
+                            "pass1p": {"Type": "Pass", "Next": "pass1pp"},
+                        },
+                    },
                     {"StartAt": "pass2p", "States": {"pass2p": {"Type": "Pass", "End": True}}},
                 ],
                 "End": True,
@@ -98,10 +118,12 @@ class TestAccessibleStatesStaticAnalyser:
         "definition",
         [
             NO_MISSING_TARGET_SINGLE_SCOPE,
+            NO_MISSING_TARGET_SINGLE_SCOPE_OUT_OF_ORDER_STATES_AND_START,
             NO_MISSING_TARGET_PARALLEL_SCOPE,
         ],
         ids=[
             "NO_MISSING_TARGET_SINGLE_SCOPE",
+            "NO_MISSING_TARGET_SINGLE_SCOPE_OUT_OF_ORDER_STATES_AND_START",
             "NO_MISSING_TARGET_PARALLEL_SCOPE",
         ],
     )
@@ -134,7 +156,7 @@ class TestAccessibleStatesStaticAnalyser:
             (
                 MISSING_TARGET_OTHER_BRANCH_SCOPE_UNREACHABLE_FROM_PARALLEL,
                 [
-                    "MISSING_TRANSITION_TARGET: Missing 'Next' target: pass2p at /States/parallel/Branches[0]/States/pass1p/Next"
+                    "MISSING_TRANSITION_TARGET: Missing 'Next' target: pass2p at /States/parallel/Branches[0]/States/pass1pp/Next"
                 ],
             ),
         ],
