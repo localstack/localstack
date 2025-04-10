@@ -92,7 +92,6 @@ def transcribe_snapshot_transformer(snapshot):
     snapshot.add_transformer(snapshot.transform.transcribe_api())
 
 
-@pytest.mark.skip(reason="flaky")
 class TestTranscribe:
     @pytest.fixture(scope="class", autouse=True)
     def pre_install_dependencies(self):
