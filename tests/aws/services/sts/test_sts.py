@@ -323,6 +323,8 @@ class TestSTSIntegrations:
         assert fake_account_id == response["Account"]
         assert assume_role_response_other_account["AssumedRoleUser"]["Arn"] == response["Arn"]
 
+
+class TestSTSAssumeRoleTagging:
     @markers.aws.validated
     def test_iam_role_chaining_override_transitive_tags(
         self,
@@ -396,8 +398,17 @@ class TestSTSIntegrations:
             )
         snapshot.match("override-transitive-tag-error", e.value.response)
 
+        # try to assume role 2 by overriding transitive session tags but with different casing
+        with pytest.raises(ClientError) as e:
+            role_1_clients.sts.assume_role(
+                RoleArn=role_2["Role"]["Arn"],
+                RoleSessionName="Session2SessionTagOverride",
+                Tags=[{"Key": "sessiontag1", "Value": "SessionValue2"}],
+            )
+        snapshot.match("override-transitive-tag-case-ignore-error", e.value.response)
+
     @markers.aws.validated
-    def test_assume_role_invalid_tags(
+    def test_assume_role_tag_validation(
         self,
         aws_client,
         aws_client_factory,
@@ -438,3 +449,24 @@ class TestSTSIntegrations:
                 TransitiveTagKeys=["InvalidKey"],
             )
         snapshot.match("invalid-transitive-tag-keys", e.value.response)
+
+        # transitive tags are case insensitive
+        aws_client.sts.assume_role(
+            RoleArn=role_1["Role"]["Arn"],
+            RoleSessionName="SessionInvalidCasingTransitiveKeys",
+            Tags=[{"Key": "SessionTag1", "Value": "SessionValue1"}],
+            TransitiveTagKeys=["sessiontag1"],
+        )
+
+        # identical tags with different casing in key names are invalid
+        with pytest.raises(ClientError) as e:
+            aws_client.sts.assume_role(
+                RoleArn=role_1["Role"]["Arn"],
+                RoleSessionName="SessionInvalidCasingTransitiveKeys",
+                Tags=[
+                    {"Key": "SessionTag1", "Value": "SessionValue1"},
+                    {"Key": "sessiontag1", "Value": "SessionValue2"},
+                ],
+                TransitiveTagKeys=["sessiontag1"],
+            )
+        snapshot.match("duplicate-tag-keys-different-casing", e.value.response)

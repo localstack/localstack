@@ -64,28 +64,34 @@ class StsProvider(StsApi, ServiceLifecycleHook):
         target_account_id = extract_account_id_from_arn(role_arn)
         access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
         store = sts_stores[target_account_id]["us-east-1"]
-        existing_tagging_config = store.session_tags.get(access_key_id)
+        existing_tagging_config = store.session_tags.get(access_key_id, {})
 
-        # prevent transitive tags from being overridden
-        if existing_tagging_config and tags:
+        if tags:
             tag_keys = {tag["Key"].lower() for tag in tags}
-            if set(existing_tagging_config["transitive_tags"]).intersection(tag_keys):
+            # if the lower-cased set is smaller than the number of keys, there have to be some duplicates.
+            if len(tag_keys) < len(tags):
                 raise InvalidParameterValueError(
-                    "One of the specified transitive tag keys can't be set because it conflicts with a transitive tag key from the calling session."
+                    "Duplicate tag keys found. Please note that Tag keys are case insensitive."
                 )
-        if transitive_tag_keys:
-            tag_keys = {tag["Key"].lower() for tag in tags}
-            transitive_tag_key_set = {key.lower() for key in transitive_tag_keys}
-            if not transitive_tag_key_set <= tag_keys:
-                raise InvalidParameterValueError(
-                    "The specified transitive tag key must be included in the requested tags."
-                )
+
+            # prevent transitive tags from being overridden
+            if existing_tagging_config:
+                if set(existing_tagging_config["transitive_tags"]).intersection(tag_keys):
+                    raise InvalidParameterValueError(
+                        "One of the specified transitive tag keys can't be set because it conflicts with a transitive tag key from the calling session."
+                    )
+            if transitive_tag_keys:
+                transitive_tag_key_set = {key.lower() for key in transitive_tag_keys}
+                if not transitive_tag_key_set <= tag_keys:
+                    raise InvalidParameterValueError(
+                        "The specified transitive tag key must be included in the requested tags."
+                    )
 
         response: AssumeRoleResponse = call_moto(context)
 
         transitive_tag_keys = transitive_tag_keys or []
         tags = tags or []
-        transformed_tags = {tag["Key"].lower(): tag["Value"] for tag in tags}
+        transformed_tags = {tag["Key"].lower(): tag for tag in tags}
         # propagate transitive tags
         if existing_tagging_config:
             for tag in existing_tagging_config["transitive_tags"]:
@@ -96,6 +102,6 @@ class StsProvider(StsApi, ServiceLifecycleHook):
             access_key_id = response["Credentials"]["AccessKeyId"]
             store.session_tags[access_key_id] = SessionTaggingConfig(
                 tags=transformed_tags,
-                transitive_tags=[tag_key.lower() for tag_key in transitive_tag_keys],
+                transitive_tags=[key.lower() for key in transitive_tag_keys],
             )
         return response

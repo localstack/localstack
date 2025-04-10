@@ -70,8 +70,63 @@
       }
     }
   },
-  "tests/aws/services/sts/test_sts.py::TestSTSIntegrations::test_iam_role_chaining_override_transitive_tags": {
-    "recorded-date": "09-04-2025, 14:30:13",
+  "tests/aws/services/sts/test_sts.py::TestSTSAssumeRoleTagging::test_assume_role_tag_validation": {
+    "recorded-date": "10-04-2025, 08:53:12",
+    "recorded-content": {
+      "role-1": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": [
+                  "sts:AssumeRole",
+                  "sts:TagSession"
+                ],
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "111111111111"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invalid-transitive-tag-keys": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "The specified transitive tag key must be included in the requested tags.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "duplicate-tag-keys-different-casing": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Duplicate tag keys found. Please note that Tag keys are case insensitive.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sts/test_sts.py::TestSTSAssumeRoleTagging::test_iam_role_chaining_override_transitive_tags": {
+    "recorded-date": "10-04-2025, 08:53:00",
     "recorded-content": {
       "role-1": {
         "Role": {
@@ -139,44 +194,11 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
         }
-      }
-    }
-  },
-  "tests/aws/services/sts/test_sts.py::TestSTSIntegrations::test_assume_role_invalid_tags": {
-    "recorded-date": "09-04-2025, 14:30:56",
-    "recorded-content": {
-      "role-1": {
-        "Role": {
-          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
-          "AssumeRolePolicyDocument": {
-            "Statement": [
-              {
-                "Action": [
-                  "sts:AssumeRole",
-                  "sts:TagSession"
-                ],
-                "Effect": "Allow",
-                "Principal": {
-                  "AWS": "111111111111"
-                }
-              }
-            ],
-            "Version": "2012-10-17"
-          },
-          "CreateDate": "<datetime>",
-          "Path": "/",
-          "RoleId": "<role-id:1>",
-          "RoleName": "<role-name:1>"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
       },
-      "invalid-transitive-tag-keys": {
+      "override-transitive-tag-case-ignore-error": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Message": "The specified transitive tag key must be included in the requested tags.",
+          "Message": "One of the specified transitive tag keys can't be set because it conflicts with a transitive tag key from the calling session.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
