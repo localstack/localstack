@@ -1268,7 +1268,6 @@ class TestCaptureUpdateProcess:
         capture_update_process(snapshot, t1, t2)
 
     @markers.aws.validated
-    @pytest.mark.skip("Deployment fails, as executor is WIP")
     def test_dynamic_update(
         self,
         snapshot,

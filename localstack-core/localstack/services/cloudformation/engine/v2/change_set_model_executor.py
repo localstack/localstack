@@ -1,3 +1,4 @@
+import copy
 import logging
 import uuid
 from typing import Any, Final, Optional
@@ -70,22 +71,27 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             # Case: change on same type.
             if before.resource_type == after.resource_type:
                 # Register a Modified if changed.
+                # XXX hacky, stick the previous resources' properties into the payload
+                before_properties = self._merge_before_properties(name, before)
+
                 self._execute_resource_action(
                     action=ChangeAction.Modify,
                     logical_resource_id=name,
                     resource_type=before.resource_type,
-                    before_properties=before.properties,
+                    before_properties=before_properties,
                     after_properties=after.properties,
                 )
             # Case: type migration.
             # TODO: Add test to assert that on type change the resources are replaced.
             else:
+                # XXX hacky, stick the previous resources' properties into the payload
+                before_properties = self._merge_before_properties(name, before)
                 # Register a Removed for the previous type.
                 self._execute_resource_action(
                     action=ChangeAction.Remove,
                     logical_resource_id=name,
                     resource_type=before.resource_type,
-                    before_properties=before.properties,
+                    before_properties=before_properties,
                     after_properties=None,
                 )
                 # Register a Create for the next type.
@@ -98,11 +104,15 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 )
         elif before is not None:
             # Case: removal
+            # XXX hacky, stick the previous resources' properties into the payload
+            # XXX hacky, stick the previous resources' properties into the payload
+            before_properties = self._merge_before_properties(name, before)
+
             self._execute_resource_action(
                 action=ChangeAction.Remove,
                 logical_resource_id=name,
                 resource_type=before.resource_type,
-                before_properties=before.properties,
+                before_properties=before_properties,
                 after_properties=None,
             )
         elif after is not None:
@@ -114,6 +124,17 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 before_properties=None,
                 after_properties=after.properties,
             )
+
+    def _merge_before_properties(
+        self, name: str, preproc_resource: PreprocResource
+    ) -> PreprocProperties:
+        before_properties = copy.deepcopy(preproc_resource.properties)
+        if previous_properties := self._node_template.extra_context.get(
+            "previous_resources", {}
+        ).get(name):
+            before_properties = PreprocProperties(previous_properties["Properties"])
+
+        return before_properties
 
     def _execute_resource_action(
         self,
