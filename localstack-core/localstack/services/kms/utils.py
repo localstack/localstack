@@ -81,5 +81,7 @@ def execute_dry_run_capable(func: Callable[..., T], dry_run: bool, *args, **kwar
     :raises DryRunOperationException: If ``dry_run`` is ``True``.
     """
     if dry_run:
-        raise DryRunOperationException()
+        raise DryRunOperationException(
+            "The request would have succeeded, but the DryRun option is set."
+        )
     return func(*args, **kwargs)
