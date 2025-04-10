@@ -197,7 +197,8 @@ class KmsCryptoKey:
             raise ValidationException(
                 f"1 validation error detected: Value '{key_spec}' at 'keySpec' "
                 f"failed to satisfy constraint: Member must satisfy enum value set: "
-                f"{valid_specs}"
+                f"[RSA_2048, ECC_NIST_P384, ECC_NIST_P256, ECC_NIST_P521, HMAC_384, RSA_3072, "
+                f"ECC_SECG_P256K1, RSA_4096, SYMMETRIC_DEFAULT, HMAC_256, HMAC_224, HMAC_512]"
             )
 
     def __init__(self, key_spec: str, key_material: Optional[bytes] = None):
