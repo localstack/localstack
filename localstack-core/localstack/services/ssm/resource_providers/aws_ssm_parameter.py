@@ -173,7 +173,8 @@ class SSMParameterProvider(ResourceProvider[SSMParameterProperties]):
 
         # tag handling
         new_tags = update_config_props.pop("Tags", {})
-        self.update_tags(ssm, model, new_tags)
+        if new_tags:
+            self.update_tags(ssm, model, new_tags)
 
         ssm.put_parameter(Overwrite=True, Tags=[], **update_config_props)
 
