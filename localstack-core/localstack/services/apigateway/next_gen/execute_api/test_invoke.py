@@ -1,5 +1,4 @@
 import datetime
-import json
 from urllib.parse import parse_qs
 
 from rolo import Request
@@ -18,11 +17,8 @@ from .handlers.resource_router import RestAPIResourceRouter
 from .header_utils import build_multi_value_headers
 from .template_mapping import dict_to_string
 
-# Sun Feb 04 18:48:23 UTC 2024
 # TODO: we probably need to write and populate those logs as part of the handler chain itself
 #  and store it in the InvocationContext. That way, we could also retrieve in when calling TestInvoke
-# endpoint_request_headers -> truncated at 998 chars [TRUNCATED]
-
 
 TEST_INVOKE_TEMPLATE = """Execution log for request {request_id}
 {formatted_date} : Starting execution for request: {request_id}
@@ -56,8 +52,10 @@ def _dump_headers(headers: Headers) -> str:
     return string_headers
 
 
-def log_template(invocation_context: RestApiInvocationContext) -> str:
-    # formatted_date = date.strftime("%a %b %d %H:%M:%S %Z %Y")
+def log_template(invocation_context: RestApiInvocationContext, response_headers: Headers) -> str:
+    # TODO: funny enough, in AWS for the `endpoint_response_headers` in AWS_PROXY, they log the response headers from
+    #  lambda HTTP Invoke call even though we use the headers from the lambda response itself
+    formatted_date = datetime.datetime.now(tz=datetime.UTC).strftime("%a %b %d %H:%M:%S %Z %Y")
     request = invocation_context.invocation_request
     context_var = invocation_context.context_variables
     integration_req = invocation_context.integration_request
@@ -66,27 +64,26 @@ def log_template(invocation_context: RestApiInvocationContext) -> str:
     # TODO: if endpoint_uri is an ARN, it means it's an AWS_PROXY integration
     #  this should be transformed to the true URL of a lambda invoke call
     endpoint_uri = integration_req.get("uri", "")
-    # TODO: funny enough, in AWS for the `endpoint_response_headers` in AWS_PROXY, they log the response headers from
-    #  lambda HTTP Invoke call even though we use the headers from the lambda response itself
 
     return TEST_INVOKE_TEMPLATE.format(
-        formatted_date="",
+        formatted_date=formatted_date,
         request_id=context_var["requestId"],
-        resource_path="",
-        method_request_path_parameters=json.dumps(request["path_parameters"]),
-        method_request_query_string="",
+        resource_path=context_var["resourcePath"],
+        method_request_path_parameters=dict_to_string(request["path_parameters"]),
+        method_request_query_string=dict_to_string(request["query_string_parameters"]),
         method_request_headers=_dump_headers(request.get("headers")),
         method_request_body=to_str(request.get("body", "")),
         endpoint_uri=endpoint_uri,
         endpoint_request_headers=_dump_headers(integration_req.get("headers")),
         endpoint_request_body=to_str(integration_req.get("body", "")),
-        endpoint_response_latency="",
-        endpoint_response_status_code=endpoint_resp.get("status"),
+        # TODO: measure integration latency
+        endpoint_response_latency=150,
+        endpoint_response_status_code=endpoint_resp.get("status_code"),
         endpoint_response_body=to_str(endpoint_resp.get("body", "")),
         endpoint_response_headers=_dump_headers(endpoint_resp.get("headers")),
-        method_response_status=method_resp.get("status"),
+        method_response_status=method_resp.get("status_code"),
         method_response_body=to_str(method_resp.get("body", "")),
-        method_response_headers=_dump_headers(method_resp.get("headers")),
+        method_response_headers=_dump_headers(response_headers),
     )
 
 
@@ -109,21 +106,11 @@ def create_test_invocation_context(
     test_request: TestInvokeMethodRequest,
     deployment: RestApiDeployment,
 ) -> RestApiInvocationContext:
-    #     restApiId: String
-    #     resourceId: String
-    #     httpMethod: String
-    #     pathWithQueryString: Optional[String]
-    #     body: Optional[String]
-    #     headers: Optional[MapOfStringToString]
-    #     multiValueHeaders: Optional[MapOfStringToList]
-    #     clientCertificateId: Optional[String]
-    #     stageVariables: Optional[MapOfStringToString]
-
-    # we do not need a true HTTP request for the context, as we are skipping all the parsing steps
-    #
     parse_handler = handlers.parse_request
     http_method = test_request["httpMethod"]
 
+    # we do not need a true HTTP request for the context, as we are skipping all the parsing steps and using the
+    # provider data
     invocation_context = RestApiInvocationContext(
         request=Request(method=http_method),
     )
@@ -169,8 +156,17 @@ def create_test_invocation_context(
     invocation_context.resource = resource
     invocation_context.resource_method = resource_method
     invocation_context.integration = resource_method["methodIntegration"]
+    handlers.route_request.update_context_variables_with_resource(
+        invocation_context.context_variables, resource
+    )
 
     return invocation_context
+
+
+def _fix_headers(headers: Headers) -> Headers:
+    headers.remove("Content-Length")
+
+    return headers
 
 
 def run_test_invocation(
@@ -180,18 +176,20 @@ def run_test_invocation(
     invocation_context = create_test_invocation_context(test_request, deployment)
 
     test_chain = create_test_chain()
-    test_response = Response(headers={"Content-Type": APPLICATION_JSON})
+    # we manually add the trace-id, as it is normally added by handlers.response_enricher which adds to much data for
+    # the TestInvoke
+    test_response = Response(
+        headers={"X-Amzn-Trace-Id": invocation_context.trace_id, "Content-Type": APPLICATION_JSON}
+    )
     start_time = datetime.datetime.now()
     test_chain.handle(context=invocation_context, response=test_response)
     end_time = datetime.datetime.now()
 
-    log = log_template(invocation_context)
-    headers = dict(test_response.headers)
-    multi_value_headers = build_multi_value_headers(test_response.headers)
-    # we manually add the trace-id, as it is normally added by handlers.response_enricher which adds to much data for
-    # the TestInvoke
-    headers["X-Amzn-Trace-Id"] = invocation_context.trace_id
-    multi_value_headers["X-Amzn-Trace-Id"] = [invocation_context.trace_id]
+    response_headers = _fix_headers(test_response.headers.copy())
+    log = log_template(invocation_context, response_headers)
+
+    headers = dict(response_headers)
+    multi_value_headers = build_multi_value_headers(response_headers)
 
     return TestInvokeMethodResponse(
         log=log,

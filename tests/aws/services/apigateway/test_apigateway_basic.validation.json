@@ -15,7 +15,7 @@
     "last_validated_date": "2024-07-12T20:04:15+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_apigw_test_invoke_method_api": {
-    "last_validated_date": "2025-04-09T18:24:25+00:00"
+    "last_validated_date": "2025-04-10T19:40:04+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_update_rest_api_deployment": {
     "last_validated_date": "2024-04-12T21:24:49+00:00"

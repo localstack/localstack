@@ -1204,6 +1204,19 @@ class TestAPIGateway:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # the Endpoint URI is wrong for AWS_PROXY because AWS resolves it to the Lambda HTTP endpoint and we keep
+            # the ARN
+            "$..log.line07",
+            "$..log.line10",
+            # AWS is returning the AWS_PROXY invoke response headers even though they are not considered at all (only
+            # the lambda payload headers are considered, so this is unhelpful)
+            "$..log.line12",
+            # LocalStack does not setup headers the same way when invoking the lambda (Token, additional headers...)
+            "$..log.line08",
+        ]
+    )
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: not is_next_gen_api(),
         paths=[
             "$..headers.Content-Length",
@@ -1225,67 +1238,33 @@ class TestAPIGateway:
         region_name,
         snapshot,
     ):
-        # we want very precise snapshot matching with regexes, as it returns a long string containing the logs
-        # Execution log for request <request-id>
-        # Sun Feb 04 18:48:23 UTC 2024 : Starting execution for request: <request-id>
-        # Sun Feb 04 18:48:23 UTC 2024 : HTTP Method: GET, Resource Path: /foo
-        # Sun Feb 04 18:48:23 UTC 2024 : Method request path: {}
-        # Sun Feb 04 18:48:23 UTC 2024 : Method request query string: {}
-        # Sun Feb 04 18:48:23 UTC 2024 : Method request headers: {}
-        # Sun Feb 04 18:48:23 UTC 2024 : Method request body before transformations:
-        # Sun Feb 04 18:48:23 UTC 2024 : Endpoint request URI: https://lambda.<region>.amazonaws.com/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:test-de2a8789/invocations
-        # Sun Feb 04 18:48:23 UTC 2024 : Endpoint request headers: {x-amzn-lambda-integration-tag=d09d726b-32a3-42fc-87c7-42ac58bca845, Authorization=*********************************************************************************************************************************************************************************************************************************************************************fd20ad, X-Amz-Date=20240204T184823Z, x-amzn-apigateway-api-id=96m844vit9, Accept=application/json, User-Agent=AmazonAPIGateway_96m844vit9, X-Amz-Security-Token=IQoJb3JpZ2luX2VjEMv//////////wEaCXVzLWVhc3QtMSJHMEUCIQDH/nm1y4gMfoEBmxGW3/Tvqy4n6O3lzViNg021ao2NOQIgXFf6aGDn2L5egYErKkRsBaOKEvTn/jpaZgmTjAGO1BEq7gIIlP//////////ARACGgw2NTk2NzY4MjExMTgiDGZzbbOVj3R7zPeswyrCAtEzQYGuVCS1ylMX93oVtpfyXNQx3ZLeknme7FtyuuFFuzM2lU+a3C4ykL4j8qQmT8nFXdfX7ZzLCLmRjr1EhTgPrh7SE5XSxfBQdxTQxkoaGImnDRbceKLPxSMALrub+owhkfeZT29laOyBzPdttLM7iG7Q/bws/ywC0I8HMJA4Dl5KHMhiKDBncYXjdYhlHCSPb+qN/5cZ1Wm+jUV/znw6RG8Hhz+mKzFDckbVItiRD+CdbP5V3IjVZgtzSvwXqN8EXN9R0tRXE+b0FD7AUMctWoDbCqkIHf [TRUNCATED]
-        # Sun Feb 04 18:48:23 UTC 2024 : Endpoint request body after transformations:
-        # Sun Feb 04 18:48:23 UTC 2024 : Sending request to https://lambda.<region>.amazonaws.com/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:test-de2a8789/invocations
-        # Sun Feb 04 18:48:24 UTC 2024 : Received response. Status: 200, Integration latency: 356 ms
-        # Sun Feb 04 18:48:24 UTC 2024 : Endpoint response headers: {Date=Sun, 04 Feb 2024 18:48:24 GMT, Content-Type=application/json, Content-Length=104, Connection=keep-alive, x-amzn-RequestId=20a0cc6d-ade0-417f-853d-04c72dbe23d6, x-amzn-Remapped-Content-Length=0, X-Amz-Executed-Version=$LATEST, X-Amzn-Trace-Id=root=1-65bfdbf7-1b5920a5a0a57e32194306b3;parent=5c9925637b7d89fa;sampled=0;lineage=59cc7ee1:0}
-        # Sun Feb 04 18:48:24 UTC 2024 : Endpoint response body before transformations: {\"statusCode\":200,\"body\":\"\\\"response from localstack lambda: {}\\\"\",\"isBase64Encoded\":false,\"headers\":{}}
-        # Sun Feb 04 18:48:24 UTC 2024 : Method response body after transformations: {\"statusCode\":200,\"body\":\"\\\"response from localstack lambda: {}\\\"\",\"isBase64Encoded\":false,\"headers\":{}}
-        # Sun Feb 04 18:48:24 UTC 2024 : Method response headers: {X-Amzn-Trace-Id=Root=1-65bfdbf7-1b5920a5a0a57e32194306b3;Parent=5c9925637b7d89fa;Sampled=0;lineage=59cc7ee1:0, Content-Type=application/json}
-        # Sun Feb 04 18:48:24 UTC 2024 : Successfully completed execution
-        # Sun Feb 04 18:48:24 UTC 2024 : Method completed with status: 200
         snapshot.add_transformers_list(
             [
+                snapshot.transform.key_value(
+                    "latency", value_replacement="<latency>", reference_replacement=False
+                ),
                 snapshot.transform.jsonpath(
                     "$..headers.X-Amzn-Trace-Id", value_replacement="x-amz-trace-id"
                 ),
                 snapshot.transform.regex(
-                    r"URI: https://.*/2015-03-31", "URI: https://<endpoint_url>/2015-03-31"
+                    r"URI: https:\/\/.*?\/2015-03-31", "URI: https://<endpoint_url>/2015-03-31"
                 ),
                 snapshot.transform.regex(
-                    r"Integration latency: \d* ms", "Integration latency: <latency> ms"
+                    r"Integration latency: \d*? ms", "Integration latency: <latency> ms"
                 ),
                 snapshot.transform.regex(
                     r"Date=[a-zA-Z]{3},\s\d{2}\s[a-zA-Z]{3}\s\d{4}\s\d{2}:\d{2}:\d{2}\sGMT",
                     r"Date=Day, dd MMM yyyy hh:mm:ss GMT",
                 ),
                 snapshot.transform.regex(
-                    r"x-amzn-RequestId=.*,", r"x-amzn-RequestId=<request-id-lambda>,"
+                    r"x-amzn-RequestId=[a-f0-9-]{36}", r"x-amzn-RequestId=<request-id-lambda>"
                 ),
                 snapshot.transform.regex(
-                    r"^[a-zA-Z]{3}\s[a-zA-Z]{3}\s\d{2}\s\d{2}:\d{2}:\d{2}\sUTC\s\d{4} :",
+                    r"[a-zA-Z]{3}\s[a-zA-Z]{3}\s\d{2}\s\d{2}:\d{2}:\d{2}\sUTC\s\d{4} :",
                     r"DDD MMM dd hh:mm:ss UTC yyyy :",
                 ),
             ]
         )
-
-        # Execution log for request 63ecf43a-1b6e-40ef-80b7-98c5b7484ec9
-        # Sun Feb 04 18:48:24 UTC 2024 : Starting execution for request: 63ecf43a-1b6e-40ef-80b7-98c5b7484ec9
-        # Sun Feb 04 18:48:24 UTC 2024 : HTTP Method: GET, Resource Path: /foo
-        # Sun Feb 04 18:48:24 UTC 2024 : Method request path: {}
-        # Sun Feb 04 18:48:24 UTC 2024 : Method request query string: {}
-        # Sun Feb 04 18:48:24 UTC 2024 : Method request headers: {content-type=application/json}
-        # Sun Feb 04 18:48:24 UTC 2024 : Method request body before transformations: {\"test\": \"val123\"}
-        # Sun Feb 04 18:48:24 UTC 2024 : Endpoint request URI: https://lambda.<region>.amazonaws.com/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:test-de2a8789/invocations
-        # Sun Feb 04 18:48:24 UTC 2024 : Endpoint request headers: {x-amzn-lambda-integration-tag=63ecf43a-1b6e-40ef-80b7-98c5b7484ec9, Authorization=*******************************************************************************************************************************************************************************************************************************************************************************************************4b5ad4, X-Amz-Date=20240204T184824Z, x-amzn-apigateway-api-id=96m844vit9, Accept=application/json, User-Agent=AmazonAPIGateway_96m844vit9, X-Amz-Security-Token=IQoJb3JpZ2luX2VjEMv//////////wEaCXVzLWVhc3QtMSJIMEYCIQCX8aMq+Q5P6zw4SzP7nSzzMTzd2D0tbCwx9jyQnWiiSgIhAKevG8f4Qo1O/lr+A17AujqFg9AqJCIB5zNu+g8RZFl+Ku4CCJT//////////wEQAhoMNjU5Njc2ODIxMTE4IgxyHR1NVV6IvXrBrD8qwgJNyGLqGkyhoWFD36VE4ENpEW9PzKtbnKkQq/tqZdBBSwvzTmANSNEE7dIpiTolgXGMN4llNaV9CNYF+Ro/zXmsY4u/y8HgSFnTst/iOam+hEGQEr9BEflhu1Sqy7xqBt5pfIVscdpPNVsdX0OLKDT98v3pTRUnilsMDK/6F4wzl4SJ8mQ4vYqCN5mh6n+96Ze2Q0ldYEDjbBmMItgyDk2so2OxMiVPtrhJ81u7NYsEYdmgQ5dve3rQYT7+oVnA [TRUNCATED]
-        # Sun Feb 04 18:48:24 UTC 2024 : Endpoint request body after transformations: {\"test\": \"val123\"}
-        # Sun Feb 04 18:48:24 UTC 2024 : Sending request to https://lambda.<region>.amazonaws.com/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:test-de2a8789/invocations
-        # Sun Feb 04 18:48:24 UTC 2024 : Received response. Status: 200, Integration latency: 25 ms
-        # Sun Feb 04 18:48:24 UTC 2024 : Endpoint response headers: {Date=Sun, 04 Feb 2024 18:48:24 GMT, Content-Type=application/json, Content-Length=131, Connection=keep-alive, x-amzn-RequestId=57dc53e3-bc2e-449b-83ef-fd7d97479909, x-amzn-Remapped-Content-Length=0, X-Amz-Executed-Version=$LATEST, X-Amzn-Trace-Id=root=1-65bfdbf8-caa70673935f456b40debcda;parent=0f5819866f6639ce;sampled=0;lineage=59cc7ee1:0}
-        # Sun Feb 04 18:48:24 UTC 2024 : Endpoint response body before transformations: {\"statusCode\":200,\"body\":\"\\\"response from localstack lambda: {\\\\\\\"test\\\\\\\":\\\\\\\"val123\\\\\\\"}\\\"\",\"isBase64Encoded\":false,\"headers\":{}}
-        # Sun Feb 04 18:48:24 UTC 2024 : Method response body after transformations: {\"statusCode\":200,\"body\":\"\\\"response from localstack lambda: {\\\\\\\"test\\\\\\\":\\\\\\\"val123\\\\\\\"}\\\"\",\"isBase64Encoded\":false,\"headers\":{}}
-        # Sun Feb 04 18:48:24 UTC 2024 : Method response headers: {X-Amzn-Trace-Id=Root=1-65bfdbf8-caa70673935f456b40debcda;Parent=0f5819866f6639ce;Sampled=0;lineage=59cc7ee1:0, Content-Type=application/json}
-        # Sun Feb 04 18:48:24 UTC 2024 : Successfully completed execution\nSun Feb 04 18:48:24 UTC 2024 : Method completed with status: 200
 
         _, role_arn = create_role_with_policy(
             "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
@@ -1361,11 +1340,18 @@ class TestAPIGateway:
             return _response
 
         invoke_simple = retry(_test_invoke_call, retries=15, sleep=1, path_with_qs="/foo")
+
+        def _transform_log(_log: str) -> dict[str, str]:
+            return {f"line{index:02d}": line for index, line in enumerate(_log.split("\n"))}
+
         # we want to do very precise matching on the log, and splitting on new lines will help in case the snapshot
         # fails
-        invoke_simple["log"] = invoke_simple["log"].split("\n")
-        request_id_1 = invoke_simple["log"][0].split(" ")[-1]
-        snapshot.add_transformer(snapshot.transform.regex(request_id_1, "<request-id-1>"))
+        # the snapshot library does not allow to ignore an array index as the last node, so we need to put it in a dict
+        invoke_simple["log"] = _transform_log(invoke_simple["log"])
+        request_id_1 = invoke_simple["log"]["line00"].split(" ")[-1]
+        snapshot.add_transformer(
+            snapshot.transform.regex(request_id_1, "<request-id-1>"), priority=-1
+        )
         snapshot.match("test_invoke_method_response", invoke_simple)
 
         # run test_invoke_method API #2
@@ -1380,10 +1366,11 @@ class TestAPIGateway:
         response_body = json.loads(invoke_with_parameters.get("body")).get("body")
         assert "response from" in response_body
         assert "val123" in response_body
-
-        invoke_with_parameters["log"] = invoke_with_parameters["log"].split("\n")
-        request_id_2 = invoke_with_parameters["log"][0].split(" ")[-1]
-        snapshot.add_transformer(snapshot.transform.regex(request_id_2, "<request-id-2>"))
+        invoke_with_parameters["log"] = _transform_log(invoke_with_parameters["log"])
+        request_id_2 = invoke_with_parameters["log"]["line00"].split(" ")[-1]
+        snapshot.add_transformer(
+            snapshot.transform.regex(request_id_2, "<request-id-2>"), priority=-1
+        )
         snapshot.match("test_invoke_method_response_with_body", invoke_with_parameters)
 
     @markers.aws.validated

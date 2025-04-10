@@ -1,7 +1,102 @@
 {
   "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_apigw_test_invoke_method_api": {
-    "recorded-date": "09-04-2025, 18:24:25",
-    "recorded-content": {}
+    "recorded-date": "10-04-2025, 19:40:04",
+    "recorded-content": {
+      "test_invoke_method_response": {
+        "body": {
+          "statusCode": 200,
+          "body": "\"response from localstack lambda: {}\"",
+          "isBase64Encoded": false,
+          "headers": {}
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "X-Amzn-Trace-Id": "<x-amz-trace-id:1>"
+        },
+        "latency": "<latency>",
+        "log": {
+          "line00": "Execution log for request <request-id-1>",
+          "line01": "DDD MMM dd hh:mm:ss UTC yyyy : Starting execution for request: <request-id-1>",
+          "line02": "DDD MMM dd hh:mm:ss UTC yyyy : HTTP Method: GET, Resource Path: /foo",
+          "line03": "DDD MMM dd hh:mm:ss UTC yyyy : Method request path: {}",
+          "line04": "DDD MMM dd hh:mm:ss UTC yyyy : Method request query string: {}",
+          "line05": "DDD MMM dd hh:mm:ss UTC yyyy : Method request headers: {}",
+          "line06": "DDD MMM dd hh:mm:ss UTC yyyy : Method request body before transformations: ",
+          "line07": "DDD MMM dd hh:mm:ss UTC yyyy : Endpoint request URI: https://<endpoint_url>/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:<function-name>/invocations",
+          "line08": "DDD MMM dd hh:mm:ss UTC yyyy : Endpoint request headers: {x-amzn-lambda-integration-tag=<request-id-1>, Authorization=*********************************************************************************************************************************************************************************************************************************************************************ca7606, X-Amz-Date=20250410T194004Z, x-amzn-apigateway-api-id=9tmlb8b101, Accept=application/json, User-Agent=AmazonAPIGateway_9tmlb8b101, X-Amz-Security-Token=IQoJb3JpZ2luX2VjEDQaCWV1LXdlc3QtMyJHMEUCIGhArE0d1b6khTa1VNnEYLGSGEdKirUtUpk4EcFQA2RWAiEA5rSnLQg1Dj7sEEeJt4j8skkzKqh2IU43diqRS/ZE0fgq7gIIrf//////////ARAAGgw2NzExMDc2Nzg0MTIiDKkWYgsnQ8xn9BzveSrCArA9qunrwSdEylofk8s22UEVNPdgJ+YcnRYDJ0/242R6Bu6CjLORoDmrGmYYlYhkH96ekamZw4jwZb1MaQTgVW+KIqkE+UiG5byM4Geq2uQWSmA+vAWAhJADh0lvzTlhYw7yQbBUq/obsbs8Jmp064RIY5IZYEHVinWfRkwyjL06i5r1DpYj7SCiaZCE18/JSLn02Rt1pnN6VhJwzadx/USf7B81kNNNntYE8akM+b+oxLFTYtG4jPEG3FmobaCrnJcC+eMNR4hkkFqaDd27lTzjhNV9/nPf0dr3Earg85OYOF [TRUNCATED]",
+          "line09": "DDD MMM dd hh:mm:ss UTC yyyy : Endpoint request body after transformations: ",
+          "line10": "DDD MMM dd hh:mm:ss UTC yyyy : Sending request to https://lambda.<region>.amazonaws.com/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:<function-name>/invocations",
+          "line11": "DDD MMM dd hh:mm:ss UTC yyyy : Received response. Status: 200, Integration latency: <latency> ms",
+          "line12": "DDD MMM dd hh:mm:ss UTC yyyy : Endpoint response headers: {Date=Day, dd MMM yyyy hh:mm:ss GMT, Content-Type=application/json, Content-Length=104, Connection=keep-alive, x-amzn-RequestId=<request-id-lambda>, x-amzn-Remapped-Content-Length=0, X-Amz-Executed-Version=$LATEST, X-Amzn-Trace-Id=<x-amz-trace-id:1>}",
+          "line13": "DDD MMM dd hh:mm:ss UTC yyyy : Endpoint response body before transformations: {\"statusCode\":200,\"body\":\"\\\"response from localstack lambda: {}\\\"\",\"isBase64Encoded\":false,\"headers\":{}}",
+          "line14": "DDD MMM dd hh:mm:ss UTC yyyy : Method response body after transformations: {\"statusCode\":200,\"body\":\"\\\"response from localstack lambda: {}\\\"\",\"isBase64Encoded\":false,\"headers\":{}}",
+          "line15": "DDD MMM dd hh:mm:ss UTC yyyy : Method response headers: {X-Amzn-Trace-Id=<x-amz-trace-id:1>, Content-Type=application/json}",
+          "line16": "DDD MMM dd hh:mm:ss UTC yyyy : Successfully completed execution",
+          "line17": "DDD MMM dd hh:mm:ss UTC yyyy : Method completed with status: 200",
+          "line18": ""
+        },
+        "multiValueHeaders": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "X-Amzn-Trace-Id": [
+            "<x-amz-trace-id:1>"
+          ]
+        },
+        "status": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "test_invoke_method_response_with_body": {
+        "body": {
+          "statusCode": 200,
+          "body": "\"response from localstack lambda: {\\\"test\\\":\\\"val123\\\"}\"",
+          "isBase64Encoded": false,
+          "headers": {}
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "X-Amzn-Trace-Id": "<x-amz-trace-id:2>"
+        },
+        "latency": "<latency>",
+        "log": {
+          "line00": "Execution log for request <request-id-2>",
+          "line01": "DDD MMM dd hh:mm:ss UTC yyyy : Starting execution for request: <request-id-2>",
+          "line02": "DDD MMM dd hh:mm:ss UTC yyyy : HTTP Method: GET, Resource Path: /foo",
+          "line03": "DDD MMM dd hh:mm:ss UTC yyyy : Method request path: {}",
+          "line04": "DDD MMM dd hh:mm:ss UTC yyyy : Method request query string: {queryTest=value}",
+          "line05": "DDD MMM dd hh:mm:ss UTC yyyy : Method request headers: {content-type=application/json}",
+          "line06": "DDD MMM dd hh:mm:ss UTC yyyy : Method request body before transformations: {\"test\": \"val123\"}",
+          "line07": "DDD MMM dd hh:mm:ss UTC yyyy : Endpoint request URI: https://<endpoint_url>/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:<function-name>/invocations",
+          "line08": "DDD MMM dd hh:mm:ss UTC yyyy : Endpoint request headers: {x-amzn-lambda-integration-tag=<request-id-2>, Authorization=*******************************************************************************************************************************************************************************************************************************************************************************************************28eddc, X-Amz-Date=20250410T194004Z, x-amzn-apigateway-api-id=9tmlb8b101, Accept=application/json, User-Agent=AmazonAPIGateway_9tmlb8b101, X-Amz-Security-Token=IQoJb3JpZ2luX2VjEDQaCWV1LXdlc3QtMyJGMEQCIGUEndRBbvLl3Ueps7zoq7WeMd7Pi7papod7KAbC58tlAiAwacGZkYpzdiAx2FxQlGTyM3+6X68ew/HHVyvITaYyqyruAgit//////////8BEAAaDDY3MTEwNzY3ODQxMiIM6rAlcNDNqulZTyYaKsIC5Y3tA6xr/2uiYNj/DDQdZ3VrN12G1YU1jQWaOlbcrAFV5KrX42A+1kxHcrerVSvmm0SY5ZwCyb/QeExP1QV4d33sWO3R+IHtehpiqGyULAH4fWen48DxUkggjBIW+ehRY8E5aeyzSjShaZwDAikRF/gzhYoEfq+Oowpmp2Xq3vwTLCiLtMWqEqXsZAgDUslUce8c3LzpRhBFbU0LfEBeFRTiIH9l1Ul15HpnR/p1pSfo/IrejU2Bme0yTwgzUN8YxhsUX3vXCCX/ [TRUNCATED]",
+          "line09": "DDD MMM dd hh:mm:ss UTC yyyy : Endpoint request body after transformations: {\"test\": \"val123\"}",
+          "line10": "DDD MMM dd hh:mm:ss UTC yyyy : Sending request to https://lambda.<region>.amazonaws.com/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:<function-name>/invocations",
+          "line11": "DDD MMM dd hh:mm:ss UTC yyyy : Received response. Status: 200, Integration latency: <latency> ms",
+          "line12": "DDD MMM dd hh:mm:ss UTC yyyy : Endpoint response headers: {Date=Day, dd MMM yyyy hh:mm:ss GMT, Content-Type=application/json, Content-Length=131, Connection=keep-alive, x-amzn-RequestId=<request-id-lambda>, x-amzn-Remapped-Content-Length=0, X-Amz-Executed-Version=$LATEST, X-Amzn-Trace-Id=<x-amz-trace-id:2>}",
+          "line13": "DDD MMM dd hh:mm:ss UTC yyyy : Endpoint response body before transformations: {\"statusCode\":200,\"body\":\"\\\"response from localstack lambda: {\\\\\\\"test\\\\\\\":\\\\\\\"val123\\\\\\\"}\\\"\",\"isBase64Encoded\":false,\"headers\":{}}",
+          "line14": "DDD MMM dd hh:mm:ss UTC yyyy : Method response body after transformations: {\"statusCode\":200,\"body\":\"\\\"response from localstack lambda: {\\\\\\\"test\\\\\\\":\\\\\\\"val123\\\\\\\"}\\\"\",\"isBase64Encoded\":false,\"headers\":{}}",
+          "line15": "DDD MMM dd hh:mm:ss UTC yyyy : Method response headers: {X-Amzn-Trace-Id=<x-amz-trace-id:2>, Content-Type=application/json}",
+          "line16": "DDD MMM dd hh:mm:ss UTC yyyy : Successfully completed execution",
+          "line17": "DDD MMM dd hh:mm:ss UTC yyyy : Method completed with status: 200",
+          "line18": ""
+        },
+        "multiValueHeaders": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "X-Amzn-Trace-Id": [
+            "<x-amz-trace-id:2>"
+          ]
+        },
+        "status": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   },
   "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_update_rest_api_deployment": {
     "recorded-date": "12-04-2024, 21:24:49",
