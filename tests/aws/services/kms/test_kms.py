@@ -2070,9 +2070,6 @@ class TestKMSGenerateKeys:
             aws_client.kms.generate_data_key_pair(KeyId=key_id, KeyPairSpec="RSA_2048", DryRun=True)
 
         err = exc.value.response
-        assert err["Error"]["Code"] == "DryRunOperationException"
-
-        # Optional: match the exception with snapshot
         snapshot.match("dryrun_exception", err)
 
     @markers.aws.validated
@@ -2095,7 +2092,4 @@ class TestKMSGenerateKeys:
             )
 
         err = exc.value.response
-        assert err["Error"]["Code"] == "DryRunOperationException"
-
-        # Optional: match the exception with snapshot
         snapshot.match("dryrun_exception", err)
