@@ -103,7 +103,6 @@ class PackageInstaller(abc.ABC):
         except PackageException as e:
             raise e
         except Exception as e:
-            LOG.debug("Package failed to install %s %s: %s", self.name, self.version, e)
             raise PackageException(f"Installation of {self.name} {self.version} failed.") from e
 
     def is_installed(self) -> bool:
