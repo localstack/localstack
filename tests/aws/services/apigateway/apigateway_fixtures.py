@@ -26,6 +26,15 @@ def assert_response_is_201(response: Dict) -> bool:
     return True
 
 
+def import_rest_api(apigateway_client, **kwargs):
+    response = apigateway_client.import_rest_api(**kwargs)
+    assert_response_is_201(response)
+    resources = apigateway_client.get_resources(restApiId=response.get("id"))
+    root_id = next(item for item in resources["items"] if item["path"] == "/")["id"]
+
+    return response, root_id
+
+
 def create_rest_resource(apigateway_client, **kwargs):
     response = apigateway_client.create_resource(**kwargs)
     assert_response_is_201(response)

@@ -13,6 +13,7 @@ from tests.aws.services.apigateway.apigateway_fixtures import (
     create_rest_api_stage,
     create_rest_resource,
     create_rest_resource_method,
+    import_rest_api,
 )
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO_STATUS_CODE
 
@@ -223,7 +224,7 @@ def import_apigw(aws_client, aws_client_factory):
         apigateway_client = aws_client.apigateway
 
     def _import_apigateway_function(*args, **kwargs):
-        response, root_id = apigateway_client.import_rest_api(**kwargs)
+        response, root_id = import_rest_api(apigateway_client, **kwargs)
         rest_api_ids.append(response.get("id"))
         return response, root_id
 

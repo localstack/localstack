@@ -22,7 +22,7 @@ from .template_mapping import dict_to_string
 
 TEST_INVOKE_TEMPLATE = """Execution log for request {request_id}
 {formatted_date} : Starting execution for request: {request_id}
-{formatted_date} : HTTP Method: GET, Resource Path: {resource_path}
+{formatted_date} : HTTP Method: {request_method}, Resource Path: {resource_path}
 {formatted_date} : Method request path: {method_request_path_parameters}
 {formatted_date} : Method request query string: {method_request_query_string}
 {formatted_date} : Method request headers: {method_request_headers}
@@ -68,7 +68,8 @@ def log_template(invocation_context: RestApiInvocationContext, response_headers:
     return TEST_INVOKE_TEMPLATE.format(
         formatted_date=formatted_date,
         request_id=context_var["requestId"],
-        resource_path=context_var["resourcePath"],
+        resource_path=request["path"],
+        request_method=request["http_method"],
         method_request_path_parameters=dict_to_string(request["path_parameters"]),
         method_request_query_string=dict_to_string(request["query_string_parameters"]),
         method_request_headers=_dump_headers(request.get("headers")),
@@ -176,11 +177,18 @@ def run_test_invocation(
     invocation_context = create_test_invocation_context(test_request, deployment)
 
     test_chain = create_test_chain()
-    # we manually add the trace-id, as it is normally added by handlers.response_enricher which adds to much data for
-    # the TestInvoke
-    test_response = Response(
-        headers={"X-Amzn-Trace-Id": invocation_context.trace_id, "Content-Type": APPLICATION_JSON}
-    )
+    # header order is important
+    if invocation_context.integration["type"] == "MOCK":
+        base_headers = {"Content-Type": APPLICATION_JSON}
+    else:
+        # we manually add the trace-id, as it is normally added by handlers.response_enricher which adds to much data
+        # for the TestInvoke. It needs to be first
+        base_headers = {
+            "X-Amzn-Trace-Id": invocation_context.trace_id,
+            "Content-Type": APPLICATION_JSON,
+        }
+
+    test_response = Response(headers=base_headers)
     start_time = datetime.datetime.now()
     test_chain.handle(context=invocation_context, response=test_response)
     end_time = datetime.datetime.now()
