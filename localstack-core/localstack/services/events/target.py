@@ -64,6 +64,7 @@ PREDEFINED_PLACEHOLDERS: Set[str] = AWS_PREDEFINED_PLACEHOLDERS_STRING_VALUES.un
 )
 
 TRANSFORMER_PLACEHOLDER_PATTERN = re.compile(r"<(.*?)>")
+TRACE_HEADER_KEY = "X-Amzn-Trace-Id"
 
 
 def transform_event_with_target_input_path(
@@ -260,7 +261,7 @@ class TargetSender(ABC):
         client = client.request_metadata(
             service_principal=service_principal, source_arn=self.rule_arn
         )
-        self._register_client_hooks()
+        self._register_client_hooks(client)
         return client
 
     def _validate_input_transformer(self, input_transformer: InputTransformer):
@@ -291,12 +292,23 @@ class TargetSender(ABC):
 
         return predefined_template_replacements
 
-    def _register_client_hooks(self):
-        def handle_inject_headers(params, context, **kwargs):
-            if trace_header := context.trace_context["aws_trace_header"]:
-                params["headers"]["X-Amzn-Trace-Id"] = trace_header.to_header_str()
+    def _register_client_hooks(self, client: BaseClient):
+        """Register client hooks to inject trace header into requests."""
 
-        self._client.register(f"before-call.{self.service}.*", handle_inject_headers)
+        def handle_extract_params(params, context, **kwargs):
+            trace_header = params.pop("TraceHeader", None)
+            if trace_header is None:
+                return
+            context[TRACE_HEADER_KEY] = trace_header.to_header_str()
+
+        def handle_inject_headers(params, context, **kwargs):
+            if trace_header_str := context.pop(TRACE_HEADER_KEY, None):
+                params["headers"][TRACE_HEADER_KEY] = trace_header_str
+
+        client.meta.events.register(
+            f"provide-client-params.{self.service}.*", handle_extract_params
+        )
+        client.meta.events.register(f"before-call.{self.service}.*", handle_inject_headers)
 
 
 TargetSenderDict = dict[str, TargetSender]  # rule_arn-target_id as global unique id
@@ -395,7 +407,7 @@ class ApiGatewayTargetSender(TargetSender):
         event_json = json.dumps(event, default=str)
 
         # Add trace header
-        headers["X-Amzn-Trace-Id"] = trace_header.to_header_str()
+        headers[TRACE_HEADER_KEY] = trace_header.to_header_str()
 
         # Send the HTTP request
         response = requests.request(
@@ -479,7 +491,7 @@ class EventsTargetSender(TargetSender):
         ):
             entries[0]["TraceHeader"] = encoded_original_id
 
-        self.client.put_events(Entries=entries)
+        self.client.put_events(Entries=entries, TraceHeader=trace_header)
 
     def _get_source(self, event: FormattedEvent | TransformedEvent) -> str:
         if isinstance(event, dict) and (source := event.get("source")):
@@ -536,7 +548,7 @@ class EventsApiDestinationTargetSender(TargetSender):
             endpoint = add_target_http_parameters(http_parameters, endpoint, headers, event)
 
         # add trace header
-        headers["X-Amzn-Trace-Id"] = trace_header.to_header_str()
+        headers[TRACE_HEADER_KEY] = trace_header.to_header_str()
 
         result = requests.request(
             method=method, url=endpoint, data=json.dumps(event or {}), headers=headers
@@ -590,6 +602,7 @@ class LambdaTargetSender(TargetSender):
             FunctionName=self.target["Arn"],
             Payload=to_bytes(to_json_str(event)),
             InvocationType="Event",
+            TraceHeader=trace_header,
         )
 
 
