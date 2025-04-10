@@ -85,7 +85,7 @@ class StsProvider(StsApi, ServiceLifecycleHook):
 
         transitive_tag_keys = transitive_tag_keys or []
         tags = tags or []
-        transformed_tags = {tag["Key"].lower(): tag["Value"].lower() for tag in tags}
+        transformed_tags = {tag["Key"].lower(): tag["Value"] for tag in tags}
         # propagate transitive tags
         if existing_tagging_config:
             for tag in existing_tagging_config["transitive_tags"]:
