@@ -7261,5 +7261,12 @@
         "Tags": []
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_execute_with_ref": {
+    "recorded-date": "11-04-2025, 14:34:15",
+    "recorded-content": {
+      "before-value": "<name-1>",
+      "after-value": "<name-2>"
+    }
   }
 }

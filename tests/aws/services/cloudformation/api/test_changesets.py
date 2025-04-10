@@ -1826,6 +1826,50 @@ class TestCaptureUpdateProcess:
         )
 
     @markers.aws.validated
+    def test_execute_with_ref(self, snapshot, aws_client, deploy_cfn_template):
+        name1 = f"param-1-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(name1, "<name-1>"))
+        name2 = f"param-2-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(name2, "<name-2>"))
+        value = "my-value"
+        param2_name = f"output-param-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(param2_name, "<output-parameter>"))
+
+        t1 = {
+            "Resources": {
+                "Parameter1": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": name1,
+                        "Type": "String",
+                        "Value": value,
+                    },
+                },
+                "Parameter2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": param2_name,
+                        "Type": "String",
+                        "Value": {"Ref": "Parameter1"},
+                    },
+                },
+            }
+        }
+        t2 = copy.deepcopy(t1)
+        t2["Resources"]["Parameter1"]["Properties"]["Name"] = name2
+
+        stack = deploy_cfn_template(template=json.dumps(t1))
+        stack_id = stack.stack_id
+
+        before_value = aws_client.ssm.get_parameter(Name=param2_name)["Parameter"]["Value"]
+        snapshot.match("before-value", before_value)
+
+        deploy_cfn_template(stack_name=stack_id, template=json.dumps(t2), is_update=True)
+
+        after_value = aws_client.ssm.get_parameter(Name=param2_name)["Parameter"]["Value"]
+        snapshot.match("after-value", after_value)
+
+    @markers.aws.validated
     @pytest.mark.skip("Executor is WIP")
     @pytest.mark.parametrize(
         "template_1, template_2",

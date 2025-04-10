@@ -60,8 +60,15 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         return delta
 
     def _reduce_intrinsic_function_ref_value(self, preproc_value: Any) -> Any:
-        # TODO: this should be implemented to compute the runtime reference value for node entities.
-        return super()._reduce_intrinsic_function_ref_value(preproc_value=preproc_value)
+        resource = self.resources.get(preproc_value.name)
+        if resource is None:
+            raise NotImplementedError(f"No resource '{preproc_value.name}' found")
+        physical_resource_id = resource.get("PhysicalResourceId")
+        if not physical_resource_id:
+            raise NotImplementedError(
+                f"no physical resource id found for resource '{preproc_value.name}'"
+            )
+        return physical_resource_id
 
     def _execute_on_resource_change(
         self, name: str, before: Optional[PreprocResource], after: Optional[PreprocResource]

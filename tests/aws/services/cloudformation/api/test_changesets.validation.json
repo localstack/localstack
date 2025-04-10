@@ -23,6 +23,9 @@
   "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_dynamic_update": {
     "last_validated_date": "2025-04-01T12:30:53+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_execute_with_ref": {
+    "last_validated_date": "2025-04-11T14:34:09+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_mappings_with_parameter_lookup": {
     "last_validated_date": "2025-04-01T13:31:33+00:00"
   },
