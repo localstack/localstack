@@ -1640,7 +1640,7 @@ class TestCaptureUpdateProcess:
 
     @markers.aws.validated
     @pytest.mark.skip(
-        "Deployment fails however this appears to be unrelated from the update graph building and describe"
+        "Deployment now succeeds but our describer incorrectly does not assign a change for Parameter2"
     )
     def test_unrelated_changes_requires_replacement(
         self,
