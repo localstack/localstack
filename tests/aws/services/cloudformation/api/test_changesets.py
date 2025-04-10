@@ -1382,7 +1382,6 @@ class TestCaptureUpdateProcess:
         capture_update_process(snapshot, t1, t1, p1={"TopicName": name1}, p2={"TopicName": name2})
 
     @markers.aws.validated
-    @pytest.mark.skip("Deployment fails, as executor is WIP")
     def test_mappings_with_static_fields(
         self,
         snapshot,
