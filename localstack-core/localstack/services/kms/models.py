@@ -191,6 +191,7 @@ class KmsCryptoKey:
             list(RSA_CRYPTO_KEY_LENGTHS.keys())
             + list(ECC_CURVES.keys())
             + list(HMAC_RANGE_KEY_LENGTHS.keys())
+            + ["SYMMETRIC_DEFAULT"]
         )
 
         if key_spec not in valid_specs:
@@ -210,9 +211,11 @@ class KmsCryptoKey:
         self.key_material = key_material or os.urandom(SYMMETRIC_DEFAULT_MATERIAL_LENGTH)
         self.key_spec = key_spec
 
+        KmsCryptoKey.assert_valid(key_spec)
+
         if key_spec == "SYMMETRIC_DEFAULT":
             return
-
+       
         if key_spec.startswith("RSA"):
             key_size = RSA_CRYPTO_KEY_LENGTHS.get(key_spec)
             key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
@@ -223,22 +226,11 @@ class KmsCryptoKey:
             else:
                 key = ec.generate_private_key(curve)
         elif key_spec.startswith("HMAC"):
-            if key_spec not in HMAC_RANGE_KEY_LENGTHS:
-                raise ValidationException(
-                    f"1 validation error detected: Value '{key_spec}' at 'keySpec' "
-                    f"failed to satisfy constraint: Member must satisfy enum value set: "
-                    f"[RSA_2048, ECC_NIST_P384, ECC_NIST_P256, ECC_NIST_P521, HMAC_384, RSA_3072, "
-                    f"ECC_SECG_P256K1, RSA_4096, SYMMETRIC_DEFAULT, HMAC_256, HMAC_224, HMAC_512]"
-                )
             minimum_length, maximum_length = HMAC_RANGE_KEY_LENGTHS.get(key_spec)
             self.key_material = key_material or os.urandom(
                 random.randint(minimum_length, maximum_length)
             )
             return
-        else:
-            # We do not support SM2 - asymmetric keys both suitable for ENCRYPT_DECRYPT and SIGN_VERIFY,
-            # but only used in China AWS regions.
-            raise UnsupportedOperationException(f"KeySpec {key_spec} is not supported")
 
         self._serialize_key(key)
 
