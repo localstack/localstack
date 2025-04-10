@@ -1699,108 +1699,116 @@ class TestCaptureUpdateProcess:
         capture_update_process(snapshot, t1, t2)
 
     @markers.aws.validated
-    @pytest.mark.skip("Executor is WIP")
+    # @pytest.mark.skip("Executor is WIP")
     @pytest.mark.parametrize(
         "template",
         [
-            {
-                "Parameters": {
-                    "ParameterValue": {
-                        "Type": "String",
-                    },
-                },
-                "Resources": {
-                    "Parameter": {
-                        "Type": "AWS::SSM::Parameter",
-                        "Properties": {
+            # pytest.param(
+            #     {
+            #         "Parameters": {
+            #             "ParameterValue": {
+            #                 "Type": "String",
+            #             },
+            #         },
+            #         "Resources": {
+            #             "Parameter": {
+            #                 "Type": "AWS::SSM::Parameter",
+            #                 "Properties": {
+            #                     "Type": "String",
+            #                     "Value": {"Ref": "ParameterValue"},
+            #                 },
+            #             }
+            #         },
+            #     },
+            #     id="change_dynamic",
+            # ),
+            # pytest.param(
+            #     {
+            #         "Parameters": {
+            #             "ParameterValue": {
+            #                 "Type": "String",
+            #             },
+            #         },
+            #         "Resources": {
+            #             "Parameter1": {
+            #                 "Type": "AWS::SSM::Parameter",
+            #                 "Properties": {
+            #                     "Name": "param-name",
+            #                     "Type": "String",
+            #                     "Value": {"Ref": "ParameterValue"},
+            #                 },
+            #             },
+            #             "Parameter2": {
+            #                 "Type": "AWS::SSM::Parameter",
+            #                 "Properties": {
+            #                     "Type": "String",
+            #                     "Value": {"Fn::GetAtt": ["Parameter1", "Name"]},
+            #                 },
+            #             },
+            #         },
+            #     },
+            #     id="change_unrelated_property",
+            # ),
+            # pytest.param(
+            #     {
+            #         "Parameters": {
+            #             "ParameterValue": {
+            #                 "Type": "String",
+            #             },
+            #         },
+            #         "Resources": {
+            #             "Parameter1": {
+            #                 "Type": "AWS::SSM::Parameter",
+            #                 "Properties": {
+            #                     "Type": "String",
+            #                     "Value": {"Ref": "ParameterValue"},
+            #                 },
+            #             },
+            #             "Parameter2": {
+            #                 "Type": "AWS::SSM::Parameter",
+            #                 "Properties": {
+            #                     "Type": "String",
+            #                     "Value": {"Fn::GetAtt": ["Parameter1", "Type"]},
+            #                 },
+            #             },
+            #         },
+            #     },
+            #     id="change_unrelated_property_not_create_only",
+            # ),
+            pytest.param(
+                {
+                    "Parameters": {
+                        "ParameterValue": {
                             "Type": "String",
-                            "Value": {"Ref": "ParameterValue"},
+                            "Default": "value-1",
+                            "AllowedValues": ["value-1", "value-2"],
+                        }
+                    },
+                    "Conditions": {
+                        "ShouldCreateParameter": {
+                            "Fn::Equals": [{"Ref": "ParameterValue"}, "value-2"]
+                        }
+                    },
+                    "Resources": {
+                        "SSMParameter1": {
+                            "Type": "AWS::SSM::Parameter",
+                            "Properties": {
+                                "Type": "String",
+                                "Value": "first",
+                            },
                         },
-                    }
-                },
-            },
-            {
-                "Parameters": {
-                    "ParameterValue": {
-                        "Type": "String",
-                    },
-                },
-                "Resources": {
-                    "Parameter1": {
-                        "Type": "AWS::SSM::Parameter",
-                        "Properties": {
-                            "Name": "param-name",
-                            "Type": "String",
-                            "Value": {"Ref": "ParameterValue"},
-                        },
-                    },
-                    "Parameter2": {
-                        "Type": "AWS::SSM::Parameter",
-                        "Properties": {
-                            "Type": "String",
-                            "Value": {"Fn::GetAtt": ["Parameter1", "Name"]},
-                        },
-                    },
-                },
-            },
-            {
-                "Parameters": {
-                    "ParameterValue": {
-                        "Type": "String",
-                    },
-                },
-                "Resources": {
-                    "Parameter1": {
-                        "Type": "AWS::SSM::Parameter",
-                        "Properties": {
-                            "Type": "String",
-                            "Value": {"Ref": "ParameterValue"},
-                        },
-                    },
-                    "Parameter2": {
-                        "Type": "AWS::SSM::Parameter",
-                        "Properties": {
-                            "Type": "String",
-                            "Value": {"Fn::GetAtt": ["Parameter1", "Type"]},
+                        "SSMParameter2": {
+                            "Type": "AWS::SSM::Parameter",
+                            "Condition": "ShouldCreateParameter",
+                            "Properties": {
+                                "Type": "String",
+                                "Value": "first",
+                            },
                         },
                     },
                 },
-            },
-            {
-                "Parameters": {
-                    "ParameterValue": {
-                        "Type": "String",
-                        "Default": "value-1",
-                        "AllowedValues": ["value-1", "value-2"],
-                    }
-                },
-                "Conditions": {
-                    "ShouldCreateParameter": {"Fn::Equals": [{"Ref": "ParameterValue"}, "value-2"]}
-                },
-                "Resources": {
-                    "SSMParameter1": {
-                        "Type": "AWS::SSM::Parameter",
-                        "Properties": {
-                            "Type": "String",
-                            "Value": "first",
-                        },
-                    },
-                    "SSMParameter2": {
-                        "Type": "AWS::SSM::Parameter",
-                        "Condition": "ShouldCreateParameter",
-                        "Properties": {
-                            "Type": "String",
-                            "Value": "first",
-                        },
-                    },
-                },
-            },
-        ],
-        ids=[
-            "change_dynamic",
-            "change_unrelated_property",
-            "change_unrelated_property_not_create_only",
-            "change_parameter_for_condition_create_resource",
+                id="change_parameter_for_condition_create_resource",
+            ),
         ],
     )
     def test_base_dynamic_parameter_scenarios(
