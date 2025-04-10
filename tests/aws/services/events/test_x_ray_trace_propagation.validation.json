@@ -2,6 +2,15 @@
   "tests/aws/services/events/test_x_ray_trace_propagation.py::test_xray_trace_propagation_events_api_gateway": {
     "last_validated_date": "2025-04-08T10:51:26+00:00"
   },
+  "tests/aws/services/events/test_x_ray_trace_propagation.py::test_xray_trace_propagation_events_events[bus_combination0]": {
+    "last_validated_date": "2025-04-10T10:13:06+00:00"
+  },
+  "tests/aws/services/events/test_x_ray_trace_propagation.py::test_xray_trace_propagation_events_events[bus_combination1]": {
+    "last_validated_date": "2025-04-10T10:13:27+00:00"
+  },
+  "tests/aws/services/events/test_x_ray_trace_propagation.py::test_xray_trace_propagation_events_events[bus_combination2]": {
+    "last_validated_date": "2025-04-10T10:14:01+00:00"
+  },
   "tests/aws/services/events/test_x_ray_trace_propagation.py::test_xray_trace_propagation_events_lambda": {
     "last_validated_date": "2025-04-08T10:46:50+00:00"
   }
