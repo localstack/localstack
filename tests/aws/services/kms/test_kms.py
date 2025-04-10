@@ -377,6 +377,53 @@ class TestKMS:
         )["Plaintext"]
         assert plaintext == message
 
+    @markers.aws.only_localstack
+    def test_create_custom_key_asymmetric(self, kms_create_key, aws_client):
+        crypto_key = ec.generate_private_key(ec.SECP256K1())
+        raw_private_key = crypto_key.private_bytes(
+            serialization.Encoding.DER,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+        raw_public_key = crypto_key.public_key().public_bytes(
+            serialization.Encoding.DER,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+
+        custom_key_material = raw_private_key
+
+        custom_key_tag_value = base64.b64encode(custom_key_material).decode("utf-8")
+
+        key_spec = "ECC_SECG_P256K1"
+        key_usage = "SIGN_VERIFY"
+
+        key_id = kms_create_key(
+            Tags=[{"TagKey": "_custom_key_material_", "TagValue": custom_key_tag_value}],
+            KeySpec=key_spec,
+            KeyUsage=key_usage,
+        )["KeyId"]
+
+        public_key = aws_client.kms.get_public_key(KeyId=key_id)["PublicKey"]
+
+        assert public_key == raw_public_key
+
+        # Do a sign/verify cycle
+        plaintext = b"test message 123 !%$@ 1234567890"
+
+        signature = crypto_key.sign(
+            plaintext,
+            ec.ECDSA(hashes.SHA256()),
+        )
+
+        verify_data = aws_client.kms.verify(
+            Message=plaintext,
+            Signature=signature,
+            MessageType="RAW",
+            SigningAlgorithm="ECDSA_SHA_256",
+            KeyId=key_id,
+        )
+        assert verify_data["SignatureValid"]
+
     @markers.aws.validated
     def test_get_key_in_different_region(
         self, kms_client_for_region, kms_create_key, snapshot, region_name, secondary_region_name
