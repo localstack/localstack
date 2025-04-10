@@ -45,7 +45,6 @@ from localstack.aws.api.kms import (
     ReplicateKeyRequest,
     SigningAlgorithmSpec,
     TagList,
-    UnsupportedOperationException,
 )
 from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.services.kms.exceptions import TagException, ValidationException
@@ -212,7 +211,7 @@ class KmsCryptoKey:
 
         if key_spec == "SYMMETRIC_DEFAULT":
             return
-       
+
         if key_spec.startswith("RSA"):
             key_size = RSA_CRYPTO_KEY_LENGTHS.get(key_spec)
             key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
