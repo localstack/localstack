@@ -54,8 +54,6 @@ from tests.aws.services.apigateway.apigateway_fixtures import (
     create_rest_api_stage,
     create_rest_resource,
     create_rest_resource_method,
-    delete_rest_api,
-    get_rest_api,
     update_rest_api_deployment,
     update_rest_api_stage,
 )
@@ -149,9 +147,8 @@ class TestAPIGateway:
         api_id, name, _ = create_rest_apigw(name=apigw_name, tags={TAG_KEY_CUSTOM_ID: test_id})
         assert test_id == api_id
         assert apigw_name == name
-        api_id, name = get_rest_api(aws_client.apigateway, restApiId=test_id)
-        assert test_id == api_id
-        assert apigw_name == name
+        response = aws_client.apigateway.get_rest_api(restApiId=test_id)
+        assert response["name"] == apigw_name
 
         spec_file = load_file(TEST_IMPORT_MOCK_INTEGRATION)
         aws_client.apigateway.put_rest_api(restApiId=test_id, body=spec_file, mode="overwrite")
@@ -1208,6 +1205,20 @@ class TestAPIGateway:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
+            # the Endpoint URI is wrong for AWS_PROXY because AWS resolves it to the Lambda HTTP endpoint and we keep
+            # the ARN
+            "$..log.line07",
+            "$..log.line10",
+            # AWS is returning the AWS_PROXY invoke response headers even though they are not considered at all (only
+            # the lambda payload headers are considered, so this is unhelpful)
+            "$..log.line12",
+            # LocalStack does not setup headers the same way when invoking the lambda (Token, additional headers...)
+            "$..log.line08",
+        ]
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_next_gen_api(),
+        paths=[
             "$..headers.Content-Length",
             "$..headers.Content-Type",
             "$..headers.X-Amzn-Trace-Id",
@@ -1216,7 +1227,7 @@ class TestAPIGateway:
             "$..multiValueHeaders.Content-Length",
             "$..multiValueHeaders.Content-Type",
             "$..multiValueHeaders.X-Amzn-Trace-Id",
-        ]
+        ],
     )
     def test_apigw_test_invoke_method_api(
         self,
@@ -1227,6 +1238,41 @@ class TestAPIGateway:
         region_name,
         snapshot,
     ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value(
+                    "latency", value_replacement="<latency>", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath(
+                    "$..headers.X-Amzn-Trace-Id", value_replacement="x-amz-trace-id"
+                ),
+                snapshot.transform.regex(
+                    r"URI: https:\/\/.*?\/2015-03-31", "URI: https://<endpoint_url>/2015-03-31"
+                ),
+                snapshot.transform.regex(
+                    r"Integration latency: \d*? ms", "Integration latency: <latency> ms"
+                ),
+                snapshot.transform.regex(
+                    r"Date=[a-zA-Z]{3},\s\d{2}\s[a-zA-Z]{3}\s\d{4}\s\d{2}:\d{2}:\d{2}\sGMT",
+                    "Date=Day, dd MMM yyyy hh:mm:ss GMT",
+                ),
+                snapshot.transform.regex(
+                    r"x-amzn-RequestId=[a-f0-9-]{36}", "x-amzn-RequestId=<request-id-lambda>"
+                ),
+                snapshot.transform.regex(
+                    r"[a-zA-Z]{3}\s[a-zA-Z]{3}\s\d{2}\s\d{2}:\d{2}:\d{2}\sUTC\s\d{4} :",
+                    "DDD MMM dd hh:mm:ss UTC yyyy :",
+                ),
+                snapshot.transform.regex(
+                    r"Authorization=.*?,", "Authorization=<authorization-header>,"
+                ),
+                snapshot.transform.regex(
+                    r"X-Amz-Security-Token=.*?\s\[", "X-Amz-Security-Token=<token> ["
+                ),
+                snapshot.transform.regex(r"\d{8}T\d{6}Z", "<date>"),
+            ]
+        )
+
         _, role_arn = create_role_with_policy(
             "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
         )
@@ -1238,14 +1284,17 @@ class TestAPIGateway:
             handler="lambda_handler.handler",
             runtime=Runtime.nodejs18_x,
         )
+        snapshot.add_transformer(snapshot.transform.regex(function_name, "<function-name>"))
         lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
         target_uri = arns.apigateway_invocations_arn(lambda_arn, region_name)
 
         # create REST API and test resource
         rest_api_id, _, root = create_rest_apigw(name=f"test-{short_uid()}")
-        resource_id, _ = create_rest_resource(
-            aws_client.apigateway, restApiId=rest_api_id, parentId=root, pathPart="foo"
+        snapshot.add_transformer(snapshot.transform.regex(rest_api_id, "<rest-api-id>"))
+        resource = aws_client.apigateway.create_resource(
+            restApiId=rest_api_id, parentId=root, pathPart="foo"
         )
+        resource_id = resource["id"]
 
         # create method and integration
         aws_client.apigateway.put_method(
@@ -1263,8 +1312,7 @@ class TestAPIGateway:
             uri=target_uri,
             credentials=role_arn,
         )
-        status_code = create_rest_api_method_response(
-            aws_client.apigateway,
+        aws_client.apigateway.put_method_response(
             restApiId=rest_api_id,
             resourceId=resource_id,
             httpMethod="GET",
@@ -1274,46 +1322,64 @@ class TestAPIGateway:
             restApiId=rest_api_id,
             resourceId=resource_id,
             httpMethod="GET",
-            statusCode=status_code,
+            statusCode="200",
             selectionPattern="",
         )
-        deployment_id, _ = create_rest_api_deployment(aws_client.apigateway, restApiId=rest_api_id)
-        create_rest_api_stage(
-            aws_client.apigateway,
-            restApiId=rest_api_id,
-            stageName="local",
-            deploymentId=deployment_id,
-        )
+        aws_client.apigateway.create_deployment(restApiId=rest_api_id, stageName="local")
 
         # run test_invoke_method API #1
-        def test_invoke_call():
-            response = aws_client.apigateway.test_invoke_method(
+        def _test_invoke_call(
+            path_with_qs: str, body: str | None = None, headers: dict | None = None
+        ):
+            kwargs = {}
+            if body:
+                kwargs["body"] = body
+            if headers:
+                kwargs["headers"] = headers
+            _response = aws_client.apigateway.test_invoke_method(
                 restApiId=rest_api_id,
                 resourceId=resource_id,
                 httpMethod="GET",
-                pathWithQueryString="/foo",
+                pathWithQueryString=path_with_qs,
+                **kwargs,
             )
-            assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
-            assert 200 == response.get("status")
-            assert "response from" in json.loads(response.get("body")).get("body")
-            snapshot.match("test_invoke_method_response", response)
+            assert _response.get("status") == 200
+            assert "response from" in json.loads(_response.get("body")).get("body")
+            return _response
 
-        retry(test_invoke_call, retries=15, sleep=1)
+        invoke_simple = retry(_test_invoke_call, retries=15, sleep=1, path_with_qs="/foo")
+
+        def _transform_log(_log: str) -> dict[str, str]:
+            return {f"line{index:02d}": line for index, line in enumerate(_log.split("\n"))}
+
+        # we want to do very precise matching on the log, and splitting on new lines will help in case the snapshot
+        # fails
+        # the snapshot library does not allow to ignore an array index as the last node, so we need to put it in a dict
+        invoke_simple["log"] = _transform_log(invoke_simple["log"])
+        request_id_1 = invoke_simple["log"]["line00"].split(" ")[-1]
+        snapshot.add_transformer(
+            snapshot.transform.regex(request_id_1, "<request-id-1>"), priority=-1
+        )
+        snapshot.match("test_invoke_method_response", invoke_simple)
 
         # run test_invoke_method API #2
-        response = aws_client.apigateway.test_invoke_method(
-            restApiId=rest_api_id,
-            resourceId=resource_id,
-            httpMethod="GET",
-            pathWithQueryString="/foo",
+        invoke_with_parameters = retry(
+            _test_invoke_call,
+            retries=15,
+            sleep=1,
+            path_with_qs="/foo?queryTest=value",
             body='{"test": "val123"}',
             headers={"content-type": "application/json"},
         )
-        assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
-        assert 200 == response.get("status")
-        assert "response from" in json.loads(response.get("body")).get("body")
-        assert "val123" in json.loads(response.get("body")).get("body")
-        snapshot.match("test_invoke_method_response_with_body", response)
+        response_body = json.loads(invoke_with_parameters.get("body")).get("body")
+        assert "response from" in response_body
+        assert "val123" in response_body
+        invoke_with_parameters["log"] = _transform_log(invoke_with_parameters["log"])
+        request_id_2 = invoke_with_parameters["log"]["line00"].split(" ")[-1]
+        snapshot.add_transformer(
+            snapshot.transform.regex(request_id_2, "<request-id-2>"), priority=-1
+        )
+        snapshot.match("test_invoke_method_response_with_body", invoke_with_parameters)
 
     @markers.aws.validated
     @pytest.mark.parametrize("stage_name", ["local", "dev"])
@@ -1631,9 +1697,8 @@ def test_rest_api_multi_region(
         api_us_id, stage=stage_name, path="/demo", region="us-west-1", url_type=url_type
     )
     retry(_invoke_url, retries=20, sleep=2, url=endpoint)
-
-    delete_rest_api(apigateway_client_eu, restApiId=api_eu_id)
-    delete_rest_api(apigateway_client_us, restApiId=api_us_id)
+    apigateway_client_eu.delete_rest_api(restApiId=api_eu_id)
+    apigateway_client_us.delete_rest_api(restApiId=api_us_id)
 
 
 class TestIntegrations:
