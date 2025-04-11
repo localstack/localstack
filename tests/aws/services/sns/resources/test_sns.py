@@ -105,6 +105,7 @@ def test_deploy_stack_with_sns_topic(deploy_cfn_template, aws_client):
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..Attributes.SubscriptionPrincipal"])
 def test_update_subscription(snapshot, deploy_cfn_template, aws_client, sqs_queue, sns_topic):
     topic_arn = sns_topic["Attributes"]["TopicArn"]
     queue_url = sqs_queue

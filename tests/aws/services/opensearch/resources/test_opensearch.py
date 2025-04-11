@@ -70,6 +70,14 @@ def test_domain(deploy_cfn_template, aws_client, snapshot):
         "$..DomainStatus.OffPeakWindowOptions",
         "$..DomainStatus.ServiceSoftwareOptions.CurrentVersion",
         "$..DomainStatus.SoftwareUpdateOptions",
+        "$..DomainStatus.AIMLOptions",
+        "$..DomainStatus.ClusterConfig.DedicatedMasterType",
+        "$..DomainStatus.ClusterConfig.InstanceType",
+        "$..DomainStatus.DomainEndpointOptions.TLSSecurityPolicy",
+        "$..DomainStatus.DomainProcessingStatus",
+        "$..DomainStatus.IPAddressType",
+        "$..DomainStatus.IdentityCenterOptions",
+        "$..DomainStatus.ModifyingProperties",
     ]
 )
 def test_domain_with_alternative_types(deploy_cfn_template, aws_client, snapshot):

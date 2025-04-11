@@ -17,6 +17,8 @@ from localstack.utils.strings import short_uid
         "$..DomainStatus.ElasticsearchClusterConfig.InstanceCount",
         "$..DomainStatus.ElasticsearchClusterConfig.ZoneAwarenessConfig",
         "$..DomainStatus.ElasticsearchClusterConfig.ZoneAwarenessEnabled",
+        "$..DomainStatus.ElasticsearchClusterConfig.DedicatedMasterType",
+        "$..DomainStatus.ElasticsearchClusterConfig.InstanceType",
         "$..DomainStatus.Endpoint",
         "$..DomainStatus.ModifyingProperties",
         "$..DomainStatus.Processing",

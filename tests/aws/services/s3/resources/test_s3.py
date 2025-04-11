@@ -86,6 +86,7 @@ def test_website_configuration(deploy_cfn_template, snapshot, aws_client):
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..CORSRules..MaxAgeSeconds"])
 def test_cors_configuration(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.s3_api())

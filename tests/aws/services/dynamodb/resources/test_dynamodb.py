@@ -69,6 +69,7 @@ def test_globalindex_read_write_provisioned_throughput_dynamodb_table(
         "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
         "$..Table.Replicas",
         "$..Table.DeletionProtectionEnabled",
+        "$..Table.WarmThroughput",
     ]
 )
 def test_default_name_for_table(deploy_cfn_template, snapshot, aws_client):
@@ -94,6 +95,7 @@ def test_default_name_for_table(deploy_cfn_template, snapshot, aws_client):
         "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
         "$..Table.Replicas",
         "$..Table.DeletionProtectionEnabled",
+        "$..Table.WarmThroughput",
     ]
 )
 @pytest.mark.parametrize("billing_mode", ["PROVISIONED", "PAY_PER_REQUEST"])
@@ -121,6 +123,7 @@ def test_billing_mode_as_conditional(deploy_cfn_template, snapshot, aws_client, 
         "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
         "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
         "$..Table.Replicas",
+        "$..Table.WarmThroughput",
     ]
 )
 def test_global_table(deploy_cfn_template, snapshot, aws_client, region_name):
