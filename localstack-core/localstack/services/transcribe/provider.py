@@ -1,7 +1,6 @@
 import datetime
 import json
 import logging
-import os
 import threading
 import wave
 from functools import cache
@@ -124,8 +123,6 @@ class TranscribeProvider(TranscribeApi):
         # Install and configure vosk
         vosk_package.install()
 
-        # Vosk must be imported only after setting the required env vars
-        os.environ["VOSK_MODEL_PATH"] = str(LANGUAGE_MODEL_DIR)
         from vosk import SetLogLevel  # noqa
 
         # Suppress Vosk logging
@@ -230,7 +227,7 @@ class TranscribeProvider(TranscribeApi):
     #
 
     @staticmethod
-    def download_model(name: str):
+    def download_model(name: str) -> str:
         """
         Download a Vosk language model to LocalStack cache directory. Do nothing if model is already downloaded.
 
@@ -240,8 +237,10 @@ class TranscribeProvider(TranscribeApi):
         model_path = LANGUAGE_MODEL_DIR / name
 
         with _DL_LOCK:
-            if model_path.exists():
-                return
+            # check if model path exists and is not empty
+            if model_path.exists() and any(model_path.iterdir()):
+                LOG.debug("Using a pre-downloaded language model: %s", model_path)
+                return str(model_path)
             else:
                 model_path.mkdir(parents=True)
 
@@ -266,6 +265,8 @@ class TranscribeProvider(TranscribeApi):
                 model_ref.extractall(model_path.parent)
 
             Path(model_zip_path).unlink()
+
+        return str(model_path)
 
     #
     # Threads
@@ -338,10 +339,10 @@ class TranscribeProvider(TranscribeApi):
             language_code = job["LanguageCode"]
             model_name = LANGUAGE_MODELS[language_code]
             self._setup_vosk()
-            self.download_model(model_name)
+            model_path = self.download_model(model_name)
             from vosk import KaldiRecognizer, Model  # noqa
 
-            model = Model(model_name=model_name)
+            model = Model(model_path=model_path, model_name=model_name)
 
             tc = KaldiRecognizer(model, audio.getframerate())
             tc.SetWords(True)
