@@ -35,7 +35,7 @@ def test_p_equals_notation(monkeypatch):
         monkeypatch,
         input_args=["-p=non-existing-test-profile"],
         expected_profile="non-existing-test-profile",
-        expected_argv=[],
+        expected_argv=["-p=non-existing-test-profile"],
     )
 
 
@@ -44,7 +44,7 @@ def test_p_separate_args_notation(monkeypatch):
         monkeypatch,
         input_args=["-p", "non-existing-test-profile"],
         expected_profile="non-existing-test-profile",
-        expected_argv=[],
+        expected_argv=["-p", "non-existing-test-profile"],
     )
 
 
@@ -66,7 +66,16 @@ def test_profiles_args_before_and_after_separate(monkeypatch):
     )
 
 
-def test_profiles_args_multiple_profile_args(monkeypatch):
+def test_p_args_before_and_after_separate(monkeypatch):
+    profile_test(
+        monkeypatch,
+        input_args=["cli", "-D", "-p", "non-existing-test-profile", "start"],
+        expected_profile="non-existing-test-profile",
+        expected_argv=["cli", "-D", "-p", "non-existing-test-profile", "start"],
+    )
+
+
+def test_profiles_args_multiple(monkeypatch):
     profile_test(
         monkeypatch,
         input_args=[
@@ -79,4 +88,52 @@ def test_profiles_args_multiple_profile_args(monkeypatch):
         ],
         expected_profile="another-profile",
         expected_argv=["cli", "start"],
+    )
+
+
+def test_p_args_multiple(monkeypatch):
+    profile_test(
+        monkeypatch,
+        input_args=[
+            "cli",
+            "-p",
+            "non-existing-test-profile",
+            "start",
+            "-p",
+            "another-profile",
+        ],
+        expected_profile="non-existing-test-profile",
+        expected_argv=[
+            "cli",
+            "-p",
+            "non-existing-test-profile",
+            "start",
+            "-p",
+            "another-profile",
+        ],
+    )
+
+
+def test_p_and_profile_args(monkeypatch):
+    profile_test(
+        monkeypatch,
+        input_args=[
+            "cli",
+            "-p",
+            "non-existing-test-profile",
+            "start",
+            "--profile",
+            "the_profile",
+            "-p",
+            "another-profile",
+        ],
+        expected_profile="the_profile",
+        expected_argv=[
+            "cli",
+            "-p",
+            "non-existing-test-profile",
+            "start",
+            "-p",
+            "another-profile",
+        ],
     )
