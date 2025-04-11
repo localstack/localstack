@@ -29,7 +29,7 @@ from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_XRAY_TRACEID
 # currently only API Gateway v2 and Lambda support X-Ray tracing
 
 
-@markers.aws.unknown
+@markers.aws.validated
 @pytest.mark.skipif(
     condition=is_old_provider(),
     reason="not supported by the old provider",
