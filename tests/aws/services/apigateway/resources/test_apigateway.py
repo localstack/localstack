@@ -6,14 +6,23 @@ import requests
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import constants
+
 from localstack.aws.api.lambda_ import Runtime
+
 from localstack.testing.aws.util import is_aws_cloud
+
 from localstack.testing.pytest import markers
+
 from localstack.utils.common import short_uid
+
 from localstack.utils.files import load_file
+
 from localstack.utils.run import to_str
+
 from localstack.utils.strings import to_bytes
+
 from localstack.utils.sync import retry
+
 from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url
 
 PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
