@@ -21,7 +21,7 @@ runs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 'localstack/.python-version'
+        python-version-file: 'localstack/.python-version'
 
     - name: Install docker helper dependencies
       shell: bash
@@ -43,10 +43,11 @@ runs:
         PLATFORM: ${{ (runner.arch == 'X64' && 'amd64') || (runner.arch == 'ARM64' && 'arm64') || '' }}
         DOCKERFILE: ../Dockerfile
         DOCKER_BUILD_CONTEXT: ..
+        IMAGE_NAME: "localstack/localstack"
       working-directory: localstack/localstack-core
       run: |
-        ./bin/docker-helper.sh build
-        ./bin/docker-helper.sh save
+        ../bin/docker-helper.sh build
+        ../bin/docker-helper.sh save
 
     - name: Store Docker Image as Artifact
       uses: actions/upload-artifact@v4
