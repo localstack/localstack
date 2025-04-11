@@ -47,6 +47,7 @@ from localstack.utils.aws.message_forwarding import (
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_bytes
 from localstack.utils.time import now_utc
+from localstack.utils.xray.trace_header import TraceHeader
 
 LOG = logging.getLogger(__name__)
 
@@ -63,6 +64,7 @@ PREDEFINED_PLACEHOLDERS: Set[str] = AWS_PREDEFINED_PLACEHOLDERS_STRING_VALUES.un
 )
 
 TRANSFORMER_PLACEHOLDER_PATTERN = re.compile(r"<(.*?)>")
+TRACE_HEADER_KEY = "X-Amzn-Trace-Id"
 
 
 def transform_event_with_target_input_path(
@@ -193,10 +195,10 @@ class TargetSender(ABC):
         return self._client
 
     @abstractmethod
-    def send_event(self, event: FormattedEvent | TransformedEvent):
+    def send_event(self, event: FormattedEvent | TransformedEvent, trace_header: TraceHeader):
         pass
 
-    def process_event(self, event: FormattedEvent):
+    def process_event(self, event: FormattedEvent, trace_header: TraceHeader):
         """Processes the event and send it to the target."""
         if input_ := self.target.get("Input"):
             event = json.loads(input_)
@@ -208,7 +210,7 @@ class TargetSender(ABC):
             if input_transformer := self.target.get("InputTransformer"):
                 event = self.transform_event_with_target_input_transformer(input_transformer, event)
         if event:
-            self.send_event(event)
+            self.send_event(event, trace_header)
         else:
             LOG.info("No event to send to target %s", self.target.get("Id"))
 
@@ -257,6 +259,7 @@ class TargetSender(ABC):
         client = client.request_metadata(
             service_principal=service_principal, source_arn=self.rule_arn
         )
+        self._register_client_hooks(client)
         return client
 
     def _validate_input_transformer(self, input_transformer: InputTransformer):
@@ -287,6 +290,24 @@ class TargetSender(ABC):
 
         return predefined_template_replacements
 
+    def _register_client_hooks(self, client: BaseClient):
+        """Register client hooks to inject trace header into requests."""
+
+        def handle_extract_params(params, context, **kwargs):
+            trace_header = params.pop("TraceHeader", None)
+            if trace_header is None:
+                return
+            context[TRACE_HEADER_KEY] = trace_header.to_header_str()
+
+        def handle_inject_headers(params, context, **kwargs):
+            if trace_header_str := context.pop(TRACE_HEADER_KEY, None):
+                params["headers"][TRACE_HEADER_KEY] = trace_header_str
+
+        client.meta.events.register(
+            f"provide-client-params.{self.service}.*", handle_extract_params
+        )
+        client.meta.events.register(f"before-call.{self.service}.*", handle_inject_headers)
+
 
 TargetSenderDict = dict[str, TargetSender]  # rule_arn-target_id as global unique id
 
@@ -316,7 +337,7 @@ class ApiGatewayTargetSender(TargetSender):
 
     ALLOWED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
 
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         # Parse the ARN to extract api_id, stage_name, http_method, and resource path
         # Example ARN: arn:{partition}:execute-api:{region}:{account_id}:{api_id}/{stage_name}/{method}/{resource_path}
         arn_parts = parse_arn(self.target["Arn"])
@@ -383,6 +404,9 @@ class ApiGatewayTargetSender(TargetSender):
         # Serialize the event, converting datetime objects to strings
         event_json = json.dumps(event, default=str)
 
+        # Add trace header
+        headers[TRACE_HEADER_KEY] = trace_header.to_header_str()
+
         # Send the HTTP request
         response = requests.request(
             method=http_method, url=url, headers=headers, data=event_json, timeout=5
@@ -415,12 +439,12 @@ class ApiGatewayTargetSender(TargetSender):
 
 
 class AppSyncTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         raise NotImplementedError("AppSync target is not yet implemented")
 
 
 class BatchTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         raise NotImplementedError("Batch target is not yet implemented")
 
     def _validate_input(self, target: Target):
@@ -433,7 +457,7 @@ class BatchTargetSender(TargetSender):
 
 
 class ECSTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         raise NotImplementedError("ECS target is a pro feature, please use LocalStack Pro")
 
     def _validate_input(self, target: Target):
@@ -444,7 +468,7 @@ class ECSTargetSender(TargetSender):
 
 
 class EventsTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         # TODO add validation and tests for eventbridge to eventbridge requires Detail, DetailType, and Source
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/events/client/put_events.html
         source = self._get_source(event)
@@ -464,7 +488,8 @@ class EventsTargetSender(TargetSender):
             event, self.region, self.account_id, self.target_region, self.target_account_id
         ):
             entries[0]["TraceHeader"] = encoded_original_id
-        self.client.put_events(Entries=entries)
+
+        self.client.put_events(Entries=entries, TraceHeader=trace_header)
 
     def _get_source(self, event: FormattedEvent | TransformedEvent) -> str:
         if isinstance(event, dict) and (source := event.get("source")):
@@ -486,7 +511,7 @@ class EventsTargetSender(TargetSender):
 
 
 class EventsApiDestinationTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         """Send an event to an EventBridge API destination
         See https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-destinations.html"""
         target_arn = self.target["Arn"]
@@ -520,6 +545,9 @@ class EventsApiDestinationTargetSender(TargetSender):
         if http_parameters := self.target.get("HttpParameters"):
             endpoint = add_target_http_parameters(http_parameters, endpoint, headers, event)
 
+        # add trace header
+        headers[TRACE_HEADER_KEY] = trace_header.to_header_str()
+
         result = requests.request(
             method=method, url=endpoint, data=json.dumps(event or {}), headers=headers
         )
@@ -532,8 +560,9 @@ class EventsApiDestinationTargetSender(TargetSender):
 
 
 class FirehoseTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         delivery_stream_name = firehose_name(self.target["Arn"])
+
         self.client.put_record(
             DeliveryStreamName=delivery_stream_name,
             Record={"Data": to_bytes(to_json_str(event))},
@@ -541,7 +570,7 @@ class FirehoseTargetSender(TargetSender):
 
 
 class KinesisTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         partition_key_path = collections.get_safe(
             self.target,
             "$.KinesisParameters.PartitionKeyPath",
@@ -549,6 +578,7 @@ class KinesisTargetSender(TargetSender):
         )
         stream_name = self.target["Arn"].split("/")[-1]
         partition_key = collections.get_safe(event, partition_key_path, event["id"])
+
         self.client.put_record(
             StreamName=stream_name,
             Data=to_bytes(to_json_str(event)),
@@ -565,18 +595,20 @@ class KinesisTargetSender(TargetSender):
 
 
 class LambdaTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         self.client.invoke(
             FunctionName=self.target["Arn"],
             Payload=to_bytes(to_json_str(event)),
             InvocationType="Event",
+            TraceHeader=trace_header,
         )
 
 
 class LogsTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         log_group_name = self.target["Arn"].split(":")[6]
         log_stream_name = str(uuid.uuid4())  # Unique log stream name
+
         self.client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)
         self.client.put_log_events(
             logGroupName=log_group_name,
@@ -591,7 +623,7 @@ class LogsTargetSender(TargetSender):
 
 
 class RedshiftTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         raise NotImplementedError("Redshift target is not yet implemented")
 
     def _validate_input(self, target: Target):
@@ -602,20 +634,21 @@ class RedshiftTargetSender(TargetSender):
 
 
 class SagemakerTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         raise NotImplementedError("Sagemaker target is not yet implemented")
 
 
 class SnsTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         self.client.publish(TopicArn=self.target["Arn"], Message=to_json_str(event))
 
 
 class SqsTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         queue_url = sqs_queue_url_for_arn(self.target["Arn"])
         msg_group_id = self.target.get("SqsParameters", {}).get("MessageGroupId", None)
         kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
+
         self.client.send_message(
             QueueUrl=queue_url,
             MessageBody=to_json_str(event),
@@ -626,8 +659,9 @@ class SqsTargetSender(TargetSender):
 class StatesTargetSender(TargetSender):
     """Step Functions Target Sender"""
 
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         self.service = "stepfunctions"
+
         self.client.start_execution(
             stateMachineArn=self.target["Arn"], name=event["id"], input=to_json_str(event)
         )
@@ -642,7 +676,7 @@ class StatesTargetSender(TargetSender):
 class SystemsManagerSender(TargetSender):
     """EC2 Run Command Target Sender"""
 
-    def send_event(self, event):
+    def send_event(self, event, trace_header):
         raise NotImplementedError("Systems Manager target is not yet implemented")
 
     def _validate_input(self, target: Target):
