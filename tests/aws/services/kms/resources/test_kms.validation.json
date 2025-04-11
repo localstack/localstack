@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/kms/resources/test_kms.py::test_cfn_with_kms_resources": {
+    "last_validated_date": "2025-04-11T13:58:56+00:00"
+  },
+  "tests/aws/services/kms/resources/test_kms.py::test_deploy_stack_with_kms": {
+    "last_validated_date": "2025-04-11T13:59:40+00:00"
+  },
+  "tests/aws/services/kms/resources/test_kms.py::test_kms_key_disabled": {
+    "last_validated_date": "2025-04-11T13:55:49+00:00"
+  }
+}
