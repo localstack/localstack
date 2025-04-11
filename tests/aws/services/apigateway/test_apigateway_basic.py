@@ -1254,15 +1254,22 @@ class TestAPIGateway:
                 ),
                 snapshot.transform.regex(
                     r"Date=[a-zA-Z]{3},\s\d{2}\s[a-zA-Z]{3}\s\d{4}\s\d{2}:\d{2}:\d{2}\sGMT",
-                    r"Date=Day, dd MMM yyyy hh:mm:ss GMT",
+                    "Date=Day, dd MMM yyyy hh:mm:ss GMT",
                 ),
                 snapshot.transform.regex(
-                    r"x-amzn-RequestId=[a-f0-9-]{36}", r"x-amzn-RequestId=<request-id-lambda>"
+                    r"x-amzn-RequestId=[a-f0-9-]{36}", "x-amzn-RequestId=<request-id-lambda>"
                 ),
                 snapshot.transform.regex(
                     r"[a-zA-Z]{3}\s[a-zA-Z]{3}\s\d{2}\s\d{2}:\d{2}:\d{2}\sUTC\s\d{4} :",
-                    r"DDD MMM dd hh:mm:ss UTC yyyy :",
+                    "DDD MMM dd hh:mm:ss UTC yyyy :",
                 ),
+                snapshot.transform.regex(
+                    r"Authorization=.*?,", "Authorization=<authorization-header>,"
+                ),
+                snapshot.transform.regex(
+                    r"X-Amz-Security-Token=.*?\s\[", "X-Amz-Security-Token=<token> ["
+                ),
+                snapshot.transform.regex(r"\d{8}T\d{6}Z", "<date>"),
             ]
         )
 
@@ -1283,6 +1290,7 @@ class TestAPIGateway:
 
         # create REST API and test resource
         rest_api_id, _, root = create_rest_apigw(name=f"test-{short_uid()}")
+        snapshot.add_transformer(snapshot.transform.regex(rest_api_id, "<rest-api-id>"))
         resource = aws_client.apigateway.create_resource(
             restApiId=rest_api_id, parentId=root, pathPart="foo"
         )
