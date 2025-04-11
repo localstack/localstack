@@ -171,8 +171,6 @@ class TargetSender(ABC):
         self._validate_input(target)
         self._client: BaseClient | None = None
 
-        self._x_ray_segment = None
-
     @property
     def arn(self):
         return self.target["Arn"]
