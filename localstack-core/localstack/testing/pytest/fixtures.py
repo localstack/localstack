@@ -1974,6 +1974,30 @@ def ses_verify_identity(aws_client):
 
 
 @pytest.fixture
+def setup_sender_email_address(ses_verify_identity):
+    """
+    If the test is running against AWS then assume the email address passed is already
+    verified, and passes the given email address through. Otherwise, it generates one random
+    email address and verify them.
+    """
+
+    def inner(sender_email_address: Optional[str] = None) -> str:
+        if is_aws_cloud():
+            if sender_email_address is None:
+                raise ValueError(
+                    "sender_email_address must be specified to run this test against AWS"
+                )
+        else:
+            # overwrite the given parameters with localstack specific ones
+            sender_email_address = f"sender-{short_uid()}@example.com"
+            ses_verify_identity(sender_email_address)
+
+        return sender_email_address
+
+    return inner
+
+
+@pytest.fixture
 def ec2_create_security_group(aws_client):
     ec2_sgs = []
 

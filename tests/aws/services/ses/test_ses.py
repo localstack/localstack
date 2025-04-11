@@ -117,30 +117,6 @@ def setup_email_addresses(ses_verify_identity):
 
 
 @pytest.fixture
-def setup_sender_email_address(ses_verify_identity):
-    """
-    If the test is running against AWS then assume the email address passed is already
-    verified, and passes the given email address through. Otherwise, it generates one random
-    email address and verify them.
-    """
-
-    def inner(sender_email_address: Optional[str] = None) -> str:
-        if is_aws_cloud():
-            if sender_email_address is None:
-                raise ValueError(
-                    "sender_email_address must be specified to run this test against AWS"
-                )
-        else:
-            # overwrite the given parameters with localstack specific ones
-            sender_email_address = f"sender-{short_uid()}@example.com"
-            ses_verify_identity(sender_email_address)
-
-        return sender_email_address
-
-    return inner
-
-
-@pytest.fixture
 def add_snapshot_transformer_for_sns_event(snapshot):
     def _inner(sender_email, recipient_email, config_set_name):
         snapshot.add_transformers_list(
