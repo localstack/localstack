@@ -142,7 +142,7 @@ def test_directory_rules_no_match():
 
 def test_service_tests_executed_on_cloudformation_changes():
     selected_tests = get_affected_tests_from_changes(
-        ["localstack/services/cloudformation/provider.py"], MATCHING_RULES
+        ["localstack-core/localstack/services/cloudformation/provider.py"], MATCHING_RULES
     )
     # picking lambda as an example
     assert "tests/aws/services/lambda_/resources" in selected_tests

@@ -168,7 +168,7 @@ def cloudformation_resource_provider_rule(
     search_patterns: Iterable[str] = DEFAULT_SEARCH_PATTERNS,
     test_dirs: Iterable[str] = ("tests/aws/services",),
 ) -> Iterable[str]:
-    root_dir = (pathlib.Path.cwd() / ".." / ".." / ".." / "..").resolve()
+    root_dir = (pathlib.Path(__file__).parent / ".." / ".." / ".." / "..").resolve()
     match = None
     for pattern in search_patterns:
         match = re.findall(pattern, changed_file_path)
