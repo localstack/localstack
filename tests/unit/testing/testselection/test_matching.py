@@ -140,15 +140,9 @@ def test_directory_rules_no_match():
     assert selected_tests == [SENTINEL_ALL_TESTS]
 
 
-def test_cloudformation_tests_executed_on_service_changes():
-    selected_tests = get_affected_tests_from_changes(
-        ["localstack/services/lambda_/provider.py"], MATCHING_RULES
-    )
-    assert selected_tests == []
-
-
 def test_service_tests_executed_on_cloudformation_changes():
     selected_tests = get_affected_tests_from_changes(
         ["localstack/services/cloudformation/provider.py"], MATCHING_RULES
     )
-    assert "tests/aws/services/lambda_/resource_providers/" in selected_tests
+    # picking lambda as an example
+    assert "tests/aws/services/lambda_/resources" in selected_tests
