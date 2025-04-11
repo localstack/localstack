@@ -30,6 +30,9 @@ PHYSICAL_RESOURCE_ID_SPECIAL_CASES = {
     "AWS::Logs::SubscriptionFilter": "/properties/LogGroupName",
     "AWS::RDS::DBProxyTargetGroup": "/properties/TargetGroupName",
     "AWS::Glue::SchemaVersionMetadata": "</properties/SchemaVersionId>|</properties/Key>|</properties/Value>",  # composite
+    "AWS::VerifiedPermissions::IdentitySource": "</properties/IdentitySourceId>|</properties/PolicyStoreId>",  # composite
+    "AWS::VerifiedPermissions::Policy": "</properties/PolicyId>|</properties/PolicyStoreId>",  # composite
+    "AWS::VerifiedPermissions::PolicyTemplate": "</properties/PolicyStoreId>|</properties/PolicyTemplateId>",  # composite
     "AWS::WAFv2::WebACL": "</properties/Name>|</properties/Id>|</properties/Scope>",
     "AWS::WAFv2::WebACLAssociation": "</properties/ResourceArn>|</properties/WebACLArn>",
     "AWS::WAFv2::IPSet": "</properties/Name>|</properties/Id>|</properties/Scope>",
