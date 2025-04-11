@@ -1,7 +1,7 @@
+import argparse
 import os
 import sys
 from typing import Optional
-import argparse
 
 # important: this needs to be free of localstack imports
 
@@ -32,7 +32,7 @@ def set_and_remove_profile_from_sys_argv():
               to be set at any point on the command line.
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('--profile')
+    parser.add_argument("--profile")
     namespace, sys.argv = parser.parse_known_args(sys.argv)
     profile = namespace.profile
 
