@@ -188,7 +188,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.6.0
     # via openapi-core
-moto-ext==5.1.1.post2
+moto-ext==5.1.3.post1
     # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy

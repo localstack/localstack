@@ -155,6 +155,8 @@ def test_dhcp_options(aws_client, deploy_cfn_template, snapshot):
         "$..Tags",
         "$..Options.AssociationDefaultRouteTableId",
         "$..Options.PropagationDefaultRouteTableId",
+        "$..Options.TransitGatewayCidrBlocks",  # an empty list returned by Moto but not by AWS
+        "$..Options.SecurityGroupReferencingSupport",  # not supported by Moto
     ]
 )
 def test_transit_gateway_attachment(deploy_cfn_template, aws_client, snapshot):
