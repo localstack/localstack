@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/logs/resources/test_logs.py::test_cfn_handle_log_group_resource": {
+    "last_validated_date": "2025-04-11T14:37:35+00:00"
+  },
+  "tests/aws/services/logs/resources/test_logs.py::test_logstream": {
+    "last_validated_date": "2025-04-11T14:37:12+00:00"
+  }
+}

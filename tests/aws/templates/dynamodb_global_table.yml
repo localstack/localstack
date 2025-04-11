@@ -1,3 +1,7 @@
+Parameters:
+  ReplicaRegion:
+    Type: String
+
 Resources:
   Table:
     Type: AWS::DynamoDB::GlobalTable
@@ -10,7 +14,7 @@ Resources:
         - AttributeName: keyName
           AttributeType: S
       Replicas:
-        - Region: us-east-1
+        - Region: !Ref ReplicaRegion
 
 
 Outputs:

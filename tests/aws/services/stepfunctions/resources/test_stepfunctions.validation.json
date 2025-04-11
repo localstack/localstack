@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/stepfunctions/resources/test_stepfunctions.py::test_apigateway_invoke_with_path": {
+    "last_validated_date": "2025-04-11T15:43:29+00:00"
+  },
+  "tests/aws/services/stepfunctions/resources/test_stepfunctions.py::test_cfn_statemachine_default_s3_location": {
+    "last_validated_date": "2025-04-11T15:46:53+00:00"
+  },
+  "tests/aws/services/stepfunctions/resources/test_stepfunctions.py::test_cfn_statemachine_with_dependencies": {
+    "last_validated_date": "2025-04-11T15:46:09+00:00"
+  },
+  "tests/aws/services/stepfunctions/resources/test_stepfunctions.py::test_nested_statemachine_with_sync2": {
+    "last_validated_date": "2025-04-11T15:37:41+00:00"
+  },
+  "tests/aws/services/stepfunctions/resources/test_stepfunctions.py::test_statemachine_create_with_logging_configuration": {
+    "last_validated_date": "2025-04-11T15:48:38+00:00"
+  },
+  "tests/aws/services/stepfunctions/resources/test_stepfunctions.py::test_statemachine_definitionsubstitution": {
+    "last_validated_date": "2025-04-11T15:35:23+00:00"
+  }
+}

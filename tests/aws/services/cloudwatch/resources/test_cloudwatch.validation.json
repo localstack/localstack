@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/cloudwatch/resources/test_cloudwatch.py::test_alarm_creation": {
+    "last_validated_date": "2025-04-11T12:11:07+00:00"
+  },
+  "tests/aws/services/cloudwatch/resources/test_cloudwatch.py::test_alarm_ext_statistic": {
+    "last_validated_date": "2025-04-11T12:12:29+00:00"
+  },
+  "tests/aws/services/cloudwatch/resources/test_cloudwatch.py::test_composite_alarm_creation": {
+    "last_validated_date": "2025-04-11T12:12:14+00:00"
+  }
+}

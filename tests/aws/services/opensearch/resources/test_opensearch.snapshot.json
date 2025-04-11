@@ -1,0 +1,128 @@
+{
+  "tests/aws/services/opensearch/resources/test_opensearch.py::test_domain_with_alternative_types": {
+    "recorded-date": "11-04-2025, 14:50:45",
+    "recorded-content": {
+      "describe_domain": {
+        "DomainStatus": {
+          "AIMLOptions": {
+            "NaturalLanguageQueryGenerationOptions": {
+              "CurrentState": "NOT_ENABLED",
+              "DesiredState": "DISABLED"
+            }
+          },
+          "ARN": "arn:<partition>:es:<region>:111111111111:domain/test-opensearch-domain",
+          "AccessPolicies": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "arn:<partition>:iam::111111111111:root"
+                },
+                "Action": "es:*",
+                "Resource": "arn:<partition>:es:<region>:111111111111:domain/test-opensearch-domain/*"
+              }
+            ]
+          },
+          "AdvancedOptions": {
+            "override_main_response_version": "true",
+            "rest.action.multi.allow_explicit_index": "true"
+          },
+          "AdvancedSecurityOptions": {
+            "AnonymousAuthEnabled": false,
+            "Enabled": false,
+            "InternalUserDatabaseEnabled": false
+          },
+          "AutoTuneOptions": {
+            "State": "ENABLED",
+            "UseOffPeakWindow": false
+          },
+          "ChangeProgressDetails": {
+            "ChangeId": "<uuid:1>",
+            "ConfigChangeStatus": "Completed",
+            "InitiatedBy": "CUSTOMER",
+            "LastUpdatedTime": "<datetime>",
+            "StartTime": "<datetime>"
+          },
+          "ClusterConfig": {
+            "ColdStorageOptions": {
+              "Enabled": false
+            },
+            "DedicatedMasterCount": 3,
+            "DedicatedMasterEnabled": true,
+            "DedicatedMasterType": "m5.large.search",
+            "InstanceCount": 2,
+            "InstanceType": "m5.large.search",
+            "MultiAZWithStandbyEnabled": false,
+            "WarmEnabled": false,
+            "ZoneAwarenessConfig": {
+              "AvailabilityZoneCount": 2
+            },
+            "ZoneAwarenessEnabled": true
+          },
+          "CognitoOptions": {
+            "Enabled": false
+          },
+          "Created": true,
+          "Deleted": false,
+          "DomainEndpointOptions": {
+            "CustomEndpointEnabled": false,
+            "EnforceHTTPS": false,
+            "TLSSecurityPolicy": "Policy-Min-TLS-1-2-2019-07"
+          },
+          "DomainId": "111111111111/test-opensearch-domain",
+          "DomainName": "test-opensearch-domain",
+          "DomainProcessingStatus": "Active",
+          "EBSOptions": {
+            "EBSEnabled": true,
+            "Iops": 0,
+            "VolumeSize": 20,
+            "VolumeType": "gp2"
+          },
+          "EncryptionAtRestOptions": {
+            "Enabled": false
+          },
+          "Endpoint": "search-test-opensearch-domain-57fgnrmccspzmfzabq6yahdhc4.<region>.es.amazonaws.com",
+          "EngineVersion": "OpenSearch_1.0",
+          "IPAddressType": "ipv4",
+          "IdentityCenterOptions": {},
+          "ModifyingProperties": [],
+          "NodeToNodeEncryptionOptions": {
+            "Enabled": false
+          },
+          "OffPeakWindowOptions": {
+            "Enabled": true,
+            "OffPeakWindow": {
+              "WindowStartTime": {
+                "Hours": 20,
+                "Minutes": 0
+              }
+            }
+          },
+          "Processing": false,
+          "ServiceSoftwareOptions": {
+            "AutomatedUpdateDate": "<datetime>",
+            "Cancellable": false,
+            "CurrentVersion": "OpenSearch_1_0_R20241003-P1",
+            "Description": "There is no software update available for this domain.",
+            "NewVersion": "",
+            "OptionalDeployment": true,
+            "UpdateAvailable": false,
+            "UpdateStatus": "COMPLETED"
+          },
+          "SnapshotOptions": {
+            "AutomatedSnapshotStartHour": 0
+          },
+          "SoftwareUpdateOptions": {
+            "AutoSoftwareUpdateEnabled": false
+          },
+          "UpgradeProcessing": false
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "tests/aws/services/ssm/resources/test_ssm.py::test_deploy_patch_baseline": {
+    "last_validated_date": "2025-04-11T15:34:13+00:00"
+  },
+  "tests/aws/services/ssm/resources/test_ssm.py::test_maintenance_window": {
+    "last_validated_date": "2025-04-11T15:34:30+00:00"
+  },
+  "tests/aws/services/ssm/resources/test_ssm.py::test_parameter_defaults": {
+    "last_validated_date": "2025-04-11T15:33:11+00:00"
+  },
+  "tests/aws/services/ssm/resources/test_ssm.py::test_update_ssm_parameter_tag": {
+    "last_validated_date": "2025-04-11T15:33:59+00:00"
+  },
+  "tests/aws/services/ssm/resources/test_ssm.py::test_update_ssm_parameters": {
+    "last_validated_date": "2025-04-11T15:33:34+00:00"
+  }
+}
