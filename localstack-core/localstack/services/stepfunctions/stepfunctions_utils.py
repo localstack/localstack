@@ -46,7 +46,7 @@ def assert_pagination_parameters_valid(
     next_token: str,
     next_token_length_limit: int = 1024,
     max_results_upper_limit: int = 1000,
-) -> tuple[int, str]:
+) -> None:
     validation_errors = []
 
     match max_results:

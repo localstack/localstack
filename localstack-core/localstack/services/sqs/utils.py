@@ -184,9 +184,3 @@ def global_message_sequence():
 
 def generate_message_id():
     return long_uid()
-
-
-def token_generator(item: str) -> str:
-    base64_bytes = base64.b64encode(item.encode("utf-8"))
-    next_token = base64_bytes.decode("utf-8")
-    return next_token
