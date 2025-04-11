@@ -164,12 +164,6 @@ def create_test_invocation_context(
     return invocation_context
 
 
-def _fix_headers(headers: Headers) -> Headers:
-    headers.remove("Content-Length")
-
-    return headers
-
-
 def run_test_invocation(
     test_request: TestInvokeMethodRequest, deployment: RestApiDeployment
 ) -> TestInvokeMethodResponse:
@@ -193,7 +187,10 @@ def run_test_invocation(
     test_chain.handle(context=invocation_context, response=test_response)
     end_time = datetime.datetime.now()
 
-    response_headers = _fix_headers(test_response.headers.copy())
+    response_headers = test_response.headers.copy()
+    # AWS does not return the Content-Length for TestInvokeMethod
+    response_headers.remove("Content-Length")
+
     log = log_template(invocation_context, response_headers)
 
     headers = dict(response_headers)
