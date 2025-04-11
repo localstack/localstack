@@ -1,0 +1,180 @@
+import json
+
+import pytest
+
+from localstack.services.stepfunctions.asl.static_analyser.accessible_states_static_analyser import (
+    AccessibleStatesStaticAnalyser,
+)
+
+NO_MISSING_TARGET_SINGLE_SCOPE = json.dumps(
+    {
+        "StartAt": "pass1",
+        "States": {
+            "pass1": {"Type": "Pass", "Next": "pass2"},
+            "pass2": {"Type": "Pass", "End": True},
+        },
+    }
+)
+
+NO_MISSING_TARGET_SINGLE_SCOPE_OUT_OF_ORDER_STATES_AND_START = json.dumps(
+    {
+        "States": {
+            "pass1": {"Type": "Pass", "Next": "pass2"},
+            "pass3": {"Type": "Pass", "End": True},
+            "pass2": {"Type": "Pass", "Next": "pass3"},
+        },
+        "StartAt": "pass1",
+    }
+)
+
+NO_MISSING_TARGET_PARALLEL_SCOPE = json.dumps(
+    {
+        "StartAt": "pass1",
+        "States": {
+            "pass1": {"Type": "Pass", "Next": "pass2"},
+            "pass2": {"Type": "Pass", "Next": "parallel"},
+            "parallel": {
+                "Type": "Parallel",
+                "Branches": [
+                    {
+                        "States": {"pass1p": {"Type": "Pass", "End": True}},
+                        "StartAt": "pass1p",
+                    },
+                    {"StartAt": "pass2p", "States": {"pass2p": {"Type": "Pass", "End": True}}},
+                ],
+                "Next": "pass3",
+            },
+            "pass3": {"Type": "Pass", "End": True},
+        },
+    }
+)
+
+MISSING_NEXT_TARGET_SINGLE_SCOPE = json.dumps(
+    {
+        "StartAt": "pass1",
+        "States": {
+            "pass1": {"Type": "Pass", "Next": "pass3"},
+            "pass2": {"Type": "Pass", "End": True},
+        },
+    }
+)
+
+MISSING_START_AT_TARGET_SINGLE_SCOPE = json.dumps(
+    {
+        "StartAt": "pass3",
+        "States": {
+            "pass1": {"Type": "Pass", "Next": "pass2"},
+            "pass2": {"Type": "Pass", "End": True},
+        },
+    }
+)
+
+MISSING_TARGET_ROOT_SCOPE_UNREACHABLE_FROM_PARALLEL = json.dumps(
+    {
+        "StartAt": "pass1",
+        "States": {
+            "pass1": {"Type": "Pass", "Next": "pass2"},
+            "pass2": {"Type": "Pass", "Next": "parallel"},
+            "parallel": {
+                "Type": "Parallel",
+                "Branches": [
+                    {"StartAt": "pass1p", "States": {"pass1p": {"Type": "Pass", "End": True}}},
+                    {"StartAt": "pass2p", "States": {"pass2p": {"Type": "Pass", "Next": "pass2"}}},
+                    {"StartAt": "pass3p", "States": {"pass3p": {"Type": "Pass", "End": True}}},
+                ],
+                "End": True,
+            },
+        },
+    }
+)
+
+MISSING_TARGET_OTHER_BRANCH_SCOPE_UNREACHABLE_FROM_PARALLEL = json.dumps(
+    {
+        "StartAt": "pass1",
+        "States": {
+            "pass1": {"Type": "Pass", "Next": "pass2"},
+            "pass2": {"Type": "Pass", "Next": "parallel"},
+            "parallel": {
+                "Type": "Parallel",
+                "Branches": [
+                    {
+                        "StartAt": "pass1p",
+                        "States": {
+                            "pass1pp": {"Type": "Pass", "Next": "pass2p"},
+                            "pass1p": {"Type": "Pass", "Next": "pass1pp"},
+                        },
+                    },
+                    {"StartAt": "pass2p", "States": {"pass2p": {"Type": "Pass", "End": True}}},
+                ],
+                "End": True,
+            },
+        },
+    }
+)
+
+
+class TestAccessibleStatesStaticAnalyser:
+    @pytest.mark.parametrize(
+        "definition",
+        [
+            NO_MISSING_TARGET_SINGLE_SCOPE,
+            NO_MISSING_TARGET_SINGLE_SCOPE_OUT_OF_ORDER_STATES_AND_START,
+            NO_MISSING_TARGET_PARALLEL_SCOPE,
+        ],
+        ids=[
+            "NO_MISSING_TARGET_SINGLE_SCOPE",
+            "NO_MISSING_TARGET_SINGLE_SCOPE_OUT_OF_ORDER_STATES_AND_START",
+            "NO_MISSING_TARGET_PARALLEL_SCOPE",
+        ],
+    )
+    def test_no_missing_target(self, definition):
+        AccessibleStatesStaticAnalyser().analyse(definition=definition)
+
+    @pytest.mark.parametrize(
+        "definition,expected_messages",
+        [
+            (
+                MISSING_NEXT_TARGET_SINGLE_SCOPE,
+                [
+                    "MISSING_TRANSITION_TARGET: Missing 'Next' target: pass3 at /States/pass1/Next",
+                    'MISSING_TRANSITION_TARGET: State "pass2" is not reachable. at /States/pass2',
+                ],
+            ),
+            (
+                MISSING_START_AT_TARGET_SINGLE_SCOPE,
+                [
+                    "MISSING_TRANSITION_TARGET: Missing 'StartAt' target: pass3 at /StartAt",
+                    'MISSING_TRANSITION_TARGET: State "pass1" is not reachable. at /States/pass1',
+                ],
+            ),
+            (
+                MISSING_TARGET_ROOT_SCOPE_UNREACHABLE_FROM_PARALLEL,
+                [
+                    "MISSING_TRANSITION_TARGET: Missing 'Next' target: pass2 at /States/parallel/Branches[1]/States/pass2p/Next"
+                ],
+            ),
+            (
+                MISSING_TARGET_OTHER_BRANCH_SCOPE_UNREACHABLE_FROM_PARALLEL,
+                [
+                    "MISSING_TRANSITION_TARGET: Missing 'Next' target: pass2p at /States/parallel/Branches[0]/States/pass1pp/Next"
+                ],
+            ),
+        ],
+        ids=[
+            "MISSING_NEXT_TARGET_SINGLE_SCOPE",
+            "MISSING_START_AT_TARGET_SINGLE_SCOPE",
+            "MISSING_TARGET_ROOT_SCOPE_UNREACHABLE_FROM_PARALLEL",
+            "MISSING_TARGET_OTHER_BRANCH_SCOPE_UNREACHABLE_FROM_PARALLEL",
+        ],
+    )
+    def test_missing_target(self, definition, expected_messages):
+        with pytest.raises(ValueError) as analysis_err:
+            AccessibleStatesStaticAnalyser().analyse(definition=definition)
+        error_msg = str(analysis_err.value)
+        TestAccessibleStatesStaticAnalyser._assert_error_msg_prefix(error_msg)
+        for expected_message in expected_messages:
+            assert expected_message in error_msg
+
+    @staticmethod
+    def _assert_error_msg_prefix(msg):
+        assert msg.startswith("Invalid State Machine Definition: ")

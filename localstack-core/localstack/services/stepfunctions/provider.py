@@ -125,6 +125,9 @@ from localstack.services.stepfunctions.asl.eval.event.logging import (
 from localstack.services.stepfunctions.asl.parse.asl_parser import (
     ASLParserException,
 )
+from localstack.services.stepfunctions.asl.static_analyser.accessible_states_static_analyser import (
+    AccessibleStatesStaticAnalyser,
+)
 from localstack.services.stepfunctions.asl.static_analyser.express_static_analyser import (
     ExpressStaticAnalyser,
 )
@@ -491,7 +494,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             )
         else:
             StepFunctionsProvider._validate_definition(
-                definition=state_machine_definition, static_analysers=[StaticAnalyser()]
+                definition=state_machine_definition,
+                static_analysers=[AccessibleStatesStaticAnalyser()],
             )
 
         # Create the state machine and add it to the store.
@@ -1246,7 +1250,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             )
 
         if definition is not None:
-            self._validate_definition(definition=definition, static_analysers=[StaticAnalyser()])
+            self._validate_definition(
+                definition=definition, static_analysers=[AccessibleStatesStaticAnalyser()]
+            )
 
         if logging_configuration is not None:
             self._sanitise_logging_configuration(logging_configuration=logging_configuration)
@@ -1586,7 +1592,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
         static_analysers = list()
         if state_machine_type == StateMachineType.STANDARD:
-            static_analysers.append(StaticAnalyser())
+            static_analysers.append(AccessibleStatesStaticAnalyser())
         else:
             static_analysers.append(ExpressStaticAnalyser())
 
