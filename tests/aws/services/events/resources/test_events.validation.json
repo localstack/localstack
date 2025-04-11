@@ -1,0 +1,26 @@
+{
+  "tests/aws/services/events/resources/test_events.py::test_cfn_event_api_destination_resource": {
+    "last_validated_date": "2025-04-11T13:41:35+00:00"
+  },
+  "tests/aws/services/events/resources/test_events.py::test_cfn_event_bus_resource": {
+    "last_validated_date": "2025-04-11T13:46:03+00:00"
+  },
+  "tests/aws/services/events/resources/test_events.py::test_event_rule_creation_without_target": {
+    "last_validated_date": "2025-04-11T13:44:58+00:00"
+  },
+  "tests/aws/services/events/resources/test_events.py::test_event_rule_to_logs": {
+    "last_validated_date": "2025-04-11T13:43:43+00:00"
+  },
+  "tests/aws/services/events/resources/test_events.py::test_eventbus_policies": {
+    "last_validated_date": "2025-04-11T13:41:58+00:00"
+  },
+  "tests/aws/services/events/resources/test_events.py::test_eventbus_policy_statement": {
+    "last_validated_date": "2025-04-11T13:42:17+00:00"
+  },
+  "tests/aws/services/events/resources/test_events.py::test_rule_pattern_transformation": {
+    "last_validated_date": "2025-04-11T13:48:40+00:00"
+  },
+  "tests/aws/services/events/resources/test_events.py::test_rule_properties": {
+    "last_validated_date": "2025-04-11T13:46:46+00:00"
+  }
+}

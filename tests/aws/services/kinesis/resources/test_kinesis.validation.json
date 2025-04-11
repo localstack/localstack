@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/kinesis/resources/test_kinesis.py::test_cfn_handle_kinesis_firehose_resources": {
+    "last_validated_date": "2025-04-11T13:53:36+00:00"
+  },
+  "tests/aws/services/kinesis/resources/test_kinesis.py::test_default_parameters_kinesis": {
+    "last_validated_date": "2025-04-11T13:51:39+00:00"
+  },
+  "tests/aws/services/kinesis/resources/test_kinesis.py::test_describe_template": {
+    "last_validated_date": "2025-04-11T13:53:38+00:00"
+  },
+  "tests/aws/services/kinesis/resources/test_kinesis.py::test_dynamodb_stream_response_with_cf": {
+    "last_validated_date": "2025-04-11T13:54:15+00:00"
+  },
+  "tests/aws/services/kinesis/resources/test_kinesis.py::test_kinesis_stream_consumer_creations": {
+    "last_validated_date": "2025-04-11T13:55:03+00:00"
+  },
+  "tests/aws/services/kinesis/resources/test_kinesis.py::test_stream_creation": {
+    "last_validated_date": "2025-04-11T13:51:16+00:00"
+  }
+}

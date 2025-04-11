@@ -1,0 +1,17 @@
+{
+  "tests/aws/services/sns/resources/test_sns.py::test_deploy_stack_with_sns_topic": {
+    "last_validated_date": "2025-04-11T15:24:09+00:00"
+  },
+  "tests/aws/services/sns/resources/test_sns.py::test_sns_subscription": {
+    "last_validated_date": "2025-04-11T15:21:13+00:00"
+  },
+  "tests/aws/services/sns/resources/test_sns.py::test_sns_topic_fifo_with_deduplication": {
+    "last_validated_date": "2025-04-11T15:19:36+00:00"
+  },
+  "tests/aws/services/sns/resources/test_sns.py::test_sns_topic_with_attributes": {
+    "last_validated_date": "2025-04-11T15:24:59+00:00"
+  },
+  "tests/aws/services/sns/resources/test_sns.py::test_update_subscription": {
+    "last_validated_date": "2025-04-11T15:24:30+00:00"
+  }
+}

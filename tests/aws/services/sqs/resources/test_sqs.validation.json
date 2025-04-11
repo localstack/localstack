@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/sqs/resources/test_sqs.py::test_cfn_handle_sqs_resource": {
+    "last_validated_date": "2025-04-11T15:29:51+00:00"
+  },
+  "tests/aws/services/sqs/resources/test_sqs.py::test_sqs_fifo_queue_generates_valid_name": {
+    "last_validated_date": "2025-04-11T15:26:52+00:00"
+  },
+  "tests/aws/services/sqs/resources/test_sqs.py::test_sqs_non_fifo_queue_generates_valid_name": {
+    "last_validated_date": "2025-04-11T15:28:05+00:00"
+  },
+  "tests/aws/services/sqs/resources/test_sqs.py::test_sqs_queue_policy": {
+    "last_validated_date": "2025-04-11T15:25:38+00:00"
+  },
+  "tests/aws/services/sqs/resources/test_sqs.py::test_update_queue_no_change": {
+    "last_validated_date": "2025-04-11T15:30:56+00:00"
+  },
+  "tests/aws/services/sqs/resources/test_sqs.py::test_update_sqs_queuepolicy": {
+    "last_validated_date": "2025-04-11T15:32:21+00:00"
+  }
+}
