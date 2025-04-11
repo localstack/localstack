@@ -13,7 +13,6 @@ from tests.aws.services.apigateway.apigateway_fixtures import (
     create_rest_api_stage,
     create_rest_resource,
     create_rest_resource_method,
-    delete_rest_api,
     import_rest_api,
 )
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO_STATUS_CODE
@@ -232,7 +231,7 @@ def import_apigw(aws_client, aws_client_factory):
     yield _import_apigateway_function
 
     for rest_api_id in rest_api_ids:
-        delete_rest_api(apigateway_client, restApiId=rest_api_id)
+        apigateway_client.delete_rest_api(restApiId=rest_api_id)
 
 
 @pytest.fixture

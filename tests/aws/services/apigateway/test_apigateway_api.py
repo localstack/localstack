@@ -2320,6 +2320,7 @@ class TestApigatewayTestInvoke:
                 lambda k, v: str(v) if k == "latency" else None, "latency", replace_reference=False
             )
         )
+        # TODO: maybe transformer `log` better
         snapshot.add_transformer(
             snapshot.transform.key_value("log", "log", reference_replacement=False)
         )
