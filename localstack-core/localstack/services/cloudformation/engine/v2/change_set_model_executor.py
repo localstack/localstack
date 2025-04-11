@@ -60,6 +60,8 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         return delta
 
     def _reduce_intrinsic_function_ref_value(self, preproc_value: Any) -> Any:
+        if preproc_value is None:
+            return None
         resource = self.resources.get(preproc_value.name)
         if resource is None:
             raise NotImplementedError(f"No resource '{preproc_value.name}' found")

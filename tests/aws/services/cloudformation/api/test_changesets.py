@@ -105,7 +105,6 @@ class TestUpdates:
         res.destroy()
 
     @markers.aws.needs_fixing
-    @pytest.mark.skip(reason="WIP")
     def test_deleting_resource(self, aws_client: ServiceLevelClientFactory, deploy_cfn_template):
         parameter_name = "my-parameter"
         value1 = "foo"
