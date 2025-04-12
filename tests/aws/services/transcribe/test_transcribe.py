@@ -442,3 +442,17 @@ class TestTranscribe:
         with pytest.raises(ParamValidationError) as e:
             transcribe_create_job(audio_file=file_path, params=settings)
         snapshot.match("err_speaker_labels_diarization", e.value)
+
+    @markers.aws.only_localstack
+    def test_transcribe_error_invalid_length(self, transcribe_create_job, aws_client, snapshot):
+        media_file = "../../files/audio_4h.mp3"
+        file_path = os.path.join(BASEDIR, media_file)
+        job_name = transcribe_create_job(audio_file=file_path)
+
+        def _is_transcription_done():
+            resp = aws_client.transcribe.get_transcription_job(TranscriptionJobName=job_name)
+            assert resp["TranscriptionJob"]["TranscriptionJobStatus"] == "FAILED"
+            assert resp["TranscriptionJob"]["FailureReason"] == "Invalid file size: file size too large. Maximum audio duration is 4.000000 hours.Check the length of the file and try your request again."
+
+
+        retry(_is_transcription_done, retries=50, sleep=2)
