@@ -1,6 +1,13 @@
 from typing import TypedDict
 
-from localstack.aws.api.cloudformation import ChangeSetType, CreateChangeSetInput, Parameter
+from localstack.aws.api.cloudformation import (
+    ChangeSetStatus,
+    ChangeSetType,
+    CreateChangeSetInput,
+    ExecutionStatus,
+    Parameter,
+    StackStatus,
+)
 from localstack.services.cloudformation.engine.entities import (
     StackIdentifier,
     StackTemplate,
@@ -22,7 +29,7 @@ class Stack:
     stack_name: str
     parameters: list[Parameter]
     change_set_name: str | None
-    status: str
+    status: StackStatus
     stack_id: str
 
     # state after deploy
@@ -41,7 +48,7 @@ class Stack:
         self.region_name = region_name
         self.template = template
         self.template_body = template_body
-        self.status = "CREATE_IN_PROGRESS"
+        self.status = StackStatus.CREATE_IN_PROGRESS
 
         # state after deploy
         self.resolved_parameters = {}
@@ -50,13 +57,20 @@ class Stack:
         if request_payload:
             self.populate_from_request(request_payload)
 
-    def set_stack_status(self, status: str):
+    def set_stack_status(self, status: StackStatus):
         self.status = status
+
+    def describe_details(self) -> dict:
+        return {
+            "StackId": self.stack_id,
+            "StackName": self.stack_name,
+            "StackStatus": self.status,
+        }
 
     def populate_from_request(self, request_payload: CreateChangeSetInput):
         self.stack_name = request_payload["StackName"]
         self.change_set_name = request_payload.get("ChangeSetName")
-        self.parameters = request_payload["Parameters"]
+        self.parameters = request_payload.get("Parameters", [])
         self.stack_id = arns.cloudformation_stack_arn(
             self.stack_name,
             stack_id=StackIdentifier(
@@ -72,6 +86,8 @@ class StackChangeSet:
     change_set_id: str
     change_set_type: ChangeSetType
     update_graph: NodeTemplate
+    status: ChangeSetStatus
+    execution_status: ExecutionStatus
 
     def __init__(
         self,
@@ -81,6 +97,8 @@ class StackChangeSet:
     ):
         self.stack = stack
         self.template = template
+        self.status = ChangeSetStatus.CREATE_IN_PROGRESS
+        self.execution_status = ExecutionStatus.AVAILABLE
 
         if request_payload:
             self.populate_from_request(request_payload)
@@ -94,6 +112,12 @@ class StackChangeSet:
             account_id=self.stack.account_id,
             region_name=self.stack.region_name,
         )
+
+    def set_change_set_status(self, status: ChangeSetStatus):
+        self.status = status
+
+    def set_execution_status(self, execution_status: ExecutionStatus):
+        self.execution_status = execution_status
 
     @property
     def account_id(self) -> str:

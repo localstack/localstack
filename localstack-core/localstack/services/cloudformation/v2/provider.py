@@ -6,11 +6,15 @@ from localstack.aws.api.cloudformation import (
     Changes,
     ChangeSetNameOrId,
     ChangeSetNotFoundException,
+    ChangeSetStatus,
     ChangeSetType,
     ClientRequestToken,
     CreateChangeSetInput,
     CreateChangeSetOutput,
+    DeletionMode,
     DescribeChangeSetOutput,
+    DescribeStackEventsOutput,
+    DescribeStacksOutput,
     DisableRollback,
     ExecuteChangeSetOutput,
     ExecutionStatus,
@@ -19,6 +23,9 @@ from localstack.aws.api.cloudformation import (
     NextToken,
     Parameter,
     RetainExceptOnCreate,
+    RetainResources,
+    RoleARN,
+    StackName,
     StackNameOrId,
     StackStatus,
 )
@@ -38,10 +45,11 @@ from localstack.services.cloudformation.provider import (
     CloudformationProvider,
 )
 from localstack.services.cloudformation.stores import (
-    find_change_set,
+    CloudFormationStore,
     get_cloudformation_store,
 )
 from localstack.services.cloudformation.v2.entities import Stack, StackChangeSet
+from localstack.utils.threads import start_worker_thread
 
 LOG = logging.getLogger(__name__)
 
@@ -52,6 +60,41 @@ def is_stack_arn(stack_name_or_id: str) -> bool:
 
 def is_changeset_arn(change_set_name_or_id: str) -> bool:
     return ARN_CHANGESET_REGEX.match(change_set_name_or_id) is not None
+
+
+def find_change_set_v2(
+    state: CloudFormationStore, change_set_name: str, stack_name: str | None = None
+) -> StackChangeSet | None:
+    change_set: StackChangeSet | None = None
+    if is_changeset_arn(change_set_name):
+        change_set = state.change_sets[change_set_name]
+    else:
+        if stack_name is not None:
+            stack: Stack | None = None
+            if is_stack_arn(stack_name):
+                stack = state.stacks_v2[stack_name]
+            else:
+                for stack_candidate in state.stacks_v2.values():
+                    # TODO: check for active stacks
+                    if (
+                        stack_candidate.stack_name == stack_name
+                        and stack.status != StackStatus.DELETE_COMPLETE
+                    ):
+                        stack = stack_candidate
+                        break
+
+            if not stack:
+                raise NotImplementedError(f"no stack found for change set {change_set_name}")
+
+            for change_set_id in stack.change_set_ids:
+                change_set_candidate = state.change_sets[change_set_id]
+                if change_set_candidate.change_set_name == change_set_name:
+                    change_set = change_set_candidate
+                    break
+        else:
+            raise NotImplementedError
+
+    return change_set
 
 
 class CloudformationProviderV2(CloudformationProvider):
@@ -94,13 +137,13 @@ class CloudformationProviderV2(CloudformationProvider):
         # this is intentionally not in a util yet. Let's first see how the different operations deal with these before generalizing
         # handle ARN stack_name here (not valid for initial CREATE, since stack doesn't exist yet)
         if is_stack_arn(stack_name):
-            stack = state.stacks.get(stack_name)
+            stack = state.stacks_v2.get(stack_name)
             if not stack:
                 raise ValidationError(f"Stack '{stack_name}' does not exist.")
         else:
             # stack name specified, so fetch the stack by name
             stack_candidates: list[Stack] = [
-                s for stack_arn, s in state.stacks.items() if s.stack_name == stack_name
+                s for stack_arn, s in state.stacks_v2.items() if s.stack_name == stack_name
             ]
             active_stack_candidates = [
                 s for s in stack_candidates if self._stack_status_is_active(s.status)
@@ -121,7 +164,7 @@ class CloudformationProviderV2(CloudformationProvider):
                     raise ValidationError(f"Stack '{stack_name}' does not exist.")
                 stack = active_stack_candidates[0]
 
-        stack.set_stack_status("REVIEW_IN_PROGRESS")
+        stack.set_stack_status(StackStatus.REVIEW_IN_PROGRESS)
 
         # TODO: test if rollback status is allowed as well
         if (
@@ -183,6 +226,7 @@ class CloudformationProviderV2(CloudformationProvider):
             before_parameters=before_parameters,
             after_parameters=after_parameters,
         )
+        change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
         stack.change_set_id = change_set.change_set_id
         state.change_sets[change_set.change_set_id] = change_set
 
@@ -199,29 +243,27 @@ class CloudformationProviderV2(CloudformationProvider):
         retain_except_on_create: RetainExceptOnCreate | None = None,
         **kwargs,
     ) -> ExecuteChangeSetOutput:
-        change_set = find_change_set(
-            context.account_id,
-            context.region,
-            change_set_name,
-            stack_name=stack_name,
-            active_only=True,
-        )
+        state = get_cloudformation_store(context.account_id, context.region)
+
+        change_set = find_change_set_v2(state, change_set_name, stack_name)
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
-        if change_set.metadata.get("ExecutionStatus") != ExecutionStatus.AVAILABLE:
+
+        if change_set.execution_status != ExecutionStatus.AVAILABLE:
             LOG.debug("Change set %s not in execution status 'AVAILABLE'", change_set_name)
             raise InvalidChangeSetStatusException(
-                f"ChangeSet [{change_set.metadata['ChangeSetId']}] cannot be executed in its current status of [{change_set.metadata.get('Status')}]"
+                f"ChangeSet [{change_set.change_set_id}] cannot be executed in its current status of [{change_set.status}]"
             )
-        stack_name = change_set.stack.stack_name
-        LOG.debug(
-            'Executing change set "%s" for stack "%s" with %s resources ...',
-            change_set_name,
-            stack_name,
-            len(change_set.template_resources),
-        )
+        # LOG.debug(
+        #     'Executing change set "%s" for stack "%s" with %s resources ...',
+        #     change_set_name,
+        #     stack_name,
+        #     len(change_set.template_resources),
+        # )
         if not change_set.update_graph:
             raise RuntimeError("Programming error: no update graph found for change set")
+
+        change_set.set_execution_status(ExecutionStatus.EXECUTE_IN_PROGRESS)
 
         change_set_executor = ChangeSetModelExecutor(
             change_set.update_graph,
@@ -230,9 +272,18 @@ class CloudformationProviderV2(CloudformationProvider):
             stack_name=change_set.stack.stack_name,
             stack_id=change_set.stack.stack_id,
         )
-        new_resources = change_set_executor.execute()
-        change_set.stack.set_stack_status(f"{change_set.change_set_type or 'UPDATE'}_COMPLETE")
-        change_set.stack.resources = new_resources
+
+        def _run(*args):
+            new_resources = change_set_executor.execute()
+            new_stack_status = StackStatus.UPDATE_COMPLETE
+            if change_set.change_set_type == ChangeSetType.CREATE:
+                new_stack_status = StackStatus.CREATE_COMPLETE
+            change_set.stack.set_stack_status(new_stack_status)
+            change_set.set_execution_status(ExecutionStatus.EXECUTE_COMPLETE)
+            change_set.stack.resources = new_resources
+
+        start_worker_thread(_run)
+
         return ExecuteChangeSetOutput()
 
     @handler("DescribeChangeSet")
@@ -248,33 +299,7 @@ class CloudformationProviderV2(CloudformationProvider):
         # TODO add support for include_property_values
         # only relevant if change_set_name isn't an ARN
         state = get_cloudformation_store(context.account_id, context.region)
-
-        change_set: StackChangeSet | None = None
-        if is_changeset_arn(change_set_name):
-            change_set = state.change_sets[change_set_name]
-        else:
-            if stack_name is not None:
-                stack: Stack | None = None
-                if is_stack_arn(stack_name):
-                    stack = state.stacks_v2[stack_name]
-                else:
-                    for stack_candidate in state.stacks_v2.values():
-                        # TODO: check for active stacks
-                        if stack_candidate.stack_name == stack_name:  # and stack.status
-                            stack = stack_candidate
-                            break
-
-                if not stack:
-                    raise NotImplementedError(f"no stack found for change set {change_set_name}")
-
-                for change_set_id in stack.change_set_ids:
-                    change_set_candidate = state.change_sets[change_set_id]
-                    if change_set_candidate.change_set_name == change_set_name:
-                        change_set = change_set_candidate
-                        break
-            else:
-                raise NotImplementedError
-
+        change_set = find_change_set_v2(state, change_set_name, stack_name)
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
 
@@ -285,6 +310,7 @@ class CloudformationProviderV2(CloudformationProvider):
         changes: Changes = change_set_describer.get_changes()
 
         result = {
+            "Status": change_set.status,
             "ChangeSetType": change_set.change_set_type,
             "StackStatus": change_set.stack.status,
             "LastUpdatedTime": "",
@@ -297,3 +323,83 @@ class CloudformationProviderV2(CloudformationProvider):
             "Changes": changes,
         }
         return result
+
+    @handler("DescribeStacks")
+    def describe_stacks(
+        self,
+        context: RequestContext,
+        stack_name: StackName = None,
+        next_token: NextToken = None,
+        **kwargs,
+    ) -> DescribeStacksOutput:
+        state = get_cloudformation_store(context.account_id, context.region)
+        if stack_name:
+            if is_stack_arn(stack_name):
+                stack = state.stacks_v2[stack_name]
+            else:
+                stack_candidates = []
+                for stack in state.stacks_v2.values():
+                    if (
+                        stack.stack_name == stack_name
+                        and stack.status != StackStatus.DELETE_COMPLETE
+                    ):
+                        stack_candidates.append(stack)
+                if len(stack_candidates) == 0:
+                    raise ValidationError(f"No stack with name {stack_name} found")
+                elif len(stack_candidates) > 1:
+                    raise RuntimeError("Programing error, duplicate stacks found")
+                else:
+                    stack = stack_candidates[0]
+        else:
+            raise NotImplementedError
+
+        return DescribeStacksOutput(Stacks=[stack.describe_details()])
+
+    @handler("DescribeStackEvents")
+    def describe_stack_events(
+        self,
+        context: RequestContext,
+        stack_name: StackName = None,
+        next_token: NextToken = None,
+        **kwargs,
+    ) -> DescribeStackEventsOutput:
+        return DescribeStackEventsOutput(StackEvents=[])
+
+    @handler("DeleteStack")
+    def delete_stack(
+        self,
+        context: RequestContext,
+        stack_name: StackName,
+        retain_resources: RetainResources = None,
+        role_arn: RoleARN = None,
+        client_request_token: ClientRequestToken = None,
+        deletion_mode: DeletionMode = None,
+        **kwargs,
+    ) -> None:
+        state = get_cloudformation_store(context.account_id, context.region)
+        if stack_name:
+            if is_stack_arn(stack_name):
+                stack = state.stacks_v2[stack_name]
+            else:
+                stack_candidates = []
+                for stack in state.stacks_v2.values():
+                    if (
+                        stack.stack_name == stack_name
+                        and stack.status != StackStatus.DELETE_COMPLETE
+                    ):
+                        stack_candidates.append(stack)
+                if len(stack_candidates) == 0:
+                    raise ValidationError(f"No stack with name {stack_name} found")
+                elif len(stack_candidates) > 1:
+                    raise RuntimeError("Programing error, duplicate stacks found")
+                else:
+                    stack = stack_candidates[0]
+        else:
+            raise NotImplementedError
+
+        if not stack:
+            # aws will silently ignore invalid stack names - we should do the same
+            return
+
+        # TODO: actually delete
+        stack.set_stack_status(StackStatus.DELETE_COMPLETE)
