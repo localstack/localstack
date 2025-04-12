@@ -452,7 +452,9 @@ class TestTranscribe:
         def _is_transcription_done():
             resp = aws_client.transcribe.get_transcription_job(TranscriptionJobName=job_name)
             assert resp["TranscriptionJob"]["TranscriptionJobStatus"] == "FAILED"
-            assert resp["TranscriptionJob"]["FailureReason"] == "Invalid file size: file size too large. Maximum audio duration is 4.000000 hours.Check the length of the file and try your request again."
-
+            assert (
+                resp["TranscriptionJob"]["FailureReason"]
+                == "Invalid file size: file size too large. Maximum audio duration is 4.000000 hours.Check the length of the file and try your request again."
+            )
 
         retry(_is_transcription_done, retries=50, sleep=2)
