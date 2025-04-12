@@ -27,7 +27,6 @@ from localstack.aws.api.cloudformation import (
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import parameters as param_resolver
 from localstack.services.cloudformation.engine import template_deployer, template_preparer
-from localstack.services.cloudformation.engine.entities import Stack, StackChangeSet
 from localstack.services.cloudformation.engine.parameters import mask_no_echo, strip_parameter_type
 from localstack.services.cloudformation.engine.resource_ordering import (
     NoResourceInStack,
@@ -52,9 +51,14 @@ from localstack.services.cloudformation.stores import (
     find_stack,
     get_cloudformation_store,
 )
+from localstack.services.cloudformation.v2.entities import Stack, StackChangeSet
 from localstack.utils.collections import remove_attributes
 
 LOG = logging.getLogger(__name__)
+
+
+def is_stack_arn(stack_name_or_id: str) -> bool:
+    return ARN_STACK_REGEX.match(stack_name_or_id) is not None
 
 
 class CloudformationProviderV2(CloudformationProvider):
@@ -62,15 +66,23 @@ class CloudformationProviderV2(CloudformationProvider):
     def create_change_set(
         self, context: RequestContext, request: CreateChangeSetInput
     ) -> CreateChangeSetOutput:
+        try:
+            stack_name = request["StackName"]
+        except KeyError:
+            # TODO: proper exception
+            raise ValidationError("StackName must be specified")
+        try:
+            change_set_name = request["ChangeSetName"]
+        except KeyError:
+            # TODO: proper exception
+            raise ValidationError("StackName must be specified")
+
         state = get_cloudformation_store(context.account_id, context.region)
 
-        req_params = request
-        change_set_type = req_params.get("ChangeSetType", "UPDATE")
-        stack_name = req_params.get("StackName")
-        change_set_name = req_params.get("ChangeSetName")
-        template_body = req_params.get("TemplateBody")
+        change_set_type = request.get("ChangeSetType", "UPDATE")
+        template_body = request.get("TemplateBody")
         # s3 or secretsmanager url
-        template_url = req_params.get("TemplateURL")
+        template_url = request.get("TemplateURL")
 
         # validate and resolve template
         if template_body and template_url:
@@ -83,24 +95,14 @@ class CloudformationProviderV2(CloudformationProvider):
                 "Specify exactly one of 'TemplateBody' or 'TemplateUrl'"
             )  # TODO: check proper message
 
-        api_utils.prepare_template_body(
-            req_params
-        )  # TODO: function has too many unclear responsibilities
-        if not template_body:
-            template_body = req_params[
-                "TemplateBody"
-            ]  # should then have been set by prepare_template_body
-        template = template_preparer.parse_template(req_params["TemplateBody"])
-
-        del req_params["TemplateBody"]  # TODO: stop mutating req_params
-        template["StackName"] = stack_name
-        # TODO: validate with AWS what this is actually doing?
-        template["ChangeSetName"] = change_set_name
+        template_body = api_utils.extract_template_body(request)
+        structured_template = template_preparer.parse_template(template_body)
 
         # this is intentionally not in a util yet. Let's first see how the different operations deal with these before generalizing
         # handle ARN stack_name here (not valid for initial CREATE, since stack doesn't exist yet)
-        if ARN_STACK_REGEX.match(stack_name):
-            if not (stack := state.stacks.get(stack_name)):
+        if is_stack_arn(stack_name):
+            stack = state.stacks.get(stack_name)
+            if not stack:
                 raise ValidationError(f"Stack '{stack_name}' does not exist.")
         else:
             # stack name specified, so fetch the stack by name
@@ -113,14 +115,11 @@ class CloudformationProviderV2(CloudformationProvider):
 
             # on a CREATE an empty Stack should be generated if we didn't find an active one
             if not active_stack_candidates and change_set_type == ChangeSetType.CREATE:
-                empty_stack_template = dict(template)
-                empty_stack_template["Resources"] = {}
-                req_params_copy = clone_stack_params(req_params)
                 stack = Stack(
                     context.account_id,
                     context.region,
-                    req_params_copy,
-                    empty_stack_template,
+                    request,
+                    structured_template,
                     template_body=template_body,
                 )
                 state.stacks[stack.stack_id] = stack
@@ -162,7 +161,9 @@ class CloudformationProviderV2(CloudformationProvider):
         new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(
             request.get("Parameters")
         )
-        parameter_declarations = param_resolver.extract_stack_parameter_declarations(template)
+        parameter_declarations = param_resolver.extract_stack_parameter_declarations(
+            structured_template
+        )
         resolved_parameters = param_resolver.resolve_parameters(
             account_id=context.account_id,
             region_name=context.region,
@@ -174,8 +175,8 @@ class CloudformationProviderV2(CloudformationProvider):
         # TODO: remove this when fixing Stack.resources and transformation order
         #   currently we need to create a stack with existing resources + parameters so that resolve refs recursively in here will work.
         #   The correct way to do it would be at a later stage anyway just like a normal intrinsic function
-        req_params_copy = clone_stack_params(req_params)
-        temp_stack = Stack(context.account_id, context.region, req_params_copy, template)
+        req_params_copy = clone_stack_params(request)
+        temp_stack = Stack(context.account_id, context.region, req_params_copy, structured_template)
         temp_stack.set_resolved_parameters(resolved_parameters)
 
         # TODO: everything below should be async
@@ -183,7 +184,7 @@ class CloudformationProviderV2(CloudformationProvider):
         transformed_template = template_preparer.transform_template(
             context.account_id,
             context.region,
-            template,
+            structured_template,
             stack_name=temp_stack.stack_name,
             resources=temp_stack.resources,
             mappings=temp_stack.mappings,
@@ -213,14 +214,14 @@ class CloudformationProviderV2(CloudformationProvider):
             before_template = json.loads(
                 stack.template_body
             )  # template_original is sometimes invalid
-        after_template = template
+        after_template = structured_template
 
         # create change set for the stack and apply changes
         change_set = StackChangeSet(
             context.account_id,
             context.region,
             stack,
-            req_params,
+            request,
             transformed_template,
             change_set_type=change_set_type,
         )

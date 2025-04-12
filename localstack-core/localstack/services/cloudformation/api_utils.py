@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 
 from localstack import config, constants
 from localstack.aws.connect import connect_to
+from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.s3.utils import (
     extract_bucket_name_and_key_from_headers_and_path,
     normalize_bucket_name,
@@ -30,6 +31,61 @@ def prepare_template_body(req_data: dict) -> str | bytes | None:  # TODO: mutati
     if modified_template_body:
         req_data["TemplateBody"] = modified_template_body
     return modified_template_body
+
+
+def extract_template_body(request: dict) -> str:
+    """
+    Given a request payload, fetch the body of the template either from S3 or from the payload itself
+    """
+    if template_body := request.get("TemplateBody"):
+        if request.get("TemplateURL"):
+            raise ValidationError(
+                "Specify exactly one of 'TemplateBody' or 'TemplateUrl'"
+            )  # TODO: check proper message
+
+        return template_body
+
+    elif template_url := request.get("TemplateURL"):
+        template_url = convert_s3_to_local_url(template_url)
+        return get_remote_template_body(template_url)
+
+    else:
+        raise ValidationError(
+            "Specify exactly one of 'TemplateBody' or 'TemplateUrl'"
+        )  # TODO: check proper message
+
+
+def get_remote_template_body(url: str) -> str:
+    response = run_safe(lambda: safe_requests.get(url, verify=False))
+    # check error codes, and code 301 - fixes https://github.com/localstack/localstack/issues/1884
+    status_code = 0 if response is None else response.status_code
+    if 200 <= status_code < 300:
+        # request was ok
+        return response.text
+    elif response is None or status_code == 301 or status_code >= 400:
+        # check if this is an S3 URL, then get the file directly from there
+        url = convert_s3_to_local_url(url)
+        if is_local_service_url(url):
+            parsed_path = urlparse(url).path.lstrip("/")
+            parts = parsed_path.partition("/")
+            client = connect_to().s3
+            LOG.debug(
+                "Download CloudFormation template content from local S3: %s - %s",
+                parts[0],
+                parts[2],
+            )
+            result = client.get_object(Bucket=parts[0], Key=parts[2])
+            body = to_str(result["Body"].read())
+            return body
+        raise RuntimeError(
+            "Unable to fetch template body (code %s) from URL %s" % (status_code, url)
+        )
+    else:
+        raise RuntimeError(
+            f"Bad status code from fetching template from url '{url}' ({status_code})",
+            url,
+            status_code,
+        )
 
 
 def get_template_body(req_data: dict) -> str:
