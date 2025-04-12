@@ -445,7 +445,11 @@ class TestTranscribe:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        paths=["$..TranscriptionJob..Settings", "$..TranscriptionJob..Transcript", "$..TranscriptionJob..MediaFormat"]
+        paths=[
+            "$..TranscriptionJob..Settings",
+            "$..TranscriptionJob..Transcript",
+            "$..TranscriptionJob..MediaFormat",
+        ]
     )
     def test_transcribe_error_invalid_length(self, transcribe_create_job, aws_client, snapshot):
         media_file = "../../files/audio_4h.mp3"
