@@ -3,6 +3,8 @@ from typing import Optional
 
 from localstack.aws.api.cloudformation import StackStatus
 from localstack.services.cloudformation.engine.entities import Stack, StackChangeSet, StackSet
+from localstack.services.cloudformation.v2.entities import Stack as StackV2
+from localstack.services.cloudformation.v2.entities import StackChangeSet as StackChangeSetV2
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 
 LOG = logging.getLogger(__name__)
@@ -11,6 +13,9 @@ LOG = logging.getLogger(__name__)
 class CloudFormationStore(BaseStore):
     # maps stack ID to stack details
     stacks: dict[str, Stack] = LocalAttribute(default=dict)
+    stacks_v2: dict[str, StackV2] = LocalAttribute(default=dict)
+
+    change_sets: dict[str, StackChangeSetV2] = LocalAttribute(default=dict)
 
     # maps stack set ID to stack set details
     stack_sets: dict[str, StackSet] = LocalAttribute(default=dict)

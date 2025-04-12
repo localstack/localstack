@@ -170,9 +170,7 @@ def convert_stack_parameters_to_list(
     return list(in_params.values())
 
 
-def convert_stack_parameters_to_dict(in_params: list[Parameter] | None) -> dict[str, Parameter]:
-    if not in_params:
-        return {}
+def convert_stack_parameters_to_dict(in_params: list[Parameter]) -> dict[str, Parameter]:
     return {p["ParameterKey"]: p for p in in_params}
 
 

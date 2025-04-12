@@ -49,7 +49,7 @@ class StackInstance:
         self.stack = None
 
 
-class StackMetadata(TypedDict):
+class CreateChangeSetInput(TypedDict):
     StackName: str
     Capabilities: list[Capability]
     ChangeSetName: Optional[str]
@@ -83,7 +83,7 @@ class Stack:
         self,
         account_id: str,
         region_name: str,
-        metadata: Optional[StackMetadata] = None,
+        metadata: Optional[CreateChangeSetInput] = None,
         template: Optional[StackTemplate] = None,
         template_body: Optional[str] = None,
     ):
