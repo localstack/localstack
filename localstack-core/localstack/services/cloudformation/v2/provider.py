@@ -259,13 +259,14 @@ class CloudformationProviderV2(CloudformationProvider):
             raise RuntimeError("Programming error: no update graph found for change set")
 
         change_set.set_execution_status(ExecutionStatus.EXECUTE_IN_PROGRESS)
+        change_set.stack.set_stack_status(
+            StackStatus.UPDATE_IN_PROGRESS
+            if change_set.change_set_type == ChangeSetType.UPDATE
+            else StackStatus.CREATE_IN_PROGRESS
+        )
 
         change_set_executor = ChangeSetModelExecutor(
-            change_set.update_graph,
-            account_id=context.account_id,
-            region=context.region,
-            stack_name=change_set.stack.stack_name,
-            stack_id=change_set.stack.stack_id,
+            change_set,
         )
 
         def _run(*args):

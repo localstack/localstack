@@ -3,11 +3,10 @@ import logging
 import uuid
 from typing import Any, Final, Optional
 
-from localstack.aws.api.cloudformation import ChangeAction
+from localstack.aws.api.cloudformation import ChangeAction, StackStatus
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeResource,
-    NodeTemplate,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
     ChangeSetModelPreproc,
@@ -23,6 +22,7 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProviderPayload,
     get_resource_type,
 )
+from localstack.services.cloudformation.v2.entities import ChangeSet
 
 LOG = logging.getLogger(__name__)
 
@@ -33,17 +33,15 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
 
     def __init__(
         self,
-        node_template: NodeTemplate,
-        account_id: str,
-        region: str,
-        stack_name: str,
-        stack_id: str,
+        change_set: ChangeSet,
     ):
-        super().__init__(node_template)
-        self.account_id = account_id
-        self.region = region
-        self.stack_name = stack_name
-        self.stack_id = stack_id
+        self.node_template = change_set.update_graph
+        super().__init__(self.node_template)
+        self.account_id = change_set.stack.account_id
+        self.region = change_set.stack.region_name
+        self.stack = change_set.stack
+        self.stack_name = self.stack.stack_name
+        self.stack_id = self.stack.stack_id
         self.resources = {}
 
     def execute(self) -> dict:
@@ -186,6 +184,13 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 # XXX for legacy delete_stack compatibility
                 self.resources[logical_resource_id]["LogicalResourceId"] = logical_resource_id
                 self.resources[logical_resource_id]["Type"] = resource_type
+            case OperationStatus.FAILED:
+                if self.stack.status == StackStatus.CREATE_IN_PROGRESS:
+                    self.stack.set_stack_status(StackStatus.CREATE_FAILED)
+                elif self.stack.status == StackStatus.UPDATE_IN_PROGRESS:
+                    self.stack.set_stack_status(StackStatus.UPDATE_FAILED)
+                else:
+                    raise NotImplementedError(f"Unhandled stack status: '{self.stack.status}'")
             case any:
                 raise NotImplementedError(f"Event status '{any}' not handled")
 
