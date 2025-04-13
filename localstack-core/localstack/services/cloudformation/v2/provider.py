@@ -48,7 +48,7 @@ from localstack.services.cloudformation.stores import (
     CloudFormationStore,
     get_cloudformation_store,
 )
-from localstack.services.cloudformation.v2.entities import Stack, StackChangeSet
+from localstack.services.cloudformation.v2.entities import ChangeSet, Stack
 from localstack.utils.threads import start_worker_thread
 
 LOG = logging.getLogger(__name__)
@@ -64,8 +64,8 @@ def is_changeset_arn(change_set_name_or_id: str) -> bool:
 
 def find_change_set_v2(
     state: CloudFormationStore, change_set_name: str, stack_name: str | None = None
-) -> StackChangeSet | None:
-    change_set: StackChangeSet | None = None
+) -> ChangeSet | None:
+    change_set: ChangeSet | None = None
     if is_changeset_arn(change_set_name):
         change_set = state.change_sets[change_set_name]
     else:
@@ -217,7 +217,7 @@ class CloudformationProviderV2(CloudformationProvider):
         after_template = structured_template
 
         # create change set for the stack and apply changes
-        change_set = StackChangeSet(stack, request)
+        change_set = ChangeSet(stack, request)
 
         # only set parameters for the changeset, then switch to stack on execute_change_set
         change_set.populate_update_graph(

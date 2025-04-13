@@ -81,7 +81,7 @@ class Stack:
         }
 
 
-class StackChangeSet:
+class ChangeSet:
     change_set_name: str
     change_set_id: str
     change_set_type: ChangeSetType
