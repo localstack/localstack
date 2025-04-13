@@ -331,5 +331,8 @@
   },
   "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_pair_dry_run": {
     "last_validated_date": "2025-04-06T11:54:20+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_pair_without_plaintext_dry_run": {
+    "last_validated_date": "2025-04-13T15:44:57+00:00"
   }
 }
