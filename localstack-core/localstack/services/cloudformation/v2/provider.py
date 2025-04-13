@@ -3,7 +3,6 @@ from typing import Any
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.cloudformation import (
-    Changes,
     ChangeSetNameOrId,
     ChangeSetNotFoundException,
     ChangeSetStatus,
@@ -31,10 +30,6 @@ from localstack.aws.api.cloudformation import (
 )
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import template_preparer
-from localstack.services.cloudformation.engine.parameters import mask_no_echo, strip_parameter_type
-from localstack.services.cloudformation.engine.v2.change_set_model_describer import (
-    ChangeSetModelDescriber,
-)
 from localstack.services.cloudformation.engine.v2.change_set_model_executor import (
     ChangeSetModelExecutor,
 )
@@ -303,25 +298,9 @@ class CloudformationProviderV2(CloudformationProvider):
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
 
-        change_set_describer = ChangeSetModelDescriber(
-            node_template=change_set.update_graph,
-            include_property_values=bool(include_property_values),
+        result = change_set.describe_details(
+            include_property_values=include_property_values or False
         )
-        changes: Changes = change_set_describer.get_changes()
-
-        result = {
-            "Status": change_set.status,
-            "ChangeSetType": change_set.change_set_type,
-            "StackStatus": change_set.stack.status,
-            "LastUpdatedTime": "",
-            "DisableRollback": "",
-            "EnableTerminationProtection": "",
-            "Transform": "",
-            "Parameters": [
-                mask_no_echo(strip_parameter_type(p)) for p in change_set.stack.resolved_parameters
-            ],
-            "Changes": changes,
-        }
         return result
 
     @handler("DescribeStacks")

@@ -1,20 +1,32 @@
+from datetime import datetime, timezone
 from typing import TypedDict
 
 from localstack.aws.api.cloudformation import (
+    Changes,
     ChangeSetStatus,
     ChangeSetType,
     CreateChangeSetInput,
+    DescribeChangeSetOutput,
     ExecutionStatus,
     Parameter,
+    StackDriftInformation,
+    StackDriftStatus,
     StackStatus,
+)
+from localstack.aws.api.cloudformation import (
+    Stack as ApiStack,
 )
 from localstack.services.cloudformation.engine.entities import (
     StackIdentifier,
     StackTemplate,
 )
+from localstack.services.cloudformation.engine.parameters import mask_no_echo, strip_parameter_type
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetModel,
     NodeTemplate,
+)
+from localstack.services.cloudformation.engine.v2.change_set_model_describer import (
+    ChangeSetModelDescriber,
 )
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
@@ -30,6 +42,7 @@ class Stack:
     change_set_name: str | None
     status: StackStatus
     stack_id: str
+    creation_time: datetime
 
     # state after deploy
     resolved_parameters: dict[str, str]
@@ -50,6 +63,7 @@ class Stack:
         self.template_body = template_body
         self.status = StackStatus.CREATE_IN_PROGRESS
         self.change_set_ids = change_set_ids or []
+        self.creation_time = datetime.now(tz=timezone.utc)
 
         self.stack_name = request_payload["StackName"]
         self.change_set_name = request_payload.get("ChangeSetName")
@@ -73,11 +87,21 @@ class Stack:
     def set_stack_status(self, status: StackStatus):
         self.status = status
 
-    def describe_details(self) -> dict:
+    def describe_details(self) -> ApiStack:
         return {
+            "CreationTime": self.creation_time,
             "StackId": self.stack_id,
             "StackName": self.stack_name,
             "StackStatus": self.status,
+            # fake values
+            "DisableRollback": False,
+            "DriftInformation": StackDriftInformation(
+                StackDriftStatus=StackDriftStatus.NOT_CHECKED
+            ),
+            "EnableTerminationProtection": False,
+            "LastUpdatedTime": self.creation_time,
+            "RollbackConfiguration": {},
+            "Tags": [],
         }
 
 
@@ -88,6 +112,7 @@ class ChangeSet:
     update_graph: NodeTemplate | None
     status: ChangeSetStatus
     execution_status: ExecutionStatus
+    creation_time: datetime
 
     def __init__(
         self,
@@ -100,6 +125,7 @@ class ChangeSet:
         self.status = ChangeSetStatus.CREATE_IN_PROGRESS
         self.execution_status = ExecutionStatus.AVAILABLE
         self.update_graph = None
+        self.creation_time = datetime.now(tz=timezone.utc)
 
         self.change_set_name = request_payload["ChangeSetName"]
         self.change_set_type = request_payload.get("ChangeSetType", ChangeSetType.UPDATE)
@@ -139,3 +165,31 @@ class ChangeSet:
             extra_context={"previous_resources": self.stack.resolved_resources},
         )
         self.update_graph = change_set_model.get_update_model()
+
+    def describe_details(self, include_property_values: bool) -> DescribeChangeSetOutput:
+        change_set_describer = ChangeSetModelDescriber(
+            node_template=self.update_graph,
+            include_property_values=include_property_values,
+        )
+        changes: Changes = change_set_describer.get_changes()
+
+        result = {
+            "Status": self.status,
+            "ChangeSetType": self.change_set_type,
+            "ChangeSetName": self.change_set_name,
+            "ExecutionStatus": self.execution_status,
+            "RollbackConfiguration": {},
+            "StackId": self.stack.stack_id,
+            "StackName": self.stack.stack_name,
+            "StackStatus": self.stack.status,
+            "CreationTime": self.creation_time,
+            "LastUpdatedTime": "",
+            "DisableRollback": "",
+            "EnableTerminationProtection": "",
+            "Transform": "",
+            "Parameters": [
+                mask_no_echo(strip_parameter_type(p)) for p in self.stack.resolved_parameters
+            ],
+            "Changes": changes,
+        }
+        return result
