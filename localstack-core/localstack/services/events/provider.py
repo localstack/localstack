@@ -1542,8 +1542,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     }
                 target_unique_id = f"{rule.arn}-{target['Id']}"
                 target_sender = self._target_sender_store[target_unique_id]
+                new_trace_header = (
+                    TraceHeader().ensure_root_exists()
+                )  # scheduled events will always start a new trace
                 try:
-                    target_sender.process_event(event.copy())
+                    target_sender.process_event(event.copy(), trace_header=new_trace_header)
                 except Exception as e:
                     LOG.info(
                         "Unable to send event notification %s to target %s: %s",
