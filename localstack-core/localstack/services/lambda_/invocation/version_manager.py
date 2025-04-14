@@ -238,13 +238,20 @@ class LambdaVersionManager:
             )
         # TODO: consider using the same prefix logging as in error case for execution environment.
         #   possibly as separate named logger.
-        LOG.debug("Got logs for invocation '%s'", invocation.request_id)
-        for log_line in invocation_result.logs.splitlines():
-            LOG.debug(
-                "[%s-%s] %s",
-                function_id.function_name,
+        if invocation_result.logs is not None:
+            LOG.debug("Got logs for invocation '%s'", invocation.request_id)
+            for log_line in invocation_result.logs.splitlines():
+                LOG.debug(
+                    "[%s-%s] %s",
+                    function_id.function_name,
+                    invocation.request_id,
+                    truncate(log_line, config.LAMBDA_TRUNCATE_STDOUT),
+                )
+        else:
+            LOG.warning(
+                "[%s] Error while printing logs for function '%s': Received no logs from environment.",
                 invocation.request_id,
-                truncate(log_line, config.LAMBDA_TRUNCATE_STDOUT),
+                function_id.function_name,
             )
         return invocation_result
 
@@ -260,7 +267,8 @@ class LambdaVersionManager:
             self.log_handler.add_logs(log_item)
         else:
             LOG.warning(
-                "Received no logs from invocation with id %s for lambda %s",
+                "Received no logs from invocation with id %s for lambda %s. Execution environment logs: \n%s",
                 invocation_result.request_id,
                 self.function_arn,
+                execution_env.get_prefixed_logs(),
             )
