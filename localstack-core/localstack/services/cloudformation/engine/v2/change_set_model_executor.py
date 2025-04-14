@@ -178,9 +178,22 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         extra_resource_properties = {}
         if resource_provider is not None:
             # TODO: stack events
-            event = resource_provider_executor.deploy_loop(
-                resource_provider, extra_resource_properties, payload
-            )
+            try:
+                event = resource_provider_executor.deploy_loop(
+                    resource_provider, extra_resource_properties, payload
+                )
+            except Exception as e:
+                reason = str(e)
+                LOG.warning(
+                    "Resource provider operation failed: '%s'",
+                    reason,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
+                if self.stack.status == StackStatus.CREATE_IN_PROGRESS:
+                    self.stack.set_stack_status(StackStatus.CREATE_FAILED, reason=reason)
+                elif self.stack.status == StackStatus.UPDATE_IN_PROGRESS:
+                    self.stack.set_stack_status(StackStatus.UPDATE_FAILED, reason=reason)
+                return
         else:
             event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
 
@@ -224,13 +237,21 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             "sessionToken": "",
         }
         before_properties_value = before_properties.properties if before_properties else None
-        if action == ChangeAction.Remove:
-            resource_properties = before_properties_value
-            previous_resource_properties = None
-        else:
-            after_properties_value = after_properties.properties if after_properties else None
-            resource_properties = after_properties_value
-            previous_resource_properties = before_properties_value
+        after_properties_value = after_properties.properties if after_properties else None
+
+        match action:
+            case ChangeAction.Add:
+                resource_properties = after_properties_value or {}
+                previous_resource_properties = None
+            case ChangeAction.Modify | ChangeAction.Dynamic:
+                resource_properties = after_properties_value or {}
+                previous_resource_properties = before_properties_value or {}
+            case ChangeAction.Remove:
+                resource_properties = before_properties_value or {}
+                previous_resource_properties = None
+            case _:
+                raise NotImplementedError(f"Action '{action}' not handled")
+
         resource_provider_payload: ResourceProviderPayload = {
             "awsAccountId": self.account_id,
             "callbackContext": {},
@@ -243,7 +264,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             "action": str(action),
             "requestData": {
                 "logicalResourceId": logical_resource_id,
-                # TODO: assign before and previous according on the action type.
                 "resourceProperties": resource_properties,
                 "previousResourceProperties": previous_resource_properties,
                 "callerCredentials": creds,

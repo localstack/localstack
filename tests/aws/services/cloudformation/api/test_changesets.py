@@ -1329,10 +1329,6 @@ class TestCaptureUpdateProcess:
         capture_update_process(snapshot, t1, t2)
 
     @markers.aws.validated
-    @pytest.mark.skip(
-        "Template deployment appears to fail on v2 due to unresolved resource dependencies; "
-        "this should be addressed in the development of the v2 engine executor."
-    )
     def test_parameter_changes(
         self,
         snapshot,
@@ -1467,10 +1463,6 @@ class TestCaptureUpdateProcess:
         capture_update_process(snapshot, t1, t2)
 
     @markers.aws.validated
-    # @pytest.mark.skip(
-    #     "Template deployment appears to fail on v2 due to unresolved resource dependencies; "
-    #     "this should be addressed in the development of the v2 engine executor."
-    # )
     def test_mappings_with_parameter_lookup(
         self,
         snapshot,
@@ -1702,25 +1694,25 @@ class TestCaptureUpdateProcess:
     @pytest.mark.parametrize(
         "template",
         [
-            # pytest.param(
-            #     {
-            #         "Parameters": {
-            #             "ParameterValue": {
-            #                 "Type": "String",
-            #             },
-            #         },
-            #         "Resources": {
-            #             "Parameter": {
-            #                 "Type": "AWS::SSM::Parameter",
-            #                 "Properties": {
-            #                     "Type": "String",
-            #                     "Value": {"Ref": "ParameterValue"},
-            #                 },
-            #             }
-            #         },
-            #     },
-            #     id="change_dynamic",
-            # ),
+            pytest.param(
+                {
+                    "Parameters": {
+                        "ParameterValue": {
+                            "Type": "String",
+                        },
+                    },
+                    "Resources": {
+                        "Parameter": {
+                            "Type": "AWS::SSM::Parameter",
+                            "Properties": {
+                                "Type": "String",
+                                "Value": {"Ref": "ParameterValue"},
+                            },
+                        }
+                    },
+                },
+                id="change_dynamic",
+            ),
             # pytest.param(
             #     {
             #         "Parameters": {
@@ -1774,40 +1766,40 @@ class TestCaptureUpdateProcess:
             #     },
             #     id="change_unrelated_property_not_create_only",
             # ),
-            pytest.param(
-                {
-                    "Parameters": {
-                        "ParameterValue": {
-                            "Type": "String",
-                            "Default": "value-1",
-                            "AllowedValues": ["value-1", "value-2"],
-                        }
-                    },
-                    "Conditions": {
-                        "ShouldCreateParameter": {
-                            "Fn::Equals": [{"Ref": "ParameterValue"}, "value-2"]
-                        }
-                    },
-                    "Resources": {
-                        "SSMParameter1": {
-                            "Type": "AWS::SSM::Parameter",
-                            "Properties": {
-                                "Type": "String",
-                                "Value": "first",
-                            },
-                        },
-                        "SSMParameter2": {
-                            "Type": "AWS::SSM::Parameter",
-                            "Condition": "ShouldCreateParameter",
-                            "Properties": {
-                                "Type": "String",
-                                "Value": "first",
-                            },
-                        },
-                    },
-                },
-                id="change_parameter_for_condition_create_resource",
-            ),
+            # pytest.param(
+            #     {
+            #         "Parameters": {
+            #             "ParameterValue": {
+            #                 "Type": "String",
+            #                 "Default": "value-1",
+            #                 "AllowedValues": ["value-1", "value-2"],
+            #             }
+            #         },
+            #         "Conditions": {
+            #             "ShouldCreateParameter": {
+            #                 "Fn::Equals": [{"Ref": "ParameterValue"}, "value-2"]
+            #             }
+            #         },
+            #         "Resources": {
+            #             "SSMParameter1": {
+            #                 "Type": "AWS::SSM::Parameter",
+            #                 "Properties": {
+            #                     "Type": "String",
+            #                     "Value": "first",
+            #                 },
+            #             },
+            #             "SSMParameter2": {
+            #                 "Type": "AWS::SSM::Parameter",
+            #                 "Condition": "ShouldCreateParameter",
+            #                 "Properties": {
+            #                     "Type": "String",
+            #                     "Value": "first",
+            #                 },
+            #             },
+            #         },
+            #     },
+            #     id="change_parameter_for_condition_create_resource",
+            # ),
         ],
     )
     def test_base_dynamic_parameter_scenarios(

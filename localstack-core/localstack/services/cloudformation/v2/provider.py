@@ -276,7 +276,7 @@ class CloudformationProviderV2(CloudformationProvider):
                 new_stack_status = StackStatus.CREATE_COMPLETE
             change_set.stack.set_stack_status(new_stack_status)
             change_set.set_execution_status(ExecutionStatus.EXECUTE_COMPLETE)
-            change_set.stack.resources = new_resources
+            change_set.stack.resolved_resources = new_resources
             change_set.stack.resolved_parameters = new_parameters
 
         start_worker_thread(_run)
