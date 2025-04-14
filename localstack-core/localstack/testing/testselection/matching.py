@@ -175,10 +175,12 @@ def cloudformation_resource_provider_rule(
         if match:
             break
 
-    if match:
-        changed_service = match[0]
-        if changed_service != "cloudformation":
-            return []
+    if not match:
+        return []
+
+    changed_service = match[0]
+    if changed_service != "cloudformation":
+        return []
 
     out = set()
     for test_dir in test_dirs:
