@@ -193,11 +193,14 @@ class TargetSender(ABC):
         return self._client
 
     @abstractmethod
-    def send_event(self, event: FormattedEvent | TransformedEvent):
+    def send_event(
+        self, event: FormattedEvent | TransformedEvent, input_event: FormattedEvent | None = None
+    ):
         pass
 
     def process_event(self, event: FormattedEvent):
         """Processes the event and send it to the target."""
+        input_event = event.copy()
         if input_ := self.target.get("Input"):
             event = json.loads(input_)
         if isinstance(event, dict):
@@ -208,7 +211,7 @@ class TargetSender(ABC):
             if input_transformer := self.target.get("InputTransformer"):
                 event = self.transform_event_with_target_input_transformer(input_transformer, event)
         if event:
-            self.send_event(event)
+            self.send_event(event, input_event)
         else:
             LOG.info("No event to send to target %s", self.target.get("Id"))
 
@@ -541,14 +544,14 @@ class FirehoseTargetSender(TargetSender):
 
 
 class KinesisTargetSender(TargetSender):
-    def send_event(self, event):
+    def send_event(self, event, input_event):
         partition_key_path = collections.get_safe(
             self.target,
             "$.KinesisParameters.PartitionKeyPath",
             default_value="$.id",
         )
         stream_name = self.target["Arn"].split("/")[-1]
-        partition_key = collections.get_safe(event, partition_key_path, event["id"])
+        partition_key = collections.get_safe(input_event, partition_key_path, input_event["id"])
         self.client.put_record(
             StreamName=stream_name,
             Data=to_bytes(to_json_str(event)),
@@ -626,10 +629,10 @@ class SqsTargetSender(TargetSender):
 class StatesTargetSender(TargetSender):
     """Step Functions Target Sender"""
 
-    def send_event(self, event):
+    def send_event(self, event, input_event):
         self.service = "stepfunctions"
         self.client.start_execution(
-            stateMachineArn=self.target["Arn"], name=event["id"], input=to_json_str(event)
+            stateMachineArn=self.target["Arn"], name=input_event["id"], input=to_json_str(event)
         )
 
     def _validate_input(self, target: Target):
