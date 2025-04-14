@@ -1,7 +1,7 @@
 import copy
 import logging
 import uuid
-from typing import Final, Optional, TypeVar
+from typing import Final, Optional
 
 from localstack.aws.api.cloudformation import ChangeAction, StackStatus
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
@@ -25,8 +25,6 @@ from localstack.services.cloudformation.resource_provider import (
 from localstack.services.cloudformation.v2.entities import ChangeSet
 
 LOG = logging.getLogger(__name__)
-
-_T = TypeVar("_T")
 
 
 class ChangeSetModelExecutor(ChangeSetModelPreproc):
