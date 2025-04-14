@@ -21,7 +21,6 @@ from localstack.services.cloudformation.resource_provider import (
     ProgressEvent,
     ResourceProviderExecutor,
     ResourceProviderPayload,
-    get_resource_type,
 )
 from localstack.services.cloudformation.v2.entities import ChangeSet
 
@@ -168,8 +167,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         resource_provider_executor = ResourceProviderExecutor(
             stack_name=self.stack_name, stack_id=self.stack_id
         )
-        # TODO
-        resource_type = get_resource_type({"Type": resource_type})
         payload = self.create_resource_provider_payload(
             action=action,
             logical_resource_id=logical_resource_id,

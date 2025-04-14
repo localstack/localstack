@@ -444,9 +444,7 @@ class ResourceProviderExecutor:
         max_iterations = max(ceil(max_timeout / sleep_time), 2)
 
         for current_iteration in range(max_iterations):
-            resource_type = get_resource_type(
-                {"Type": raw_payload["resourceType"]}
-            )  # TODO: simplify signature of get_resource_type to just take the type
+            resource_type = raw_payload["resourceType"]
             resource["SpecifiedProperties"] = raw_payload["requestData"]["resourceProperties"]
 
             try:
