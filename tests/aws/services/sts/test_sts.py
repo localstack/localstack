@@ -3,6 +3,7 @@ from base64 import b64encode
 
 import pytest
 import requests
+from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON
@@ -321,3 +322,151 @@ class TestSTSIntegrations:
         response = sts_role_client_2.get_caller_identity()
         assert fake_account_id == response["Account"]
         assert assume_role_response_other_account["AssumedRoleUser"]["Arn"] == response["Arn"]
+
+
+class TestSTSAssumeRoleTagging:
+    @markers.aws.validated
+    def test_iam_role_chaining_override_transitive_tags(
+        self,
+        aws_client,
+        aws_client_factory,
+        create_role,
+        snapshot,
+        region_name,
+        account_id,
+        wait_and_assume_role,
+    ):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+        role_name_1 = f"role-1-{short_uid()}"
+        role_name_2 = f"role-2-{short_uid()}"
+        assume_role_policy_document = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": ["sts:AssumeRole", "sts:TagSession"],
+                    "Principal": {"AWS": account_id},
+                }
+            ],
+        }
+
+        role_1 = create_role(
+            RoleName=role_name_1, AssumeRolePolicyDocument=json.dumps(assume_role_policy_document)
+        )
+        snapshot.match("role-1", role_1)
+        role_2 = create_role(
+            RoleName=role_name_2,
+            AssumeRolePolicyDocument=json.dumps(assume_role_policy_document),
+        )
+        snapshot.match("role-2", role_2)
+        aws_client.iam.put_role_policy(
+            RoleName=role_name_1,
+            PolicyName=f"policy-{short_uid()}",
+            PolicyDocument=json.dumps(
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": ["sts:AssumeRole", "sts:TagSession"],
+                            "Resource": [role_2["Role"]["Arn"]],
+                        }
+                    ],
+                }
+            ),
+        )
+
+        # assume role 1 with transitive tags
+        keys = wait_and_assume_role(
+            role_arn=role_1["Role"]["Arn"],
+            session_name="Session1",
+            Tags=[{"Key": "SessionTag1", "Value": "SessionValue1"}],
+            TransitiveTagKeys=["SessionTag1"],
+        )
+        role_1_clients = aws_client_factory(
+            aws_access_key_id=keys["AccessKeyId"],
+            aws_secret_access_key=keys["SecretAccessKey"],
+            aws_session_token=keys["SessionToken"],
+        )
+
+        # try to assume role 2 by overriding transitive session tags
+        with pytest.raises(ClientError) as e:
+            role_1_clients.sts.assume_role(
+                RoleArn=role_2["Role"]["Arn"],
+                RoleSessionName="Session2SessionTagOverride",
+                Tags=[{"Key": "SessionTag1", "Value": "SessionValue2"}],
+            )
+        snapshot.match("override-transitive-tag-error", e.value.response)
+
+        # try to assume role 2 by overriding transitive session tags but with different casing
+        with pytest.raises(ClientError) as e:
+            role_1_clients.sts.assume_role(
+                RoleArn=role_2["Role"]["Arn"],
+                RoleSessionName="Session2SessionTagOverride",
+                Tags=[{"Key": "sessiontag1", "Value": "SessionValue2"}],
+            )
+        snapshot.match("override-transitive-tag-case-ignore-error", e.value.response)
+
+    @markers.aws.validated
+    def test_assume_role_tag_validation(
+        self,
+        aws_client,
+        aws_client_factory,
+        create_role,
+        snapshot,
+        region_name,
+        account_id,
+        wait_and_assume_role,
+    ):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+        role_name_1 = f"role-1-{short_uid()}"
+        assume_role_policy_document = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": ["sts:AssumeRole", "sts:TagSession"],
+                    "Principal": {"AWS": account_id},
+                }
+            ],
+        }
+
+        role_1 = create_role(
+            RoleName=role_name_1, AssumeRolePolicyDocument=json.dumps(assume_role_policy_document)
+        )
+        snapshot.match("role-1", role_1)
+
+        # wait until role 1 is ready to be assumed
+        wait_and_assume_role(
+            role_arn=role_1["Role"]["Arn"],
+            session_name="Session1",
+        )
+        with pytest.raises(ClientError) as e:
+            aws_client.sts.assume_role(
+                RoleArn=role_1["Role"]["Arn"],
+                RoleSessionName="SessionInvalidTransitiveKeys",
+                Tags=[{"Key": "SessionTag1", "Value": "SessionValue1"}],
+                TransitiveTagKeys=["InvalidKey"],
+            )
+        snapshot.match("invalid-transitive-tag-keys", e.value.response)
+
+        # transitive tags are case insensitive
+        aws_client.sts.assume_role(
+            RoleArn=role_1["Role"]["Arn"],
+            RoleSessionName="SessionInvalidCasingTransitiveKeys",
+            Tags=[{"Key": "SessionTag1", "Value": "SessionValue1"}],
+            TransitiveTagKeys=["sessiontag1"],
+        )
+
+        # identical tags with different casing in key names are invalid
+        with pytest.raises(ClientError) as e:
+            aws_client.sts.assume_role(
+                RoleArn=role_1["Role"]["Arn"],
+                RoleSessionName="SessionInvalidCasingTransitiveKeys",
+                Tags=[
+                    {"Key": "SessionTag1", "Value": "SessionValue1"},
+                    {"Key": "sessiontag1", "Value": "SessionValue2"},
+                ],
+                TransitiveTagKeys=["sessiontag1"],
+            )
+        snapshot.match("duplicate-tag-keys-different-casing", e.value.response)
