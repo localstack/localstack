@@ -171,6 +171,7 @@ from localstack.utils.common import truncate
 from localstack.utils.event_matcher import matches_event
 from localstack.utils.strings import long_uid
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
+from localstack.utils.xray.trace_header import TraceHeader
 
 from .analytics import InvocationStatus, rule_invocation
 
@@ -1541,8 +1542,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     }
                 target_unique_id = f"{rule.arn}-{target['Id']}"
                 target_sender = self._target_sender_store[target_unique_id]
+                new_trace_header = (
+                    TraceHeader().ensure_root_exists()
+                )  # scheduled events will always start a new trace
                 try:
-                    target_sender.process_event(event.copy())
+                    target_sender.process_event(event.copy(), trace_header=new_trace_header)
                 except Exception as e:
                     LOG.info(
                         "Unable to send event notification %s to target %s: %s",
@@ -1814,6 +1818,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             return
 
         region, account_id = extract_region_and_account_id(event_bus_name_or_arn, context)
+
+        # TODO check interference with x-ray trace header
         if encoded_trace_header := get_trace_header_encoded_region_account(
             entry, context.region, context.account_id, region, account_id
         ):
@@ -1837,14 +1843,16 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             )
             return
 
-        self._proxy_capture_input_event(event_formatted)
+        trace_header = context.trace_context["aws_trace_header"]
+
+        self._proxy_capture_input_event(event_formatted, trace_header)
 
         # Always add the successful EventId entry, even if target processing might fail
         processed_entries.append({"EventId": event_formatted["id"]})
 
         if configured_rules := list(event_bus.rules.values()):
             for rule in configured_rules:
-                self._process_rules(rule, region, account_id, event_formatted)
+                self._process_rules(rule, region, account_id, event_formatted, trace_header)
         else:
             LOG.info(
                 json.dumps(
@@ -1855,7 +1863,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 )
             )
 
-    def _proxy_capture_input_event(self, event: FormattedEvent) -> None:
+    def _proxy_capture_input_event(self, event: FormattedEvent, trace_header: TraceHeader) -> None:
         # only required for eventstudio to capture input event if no rule is configured
         pass
 
@@ -1865,6 +1873,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         region: str,
         account_id: str,
         event_formatted: FormattedEvent,
+        trace_header: TraceHeader,
     ) -> None:
         """Process rules for an event. Note that we no longer handle entries here as AWS returns success regardless of target failures."""
         event_pattern = rule.event_pattern
@@ -1894,7 +1903,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     target_unique_id = f"{rule.arn}-{target_id}"
                     target_sender = self._target_sender_store[target_unique_id]
                     try:
-                        target_sender.process_event(event_formatted.copy())
+                        target_sender.process_event(event_formatted.copy(), trace_header)
                         rule_invocation.labels(
                             status=InvocationStatus.success,
                             service=target_sender.service,
