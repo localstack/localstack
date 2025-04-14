@@ -144,7 +144,6 @@ class TestScheduleRate:
         assert expected_time_delta - tolerance <= time_delta <= expected_time_delta + tolerance
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="flakey scheduler execution time of 60 seconds")
     def tests_schedule_rate_custom_input_target_sqs(
         self, sqs_as_events_target, events_put_rule, aws_client, snapshot
     ):
