@@ -143,6 +143,6 @@ def test_trailing_p_argument(monkeypatch):
     profile_test(
         monkeypatch,
         input_args=["cli", "start", "-p"],
-        expected_profile="the_profile",
+        expected_profile="",
         expected_argv=["cli", "start", "-p"],
     )
