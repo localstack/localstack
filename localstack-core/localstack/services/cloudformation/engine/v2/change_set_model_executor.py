@@ -1,11 +1,12 @@
 import copy
 import logging
 import uuid
-from typing import Any, Final, Optional
+from typing import Final, Optional, TypeVar
 
 from localstack.aws.api.cloudformation import ChangeAction, StackStatus
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.engine.v2.change_set_model import (
+    NodeParameter,
     NodeResource,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
@@ -26,6 +27,8 @@ from localstack.services.cloudformation.v2.entities import ChangeSet
 
 LOG = logging.getLogger(__name__)
 
+_T = TypeVar("_T")
+
 
 class ChangeSetModelExecutor(ChangeSetModelPreproc):
     account_id: Final[str]
@@ -43,10 +46,17 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         self.stack_name = self.stack.stack_name
         self.stack_id = self.stack.stack_id
         self.resources = {}
+        self.resolved_parameters = {}
 
-    def execute(self) -> dict:
+    # TODO: use a structured type for the return value
+    def execute(self) -> tuple[dict, dict]:
         self.process()
-        return self.resources
+        return self.resources, self.resolved_parameters
+
+    def visit_node_parameter(self, node_parameter: NodeParameter) -> PreprocEntityDelta:
+        delta = super().visit_node_parameter(node_parameter=node_parameter)
+        self.resolved_parameters[node_parameter.name] = delta.after
+        return delta
 
     def visit_node_resource(
         self, node_resource: NodeResource
@@ -57,10 +67,14 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         )
         return delta
 
-    def _reduce_intrinsic_function_ref_value(self, preproc_value: Any) -> Any:
-        if preproc_value is None:
-            return None
-        resource = self.resources.get(preproc_value.name)
+    def _reduce_intrinsic_function_ref_value(self, preproc_value: PreprocResource | str) -> str:
+        # TODO: why is this here?
+        # if preproc_value is None:
+        #     return None
+        name = preproc_value
+        if isinstance(preproc_value, PreprocResource):
+            name = preproc_value.name
+        resource = self.resources.get(name)
         if resource is None:
             raise NotImplementedError(f"No resource '{preproc_value.name}' found")
         physical_resource_id = resource.get("PhysicalResourceId")

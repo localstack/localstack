@@ -1467,10 +1467,10 @@ class TestCaptureUpdateProcess:
         capture_update_process(snapshot, t1, t2)
 
     @markers.aws.validated
-    @pytest.mark.skip(
-        "Template deployment appears to fail on v2 due to unresolved resource dependencies; "
-        "this should be addressed in the development of the v2 engine executor."
-    )
+    # @pytest.mark.skip(
+    #     "Template deployment appears to fail on v2 due to unresolved resource dependencies; "
+    #     "this should be addressed in the development of the v2 engine executor."
+    # )
     def test_mappings_with_parameter_lookup(
         self,
         snapshot,

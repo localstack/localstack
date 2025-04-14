@@ -20,7 +20,6 @@ from localstack.services.cloudformation.engine.entities import (
     StackIdentifier,
     StackTemplate,
 )
-from localstack.services.cloudformation.engine.parameters import mask_no_echo, strip_parameter_type
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetModel,
     NodeTemplate,
@@ -187,8 +186,10 @@ class ChangeSet:
             "DisableRollback": "",
             "EnableTerminationProtection": "",
             "Transform": "",
+            # TODO: mask no echo
             "Parameters": [
-                mask_no_echo(strip_parameter_type(p)) for p in self.stack.resolved_parameters
+                Parameter(ParameterKey=key, ParameterValue=value)
+                for (key, value) in self.stack.resolved_parameters.items()
             ],
             "Changes": changes,
         }

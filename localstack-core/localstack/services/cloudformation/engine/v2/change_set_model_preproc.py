@@ -404,7 +404,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         delta = self.visit(node_condition.body)
         return delta
 
-    def _reduce_intrinsic_function_ref_value(self, preproc_value: Any) -> Any:
+    def _reduce_intrinsic_function_ref_value(self, preproc_value: PreprocResource | str) -> str:
         if isinstance(preproc_value, PreprocResource):
             value = preproc_value.name
         else:
@@ -422,7 +422,10 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         if before_logical_id is not None:
             before_delta = self._resolve_reference(logical_id=before_logical_id)
             before_value = before_delta.before
-            before = self._reduce_intrinsic_function_ref_value(before_value)
+            if isinstance(before_value, str):
+                before = before_value
+            else:
+                before = self._reduce_intrinsic_function_ref_value(before_value)
 
         after_logical_id = arguments_delta.after
         after = None
