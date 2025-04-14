@@ -1,5 +1,5 @@
 name: S3
-aws_documentation: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html"
+service: S3
 localstack_page: "https://docs.localstack.cloud/user-guide/aws/s3/"
 features:
   - name: "Buckets"
@@ -48,7 +48,7 @@ features:
 
   - name: "Lifecycle Management"
     description: "Manage object lifecycles by transitioning them to lower-cost storage classes or deleting expired objects."
-    documentation: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html"
+    documentation_page: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html"
     api_methods:
       - "DeleteBucketLifecycle"
       - "GetBucketLifecycleConfiguration"
@@ -58,7 +58,7 @@ features:
 
   - name: "Access Control"
     description: "Control access to resources using bucket policies, IAM roles, and ACLs."
-    documentation: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-management.html"
+    documentation_page: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-management.html"
     api_methods:
       - "PutBucketAcl"
       - "GetBucketAcl"
@@ -71,7 +71,7 @@ features:
 
   - name: "Tagging"
     description: "Assign tags to categorize storage."
-    documentation: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-tagging.html"
+    documentation_page: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-tagging.html"
     api_methods:
       - "PutObjectTagging"
       - "GetObjectTagging"

@@ -6,11 +6,11 @@ features:
     documentation_page: https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-rest-api.html
     status: "supported"
     api_methods:
-      - create_rest_api
-      - get_rest_api
-      - delete_rest_api
-      - update_rest_api
-      - get_rest_apis
+      - CreateRestApi
+      - GetRestApi
+      - DeleteRestApi
+      - UpdateRestApi
+      - GetRestApis
     limitations:
       - "Advanced integration types might have limited functionality"
 
@@ -20,13 +20,13 @@ features:
     status: "supported"
     emulation_level: emulated
     api_methods:
-      - create_resource
-      - get_resource
-      - get_resources
-      - delete_resource
-      - put_method
-      - delete_method
-      - update_method
+      - CreateResource
+      - GetResource
+      - GetResources
+      - DeleteResource
+      - PutMethod
+      - DeleteMethod
+      - UpdateMethod
     limitations:
       - "Method response mappings have limited support"
 
@@ -35,11 +35,11 @@ features:
     documentation_page: https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-custom-domains.html
     status: "supported"
     api_methods:
-      - create_domain_name
-      - get_domain_name
-      - get_domain_names
-      - delete_domain_name
-      - create_base_path_mapping
+      - CreateDomainName
+      - GetDomainName
+      - GetDomainNames
+      - DeleteDomainName
+      - CreateBasePathMapping
     emulation_level: CRUD
 
   - name: "API Deployments and Stages"
@@ -48,14 +48,14 @@ features:
     status: "supported"
     emulation_level: CRUD
     api_methods:
-      - create_deployment
-      - get_deployment
-      - get_deployments
-      - delete_deployment
-      - create_stage
-      - get_stage
-      - delete_stage
-      - update_stage
+      - CreateDeployment
+      - GetDeployment
+      - GetDeployments
+      - DeleteDeployment
+      - CreateStage
+      - GetStage
+      - DeleteStage
+      - UpdateStage
 
   - name: "API Keys and Usage Plans"
     description: "Manage API keys and usage plans for API access control"
@@ -63,14 +63,14 @@ features:
     status: "supported"
     emulation_level: CRUD
     api_methods:
-      - create_api_key
-      - get_api_key
-      - get_api_keys
-      - delete_api_key
-      - create_usage_plan
-      - get_usage_plan
-      - delete_usage_plan
-      - create_usage_plan_key
+      - CreateApiKey
+      - GetApiKey
+      - GetApiKeys
+      - DeleteApiKey
+      - CreateUsagePlan
+      - GetUsagePlan
+      - DeleteUsagePlan
+      - CreateUsagePlanKey
 
   - name: "Request/Response Transformations"
     description: "Transform request and response payloads using mapping templates"
@@ -78,10 +78,10 @@ features:
     status: "supported"
     emulation_level: emulated
     api_methods:
-      - put_integration
-      - update_integration
-      - put_integration_response
-      - put_method_response
+      - PutIntegration
+      - UpdateIntegration
+      - PutIntegrationResponse
+      - PutMethodResponse
     limitations:
       - "Complex transformations might have limited support"
 
@@ -91,11 +91,11 @@ features:
     status: "supported"
     emulation_level: CRUD
     api_methods:
-      - create_documentation_part
-      - get_documentation_parts
-      - update_documentation_part
-      - delete_documentation_part
-      - create_documentation_version
+      - CreateDocumentationPart
+      - GetDocumentationParts
+      - UpdateDocumentationPart
+      - DeleteDocumentationPart
+      - CreateDocumentationVersion
 
   - name: "Resource Tagging"
     description: "Manage tags for API Gateway resources"
@@ -103,6 +103,6 @@ features:
     status: "supported"
     emulation_level: CRUD
     api_methods:
-      - tag_resource
-      - untag_resource
-      - get_tags
+      - TagResource
+      - UntagResource
+      - GetTags
