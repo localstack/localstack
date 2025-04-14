@@ -1,5 +1,6 @@
 import abc
 import logging
+import time
 from concurrent.futures import CancelledError, Future
 from http import HTTPStatus
 from typing import Dict, Optional
@@ -19,6 +20,8 @@ from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
 INVOCATION_PORT = 9563
+_INVOCATION_CONNECTION_ERROR_MAX_RETRY = 5
+_INVOCATION_CONNECTION_ERROR_BACKOFF_FACTOR_SECONDS = 1
 
 NAMESPACE = "/_localstack_lambda"
 
@@ -192,7 +195,9 @@ class ExecutorEndpoint(Endpoint):
         invocation_url = f"http://{self.container_address}:{self.container_port}/invoke"
         # disable proxies for internal requests
         proxies = {"http": "", "https": ""}
-        response = requests.post(url=invocation_url, json=payload, proxies=proxies)
+        response = self._perform_invoke(
+            invocation_url=invocation_url, proxies=proxies, payload=payload
+        )
         if not response.ok:
             raise InvokeSendError(
                 f"Error while sending invocation {payload} to {invocation_url}. Error Code: {response.status_code}"
@@ -214,3 +219,59 @@ class ExecutorEndpoint(Endpoint):
             invoke_timeout_buffer_seconds = 5
             timeout_seconds = lambda_max_timeout_seconds + invoke_timeout_buffer_seconds
         return self.invocation_future.result(timeout=timeout_seconds)
+
+    def _perform_invoke(
+        self,
+        invocation_url: str,
+        proxies: dict[str, str],
+        payload: dict[str, str],
+        connection_error_retry_number: int = 0,
+    ) -> Response:
+        """
+        Dispatches a Lambda invocation request to the specified container endpoint, with automatic
+        retries in case of connection errors.
+
+        Although the `startup_future` flag may be marked as FINISHED, this does not always guarantee
+        that the container is fully ready to accept incoming connections. There can be a short delay
+        between the container signaling readiness and the actual availability of its network endpoint.
+
+        This method handles that transitional period by retrying on `requests.exceptions.ConnectionError`
+        up to `_INVOCATION_CONNECTION_ERROR_MAX_RETRY` times. The retry interval increases
+        exponentially, controlled by `_INVOCATION_CONNECTION_ERROR_BACKOFF_FACTOR_SECONDS`.
+
+        Parameters:
+            invocation_url (str): The full URL of the container's invocation endpoint.
+            proxies (dict[str, str]): Proxy settings to be used for the HTTP request.
+            payload (dict[str, str]): The JSON payload to send to the container.
+            connection_error_retry_number (int): Internal counter for retry attempts.
+
+        Returns:
+            Response: The successful HTTP response from the container.
+
+        Raises:
+            requests.exceptions.ConnectionError: If the maximum number of retries is exceeded
+            without a successful connection to the container.
+        """
+        try:
+            response = requests.post(url=invocation_url, json=payload, proxies=proxies)
+            response.raise_for_status()
+            return response
+        except requests.exceptions.ConnectionError as connection_error:
+            if connection_error_retry_number >= _INVOCATION_CONNECTION_ERROR_MAX_RETRY - 1:
+                LOG.debug("Connection error on final invoke attempt %s", connection_error)
+                raise connection_error
+
+            retry_delay = _INVOCATION_CONNECTION_ERROR_BACKOFF_FACTOR_SECONDS * (
+                2**connection_error_retry_number
+            )
+            LOG.debug(
+                "Connection error on invoke attempt #%d: %s. Retrying in %s seconds",
+                connection_error_retry_number + 1,
+                connection_error,
+                retry_delay,
+            )
+            time.sleep(retry_delay)
+
+            return self._perform_invoke(
+                invocation_url, proxies, payload, connection_error_retry_number + 1
+            )
