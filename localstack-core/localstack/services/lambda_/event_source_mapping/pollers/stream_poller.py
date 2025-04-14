@@ -322,6 +322,7 @@ class StreamPoller(Poller):
                     attempts,
                     self.partner_resource_arn or self.source_arn,
                     events,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
             finally:
                 # Retry polling until the record expires at the source
