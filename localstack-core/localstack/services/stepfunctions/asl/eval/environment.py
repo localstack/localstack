@@ -51,6 +51,7 @@ class Environment:
     callback_pool_manager: CallbackPoolManager
     map_run_record_pool_manager: MapRunRecordPoolManager
     activity_store: Final[dict[Arn, Activity]]
+    mock_test_case: Optional = (None,)
 
     _frames: Final[list[Environment]]
     _is_frame: bool = False
@@ -69,6 +70,7 @@ class Environment:
         cloud_watch_logging_session: Optional[CloudWatchLoggingSession],
         activity_store: dict[Arn, Activity],
         variable_store: Optional[VariableStore] = None,
+        mock_test_case: Optional = None,
     ):
         super(Environment, self).__init__()
         self._state_mutex = threading.RLock()
@@ -85,6 +87,8 @@ class Environment:
         self.map_run_record_pool_manager = MapRunRecordPoolManager()
 
         self.activity_store = activity_store
+
+        self.mock_test_case = mock_test_case
 
         self._frames = list()
         self._is_frame = False
@@ -133,6 +137,7 @@ class Environment:
             cloud_watch_logging_session=env.cloud_watch_logging_session,
             activity_store=env.activity_store,
             variable_store=variable_store,
+            mock_test_case=env.mock_test_case,
         )
         frame._is_frame = True
         frame.event_manager = env.event_manager
@@ -262,3 +267,25 @@ class Environment:
 
     def is_standard_workflow(self) -> bool:
         return self.execution_type == StateMachineType.STANDARD
+
+    def is_mocked_mode(self) -> bool:
+        return self.mock_test_case is not None
+
+    def get_current_mocked_response(self):
+        if not self.is_mocked_mode():
+            raise RuntimeError(
+                "Cannot retrieve mocked response: execution is not operating in mocked mode"
+            )
+        state_name = self.next_state_name
+        state_mocked_responses: Optional = self.mock_test_case.state_mocked_responses.get(
+            state_name
+        )
+        if state_mocked_responses is None:
+            raise RuntimeError(f"No mocked response definition for state '{state_name}'")
+        retry_count = self.states.context_object.context_object_data["State"]["RetryCount"]
+        if len(state_mocked_responses.mocked_responses) <= retry_count:
+            raise RuntimeError(
+                f"No mocked response definition for state '{state_name}' "
+                f"and retry number '{retry_count}'"
+            )
+        return state_mocked_responses.mocked_responses[retry_count]

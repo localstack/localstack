@@ -1,0 +1,439 @@
+{
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_lambda_service_invoke": {
+    "recorded-date": "14-04-2025, 18:51:50",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionName": "lambda_function_name",
+                "Payload": {
+                  "body": "string body"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "lambda_function_name",
+                "Payload": {
+                  "body": "string body"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "lambda_function_name",
+                "Payload": {
+                  "body": "string body"
+                }
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "ExecutedVersion": "$LATEST",
+                "Payload": {
+                  "body": "string body"
+                },
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "X-Amz-Executed-Version": [
+                      "$LATEST"
+                    ],
+                    "x-amzn-Remapped-Content-Length": [
+                      "0"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "Content-Length": [
+                      "23"
+                    ],
+                    "Date": "date",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                    "Content-Type": [
+                      "application/json"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "23",
+                    "Content-Type": "application/json",
+                    "Date": "date",
+                    "X-Amz-Executed-Version": "$LATEST",
+                    "x-amzn-Remapped-Content-Length": "0",
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                },
+                "StatusCode": 200
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Start",
+              "output": {
+                "ExecutedVersion": "$LATEST",
+                "Payload": {
+                  "body": "string body"
+                },
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "X-Amz-Executed-Version": [
+                      "$LATEST"
+                    ],
+                    "x-amzn-Remapped-Content-Length": [
+                      "0"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "Content-Length": [
+                      "23"
+                    ],
+                    "Date": "date",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                    "Content-Type": [
+                      "application/json"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "23",
+                    "Content-Type": "application/json",
+                    "Date": "date",
+                    "X-Amz-Executed-Version": "$LATEST",
+                    "x-amzn-Remapped-Content-Length": "0",
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                },
+                "StatusCode": 200
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "ExecutedVersion": "$LATEST",
+                "Payload": {
+                  "body": "string body"
+                },
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "X-Amz-Executed-Version": [
+                      "$LATEST"
+                    ],
+                    "x-amzn-Remapped-Content-Length": [
+                      "0"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "Content-Length": [
+                      "23"
+                    ],
+                    "Date": "date",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                    "Content-Type": [
+                      "application/json"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "23",
+                    "Content-Type": "application/json",
+                    "Date": "date",
+                    "X-Amz-Executed-Version": "$LATEST",
+                    "x-amzn-Remapped-Content-Length": "0",
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                },
+                "StatusCode": 200
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EndWithFinal"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "EndWithFinal",
+              "output": {
+                "ExecutedVersion": "$LATEST",
+                "Payload": {
+                  "body": "string body"
+                },
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "X-Amz-Executed-Version": [
+                      "$LATEST"
+                    ],
+                    "x-amzn-Remapped-Content-Length": [
+                      "0"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "Content-Length": [
+                      "23"
+                    ],
+                    "Date": "date",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                    "Content-Type": [
+                      "application/json"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "23",
+                    "Content-Type": "application/json",
+                    "Date": "date",
+                    "X-Amz-Executed-Version": "$LATEST",
+                    "x-amzn-Remapped-Content-Length": "0",
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                },
+                "StatusCode": 200,
+                "final": {
+                  "ExecutedVersion": "$LATEST",
+                  "Payload": {
+                    "body": "string body"
+                  },
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "X-Amz-Executed-Version": [
+                        "$LATEST"
+                      ],
+                      "x-amzn-Remapped-Content-Length": [
+                        "0"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "Content-Length": [
+                        "23"
+                      ],
+                      "Date": "date",
+                      "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                      "Content-Type": [
+                        "application/json"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "23",
+                      "Content-Type": "application/json",
+                      "Date": "date",
+                      "X-Amz-Executed-Version": "$LATEST",
+                      "x-amzn-Remapped-Content-Length": "0",
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "RequestId"
+                  },
+                  "StatusCode": 200
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "ExecutedVersion": "$LATEST",
+                "Payload": {
+                  "body": "string body"
+                },
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "X-Amz-Executed-Version": [
+                      "$LATEST"
+                    ],
+                    "x-amzn-Remapped-Content-Length": [
+                      "0"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "Content-Length": [
+                      "23"
+                    ],
+                    "Date": "date",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                    "Content-Type": [
+                      "application/json"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "23",
+                    "Content-Type": "application/json",
+                    "Date": "date",
+                    "X-Amz-Executed-Version": "$LATEST",
+                    "x-amzn-Remapped-Content-Length": "0",
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                },
+                "StatusCode": 200,
+                "final": {
+                  "ExecutedVersion": "$LATEST",
+                  "Payload": {
+                    "body": "string body"
+                  },
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "X-Amz-Executed-Version": [
+                        "$LATEST"
+                      ],
+                      "x-amzn-Remapped-Content-Length": [
+                        "0"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "Content-Length": [
+                        "23"
+                      ],
+                      "Date": "date",
+                      "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                      "Content-Type": [
+                        "application/json"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "23",
+                      "Content-Type": "application/json",
+                      "Date": "date",
+                      "X-Amz-Executed-Version": "$LATEST",
+                      "x-amzn-Remapped-Content-Length": "0",
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "RequestId"
+                  },
+                  "StatusCode": 200
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
