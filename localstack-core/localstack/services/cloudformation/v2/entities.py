@@ -12,6 +12,7 @@ from localstack.aws.api.cloudformation import (
     StackDriftInformation,
     StackDriftStatus,
     StackStatus,
+    StackStatusReason,
 )
 from localstack.aws.api.cloudformation import (
     Stack as ApiStack,
@@ -40,6 +41,7 @@ class Stack:
     parameters: list[Parameter]
     change_set_name: str | None
     status: StackStatus
+    status_reason: StackStatusReason | None
     stack_id: str
     creation_time: datetime
 
@@ -61,6 +63,7 @@ class Stack:
         self.template = template
         self.template_body = template_body
         self.status = StackStatus.CREATE_IN_PROGRESS
+        self.status_reason = None
         self.change_set_ids = change_set_ids or []
         self.creation_time = datetime.now(tz=timezone.utc)
 
@@ -83,8 +86,10 @@ class Stack:
         self.resolved_parameters = {}
         self.resolved_resources = {}
 
-    def set_stack_status(self, status: StackStatus):
+    def set_stack_status(self, status: StackStatus, reason: StackStatusReason | None = None):
         self.status = status
+        if reason:
+            self.status_reason = reason
 
     def describe_details(self) -> ApiStack:
         return {
@@ -92,6 +97,7 @@ class Stack:
             "StackId": self.stack_id,
             "StackName": self.stack_name,
             "StackStatus": self.status,
+            "StackStatusReason": self.status_reason,
             # fake values
             "DisableRollback": False,
             "DriftInformation": StackDriftInformation(

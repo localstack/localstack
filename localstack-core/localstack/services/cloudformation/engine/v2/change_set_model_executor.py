@@ -162,6 +162,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         before_properties: Optional[PreprocProperties],
         after_properties: Optional[PreprocProperties],
     ) -> None:
+        LOG.debug("Executing resource action: %s for resource '%s'", action, logical_resource_id)
         resource_provider_executor = ResourceProviderExecutor(
             stack_name=self.stack_name, stack_id=self.stack_id
         )
@@ -194,10 +195,15 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 self.resources[logical_resource_id]["LogicalResourceId"] = logical_resource_id
                 self.resources[logical_resource_id]["Type"] = resource_type
             case OperationStatus.FAILED:
+                reason = event.message
+                LOG.warning(
+                    "Resource provider operation failed: '%s'",
+                    reason,
+                )
                 if self.stack.status == StackStatus.CREATE_IN_PROGRESS:
-                    self.stack.set_stack_status(StackStatus.CREATE_FAILED)
+                    self.stack.set_stack_status(StackStatus.CREATE_FAILED, reason=reason)
                 elif self.stack.status == StackStatus.UPDATE_IN_PROGRESS:
-                    self.stack.set_stack_status(StackStatus.UPDATE_FAILED)
+                    self.stack.set_stack_status(StackStatus.UPDATE_FAILED, reason=reason)
                 else:
                     raise NotImplementedError(f"Unhandled stack status: '{self.stack.status}'")
             case any:
