@@ -7268,5 +7268,20 @@
       "before-value": "<name-1>",
       "after-value": "<name-2>"
     }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestUpdates::test_deleting_resource": {
+    "recorded-date": "15-04-2025, 15:07:18",
+    "recorded-content": {
+      "get-parameter-error": {
+        "Error": {
+          "Code": "ParameterNotFound",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
