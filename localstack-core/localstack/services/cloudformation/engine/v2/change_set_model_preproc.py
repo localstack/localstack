@@ -490,10 +490,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             )
             condition_before = condition_delta.before
             condition_after = condition_delta.after
-            if not condition_before and condition_after:
-                change_type = ChangeType.CREATED
-            elif condition_before and not condition_after:
-                change_type = ChangeType.REMOVED
 
         type_delta = self.visit(node_resource.type_)
         properties_delta: PreprocEntityDelta[PreprocProperties, PreprocProperties] = self.visit(
@@ -502,14 +498,14 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
         before = None
         after = None
-        if change_type != ChangeType.CREATED:
+        if change_type != ChangeType.CREATED and condition_before is None or condition_before:
             before = PreprocResource(
                 name=node_resource.name,
                 condition=condition_before,
                 resource_type=type_delta.before,
                 properties=properties_delta.before,
             )
-        if change_type != ChangeType.REMOVED:
+        if change_type != ChangeType.REMOVED and condition_after is None or condition_after:
             after = PreprocResource(
                 name=node_resource.name,
                 condition=condition_after,
