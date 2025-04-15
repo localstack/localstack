@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/cloudformation/v2/test_change_set_mappings.py::TestChangeSetMappings::test_mapping_addition_with_resource": {
+    "last_validated_date": "2025-04-15T13:05:52+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_mappings.py::TestChangeSetMappings::test_mapping_deletion_with_resource_remap": {
+    "last_validated_date": "2025-04-15T13:08:27+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_mappings.py::TestChangeSetMappings::test_mapping_key_addition_with_resource": {
+    "last_validated_date": "2025-04-15T13:07:01+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_mappings.py::TestChangeSetMappings::test_mapping_key_deletion_with_resource_remap": {
+    "last_validated_date": "2025-04-15T13:15:54+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_mappings.py::TestChangeSetMappings::test_mapping_key_update": {
+    "last_validated_date": "2025-04-15T13:04:43+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_mappings.py::TestChangeSetMappings::test_mapping_leaf_update": {
+    "last_validated_date": "2025-04-15T13:03:18+00:00"
+  }
+}
