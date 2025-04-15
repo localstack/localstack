@@ -909,7 +909,7 @@ class CmdDockerClient(ContainerClient):
         if any(msg.lower() in process_stdout_lower for msg in error_messages):
             raise NoSuchContainer(container_name_or_id, stdout=error.stdout, stderr=error.stderr)
 
-    def _transform_container_labels(self, labels: str | Dict[str,str]) -> Dict[str, str]:
+    def _transform_container_labels(self, labels: str | Dict[str, str]) -> Dict[str, str]:
         """
         Transforms the container labels returned by the docker command from the key-value pair format to a dict
         :param labels: Input string, comma separated key value pairs. Example: key1=value1,key2=value2
