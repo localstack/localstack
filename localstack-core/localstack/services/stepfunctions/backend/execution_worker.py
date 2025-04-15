@@ -48,7 +48,7 @@ class ExecutionWorker:
         exec_comm: ExecutionWorkerCommunication,
         cloud_watch_logging_session: Optional[CloudWatchLoggingSession],
         activity_store: dict[Arn, Activity],
-        mock_test_case: Optional[MockTestCase],
+        mock_test_case: Optional[MockTestCase] = None,
     ):
         self._evaluation_details = evaluation_details
         self._execution_communication = exec_comm
