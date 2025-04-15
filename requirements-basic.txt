@@ -54,5 +54,5 @@ semver==3.0.4
     # via localstack-core (pyproject.toml)
 tailer==0.4.1
     # via localstack-core (pyproject.toml)
-urllib3==2.3.0
+urllib3==2.4.0
     # via requests
