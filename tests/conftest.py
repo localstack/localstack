@@ -20,44 +20,6 @@ pytest_plugins = [
 ]
 
 
-# FIXME: remove this once https://github.com/csernazs/pytest-httpserver/pull/411 is merged
-def pytest_sessionstart(session):
-    import threading
-
-    try:
-        from pytest_httpserver import HTTPServer, HTTPServerError
-        from werkzeug import Request
-        from werkzeug.serving import make_server
-
-        from localstack.utils.patch import Patch
-
-        def start_non_daemon_thread(self) -> None:
-            if self.is_running():
-                raise HTTPServerError("Server is already running")
-
-            app = Request.application(self.application)
-
-            self.server = make_server(
-                self.host,
-                self.port,
-                app,
-                ssl_context=self.ssl_context,
-                threaded=self.threaded,
-            )
-
-            self.port = self.server.port  # Update port (needed if `port` was set to 0)
-            self.server_thread = threading.Thread(target=self.thread_target, daemon=True)
-            self.server_thread.start()
-
-        patch = Patch(name="start", obj=HTTPServer, new=start_non_daemon_thread)
-        patch.apply()
-
-    except ImportError:
-        # this will be executed in the CLI tests as well, where we don't have the pytest_httpserver dependency
-        # skip in that case
-        pass
-
-
 @pytest.fixture(scope="session")
 def aws_session():
     """
