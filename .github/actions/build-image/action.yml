@@ -1,0 +1,63 @@
+name: 'Build Image'
+description: 'Composite action which combines all steps necessary to build the LocalStack Community image.'
+inputs:
+  dockerhubPullUsername:
+    description: 'Username to log in to DockerHub to mitigate rate limiting issues with DockerHub.'
+    required: false
+  dockerhubPullToken:
+    description: 'API token to log in to DockerHub to mitigate rate limiting issues with DockerHub.'
+    required: false
+  disableCaching:
+    description: 'Disable Caching'
+    required: false
+outputs:
+  image-artifact-name:
+    description: "Name of the artifact containing the built docker image"
+    value: ${{ steps.image-artifact-name.outputs.image-artifact-name }}
+runs:
+  using: "composite"
+  # This GH Action requires localstack repo in 'localstack' dir + full git history (fetch-depth: 0)
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: 'localstack/.python-version'
+
+    - name: Install docker helper dependencies
+      shell: bash
+      run: pip install --upgrade setuptools setuptools_scm
+
+    - name: Login to Docker Hub
+      # login to DockerHub to avoid rate limiting issues on custom runners
+      uses: docker/login-action@v3
+      if: ${{ inputs.dockerHubPullUsername != '' && inputs.dockerHubPullToken != '' }}
+      with:
+        username: ${{ inputs.dockerhubPullUsername }}
+        password: ${{ inputs.dockerhubPullToken }}
+
+    - name: Build Docker Image
+      id: build-image
+      shell: bash
+      env:
+        DOCKER_BUILD_FLAGS: "--load ${{ inputs.disableCaching == 'true' && '--no-cache' || '' }}"
+        PLATFORM: ${{ (runner.arch == 'X64' && 'amd64') || (runner.arch == 'ARM64' && 'arm64') || '' }}
+        DOCKERFILE: ../Dockerfile
+        DOCKER_BUILD_CONTEXT: ..
+        IMAGE_NAME: "localstack/localstack"
+      working-directory: localstack/localstack-core
+      run: |
+        ../bin/docker-helper.sh build
+        ../bin/docker-helper.sh save
+
+    - name: Store Docker Image as Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: localstack-docker-image-${{ (runner.arch == 'X64' && 'amd64') || (runner.arch == 'ARM64' && 'arm64') || '' }}
+        # the path is defined by the "save" command of the docker-helper, which sets a GitHub output "IMAGE_FILENAME"
+        path: localstack/localstack-core/${{ steps.build-image.outputs.IMAGE_FILENAME || steps.build-test-image.outputs.IMAGE_FILENAME}}
+        retention-days: 1
+
+    - name: Set image artifact name as output
+      id: image-artifact-name
+      shell: bash
+      run: echo "image-artifact-name=localstack-docker-image-${{ (runner.arch == 'X64' && 'amd64') || (runner.arch == 'ARM64' && 'arm64') || '' }}" >> $GITHUB_OUTPUT
