@@ -431,7 +431,11 @@ def _print_service_table(services: Dict[str, str]) -> None:
     console.print(table)
 
 
-@localstack.command(name="start", short_help="Start LocalStack")
+@localstack.group(
+    name="start",
+    short_help="Start LocalStack",
+    invoke_without_command=True,
+)
 @click.option("--docker", is_flag=True, help="Start LocalStack in a docker container [default]")
 @click.option("--host", is_flag=True, help="Start LocalStack directly on the host")
 @click.option("--no-banner", is_flag=True, help="Disable LocalStack banner", default=False)
@@ -472,13 +476,15 @@ def _print_service_table(services: Dict[str, str]) -> None:
     is_flag=True,
     default=False,
 )
+@click.pass_context
 @publish_invocation
 def cmd_start(
+    ctx: click.Context,
     docker: bool,
     host: bool,
-    no_banner: bool,
-    detached: bool,
-    network: str = None,
+    no_banner: bool = False,
+    detached: bool = False,
+    network: str | None = None,
     env: Tuple = (),
     publish: Tuple = (),
     volume: Tuple = (),
@@ -491,6 +497,51 @@ def cmd_start(
     By default, it will start a new Docker container from the latest LocalStack(-Pro) Docker image
     with best-practice volume mounts and port mappings.
     """
+    # If a subcommand is invoked, skip running the default command
+    if ctx.invoked_subcommand is not None:
+        return
+    _start_localstack(docker, host, no_banner, detached, network, env, publish, volume, host_dns)
+
+
+@cmd_start.command(name="snowflake", short_help="Start LocalStack for Snowflake")
+@click.pass_context
+def cmd_start_snowflake(ctx: click.Context) -> None:
+    """
+    Start LocalStack for Snowflake.
+    """
+    # Get the Docker image name from environment variables or default to latest
+    # The image name must contain 'localstack/snowflake' to ensure we're using the correct image
+    image_name = os.environ.get("IMAGE_NAME", "localstack/snowflake:latest")
+    if "localstack/snowflake" not in image_name.lower():
+        raise click.UsageError(
+            "Invalid image name. Must be a version of 'localstack/snowflake' to ensure correct functionality"
+        )
+    os.environ["IMAGE_NAME"] = image_name
+    _start_localstack(
+        docker=True,
+        host=False,
+        no_banner=False,
+        detached=False,
+        network=None,
+        env=(),
+        publish=(),
+        volume=(),
+        host_dns=False,
+    )
+
+
+def _start_localstack(
+    docker: bool,
+    host: bool,
+    no_banner: bool = False,
+    detached: bool = False,
+    network: str | None = None,
+    env: Tuple = (),
+    publish: Tuple = (),
+    volume: Tuple = (),
+    host_dns: bool = False,
+) -> None:
+    """Common implementation for starting LocalStack"""
     if docker and host:
         raise CLIError("Please specify either --docker or --host")
     if host and detached:

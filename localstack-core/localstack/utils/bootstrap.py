@@ -807,6 +807,8 @@ class ContainerConfigurators:
         """
 
         def _cfg(cfg: ContainerConfiguration):
+            if not params:
+                return
             for param in params:
                 cfg.volumes.append(BindMount.parse(param))
 
