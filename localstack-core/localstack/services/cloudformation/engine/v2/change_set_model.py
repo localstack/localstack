@@ -118,7 +118,6 @@ class NodeTemplate(ChangeSetNode):
     conditions: Final[NodeConditions]
     resources: Final[NodeResources]
     outputs: Final[NodeOutputs]
-    extra_context: Final[dict]
 
     def __init__(
         self,
@@ -129,7 +128,6 @@ class NodeTemplate(ChangeSetNode):
         conditions: NodeConditions,
         resources: NodeResources,
         outputs: NodeOutputs,
-        extra_context: dict | None = None,
     ):
         super().__init__(scope=scope, change_type=change_type)
         self.mappings = mappings
@@ -137,7 +135,6 @@ class NodeTemplate(ChangeSetNode):
         self.conditions = conditions
         self.resources = resources
         self.outputs = outputs
-        self.extra_context = extra_context
 
 
 class NodeDivergence(ChangeSetNode):
@@ -402,13 +399,11 @@ class ChangeSetModel:
         after_template: Optional[dict],
         before_parameters: Optional[dict],
         after_parameters: Optional[dict],
-        extra_context: Optional[dict] = None,
     ):
         self._before_template = before_template or Nothing
         self._after_template = after_template or Nothing
         self._before_parameters = before_parameters or Nothing
         self._after_parameters = after_parameters or Nothing
-        self._extra_context = extra_context or {}
         self._visited_scopes = dict()
         self._node_template = self._model(
             before_template=self._before_template, after_template=self._after_template
@@ -1060,7 +1055,6 @@ class ChangeSetModel:
             conditions=conditions,
             resources=resources,
             outputs=outputs,
-            extra_context=self._extra_context,
         )
 
     def _retrieve_condition_if_exists(self, condition_name: str) -> Optional[NodeCondition]:

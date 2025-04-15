@@ -434,6 +434,5 @@ class StackChangeSet(Stack):
             after_template=after_template,
             before_parameters=before_parameters,
             after_parameters=after_parameters,
-            extra_context={"previous_resources": self.resources},
         )
         self.update_graph = change_set_model.get_update_model()

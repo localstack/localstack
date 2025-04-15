@@ -33,7 +33,7 @@ from localstack.utils.strings import short_uid
 
 
 class ResolvedResource(TypedDict):
-    pass
+    Properties: dict
 
 
 class Stack:
@@ -167,7 +167,6 @@ class ChangeSet:
             after_template=after_template,
             before_parameters=before_parameters,
             after_parameters=after_parameters,
-            extra_context={"previous_resources": self.stack.resolved_resources},
         )
         self.update_graph = change_set_model.get_update_model()
 

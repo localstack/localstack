@@ -146,13 +146,13 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
     def _merge_before_properties(
         self, name: str, preproc_resource: PreprocResource
     ) -> PreprocProperties:
-        before_properties = copy.deepcopy(preproc_resource.properties)
-        if previous_properties := self._node_template.extra_context.get(
-            "previous_resources", {}
-        ).get(name):
-            before_properties = PreprocProperties(previous_properties["Properties"])
+        if previous_resource_properties := self.stack.resolved_resources.get(name, {}).get(
+            "Properties"
+        ):
+            return PreprocProperties(properties=previous_resource_properties)
 
-        return before_properties
+        # XXX fall back to returning the input value
+        return copy.deepcopy(preproc_resource.properties)
 
     def _execute_resource_action(
         self,
