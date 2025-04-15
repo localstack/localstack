@@ -23,7 +23,7 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-sam-translator==1.96.0
+aws-sam-translator==1.97.0
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
@@ -31,7 +31,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.38.28
     # via localstack-core (pyproject.toml)
-awscrt==0.25.7
+awscrt==0.26.1
     # via localstack-core
 boto3==1.37.28
     # via
@@ -64,7 +64,7 @@ certifi==2025.1.31
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.32.4
+cfn-lint==1.33.2
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -76,7 +76,7 @@ colorama==0.4.6
     # via awscli
 constantly==23.10.4
     # via localstack-twisted
-crontab==1.0.1
+crontab==1.0.4
     # via localstack-core (pyproject.toml)
 cryptography==44.0.2
     # via
@@ -239,13 +239,13 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.11.2
+pydantic==2.11.3
     # via aws-sam-translator
 pydantic-core==2.33.1
     # via pydantic
 pygments==2.19.1
     # via rich
-pymongo==4.11.3
+pymongo==4.12.0
     # via localstack-core (pyproject.toml)
 pyopenssl==25.0.0
     # via
@@ -332,7 +332,7 @@ tailer==0.4.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-typing-extensions==4.13.1
+typing-extensions==4.13.2
     # via
     #   aws-sam-translator
     #   cfn-lint
@@ -345,7 +345,7 @@ typing-extensions==4.13.1
     #   typing-inspection
 typing-inspection==0.4.0
     # via pydantic
-urllib3==2.3.0
+urllib3==2.4.0
     # via
     #   botocore
     #   docker
