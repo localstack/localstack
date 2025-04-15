@@ -34,6 +34,7 @@ from localstack.services.stepfunctions.asl.eval.program_state import (
 from localstack.services.stepfunctions.asl.eval.states import ContextObjectData, States
 from localstack.services.stepfunctions.asl.eval.variable_store import VariableStore
 from localstack.services.stepfunctions.backend.activity import Activity
+from localstack.services.stepfunctions.mocking.mock_config import MockedResponse, MockTestCase
 
 LOG = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ class Environment:
     callback_pool_manager: CallbackPoolManager
     map_run_record_pool_manager: MapRunRecordPoolManager
     activity_store: Final[dict[Arn, Activity]]
-    mock_test_case: Optional = (None,)
+    mock_test_case: Optional[MockTestCase] = None
 
     _frames: Final[list[Environment]]
     _is_frame: bool = False
@@ -70,7 +71,7 @@ class Environment:
         cloud_watch_logging_session: Optional[CloudWatchLoggingSession],
         activity_store: dict[Arn, Activity],
         variable_store: Optional[VariableStore] = None,
-        mock_test_case: Optional = None,
+        mock_test_case: Optional[MockTestCase] = None,
     ):
         super(Environment, self).__init__()
         self._state_mutex = threading.RLock()
@@ -271,7 +272,7 @@ class Environment:
     def is_mocked_mode(self) -> bool:
         return self.mock_test_case is not None
 
-    def get_current_mocked_response(self):
+    def get_current_mocked_response(self) -> MockedResponse:
         if not self.is_mocked_mode():
             raise RuntimeError(
                 "Cannot retrieve mocked response: execution is not operating in mocked mode"

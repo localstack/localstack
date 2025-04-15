@@ -20,15 +20,10 @@ from tests.aws.services.stepfunctions.templates.services.services_templates impo
 
 
 @markers.snapshot.skip_snapshot_verify(
-    paths=[
-        # TODO: add support for Sdk Http metadata.
-        "$..SdkHttpMetadata",
-        "$..SdkResponseMetadata",
-    ]
+    paths=["$..SdkHttpMetadata", "$..SdkResponseMetadata", "$..ExecutedVersion"]
 )
 class TestBaseScenarios:
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..ExecutedVersion"])
     def test_lambda_service_invoke(
         self,
         aws_client,
