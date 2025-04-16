@@ -159,6 +159,8 @@ class EsmEventProcessor(EventProcessor):
         if not error_payload:
             return {}
         # TODO: Should 'requestContext' and 'responseContext' be defined as models?
+        # TODO: Allow for generating failure context where there is no responseContext i.e
+        # if a RecordAgeExceeded condition is triggered.
         context = {
             "requestContext": {
                 "requestId": error_payload.get("requestId"),

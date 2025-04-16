@@ -2,6 +2,7 @@ import json
 import logging
 import threading
 from abc import abstractmethod
+from bisect import bisect_left
 from collections import defaultdict
 from datetime import datetime
 from typing import Iterator
@@ -209,16 +210,7 @@ class StreamPoller(Poller):
 
     def forward_events_to_target(self, shard_id, next_shard_iterator, records):
         polled_events = self.transform_into_events(records, shard_id)
-
         abort_condition = None
-        # Check MaximumRecordAgeInSeconds
-        if maximum_record_age_in_seconds := self.stream_parameters.get("MaximumRecordAgeInSeconds"):
-            arrival_timestamp_of_last_event = polled_events[-1]["approximateArrivalTimestamp"]
-            now = get_current_time().timestamp()
-            record_age_in_seconds = now - arrival_timestamp_of_last_event
-            if record_age_in_seconds > maximum_record_age_in_seconds:
-                abort_condition = "RecordAgeExpired"
-
         # TODO: implement format detection behavior (e.g., for JSON body):
         #  https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-event-filtering.html
         #  Check whether we need poller-specific filter-preprocessing here without modifying the actual event!
@@ -250,16 +242,26 @@ class StreamPoller(Poller):
         # TODO: handle partial batch failure (see poller.py:parse_batch_item_failures)
         # TODO: think about how to avoid starvation of other shards if one shard runs into infinite retries
         attempts = 0
+        discarded_events_for_dlq = []
         error_payload = {}
 
         max_retries = self.stream_parameters.get("MaximumRetryAttempts", -1)
+        max_record_age = max(
+            self.stream_parameters.get("MaximumRecordAgeInSeconds", -1), 0
+        )  # Disable check if -1
         # NOTE: max_retries == 0 means exponential backoff is disabled
         boff = ExponentialBackoff(max_retries=max_retries)
-        while (
-            not abort_condition
-            and not self.max_retries_exceeded(attempts)
-            and not self._is_shutdown.is_set()
-        ):
+        while not abort_condition and events and not self._is_shutdown.is_set():
+            if self.max_retries_exceeded(attempts):
+                abort_condition = "RetryAttemptsExhausted"
+                break
+
+            if max_record_age:
+                events, expired_events = self.bisect_events_by_record_age(max_record_age, events)
+                if expired_events:
+                    discarded_events_for_dlq.extend(expired_events)
+                    continue
+
             try:
                 if attempts > 0:
                     # TODO: Should we always backoff (with jitter) before processing since we may not want multiple pollers
@@ -269,10 +271,8 @@ class StreamPoller(Poller):
 
                 self.processor.process_events_batch(events)
                 boff.reset()
-
-                # Update shard iterator if execution is successful
-                self.shards[shard_id] = next_shard_iterator
-                return
+                # Stop processing if execution is successful
+                break
             except PartialBatchFailureError as ex:
                 # TODO: add tests for partial batch failure scenarios
                 if (
@@ -327,15 +327,20 @@ class StreamPoller(Poller):
                 # Retry polling until the record expires at the source
                 attempts += 1
 
+        if discarded_events_for_dlq:
+            abort_condition = "RecordAgeExceeded"
+            error_payload = {}
+            events = discarded_events_for_dlq
+
         # Send failed events to potential DLQ
-        abort_condition = abort_condition or "RetryAttemptsExhausted"
-        failure_context = self.processor.generate_event_failure_context(
-            abort_condition=abort_condition,
-            error=error_payload,
-            attempts_count=attempts,
-            partner_resource_arn=self.partner_resource_arn,
-        )
-        self.send_events_to_dlq(shard_id, events, context=failure_context)
+        if abort_condition:
+            failure_context = self.processor.generate_event_failure_context(
+                abort_condition=abort_condition,
+                error=error_payload,
+                attempts_count=attempts,
+                partner_resource_arn=self.partner_resource_arn,
+            )
+            self.send_events_to_dlq(shard_id, events, context=failure_context)
         # Update shard iterator if the execution failed but the events are sent to a DLQ
         self.shards[shard_id] = next_shard_iterator
 
@@ -478,6 +483,17 @@ class StreamPoller(Poller):
                 return events[:i], events[i:]
 
         return events, []
+
+    def bisect_events_by_record_age(
+        self, maximum_record_age: int, events: list[dict]
+    ) -> tuple[list[dict], list[dict]]:
+        """Splits events into [valid_events], [expired_events] based on record age.
+        Where:
+          - Events with approximate arrival time >= cutoff_timestamp are valid.
+          - Events with approximate arrival time < cutoff_timestamp are expired."""
+        cutoff_timestamp = get_current_time().timestamp() - maximum_record_age
+        index = bisect_left(events, cutoff_timestamp, key=self.get_approximate_arrival_time)
+        return events[index:], events[:index]
 
 
 def get_failure_s3_object_key(esm_uuid: str, shard_id: str, failure_datetime: datetime) -> str:
