@@ -325,7 +325,7 @@ class StreamPoller(Poller):
                 )
             except Exception:
                 # FIXME partner_resource_arn is not defined in ESM
-                LOG.warning(
+                LOG.error(
                     "Attempt %d failed with unexpected error while processing %s with events: %s",
                     attempts,
                     self.partner_resource_arn or self.source_arn,
