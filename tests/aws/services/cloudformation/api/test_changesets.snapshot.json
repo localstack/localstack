@@ -7261,5 +7261,27 @@
         "Tags": []
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestCaptureUpdateProcess::test_execute_with_ref": {
+    "recorded-date": "11-04-2025, 14:34:15",
+    "recorded-content": {
+      "before-value": "<name-1>",
+      "after-value": "<name-2>"
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestUpdates::test_deleting_resource": {
+    "recorded-date": "15-04-2025, 15:07:18",
+    "recorded-content": {
+      "get-parameter-error": {
+        "Error": {
+          "Code": "ParameterNotFound",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

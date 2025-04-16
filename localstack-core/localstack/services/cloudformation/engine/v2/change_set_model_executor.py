@@ -1,12 +1,13 @@
+import copy
 import logging
 import uuid
-from typing import Any, Final, Optional
+from typing import Final, Optional
 
-from localstack.aws.api.cloudformation import ChangeAction
+from localstack.aws.api.cloudformation import ChangeAction, StackStatus
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.engine.v2.change_set_model import (
+    NodeParameter,
     NodeResource,
-    NodeTemplate,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
     ChangeSetModelPreproc,
@@ -20,8 +21,8 @@ from localstack.services.cloudformation.resource_provider import (
     ProgressEvent,
     ResourceProviderExecutor,
     ResourceProviderPayload,
-    get_resource_type,
 )
+from localstack.services.cloudformation.v2.entities import ChangeSet
 
 LOG = logging.getLogger(__name__)
 
@@ -32,22 +33,27 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
 
     def __init__(
         self,
-        node_template: NodeTemplate,
-        account_id: str,
-        region: str,
-        stack_name: str,
-        stack_id: str,
+        change_set: ChangeSet,
     ):
-        super().__init__(node_template)
-        self.account_id = account_id
-        self.region = region
-        self.stack_name = stack_name
-        self.stack_id = stack_id
+        self.node_template = change_set.update_graph
+        super().__init__(self.node_template)
+        self.account_id = change_set.stack.account_id
+        self.region = change_set.stack.region_name
+        self.stack = change_set.stack
+        self.stack_name = self.stack.stack_name
+        self.stack_id = self.stack.stack_id
         self.resources = {}
+        self.resolved_parameters = {}
 
-    def execute(self) -> dict:
+    # TODO: use a structured type for the return value
+    def execute(self) -> tuple[dict, dict]:
         self.process()
-        return self.resources
+        return self.resources, self.resolved_parameters
+
+    def visit_node_parameter(self, node_parameter: NodeParameter) -> PreprocEntityDelta:
+        delta = super().visit_node_parameter(node_parameter=node_parameter)
+        self.resolved_parameters[node_parameter.name] = delta.after
+        return delta
 
     def visit_node_resource(
         self, node_resource: NodeResource
@@ -58,9 +64,22 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         )
         return delta
 
-    def _reduce_intrinsic_function_ref_value(self, preproc_value: Any) -> Any:
-        # TODO: this should be implemented to compute the runtime reference value for node entities.
-        return super()._reduce_intrinsic_function_ref_value(preproc_value=preproc_value)
+    def _reduce_intrinsic_function_ref_value(self, preproc_value: PreprocResource | str) -> str:
+        # TODO: why is this here?
+        # if preproc_value is None:
+        #     return None
+        name = preproc_value
+        if isinstance(preproc_value, PreprocResource):
+            name = preproc_value.name
+        resource = self.resources.get(name)
+        if resource is None:
+            raise NotImplementedError(f"No resource '{preproc_value.name}' found")
+        physical_resource_id = resource.get("PhysicalResourceId")
+        if not physical_resource_id:
+            raise NotImplementedError(
+                f"no physical resource id found for resource '{preproc_value.name}'"
+            )
+        return physical_resource_id
 
     def _execute_on_resource_change(
         self, name: str, before: Optional[PreprocResource], after: Optional[PreprocResource]
@@ -70,22 +89,27 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             # Case: change on same type.
             if before.resource_type == after.resource_type:
                 # Register a Modified if changed.
+                # XXX hacky, stick the previous resources' properties into the payload
+                before_properties = self._merge_before_properties(name, before)
+
                 self._execute_resource_action(
                     action=ChangeAction.Modify,
                     logical_resource_id=name,
                     resource_type=before.resource_type,
-                    before_properties=before.properties,
+                    before_properties=before_properties,
                     after_properties=after.properties,
                 )
             # Case: type migration.
             # TODO: Add test to assert that on type change the resources are replaced.
             else:
+                # XXX hacky, stick the previous resources' properties into the payload
+                before_properties = self._merge_before_properties(name, before)
                 # Register a Removed for the previous type.
                 self._execute_resource_action(
                     action=ChangeAction.Remove,
                     logical_resource_id=name,
                     resource_type=before.resource_type,
-                    before_properties=before.properties,
+                    before_properties=before_properties,
                     after_properties=None,
                 )
                 # Register a Create for the next type.
@@ -98,11 +122,15 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 )
         elif before is not None:
             # Case: removal
+            # XXX hacky, stick the previous resources' properties into the payload
+            # XXX hacky, stick the previous resources' properties into the payload
+            before_properties = self._merge_before_properties(name, before)
+
             self._execute_resource_action(
                 action=ChangeAction.Remove,
                 logical_resource_id=name,
                 resource_type=before.resource_type,
-                before_properties=before.properties,
+                before_properties=before_properties,
                 after_properties=None,
             )
         elif after is not None:
@@ -115,6 +143,17 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 after_properties=after.properties,
             )
 
+    def _merge_before_properties(
+        self, name: str, preproc_resource: PreprocResource
+    ) -> PreprocProperties:
+        if previous_resource_properties := self.stack.resolved_resources.get(name, {}).get(
+            "Properties"
+        ):
+            return PreprocProperties(properties=previous_resource_properties)
+
+        # XXX fall back to returning the input value
+        return copy.deepcopy(preproc_resource.properties)
+
     def _execute_resource_action(
         self,
         action: ChangeAction,
@@ -123,11 +162,10 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         before_properties: Optional[PreprocProperties],
         after_properties: Optional[PreprocProperties],
     ) -> None:
+        LOG.debug("Executing resource action: %s for resource '%s'", action, logical_resource_id)
         resource_provider_executor = ResourceProviderExecutor(
             stack_name=self.stack_name, stack_id=self.stack_id
         )
-        # TODO
-        resource_type = get_resource_type({"Type": resource_type})
         payload = self.create_resource_provider_payload(
             action=action,
             logical_resource_id=logical_resource_id,
@@ -140,9 +178,22 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         extra_resource_properties = {}
         if resource_provider is not None:
             # TODO: stack events
-            event = resource_provider_executor.deploy_loop(
-                resource_provider, extra_resource_properties, payload
-            )
+            try:
+                event = resource_provider_executor.deploy_loop(
+                    resource_provider, extra_resource_properties, payload
+                )
+            except Exception as e:
+                reason = str(e)
+                LOG.warning(
+                    "Resource provider operation failed: '%s'",
+                    reason,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
+                if self.stack.status == StackStatus.CREATE_IN_PROGRESS:
+                    self.stack.set_stack_status(StackStatus.CREATE_FAILED, reason=reason)
+                elif self.stack.status == StackStatus.UPDATE_IN_PROGRESS:
+                    self.stack.set_stack_status(StackStatus.UPDATE_FAILED, reason=reason)
+                return
         else:
             event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
 
@@ -156,6 +207,18 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 # XXX for legacy delete_stack compatibility
                 self.resources[logical_resource_id]["LogicalResourceId"] = logical_resource_id
                 self.resources[logical_resource_id]["Type"] = resource_type
+            case OperationStatus.FAILED:
+                reason = event.message
+                LOG.warning(
+                    "Resource provider operation failed: '%s'",
+                    reason,
+                )
+                if self.stack.status == StackStatus.CREATE_IN_PROGRESS:
+                    self.stack.set_stack_status(StackStatus.CREATE_FAILED, reason=reason)
+                elif self.stack.status == StackStatus.UPDATE_IN_PROGRESS:
+                    self.stack.set_stack_status(StackStatus.UPDATE_FAILED, reason=reason)
+                else:
+                    raise NotImplementedError(f"Unhandled stack status: '{self.stack.status}'")
             case any:
                 raise NotImplementedError(f"Event status '{any}' not handled")
 
@@ -174,13 +237,21 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             "sessionToken": "",
         }
         before_properties_value = before_properties.properties if before_properties else None
-        if action == ChangeAction.Remove:
-            resource_properties = before_properties_value
-            previous_resource_properties = None
-        else:
-            after_properties_value = after_properties.properties if after_properties else None
-            resource_properties = after_properties_value
-            previous_resource_properties = before_properties_value
+        after_properties_value = after_properties.properties if after_properties else None
+
+        match action:
+            case ChangeAction.Add:
+                resource_properties = after_properties_value or {}
+                previous_resource_properties = None
+            case ChangeAction.Modify | ChangeAction.Dynamic:
+                resource_properties = after_properties_value or {}
+                previous_resource_properties = before_properties_value or {}
+            case ChangeAction.Remove:
+                resource_properties = before_properties_value or {}
+                previous_resource_properties = None
+            case _:
+                raise NotImplementedError(f"Action '{action}' not handled")
+
         resource_provider_payload: ResourceProviderPayload = {
             "awsAccountId": self.account_id,
             "callbackContext": {},
@@ -193,7 +264,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             "action": str(action),
             "requestData": {
                 "logicalResourceId": logical_resource_id,
-                # TODO: assign before and previous according on the action type.
                 "resourceProperties": resource_properties,
                 "previousResourceProperties": previous_resource_properties,
                 "callerCredentials": creds,

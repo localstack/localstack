@@ -173,20 +173,20 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 return condition
         return None
 
-    def _resolve_reference(self, logica_id: str) -> PreprocEntityDelta:
-        node_condition = self._get_node_condition_if_exists(condition_name=logica_id)
+    def _resolve_reference(self, logical_id: str) -> PreprocEntityDelta:
+        node_condition = self._get_node_condition_if_exists(condition_name=logical_id)
         if isinstance(node_condition, NodeCondition):
             condition_delta = self.visit(node_condition)
             return condition_delta
 
-        node_parameter = self._get_node_parameter_if_exists(parameter_name=logica_id)
+        node_parameter = self._get_node_parameter_if_exists(parameter_name=logical_id)
         if isinstance(node_parameter, NodeParameter):
             parameter_delta = self.visit(node_parameter)
             return parameter_delta
 
         # TODO: check for KNOWN AFTER APPLY values for logical ids coming from intrinsic functions as arguments.
         node_resource = self._get_node_resource_for(
-            resource_name=logica_id, node_template=self._node_template
+            resource_name=logical_id, node_template=self._node_template
         )
         resource_delta = self.visit(node_resource)
         before = resource_delta.before
@@ -210,11 +210,11 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     ) -> PreprocEntityDelta:
         before = None
         if before_logical_id is not None:
-            before_delta = self._resolve_reference(logica_id=before_logical_id)
+            before_delta = self._resolve_reference(logical_id=before_logical_id)
             before = before_delta.before
         after = None
         if after_logical_id is not None:
-            after_delta = self._resolve_reference(logica_id=after_logical_id)
+            after_delta = self._resolve_reference(logical_id=after_logical_id)
             after = after_delta.after
         return PreprocEntityDelta(before=before, after=after)
 
@@ -335,7 +335,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
         def _compute_delta_for_if_statement(args: list[Any]) -> PreprocEntityDelta:
             condition_name = args[0]
-            boolean_expression_delta = self._resolve_reference(logica_id=condition_name)
+            boolean_expression_delta = self._resolve_reference(logical_id=condition_name)
             return PreprocEntityDelta(
                 before=args[1] if boolean_expression_delta.before else args[2],
                 after=args[1] if boolean_expression_delta.after else args[2],
@@ -404,7 +404,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         delta = self.visit(node_condition.body)
         return delta
 
-    def _reduce_intrinsic_function_ref_value(self, preproc_value: Any) -> Any:
+    def _reduce_intrinsic_function_ref_value(self, preproc_value: PreprocResource | str) -> str:
         if isinstance(preproc_value, PreprocResource):
             value = preproc_value.name
         else:
@@ -420,16 +420,23 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         before_logical_id = arguments_delta.before
         before = None
         if before_logical_id is not None:
-            before_delta = self._resolve_reference(logica_id=before_logical_id)
+            before_delta = self._resolve_reference(logical_id=before_logical_id)
             before_value = before_delta.before
-            before = self._reduce_intrinsic_function_ref_value(before_value)
+            if isinstance(before_value, str):
+                before = before_value
+            else:
+                before = self._reduce_intrinsic_function_ref_value(before_value)
 
         after_logical_id = arguments_delta.after
         after = None
         if after_logical_id is not None:
-            after_delta = self._resolve_reference(logica_id=after_logical_id)
+            after_delta = self._resolve_reference(logical_id=after_logical_id)
             after_value = after_delta.after
-            after = self._reduce_intrinsic_function_ref_value(after_value)
+            # TODO: swap isinstance to be a structured type check
+            if isinstance(after_value, str):
+                after = after_value
+            else:
+                after = self._reduce_intrinsic_function_ref_value(after_value)
 
         return PreprocEntityDelta(before=before, after=after)
 
