@@ -82,10 +82,6 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         before_properties: Optional[PreprocProperties],
         after_properties: Optional[PreprocProperties],
     ) -> None:
-        # unchanged: nothing to do.
-        if before_properties == after_properties:
-            return
-
         action = cfn_api.ChangeAction.Modify
         if before_properties is None:
             action = cfn_api.ChangeAction.Add
@@ -111,6 +107,9 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
     def _describe_resource_change(
         self, name: str, before: Optional[PreprocResource], after: Optional[PreprocResource]
     ) -> None:
+        if before == after:
+            # unchanged: nothing to do.
+            return
         if before is not None and after is not None:
             # Case: change on same type.
             if before.resource_type == after.resource_type:

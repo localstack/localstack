@@ -769,7 +769,10 @@ class ChangeSetModel:
             before_properties=before_properties,
             after_properties=after_properties,
         )
-        change_type = change_type.for_child(properties.change_type)
+        if properties.properties:
+            # Properties were defined in the before or after template, thus must play a role
+            # in affecting the change type of this resource.
+            change_type = change_type.for_child(properties.change_type)
         node_resource = NodeResource(
             scope=scope,
             change_type=change_type,
