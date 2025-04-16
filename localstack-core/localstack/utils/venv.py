@@ -14,7 +14,7 @@ class VirtualEnvironment:
     def __init__(self, venv_dir: Union[str, os.PathLike]):
         self._venv_dir = venv_dir
 
-    def create(self):
+    def create(self) -> None:
         """
         Uses the virtualenv cli to create the virtual environment.
         :return:
@@ -73,7 +73,7 @@ class VirtualEnvironment:
 
         return matches[0]
 
-    def inject_to_sys_path(self):
+    def inject_to_sys_path(self) -> None:
         path = str(self.site_dir)
         if path and path not in sys.path:
             sys.path.append(path)
