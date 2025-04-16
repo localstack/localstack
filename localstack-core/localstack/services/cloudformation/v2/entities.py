@@ -48,6 +48,7 @@ class Stack:
     # state after deploy
     resolved_parameters: dict[str, str]
     resolved_resources: dict[str, ResolvedResource]
+    resolved_outputs: dict[str, str]
 
     def __init__(
         self,
@@ -85,6 +86,7 @@ class Stack:
         # state after deploy
         self.resolved_parameters = {}
         self.resolved_resources = {}
+        self.resolved_outputs = {}
 
     def set_stack_status(self, status: StackStatus, reason: StackStatusReason | None = None):
         self.status = status
@@ -107,6 +109,12 @@ class Stack:
             "LastUpdatedTime": self.creation_time,
             "RollbackConfiguration": {},
             "Tags": [],
+            "Outputs": [
+                # TODO(parity): Description, ExportName
+                # TODO(parity): what happens on describe stack when the stack has not been deployed yet?
+                {"OutputKey": k, "OutputValue": v}
+                for k, v in self.resolved_outputs.items()
+            ],
         }
 
 

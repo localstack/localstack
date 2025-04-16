@@ -1,17 +1,20 @@
 import copy
 import logging
 import uuid
+from dataclasses import dataclass
 from typing import Any, Final, Optional
 
 from localstack.aws.api.cloudformation import ChangeAction, StackStatus
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.engine.v2.change_set_model import (
+    NodeOutput,
     NodeParameter,
     NodeResource,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
     ChangeSetModelPreproc,
     PreprocEntityDelta,
+    PreprocOutput,
     PreprocProperties,
     PreprocResource,
 )
@@ -27,22 +30,33 @@ from localstack.services.cloudformation.v2.entities import ChangeSet
 LOG = logging.getLogger(__name__)
 
 
+@dataclass
+class ChangeSetModelExecutorResult:
+    resources: dict
+    parameters: dict
+    outputs: dict
+
+
 class ChangeSetModelExecutor(ChangeSetModelPreproc):
     change_set: Final[ChangeSet]
     # TODO: add typing.
     resources: Final[dict]
+    outputs: Final[dict]
     resolved_parameters: Final[dict]
 
     def __init__(self, change_set: ChangeSet):
         super().__init__(node_template=change_set.update_graph)
         self.change_set = change_set
         self.resources = dict()
+        self.outputs = dict()
         self.resolved_parameters = dict()
 
     # TODO: use a structured type for the return value
-    def execute(self) -> tuple[dict, dict]:
+    def execute(self) -> ChangeSetModelExecutorResult:
         self.process()
-        return self.resources, self.resolved_parameters
+        return ChangeSetModelExecutorResult(
+            resources=self.resources, parameters=self.resolved_parameters, outputs=self.outputs
+        )
 
     def visit_node_parameter(self, node_parameter: NodeParameter) -> PreprocEntityDelta:
         delta = super().visit_node_parameter(node_parameter=node_parameter)
@@ -56,6 +70,18 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         self._execute_on_resource_change(
             name=node_resource.name, before=delta.before, after=delta.after
         )
+        return delta
+
+    def visit_node_output(
+        self, node_output: NodeOutput
+    ) -> PreprocEntityDelta[PreprocOutput, PreprocOutput]:
+        delta = super().visit_node_output(node_output=node_output)
+        if delta.after is None:
+            # handling deletion so the output does not really matter
+            # TODO: are there other situations?
+            return delta
+
+        self.outputs[delta.after.name] = delta.after.value
         return delta
 
     def _reduce_intrinsic_function_ref_value(self, preproc_value: Any) -> PreprocEntityDelta:

@@ -27,7 +27,6 @@ class TestUpdates:
     def test_simple_update_single_resource(
         self, aws_client: ServiceLevelClientFactory, deploy_cfn_template
     ):
-        parameter_name = "my-parameter"
         value1 = "foo"
         value2 = "bar"
         stack_name = f"stack-{short_uid()}"
@@ -37,15 +36,20 @@ class TestUpdates:
                 "MyParameter": {
                     "Type": "AWS::SSM::Parameter",
                     "Properties": {
-                        "Name": parameter_name,
                         "Type": "String",
                         "Value": value1,
                     },
                 },
             },
+            "Outputs": {
+                "ParameterName": {
+                    "Value": {"Ref": "MyParameter"},
+                },
+            },
         }
 
         res = deploy_cfn_template(stack_name=stack_name, template=json.dumps(t1), is_update=False)
+        parameter_name = res.outputs["ParameterName"]
 
         found_value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
         assert found_value == value1
