@@ -1,5 +1,6 @@
 import logging
 import os
+import tempfile
 import threading
 import time
 from urllib.parse import urlparse
@@ -16,6 +17,7 @@ from localstack.services.transcribe.provider import LANGUAGE_MODELS, TranscribeP
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import new_tmp_file
+from localstack.utils.run import run
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
 from localstack.utils.threads import start_worker_thread
@@ -439,3 +441,36 @@ class TestTranscribe:
         with pytest.raises(ParamValidationError) as e:
             transcribe_create_job(audio_file=file_path, params=settings)
         snapshot.match("err_speaker_labels_diarization", e.value)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..TranscriptionJob..Settings",
+            "$..TranscriptionJob..Transcript",
+            "$..TranscriptionJob..MediaFormat",
+        ]
+    )
+    def test_transcribe_error_invalid_length(self, transcribe_create_job, aws_client, snapshot):
+        ffmpeg_bin = ffmpeg_package.get_installer().get_ffmpeg_path()
+        media_file = os.path.join(tempfile.gettempdir(), "audio_4h.mp3")
+
+        run(
+            f"{ffmpeg_bin} -f lavfi -i anullsrc=r=44100:cl=mono -t 14400 -q:a 9 -acodec libmp3lame {media_file}"
+        )
+        job_name = transcribe_create_job(audio_file=media_file)
+
+        def _is_transcription_done():
+            transcription_status = aws_client.transcribe.get_transcription_job(
+                TranscriptionJobName=job_name
+            )
+            return transcription_status["TranscriptionJob"]["TranscriptionJobStatus"] == "FAILED"
+
+        # empirically it takes around
+        # <5sec for a vosk transcription
+        # ~100sec for an AWS transcription -> adjust timeout accordingly
+        assert poll_condition(_is_transcription_done, timeout=100), (
+            f"could not finish transcription job: {job_name} in time"
+        )
+
+        job = aws_client.transcribe.get_transcription_job(TranscriptionJobName=job_name)
+        snapshot.match("TranscribeErrorInvalidLength", job)

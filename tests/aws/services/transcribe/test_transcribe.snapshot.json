@@ -893,5 +893,32 @@
     "recorded-content": {
       "err_speaker_labels_diarization": "Parameter validation failed:\nInvalid value for parameter Settings.MaxSpeakerLabels, value: 1, valid min value: 2"
     }
+  },
+  "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_error_invalid_length": {
+    "recorded-date": "12-04-2025, 16:02:39",
+    "recorded-content": {
+      "TranscribeErrorInvalidLength": {
+        "TranscriptionJob": {
+          "CreationTime": "datetime",
+          "FailureReason": "Invalid file size: file size too large. Maximum audio duration is 4.000000 hours.Check the length of the file and try your request again.",
+          "LanguageCode": "en-GB",
+          "Media": {
+            "MediaFileUri": "s3:/<test-bucket>/test-clip.wav"
+          },
+          "Settings": {
+            "ChannelIdentification": false,
+            "ShowAlternatives": false
+          },
+          "StartTime": "datetime",
+          "Transcript": {},
+          "TranscriptionJobName": "<transcription-job:1>",
+          "TranscriptionJobStatus": "FAILED"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
