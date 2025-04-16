@@ -3,7 +3,7 @@ import logging
 import time
 from concurrent.futures import CancelledError, Future
 from http import HTTPStatus
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import requests
 from werkzeug import Request
@@ -11,6 +11,7 @@ from werkzeug import Request
 from localstack.http import Response, route
 from localstack.services.edge import ROUTER
 from localstack.services.lambda_.invocation.lambda_models import InvocationResult
+from localstack.utils.backoff import ExponentialBackoff
 from localstack.utils.lambda_debug_mode.lambda_debug_mode import (
     DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS,
     is_lambda_debug_mode,
@@ -20,8 +21,6 @@ from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
 INVOCATION_PORT = 9563
-_INVOCATION_CONNECTION_ERROR_MAX_RETRY = 5
-_INVOCATION_CONNECTION_ERROR_BACKOFF_FACTOR_SECONDS = 0.1
 
 NAMESPACE = "/_localstack_lambda"
 
@@ -220,58 +219,65 @@ class ExecutorEndpoint(Endpoint):
             timeout_seconds = lambda_max_timeout_seconds + invoke_timeout_buffer_seconds
         return self.invocation_future.result(timeout=timeout_seconds)
 
+    @staticmethod
     def _perform_invoke(
-        self,
         invocation_url: str,
         proxies: dict[str, str],
-        payload: dict[str, str],
-        connection_error_retry_number: int = 0,
-    ) -> Response:
+        payload: dict[str, Any],
+    ) -> requests.Response:
         """
         Dispatches a Lambda invocation request to the specified container endpoint, with automatic
-        retries in case of connection errors.
+        retries in case of connection errors, using exponential backoff.
 
-        Although the `startup_future` flag may be marked as FINISHED, this does not always guarantee
-        that the container is fully ready to accept incoming connections. There can be a short delay
-        between the container signaling readiness and the actual availability of its network endpoint.
-
-        This method handles that transitional period by retrying on `requests.exceptions.ConnectionError`
-        up to `_INVOCATION_CONNECTION_ERROR_MAX_RETRY` times. The retry interval increases
-        exponentially, controlled by `_INVOCATION_CONNECTION_ERROR_BACKOFF_FACTOR_SECONDS`.
+        The first attempt is made immediately. If it fails, exponential backoff is applied with
+        retry intervals starting at 100ms, doubling each time for up to 5 total retries.
 
         Parameters:
             invocation_url (str): The full URL of the container's invocation endpoint.
             proxies (dict[str, str]): Proxy settings to be used for the HTTP request.
-            payload (dict[str, str]): The JSON payload to send to the container.
-            connection_error_retry_number (int): Internal counter for retry attempts.
+            payload (dict[str, Any]): The JSON payload to send to the container.
 
         Returns:
             Response: The successful HTTP response from the container.
 
         Raises:
-            requests.exceptions.ConnectionError: If the maximum number of retries is exceeded
-            without a successful connection to the container.
+            requests.exceptions.ConnectionError: If all retry attempts fail to connect.
         """
-        try:
-            response = requests.post(url=invocation_url, json=payload, proxies=proxies)
-            response.raise_for_status()
-            return response
-        except requests.exceptions.ConnectionError as connection_error:
-            if connection_error_retry_number >= _INVOCATION_CONNECTION_ERROR_MAX_RETRY - 1:
-                LOG.debug("Connection error on final invoke attempt %s", connection_error)
-                raise connection_error
+        backoff = None
+        last_exception = None
+        max_retry_on_connection_error = 5
 
-            retry_delay = _INVOCATION_CONNECTION_ERROR_BACKOFF_FACTOR_SECONDS * (
-                2**connection_error_retry_number
-            )
-            LOG.debug(
-                "Connection error on invoke attempt #%d: %s. Retrying in %s seconds",
-                connection_error_retry_number + 1,
-                connection_error,
-                retry_delay,
-            )
-            time.sleep(retry_delay)
+        for attempt_count in range(max_retry_on_connection_error + 1):  # 1 initial + n retries
+            try:
+                response = requests.post(url=invocation_url, json=payload, proxies=proxies)
+                response.raise_for_status()
+                return response
+            except requests.exceptions.ConnectionError as connection_error:
+                last_exception = connection_error
 
-            return self._perform_invoke(
-                invocation_url, proxies, payload, connection_error_retry_number + 1
-            )
+                if backoff is None:
+                    LOG.debug(
+                        "Initial connection attempt failed: %s. Starting backoff retries.",
+                        connection_error,
+                    )
+                    backoff = ExponentialBackoff(
+                        max_retries=max_retry_on_connection_error,
+                        initial_interval=0.1,
+                        multiplier=2.0,
+                        randomization_factor=0.0,
+                        max_interval=1,
+                        max_time_elapsed=-1,
+                    )
+
+                delay = backoff.next_backoff()
+                if delay > 0:
+                    LOG.debug(
+                        "Connection error on invoke attempt #%d: %s. Retrying in %.2f seconds",
+                        attempt_count,
+                        connection_error,
+                        delay,
+                    )
+                    time.sleep(delay)
+
+        LOG.debug("Connection error after all attempts exhausted: %s", last_exception)
+        raise last_exception
