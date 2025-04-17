@@ -91,7 +91,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_ec2.py::test_transit_gateway_attachment": {
-    "recorded-date": "28-03-2024, 06:48:11",
+    "recorded-date": "08-04-2025, 10:51:02",
     "recorded-content": {
       "attachment": {
         "Association": {
@@ -125,6 +125,7 @@
           "DnsSupport": "enable",
           "MulticastSupport": "disable",
           "PropagationDefaultRouteTableId": "<transit-gateway-route-table-id:1>",
+          "SecurityGroupReferencingSupport": "disable",
           "VpnEcmpSupport": "enable"
         },
         "OwnerId": "111111111111",

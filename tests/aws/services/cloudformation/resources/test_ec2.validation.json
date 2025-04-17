@@ -24,7 +24,7 @@
     "last_validated_date": "2024-07-01T20:10:52+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_ec2.py::test_transit_gateway_attachment": {
-    "last_validated_date": "2024-03-28T06:48:11+00:00"
+    "last_validated_date": "2025-04-08T10:51:02+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_ec2.py::test_vpc_creates_default_sg": {
     "last_validated_date": "2024-04-01T11:21:54+00:00"
