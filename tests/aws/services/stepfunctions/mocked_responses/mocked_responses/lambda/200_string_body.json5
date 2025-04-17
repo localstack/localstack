@@ -3,7 +3,6 @@
     "Return": {
       "StatusCode": 200,
       "Payload": {
-        "StatusCode": 200,
         "body": "string body"
       }
     }
