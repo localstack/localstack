@@ -1,10 +1,12 @@
 service: StepFunctions
 name: Step Functions
-localstack_page: "https://docs.localstack.cloud/user-guide/aws/stepfunctions/"
+emulation_level: emulated
+aws_provider:
+  api: stepfunctions
 features:
   - name: "State machines"
     description: "Define workflows that are comprised of a series of event-driven steps"
-    documentation_page: "https://docs.aws.amazon.com/step-functions/latest/dg/concepts-statemachines.html"
+    aws_documentation_url: "https://docs.aws.amazon.com/step-functions/latest/dg/concepts-statemachines.html"
     api_methods:
       - "CreateStateMachine"
       - "DeleteStateMachine"
@@ -14,7 +16,7 @@ features:
 
   - name: "Aliases"
     description: "Create and manage state machine version-based pointers to manage the state machine configuration"
-    documentation_page: "https://docs.aws.amazon.com/step-functions/latest/dg/concepts-state-machine-alias.html"
+    aws_documentation_url: "https://docs.aws.amazon.com/step-functions/latest/dg/concepts-state-machine-alias.html"
     api_methods:
       - "CreateStateMachineAlias"
       - "ListStateMachineAliases"
@@ -29,7 +31,7 @@ features:
 
   - name: "Activity Management"
     description: "Create and manage activities that are used to perform tasks in the state machine"
-    documentation_page: "https://docs.aws.amazon.com/step-functions/latest/dg/concepts-activities.html"
+    aws_documentation_url: "https://docs.aws.amazon.com/step-functions/latest/dg/concepts-activities.html"
     api_methods:
       - "CreateActivity"
       - "DeleteActivity"
@@ -44,7 +46,7 @@ features:
 
   - name: "Execution management"
     description: "Manage and control the execution of your workflows"
-    documentation_page: "https://docs.aws.amazon.com/step-functions/latest/dg/statemachine-starting.html"
+    aws_documentation_url: "https://docs.aws.amazon.com/step-functions/latest/dg/statemachine-starting.html"
     api_methods:
       - "StartExecution"
       - "StopExecution"
@@ -59,7 +61,7 @@ features:
 
   - name: "Map Runs"
     description: "Execute workloads with distributed map states"
-    documentation_page: "https://docs.aws.amazon.com/step-functions/latest/dg/state-map.html"
+    aws_documentation_url: "https://docs.aws.amazon.com/step-functions/latest/dg/state-map.html"
     api_methods:
       - "DescribeMapRun"
       - "ListMapRuns"
@@ -70,7 +72,7 @@ features:
 
   - name: "Restart state machine execution"
     description: "Restart executions of standard workflows that did not finish successfully"
-    documentation_page: "https://docs.aws.amazon.com/step-functions/latest/dg/redrive-executions.html"
+    aws_documentation_url: "https://docs.aws.amazon.com/step-functions/latest/dg/redrive-executions.html"
     api_methods:
       - "RedriveExecution"
     status: "unsupported"
