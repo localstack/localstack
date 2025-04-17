@@ -408,10 +408,16 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         return bindings_delta
 
     def visit_node_parameter(self, node_parameter: NodeParameter) -> PreprocEntityDelta:
-        # TODO: add support for default value sampling
         dynamic_value = node_parameter.dynamic_value
-        delta = self.visit(dynamic_value)
-        return delta
+        dynamic_delta = self.visit(dynamic_value)
+
+        default_value = node_parameter.default_value
+        default_delta = self.visit(default_value)
+
+        before = dynamic_delta.before or default_delta.before
+        after = dynamic_delta.after or default_delta.after
+
+        return PreprocEntityDelta(before=before, after=after)
 
     def visit_node_condition(self, node_condition: NodeCondition) -> PreprocEntityDelta:
         delta = self.visit(node_condition.body)
