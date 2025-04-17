@@ -109,7 +109,7 @@ class LambdaVersionManager:
                 self.function_arn,
                 self.function_version.config.internal_revision,
                 e,
-                exc_info=True,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
         return self.state
 
