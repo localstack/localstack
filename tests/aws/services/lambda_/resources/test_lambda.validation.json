@@ -1,0 +1,71 @@
+{
+  "tests/aws/services/lambda_/resources/test_lambda.py::TestCfnLambdaDestinations::test_generic_destination_routing[sqs-sqs]": {
+    "last_validated_date": "2025-04-11T14:32:09+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_dynamodb_source": {
+    "last_validated_date": "2025-04-11T14:26:48+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_kinesis_source": {
+    "last_validated_date": "2025-04-11T14:30:11+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_permissions": {
+    "last_validated_date": "2025-04-11T14:17:33+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_sqs_source": {
+    "last_validated_date": "2025-04-11T14:20:33+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::TestCfnLambdaIntegrations::test_lambda_dynamodb_event_filter": {
+    "last_validated_date": "2025-04-11T14:23:57+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::test_cfn_function_url": {
+    "last_validated_date": "2025-04-11T14:06:38+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::test_event_invoke_config": {
+    "last_validated_date": "2025-04-11T14:11:24+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::test_lambda_alias": {
+    "last_validated_date": "2025-04-11T14:09:16+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::test_lambda_cfn_dead_letter_config_async_invocation": {
+    "last_validated_date": "2025-04-11T14:35:09+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::test_lambda_cfn_run": {
+    "last_validated_date": "2025-04-11T14:13:17+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::test_lambda_code_signing_config": {
+    "last_validated_date": "2025-04-11T14:10:41+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::test_lambda_function_tags": {
+    "last_validated_date": "2025-04-11T14:16:35+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::test_lambda_layer_crud": {
+    "last_validated_date": "2025-04-11T14:36:25+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::test_lambda_logging_config": {
+    "last_validated_date": "2025-04-11T14:10:14+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::test_lambda_version": {
+    "last_validated_date": "2025-04-11T14:12:23+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::test_lambda_w_dynamodb_event_filter": {
+    "last_validated_date": "2025-04-11T14:01:14+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::test_lambda_w_dynamodb_event_filter_update": {
+    "last_validated_date": "2025-04-11T14:02:52+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::test_multiple_lambda_permissions_for_singlefn": {
+    "last_validated_date": "2025-04-11T14:15:42+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::test_python_lambda_code_deployed_via_s3": {
+    "last_validated_date": "2025-04-11T14:33:56+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::test_update_lambda_function": {
+    "last_validated_date": "2025-04-11T14:04:27+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::test_update_lambda_function_name": {
+    "last_validated_date": "2025-04-11T14:05:45+00:00"
+  },
+  "tests/aws/services/lambda_/resources/test_lambda.py::test_update_lambda_permissions": {
+    "last_validated_date": "2025-04-11T14:14:19+00:00"
+  }
+}

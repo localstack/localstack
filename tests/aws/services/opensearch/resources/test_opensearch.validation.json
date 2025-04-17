@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/opensearch/resources/test_opensearch.py::test_domain_with_alternative_types": {
+    "last_validated_date": "2025-04-11T14:50:45+00:00"
+  }
+}
