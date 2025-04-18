@@ -340,9 +340,7 @@ pygments==2.19.1
 pymongo==4.12.0
     # via localstack-core
 pyopenssl==25.0.0
-    # via
-    #   localstack-core
-    #   localstack-twisted
+    # via localstack-twisted
 pypandoc==1.15
     # via localstack-core (pyproject.toml)
 pyparsing==3.2.3

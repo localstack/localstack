@@ -310,9 +310,7 @@ pygments==2.19.1
 pymongo==4.12.0
     # via localstack-core
 pyopenssl==25.0.0
-    # via
-    #   localstack-core
-    #   localstack-twisted
+    # via localstack-twisted
 pyparsing==3.2.3
     # via moto-ext
 pyproject-hooks==1.2.0
