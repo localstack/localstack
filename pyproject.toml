@@ -129,6 +129,7 @@ dev = [
     "pypandoc",
     "ruff>=0.3.3",
     "rstr>=3.2.0",
+    "mypy",
 ]
 
 # not strictly necessary for development, but provides type hint support for a better developer experience

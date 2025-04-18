@@ -47,8 +47,11 @@ class JavaInstallerMixin:
             if is_mac_os():
                 return os.path.join(java_home, "lib", "jli", "libjli.dylib")
             return os.path.join(java_home, "lib", "server", "libjvm.so")
+        return None
 
-    def get_java_env_vars(self, path: str = None, ld_library_path: str = None) -> dict[str, str]:
+    def get_java_env_vars(
+        self, path: str | None = None, ld_library_path: str | None = None
+    ) -> dict[str, str]:
         """
         Returns environment variables pointing to the Java installation. This is useful to build the environment where
         the application will run.
@@ -64,16 +67,16 @@ class JavaInstallerMixin:
 
         path = path or os.environ["PATH"]
 
-        ld_library_path = ld_library_path or os.environ.get("LD_LIBRARY_PATH")
+        library_path = ld_library_path or os.environ.get("LD_LIBRARY_PATH")
         # null paths (e.g. `:/foo`) have a special meaning according to the manpages
-        if ld_library_path is None:
-            ld_library_path = f"{java_home}/lib:{java_home}/lib/server"
+        if library_path is None:
+            full_library_path = f"{java_home}/lib:{java_home}/lib/server"
         else:
-            ld_library_path = f"{java_home}/lib:{java_home}/lib/server:{ld_library_path}"
+            full_library_path = f"{java_home}/lib:{java_home}/lib/server:{library_path}"
 
         return {
-            "JAVA_HOME": java_home,
-            "LD_LIBRARY_PATH": ld_library_path,
+            "JAVA_HOME": java_home,  # type: ignore[dict-item]
+            "LD_LIBRARY_PATH": full_library_path,
             "PATH": f"{java_bin}:{path}",
         }
 
@@ -144,7 +147,7 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         """
         installed_dir = self.get_installed_dir()
         if is_mac_os():
-            return os.path.join(installed_dir, "Contents", "Home")
+            return os.path.join(installed_dir, "Contents", "Home")  # type: ignore[arg-type]
         return installed_dir
 
     @property
@@ -188,14 +191,14 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
         )
 
 
-class JavaPackage(Package):
+class JavaPackage(Package[JavaPackageInstaller]):
     def __init__(self, default_version: str = DEFAULT_JAVA_VERSION):
         super().__init__(name="Java", default_version=default_version)
 
     def get_versions(self) -> List[str]:
         return list(JAVA_VERSIONS.keys())
 
-    def _get_installer(self, version):
+    def _get_installer(self, version: str) -> JavaPackageInstaller:
         return JavaPackageInstaller(version)
 
 

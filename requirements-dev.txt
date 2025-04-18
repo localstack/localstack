@@ -256,6 +256,10 @@ mpmath==1.3.0
     # via sympy
 multipart==1.2.1
     # via moto-ext
+mypy==1.15.0
+    # via localstack-core (pyproject.toml)
+mypy-extensions==1.0.0
+    # via mypy
 networkx==3.4.2
     # via
     #   cfn-lint
@@ -464,6 +468,7 @@ typing-extensions==4.13.2
     #   cfn-lint
     #   jsii
     #   localstack-twisted
+    #   mypy
     #   pydantic
     #   pydantic-core
     #   pyopenssl

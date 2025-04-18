@@ -605,7 +605,7 @@ class HostAndPort:
     def is_unprivileged(self) -> bool:
         return self.port >= self._get_unprivileged_port_range_start()
 
-    def host_and_port(self):
+    def host_and_port(self) -> str:
         formatted_host = f"[{self.host}]" if is_ipv6_address(self.host) else self.host
         return f"{formatted_host}:{self.port}" if self.port is not None else formatted_host
 

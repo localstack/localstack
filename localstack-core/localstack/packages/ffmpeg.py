@@ -1,7 +1,7 @@
 import os
 from typing import List
 
-from localstack.packages import Package, PackageInstaller
+from localstack.packages import Package
 from localstack.packages.core import ArchiveDownloadAndExtractInstaller
 from localstack.utils.platform import get_arch
 
@@ -10,11 +10,11 @@ FFMPEG_STATIC_BIN_URL = (
 )
 
 
-class FfmpegPackage(Package):
-    def __init__(self):
+class FfmpegPackage(Package["FfmpegPackageInstaller"]):
+    def __init__(self) -> None:
         super().__init__(name="ffmpeg", default_version="7.0.1")
 
-    def _get_installer(self, version: str) -> PackageInstaller:
+    def _get_installer(self, version: str) -> "FfmpegPackageInstaller":
         return FfmpegPackageInstaller(version)
 
     def get_versions(self) -> List[str]:
@@ -35,10 +35,10 @@ class FfmpegPackageInstaller(ArchiveDownloadAndExtractInstaller):
         return f"ffmpeg-{self.version}-{get_arch()}-static"
 
     def get_ffmpeg_path(self) -> str:
-        return os.path.join(self.get_installed_dir(), "ffmpeg")
+        return os.path.join(self.get_installed_dir(), "ffmpeg")  # type: ignore[arg-type]
 
     def get_ffprobe_path(self) -> str:
-        return os.path.join(self.get_installed_dir(), "ffprobe")
+        return os.path.join(self.get_installed_dir(), "ffprobe")  # type: ignore[arg-type]
 
 
 ffmpeg_package = FfmpegPackage()

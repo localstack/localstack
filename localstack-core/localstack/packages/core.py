@@ -4,7 +4,7 @@ import re
 from abc import ABC
 from functools import lru_cache
 from sys import version_info
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import requests
 
@@ -39,6 +39,7 @@ class ExecutableInstaller(PackageInstaller, ABC):
         install_dir = self.get_installed_dir()
         if install_dir:
             return self._get_install_marker_path(install_dir)
+        return None
 
 
 class DownloadInstaller(ExecutableInstaller):
@@ -104,6 +105,7 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
             if install_dir:
                 install_dir = install_dir[: -len(subdir)]
                 return self._get_install_marker_path(install_dir)
+        return None
 
     def _install(self, target: InstallTarget) -> None:
         target_directory = self._get_install_dir(target)
@@ -133,7 +135,7 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
 class PermissionDownloadInstaller(DownloadInstaller, ABC):
     def _install(self, target: InstallTarget) -> None:
         super()._install(target)
-        chmod_r(self.get_executable_path(), 0o777)
+        chmod_r(self.get_executable_path(), 0o777)  # type: ignore[arg-type]
 
 
 class GitHubReleaseInstaller(PermissionDownloadInstaller):
@@ -249,11 +251,11 @@ class PythonPackageInstaller(PackageInstaller):
     normalized_name: str
     """Normalized package name according to PEP440."""
 
-    def __init__(self, name: str, version: str, *args, **kwargs):
+    def __init__(self, name: str, version: str, *args: Any, **kwargs: Any):
         super().__init__(name, version, *args, **kwargs)
         self.normalized_name = self._normalize_package_name(name)
 
-    def _normalize_package_name(self, name: str):
+    def _normalize_package_name(self, name: str) -> str:
         """
         Normalized the Python package name according to PEP440.
         https://packaging.python.org/en/latest/specifications/name-normalization/#name-normalization

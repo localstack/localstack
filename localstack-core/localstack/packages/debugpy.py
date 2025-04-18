@@ -4,14 +4,14 @@ from localstack.packages import InstallTarget, Package, PackageInstaller
 from localstack.utils.run import run
 
 
-class DebugPyPackage(Package):
-    def __init__(self):
+class DebugPyPackage(Package["DebugPyPackageInstaller"]):
+    def __init__(self) -> None:
         super().__init__("DebugPy", "latest")
 
     def get_versions(self) -> List[str]:
         return ["latest"]
 
-    def _get_installer(self, version: str) -> PackageInstaller:
+    def _get_installer(self, version: str) -> "DebugPyPackageInstaller":
         return DebugPyPackageInstaller("debugpy", version)
 
 
@@ -20,7 +20,7 @@ class DebugPyPackageInstaller(PackageInstaller):
 
     def is_installed(self) -> bool:
         try:
-            import debugpy  # noqa: T100
+            import debugpy  # type: ignore[import-not-found]  # noqa: T100
 
             assert debugpy
             return True
