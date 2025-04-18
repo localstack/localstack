@@ -47,6 +47,7 @@ from localstack.aws.api.kms import (
     ReplicateKeyRequest,
     SigningAlgorithmSpec,
     TagList,
+    UnsupportedOperationException,
 )
 from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.services.kms.exceptions import TagException, ValidationException
@@ -184,22 +185,42 @@ class KmsCryptoKey:
 
         :param key_spec: The key specification to validate.
         :type key_spec: str
-        :raises ValidationException: If ``key_spec`` is not in the supported list.
+        :raises ValidationException: If ``key_spec`` is not a known valid spec.
+        :raises UnsupportedOperationException: If ``key_spec`` is entirely unsupported.
         """
-        valid_specs = (
+        all_valid_specs = (
             list(RSA_CRYPTO_KEY_LENGTHS.keys())
             + list(ECC_CURVES.keys())
             + list(HMAC_RANGE_KEY_LENGTHS.keys())
             + ["SYMMETRIC_DEFAULT"]
         )
 
-        if key_spec not in valid_specs:
+        def raise_validation():
             raise ValidationException(
                 f"1 validation error detected: Value '{key_spec}' at 'keySpec' "
                 f"failed to satisfy constraint: Member must satisfy enum value set: "
-                f"[RSA_2048, ECC_NIST_P384, ECC_NIST_P256, ECC_NIST_P521, HMAC_384, RSA_3072, "
-                f"ECC_SECG_P256K1, RSA_4096, SYMMETRIC_DEFAULT, HMAC_256, HMAC_224, HMAC_512]"
+                f"{all_valid_specs}"
             )
+
+        if key_spec == "SYMMETRIC_DEFAULT":
+            return
+
+        if key_spec.startswith("RSA"):
+            if key_spec not in RSA_CRYPTO_KEY_LENGTHS:
+                raise_validation()
+            return
+
+        if key_spec.startswith("ECC"):
+            if key_spec not in ECC_CURVES:
+                raise_validation()
+            return
+
+        if key_spec.startswith("HMAC"):
+            if key_spec not in HMAC_RANGE_KEY_LENGTHS:
+                raise_validation()
+            return
+
+        raise UnsupportedOperationException(f"KeySpec {key_spec} is not supported")
 
     def __init__(self, key_spec: str, key_material: Optional[bytes] = None):
         self.private_key = None

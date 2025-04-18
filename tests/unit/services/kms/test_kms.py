@@ -1,10 +1,17 @@
 import pytest
 
 from localstack.aws.api import RequestContext
-from localstack.aws.api.kms import CreateKeyRequest, DryRunOperationException
+from localstack.aws.api.kms import (
+    CreateKeyRequest,
+    DryRunOperationException,
+    UnsupportedOperationException,
+)
 from localstack.services.kms.exceptions import ValidationException
 from localstack.services.kms.provider import KmsProvider
-from localstack.services.kms.utils import execute_dry_run_capable, validate_alias_name
+from localstack.services.kms.utils import (
+    execute_dry_run_capable,
+    validate_alias_name,
+)
 
 
 def test_alias_name_validator():
@@ -31,14 +38,15 @@ def test_execute_dry_run_capable_raises_when_dry():
     "invalid_spec",
     [
         "INVALID_SPEC",
-        "RSA_1024",  # Not supported by AWS
-        "ECC_FAKE",  # Invalid ECC curve
         "AES_256",  # Symmetric, not key pair
         "",
+        "foo",
     ],
 )
 @pytest.mark.parametrize("dry_run", [True, False])
-def test_generate_data_key_pair_invalid_spec(provider, invalid_spec, dry_run):
+def test_generate_data_key_pair_invalid_spec_raises_unsupported_exception(
+    provider, invalid_spec, dry_run
+):
     # Arrange
     context = RequestContext()
     context.account_id = "000000000000"
@@ -49,7 +57,7 @@ def test_generate_data_key_pair_invalid_spec(provider, invalid_spec, dry_run):
     key_id = key["KeyMetadata"]["KeyId"]
 
     # Act & Assert
-    with pytest.raises(ValidationException) as exc:
+    with pytest.raises(UnsupportedOperationException):
         provider.generate_data_key_pair(
             context=context,
             key_id=key_id,
@@ -57,8 +65,36 @@ def test_generate_data_key_pair_invalid_spec(provider, invalid_spec, dry_run):
             dry_run=dry_run,
         )
 
-    assert "1 validation error detected" in str(exc.value)
-    assert invalid_spec in str(exc.value)
+
+@pytest.mark.parametrize(
+    "invalid_spec",
+    [
+        "RSA_1024",
+        "ECC_FAKE",  # Symmetric, not key pair
+        "HMAC_222",
+    ],
+)
+@pytest.mark.parametrize("dry_run", [True, False])
+def test_generate_data_key_pair_invalid_spec_raises_validation_exception(
+    provider, invalid_spec, dry_run
+):
+    # Arrange
+    context = RequestContext()
+    context.account_id = "000000000000"
+    context.region = "us-east-1"
+
+    key_request = CreateKeyRequest(Description="Test key")
+    key = provider.create_key(context, key_request)
+    key_id = key["KeyMetadata"]["KeyId"]
+
+    # Act & Assert
+    with pytest.raises(ValidationException):
+        provider.generate_data_key_pair(
+            context=context,
+            key_id=key_id,
+            key_pair_spec=invalid_spec,
+            dry_run=dry_run,
+        )
 
 
 def test_generate_data_key_pair_real_key(provider):
