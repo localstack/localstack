@@ -188,14 +188,14 @@ class KmsCryptoKey:
         :raises ValidationException: If ``key_spec`` is not a known valid spec.
         :raises UnsupportedOperationException: If ``key_spec`` is entirely unsupported.
         """
-        all_valid_specs = (
-            list(RSA_CRYPTO_KEY_LENGTHS.keys())
-            + list(ECC_CURVES.keys())
-            + list(HMAC_RANGE_KEY_LENGTHS.keys())
-            + ["SYMMETRIC_DEFAULT"]
-        )
 
         def raise_validation():
+            all_valid_specs = (
+                list(RSA_CRYPTO_KEY_LENGTHS.keys())
+                + list(ECC_CURVES.keys())
+                + list(HMAC_RANGE_KEY_LENGTHS.keys())
+                + ["SYMMETRIC_DEFAULT"]
+            )
             raise ValidationException(
                 f"1 validation error detected: Value '{key_spec}' at 'keySpec' "
                 f"failed to satisfy constraint: Member must satisfy enum value set: "
