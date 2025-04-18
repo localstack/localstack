@@ -190,16 +190,11 @@ class KmsCryptoKey:
         """
 
         def raise_validation():
-            all_valid_specs = (
-                list(RSA_CRYPTO_KEY_LENGTHS.keys())
-                + list(ECC_CURVES.keys())
-                + list(HMAC_RANGE_KEY_LENGTHS.keys())
-                + ["SYMMETRIC_DEFAULT"]
-            )
             raise ValidationException(
                 f"1 validation error detected: Value '{key_spec}' at 'keySpec' "
                 f"failed to satisfy constraint: Member must satisfy enum value set: "
-                f"{all_valid_specs}"
+                f"[RSA_2048, ECC_NIST_P384, ECC_NIST_P256, ECC_NIST_P521, HMAC_384, RSA_3072, "
+                f"ECC_SECG_P256K1, RSA_4096, SYMMETRIC_DEFAULT, HMAC_256, HMAC_224, HMAC_512]"
             )
 
         if key_spec == "SYMMETRIC_DEFAULT":
