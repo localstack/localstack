@@ -3173,5 +3173,282 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_maximum_record_age_exceeded[expire-while-retrying]": {
+    "recorded-date": "13-04-2025, 15:00:55",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:<partition>:sqs:<region>:111111111111:<resource:1>"
+          }
+        },
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": 60,
+        "MaximumRetryAttempts": -1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "record_age_exceeded_payload": {
+        "Messages": [
+          {
+            "Body": {
+              "requestContext": {
+                "requestId": "<uuid:2>",
+                "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+                "condition": "RecordAgeExceeded",
+                "approximateInvokeCount": 1
+              },
+              "version": "1.0",
+              "timestamp": "<timestamp:2022-07-13T13:48:01.000Z>",
+              "KinesisBatchInfo": {
+                "shardId": "shardId-000000000000",
+                "startSequenceNumber": "<start-sequence-number:1>",
+                "endSequenceNumber": "<start-sequence-number:1>",
+                "approximateArrivalOfFirstRecord": "<timestamp:2022-07-13T13:48:01.000Z>",
+                "approximateArrivalOfLastRecord": "<timestamp:2022-07-13T13:48:01.000Z>",
+                "batchSize": 1,
+                "streamArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>"
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_maximum_record_age_exceeded[expire-before-ingestion]": {
+    "recorded-date": "13-04-2025, 16:29:29",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:<partition>:sqs:<region>:111111111111:<resource:1>"
+          }
+        },
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": 60,
+        "MaximumRetryAttempts": 0,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "record_age_exceeded_payload": {
+        "Messages": [
+          {
+            "Body": {
+              "requestContext": {
+                "requestId": "<uuid:2>",
+                "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+                "condition": "RecordAgeExceeded",
+                "approximateInvokeCount": 1
+              },
+              "version": "1.0",
+              "timestamp": "<timestamp:2022-07-13T13:48:01.000Z>",
+              "KinesisBatchInfo": {
+                "shardId": "shardId-000000000000",
+                "startSequenceNumber": "<start-sequence-number:1>",
+                "endSequenceNumber": "<start-sequence-number:1>",
+                "approximateArrivalOfFirstRecord": "<timestamp:2022-07-13T13:48:01.000Z>",
+                "approximateArrivalOfLastRecord": "<timestamp:2022-07-13T13:48:01.000Z>",
+                "batchSize": 1,
+                "streamArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>"
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_maximum_record_age_exceeded_discard_records": {
+    "recorded-date": "13-04-2025, 17:05:16",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:<partition>:sqs:<region>:111111111111:<resource:1>"
+          }
+        },
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>",
+        "EventSourceMappingArn": "arn:<partition>:lambda:<region>:111111111111:event-source-mapping:<uuid:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionResponseTypes": [],
+        "LastModified": "<datetime>",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": 60,
+        "MaximumRetryAttempts": 0,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "record_age_exceeded_payload": {
+        "Messages": [
+          {
+            "Body": {
+              "requestContext": {
+                "requestId": "<uuid:2>",
+                "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
+                "condition": "RecordAgeExceeded",
+                "approximateInvokeCount": 1
+              },
+              "version": "1.0",
+              "timestamp": "<timestamp:2022-07-13T13:48:01.000Z>",
+              "KinesisBatchInfo": {
+                "shardId": "shardId-000000000000",
+                "startSequenceNumber": "<start-sequence-number:1>",
+                "endSequenceNumber": "<start-sequence-number:1>",
+                "approximateArrivalOfFirstRecord": "<timestamp:2022-07-13T13:48:01.000Z>",
+                "approximateArrivalOfLastRecord": "<timestamp:2022-07-13T13:48:01.000Z>",
+                "batchSize": 1,
+                "streamArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>"
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "Records": [
+        {
+          "kinesis": {
+            "kinesisSchemaVersion": "1.0",
+            "partitionKey": "test",
+            "sequenceNumber": "<sequence-number:1>",
+            "data": "c3RyZWFtLWRhdGEtMQ==",
+            "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+          },
+          "eventSource": "aws:kinesis",
+          "eventVersion": "1.0",
+          "eventID": "shardId-000000000000:<sequence-number:1>",
+          "eventName": "aws:kinesis:record",
+          "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:4>",
+          "awsRegion": "<region>",
+          "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>"
+        },
+        {
+          "kinesis": {
+            "kinesisSchemaVersion": "1.0",
+            "partitionKey": "test",
+            "sequenceNumber": "<sequence-number:2>",
+            "data": "c3RyZWFtLWRhdGEtMg==",
+            "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+          },
+          "eventSource": "aws:kinesis",
+          "eventVersion": "1.0",
+          "eventID": "shardId-000000000000:<sequence-number:2>",
+          "eventName": "aws:kinesis:record",
+          "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:4>",
+          "awsRegion": "<region>",
+          "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>"
+        },
+        {
+          "kinesis": {
+            "kinesisSchemaVersion": "1.0",
+            "partitionKey": "test",
+            "sequenceNumber": "<sequence-number:3>",
+            "data": "c3RyZWFtLWRhdGEtMw==",
+            "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+          },
+          "eventSource": "aws:kinesis",
+          "eventVersion": "1.0",
+          "eventID": "shardId-000000000000:<sequence-number:3>",
+          "eventName": "aws:kinesis:record",
+          "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:4>",
+          "awsRegion": "<region>",
+          "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>"
+        },
+        {
+          "kinesis": {
+            "kinesisSchemaVersion": "1.0",
+            "partitionKey": "test",
+            "sequenceNumber": "<sequence-number:4>",
+            "data": "c3RyZWFtLWRhdGEtNA==",
+            "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+          },
+          "eventSource": "aws:kinesis",
+          "eventVersion": "1.0",
+          "eventID": "shardId-000000000000:<sequence-number:4>",
+          "eventName": "aws:kinesis:record",
+          "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:4>",
+          "awsRegion": "<region>",
+          "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>"
+        },
+        {
+          "kinesis": {
+            "kinesisSchemaVersion": "1.0",
+            "partitionKey": "test",
+            "sequenceNumber": "<sequence-number:5>",
+            "data": "c3RyZWFtLWRhdGEtNQ==",
+            "approximateArrivalTimestamp": "<approximate-arrival-timestamp>"
+          },
+          "eventSource": "aws:kinesis",
+          "eventVersion": "1.0",
+          "eventID": "shardId-000000000000:<sequence-number:5>",
+          "eventName": "aws:kinesis:record",
+          "invokeIdentityArn": "arn:<partition>:iam::111111111111:role/<resource:4>",
+          "awsRegion": "<region>",
+          "eventSourceARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>"
+        }
+      ]
+    }
   }
 }

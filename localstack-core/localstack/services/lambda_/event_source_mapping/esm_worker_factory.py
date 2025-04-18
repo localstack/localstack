@@ -172,6 +172,7 @@ class EsmWorkerFactory:
                         "MaximumBatchingWindowInSeconds"
                     ],
                     MaximumRetryAttempts=self.esm_config["MaximumRetryAttempts"],
+                    MaximumRecordAgeInSeconds=self.esm_config["MaximumRecordAgeInSeconds"],
                     **optional_params,
                 ),
             )
@@ -203,6 +204,7 @@ class EsmWorkerFactory:
                         "MaximumBatchingWindowInSeconds"
                     ],
                     MaximumRetryAttempts=self.esm_config["MaximumRetryAttempts"],
+                    MaximumRecordAgeInSeconds=self.esm_config["MaximumRecordAgeInSeconds"],
                     **optional_params,
                 ),
             )
