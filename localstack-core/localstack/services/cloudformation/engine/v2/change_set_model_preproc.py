@@ -61,20 +61,23 @@ class PreprocProperties:
 
 
 class PreprocResource:
-    name: str
+    logical_id: str
+    physical_resource_id: Optional[str]
     condition: Optional[bool]
     resource_type: str
     properties: PreprocProperties
 
     def __init__(
         self,
-        name: str,
+        logical_id: str,
+        physical_resource_id: str,
         condition: Optional[bool],
         resource_type: str,
         properties: PreprocProperties,
     ):
+        self.logical_id = logical_id
+        self.physical_resource_id = physical_resource_id
         self.condition = condition
-        self.name = name
         self.resource_type = resource_type
         self.properties = properties
 
@@ -90,7 +93,8 @@ class PreprocResource:
             return False
         return all(
             [
-                self.name == other.name,
+                self.logical_id == other.logical_id,
+                # TODO: compare the physical id too?
                 self._compare_conditions(self.condition, other.condition),
                 self.resource_type == other.resource_type,
                 self.properties == other.properties,
@@ -125,10 +129,12 @@ class PreprocOutput:
 
 class ChangeSetModelPreproc(ChangeSetModelVisitor):
     _node_template: Final[NodeTemplate]
+    _before_resolved_resources: Final[dict]
     _processed: dict[Scope, Any]
 
-    def __init__(self, node_template: NodeTemplate):
+    def __init__(self, node_template: NodeTemplate, before_resolved_resources: dict):
         self._node_template = node_template
+        self._before_resolved_resources = before_resolved_resources
         self._processed = dict()
 
     def process(self) -> None:
@@ -411,35 +417,49 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         delta = self.visit(node_condition.body)
         return delta
 
-    def _reduce_intrinsic_function_ref_value(self, preproc_value: Any) -> PreprocEntityDelta:
-        if isinstance(preproc_value, PreprocResource):
-            value = preproc_value.name
-        else:
-            value = preproc_value
-        return PreprocEntityDelta(value, value)
+    def _resource_physical_resource_id_from(
+        self, logical_resource_id: str, resolved_resources: dict
+    ) -> Optional[str]:
+        # TODO: typing around resolved resources is needed and should be reflected here.
+        resolved_resource = resolved_resources.get(logical_resource_id)
+        if resolved_resource is None:
+            return None
+        physical_resource_id: Optional[str] = resolved_resource.get("PhysicalResourceId")
+        if not isinstance(physical_resource_id, str):
+            raise RuntimeError(f"No PhysicalResourceId found for resource '{logical_resource_id}'")
+        return physical_resource_id
+
+    def _before_resource_physical_id(self, resource_logical_id: str) -> Optional[str]:
+        # TODO: typing around resolved resources is needed and should be reflected here.
+        return self._resource_physical_resource_id_from(
+            logical_resource_id=resource_logical_id,
+            resolved_resources=self._before_resolved_resources,
+        )
+
+    def _after_resource_physical_id(self, resource_logical_id: str) -> Optional[str]:
+        return self._before_resource_physical_id(resource_logical_id=resource_logical_id)
 
     def visit_node_intrinsic_function_ref(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
         arguments_delta = self.visit(node_intrinsic_function.arguments)
-
-        # TODO: add tests with created and deleted parameters and verify this logic holds.
         before_logical_id = arguments_delta.before
+        after_logical_id = arguments_delta.after
+
+        # TODO: extend this to support references to other types.
         before = None
         if before_logical_id is not None:
             before_delta = self._resolve_reference(logical_id=before_logical_id)
-            before_value = before_delta.before
-            before_ref_delta = self._reduce_intrinsic_function_ref_value(before_value)
-            before = before_ref_delta.before
+            before = before_delta.before
+            if isinstance(before, PreprocResource):
+                before = before.physical_resource_id
 
-        after_logical_id = arguments_delta.after
         after = None
         if after_logical_id is not None:
             after_delta = self._resolve_reference(logical_id=after_logical_id)
-            after_value = after_delta.after
-            # TODO: swap isinstance to be a structured type check
-            after_ref_delta = self._reduce_intrinsic_function_ref_value(after_value)
-            after = after_ref_delta.after
+            after = after_delta.after
+            if isinstance(after, PreprocResource):
+                after = after.physical_resource_id
 
         return PreprocEntityDelta(before=before, after=after)
 
@@ -505,15 +525,25 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         before = None
         after = None
         if change_type != ChangeType.CREATED and condition_before is None or condition_before:
+            logical_resource_id = node_resource.name
+            before_physical_resource_id = self._before_resource_physical_id(
+                resource_logical_id=logical_resource_id
+            )
             before = PreprocResource(
-                name=node_resource.name,
+                logical_id=logical_resource_id,
+                physical_resource_id=before_physical_resource_id,
                 condition=condition_before,
                 resource_type=type_delta.before,
                 properties=properties_delta.before,
             )
         if change_type != ChangeType.REMOVED and condition_after is None or condition_after:
+            logical_resource_id = node_resource.name
+            after_physical_resource_id = self._after_resource_physical_id(
+                resource_logical_id=logical_resource_id
+            )
             after = PreprocResource(
-                name=node_resource.name,
+                logical_id=logical_resource_id,
+                physical_resource_id=after_physical_resource_id,
                 condition=condition_after,
                 resource_type=type_delta.after,
                 properties=properties_delta.after,

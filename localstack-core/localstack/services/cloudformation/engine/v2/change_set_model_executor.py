@@ -1,7 +1,7 @@
 import copy
 import logging
 import uuid
-from typing import Any, Final, Optional
+from typing import Final, Optional
 
 from localstack.aws.api.cloudformation import ChangeAction, StackStatus
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
@@ -28,14 +28,17 @@ LOG = logging.getLogger(__name__)
 
 
 class ChangeSetModelExecutor(ChangeSetModelPreproc):
-    change_set: Final[ChangeSet]
-    # TODO: add typing.
+    _change_set: Final[ChangeSet]
+    # TODO: add typing for resolved resources and parameters.
     resources: Final[dict]
     resolved_parameters: Final[dict]
 
     def __init__(self, change_set: ChangeSet):
-        super().__init__(node_template=change_set.update_graph)
-        self.change_set = change_set
+        super().__init__(
+            node_template=change_set.update_graph,
+            before_resolved_resources=change_set.stack.resolved_resources,
+        )
+        self._change_set = change_set
         self.resources = dict()
         self.resolved_parameters = dict()
 
@@ -49,6 +52,20 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         self.resolved_parameters[node_parameter.name] = delta.after
         return delta
 
+    def _after_resource_physical_id(self, resource_logical_id: str) -> Optional[str]:
+        after_resolved_resources = self.resources
+        return self._resource_physical_resource_id_from(
+            logical_resource_id=resource_logical_id, resolved_resources=after_resolved_resources
+        )
+
+    def _current_resource_physical_id(self, resource_logical_id: str) -> str:
+        before_physical_id = self._before_resource_physical_id(resource_logical_id)
+        after_physical_id = self._after_resource_physical_id(resource_logical_id)
+        if before_physical_id is None and after_physical_id is None:
+            raise RuntimeError(f"No PhysicalResourceId for '{resource_logical_id}'")
+        current_physical_id = after_physical_id or before_physical_id
+        return current_physical_id
+
     def visit_node_resource(
         self, node_resource: NodeResource
     ) -> PreprocEntityDelta[PreprocResource, PreprocResource]:
@@ -56,37 +73,14 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         self._execute_on_resource_change(
             name=node_resource.name, before=delta.before, after=delta.after
         )
+        after_resource = delta.after
+        if after_resource is not None and delta.before != delta.after:
+            after_logical_id = after_resource.logical_id
+            after_physical_id = self._current_resource_physical_id(
+                resource_logical_id=after_logical_id
+            )
+            after_resource.physical_resource_id = after_physical_id
         return delta
-
-    def _reduce_intrinsic_function_ref_value(self, preproc_value: Any) -> PreprocEntityDelta:
-        if not isinstance(preproc_value, PreprocResource):
-            return super()._reduce_intrinsic_function_ref_value(preproc_value=preproc_value)
-
-        logical_id = preproc_value.name
-
-        def _get_physical_id_of_resolved_resource(resolved_resource: dict) -> str:
-            physical_resource_id = resolved_resource.get("PhysicalResourceId")
-            if not isinstance(physical_resource_id, str):
-                raise RuntimeError(
-                    f"No physical resource id found for resource '{logical_id}' during ChangeSet execution"
-                )
-            return physical_resource_id
-
-        before_resolved_resources = self.change_set.stack.resolved_resources
-        after_resolved_resources = self.resources
-
-        before_physical_id = None
-        if logical_id in before_resolved_resources:
-            before_resolved_resource = before_resolved_resources[logical_id]
-            before_physical_id = _get_physical_id_of_resolved_resource(before_resolved_resource)
-        after_physical_id = None
-        if logical_id in after_resolved_resources:
-            after_resolved_resource = after_resolved_resources[logical_id]
-            after_physical_id = _get_physical_id_of_resolved_resource(after_resolved_resource)
-
-        if before_physical_id is None and after_physical_id is None:
-            raise RuntimeError(f"No resource '{logical_id}' found during ChangeSet execution")
-        return PreprocEntityDelta(before=before_physical_id, after=after_physical_id)
 
     def _execute_on_resource_change(
         self, name: str, before: Optional[PreprocResource], after: Optional[PreprocResource]
@@ -156,7 +150,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
     def _merge_before_properties(
         self, name: str, preproc_resource: PreprocResource
     ) -> PreprocProperties:
-        if previous_resource_properties := self.change_set.stack.resolved_resources.get(
+        if previous_resource_properties := self._change_set.stack.resolved_resources.get(
             name, {}
         ).get("Properties"):
             return PreprocProperties(properties=previous_resource_properties)
@@ -174,7 +168,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
     ) -> None:
         LOG.debug("Executing resource action: %s for resource '%s'", action, logical_resource_id)
         resource_provider_executor = ResourceProviderExecutor(
-            stack_name=self.change_set.stack.stack_name, stack_id=self.change_set.stack.stack_id
+            stack_name=self._change_set.stack.stack_name, stack_id=self._change_set.stack.stack_id
         )
         payload = self.create_resource_provider_payload(
             action=action,
@@ -199,7 +193,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     reason,
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
-                stack = self.change_set.stack
+                stack = self._change_set.stack
                 stack_status = stack.status
                 if stack_status == StackStatus.CREATE_IN_PROGRESS:
                     stack.set_stack_status(StackStatus.CREATE_FAILED, reason=reason)
@@ -226,7 +220,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     reason,
                 )
                 # TODO: duplication
-                stack = self.change_set.stack
+                stack = self._change_set.stack
                 stack_status = stack.status
                 if stack_status == StackStatus.CREATE_IN_PROGRESS:
                     stack.set_stack_status(StackStatus.CREATE_FAILED, reason=reason)
@@ -247,7 +241,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
     ) -> Optional[ResourceProviderPayload]:
         # FIXME: use proper credentials
         creds: Credentials = {
-            "accessKeyId": self.change_set.stack.account_id,
+            "accessKeyId": self._change_set.stack.account_id,
             "secretAccessKey": INTERNAL_AWS_SECRET_ACCESS_KEY,
             "sessionToken": "",
         }
@@ -268,14 +262,14 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 raise NotImplementedError(f"Action '{action}' not handled")
 
         resource_provider_payload: ResourceProviderPayload = {
-            "awsAccountId": self.change_set.stack.account_id,
+            "awsAccountId": self._change_set.stack.account_id,
             "callbackContext": {},
-            "stackId": self.change_set.stack.stack_name,
+            "stackId": self._change_set.stack.stack_name,
             "resourceType": resource_type,
             "resourceTypeVersion": "000000",
             # TODO: not actually a UUID
             "bearerToken": str(uuid.uuid4()),
-            "region": self.change_set.stack.region_name,
+            "region": self._change_set.stack.region_name,
             "action": str(action),
             "requestData": {
                 "logicalResourceId": logical_resource_id,

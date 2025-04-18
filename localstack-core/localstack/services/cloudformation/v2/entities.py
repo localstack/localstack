@@ -173,6 +173,7 @@ class ChangeSet:
     def describe_details(self, include_property_values: bool) -> DescribeChangeSetOutput:
         change_set_describer = ChangeSetModelDescriber(
             node_template=self.update_graph,
+            before_resolved_resources=self.stack.resolved_resources,
             include_property_values=include_property_values,
         )
         changes: Changes = change_set_describer.get_changes()

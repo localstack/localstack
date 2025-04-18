@@ -24,8 +24,15 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
     _include_property_values: Final[bool]
     _changes: Final[cfn_api.Changes]
 
-    def __init__(self, node_template: NodeTemplate, include_property_values: bool):
-        super().__init__(node_template=node_template)
+    def __init__(
+        self,
+        node_template: NodeTemplate,
+        before_resolved_resources: dict,
+        include_property_values: bool,
+    ):
+        super().__init__(
+            node_template=node_template, before_resolved_resources=before_resolved_resources
+        )
         self._include_property_values = include_property_values
         self._changes = list()
 
@@ -79,6 +86,7 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         self,
         logical_id: str,
         type_: str,
+        physical_id: Optional[str],
         before_properties: Optional[PreprocProperties],
         after_properties: Optional[PreprocProperties],
     ) -> None:
@@ -92,6 +100,8 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         resource_change["Action"] = action
         resource_change["LogicalResourceId"] = logical_id
         resource_change["ResourceType"] = type_
+        if physical_id:
+            resource_change["PhysicalResourceId"] = physical_id
         if self._include_property_values and before_properties is not None:
             before_context_properties = {PropertiesKey: before_properties.properties}
             before_context_properties_json_str = json.dumps(before_context_properties)
@@ -116,6 +126,7 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
                 # Register a Modified if changed.
                 self._register_resource_change(
                     logical_id=name,
+                    physical_id=before.physical_resource_id,
                     type_=before.resource_type,
                     before_properties=before.properties,
                     after_properties=after.properties,
@@ -126,6 +137,7 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
                 # Register a Removed for the previous type.
                 self._register_resource_change(
                     logical_id=name,
+                    physical_id=before.physical_resource_id,
                     type_=before.resource_type,
                     before_properties=before.properties,
                     after_properties=None,
@@ -133,6 +145,7 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
                 # Register a Create for the next type.
                 self._register_resource_change(
                     logical_id=name,
+                    physical_id=None,
                     type_=after.resource_type,
                     before_properties=None,
                     after_properties=after.properties,
@@ -141,6 +154,7 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
             # Case: removal
             self._register_resource_change(
                 logical_id=name,
+                physical_id=before.physical_resource_id,
                 type_=before.resource_type,
                 before_properties=before.properties,
                 after_properties=None,
@@ -149,6 +163,7 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
             # Case: addition
             self._register_resource_change(
                 logical_id=name,
+                physical_id=None,
                 type_=after.resource_type,
                 before_properties=None,
                 after_properties=after.properties,
