@@ -149,21 +149,24 @@ class NodeDivergence(ChangeSetNode):
 
 class NodeParameter(ChangeSetNode):
     name: Final[str]
-    value: Final[ChangeSetEntity]
+    type_: Final[ChangeSetEntity]
     dynamic_value: Final[ChangeSetEntity]
+    default_value: Final[Optional[ChangeSetEntity]]
 
     def __init__(
         self,
         scope: Scope,
         change_type: ChangeType,
         name: str,
-        value: ChangeSetEntity,
+        type_: ChangeSetEntity,
         dynamic_value: ChangeSetEntity,
+        default_value: Optional[ChangeSetEntity],
     ):
         super().__init__(scope=scope, change_type=change_type)
         self.name = name
-        self.value = value
+        self.type_ = type_
         self.dynamic_value = dynamic_value
+        self.default_value = default_value
 
 
 class NodeParameters(ChangeSetNode):
@@ -358,6 +361,7 @@ MappingsKey: Final[str] = "Mappings"
 ResourcesKey: Final[str] = "Resources"
 PropertiesKey: Final[str] = "Properties"
 ParametersKey: Final[str] = "Parameters"
+DefaultKey: Final[str] = "Default"
 ValueKey: Final[str] = "Value"
 ExportKey: Final[str] = "Export"
 OutputsKey: Final[str] = "Outputs"
@@ -855,19 +859,29 @@ class ChangeSetModel:
         node_parameter = self._visited_scopes.get(scope)
         if isinstance(node_parameter, NodeParameter):
             return node_parameter
-        # TODO: add logic to compute defaults already in the graph building process?
+
+        type_scope, (before_type, after_type) = self._safe_access_in(
+            scope, TypeKey, before_parameter, after_parameter
+        )
+        type_ = self._visit_value(type_scope, before_type, after_type)
+
+        default_scope, (before_default, after_default) = self._safe_access_in(
+            scope, DefaultKey, before_parameter, after_parameter
+        )
+        default_value = self._visit_value(default_scope, before_default, after_default)
+
         dynamic_value = self._visit_dynamic_parameter(parameter_name=parameter_name)
-        value = self._visit_value(
-            scope=scope, before_value=before_parameter, after_value=after_parameter
-        )
+
         change_type = self._change_type_for_parent_of(
-            change_types=[dynamic_value.change_type, value.change_type]
+            change_types=[type_.change_type, default_value.change_type, dynamic_value.change_type]
         )
+
         node_parameter = NodeParameter(
             scope=scope,
             change_type=change_type,
             name=parameter_name,
-            value=value,
+            type_=type_,
+            default_value=default_value,
             dynamic_value=dynamic_value,
         )
         self._visited_scopes[scope] = node_parameter

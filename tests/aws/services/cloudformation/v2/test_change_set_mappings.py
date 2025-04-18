@@ -22,7 +22,6 @@ from localstack.utils.strings import long_uid
         "$..Parameters",
         "$..Replacement",
         "$..PolicyAction",
-        "$..PhysicalResourceId",
     ]
 )
 class TestChangeSetMappings:

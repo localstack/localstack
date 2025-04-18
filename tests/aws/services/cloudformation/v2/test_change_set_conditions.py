@@ -22,14 +22,15 @@ from localstack.utils.strings import long_uid
         "$..Parameters",
         "$..Replacement",
         "$..PolicyAction",
-        "$..PhysicalResourceId",
     ]
 )
 class TestChangeSetConditions:
     @markers.aws.validated
     @pytest.mark.skip(
-        reason="The inclusion of response parameters in executor is in progress, "
-        "currently it cannot delete due to missing topic arn in the request"
+        reason=(
+            "The inclusion of response parameters in executor is in progress, "
+            "currently it cannot delete due to missing topic arn in the request"
+        )
     )
     def test_condition_update_removes_resource(
         self,
