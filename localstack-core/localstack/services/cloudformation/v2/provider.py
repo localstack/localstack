@@ -270,14 +270,15 @@ class CloudformationProviderV2(CloudformationProvider):
         )
 
         def _run(*args):
-            new_resources, new_parameters = change_set_executor.execute()
+            result = change_set_executor.execute()
             new_stack_status = StackStatus.UPDATE_COMPLETE
             if change_set.change_set_type == ChangeSetType.CREATE:
                 new_stack_status = StackStatus.CREATE_COMPLETE
             change_set.stack.set_stack_status(new_stack_status)
             change_set.set_execution_status(ExecutionStatus.EXECUTE_COMPLETE)
-            change_set.stack.resolved_resources = new_resources
-            change_set.stack.resolved_parameters = new_parameters
+            change_set.stack.resolved_resources = result.resources
+            change_set.stack.resolved_parameters = result.parameters
+            change_set.stack.resolved_outputs = result.outputs
 
         start_worker_thread(_run)
 
