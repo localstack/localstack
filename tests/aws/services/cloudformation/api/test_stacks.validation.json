@@ -127,5 +127,32 @@
   },
   "tests/aws/services/cloudformation/api/test_stacks.py::test_updating_an_updated_stack_sets_status": {
     "last_validated_date": "2022-12-02T10:19:41+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_validate_resource_names[create_change_set-with-colons]": {
+    "last_validated_date": "2025-04-02T08:41:36+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_validate_resource_names[create_change_set-with-hyphens]": {
+    "last_validated_date": "2025-04-02T08:41:35+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_validate_resource_names[create_change_set-with-underscores]": {
+    "last_validated_date": "2025-04-02T08:41:36+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_validate_resource_names[create_stack-with-colons]": {
+    "last_validated_date": "2025-04-02T08:41:36+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_validate_resource_names[create_stack-with-hyphens]": {
+    "last_validated_date": "2025-04-02T08:41:36+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_validate_resource_names[create_stack-with-underscores]": {
+    "last_validated_date": "2025-04-02T08:41:36+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_validate_resource_names[with-colons]": {
+    "last_validated_date": "2025-04-02T08:38:32+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_validate_resource_names[with-hyphens]": {
+    "last_validated_date": "2025-04-02T08:38:32+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_validate_resource_names[with-underscores]": {
+    "last_validated_date": "2025-04-02T08:38:32+00:00"
   }
 }

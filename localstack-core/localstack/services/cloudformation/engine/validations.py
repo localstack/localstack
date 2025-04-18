@@ -2,6 +2,7 @@
 Provide validations for use within the CFn engine
 """
 
+import re
 from typing import Protocol
 
 from localstack.aws.api import CommonServiceException
@@ -76,6 +77,20 @@ def resources_top_level_keys(template: dict):
                 raise ValidationError(f"Invalid template resource property '{key}'")
 
 
+def alphanumeric_resources(template: dict):
+    # validate that all resource names are alphanumeric
+
+    # XXX I don't think these resource # names can be transformed by later template
+    # processing since in our implementation we # have applied the global transforms,
+    # and only local transforms (affecting resource # properties) are left to do
+    alpha_regex = re.compile(r"^[a-zA-Z0-9]+$")
+    for resource_name in template["Resources"]:
+        if not alpha_regex.match(resource_name):
+            raise ValidationError(
+                f"Template format error: Resource name {resource_name} is non alphanumeric."
+            )
+
+
 DEFAULT_TEMPLATE_VALIDATIONS: list[TemplateValidationStep] = [
     # FIXME: disabled for now due to the template validation not fitting well with the template that we use here.
     #  We don't have access to a "raw" processed template here and it's questionable if we should have it at all,
@@ -83,4 +98,5 @@ DEFAULT_TEMPLATE_VALIDATIONS: list[TemplateValidationStep] = [
     #   => Reevaluate this when reworking how we mutate the template dict in the provider
     # outputs_have_values,
     # resources_top_level_keys,
+    alphanumeric_resources,
 ]
