@@ -235,7 +235,6 @@ class StreamPoller(Poller):
             return
         events = self.add_source_metadata(matching_events_post_filter)
         LOG.debug("Polled %d events from %s in shard %s", len(events), self.source_arn, shard_id)
-        # TODO: A retry should probably re-trigger fetching the record from the stream again?!
         #  -> This could be tested by setting a high retry number, using a long pipe execution, and a relatively
         #  short record expiration age at the source. Check what happens if the record expires at the source.
         #  A potential implementation could use checkpointing based on the iterator position (within shard scope)
@@ -271,7 +270,7 @@ class StreamPoller(Poller):
 
                 self.processor.process_events_batch(events)
                 boff.reset()
-                # Stop processing if execution is successful
+                # We may need to send on data to a DLQ so break the processing loop and proceed if invocation successful.
                 break
             except PartialBatchFailureError as ex:
                 # TODO: add tests for partial batch failure scenarios
@@ -489,8 +488,8 @@ class StreamPoller(Poller):
     ) -> tuple[list[dict], list[dict]]:
         """Splits events into [valid_events], [expired_events] based on record age.
         Where:
-          - Events with approximate arrival time >= cutoff_timestamp are valid.
-          - Events with approximate arrival time < cutoff_timestamp are expired."""
+          - Events with approximate arrival time < maximum_record_age are valid.
+          - Events with approximate arrival time >= maximum_record_age are expired."""
         cutoff_timestamp = get_current_time().timestamp() - maximum_record_age
         index = bisect_left(events, cutoff_timestamp, key=self.get_approximate_arrival_time)
         return events[index:], events[:index]
