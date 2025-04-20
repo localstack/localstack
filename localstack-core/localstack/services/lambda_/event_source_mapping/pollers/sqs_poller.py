@@ -1,3 +1,4 @@
+import functools
 import json
 import logging
 from collections import defaultdict
@@ -7,7 +8,7 @@ from botocore.client import BaseClient
 
 from localstack.aws.api.pipes import PipeSourceSqsQueueParameters
 from localstack.aws.api.sqs import MessageSystemAttributeName
-from localstack.config import internal_service_url
+from localstack.aws.connect import connect_to
 from localstack.services.lambda_.event_source_mapping.event_processor import (
     EventProcessor,
     PartialBatchFailureError,
@@ -315,16 +316,19 @@ def transform_into_events(messages: list[dict]) -> list[dict]:
     return events
 
 
+@functools.cache
 def get_queue_url(queue_arn: str) -> str:
-    # TODO: consolidate this method with localstack.services.sqs.models.SqsQueue.url
-    # * Do we need to support different endpoint strategies?
-    # * If so, how can we achieve this without having a request context
-    host_url = internal_service_url()
-    host = host_url.rstrip("/")
     parsed_arn = parse_arn(queue_arn)
+
+    queue_name = parsed_arn["resource"]
     account_id = parsed_arn["account"]
-    name = parsed_arn["resource"]
-    return f"{host}/{account_id}/{name}"
+    region = parsed_arn["region"]
+
+    sqs_client = connect_to(region_name=region).sqs
+    queue_url = sqs_client.get_queue_url(QueueName=queue_name, QueueOwnerAWSAccountId=account_id)[
+        "QueueUrl"
+    ]
+    return queue_url
 
 
 def message_attributes_to_lower(message_attrs):

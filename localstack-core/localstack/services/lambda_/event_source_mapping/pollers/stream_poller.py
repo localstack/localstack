@@ -488,8 +488,8 @@ class StreamPoller(Poller):
     ) -> tuple[list[dict], list[dict]]:
         """Splits events into [valid_events], [expired_events] based on record age.
         Where:
-          - Events with approximate arrival time < maximum_record_age are valid.
-          - Events with approximate arrival time >= maximum_record_age are expired."""
+          - Events with age < maximum_record_age are valid.
+          - Events with age >= maximum_record_age are expired."""
         cutoff_timestamp = get_current_time().timestamp() - maximum_record_age
         index = bisect_left(events, cutoff_timestamp, key=self.get_approximate_arrival_time)
         return events[index:], events[:index]

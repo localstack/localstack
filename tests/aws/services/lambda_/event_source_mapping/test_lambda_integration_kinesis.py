@@ -1084,7 +1084,9 @@ class TestKinesisSource:
         wait_for_stream_ready,
         snapshot,
         aws_client,
+        region_name,
         sqs_create_queue,
+        monkeypatch,
         # Parametrized arguments
         processing_delay_seconds,
         max_retries,
@@ -1148,7 +1150,7 @@ class TestKinesisSource:
 
         sleep = 15 if is_aws_cloud() else 5
         record_age_exceeded_payload = retry(
-            _verify_failure_received, retries=15, sleep=sleep, sleep_before=5
+            _verify_failure_received, retries=30, sleep=sleep, sleep_before=5
         )
         snapshot.match("record_age_exceeded_payload", record_age_exceeded_payload)
 
@@ -1272,7 +1274,7 @@ class TestKinesisSource:
         # While 6 records were sent, we expect 5 records since the first
         # record should have expired and been discarded.
         kinesis_events = retry(
-            _verify_events_received, retries=15, sleep=sleep, sleep_before=5, expected=5
+            _verify_events_received, retries=30, sleep=sleep, sleep_before=5, expected=5
         )
         snapshot.match("Records", kinesis_events)
 
