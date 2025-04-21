@@ -6241,5 +6241,239 @@
         }
       }
     }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_simulate_principle_policy[role]": {
+    "recorded-date": "21-04-2025, 20:07:35",
+    "recorded-content": {
+      "response": {
+        "EvaluationResults": [
+          {
+            "EvalActionName": "s3:PutObject",
+            "EvalDecision": "allowed",
+            "EvalDecisionDetails": {},
+            "EvalResourceName": "arn:<partition>:s3:::bucket",
+            "MatchedStatements": [
+              {
+                "EndPosition": {
+                  "Column": 113,
+                  "Line": 1
+                },
+                "SourcePolicyId": "<source-policy-id:1>",
+                "SourcePolicyType": "IAM Policy",
+                "StartPosition": {
+                  "Column": 41,
+                  "Line": 1
+                }
+              }
+            ],
+            "MissingContextValues": [],
+            "OrganizationsDecisionDetail": {
+              "AllowedByOrganizations": true
+            },
+            "ResourceSpecificResults": [
+              {
+                "EvalResourceDecision": "allowed",
+                "EvalResourceName": "arn:<partition>:s3:::bucket",
+                "MatchedStatements": [
+                  {
+                    "EndPosition": {
+                      "Column": 113,
+                      "Line": 1
+                    },
+                    "SourcePolicyId": "<source-policy-id:1>",
+                    "SourcePolicyType": "IAM Policy",
+                    "StartPosition": {
+                      "Column": 41,
+                      "Line": 1
+                    }
+                  }
+                ],
+                "MissingContextValues": []
+              }
+            ]
+          },
+          {
+            "EvalActionName": "s3:GetObjectVersion",
+            "EvalDecision": "implicitDeny",
+            "EvalDecisionDetails": {},
+            "EvalResourceName": "arn:<partition>:s3:::bucket",
+            "MatchedStatements": [],
+            "MissingContextValues": [],
+            "OrganizationsDecisionDetail": {
+              "AllowedByOrganizations": true
+            },
+            "ResourceSpecificResults": [
+              {
+                "EvalResourceDecision": "implicitDeny",
+                "EvalResourceName": "arn:<partition>:s3:::bucket",
+                "MatchedStatements": [],
+                "MissingContextValues": []
+              }
+            ]
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_simulate_principle_policy[group]": {
+    "recorded-date": "21-04-2025, 20:07:37",
+    "recorded-content": {
+      "response": {
+        "EvaluationResults": [
+          {
+            "EvalActionName": "s3:PutObject",
+            "EvalDecision": "allowed",
+            "EvalDecisionDetails": {},
+            "EvalResourceName": "arn:<partition>:s3:::bucket",
+            "MatchedStatements": [
+              {
+                "EndPosition": {
+                  "Column": 113,
+                  "Line": 1
+                },
+                "SourcePolicyId": "<source-policy-id:1>",
+                "SourcePolicyType": "IAM Policy",
+                "StartPosition": {
+                  "Column": 41,
+                  "Line": 1
+                }
+              }
+            ],
+            "MissingContextValues": [],
+            "OrganizationsDecisionDetail": {
+              "AllowedByOrganizations": true
+            },
+            "ResourceSpecificResults": [
+              {
+                "EvalResourceDecision": "allowed",
+                "EvalResourceName": "arn:<partition>:s3:::bucket",
+                "MatchedStatements": [
+                  {
+                    "EndPosition": {
+                      "Column": 113,
+                      "Line": 1
+                    },
+                    "SourcePolicyId": "<source-policy-id:1>",
+                    "SourcePolicyType": "IAM Policy",
+                    "StartPosition": {
+                      "Column": 41,
+                      "Line": 1
+                    }
+                  }
+                ],
+                "MissingContextValues": []
+              }
+            ]
+          },
+          {
+            "EvalActionName": "s3:GetObjectVersion",
+            "EvalDecision": "implicitDeny",
+            "EvalDecisionDetails": {},
+            "EvalResourceName": "arn:<partition>:s3:::bucket",
+            "MatchedStatements": [],
+            "MissingContextValues": [],
+            "OrganizationsDecisionDetail": {
+              "AllowedByOrganizations": true
+            },
+            "ResourceSpecificResults": [
+              {
+                "EvalResourceDecision": "implicitDeny",
+                "EvalResourceName": "arn:<partition>:s3:::bucket",
+                "MatchedStatements": [],
+                "MissingContextValues": []
+              }
+            ]
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_simulate_principle_policy[user]": {
+    "recorded-date": "21-04-2025, 20:07:38",
+    "recorded-content": {
+      "response": {
+        "EvaluationResults": [
+          {
+            "EvalActionName": "s3:PutObject",
+            "EvalDecision": "allowed",
+            "EvalDecisionDetails": {},
+            "EvalResourceName": "arn:<partition>:s3:::bucket",
+            "MatchedStatements": [
+              {
+                "EndPosition": {
+                  "Column": 113,
+                  "Line": 1
+                },
+                "SourcePolicyId": "<source-policy-id:1>",
+                "SourcePolicyType": "IAM Policy",
+                "StartPosition": {
+                  "Column": 41,
+                  "Line": 1
+                }
+              }
+            ],
+            "MissingContextValues": [],
+            "OrganizationsDecisionDetail": {
+              "AllowedByOrganizations": true
+            },
+            "ResourceSpecificResults": [
+              {
+                "EvalResourceDecision": "allowed",
+                "EvalResourceName": "arn:<partition>:s3:::bucket",
+                "MatchedStatements": [
+                  {
+                    "EndPosition": {
+                      "Column": 113,
+                      "Line": 1
+                    },
+                    "SourcePolicyId": "<source-policy-id:1>",
+                    "SourcePolicyType": "IAM Policy",
+                    "StartPosition": {
+                      "Column": 41,
+                      "Line": 1
+                    }
+                  }
+                ],
+                "MissingContextValues": []
+              }
+            ]
+          },
+          {
+            "EvalActionName": "s3:GetObjectVersion",
+            "EvalDecision": "implicitDeny",
+            "EvalDecisionDetails": {},
+            "EvalResourceName": "arn:<partition>:s3:::bucket",
+            "MatchedStatements": [],
+            "MissingContextValues": [],
+            "OrganizationsDecisionDetail": {
+              "AllowedByOrganizations": true
+            },
+            "ResourceSpecificResults": [
+              {
+                "EvalResourceDecision": "implicitDeny",
+                "EvalResourceName": "arn:<partition>:s3:::bucket",
+                "MatchedStatements": [],
+                "MissingContextValues": []
+              }
+            ]
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
