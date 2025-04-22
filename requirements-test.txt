@@ -27,13 +27,13 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.232
+aws-cdk-asset-awscli-v1==2.2.233
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==41.2.0
     # via aws-cdk-lib
-aws-cdk-lib==2.189.1
+aws-cdk-lib==2.190.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.97.0
     # via
@@ -80,7 +80,7 @@ certifi==2025.1.31
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.33.2
+cfn-lint==1.34.1
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -218,7 +218,7 @@ jsonschema-specifications==2024.10.1
     # via
     #   jsonschema
     #   openapi-schema-validator
-lazy-object-proxy==1.10.0
+lazy-object-proxy==1.11.0
     # via openapi-spec-validator
 localstack-snapshot==0.2.0
     # via localstack-core (pyproject.toml)
@@ -256,7 +256,7 @@ opensearch-py==2.8.0
     # via localstack-core
 orderly-set==5.4.0
     # via deepdiff
-packaging==24.2
+packaging==25.0
     # via
     #   apispec
     #   build
@@ -389,7 +389,7 @@ rpds-py==0.24.0
     #   referencing
 rsa==4.7.2
     # via awscli
-s3transfer==0.11.4
+s3transfer==0.11.5
     # via
     #   awscli
     #   boto3
