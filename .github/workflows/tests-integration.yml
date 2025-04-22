@@ -1,0 +1,211 @@
+name: Community Integration Tests
+
+on:
+#  push:
+#    branches: [ master ]
+#  pull_request:
+#    branches: [ '**' ]
+  workflow_dispatch:
+    inputs:
+      disableCaching:
+        description: 'Disable Caching'
+        required: false
+        type: boolean
+        default: false
+      pytest_loglevel:
+        description: "PyTest log level"
+        default: "WARNING"
+        required: false
+        type: string
+      skip_test_selection:
+        description: "Skip test selection"
+        default: false
+        required: false
+        type: boolean
+      randomize-aws-credentials:
+        description: "Randomize AWS credentials"
+        default: false
+        required: false
+        type: boolean
+      only-acceptance-tests:
+        description: "Run only acceptance tests"
+        default: false
+        required: false
+        type: boolean
+
+env:
+  PYTEST_LOGLEVEL: ${{ inputs.pytest_loglevel || 'WARNING' }}
+  IMAGE_NAME: "localstack/localstack"
+  TINYBIRD_DATASOURCE: "community_tests"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      # <-- Consider changing to composite action
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # setuptools_scm requires the git history (at least until the last tag) to determine the version
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: '.python-version'
+
+      - name: Cache Pip Dependencies # To-Do: Check usage
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements-dev.txt') }}
+
+      - name: Install Community Dependencies
+        run: make install-dev
+
+      - name: Setup environment
+        run: |
+          make install
+          mkdir -p target/reports
+          mkdir -p target/coverage
+
+      #  Consider changing to composite action -->
+
+      # Preflight phase
+      - name: Linting
+        run: make lint
+
+      - name: Check AWS compatibility markers
+        run: make check-aws-markers
+
+  build:
+    name: "Build Docker Image (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }})"
+    strategy:
+      matrix:
+        runner:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+        exclude:
+          # skip the ARM integration tests in case we are not on the master and not on the upgrade-dependencies branch and forceARMTests is not set to true
+          - runner: ${{ (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'ubuntu-24.04-arm' || ''}}
+      fail-fast: false
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: localstack
+          # setuptools_scm requires the git history (at least until the last tag) to determine the version
+          fetch-depth: 0
+
+      - name: Build Image
+        uses: localstack/localstack/.github/actions/build-image@master
+        with:
+          disableCaching: ${{ inputs.disableCaching == true && 'true' || 'false' }}
+          dockerhubPullUsername: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+          dockerhubPullToken: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
+  test-integration:
+    name: "Integration Tests (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }} - ${{ matrix.group }})"
+    if: ${{ !inputs.onlyAcceptanceTests }}
+    needs:
+      - build
+    strategy:
+      matrix:
+        runner:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+        exclude:
+          # skip the ARM integration tests in case we are not on the master and not on the upgrade-dependencies branch and forceARMTests is not set to true
+          - runner: ${{ (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'ubuntu-24.04-arm' || ''}}
+      fail-fast: false
+    runs-on: ${{ matrix.runner }}
+    env:
+      # Set job-specific environment variables for pytest-tinybird
+      CI_JOB_NAME: ${{ github.job }}-${{ contains(matrix.runner, 'arm') && 'arm' || 'amd' }}
+      CI_JOB_ID: ${{ github.job }}-${{ contains(matrix.runner, 'arm') && 'arm' || 'amd' }}
+    steps:
+      - name: Determine Runner Architecture
+        shell: bash
+        run: echo "PLATFORM=${{ (runner.arch == 'X64' && 'amd64') || (runner.arch == 'ARM64' && 'arm64') || '' }}" >> $GITHUB_ENV
+
+#      - name: Login to Docker Hub
+#        # login to DockerHub to avoid rate limiting issues on custom runners
+#        uses: docker/login-action@v3
+#        with:
+#          username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+#          password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
+      - name: Set environment
+        if: ${{ inputs.testEnvironmentVariables != ''}}
+        shell: bash
+        run: |
+          echo "${{ inputs.testEnvironmentVariables }}" | sed "s/;/\n/" >> $GITHUB_ENV
+
+      - name: Artifact name
+        run: |
+          echo ${{ needs.build.outputs.image-artifact-name }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # setuptools_scm requires the git history (at least until the last tag) to determine the version
+          fetch-depth: 0 #TO-DO: verify that this is needed
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: '.python-version'
+
+      - name: Download Docker Image
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.image-artifact-name }}
+
+      - name: Install docker helper dependencies
+        run: pip install --upgrade setuptools setuptools_scm
+
+      - name: Load Docker Image
+        run: docker-helper.sh load
+
+#      - name: Download Test Selection
+#        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: test-selection
+#          path: dist/testselection/
+
+      - name: Run Integration Tests
+        timeout-minutes: 120
+        env:
+          # add the GitHub API token to avoid rate limit issues
+          #GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }}${{ inputs.additionalIntegrationTestPytestArgs }} --splits 2 --group ${{ matrix.group }} --store-durations --clean-durations --instafail --ignore=tests/unit/ --ignore=tests/bootstrap"
+          COVERAGE_FILE: ".coverage.main-${{ env.PLATFORM }}-${{ matrix.group }}"
+          JUNIT_REPORTS_FILE: "pytest-junit-main-${{ env.PLATFORM }}-${{ matrix.group }}.xml"
+#          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+#          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+        run: make docker-run-tests
+
+      - name: Archive Test Durations
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: pytest-split-durations-${{ env.PLATFORM }}-${{ matrix.group }}
+          path: .test_durations
+          include-hidden-files: true
+          retention-days: 5
+
+      - name: Archive Test Results
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: test-results-main-${{ env.PLATFORM }}-${{ matrix.group }}
+          path: |
+            localstack-core/pytest-junit-main-${{ env.PLATFORM }}-${{ matrix.group }}.xml
+            localstack-core/.coverage.main-${{ env.PLATFORM }}-${{ matrix.group }}
+          retention-days: 30
