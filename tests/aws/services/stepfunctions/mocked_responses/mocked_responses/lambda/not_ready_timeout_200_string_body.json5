@@ -1,0 +1,22 @@
+{
+  "0": {
+    "Throw": {
+      "Error": "Lambda.ResourceNotReadyException",
+      "Cause": "This is a mocked lambda error"
+    }
+  },
+  "1": {
+    "Throw": {
+      "Error": "Lambda.TimeoutException",
+      "Cause": "This is a mocked lambda error"
+    }
+  },
+  "2": {
+    "Return": {
+      "Payload": {
+        "StatusCode": 200,
+        "body": "Hello from Lambda!"
+      }
+    }
+  }
+}

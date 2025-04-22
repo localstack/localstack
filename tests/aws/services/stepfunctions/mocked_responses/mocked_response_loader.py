@@ -13,6 +13,9 @@ class MockedResponseLoader(abc.ABC):
     LAMBDA_200_STRING_BODY: Final[str] = os.path.join(
         _THIS_FOLDER, "mocked_responses/lambda/200_string_body.json5"
     )
+    LAMBDA_NOT_READY_TIMEOUT_200_STRING_BODY: Final[str] = os.path.join(
+        _THIS_FOLDER, "mocked_responses/lambda/not_ready_timeout_200_string_body.json5"
+    )
 
     @staticmethod
     def load(file_path: str) -> dict:
