@@ -92,7 +92,7 @@ jsonschema-specifications==2024.10.1
     # via
     #   jsonschema
     #   openapi-schema-validator
-lazy-object-proxy==1.10.0
+lazy-object-proxy==1.11.0
     # via openapi-spec-validator
 localstack-twisted==24.3.0
     # via localstack-core (pyproject.toml)
@@ -112,7 +112,7 @@ openapi-schema-validator==0.6.3
     #   openapi-spec-validator
 openapi-spec-validator==0.7.1
     # via openapi-core
-packaging==24.2
+packaging==25.0
     # via build
 parse==1.20.2
     # via openapi-core
@@ -170,7 +170,7 @@ rpds-py==0.24.0
     # via
     #   jsonschema
     #   referencing
-s3transfer==0.11.4
+s3transfer==0.11.5
     # via boto3
 semver==3.0.4
     # via localstack-core (pyproject.toml)

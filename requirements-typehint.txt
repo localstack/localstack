@@ -27,13 +27,13 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.232
+aws-cdk-asset-awscli-v1==2.2.233
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==41.2.0
     # via aws-cdk-lib
-aws-cdk-lib==2.189.1
+aws-cdk-lib==2.190.0
     # via localstack-core
 aws-sam-translator==1.97.0
     # via
@@ -51,7 +51,7 @@ boto3==1.37.28
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.37.34
+boto3-stubs==1.37.38
     # via localstack-core (pyproject.toml)
 botocore==1.37.28
     # via
@@ -61,7 +61,7 @@ botocore==1.37.28
     #   localstack-core
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.37.29
+botocore-stubs==1.37.38
     # via boto3-stubs
 build==1.2.2.post1
     # via
@@ -86,7 +86,7 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.33.2
+cfn-lint==1.34.1
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -174,7 +174,7 @@ hyperframe==6.1.0
     # via h2
 hyperlink==21.0.0
     # via localstack-twisted
-identify==2.6.9
+identify==2.6.10
     # via pre-commit
 idna==3.10
     # via
@@ -238,7 +238,7 @@ jsonschema-specifications==2024.10.1
     # via
     #   jsonschema
     #   openapi-schema-validator
-lazy-object-proxy==1.10.0
+lazy-object-proxy==1.11.0
     # via openapi-spec-validator
 localstack-snapshot==0.2.0
     # via localstack-core
@@ -282,7 +282,7 @@ mypy-boto3-appsync==1.37.15
     # via boto3-stubs
 mypy-boto3-athena==1.37.0
     # via boto3-stubs
-mypy-boto3-autoscaling==1.37.0
+mypy-boto3-autoscaling==1.37.36
     # via boto3-stubs
 mypy-boto3-backup==1.37.0
     # via boto3-stubs
@@ -328,11 +328,11 @@ mypy-boto3-ec2==1.37.28
     # via boto3-stubs
 mypy-boto3-ecr==1.37.26
     # via boto3-stubs
-mypy-boto3-ecs==1.37.26
+mypy-boto3-ecs==1.37.36
     # via boto3-stubs
 mypy-boto3-efs==1.37.0
     # via boto3-stubs
-mypy-boto3-eks==1.37.24
+mypy-boto3-eks==1.37.35
     # via boto3-stubs
 mypy-boto3-elasticache==1.37.32
     # via boto3-stubs
@@ -346,9 +346,9 @@ mypy-boto3-emr-serverless==1.37.0
     # via boto3-stubs
 mypy-boto3-es==1.37.0
     # via boto3-stubs
-mypy-boto3-events==1.37.28
+mypy-boto3-events==1.37.35
     # via boto3-stubs
-mypy-boto3-firehose==1.37.0
+mypy-boto3-firehose==1.37.38
     # via boto3-stubs
 mypy-boto3-fis==1.37.0
     # via boto3-stubs
@@ -418,7 +418,7 @@ mypy-boto3-redshift==1.37.0
     # via boto3-stubs
 mypy-boto3-redshift-data==1.37.8
     # via boto3-stubs
-mypy-boto3-resource-groups==1.37.0
+mypy-boto3-resource-groups==1.37.35
     # via boto3-stubs
 mypy-boto3-resourcegroupstaggingapi==1.37.0
     # via boto3-stubs
@@ -430,7 +430,7 @@ mypy-boto3-s3==1.37.24
     # via boto3-stubs
 mypy-boto3-s3control==1.37.28
     # via boto3-stubs
-mypy-boto3-sagemaker==1.37.27
+mypy-boto3-sagemaker==1.37.37
     # via boto3-stubs
 mypy-boto3-sagemaker-runtime==1.37.0
     # via boto3-stubs
@@ -491,7 +491,7 @@ opensearch-py==2.8.0
     # via localstack-core
 orderly-set==5.4.0
     # via deepdiff
-packaging==24.2
+packaging==25.0
     # via
     #   apispec
     #   build
@@ -639,9 +639,9 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core
-ruff==0.11.5
+ruff==0.11.6
     # via localstack-core
-s3transfer==0.11.4
+s3transfer==0.11.5
     # via
     #   awscli
     #   boto3
@@ -673,7 +673,7 @@ typeguard==2.13.3
     #   jsii
 types-awscrt==0.26.1
     # via botocore-stubs
-types-s3transfer==0.11.4
+types-s3transfer==0.11.5
     # via boto3-stubs
 typing-extensions==4.13.2
     # via
