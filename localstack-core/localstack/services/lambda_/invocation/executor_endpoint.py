@@ -250,7 +250,6 @@ class ExecutorEndpoint(Endpoint):
         for attempt_count in range(max_retry_on_connection_error + 1):  # 1 initial + n retries
             try:
                 response = requests.post(url=invocation_url, json=payload, proxies=proxies)
-                response.raise_for_status()
                 return response
             except requests.exceptions.ConnectionError as connection_error:
                 last_exception = connection_error
