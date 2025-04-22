@@ -241,6 +241,15 @@ def get_resource_type(resource: dict) -> str:
         )
 
 
+def standardise_resource_type(resource_type: str) -> str:
+    """
+    Custom resources can either start with Custom:: or AWS::CloudFormation::CustomResource.
+    """
+    if resource_type.startswith("Custom::"):
+        return "AWS::CloudFormation::CustomResource"
+    return resource_type
+
+
 def invoke_function(
     account_id: str,
     region_name: str,
