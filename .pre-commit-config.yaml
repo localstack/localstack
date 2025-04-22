@@ -10,6 +10,12 @@ repos:
       # Run the formatter.
       - id: ruff-format
 
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.15.0
+    hooks:
+      - id: mypy
+        entry: bash -c 'cd localstack-core && mypy --install-types --non-interactive'
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:

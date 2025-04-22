@@ -45,7 +45,7 @@ MODULE_MAIN_PATH = os.path.dirname(os.path.realpath(__file__))
 LOCALSTACK_ROOT_FOLDER = os.path.realpath(os.path.join(MODULE_MAIN_PATH, ".."))
 
 # virtualenv folder
-LOCALSTACK_VENV_FOLDER = os.environ.get("VIRTUAL_ENV")
+LOCALSTACK_VENV_FOLDER: str = os.environ.get("VIRTUAL_ENV")
 if not LOCALSTACK_VENV_FOLDER:
     # fallback to the previous logic
     LOCALSTACK_VENV_FOLDER = os.path.join(LOCALSTACK_ROOT_FOLDER, ".venv")
