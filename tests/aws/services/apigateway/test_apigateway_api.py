@@ -201,13 +201,20 @@ class TestApiGatewayApiRestApi:
         snapshot.match("get-rest-apis-w-tags", response)
 
     @markers.aws.only_localstack
-    def test_create_rest_api_with_custom_id_tag(self, apigw_create_rest_api):
+    def test_create_rest_api_with_custom_id_tag(self, apigw_create_rest_api, aws_client):
         custom_id_tag = "testid123"
         response = apigw_create_rest_api(
             name="my_api", description="this is my api", tags={TAG_KEY_CUSTOM_ID: custom_id_tag}
         )
         api_id = response["id"]
         assert api_id == custom_id_tag
+
+        with pytest.raises(aws_client.apigateway.exceptions.BadRequestException):
+            apigw_create_rest_api(
+                name="my_api",
+                description="bad custom id",
+                tags={TAG_KEY_CUSTOM_ID: "bad-custom-id-hyphen"},
+            )
 
     @markers.aws.validated
     def test_update_rest_api_operation_add_remove(
