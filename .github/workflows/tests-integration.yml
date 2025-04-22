@@ -17,11 +17,11 @@ on:
         default: "WARNING"
         required: false
         type: string
-      skip_test_selection:
-        description: "Skip test selection"
-        default: false
+      disableTestSelection:
+        description: 'Disable Test Selection'
         required: false
         type: boolean
+        default: false
       randomize-aws-credentials:
         description: "Randomize AWS credentials"
         default: false
@@ -37,13 +37,14 @@ env:
   PYTEST_LOGLEVEL: ${{ inputs.pytest_loglevel || 'WARNING' }}
   IMAGE_NAME: "localstack/localstack"
   TINYBIRD_DATASOURCE: "community_tests"
+  TESTSELECTION_PYTEST_ARGS: "${{ !inputs.disableTestSelection && '--path-filter=../../dist/testselection/test-selection.txt ' || '' }}"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  install:
+  preflight:
     runs-on: ubuntu-latest
     steps:
       # <-- Consider changing to composite action
@@ -57,12 +58,22 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version-file: '.python-version'
+          cache: 'pip'
+          cache-dependency-path: 'requirements-dev.txt'
 
-      - name: Cache Pip Dependencies # To-Do: Check usage
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements-dev.txt') }}
+      - name: Determine Test Selection
+        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
+        run: |
+          if [ -z "${{ github.event.pull_request.base.sha }}" ]; then
+            echo "Do test selection based on branch name"
+          else
+            echo "Do test selection based on Pull Request event"
+            SCRIPT_OPTS="--base-commit-sha ${{ github.event.pull_request.base.sha }} --head-commit-sha ${{ github.event.pull_request.head.sha }}"
+          fi
+          source .venv/bin/activate
+          python -m localstack.testing.testselection.scripts.generate_test_selection $(pwd) dist/testselection/test-selection.txt $SCRIPT_OPTS
+          echo "Test selection:"
+          cat dist/testselection/test-selection.txt
 
       - name: Install Community Dependencies
         run: make install-dev
@@ -75,7 +86,6 @@ jobs:
 
       #  Consider changing to composite action -->
 
-      # Preflight phase
       - name: Linting
         run: make lint
 
@@ -84,6 +94,8 @@ jobs:
 
   build:
     name: "Build Docker Image (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }})"
+    needs:
+      - preflight
     strategy:
       matrix:
         runner:
@@ -154,7 +166,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
-          fetch-depth: 0 #TO-DO: verify that this is needed
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
