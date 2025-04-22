@@ -222,25 +222,6 @@ class ResourceProvider(Generic[Properties]):
         raise NotImplementedError
 
 
-# legacy helpers
-def get_resource_type(resource: dict) -> str:
-    """this is currently overwritten in PRO to add support for custom resources"""
-    if isinstance(resource, str):
-        raise ValueError(f"Invalid argument: {resource}")
-    try:
-        resource_type: str = resource["Type"]
-
-        if resource_type.startswith("Custom::"):
-            return "AWS::CloudFormation::CustomResource"
-        return resource_type
-    except Exception:
-        LOG.warning(
-            "Failed to retrieve resource type %s",
-            resource.get("Type"),
-            exc_info=LOG.isEnabledFor(logging.DEBUG),
-        )
-
-
 def standardise_resource_type(resource_type: str) -> str:
     """
     Custom resources can either start with Custom:: or AWS::CloudFormation::CustomResource.
