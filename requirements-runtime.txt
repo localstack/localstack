@@ -29,17 +29,17 @@ aws-sam-translator==1.97.0
     #   localstack-core (pyproject.toml)
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.38.28
+awscli==1.39.0
     # via localstack-core (pyproject.toml)
 awscrt==0.26.1
     # via localstack-core
-boto3==1.37.28
+boto3==1.38.0
     # via
     #   amazon-kclpy
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-botocore==1.37.28
+botocore==1.38.0
     # via
     #   aws-xray-sdk
     #   awscli
@@ -104,7 +104,7 @@ docker==7.1.0
     # via
     #   localstack-core
     #   moto-ext
-docutils==0.16
+docutils==0.19
     # via awscli
 events==0.5
     # via opensearch-py
@@ -186,7 +186,7 @@ markupsafe==3.0.2
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-more-itertools==10.6.0
+more-itertools==10.7.0
     # via openapi-core
 moto-ext==5.1.3.post1
     # via localstack-core (pyproject.toml)
@@ -312,7 +312,7 @@ rpds-py==0.24.0
     #   referencing
 rsa==4.7.2
     # via awscli
-s3transfer==0.11.5
+s3transfer==0.12.0
     # via
     #   awscli
     #   boto3
