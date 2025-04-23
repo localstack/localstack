@@ -4,6 +4,7 @@ import os
 import socket
 import sys
 import time
+from typing import IO
 
 from orjson import orjson
 from twisted.internet.tcp import Port
@@ -19,9 +20,22 @@ from localstack.aws.skeleton import (
 )
 from localstack.config import HostAndPort
 from localstack.services.moto import MotoFallbackDispatcher
+from localstack.services.s3.storage import LimitedIterableStream
 from localstack.utils.patch import patch
 
 from .twisted import serve_gateway
+
+
+class StreamingBody(IO):
+    def __init__(self, body: IO[bytes], length: int):
+        self.body = body
+        self.length = length
+
+    def read(self, n=0) -> bytes:
+        return self.body.read(n or self.length or -1)
+
+    def writable(self):
+        return False
 
 
 class ServiceWsgiApp:
@@ -29,31 +43,51 @@ class ServiceWsgiApp:
         self.provider = provider
         self._dispatch_table = dispatch_table_factory(provider)
 
-    def _invoke_orjson(self, payload: bytes):
+    def _invoke_orjson(self, body: StreamingBody, payload: bytes, streaming_body: str):
         req = orjson.loads(payload)
         context = JsonContext(**req["context"])
         context.service = FakeService(**context.service)
         context.operation = FakeOperation(**context.operation)
         context.request = FakeRequest(**context.request)
         context.request.query_string = context.request.query_string.encode("utf-8")
+        if streaming_body:
+            req["instance"][streaming_body] = body
 
         instance = req["instance"]
         handler = self._dispatch_table[context.operation.name]
+        stream_response = None
+        stream_key = None
         try:
             response = {"response": handler(context, instance)}
+            for key, value in response["response"].items():
+                if hasattr(value, "read") or isinstance(value, LimitedIterableStream):
+                    stream_key = key
+                    stream_response = value
+                    response["response"].pop(key)
+                    break
         except ServiceException as e:
             # we could serialize something somewhat here?
             response = {"error": e.to_dict()}
-        return json.dumps(response).encode("utf-8")
+        return json.dumps(response), stream_key, stream_response
 
     def __call__(self, environ, start_response):
-        content_length = int(environ["CONTENT_LENGTH"])
-        input = environ["wsgi.input"].read(content_length)
-        _invoke_result = self._invoke_orjson(input)
+        content_length = environ.get("CONTENT_LENGTH", 0)
+        body = StreamingBody(environ["wsgi.input"], content_length)
+        payload = environ["HTTP_AWS_PAYLOAD"]
+        stream_field = environ.get("HTTP_STREAM_FIELD")
+        _invoke_result, stream_key, stream_body = self._invoke_orjson(body, payload, stream_field)
         status = "200 OK"
-        response_headers = [("Content-type", "application/json")]
+        response_headers = [
+            ("Content-type", "application/json"),
+            ("Response-Payload", _invoke_result),
+        ]
+        if stream_key:
+            response_headers.append(("Response-Key", stream_key))
         start_response(status, response_headers)
-        return [_invoke_result]
+        if stream_key:
+            return stream_body
+        else:
+            return [b""]
 
 
 def wsgi_app():

@@ -1,7 +1,6 @@
 import base64
 import dataclasses
 import inspect
-import json
 import logging
 import os
 import socket
@@ -62,6 +61,7 @@ class FakeRequest:
     host: str
     root_path: str
     method: str
+    data: bytes
 
 
 @dataclasses.dataclass
@@ -104,6 +104,7 @@ def _copy_context_json(ctx: RequestContext) -> JsonContext:
             host=ctx.request.host,
             root_path=ctx.request.root_path,
             method=ctx.request.method,
+            data="",
         ),
     )
 
@@ -363,6 +364,14 @@ class Skeleton:
             if isinstance(result, Response):
                 return result
         else:
+            stream_key = None
+            stream_body = None
+            for key, value in instance.items():
+                if hasattr(value, "read"):
+                    stream_key = key
+                    stream_body = value
+                    instance.pop(key)
+                    break
             req = orjson.dumps(
                 {
                     "context": _copy_context_json(context),
@@ -373,8 +382,20 @@ class Skeleton:
             socket_address = assure_service_started(context.service.service_name)
             session = requests.Session()
             session.mount("http+unix://", UnixSocketAdapter(socket_address, timeout=60))
-            response = session.post("http+unix://localhost/", data=req)
-            result = json.loads(response.content)
+            headers = {"Aws-Payload": req}
+            if stream_key:
+                headers["Stream-Field"] = stream_key
+            # stream will be kept open until response is read - in the error case we need to close it, otherwise
+            # gunicorn should close the stream after reading it
+            response = session.post(
+                "http+unix://localhost/", data=stream_body, headers=headers, stream=True
+            )
+            result = response.headers.get("Response-Payload")
+            result = orjson.loads(result)
+            if key := response.headers.get("Response-Key"):
+                result["response"][key] = response.raw
+            else:
+                response.close()
             if error := result.get("error"):
                 raise ServiceException(
                     code=error.get("code"),

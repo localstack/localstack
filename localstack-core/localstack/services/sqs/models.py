@@ -560,7 +560,7 @@ class SqsQueue:
             return
 
         with self.mutex:
-            messages = [message for message in self.inflight if message.is_visible]
+            messages = [message for message in list(self.inflight) if message.is_visible]
             for standard_message in messages:
                 LOG.debug(
                     "re-queueing inflight messages %s into queue %s",
