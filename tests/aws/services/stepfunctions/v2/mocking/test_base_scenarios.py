@@ -12,6 +12,7 @@ from localstack.testing.pytest.stepfunctions.utils import (
     create_and_record_execution,
     create_and_record_mocked_execution,
 )
+from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.mocked_responses.mocked_response_loader import (
     MockedResponseLoader,
@@ -227,3 +228,92 @@ class TestBaseScenarios:
                 state_machine_name,
                 test_name,
             )
+
+    @markers.aws.validated
+    def test_sqs_send_message(
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        create_lambda_function,
+        sqs_create_queue,
+        sfn_snapshot,
+        monkeypatch,
+        mock_config_file,
+    ):
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
+
+        template = ServicesTemplates.load_sfn_template(ServicesTemplates.SQS_SEND_MESSAGE)
+        definition = json.dumps(template)
+        message_body = "test_message_body"
+
+        if is_aws_cloud():
+            queue_name = f"queue-{short_uid()}"
+            queue_url = sqs_create_queue(QueueName=queue_name)
+            sfn_snapshot.add_transformer(RegexTransformer(queue_name, "sqs-queue-name"))
+            sfn_snapshot.add_transformer(RegexTransformer(queue_url, "sqs-queue-url"))
+
+            exec_input = json.dumps({"QueueUrl": queue_url, "MessageBody": message_body})
+            create_and_record_execution(
+                aws_client,
+                create_state_machine_iam_role,
+                create_state_machine,
+                sfn_snapshot,
+                definition,
+                exec_input,
+            )
+        else:
+            state_machine_name = f"mocked_state_machine_{short_uid()}"
+            test_name = "TestCaseName"
+            sqs_200_send_message = MockedResponseLoader.load(
+                MockedResponseLoader.SQS_200_SEND_MESSAGE
+            )
+            mock_config = {
+                "StateMachines": {
+                    state_machine_name: {
+                        "TestCases": {test_name: {"SendSQS": "sqs_200_send_message"}}
+                    }
+                },
+                "MockedResponses": {"sqs_200_send_message": sqs_200_send_message},
+            }
+            mock_config_file_path = mock_config_file(mock_config)
+            monkeypatch.setattr(config, "SFN_MOCK_CONFIG", mock_config_file_path)
+            exec_input = json.dumps({"QueueUrl": "sqs-queue-url", "MessageBody": message_body})
+            create_and_record_mocked_execution(
+                aws_client,
+                create_state_machine_iam_role,
+                create_state_machine,
+                sfn_snapshot,
+                definition,
+                exec_input,
+                state_machine_name,
+                test_name,
+            )
+
+    @markers.aws.validated
+    def test_publish_base(
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sns_create_topic,
+        sfn_snapshot,
+    ):
+        sfn_snapshot.add_transformer(TransformerUtility.sns_api())
+
+        template = ServicesTemplates.load_sfn_template(ServicesTemplates.SNS_PUBLISH)
+        definition = json.dumps(template)
+
+        message = {"message": "string-literal"}
+        sns_topic = sns_create_topic()
+        topic_arn = sns_topic["TopicArn"]
+
+        exec_input = json.dumps({"TopicArn": topic_arn, "Message": {"Message": "HelloWorld!"}})
+        create_and_record_execution(
+            aws_client,
+            create_state_machine_iam_role,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
