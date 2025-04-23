@@ -33,6 +33,9 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
     StateCredentials,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.mock_eval_utils import (
+    eval_mocked_response,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceRuntimePart,
     ServiceResource,
@@ -44,6 +47,7 @@ from localstack.services.stepfunctions.asl.component.state.state_props import St
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.services.stepfunctions.mocking.mock_config import MockedResponse
 from localstack.services.stepfunctions.quotas import is_within_size_quota
 from localstack.utils.strings import camel_to_snake_case, snake_to_camel_case, to_bytes, to_str
 
@@ -352,12 +356,16 @@ class StateTaskService(StateTask, abc.ABC):
         normalised_parameters = copy.deepcopy(raw_parameters)
         self._normalise_parameters(normalised_parameters)
 
-        self._eval_service_task(
-            env=env,
-            resource_runtime_part=resource_runtime_part,
-            normalised_parameters=normalised_parameters,
-            state_credentials=state_credentials,
-        )
+        if env.is_mocked_mode():
+            mocked_response: MockedResponse = env.get_current_mocked_response()
+            eval_mocked_response(env=env, mocked_response=mocked_response)
+        else:
+            self._eval_service_task(
+                env=env,
+                resource_runtime_part=resource_runtime_part,
+                normalised_parameters=normalised_parameters,
+                state_credentials=state_credentials,
+            )
 
         output_value = env.stack[-1]
         self._normalise_response(output_value)

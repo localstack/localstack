@@ -59,6 +59,7 @@ from localstack.services.stepfunctions.backend.state_machine import (
     StateMachineInstance,
     StateMachineVersion,
 )
+from localstack.services.stepfunctions.mocking.mock_config import MockTestCase
 
 LOG = logging.getLogger(__name__)
 
@@ -107,6 +108,8 @@ class Execution:
     state_machine_version_arn: Final[Optional[Arn]]
     state_machine_alias_arn: Final[Optional[Arn]]
 
+    mock_test_case: Final[Optional[MockTestCase]]
+
     start_date: Final[Timestamp]
     input_data: Final[Optional[json]]
     input_details: Final[Optional[CloudWatchEventsExecutionDataDetails]]
@@ -141,6 +144,7 @@ class Execution:
         input_data: Optional[json] = None,
         trace_header: Optional[TraceHeader] = None,
         state_machine_alias_arn: Optional[Arn] = None,
+        mock_test_case: Optional[MockTestCase] = None,
     ):
         self.name = name
         self.sm_type = sm_type
@@ -169,6 +173,7 @@ class Execution:
         self.error = None
         self.cause = None
         self._activity_store = activity_store
+        self.mock_test_case = mock_test_case
 
     def _get_events_client(self):
         return connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).events
@@ -301,6 +306,7 @@ class Execution:
             exec_comm=self._get_start_execution_worker_comm(),
             cloud_watch_logging_session=self._cloud_watch_logging_session,
             activity_store=self._activity_store,
+            mock_test_case=self.mock_test_case,
         )
 
     def start(self) -> None:

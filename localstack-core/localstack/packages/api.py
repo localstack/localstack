@@ -6,9 +6,9 @@ from collections import defaultdict
 from enum import Enum
 from inspect import getmodule
 from threading import RLock
-from typing import Callable, List, Optional, Tuple
+from typing import Any, Callable, Generic, List, Optional, ParamSpec, TypeVar
 
-from plux import Plugin, PluginManager, PluginSpec
+from plux import Plugin, PluginManager, PluginSpec  # type: ignore[import-untyped]
 
 from localstack import config
 
@@ -24,7 +24,7 @@ class PackageException(Exception):
 class NoSuchVersionException(PackageException):
     """Exception indicating that a requested installer version is not available / supported."""
 
-    def __init__(self, package: str = None, version: str = None):
+    def __init__(self, package: str | None = None, version: str | None = None):
         message = "Unable to find requested version"
         if package and version:
             message += f"Unable to find requested version '{version}' for package '{package}'"
@@ -123,6 +123,7 @@ class PackageInstaller(abc.ABC):
             directory = self._get_install_dir(target)
             if directory and os.path.exists(self._get_install_marker_path(directory)):
                 return directory
+        return None
 
     def _get_install_dir(self, target: InstallTarget) -> str:
         """
@@ -181,7 +182,12 @@ class PackageInstaller(abc.ABC):
         pass
 
 
-class Package(abc.ABC):
+# With Python 3.13 we should be able to set PackageInstaller as the default
+# https://typing.python.org/en/latest/spec/generics.html#type-parameter-defaults
+T = TypeVar("T", bound=PackageInstaller)
+
+
+class Package(abc.ABC, Generic[T]):
     """
     A Package defines a specific kind of software, mostly used as backends or supporting system for service
     implementations.
@@ -214,7 +220,7 @@ class Package(abc.ABC):
         self.get_installer(version).install(target)
 
     @functools.lru_cache()
-    def get_installer(self, version: str | None = None) -> PackageInstaller:
+    def get_installer(self, version: str | None = None) -> T:
         """
         Returns the installer instance for a specific version of the package.
 
@@ -237,7 +243,7 @@ class Package(abc.ABC):
         """
         raise NotImplementedError()
 
-    def _get_installer(self, version: str) -> PackageInstaller:
+    def _get_installer(self, version: str) -> T:
         """
         Internal lookup function which needs to be implemented by specific packages.
         It creates PackageInstaller instances for the specific version.
@@ -247,7 +253,7 @@ class Package(abc.ABC):
         """
         raise NotImplementedError()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -298,7 +304,7 @@ class MultiPackageInstaller(PackageInstaller):
 PLUGIN_NAMESPACE = "localstack.packages"
 
 
-class PackagesPlugin(Plugin):
+class PackagesPlugin(Plugin):  # type: ignore[misc]
     """
     Plugin implementation for Package plugins.
     A package plugin exposes a specific package instance.
@@ -311,8 +317,8 @@ class PackagesPlugin(Plugin):
         self,
         name: str,
         scope: str,
-        get_package: Callable[[], Package | List[Package]],
-        should_load: Callable[[], bool] = None,
+        get_package: Callable[[], Package[PackageInstaller] | List[Package[PackageInstaller]]],
+        should_load: Callable[[], bool] | None = None,
     ) -> None:
         super().__init__()
         self.name = name
@@ -325,11 +331,11 @@ class PackagesPlugin(Plugin):
             return self._should_load()
         return True
 
-    def get_package(self) -> Package:
+    def get_package(self) -> Package[PackageInstaller]:
         """
         :return: returns the package instance of this package plugin
         """
-        return self._get_package()
+        return self._get_package()  # type: ignore[return-value]
 
 
 class NoSuchPackageException(PackageException):
@@ -338,20 +344,20 @@ class NoSuchPackageException(PackageException):
     pass
 
 
-class PackagesPluginManager(PluginManager[PackagesPlugin]):
+class PackagesPluginManager(PluginManager[PackagesPlugin]):  # type: ignore[misc]
     """PluginManager which simplifies the loading / access of PackagesPlugins and their exposed package instances."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(PLUGIN_NAMESPACE)
 
-    def get_all_packages(self) -> List[Tuple[str, str, Package]]:
+    def get_all_packages(self) -> list[tuple[str, str, Package[PackageInstaller]]]:
         return sorted(
             [(plugin.name, plugin.scope, plugin.get_package()) for plugin in self.load_all()]
         )
 
     def get_packages(
-        self, package_names: List[str], version: Optional[str] = None
-    ) -> List[Package]:
+        self, package_names: list[str], version: Optional[str] = None
+    ) -> list[Package[PackageInstaller]]:
         # Plugin names are unique, but there could be multiple packages with the same name in different scopes
         plugin_specs_per_name = defaultdict(list)
         # Plugin names have the format "<package-name>/<scope>", build a dict of specs per package name for the lookup
@@ -359,7 +365,7 @@ class PackagesPluginManager(PluginManager[PackagesPlugin]):
             (package_name, _, _) = plugin_spec.name.rpartition("/")
             plugin_specs_per_name[package_name].append(plugin_spec)
 
-        package_instances: List[Package] = []
+        package_instances: list[Package[PackageInstaller]] = []
         for package_name in package_names:
             plugin_specs = plugin_specs_per_name.get(package_name)
             if not plugin_specs:
@@ -377,9 +383,15 @@ class PackagesPluginManager(PluginManager[PackagesPlugin]):
         return package_instances
 
 
+P = ParamSpec("P")
+T2 = TypeVar("T2")
+
+
 def package(
-    name: str = None, scope: str = "community", should_load: Optional[Callable[[], bool]] = None
-):
+    name: str | None = None,
+    scope: str = "community",
+    should_load: Optional[Callable[[], bool]] = None,
+) -> Callable[[Callable[[], Package[Any] | list[Package[Any]]]], PluginSpec]:
     """
     Decorator for marking methods that create Package instances as a PackagePlugin.
     Methods marked with this decorator are discoverable as a PluginSpec within the namespace "localstack.packages",
@@ -387,8 +399,8 @@ def package(
     service name.
     """
 
-    def wrapper(fn):
-        _name = name or getmodule(fn).__name__.split(".")[-2]
+    def wrapper(fn: Callable[[], Package[Any] | list[Package[Any]]]) -> PluginSpec:
+        _name = name or getmodule(fn).__name__.split(".")[-2]  # type: ignore[union-attr]
 
         @functools.wraps(fn)
         def factory() -> PackagesPlugin:
