@@ -25,6 +25,7 @@ from localstack.aws.api.events import (
     EventBusNameOrArn,
     EventPattern,
     EventsApi,
+    KmsKeyIdentifier,
     PutRuleResponse,
     PutTargetsResponse,
     RoleArn,
@@ -296,8 +297,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         auth_parameters: CreateConnectionAuthRequestParameters,
         description: ConnectionDescription = None,
         invocation_connectivity_parameters: ConnectivityResourceParameters = None,
+        kms_key_identifier: KmsKeyIdentifier = None,
         **kwargs,
     ) -> CreateConnectionResponse:
+        # TODO add support for kms_key_identifier
         errors = []
 
         if not CONNECTION_NAME_PATTERN.match(name):
