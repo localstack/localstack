@@ -437,40 +437,77 @@ class TestIAMIntegrations:
 
         aws_client.iam.delete_policy(PolicyArn=policy_arn)
 
-    @markers.aws.needs_fixing
-    def test_simulate_principle_policy(self, aws_client):
-        # FIXME this test should test whether a principal (like user, role) has some permissions, it cannot test
-        # the policy itself
-        policy_name = "policy-{}".format(short_uid())
-        policy_document = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Action": ["s3:GetObjectVersion", "s3:ListBucket"],
-                    "Effect": "Allow",
-                    "Resource": ["arn:aws:s3:::bucket_name"],
-                }
-            ],
-        }
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..EvaluationResults"])
+    @pytest.mark.parametrize("arn_type", ["role", "group", "user"])
+    def test_simulate_principle_policy(
+        self,
+        arn_type,
+        aws_client,
+        create_role,
+        create_policy,
+        create_user,
+        s3_bucket,
+        snapshot,
+        cleanups,
+    ):
+        bucket = s3_bucket
+        snapshot.add_transformer(snapshot.transform.regex(bucket, "bucket"))
+        snapshot.add_transformer(snapshot.transform.key_value("SourcePolicyId"))
 
-        policy_arn = aws_client.iam.create_policy(
-            PolicyName=policy_name, Path="/", PolicyDocument=json.dumps(policy_document)
+        policy_arn = create_policy(
+            PolicyDocument=json.dumps(
+                {
+                    "Version": "2012-10-17",
+                    "Statement": {
+                        "Sid": "",
+                        "Effect": "Allow",
+                        "Action": "s3:PutObject",
+                        "Resource": "*",
+                    },
+                }
+            )
         )["Policy"]["Arn"]
 
-        rs = aws_client.iam.simulate_principal_policy(
-            PolicySourceArn=policy_arn,
-            ActionNames=["s3:PutObject", "s3:GetObjectVersion"],
-            ResourceArns=["arn:aws:s3:::bucket_name"],
-        )
-        assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
-        evaluation_results = rs["EvaluationResults"]
-        assert len(evaluation_results) == 2
+        if arn_type == "role":
+            role_name = f"role-{short_uid()}"
+            role_arn = create_role(
+                RoleName=role_name,
+                AssumeRolePolicyDocument=json.dumps(
+                    {
+                        "Version": "2012-10-17",
+                        "Statement": {
+                            "Sid": "",
+                            "Effect": "Allow",
+                            "Principal": {"Service": "apigateway.amazonaws.com"},
+                            "Action": "sts:AssumeRole",
+                        },
+                    }
+                ),
+            )["Role"]["Arn"]
+            aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
+            arn = role_arn
 
-        actions = {evaluation["EvalActionName"]: evaluation for evaluation in evaluation_results}
-        assert "s3:PutObject" in actions
-        assert actions["s3:PutObject"]["EvalDecision"] == "explicitDeny"
-        assert "s3:GetObjectVersion" in actions
-        assert actions["s3:GetObjectVersion"]["EvalDecision"] == "allowed"
+        elif arn_type == "group":
+            group_name = f"group-{short_uid()}"
+            group = aws_client.iam.create_group(GroupName=group_name)["Group"]
+            cleanups.append(lambda _: aws_client.iam.delete_group(GroupName=group_name))
+            aws_client.iam.attach_group_policy(GroupName=group_name, PolicyArn=policy_arn)
+            arn = group["Arn"]
+
+        else:
+            user_name = f"user-{short_uid()}"
+            user = create_user(UserName=user_name)["User"]
+            aws_client.iam.attach_user_policy(UserName=user_name, PolicyArn=policy_arn)
+            arn = user["Arn"]
+
+        rs = aws_client.iam.simulate_principal_policy(
+            PolicySourceArn=arn,
+            ActionNames=["s3:PutObject", "s3:GetObjectVersion"],
+            ResourceArns=[f"arn:aws:s3:::{bucket}"],
+        )
+
+        snapshot.match("response", rs)
 
     @markers.aws.validated
     def test_create_role_with_assume_role_policy(self, aws_client, account_id, create_role):
