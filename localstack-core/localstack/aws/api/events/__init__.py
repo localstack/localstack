@@ -548,6 +548,7 @@ class CreateConnectionRequest(ServiceRequest):
     AuthorizationType: ConnectionAuthorizationType
     AuthParameters: CreateConnectionAuthRequestParameters
     InvocationConnectivityParameters: Optional[ConnectivityResourceParameters]
+    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
 
 
 class CreateConnectionResponse(TypedDict, total=False):
@@ -757,6 +758,7 @@ class DescribeConnectionResponse(TypedDict, total=False):
     StateReason: Optional[ConnectionStateReason]
     AuthorizationType: Optional[ConnectionAuthorizationType]
     SecretArn: Optional[SecretsManagerSecretArn]
+    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
     AuthParameters: Optional[ConnectionAuthResponseParameters]
     CreationTime: Optional[Timestamp]
     LastModifiedTime: Optional[Timestamp]
@@ -1504,6 +1506,7 @@ class UpdateConnectionRequest(ServiceRequest):
     AuthorizationType: Optional[ConnectionAuthorizationType]
     AuthParameters: Optional[UpdateConnectionAuthRequestParameters]
     InvocationConnectivityParameters: Optional[ConnectivityResourceParameters]
+    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
 
 
 class UpdateConnectionResponse(TypedDict, total=False):
@@ -1603,6 +1606,7 @@ class EventsApi:
         auth_parameters: CreateConnectionAuthRequestParameters,
         description: ConnectionDescription = None,
         invocation_connectivity_parameters: ConnectivityResourceParameters = None,
+        kms_key_identifier: KmsKeyIdentifier = None,
         **kwargs,
     ) -> CreateConnectionResponse:
         raise NotImplementedError
@@ -2072,6 +2076,7 @@ class EventsApi:
         authorization_type: ConnectionAuthorizationType = None,
         auth_parameters: UpdateConnectionAuthRequestParameters = None,
         invocation_connectivity_parameters: ConnectivityResourceParameters = None,
+        kms_key_identifier: KmsKeyIdentifier = None,
         **kwargs,
     ) -> UpdateConnectionResponse:
         raise NotImplementedError
