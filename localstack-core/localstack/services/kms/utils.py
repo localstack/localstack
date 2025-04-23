@@ -1,9 +1,11 @@
 import re
-from typing import Tuple
+from typing import Callable, Tuple, TypeVar
 
-from localstack.aws.api.kms import Tag, TagException
+from localstack.aws.api.kms import DryRunOperationException, Tag, TagException
 from localstack.services.kms.exceptions import ValidationException
 from localstack.utils.aws.arns import ARN_PARTITION_REGEX
+
+T = TypeVar("T")
 
 KMS_KEY_ARN_PATTERN = re.compile(
     rf"{ARN_PARTITION_REGEX}:kms:(?P<region_name>[^:]+):(?P<account_id>\d{{12}}):key\/(?P<key_id>[^:]+)$"
@@ -58,3 +60,28 @@ def validate_tag(tag_position: int, tag: Tag) -> None:
 
     if tag_key.lower().startswith("aws:"):
         raise TagException("Tags beginning with aws: are reserved")
+
+
+def execute_dry_run_capable(func: Callable[..., T], dry_run: bool, *args, **kwargs) -> T:
+    """
+    Executes a function unless dry run mode is enabled.
+
+    If ``dry_run`` is ``True``, the function is not executed and a
+    ``DryRunOperationException`` is raised. Otherwise, the provided
+    function is called with the given positional and keyword arguments.
+
+    :param func: The function to be executed.
+    :type func: Callable[..., T]
+    :param dry_run: Flag indicating whether the execution is a dry run.
+    :type dry_run: bool
+    :param args: Positional arguments to pass to the function.
+    :param kwargs: Keyword arguments to pass to the function.
+    :returns: The result of the function call if ``dry_run`` is ``False``.
+    :rtype: T
+    :raises DryRunOperationException: If ``dry_run`` is ``True``.
+    """
+    if dry_run:
+        raise DryRunOperationException(
+            "The request would have succeeded, but the DryRun option is set."
+        )
+    return func(*args, **kwargs)
