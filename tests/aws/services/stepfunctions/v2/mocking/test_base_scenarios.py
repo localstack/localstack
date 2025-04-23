@@ -12,7 +12,6 @@ from localstack.testing.pytest.stepfunctions.utils import (
     create_and_record_execution,
     create_and_record_mocked_execution,
 )
-from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.mocked_responses.mocked_response_loader import (
     MockedResponseLoader,
@@ -291,29 +290,193 @@ class TestBaseScenarios:
             )
 
     @markers.aws.validated
-    def test_publish_base(
+    def test_sns_publish_base(
         self,
         aws_client,
         create_state_machine_iam_role,
         create_state_machine,
         sns_create_topic,
         sfn_snapshot,
+        monkeypatch,
+        mock_config_file,
     ):
-        sfn_snapshot.add_transformer(TransformerUtility.sns_api())
-
         template = ServicesTemplates.load_sfn_template(ServicesTemplates.SNS_PUBLISH)
         definition = json.dumps(template)
+        message_body = {"message": "string-literal"}
 
-        message = {"message": "string-literal"}
-        sns_topic = sns_create_topic()
-        topic_arn = sns_topic["TopicArn"]
+        if is_aws_cloud():
+            topic = sns_create_topic()
+            topic_arn = topic["TopicArn"]
+            sfn_snapshot.add_transformer(RegexTransformer(topic_arn, "topic-arn"))
+            exec_input = json.dumps({"TopicArn": topic_arn, "Message": message_body})
+            create_and_record_execution(
+                aws_client,
+                create_state_machine_iam_role,
+                create_state_machine,
+                sfn_snapshot,
+                definition,
+                exec_input,
+            )
+        else:
+            state_machine_name = f"mocked_state_machine_{short_uid()}"
+            test_name = "TestCaseName"
+            sns_200_publish = MockedResponseLoader.load(MockedResponseLoader.SNS_200_PUBLISH)
+            mock_config = {
+                "StateMachines": {
+                    state_machine_name: {"TestCases": {test_name: {"Publish": "sns_200_publish"}}}
+                },
+                "MockedResponses": {"sns_200_publish": sns_200_publish},
+            }
+            mock_config_file_path = mock_config_file(mock_config)
+            monkeypatch.setattr(config, "SFN_MOCK_CONFIG", mock_config_file_path)
+            exec_input = json.dumps({"TopicArn": "topic-arn", "Message": message_body})
+            create_and_record_mocked_execution(
+                aws_client,
+                create_state_machine_iam_role,
+                create_state_machine,
+                sfn_snapshot,
+                definition,
+                exec_input,
+                state_machine_name,
+                test_name,
+            )
 
-        exec_input = json.dumps({"TopicArn": topic_arn, "Message": {"Message": "HelloWorld!"}})
-        create_and_record_execution(
-            aws_client,
-            create_state_machine_iam_role,
-            create_state_machine,
-            sfn_snapshot,
-            definition,
-            exec_input,
+    @markers.aws.validated
+    def test_events_put_events(
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        events_to_sqs_queue,
+        sfn_snapshot,
+        monkeypatch,
+        mock_config_file,
+    ):
+        detail_type = f"detail_type_{short_uid()}"
+        sfn_snapshot.add_transformer(RegexTransformer(detail_type, "detail-type"))
+        entries = [
+            {
+                "Detail": json.dumps({"Message": "string-literal"}),
+                "DetailType": detail_type,
+                "Source": "some.source",
+            }
+        ]
+
+        template = ServicesTemplates.load_sfn_template(ServicesTemplates.EVENTS_PUT_EVENTS)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Entries": entries})
+
+        if is_aws_cloud():
+            event_pattern = {"detail-type": [detail_type]}
+            queue_url = events_to_sqs_queue(event_pattern)
+            sfn_snapshot.add_transformer(RegexTransformer(queue_url, "sqs_queue_url"))
+            create_and_record_execution(
+                aws_client,
+                create_state_machine_iam_role,
+                create_state_machine,
+                sfn_snapshot,
+                definition,
+                exec_input,
+            )
+        else:
+            state_machine_name = f"mocked_state_machine_{short_uid()}"
+            test_name = "TestCaseName"
+            events_200_put_events = MockedResponseLoader.load(
+                MockedResponseLoader.EVENTS_200_PUT_EVENTS
+            )
+            mock_config = {
+                "StateMachines": {
+                    state_machine_name: {
+                        "TestCases": {test_name: {"PutEvents": "events_200_put_events"}}
+                    }
+                },
+                "MockedResponses": {"events_200_put_events": events_200_put_events},
+            }
+            mock_config_file_path = mock_config_file(mock_config)
+            monkeypatch.setattr(config, "SFN_MOCK_CONFIG", mock_config_file_path)
+            create_and_record_mocked_execution(
+                aws_client,
+                create_state_machine_iam_role,
+                create_state_machine,
+                sfn_snapshot,
+                definition,
+                exec_input,
+                state_machine_name,
+                test_name,
+            )
+
+    @markers.aws.validated
+    def test_dynamodb_put_get_item(
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        events_to_sqs_queue,
+        dynamodb_create_table,
+        sfn_snapshot,
+        monkeypatch,
+        mock_config_file,
+    ):
+        template = ServicesTemplates.load_sfn_template(ServicesTemplates.DYNAMODB_PUT_GET_ITEM)
+        definition = json.dumps(template)
+
+        table_name = f"sfn_test_table_{short_uid()}"
+        sfn_snapshot.add_transformer(RegexTransformer(table_name, "table-name"))
+        exec_input = json.dumps(
+            {
+                "TableName": table_name,
+                "Item": {"data": {"S": "string-literal"}, "id": {"S": "id1"}},
+                "Key": {"id": {"S": "id1"}},
+            }
         )
+
+        if is_aws_cloud():
+            dynamodb_create_table(
+                table_name=table_name, partition_key="id", client=aws_client.dynamodb
+            )
+            create_and_record_execution(
+                aws_client,
+                create_state_machine_iam_role,
+                create_state_machine,
+                sfn_snapshot,
+                definition,
+                exec_input,
+            )
+        else:
+            state_machine_name = f"mocked_state_machine_{short_uid()}"
+            test_name = "TestCaseName"
+            dynamodb_200_put_item = MockedResponseLoader.load(
+                MockedResponseLoader.DYNAMODB_200_PUT_ITEM
+            )
+            dynamodb_200_get_item = MockedResponseLoader.load(
+                MockedResponseLoader.DYNAMODB_200_GET_ITEM
+            )
+            mock_config = {
+                "StateMachines": {
+                    state_machine_name: {
+                        "TestCases": {
+                            test_name: {
+                                "PutItem": "dynamodb_200_put_item",
+                                "GetItem": "dynamodb_200_get_item",
+                            }
+                        }
+                    }
+                },
+                "MockedResponses": {
+                    "dynamodb_200_put_item": dynamodb_200_put_item,
+                    "dynamodb_200_get_item": dynamodb_200_get_item,
+                },
+            }
+            mock_config_file_path = mock_config_file(mock_config)
+            monkeypatch.setattr(config, "SFN_MOCK_CONFIG", mock_config_file_path)
+            create_and_record_mocked_execution(
+                aws_client,
+                create_state_machine_iam_role,
+                create_state_machine,
+                sfn_snapshot,
+                definition,
+                exec_input,
+                state_machine_name,
+                test_name,
+            )

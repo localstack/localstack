@@ -19,6 +19,18 @@ class MockedResponseLoader(abc.ABC):
     SQS_200_SEND_MESSAGE: Final[str] = os.path.join(
         _THIS_FOLDER, "mocked_responses/sqs/200_send_message.json5"
     )
+    SNS_200_PUBLISH: Final[str] = os.path.join(
+        _THIS_FOLDER, "mocked_responses/sns/200_publish.json5"
+    )
+    EVENTS_200_PUT_EVENTS: Final[str] = os.path.join(
+        _THIS_FOLDER, "mocked_responses/events/200_put_events.json5"
+    )
+    DYNAMODB_200_PUT_ITEM: Final[str] = os.path.join(
+        _THIS_FOLDER, "mocked_responses/dynamodb/200_put_item.json5"
+    )
+    DYNAMODB_200_GET_ITEM: Final[str] = os.path.join(
+        _THIS_FOLDER, "mocked_responses/dynamodb/200_get_item.json5"
+    )
 
     @staticmethod
     def load(file_path: str) -> dict:
