@@ -1,3 +1,4 @@
+import base64
 import dataclasses
 import inspect
 import json
@@ -40,11 +41,27 @@ STARTED_PROVIDERS = set()
 @dataclasses.dataclass
 class FakeOperation:
     name: str
+    has_event_stream_output: bool = False
+    has_streaming_output = False
 
 
 @dataclasses.dataclass
 class FakeService:
     protocol: str
+    service_name: str
+
+
+@dataclasses.dataclass
+class FakeRequest:
+    scheme: str
+    headers: dict[str, str]
+    path: str
+    remote_addr: str
+    query_string: str
+    environ: dict
+    host: str
+    root_path: str
+    method: str
 
 
 @dataclasses.dataclass
@@ -55,6 +72,7 @@ class JsonContext:
     partition: str
     operation: FakeOperation
     service: FakeService
+    request: FakeRequest
 
 
 def _copy_context(ctx: RequestContext) -> RequestContext:
@@ -75,7 +93,18 @@ def _copy_context_json(ctx: RequestContext) -> JsonContext:
         request_id=ctx.request_id,
         partition=ctx.partition,
         operation=FakeOperation(ctx.operation.name),
-        service=FakeService(ctx.service.protocol),
+        service=FakeService(ctx.service.protocol, service_name=ctx.service.service_name),
+        request=FakeRequest(
+            scheme=ctx.request.scheme,
+            headers=dict(ctx.request.headers),
+            path=ctx.request.path,
+            remote_addr=ctx.request.remote_addr,
+            query_string=ctx.request.query_string.decode("utf-8"),
+            environ={"RAW_URI": ctx.request.environ.get("RAW_URI")},
+            host=ctx.request.host,
+            root_path=ctx.request.root_path,
+            method=ctx.request.method,
+        ),
     )
 
     return ctx_cpy
@@ -220,12 +249,19 @@ class UnixSocketAdapter(HTTPAdapter):
         return UnixSocketHTTPConnectionPool(request.url, self.socket_path, self.timeout)
 
 
-def assure_service_started(service_name: str):
-    if service_name in STARTED_PROVIDERS:
-        return
+def default(obj):
+    if isinstance(obj, bytes):
+        return base64.b64encode(obj).decode("utf-8")
+    raise TypeError
+
+
+def assure_service_started(service_name: str) -> str:
     socket_address = f"/tmp/localstack/{service_name}.sock"
+    if service_name in STARTED_PROVIDERS:
+        return socket_address
     if os.path.exists(socket_address):
-        return
+        STARTED_PROVIDERS.add(service_name)
+        return socket_address
 
     f = None
     try:
@@ -234,8 +270,9 @@ def assure_service_started(service_name: str):
         except OSError:
             LOG.warning("Lock already taken, waiting for socket to spawn...")
             for i in range(10):
-                if os.path.exists(f"/tmp/localstack/{service_name}.sock"):
-                    return
+                if os.path.exists(socket_address):
+                    STARTED_PROVIDERS.add(service_name)
+                    return socket_address
                 time.sleep(1)
             raise Exception(
                 f"Waiting for other process to start service {service_name}, but it did not happen after 10s."
@@ -250,9 +287,18 @@ def assure_service_started(service_name: str):
                 "-w",
                 "1",
                 "localstack.aws.serving.multitwisted:wsgi_app()",
-            ]
+            ],
+            env=dict(os.environ) | {"SERVICE": service_name},
         )
         f.write(str(process.pid))
+        for i in range(10):
+            if os.path.exists(socket_address):
+                STARTED_PROVIDERS.add(service_name)
+                return socket_address
+            time.sleep(1)
+        raise Exception(
+            f"Waiting for this process to start service {service_name}, but it did not happen after 10s."
+        )
     finally:
         if f:
             f.close()
@@ -306,38 +352,38 @@ class Skeleton:
         #     "context": _copy_context(context),
         #     "instance": instance
         # })
-        req = orjson.dumps(
-            {
-                "context": _copy_context_json(context),
-                "instance": instance,
-            }
-        )
-        # req = json.dumps({"op_name": operation.name, "payload": instance}).encode("utf-8")
-        # coro = self._nats_conn.request("services.sqs", b"", timeout=0.5)
-        assure_service_started(context.service.service_name)
-        socket_address = f"/tmp/localstack/{context.service.service_name}.sock"
-        session = requests.Session()
-        session.mount("http+unix://", UnixSocketAdapter(socket_address, timeout=60))
-        response = session.post("http+unix://localhost/", data=req)
-        result = json.loads(response.content)
-        if error := result.get("error"):
-            raise ServiceException(
-                code=error.get("code"),
-                status_code=error.get("status_code"),
-                message=error.get("message"),
-                sender_fault=error.get("sender_fault"),
+        # internal stateless services
+        if context.service.service_name in {"dynamodb", "dynamodbstreams"}:
+            handler = self.dispatch_table[operation.name]
+
+            # Call the appropriate handler
+            result = handler(context, instance) or {}
+
+            # if the service handler returned an HTTP request, forego serialization and return immediately
+            if isinstance(result, Response):
+                return result
+        else:
+            req = orjson.dumps(
+                {
+                    "context": _copy_context_json(context),
+                    "instance": instance,
+                },
+                default=default,
             )
+            socket_address = assure_service_started(context.service.service_name)
+            session = requests.Session()
+            session.mount("http+unix://", UnixSocketAdapter(socket_address, timeout=60))
+            response = session.post("http+unix://localhost/", data=req)
+            result = json.loads(response.content)
+            if error := result.get("error"):
+                raise ServiceException(
+                    code=error.get("code"),
+                    status_code=error.get("status_code"),
+                    message=error.get("message"),
+                    sender_fault=error.get("sender_fault"),
+                )
 
-        result = result.get("response")
-
-        # handler = self.dispatch_table[operation.name]
-        #
-        # # Call the appropriate handler
-        # result = handler(context, instance) or {}
-
-        # if the service handler returned an HTTP request, forego serialization and return immediately
-        # if isinstance(result, Response):
-        #     return result
+            result = result.get("response")
 
         context.service_response = result
 

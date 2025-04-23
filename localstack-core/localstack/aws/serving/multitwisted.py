@@ -1,4 +1,3 @@
-import dataclasses
 import json
 import multiprocessing as mp
 import os
@@ -11,53 +10,32 @@ from twisted.internet.tcp import Port
 
 from localstack.aws.api import ServiceException
 from localstack.aws.app import LocalstackAwsGateway
-from localstack.aws.skeleton import create_dispatch_table
+from localstack.aws.skeleton import (
+    FakeOperation,
+    FakeRequest,
+    FakeService,
+    JsonContext,
+    create_dispatch_table,
+)
 from localstack.config import HostAndPort
-from localstack.services.sqs.provider import SqsProvider
+from localstack.services.moto import MotoFallbackDispatcher
 from localstack.utils.patch import patch
 
 from .twisted import serve_gateway
 
 
-@dataclasses.dataclass
-class FakeRequest:
-    scheme: str
-
-
-fake_req = FakeRequest(scheme="http")
-
-
-@dataclasses.dataclass
-class FakeOperation:
-    name: str
-
-
-@dataclasses.dataclass
-class FakeService:
-    protocol: str
-
-
-@dataclasses.dataclass
-class JsonContext:
-    account_id: str
-    region: str
-    request_id: str
-    partition: str
-    operation: FakeOperation
-    service: FakeService
-    request: FakeRequest
-
-
 class ServiceWsgiApp:
-    def __init__(self, provider):
+    def __init__(self, provider, dispatch_table_factory):
         self.provider = provider
-        self._dispatch_table = create_dispatch_table(provider)
+        self._dispatch_table = dispatch_table_factory(provider)
 
     def _invoke_orjson(self, payload: bytes):
         req = orjson.loads(payload)
-        context = JsonContext(**req["context"], request=fake_req)
+        context = JsonContext(**req["context"])
         context.service = FakeService(**context.service)
         context.operation = FakeOperation(**context.operation)
+        context.request = FakeRequest(**context.request)
+        context.request.query_string = context.request.query_string.encode("utf-8")
 
         instance = req["instance"]
         handler = self._dispatch_table[context.operation.name]
@@ -79,10 +57,37 @@ class ServiceWsgiApp:
 
 
 def wsgi_app():
-    provider = SqsProvider()
-    # provider.on_after_init()
-    # provider.on_before_start()
-    return ServiceWsgiApp(provider)
+    service_name = os.environ.get("SERVICE")
+    if not service_name:
+        raise ValueError("No service name set")
+    match service_name:
+        case "sqs":
+            from localstack.services.sqs.provider import SqsProvider
+
+            provider = SqsProvider()
+        case "dynamodb":
+            from localstack.services.dynamodb.provider import DynamoDBProvider
+
+            provider = DynamoDBProvider()
+        case "s3":
+            from localstack.services.s3.provider import S3Provider
+
+            provider = S3Provider()
+        case "sns":
+            from localstack.services.sns.provider import SnsProvider
+
+            provider = SnsProvider()
+        case _:
+            raise ValueError(f"Unknown service name {service_name}")
+    if hasattr(provider, "on_after_init"):
+        provider.on_after_init()
+    if hasattr(provider, "on_before_start"):
+        provider.on_before_start()
+    if service_name in {"sns"}:
+        dispatch_table_factory = MotoFallbackDispatcher
+    else:
+        dispatch_table_factory = create_dispatch_table
+    return ServiceWsgiApp(provider, dispatch_table_factory=dispatch_table_factory)
 
 
 @patch(target=Port.createInternetSocket)

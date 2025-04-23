@@ -1,6 +1,7 @@
 import logging
 import os
 import threading
+import time
 
 from localstack import config
 from localstack.aws.connect import connect_externally_to
@@ -82,8 +83,33 @@ class DynamodbServer(Server):
         """Start the DynamoDB server."""
 
         # We want this method to be idempotent.
-        if self.is_running() and self.is_up():
+        try:
+            if self.health():
+                self._started.set()
+                return True
+        except Exception:
+            pass
+
+        f = None
+        try:
+            f = open("/tmp/localstack/dynamodb.lock", mode="x")
+        except OSError:
+            LOG.debug("Dynamodb server lock present - assuming it is already starting...")
+            for i in range(10):
+                try:
+                    if self.health():
+                        self._started.set()
+                        return True
+                except Exception:
+                    pass
+                time.sleep(1)
+            LOG.debug("Waiting for startup failed...")
+            self._started.set()
             return True
+        finally:
+            if f:
+                f.close()
+        LOG.debug("Starting dynamodb")
 
         # For the v2 provider, the DynamodbServer has been made a singleton. Yet, the Server abstraction is modelled
         # after threading.Thread, where Start -> Stop -> Start is not allowed. This flow happens during state resets.
@@ -198,10 +224,11 @@ class DynamodbServer(Server):
         t.start()
         return t
 
-    def check_dynamodb(self, expect_shutdown: bool = False) -> None:
+    def check_dynamodb(self, expect_shutdown: bool = False) -> bool:
         """Checks if DynamoDB server is up"""
         out = None
 
+        status = False
         try:
             self.wait_is_up()
             out = connect_externally_to(
@@ -209,12 +236,14 @@ class DynamodbServer(Server):
                 aws_access_key_id=DEFAULT_AWS_ACCOUNT_ID,
                 aws_secret_access_key=DEFAULT_AWS_ACCOUNT_ID,
             ).dynamodb.list_tables()
+            status = True
         except Exception:
             LOG.exception("DynamoDB health check failed")
         if expect_shutdown:
             assert out is None
         else:
             assert isinstance(out["TableNames"], list)
+        return status
 
     def wait_for_dynamodb(self) -> None:
         retry(self.check_dynamodb, sleep=0.4, retries=10)

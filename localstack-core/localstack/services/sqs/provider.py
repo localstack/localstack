@@ -1931,18 +1931,14 @@ def message_filter_message_attributes(message: Message, names: Optional[MessageA
 
 
 def extract_message_count_from_headers(context: RequestContext) -> int | None:
-    if override := context.request.headers.get(
-        HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT, default=None, type=int
-    ):
-        return override
+    if override := context.request.headers.get(HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT):
+        return int(override)
 
     return None
 
 
 def extract_wait_time_seconds_from_headers(context: RequestContext) -> int | None:
-    if override := context.request.headers.get(
-        HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS, default=None, type=int
-    ):
-        return override
+    if override := context.request.headers.get(HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS):
+        return int(override)
 
     return None
