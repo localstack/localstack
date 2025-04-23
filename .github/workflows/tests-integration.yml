@@ -12,11 +12,11 @@ on:
         required: false
         type: boolean
         default: false
-      pytest_loglevel:
-        description: "PyTest log level"
-        default: "WARNING"
-        required: false
+      PYTEST_LOGLEVEL:
         type: string
+        required: false
+        description: Loglevel for PyTest
+        default: WARNING
       disableTestSelection:
         description: 'Disable Test Selection'
         required: false
@@ -27,14 +27,14 @@ on:
         default: false
         required: false
         type: boolean
-      only-acceptance-tests:
+      onlyAcceptanceTests:
         description: "Run only acceptance tests"
         default: false
         required: false
         type: boolean
 
 env:
-  PYTEST_LOGLEVEL: ${{ inputs.pytest_loglevel || 'WARNING' }}
+  PYTEST_LOGLEVEL: ${{ inputs.PYTEST_LOGLEVEL || 'WARNING' }}
   IMAGE_NAME: "localstack/localstack"
   TINYBIRD_DATASOURCE: "community_tests"
   TESTSELECTION_PYTEST_ARGS: "${{ !inputs.disableTestSelection && '--path-filter=../../dist/testselection/test-selection.txt ' || '' }}"
@@ -44,7 +44,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  preflight:
+  test-preflight:
+    name: "Preflight & Unit-Tests"
     runs-on: ubuntu-latest
     steps:
       # <-- Consider changing to composite action
@@ -60,20 +61,6 @@ jobs:
           python-version-file: '.python-version'
           cache: 'pip'
           cache-dependency-path: 'requirements-dev.txt'
-
-      - name: Determine Test Selection
-        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        run: |
-          if [ -z "${{ github.event.pull_request.base.sha }}" ]; then
-            echo "Do test selection based on branch name"
-          else
-            echo "Do test selection based on Pull Request event"
-            SCRIPT_OPTS="--base-commit-sha ${{ github.event.pull_request.base.sha }} --head-commit-sha ${{ github.event.pull_request.head.sha }}"
-          fi
-          source .venv/bin/activate
-          python -m localstack.testing.testselection.scripts.generate_test_selection $(pwd) dist/testselection/test-selection.txt $SCRIPT_OPTS
-          echo "Test selection:"
-          cat dist/testselection/test-selection.txt
 
       - name: Install Community Dependencies
         run: make install-dev
@@ -92,10 +79,50 @@ jobs:
       - name: Check AWS compatibility markers
         run: make check-aws-markers
 
+      - name: Determine Test Selection
+        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
+        run: |
+          source .venv/bin/activate
+          if [ -z "${{ github.event.pull_request.base.sha }}" ]; then
+            echo "Do test selection based on branch name"
+          else
+            echo "Do test selection based on Pull Request event"
+            SCRIPT_OPTS="--base-commit-sha ${{ github.event.pull_request.base.sha }} --head-commit-sha ${{ github.event.pull_request.head.sha }}"
+          fi
+          source .venv/bin/activate
+          python -m localstack.testing.testselection.scripts.generate_test_selection $(pwd) dist/testselection/test-selection.txt $SCRIPT_OPTS
+          echo "Test selection:"
+          cat dist/testselection/test-selection.txt
+
+      - name: Run Unit Tests
+        timeout-minutes: 8
+        env:
+          # add the GitHub API token to avoid rate limit issues
+          #GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEBUG: 1
+          TEST_PATH: "tests/unit"
+          JUNIT_REPORTS_FILE: "pytest-junit-unit.xml"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} -o junit_suite_name=unit-tests"
+          COVERAGE_FILE: ".coverage.unit"
+          # Set job-specific environment variables for pytest-tinybird
+          CI_JOB_NAME: ${{ github.job }}-unit
+          CI_JOB_ID: ${{ github.job }}-unit
+        run: make test-coverage
+
+      - name: Archive Test Results
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: test-results-preflight
+          path: |
+            localstack-core/pytest-junit-unit.xml
+            localstack-core/.coverage.unit
+          retention-days: 30
+
   build:
     name: "Build Docker Image (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }})"
     needs:
-      - preflight
+      - test-preflight
     strategy:
       matrix:
         runner:
@@ -126,8 +153,10 @@ jobs:
     if: ${{ !inputs.onlyAcceptanceTests }}
     needs:
       - build
+      - test-preflight
     strategy:
       matrix:
+        group: [ 1 ]
         runner:
           - ubuntu-latest
           - ubuntu-24.04-arm
@@ -176,13 +205,13 @@ jobs:
       - name: Download Docker Image
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.build.outputs.image-artifact-name }}
+          name: localstack-docker-image-${{ env.PLATFORM }}
 
       - name: Install docker helper dependencies
         run: pip install --upgrade setuptools setuptools_scm
 
       - name: Load Docker Image
-        run: docker-helper.sh load
+        run: bin/docker-helper.sh load
 
 #      - name: Download Test Selection
 #        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
@@ -196,7 +225,7 @@ jobs:
         env:
           # add the GitHub API token to avoid rate limit issues
           #GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }}${{ inputs.additionalIntegrationTestPytestArgs }} --splits 2 --group ${{ matrix.group }} --store-durations --clean-durations --instafail --ignore=tests/unit/ --ignore=tests/bootstrap"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --splits 2 --group ${{ matrix.group }} --store-durations --clean-durations --ignore=tests/unit/ --ignore=tests/bootstrap"
           COVERAGE_FILE: ".coverage.main-${{ env.PLATFORM }}-${{ matrix.group }}"
           JUNIT_REPORTS_FILE: "pytest-junit-main-${{ env.PLATFORM }}-${{ matrix.group }}.xml"
 #          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
