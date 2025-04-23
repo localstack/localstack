@@ -3171,6 +3171,7 @@ class ServiceConnectivityType(StrEnum):
 class ServiceManaged(StrEnum):
     alb = "alb"
     nlb = "nlb"
+    rnat = "rnat"
 
 
 class ServiceState(StrEnum):
@@ -6104,6 +6105,14 @@ class ClientLoginBannerResponseOptions(TypedDict, total=False):
     BannerText: Optional[String]
 
 
+class ClientRouteEnforcementOptions(TypedDict, total=False):
+    Enforced: Optional[Boolean]
+
+
+class ClientRouteEnforcementResponseOptions(TypedDict, total=False):
+    Enforced: Optional[Boolean]
+
+
 class FederatedAuthentication(TypedDict, total=False):
     SamlProviderArn: Optional[String]
     SelfServiceSamlProviderArn: Optional[String]
@@ -6202,6 +6211,7 @@ class ClientVpnEndpoint(TypedDict, total=False):
     ClientConnectOptions: Optional[ClientConnectResponseOptions]
     SessionTimeoutHours: Optional[Integer]
     ClientLoginBannerOptions: Optional[ClientLoginBannerResponseOptions]
+    ClientRouteEnforcementOptions: Optional[ClientRouteEnforcementResponseOptions]
     DisconnectOnSessionTimeout: Optional[Boolean]
 
 
@@ -6551,6 +6561,7 @@ class CreateClientVpnEndpointRequest(ServiceRequest):
     ClientConnectOptions: Optional[ClientConnectOptions]
     SessionTimeoutHours: Optional[Integer]
     ClientLoginBannerOptions: Optional[ClientLoginBannerOptions]
+    ClientRouteEnforcementOptions: Optional[ClientRouteEnforcementOptions]
     DisconnectOnSessionTimeout: Optional[Boolean]
 
 
@@ -18054,6 +18065,7 @@ class ModifyClientVpnEndpointRequest(ServiceRequest):
     ClientConnectOptions: Optional[ClientConnectOptions]
     SessionTimeoutHours: Optional[Integer]
     ClientLoginBannerOptions: Optional[ClientLoginBannerOptions]
+    ClientRouteEnforcementOptions: Optional[ClientRouteEnforcementOptions]
     DisconnectOnSessionTimeout: Optional[Boolean]
 
 
@@ -20993,6 +21005,7 @@ class Ec2Api:
         client_connect_options: ClientConnectOptions = None,
         session_timeout_hours: Integer = None,
         client_login_banner_options: ClientLoginBannerOptions = None,
+        client_route_enforcement_options: ClientRouteEnforcementOptions = None,
         disconnect_on_session_timeout: Boolean = None,
         **kwargs,
     ) -> CreateClientVpnEndpointResult:
@@ -26572,6 +26585,7 @@ class Ec2Api:
         client_connect_options: ClientConnectOptions = None,
         session_timeout_hours: Integer = None,
         client_login_banner_options: ClientLoginBannerOptions = None,
+        client_route_enforcement_options: ClientRouteEnforcementOptions = None,
         disconnect_on_session_timeout: Boolean = None,
         **kwargs,
     ) -> ModifyClientVpnEndpointResult:

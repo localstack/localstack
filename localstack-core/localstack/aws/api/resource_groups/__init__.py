@@ -287,6 +287,7 @@ class GetTagSyncTaskOutput(TypedDict, total=False):
     TaskArn: Optional[TagSyncTaskArn]
     TagKey: Optional[TagKey]
     TagValue: Optional[TagValue]
+    ResourceQuery: Optional[ResourceQuery]
     RoleArn: Optional[RoleArn]
     Status: Optional[TagSyncTaskStatus]
     ErrorMessage: Optional[ErrorMessage]
@@ -463,6 +464,7 @@ class TagSyncTaskItem(TypedDict, total=False):
     TaskArn: Optional[TagSyncTaskArn]
     TagKey: Optional[TagKey]
     TagValue: Optional[TagValue]
+    ResourceQuery: Optional[ResourceQuery]
     RoleArn: Optional[RoleArn]
     Status: Optional[TagSyncTaskStatus]
     ErrorMessage: Optional[ErrorMessage]
@@ -500,8 +502,9 @@ class SearchResourcesOutput(TypedDict, total=False):
 
 class StartTagSyncTaskInput(ServiceRequest):
     Group: GroupStringV2
-    TagKey: TagKey
-    TagValue: TagValue
+    TagKey: Optional[TagKey]
+    TagValue: Optional[TagValue]
+    ResourceQuery: Optional[ResourceQuery]
     RoleArn: RoleArn
 
 
@@ -511,6 +514,7 @@ class StartTagSyncTaskOutput(TypedDict, total=False):
     TaskArn: Optional[TagSyncTaskArn]
     TagKey: Optional[TagKey]
     TagValue: Optional[TagValue]
+    ResourceQuery: Optional[ResourceQuery]
     RoleArn: Optional[RoleArn]
 
 
@@ -738,9 +742,10 @@ class ResourceGroupsApi:
         self,
         context: RequestContext,
         group: GroupStringV2,
-        tag_key: TagKey,
-        tag_value: TagValue,
         role_arn: RoleArn,
+        tag_key: TagKey = None,
+        tag_value: TagValue = None,
+        resource_query: ResourceQuery = None,
         **kwargs,
     ) -> StartTagSyncTaskOutput:
         raise NotImplementedError
