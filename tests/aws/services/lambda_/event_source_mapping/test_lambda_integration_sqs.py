@@ -1105,10 +1105,10 @@ class TestSQSEventSourceMapping:
                 messages_to_delete.append(
                     {"Id": message["MessageId"], "ReceiptHandle": message["ReceiptHandle"]}
                 )
-
-            aws_client.sqs.delete_message_batch(
-                QueueUrl=destination_queue_url, Entries=messages_to_delete
-            )
+            if messages_to_delete:
+                aws_client.sqs.delete_message_batch(
+                    QueueUrl=destination_queue_url, Entries=messages_to_delete
+                )
             assert sum([len(batch) for batch in batches]) == 15
             return [message for batch in batches for message in batch]
 
