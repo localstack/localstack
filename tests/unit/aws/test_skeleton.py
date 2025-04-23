@@ -200,8 +200,11 @@ def test_skeleton_e2e_sqs_send_message():
     [
         (
             TestSqsApiNotImplemented(),
-            "API action 'SendMessage' for service 'sqs' not yet implemented or pro feature"
-            " - please check https://docs.localstack.cloud/references/coverage/coverage_sqs/ for further information",
+            (
+                "The API action 'SendMessage' for service 'sqs' is either not available "
+                "in your current license plan or has not yet been emulated by LocalStack. "
+                "Please refer to https://docs.localstack.cloud/references/coverage/coverage_sqs for more information."
+            ),
         ),
         (
             TestSqsApiNotImplementedWithMessage(),
@@ -312,8 +315,11 @@ def test_dispatch_missing_method_returns_internal_failure():
     assert "Error" in parsed_response
     assert parsed_response["Error"] == {
         "Code": "InternalFailure",
-        "Message": "API action 'DeleteQueue' for service 'sqs' not yet implemented or pro feature - please check "
-        "https://docs.localstack.cloud/references/coverage/coverage_sqs/ for further information",
+        "Message": (
+            "The API action 'DeleteQueue' for service 'sqs' is either not available in your "
+            "current license plan or has not yet been emulated by LocalStack. "
+            "Please refer to https://docs.localstack.cloud/references/coverage/coverage_sqs for more information."
+        ),
     }
 
 
