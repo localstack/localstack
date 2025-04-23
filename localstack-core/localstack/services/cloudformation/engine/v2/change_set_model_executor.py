@@ -58,17 +58,13 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             logical_resource_id=resource_logical_id, resolved_resources=after_resolved_resources
         )
 
-    def _current_resource_physical_id(self, resource_logical_id: str) -> str:
-        before_physical_id = self._before_resource_physical_id(resource_logical_id)
-        after_physical_id = self._after_resource_physical_id(resource_logical_id)
-        if before_physical_id is None and after_physical_id is None:
-            raise RuntimeError(f"No PhysicalResourceId for '{resource_logical_id}'")
-        current_physical_id = after_physical_id or before_physical_id
-        return current_physical_id
-
     def visit_node_resource(
         self, node_resource: NodeResource
     ) -> PreprocEntityDelta[PreprocResource, PreprocResource]:
+        """
+        Overrides the default preprocessing for NodeResource objects by annotating the
+        `after` delta with the physical resource ID, if side effects resulted in an update.
+        """
         delta = super().visit_node_resource(node_resource=node_resource)
         self._execute_on_resource_change(
             name=node_resource.name, before=delta.before, after=delta.after
@@ -76,9 +72,13 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         after_resource = delta.after
         if after_resource is not None and delta.before != delta.after:
             after_logical_id = after_resource.logical_id
-            after_physical_id = self._current_resource_physical_id(
+            after_physical_id: Optional[str] = self._after_resource_physical_id(
                 resource_logical_id=after_logical_id
             )
+            if after_physical_id is None:
+                raise RuntimeError(
+                    f"No PhysicalResourceId was found for resource '{after_physical_id}' post-update."
+                )
             after_resource.physical_resource_id = after_physical_id
         return delta
 
