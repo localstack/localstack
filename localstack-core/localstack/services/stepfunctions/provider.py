@@ -150,6 +150,10 @@ from localstack.services.stepfunctions.backend.store import SFNStore, sfn_stores
 from localstack.services.stepfunctions.backend.test_state.execution import (
     TestStateExecution,
 )
+from localstack.services.stepfunctions.mocking.mock_config import (
+    MockTestCase,
+    load_mock_test_case_for,
+)
 from localstack.services.stepfunctions.stepfunctions_utils import (
     assert_pagination_parameters_valid,
     get_next_page_token_from_arn,
@@ -180,7 +184,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         visitor.visit(sfn_stores)
 
     _STATE_MACHINE_ARN_REGEX: Final[re.Pattern] = re.compile(
-        rf"{ARN_PARTITION_REGEX}:states:[a-z0-9-]+:[0-9]{{12}}:stateMachine:[a-zA-Z0-9-_.]+(:\d+)?(:[a-zA-Z0-9-_.]+)*$"
+        rf"{ARN_PARTITION_REGEX}:states:[a-z0-9-]+:[0-9]{{12}}:stateMachine:[a-zA-Z0-9-_.]+(:\d+)?(:[a-zA-Z0-9-_.]+)*(?:#[a-zA-Z0-9-_]+)?$"
     )
 
     _STATE_MACHINE_EXECUTION_ARN_REGEX: Final[re.Pattern] = re.compile(
@@ -779,6 +783,12 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     ) -> StartExecutionOutput:
         self._validate_state_machine_arn(state_machine_arn)
 
+        state_machine_arn_parts = state_machine_arn.split("#")
+        state_machine_arn = state_machine_arn_parts[0]
+        mock_test_case_name = (
+            state_machine_arn_parts[1] if len(state_machine_arn_parts) == 2 else None
+        )
+
         store = self.get_store(context=context)
 
         alias: Optional[Alias] = store.aliases.get(state_machine_arn)
@@ -832,6 +842,18 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                 configuration=state_machine_clone.cloud_watch_logging_configuration,
             )
 
+        mock_test_case: Optional[MockTestCase] = None
+        if mock_test_case_name is not None:
+            state_machine_name = state_machine_clone.name
+            mock_test_case = load_mock_test_case_for(
+                state_machine_name=state_machine_name, test_case_name=mock_test_case_name
+            )
+            if mock_test_case is None:
+                raise InvalidName(
+                    f"Invalid mock test case name '{mock_test_case_name}' "
+                    f"for state machine '{state_machine_name}'"
+                )
+
         execution = Execution(
             name=exec_name,
             sm_type=state_machine_clone.sm_type,
@@ -846,6 +868,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             input_data=input_data,
             trace_header=trace_header,
             activity_store=self.get_store(context).activities,
+            mock_test_case=mock_test_case,
         )
 
         store.executions[exec_arn] = execution

@@ -383,6 +383,7 @@ def create_state_machine_with_iam_role(
     snapshot,
     definition: Definition,
     logging_configuration: Optional[LoggingConfiguration] = None,
+    state_machine_name: Optional[str] = None,
 ):
     snf_role_arn = create_state_machine_iam_role(target_aws_client=target_aws_client)
     snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
@@ -396,7 +397,7 @@ def create_state_machine_with_iam_role(
         RegexTransformer("Request ID: [a-zA-Z0-9-]+", "Request ID: <request_id>")
     )
 
-    sm_name: str = f"statemachine_create_and_record_execution_{short_uid()}"
+    sm_name: str = state_machine_name or f"statemachine_create_and_record_execution_{short_uid()}"
     create_arguments = {
         "name": sm_name,
         "definition": definition,
@@ -431,6 +432,42 @@ def launch_and_record_execution(
     if verify_execution_description:
         describe_execution = stepfunctions_client.describe_execution(executionArn=execution_arn)
         sfn_snapshot.match("describe_execution", describe_execution)
+
+    get_execution_history = stepfunctions_client.get_execution_history(executionArn=execution_arn)
+
+    # Transform all map runs if any.
+    try:
+        map_run_arns = extract_json("$..mapRunArn", get_execution_history)
+        if isinstance(map_run_arns, str):
+            map_run_arns = [map_run_arns]
+        for i, map_run_arn in enumerate(list(set(map_run_arns))):
+            sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_map_run_arn(map_run_arn, i))
+    except NoSuchJsonPathError:
+        # No mapRunArns
+        pass
+
+    sfn_snapshot.match("get_execution_history", get_execution_history)
+
+    return execution_arn
+
+
+def launch_and_record_mocked_execution(
+    target_aws_client,
+    sfn_snapshot,
+    state_machine_arn,
+    execution_input,
+    test_name,
+) -> LongArn:
+    stepfunctions_client = target_aws_client.stepfunctions
+    exec_resp = stepfunctions_client.start_execution(
+        stateMachineArn=f"{state_machine_arn}#{test_name}", input=execution_input
+    )
+    sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
+    execution_arn = exec_resp["executionArn"]
+
+    await_execution_terminated(
+        stepfunctions_client=stepfunctions_client, execution_arn=execution_arn
+    )
 
     get_execution_history = stepfunctions_client.get_execution_history(executionArn=execution_arn)
 
@@ -510,6 +547,29 @@ def create_and_record_execution(
         state_machine_arn,
         execution_input,
         verify_execution_description,
+    )
+
+
+def create_and_record_mocked_execution(
+    target_aws_client,
+    create_state_machine_iam_role,
+    create_state_machine,
+    sfn_snapshot,
+    definition,
+    execution_input,
+    state_machine_name,
+    test_name,
+):
+    state_machine_arn = create_state_machine_with_iam_role(
+        target_aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        definition,
+        state_machine_name=state_machine_name,
+    )
+    launch_and_record_mocked_execution(
+        target_aws_client, sfn_snapshot, state_machine_arn, execution_input, test_name
     )
 
 

@@ -94,7 +94,6 @@ class PreprocResource:
         return all(
             [
                 self.logical_id == other.logical_id,
-                # TODO: compare the physical id too?
                 self._compare_conditions(self.condition, other.condition),
                 self.resource_type == other.resource_type,
                 self.properties == other.properties,

@@ -1,21 +1,14 @@
-import io
-import tarfile
-import zipfile
-from subprocess import Popen
-from typing import IO, Optional
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
-
 import glob
+import io
 import logging
 import os
 import re
+import tarfile
 import tempfile
 import time
-from typing import Union
+import zipfile
+from subprocess import Popen
+from typing import IO, Literal, Optional, Union
 
 from localstack.constants import MAVEN_REPO_URL
 from localstack.utils.files import load_file, mkdir, new_tmp_file, rm_rf, save_file
@@ -177,7 +170,13 @@ def upgrade_jar_file(base_dir: str, file_glob: str, maven_asset: str):
     download(maven_asset_url, target_file)
 
 
-def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archive=None):
+def download_and_extract(
+    archive_url: str,
+    target_dir: str,
+    retries: Optional[int] = 0,
+    sleep: Optional[int] = 3,
+    tmp_archive: Optional[str] = None,
+) -> None:
     mkdir(target_dir)
 
     _, ext = os.path.splitext(tmp_archive or archive_url)
