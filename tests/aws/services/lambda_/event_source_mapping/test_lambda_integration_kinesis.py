@@ -26,6 +26,7 @@ from tests.aws.services.lambda_.event_source_mapping.utils import (
 )
 from tests.aws.services.lambda_.functions import FUNCTIONS_PATH, lambda_integration
 from tests.aws.services.lambda_.test_lambda import (
+    TEST_LAMBDA_EVENT_SOURCE_MAPPING_SEND_MESSAGE,
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
 )
@@ -35,6 +36,7 @@ TEST_LAMBDA_KINESIS_LOG = FUNCTIONS_PATH / "kinesis_log.py"
 TEST_LAMBDA_KINESIS_BATCH_ITEM_FAILURE = (
     FUNCTIONS_PATH / "lambda_report_batch_item_failures_kinesis.py"
 )
+TEST_LAMBDA_ECHO_FAILURE = FUNCTIONS_PATH / "lambda_echofail.py"
 TEST_LAMBDA_PROVIDED_BOOTSTRAP_EMPTY = FUNCTIONS_PATH / "provided_bootstrap_empty"
 
 
@@ -1053,6 +1055,228 @@ class TestKinesisSource:
 
         invocation_events = retry(_verify_messages_received, retries=30, sleep=5)
         snapshot.match("kinesis_events", invocation_events)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # FIXME: Generate and send a requestContext in StreamPoller for RecordAgeExceeded
+            # which contains no responseContext object.
+            "$..Messages..Body.requestContext",
+            "$..Messages..MessageId",  # Skip while no requestContext generated in StreamPoller due to transformation issues
+        ]
+    )
+    @pytest.mark.parametrize(
+        "processing_delay_seconds, max_retries",
+        [
+            # The record expired while retrying
+            pytest.param(0, -1, id="expire-while-retrying"),
+            # The record expired prior to arriving (no retries expected)
+            pytest.param(60, 0, id="expire-before-ingestion"),
+        ],
+    )
+    def test_kinesis_maximum_record_age_exceeded(
+        self,
+        create_lambda_function,
+        kinesis_create_stream,
+        sqs_get_queue_arn,
+        create_event_source_mapping,
+        lambda_su_role,
+        wait_for_stream_ready,
+        snapshot,
+        aws_client,
+        region_name,
+        sqs_create_queue,
+        monkeypatch,
+        # Parametrized arguments
+        processing_delay_seconds,
+        max_retries,
+    ):
+        # snapshot setup
+        snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
+        snapshot.add_transformer(snapshot.transform.key_value("ReceiptHandle"))
+        snapshot.add_transformer(snapshot.transform.key_value("startSequenceNumber"))
+
+        function_name = f"lambda_func-{short_uid()}"
+        stream_name = f"test-kinesis-{short_uid()}"
+
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        wait_for_stream_ready(stream_name=stream_name)
+        stream_summary = aws_client.kinesis.describe_stream_summary(StreamName=stream_name)
+        assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 1
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
+
+        aws_client.kinesis.put_record(
+            Data="stream-data",
+            PartitionKey="test",
+            StreamName=stream_name,
+        )
+
+        if processing_delay_seconds > 0:
+            # Optionally delay the ESM creation, allowing a record to expire prior to being ingested.
+            time.sleep(processing_delay_seconds)
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FAILURE,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
+
+        # Use OnFailure config with a DLQ to minimise flakiness instead of relying on Cloudwatch logs
+        queue_event_source_mapping = sqs_create_queue()
+        destination_queue = sqs_get_queue_arn(queue_event_source_mapping)
+        destination_config = {"OnFailure": {"Destination": destination_queue}}
+
+        create_event_source_mapping_response = create_event_source_mapping(
+            FunctionName=function_name,
+            BatchSize=1,
+            StartingPosition="TRIM_HORIZON",
+            EventSourceArn=stream_arn,
+            MaximumBatchingWindowInSeconds=1,
+            MaximumRetryAttempts=max_retries,
+            MaximumRecordAgeInSeconds=60,
+            DestinationConfig=destination_config,
+        )
+        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
+        event_source_mapping_uuid = create_event_source_mapping_response["UUID"]
+        _await_event_source_mapping_enabled(aws_client.lambda_, event_source_mapping_uuid)
+
+        def _verify_failure_received():
+            result = aws_client.sqs.receive_message(QueueUrl=queue_event_source_mapping)
+            assert result.get("Messages")
+            return result
+
+        sleep = 15 if is_aws_cloud() else 5
+        record_age_exceeded_payload = retry(
+            _verify_failure_received, retries=30, sleep=sleep, sleep_before=5
+        )
+        snapshot.match("record_age_exceeded_payload", record_age_exceeded_payload)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # FIXME: Generate and send a requestContext in StreamPoller for RecordAgeExceeded
+            # which contains no responseContext object.
+            "$..Messages..Body.requestContext",
+            "$..Messages..MessageId",  # Skip while no requestContext generated in StreamPoller due to transformation issues
+        ]
+    )
+    def test_kinesis_maximum_record_age_exceeded_discard_records(
+        self,
+        create_lambda_function,
+        kinesis_create_stream,
+        sqs_get_queue_arn,
+        create_event_source_mapping,
+        lambda_su_role,
+        wait_for_stream_ready,
+        snapshot,
+        aws_client,
+        sqs_create_queue,
+    ):
+        # snapshot setup
+        snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
+        snapshot.add_transformer(snapshot.transform.key_value("ReceiptHandle"))
+        snapshot.add_transformer(snapshot.transform.key_value("startSequenceNumber"))
+
+        function_name = f"lambda_func-{short_uid()}"
+        stream_name = f"test-kinesis-{short_uid()}"
+
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        wait_for_stream_ready(stream_name=stream_name)
+        stream_summary = aws_client.kinesis.describe_stream_summary(StreamName=stream_name)
+        assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 1
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
+
+        aws_client.kinesis.put_record(
+            Data="stream-data",
+            PartitionKey="test",
+            StreamName=stream_name,
+        )
+
+        # Ensure that the first record has expired
+        time.sleep(60)
+
+        # The first record in the batch has expired with the remaining batch not exceeding any age-limits.
+        for i in range(5):
+            aws_client.kinesis.put_record(
+                Data=f"stream-data-{i + 1}",
+                PartitionKey="test",
+                StreamName=stream_name,
+            )
+
+        destination_queue_url = sqs_create_queue()
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_EVENT_SOURCE_MAPPING_SEND_MESSAGE,
+            runtime=Runtime.python3_12,
+            envvars={"SQS_QUEUE_URL": destination_queue_url},
+            role=lambda_su_role,
+        )
+
+        # Use OnFailure config with a DLQ to minimise flakiness instead of relying on Cloudwatch logs
+        dead_letter_queue = sqs_create_queue()
+        dead_letter_queue_arn = sqs_get_queue_arn(dead_letter_queue)
+        destination_config = {"OnFailure": {"Destination": dead_letter_queue_arn}}
+
+        create_event_source_mapping_response = create_event_source_mapping(
+            FunctionName=function_name,
+            BatchSize=10,
+            StartingPosition="TRIM_HORIZON",
+            EventSourceArn=stream_arn,
+            MaximumBatchingWindowInSeconds=1,
+            MaximumRetryAttempts=0,
+            MaximumRecordAgeInSeconds=60,
+            DestinationConfig=destination_config,
+        )
+        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
+        event_source_mapping_uuid = create_event_source_mapping_response["UUID"]
+        _await_event_source_mapping_enabled(aws_client.lambda_, event_source_mapping_uuid)
+
+        def _verify_failure_received():
+            result = aws_client.sqs.receive_message(QueueUrl=dead_letter_queue)
+            assert result.get("Messages")
+            return result
+
+        batches = []
+
+        def _verify_events_received(expected: int):
+            messages_to_delete = []
+            receive_message_response = aws_client.sqs.receive_message(
+                QueueUrl=destination_queue_url,
+                MaxNumberOfMessages=10,
+                VisibilityTimeout=120,
+                WaitTimeSeconds=5 if is_aws_cloud() else 1,
+            )
+            messages = receive_message_response.get("Messages", [])
+            for message in messages:
+                received_batch = json.loads(message["Body"])
+                batches.append(received_batch)
+                messages_to_delete.append(
+                    {"Id": message["MessageId"], "ReceiptHandle": message["ReceiptHandle"]}
+                )
+            if messages_to_delete:
+                aws_client.sqs.delete_message_batch(
+                    QueueUrl=destination_queue_url, Entries=messages_to_delete
+                )
+            assert sum([len(batch) for batch in batches]) == expected
+            return [message for batch in batches for message in batch]
+
+        sleep = 15 if is_aws_cloud() else 5
+        record_age_exceeded_payload = retry(
+            _verify_failure_received, retries=15, sleep=sleep, sleep_before=5
+        )
+        snapshot.match("record_age_exceeded_payload", record_age_exceeded_payload)
+
+        # While 6 records were sent, we expect 5 records since the first
+        # record should have expired and been discarded.
+        kinesis_events = retry(
+            _verify_events_received, retries=30, sleep=sleep, sleep_before=5, expected=5
+        )
+        snapshot.match("Records", kinesis_events)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(

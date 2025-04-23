@@ -1,8 +1,9 @@
 import abc
 import logging
+import time
 from concurrent.futures import CancelledError, Future
 from http import HTTPStatus
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import requests
 from werkzeug import Request
@@ -10,6 +11,7 @@ from werkzeug import Request
 from localstack.http import Response, route
 from localstack.services.edge import ROUTER
 from localstack.services.lambda_.invocation.lambda_models import InvocationResult
+from localstack.utils.backoff import ExponentialBackoff
 from localstack.utils.lambda_debug_mode.lambda_debug_mode import (
     DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS,
     is_lambda_debug_mode,
@@ -192,7 +194,9 @@ class ExecutorEndpoint(Endpoint):
         invocation_url = f"http://{self.container_address}:{self.container_port}/invoke"
         # disable proxies for internal requests
         proxies = {"http": "", "https": ""}
-        response = requests.post(url=invocation_url, json=payload, proxies=proxies)
+        response = self._perform_invoke(
+            invocation_url=invocation_url, proxies=proxies, payload=payload
+        )
         if not response.ok:
             raise InvokeSendError(
                 f"Error while sending invocation {payload} to {invocation_url}. Error Code: {response.status_code}"
@@ -214,3 +218,65 @@ class ExecutorEndpoint(Endpoint):
             invoke_timeout_buffer_seconds = 5
             timeout_seconds = lambda_max_timeout_seconds + invoke_timeout_buffer_seconds
         return self.invocation_future.result(timeout=timeout_seconds)
+
+    @staticmethod
+    def _perform_invoke(
+        invocation_url: str,
+        proxies: dict[str, str],
+        payload: dict[str, Any],
+    ) -> requests.Response:
+        """
+        Dispatches a Lambda invocation request to the specified container endpoint, with automatic
+        retries in case of connection errors, using exponential backoff.
+
+        The first attempt is made immediately. If it fails, exponential backoff is applied with
+        retry intervals starting at 100ms, doubling each time for up to 5 total retries.
+
+        Parameters:
+            invocation_url (str): The full URL of the container's invocation endpoint.
+            proxies (dict[str, str]): Proxy settings to be used for the HTTP request.
+            payload (dict[str, Any]): The JSON payload to send to the container.
+
+        Returns:
+            Response: The successful HTTP response from the container.
+
+        Raises:
+            requests.exceptions.ConnectionError: If all retry attempts fail to connect.
+        """
+        backoff = None
+        last_exception = None
+        max_retry_on_connection_error = 5
+
+        for attempt_count in range(max_retry_on_connection_error + 1):  # 1 initial + n retries
+            try:
+                response = requests.post(url=invocation_url, json=payload, proxies=proxies)
+                return response
+            except requests.exceptions.ConnectionError as connection_error:
+                last_exception = connection_error
+
+                if backoff is None:
+                    LOG.debug(
+                        "Initial connection attempt failed: %s. Starting backoff retries.",
+                        connection_error,
+                    )
+                    backoff = ExponentialBackoff(
+                        max_retries=max_retry_on_connection_error,
+                        initial_interval=0.1,
+                        multiplier=2.0,
+                        randomization_factor=0.0,
+                        max_interval=1,
+                        max_time_elapsed=-1,
+                    )
+
+                delay = backoff.next_backoff()
+                if delay > 0:
+                    LOG.debug(
+                        "Connection error on invoke attempt #%d: %s. Retrying in %.2f seconds",
+                        attempt_count,
+                        connection_error,
+                        delay,
+                    )
+                    time.sleep(delay)
+
+        LOG.debug("Connection error after all attempts exhausted: %s", last_exception)
+        raise last_exception

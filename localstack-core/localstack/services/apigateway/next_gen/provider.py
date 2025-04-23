@@ -1,6 +1,8 @@
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.apigateway import (
+    BadRequestException,
     CacheClusterSize,
+    CreateRestApiRequest,
     CreateStageRequest,
     Deployment,
     DeploymentCanarySettings,
@@ -12,12 +14,14 @@ from localstack.aws.api.apigateway import (
     NotFoundException,
     NullableBoolean,
     NullableInteger,
+    RestApi,
     Stage,
     StatusCode,
     String,
     TestInvokeMethodRequest,
     TestInvokeMethodResponse,
 )
+from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.services.apigateway.helpers import (
     get_apigateway_store,
     get_moto_rest_api,
@@ -55,6 +59,16 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
     def on_after_init(self):
         apply_patches()
         self.router.register_routes()
+
+    @handler("CreateRestApi", expand=False)
+    def create_rest_api(self, context: RequestContext, request: CreateRestApiRequest) -> RestApi:
+        if "-" in request.get("tags", {}).get(TAG_KEY_CUSTOM_ID, ""):
+            raise BadRequestException(
+                f"The '{TAG_KEY_CUSTOM_ID}' tag cannot contain the '-' character."
+            )
+
+        response = super().create_rest_api(context, request)
+        return response
 
     @handler("DeleteRestApi")
     def delete_rest_api(self, context: RequestContext, rest_api_id: String, **kwargs) -> None:
