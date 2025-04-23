@@ -1,11 +1,12 @@
+import base64
 import json
 import math
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from botocore.exceptions import ClientError
-from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
+from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer, SortingTransformer
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.lambda_utils import (
@@ -1084,9 +1085,7 @@ class TestKinesisSource:
         wait_for_stream_ready,
         snapshot,
         aws_client,
-        region_name,
         sqs_create_queue,
-        monkeypatch,
         # Parametrized arguments
         processing_delay_seconds,
         max_retries,
@@ -1180,6 +1179,12 @@ class TestKinesisSource:
         snapshot.add_transformer(snapshot.transform.key_value("ReceiptHandle"))
         snapshot.add_transformer(snapshot.transform.key_value("startSequenceNumber"))
 
+        snapshot.add_transformer(
+            SortingTransformer(
+                "Records", lambda x: base64.b64decode(x["kinesis"]["data"]).decode("utf-8")
+            ),
+        )
+
         function_name = f"lambda_func-{short_uid()}"
         stream_name = f"test-kinesis-{short_uid()}"
 
@@ -1191,22 +1196,40 @@ class TestKinesisSource:
             "StreamDescription"
         ]["StreamARN"]
 
-        aws_client.kinesis.put_record(
+        shard_id = aws_client.kinesis.put_record(
             Data="stream-data",
             PartitionKey="test",
             StreamName=stream_name,
-        )
+        ).get("ShardId")
 
-        # Ensure that the first record has expired
-        time.sleep(60)
+        def has_records_older_than(age: float):
+            def _fetch():
+                shard_iterator = aws_client.kinesis.get_shard_iterator(
+                    StreamName=stream_name,
+                    ShardId=shard_id,
+                    ShardIteratorType="TRIM_HORIZON",
+                ).get("ShardIterator")
 
-        # The first record in the batch has expired with the remaining batch not exceeding any age-limits.
-        for i in range(5):
-            aws_client.kinesis.put_record(
-                Data=f"stream-data-{i + 1}",
-                PartitionKey="test",
-                StreamName=stream_name,
-            )
+                if not shard_iterator:
+                    return False
+
+                records = aws_client.kinesis.get_records(ShardIterator=shard_iterator, Limit=1).get(
+                    "Records", []
+                )
+
+                if not records:
+                    return False
+
+                current_time = datetime.now(timezone.utc)
+                return any(
+                    (current_time - record.get("ApproximateArrivalTimestamp")).total_seconds() > age
+                    for record in records
+                )
+
+            return _fetch
+
+        # Events expire after 60s but make this 80s to ensure we have some room to properly expire.
+        assert wait_until(has_records_older_than(80), wait=5.0, max_retries=30, strategy="static")
 
         destination_queue_url = sqs_create_queue()
         create_lambda_function(
@@ -1221,6 +1244,12 @@ class TestKinesisSource:
         dead_letter_queue = sqs_create_queue()
         dead_letter_queue_arn = sqs_get_queue_arn(dead_letter_queue)
         destination_config = {"OnFailure": {"Destination": dead_letter_queue_arn}}
+
+        # The first record in the batch will have expired with the remaining batch not exceeding any age-limits.
+        aws_client.kinesis.put_records(
+            Records=[{"Data": f"stream-data-{i + 1}", "PartitionKey": "test"} for i in range(5)],
+            StreamName=stream_name,
+        )
 
         create_event_source_mapping_response = create_event_source_mapping(
             FunctionName=function_name,
