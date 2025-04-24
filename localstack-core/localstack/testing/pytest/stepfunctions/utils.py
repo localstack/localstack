@@ -38,7 +38,7 @@ LOG = logging.getLogger(__name__)
 # Running executions may emit logs after DeleteStateMachine API is called.
 _DELETION_TIMEOUT_SECS: Final[int] = 120
 _SAMPLING_INTERVAL_SECONDS_AWS_CLOUD: Final[int] = 1
-_SAMPLING_INTERVAL_SECONDS_LOCALSTACK: Final[float] = 0.1
+_SAMPLING_INTERVAL_SECONDS_LOCALSTACK: Final[float] = 0.2
 
 
 def _get_sampling_interval_seconds() -> int | float:
