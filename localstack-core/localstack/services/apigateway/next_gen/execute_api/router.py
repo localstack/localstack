@@ -124,7 +124,7 @@ class ApiGatewayRouter:
 
     def register_routes(self) -> None:
         LOG.debug("Registering API Gateway routes.")
-        host_pattern = "<regex('[^-]+'):api_id><regex('(-vpce-[^.]+)?'):vpce_suffix>.execute-api.<regex('.*'):server>"
+        host_pattern = "<regex('.+?'):api_id><regex('(-vpce-[^.]+)?'):vpce_suffix>.execute-api.<regex('.*'):server>"
         deprecated_route_endpoint = deprecated_endpoint(
             endpoint=self.handler,
             previous_path="/restapis/<api_id>/<stage>/_user_request_",

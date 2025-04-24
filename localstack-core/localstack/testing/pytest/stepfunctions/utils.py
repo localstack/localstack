@@ -27,6 +27,7 @@ from localstack.aws.api.stepfunctions import (
 from localstack.services.stepfunctions.asl.eval.event.logging import is_logging_enabled_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.asl.utils.json_path import NoSuchJsonPathError, extract_json
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 
@@ -36,6 +37,16 @@ LOG = logging.getLogger(__name__)
 # For EXPRESS state machines, the deletion will happen eventually (usually less than a minute).
 # Running executions may emit logs after DeleteStateMachine API is called.
 _DELETION_TIMEOUT_SECS: Final[int] = 120
+_SAMPLING_INTERVAL_SECONDS_AWS_CLOUD: Final[int] = 1
+_SAMPLING_INTERVAL_SECONDS_LOCALSTACK: Final[float] = 0.2
+
+
+def _get_sampling_interval_seconds() -> int | float:
+    return (
+        _SAMPLING_INTERVAL_SECONDS_AWS_CLOUD
+        if is_aws_cloud()
+        else _SAMPLING_INTERVAL_SECONDS_LOCALSTACK
+    )
 
 
 def await_no_state_machines_listed(stepfunctions_client):
@@ -47,7 +58,7 @@ def await_no_state_machines_listed(stepfunctions_client):
     success = poll_condition(
         condition=_is_empty_state_machine_list,
         timeout=_DELETION_TIMEOUT_SECS,
-        interval=1,
+        interval=_get_sampling_interval_seconds(),
     )
     if not success:
         LOG.warning("Timed out whilst awaiting for listing to be empty.")
@@ -76,7 +87,7 @@ def await_state_machine_alias_is_created(
             state_machine_alias_arn=state_machine_alias_arn,
         ),
         timeout=_DELETION_TIMEOUT_SECS,
-        interval=1,
+        interval=_get_sampling_interval_seconds(),
     )
     if not success:
         LOG.warning("Timed out whilst awaiting for listing to be empty.")
@@ -92,7 +103,7 @@ def await_state_machine_alias_is_deleted(
             state_machine_alias_arn=state_machine_alias_arn,
         ),
         timeout=_DELETION_TIMEOUT_SECS,
-        interval=1,
+        interval=_get_sampling_interval_seconds(),
     )
     if not success:
         LOG.warning("Timed out whilst awaiting for listing to be empty.")
@@ -122,7 +133,7 @@ def await_state_machine_not_listed(stepfunctions_client, state_machine_arn: str)
     success = poll_condition(
         condition=lambda: not _is_state_machine_listed(stepfunctions_client, state_machine_arn),
         timeout=_DELETION_TIMEOUT_SECS,
-        interval=1,
+        interval=_get_sampling_interval_seconds(),
     )
     if not success:
         LOG.warning("Timed out whilst awaiting for listing to exclude '%s'.", state_machine_arn)
@@ -132,7 +143,7 @@ def await_state_machine_listed(stepfunctions_client, state_machine_arn: str):
     success = poll_condition(
         condition=lambda: _is_state_machine_listed(stepfunctions_client, state_machine_arn),
         timeout=_DELETION_TIMEOUT_SECS,
-        interval=1,
+        interval=_get_sampling_interval_seconds(),
     )
     if not success:
         LOG.warning("Timed out whilst awaiting for listing to include '%s'.", state_machine_arn)
@@ -146,7 +157,7 @@ def await_state_machine_version_not_listed(
             stepfunctions_client, state_machine_arn, state_machine_version_arn
         ),
         timeout=_DELETION_TIMEOUT_SECS,
-        interval=1,
+        interval=_get_sampling_interval_seconds(),
     )
     if not success:
         LOG.warning(
@@ -164,7 +175,7 @@ def await_state_machine_version_listed(
             stepfunctions_client, state_machine_arn, state_machine_version_arn
         ),
         timeout=_DELETION_TIMEOUT_SECS,
-        interval=1,
+        interval=_get_sampling_interval_seconds(),
     )
     if not success:
         LOG.warning(
@@ -190,7 +201,9 @@ def await_on_execution_events(
         res: bool = check_func(events)
         return res
 
-    assert poll_condition(condition=_run_check, timeout=120, interval=1)
+    assert poll_condition(
+        condition=_run_check, timeout=120, interval=_get_sampling_interval_seconds()
+    )
     return events
 
 
@@ -223,7 +236,9 @@ def await_list_execution_status(
             return True
         return False
 
-    success = poll_condition(condition=_run_check, timeout=120, interval=1)
+    success = poll_condition(
+        condition=_run_check, timeout=120, interval=_get_sampling_interval_seconds()
+    )
     if not success:
         LOG.warning(
             "Timed out whilst awaiting for execution status %s to satisfy condition for execution '%s'.",
@@ -264,7 +279,9 @@ def await_execution_lists_terminated(
                 return execution["status"] != ExecutionStatus.RUNNING
         return False
 
-    success = poll_condition(condition=_check_last_is_terminal, timeout=120, interval=1)
+    success = poll_condition(
+        condition=_check_last_is_terminal, timeout=120, interval=_get_sampling_interval_seconds()
+    )
     if not success:
         LOG.warning(
             "Timed out whilst awaiting for execution events to satisfy condition for execution '%s'.",
@@ -291,7 +308,9 @@ def await_execution_aborted(stepfunctions_client, execution_arn: str):
         status: ExecutionStatus = desc_res["status"]
         return status == ExecutionStatus.ABORTED
 
-    success = poll_condition(condition=_run_check, timeout=120, interval=1)
+    success = poll_condition(
+        condition=_run_check, timeout=120, interval=_get_sampling_interval_seconds()
+    )
     if not success:
         LOG.warning("Timed out whilst awaiting for execution '%s' to abort.", execution_arn)
 
