@@ -223,6 +223,7 @@ class CloudformationProviderV2(CloudformationProvider):
         )
         change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
         stack.change_set_id = change_set.change_set_id
+        stack.change_set_id = change_set.change_set_id
         state.change_sets[change_set.change_set_id] = change_set
 
         return CreateChangeSetOutput(StackId=stack.stack_id, Id=change_set.change_set_id)

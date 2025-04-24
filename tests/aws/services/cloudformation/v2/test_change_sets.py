@@ -24,7 +24,6 @@ pytestmark = pytest.mark.skipif(
         "per-resource-events..*",
         "delete-describe..*",
         #
-        "$..ChangeSetId",  # An issue for the WIP executor
         # Before/After Context
         "$..Capabilities",
         "$..NotificationARNs",
