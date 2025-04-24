@@ -1,6 +1,6 @@
 import json
 
-from localstack_snapshot.snapshots.transformer import RegexTransformer
+from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
@@ -470,6 +470,80 @@ class TestBaseScenarios:
             }
             mock_config_file_path = mock_config_file(mock_config)
             monkeypatch.setattr(config, "SFN_MOCK_CONFIG", mock_config_file_path)
+            create_and_record_mocked_execution(
+                aws_client,
+                create_state_machine_iam_role,
+                create_state_machine,
+                sfn_snapshot,
+                definition,
+                exec_input,
+                state_machine_name,
+                test_name,
+            )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..events..previousEventId"])
+    def test_map_state_lambda(
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        create_lambda_function,
+        mock_config_file,
+        monkeypatch,
+        sfn_snapshot,
+    ):
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..mapRunArn", replacement="map_run_arn", replace_reference=False
+            )
+        )
+
+        template = ScenariosTemplate.load_sfn_template(
+            ScenariosTemplate.MAP_STATE_CONFIG_DISTRIBUTED_REENTRANT_LAMBDA
+        )
+        # Update the lambda function's return value.
+        template["States"]["StartState"]["Parameters"]["Values"][0] = {"body": "string body"}
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        if is_aws_cloud():
+            function_name = f"sfn_lambda_{short_uid()}"
+            create_res = create_lambda_function(
+                func_name=function_name,
+                handler_file=ServicesTemplates.LAMBDA_ID_FUNCTION,
+                runtime=Runtime.python3_12,
+            )
+            sfn_snapshot.add_transformer(RegexTransformer(function_name, "lambda_function_name"))
+            function_arn = create_res["CreateFunctionResponse"]["FunctionArn"]
+            definition = definition.replace("_tbd_", function_arn)
+            create_and_record_execution(
+                aws_client,
+                create_state_machine_iam_role,
+                create_state_machine,
+                sfn_snapshot,
+                definition,
+                exec_input,
+            )
+        else:
+            state_machine_name = f"mocked_state_machine_{short_uid()}"
+            test_name = "TestCaseName"
+            lambda_200_string_body = MockedResponseLoader.load(
+                MockedResponseLoader.LAMBDA_200_STRING_BODY
+            )
+            mock_config = {
+                "StateMachines": {
+                    state_machine_name: {
+                        "TestCases": {test_name: {"ProcessValue": "lambda_200_string_body"}}
+                    }
+                },
+                "MockedResponses": {"lambda_200_string_body": lambda_200_string_body},
+            }
+            mock_config_file_path = mock_config_file(mock_config)
+            monkeypatch.setattr(config, "SFN_MOCK_CONFIG", mock_config_file_path)
+            definition = definition.replace(
+                "_tbd_", "arn:aws:lambda:us-east-1:111111111111:function:nosuchfunction"
+            )
             create_and_record_mocked_execution(
                 aws_client,
                 create_state_machine_iam_role,
