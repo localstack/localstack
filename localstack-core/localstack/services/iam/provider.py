@@ -107,6 +107,55 @@ def get_iam_backend(context: RequestContext) -> IAMBackend:
     return iam_backends[context.account_id][context.partition]
 
 
+def get_policies_from_principal(backend: IAMBackend, principal_arn: str) -> list[dict]:
+    policies = []
+    if ":role" in principal_arn:
+        role_name = principal_arn.split("/")[-1]
+
+        policies.append(backend.get_role(role_name=role_name).assume_role_policy_document)
+
+        policy_names = backend.list_role_policies(role_name=role_name)
+        policies.extend(
+            [
+                backend.get_role_policy(role_name=role_name, policy_name=policy_name)[1]
+                for policy_name in policy_names
+            ]
+        )
+
+        attached_policies, _ = backend.list_attached_role_policies(role_name=role_name)
+        policies.extend([policy.document for policy in attached_policies])
+
+    if ":group" in principal_arn:
+        print(principal_arn)
+        group_name = principal_arn.split("/")[-1]
+        policy_names = backend.list_group_policies(group_name=group_name)
+        policies.extend(
+            [
+                backend.get_group_policy(group_name=group_name, policy_name=policy_name)[1]
+                for policy_name in policy_names
+            ]
+        )
+
+        attached_policies, _ = backend.list_attached_group_policies(group_name=group_name)
+        policies.extend([policy.document for policy in attached_policies])
+
+    if ":user" in principal_arn:
+        print(principal_arn)
+        user_name = principal_arn.split("/")[-1]
+        policy_names = backend.list_user_policies(user_name=user_name)
+        policies.extend(
+            [
+                backend.get_user_policy(user_name=user_name, policy_name=policy_name)[1]
+                for policy_name in policy_names
+            ]
+        )
+
+        attached_policies, _ = backend.list_attached_user_policies(user_name=user_name)
+        policies.extend([policy.document for policy in attached_policies])
+
+    return policies
+
+
 class IamProvider(IamApi):
     def __init__(self):
         apply_iam_patches()
@@ -168,12 +217,20 @@ class IamProvider(IamApi):
         **kwargs,
     ) -> SimulatePolicyResponse:
         backend = get_iam_backend(context)
-        policy = backend.get_policy(policy_source_arn)
-        policy_version = backend.get_policy_version(policy_source_arn, policy.default_version_id)
-        try:
-            policy_statements = json.loads(policy_version.document).get("Statement", [])
-        except Exception:
-            raise NoSuchEntityException("Policy not found")
+
+        policies = get_policies_from_principal(backend, policy_source_arn)
+
+        def _get_statements_from_policy_list(policies: list[str]):
+            statements = []
+            for policy_str in policies:
+                policy_dict = json.loads(policy_str)
+                if isinstance(policy_dict["Statement"], list):
+                    statements.extend(policy_dict["Statement"])
+                else:
+                    statements.append(policy_dict["Statement"])
+            return statements
+
+        policy_statements = _get_statements_from_policy_list(policies)
 
         evaluations = [
             self.build_evaluation_result(action_name, resource_arn, policy_statements)

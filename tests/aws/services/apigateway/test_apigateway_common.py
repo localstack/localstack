@@ -8,6 +8,7 @@ import requests
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import Runtime
+from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws.arns import get_partition, parse_arn
@@ -1787,3 +1788,34 @@ class TestApigatewayRouting:
             assert _response.json() == {
                 "message": "The API id '404api' does not correspond to a deployed API Gateway API"
             }
+
+    @markers.aws.only_localstack
+    def test_routing_with_custom_api_id(self, aws_client, create_rest_apigw):
+        custom_id = "custom-api-id"
+        api_id, _, root_id = create_rest_apigw(
+            name="test custom id routing", tags={TAG_KEY_CUSTOM_ID: custom_id}
+        )
+
+        resource = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="part1"
+        )
+        hardcoded_resource_id = resource["id"]
+
+        response_template_get = {"statusCode": 200, "message": "routing ok"}
+        _create_mock_integration_with_200_response_template(
+            aws_client, api_id, hardcoded_resource_id, "GET", response_template_get
+        )
+
+        stage_name = "dev"
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+        url = api_invoke_url(api_id=api_id, stage=stage_name, path="/part1")
+        response = requests.get(url)
+        assert response.ok
+        assert response.json()["message"] == "routing ok"
+
+        # Validated test living here: `test_create_execute_api_vpc_endpoint`
+        vpce_url = url.replace(custom_id, f"{custom_id}-vpce-aabbaabbaabbaabba")
+        response = requests.get(vpce_url)
+        assert response.ok
+        assert response.json()["message"] == "routing ok"

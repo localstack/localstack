@@ -47,6 +47,15 @@
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_role_attach_policy": {
     "last_validated_date": "2025-03-06T12:25:03+00:00"
   },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_simulate_principle_policy[group]": {
+    "last_validated_date": "2025-04-21T20:07:37+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_simulate_principle_policy[role]": {
+    "last_validated_date": "2025-04-21T20:07:35+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_simulate_principle_policy[user]": {
+    "last_validated_date": "2025-04-21T20:07:38+00:00"
+  },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_update_assume_role_policy": {
     "last_validated_date": "2025-03-06T12:24:58+00:00"
   },
