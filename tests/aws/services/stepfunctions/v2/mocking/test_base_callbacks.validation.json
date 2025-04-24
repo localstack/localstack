@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_callbacks.py::TestBaseScenarios::test_sfn_start_execution_sync[SFN_SYNC2]": {
+    "last_validated_date": "2025-04-24T10:06:22+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_callbacks.py::TestBaseScenarios::test_sfn_start_execution_sync[SFN_SYNC]": {
+    "last_validated_date": "2025-04-24T10:05:48+00:00"
+  }
+}

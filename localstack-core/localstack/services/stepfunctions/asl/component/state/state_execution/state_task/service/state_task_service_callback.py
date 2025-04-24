@@ -182,6 +182,10 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
                     callback_endpoint=callback_endpoint,
                     heartbeat_endpoint=heartbeat_endpoint,
                 )
+            elif env.is_mocked_mode():
+                # Sync operation in mock mode: sync and sync2 workflows are skipped and the outcome
+                # treated as the overall operation output.
+                outcome = task_output
             else:
                 # Sync operations require the task output as input.
                 env.stack.append(task_output)

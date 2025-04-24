@@ -1,0 +1,426 @@
+{
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_callbacks.py::TestBaseScenarios::test_sfn_start_execution_sync[SFN_SYNC]": {
+    "recorded-date": "24-04-2025, 10:05:48",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "StateMachineArn": "state-machine-arn",
+                "Input": null,
+                "Name": "TestStartTarget"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "StateMachineArn": "state-machine-arn",
+                "Input": null,
+                "Name": "TestStartTarget"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "StartExecution"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Input": null,
+                "StateMachineArn": "state-machine-arn",
+                "Name": "TestStartTarget"
+              },
+              "region": "<region>",
+              "resource": "startExecution.sync",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "startExecution.sync",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "ExecutionArn": "execution-arn",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "164"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "164",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "x-amzn-RequestId"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                },
+                "StartDate": "start-date"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "startExecution.sync",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskSucceededEventDetails": {
+              "output": {
+                "ExecutionArn": "execution-arn",
+                "Input": "{}",
+                "InputDetails": {
+                  "Included": true
+                },
+                "Name": "TestStartTarget",
+                "Output": "{\"Arg1\":\"argument1\"}",
+                "OutputDetails": {
+                  "Included": true
+                },
+                "RedriveCount": 0,
+                "RedriveStatus": "NOT_REDRIVABLE",
+                "RedriveStatusReason": "Execution is SUCCEEDED and cannot be redriven",
+                "StartDate": "start-date",
+                "StateMachineArn": "state-machine-arn",
+                "Status": "SUCCEEDED",
+                "StopDate": "stop-date"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "startExecution.sync",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "StartExecution",
+              "output": {
+                "ExecutionArn": "execution-arn",
+                "Input": "{}",
+                "InputDetails": {
+                  "Included": true
+                },
+                "Name": "TestStartTarget",
+                "Output": "{\"Arg1\":\"argument1\"}",
+                "OutputDetails": {
+                  "Included": true
+                },
+                "RedriveCount": 0,
+                "RedriveStatus": "NOT_REDRIVABLE",
+                "RedriveStatusReason": "Execution is SUCCEEDED and cannot be redriven",
+                "StartDate": "start-date",
+                "StateMachineArn": "state-machine-arn",
+                "Status": "SUCCEEDED",
+                "StopDate": "stop-date"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "ExecutionArn": "execution-arn",
+                "Input": "{}",
+                "InputDetails": {
+                  "Included": true
+                },
+                "Name": "TestStartTarget",
+                "Output": "{\"Arg1\":\"argument1\"}",
+                "OutputDetails": {
+                  "Included": true
+                },
+                "RedriveCount": 0,
+                "RedriveStatus": "NOT_REDRIVABLE",
+                "RedriveStatusReason": "Execution is SUCCEEDED and cannot be redriven",
+                "StartDate": "start-date",
+                "StateMachineArn": "state-machine-arn",
+                "Status": "SUCCEEDED",
+                "StopDate": "stop-date"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_callbacks.py::TestBaseScenarios::test_sfn_start_execution_sync[SFN_SYNC2]": {
+    "recorded-date": "24-04-2025, 10:06:22",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "StateMachineArn": "state-machine-arn",
+                "Input": null,
+                "Name": "TestStartTarget"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "StateMachineArn": "state-machine-arn",
+                "Input": null,
+                "Name": "TestStartTarget"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "StartExecution"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Input": null,
+                "StateMachineArn": "state-machine-arn",
+                "Name": "TestStartTarget"
+              },
+              "region": "<region>",
+              "resource": "startExecution.sync:2",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "startExecution.sync:2",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "ExecutionArn": "execution-arn",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "164"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "164",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "x-amzn-RequestId"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                },
+                "StartDate": "start-date"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "startExecution.sync:2",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskSucceededEventDetails": {
+              "output": {
+                "ExecutionArn": "execution-arn",
+                "Input": {},
+                "InputDetails": {
+                  "Included": true
+                },
+                "Name": "TestStartTarget",
+                "Output": {
+                  "Arg1": "argument1"
+                },
+                "OutputDetails": {
+                  "Included": true
+                },
+                "RedriveCount": 0,
+                "RedriveStatus": "NOT_REDRIVABLE",
+                "RedriveStatusReason": "Execution is SUCCEEDED and cannot be redriven",
+                "StartDate": "start-date",
+                "StateMachineArn": "state-machine-arn",
+                "Status": "SUCCEEDED",
+                "StopDate": "stop-date"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "startExecution.sync:2",
+              "resourceType": "states"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "StartExecution",
+              "output": {
+                "ExecutionArn": "execution-arn",
+                "Input": {},
+                "InputDetails": {
+                  "Included": true
+                },
+                "Name": "TestStartTarget",
+                "Output": {
+                  "Arg1": "argument1"
+                },
+                "OutputDetails": {
+                  "Included": true
+                },
+                "RedriveCount": 0,
+                "RedriveStatus": "NOT_REDRIVABLE",
+                "RedriveStatusReason": "Execution is SUCCEEDED and cannot be redriven",
+                "StartDate": "start-date",
+                "StateMachineArn": "state-machine-arn",
+                "Status": "SUCCEEDED",
+                "StopDate": "stop-date"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "ExecutionArn": "execution-arn",
+                "Input": {},
+                "InputDetails": {
+                  "Included": true
+                },
+                "Name": "TestStartTarget",
+                "Output": {
+                  "Arg1": "argument1"
+                },
+                "OutputDetails": {
+                  "Included": true
+                },
+                "RedriveCount": 0,
+                "RedriveStatus": "NOT_REDRIVABLE",
+                "RedriveStatusReason": "Execution is SUCCEEDED and cannot be redriven",
+                "StartDate": "start-date",
+                "StateMachineArn": "state-machine-arn",
+                "Status": "SUCCEEDED",
+                "StopDate": "stop-date"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

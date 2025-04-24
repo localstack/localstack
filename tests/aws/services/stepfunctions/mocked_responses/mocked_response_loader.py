@@ -31,6 +31,12 @@ class MockedResponseLoader(abc.ABC):
     DYNAMODB_200_GET_ITEM: Final[str] = os.path.join(
         _THIS_FOLDER, "mocked_responses/dynamodb/200_get_item.json5"
     )
+    STATES_200_START_EXECUTION_SYNC: Final[str] = os.path.join(
+        _THIS_FOLDER, "mocked_responses/states/200_start_execution_sync.json5"
+    )
+    STATES_200_START_EXECUTION_SYNC2: Final[str] = os.path.join(
+        _THIS_FOLDER, "mocked_responses/states/200_start_execution_sync2.json5"
+    )
 
     @staticmethod
     def load(file_path: str) -> dict:
