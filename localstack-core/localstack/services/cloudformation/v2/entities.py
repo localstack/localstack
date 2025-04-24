@@ -94,7 +94,7 @@ class Stack:
             self.status_reason = reason
 
     def describe_details(self) -> ApiStack:
-        return {
+        result = {
             "CreationTime": self.creation_time,
             "StackId": self.stack_id,
             "StackName": self.stack_name,
@@ -109,13 +109,15 @@ class Stack:
             "LastUpdatedTime": self.creation_time,
             "RollbackConfiguration": {},
             "Tags": [],
-            "Outputs": [
+        }
+        if self.resolved_outputs:
+            result["Outputs"] = [
                 # TODO(parity): Description, ExportName
                 # TODO(parity): what happens on describe stack when the stack has not been deployed yet?
                 {"OutputKey": k, "OutputValue": v}
                 for k, v in self.resolved_outputs.items()
-            ],
-        }
+            ]
+        return result
 
 
 class ChangeSet:
