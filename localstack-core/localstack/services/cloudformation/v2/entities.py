@@ -197,6 +197,7 @@ class ChangeSet:
         result = {
             "Status": self.status,
             "ChangeSetType": self.change_set_type,
+            "ChangeSetId": self.change_set_id,
             "ChangeSetName": self.change_set_name,
             "ExecutionStatus": self.execution_status,
             "RollbackConfiguration": {},
