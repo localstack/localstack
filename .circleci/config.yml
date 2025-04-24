@@ -522,6 +522,36 @@ jobs:
       - store_test_results:
           path: target/reports/
 
+  itest-cfn-v2-engine-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+    steps:
+      - prepare-acceptance-tests
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-testselection
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Test CloudFormation Engine v2
+          environment:
+            PROVIDER_OVERRIDE_CLOUDFORMATION: "engine-v2"
+            TEST_PATH: "tests/aws/services/cloudformation/v2"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.cloudformation_v2.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/cloudformation_v2.xml -o junit_suite_name='cloudformation_v2'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
   #########################
   ## Parity Metrics Jobs ##
   #########################
@@ -890,6 +920,10 @@ workflows:
           requires:
             - preflight
             - test-selection
+      - itest-cfn-v2-engine-provider:
+          requires:
+            - preflight
+            - test-selection
       - unit-tests:
           requires:
             - preflight
@@ -951,6 +985,7 @@ workflows:
             - itest-cloudwatch-v1-provider
             - itest-events-v1-provider
             - itest-ddb-v2-provider
+            - itest-cfn-v2-engine-provider
             - acceptance-tests-amd64
             - acceptance-tests-arm64
             - integration-tests-amd64
@@ -965,6 +1000,7 @@ workflows:
             - itest-cloudwatch-v1-provider
             - itest-events-v1-provider
             - itest-ddb-v2-provider
+            - itest-cfn-v2-engine-provider
             - acceptance-tests-amd64
             - acceptance-tests-arm64
             - integration-tests-amd64
