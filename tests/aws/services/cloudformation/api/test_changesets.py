@@ -1211,7 +1211,9 @@ def test_describe_change_set_with_similarly_named_stacks(deploy_cfn_template, aw
     )
 
 
-@pytest.mark.skipif(condition=not is_v2_engine(), reason="Requires the V2 engine")
+@pytest.mark.skipif(
+    condition=not is_v2_engine() and not is_aws_cloud(), reason="Requires the V2 engine"
+)
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "per-resource-events..*",
