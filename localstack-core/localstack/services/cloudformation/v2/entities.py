@@ -8,6 +8,7 @@ from localstack.aws.api.cloudformation import (
     CreateChangeSetInput,
     DescribeChangeSetOutput,
     ExecutionStatus,
+    Output,
     Parameter,
     StackDriftInformation,
     StackDriftStatus,
@@ -111,12 +112,17 @@ class Stack:
             "Tags": [],
         }
         if self.resolved_outputs:
-            result["Outputs"] = [
-                # TODO(parity): Description, ExportName
-                # TODO(parity): what happens on describe stack when the stack has not been deployed yet?
-                {"OutputKey": k, "OutputValue": v}
-                for k, v in self.resolved_outputs.items()
-            ]
+            describe_outputs = []
+            for key, value in self.resolved_outputs.items():
+                describe_outputs.append(
+                    Output(
+                        # TODO(parity): Description, ExportName
+                        # TODO(parity): what happens on describe stack when the stack has not been deployed yet?
+                        OutputKey=key,
+                        OutputValue=value,
+                    )
+                )
+            result["Outputs"] = describe_outputs
         return result
 
 
