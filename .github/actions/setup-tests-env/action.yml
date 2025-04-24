@@ -1,0 +1,28 @@
+name: 'Setup Test Environment'
+description: 'Composite action which combines all steps necessary to setup the runner for local test execution'
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        # setuptools_scm requires the git history (at least until the last tag) to determine the version
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: '.python-version'
+        cache: 'pip'
+        cache-dependency-path: 'requirements-dev.txt'
+
+    - name: Install Community Dependencies
+      shell: bash
+      run: make install-dev
+
+    - name: Setup environment
+      shell: bash
+      run: |
+        make install
+        mkdir -p target/reports
+        mkdir -p target/coverage
