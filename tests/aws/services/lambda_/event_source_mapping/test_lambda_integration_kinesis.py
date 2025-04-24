@@ -2,13 +2,16 @@ import base64
 import json
 import math
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pytest
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer, SortingTransformer
 
 from localstack.aws.api.lambda_ import Runtime
+from localstack.services.lambda_.event_source_mapping.pollers.kinesis_poller import (
+    KinesisPoller,
+)
 from localstack.testing.aws.lambda_utils import (
     _await_event_source_mapping_enabled,
     _await_event_source_mapping_state,
@@ -1072,7 +1075,7 @@ class TestKinesisSource:
             # The record expired while retrying
             pytest.param(0, -1, id="expire-while-retrying"),
             # The record expired prior to arriving (no retries expected)
-            pytest.param(60, 0, id="expire-before-ingestion"),
+            pytest.param(60 if is_aws_cloud() else 5, 0, id="expire-before-ingestion"),
         ],
     )
     def test_kinesis_maximum_record_age_exceeded(
@@ -1086,6 +1089,7 @@ class TestKinesisSource:
         snapshot,
         aws_client,
         sqs_create_queue,
+        monkeypatch,
         # Parametrized arguments
         processing_delay_seconds,
         max_retries,
@@ -1106,15 +1110,26 @@ class TestKinesisSource:
             "StreamDescription"
         ]["StreamARN"]
 
+        if not is_aws_cloud():
+            # Override the MaximumRecordAgeInSeconds to make test shorter in LS
+            # which would otherwise fail validations (where MaximumRecordAgeInSeconds >= 60s).
+            def _patched_stream_parameters(self):
+                params = self.source_parameters.get("KinesisStreamParameters", {})
+                params["MaximumRecordAgeInSeconds"] = 5
+                return params
+
+            monkeypatch.setattr(
+                KinesisPoller, "stream_parameters", property(_patched_stream_parameters)
+            )
+
         aws_client.kinesis.put_record(
             Data="stream-data",
             PartitionKey="test",
             StreamName=stream_name,
         )
 
-        if processing_delay_seconds > 0:
-            # Optionally delay the ESM creation, allowing a record to expire prior to being ingested.
-            time.sleep(processing_delay_seconds)
+        # Optionally delay the ESM creation, allowing a record to expire prior to being ingested.
+        time.sleep(processing_delay_seconds)
 
         create_lambda_function(
             handler_file=TEST_LAMBDA_ECHO_FAILURE,
@@ -1173,6 +1188,7 @@ class TestKinesisSource:
         snapshot,
         aws_client,
         sqs_create_queue,
+        monkeypatch,
     ):
         # snapshot setup
         snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
@@ -1187,6 +1203,19 @@ class TestKinesisSource:
 
         function_name = f"lambda_func-{short_uid()}"
         stream_name = f"test-kinesis-{short_uid()}"
+        wait_before_processing = 80
+
+        if not is_aws_cloud():
+            wait_before_processing = 5
+
+            def _patched_stream_parameters(self):
+                params = self.source_parameters.get("KinesisStreamParameters", {})
+                params["MaximumRecordAgeInSeconds"] = wait_before_processing
+                return params
+
+            monkeypatch.setattr(
+                KinesisPoller, "stream_parameters", property(_patched_stream_parameters)
+            )
 
         kinesis_create_stream(StreamName=stream_name, ShardCount=1)
         wait_for_stream_ready(stream_name=stream_name)
@@ -1196,40 +1225,20 @@ class TestKinesisSource:
             "StreamDescription"
         ]["StreamARN"]
 
-        shard_id = aws_client.kinesis.put_record(
+        aws_client.kinesis.put_record(
             Data="stream-data",
             PartitionKey="test",
             StreamName=stream_name,
-        ).get("ShardId")
+        )
 
-        def has_records_older_than(age: float):
-            def _fetch():
-                shard_iterator = aws_client.kinesis.get_shard_iterator(
-                    StreamName=stream_name,
-                    ShardId=shard_id,
-                    ShardIteratorType="TRIM_HORIZON",
-                ).get("ShardIterator")
+        # Ensure that the first record has expired
+        time.sleep(wait_before_processing)
 
-                if not shard_iterator:
-                    return False
-
-                records = aws_client.kinesis.get_records(ShardIterator=shard_iterator, Limit=1).get(
-                    "Records", []
-                )
-
-                if not records:
-                    return False
-
-                current_time = datetime.now(timezone.utc)
-                return any(
-                    (current_time - record.get("ApproximateArrivalTimestamp")).total_seconds() > age
-                    for record in records
-                )
-
-            return _fetch
-
-        # Events expire after 60s but make this 80s to ensure we have some room to properly expire.
-        assert wait_until(has_records_older_than(80), wait=5.0, max_retries=30, strategy="static")
+        # The first record in the batch will have expired with the remaining batch not exceeding any age-limits.
+        aws_client.kinesis.put_records(
+            Records=[{"Data": f"stream-data-{i + 1}", "PartitionKey": "test"} for i in range(5)],
+            StreamName=stream_name,
+        )
 
         destination_queue_url = sqs_create_queue()
         create_lambda_function(
@@ -1244,12 +1253,6 @@ class TestKinesisSource:
         dead_letter_queue = sqs_create_queue()
         dead_letter_queue_arn = sqs_get_queue_arn(dead_letter_queue)
         destination_config = {"OnFailure": {"Destination": dead_letter_queue_arn}}
-
-        # The first record in the batch will have expired with the remaining batch not exceeding any age-limits.
-        aws_client.kinesis.put_records(
-            Records=[{"Data": f"stream-data-{i + 1}", "PartitionKey": "test"} for i in range(5)],
-            StreamName=stream_name,
-        )
 
         create_event_source_mapping_response = create_event_source_mapping(
             FunctionName=function_name,
