@@ -540,6 +540,7 @@ jobs:
             PROVIDER_OVERRIDE_CLOUDFORMATION: "engine-v2"
             TEST_PATH: "tests/aws/services/cloudformation/v2"
             COVERAGE_ARGS: "-p"
+          # TODO: use docker-run-tests
           command: |
             COVERAGE_FILE="target/coverage/.coverage.cloudformation_v2.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/cloudformation_v2.xml -o junit_suite_name='cloudformation_v2'" \
