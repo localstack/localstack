@@ -46,7 +46,7 @@ dnspython==2.7.0
     # via localstack-core (pyproject.toml)
 docker==7.1.0
     # via localstack-core (pyproject.toml)
-h11==0.14.0
+h11==0.16.0
     # via
     #   hypercorn
     #   wsproto
