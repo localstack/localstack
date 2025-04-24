@@ -201,6 +201,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version-file: '.python-version'
+          cache: 'pip'
+          cache-dependency-path: 'requirements-dev.txt'
 
       - name: Download Docker Image
         uses: actions/download-artifact@v4
@@ -250,3 +252,61 @@ jobs:
             localstack-core/pytest-junit-main-${{ env.PLATFORM }}-${{ matrix.group }}.xml
             localstack-core/.coverage.main-${{ env.PLATFORM }}-${{ matrix.group }}
           retention-days: 30
+
+  test-bootstrap:
+      name: Test Bootstrap
+      if: ${{ !inputs.onlyAcceptanceTests }}
+      runs-on: ubuntu-latest
+      needs:
+        - test-preflight
+        - build
+      timeout-minutes: 60
+      env:
+        # Set job-specific environment variables for pytest-tinybird
+        CI_JOB_NAME: ${{ github.job }}
+        CI_JOB_ID: ${{ github.job }}
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+          with:
+            # setuptools_scm requires the git history (at least until the last tag) to determine the version
+            fetch-depth: 0
+
+        - name: Set up Python
+          uses: actions/setup-python@v5
+          with:
+            python-version-file: '.python-version'
+            cache: 'pip'
+            cache-dependency-path: 'requirements-dev.txt'
+
+        - name: Install Community Dependencies
+          run: make install-dev
+
+        - name: Setup environment
+          run: |
+            make install
+            mkdir -p target/reports
+            mkdir -p target/coverage
+
+        - name: Run Bootstrap Tests
+          timeout-minutes: 30
+          env:
+            # add the GitHub API token to avoid rate limit issues
+#            GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            DEBUG: 1
+            TEST_PATH: "tests/bootstrap"
+            JUNIT_REPORTS_FILE: "pytest-junit-bootstrap.xml"
+            PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} -o junit_suite_name=bootstrap-tests"
+            COVERAGE_ARGS: "-p"
+          run: make test-coverage
+
+        # Store coverage results
+
+        - name: Archive Test Results
+          uses: actions/upload-artifact@v4
+          if: success() || failure()
+          with:
+            name: test-results-bootstrap
+            path: |
+              localstack-core/pytest-junit-bootstrap.xml
+            retention-days: 30
