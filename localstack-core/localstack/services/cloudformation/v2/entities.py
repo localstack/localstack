@@ -10,8 +10,14 @@ from localstack.aws.api.cloudformation import (
     ExecutionStatus,
     Output,
     Parameter,
+    ResourceStatus,
+    ResourceType,
     StackDriftInformation,
     StackDriftStatus,
+    StackResource,
+    StackResourceDetail,
+    StackResourceDriftInformation,
+    StackResourceDriftStatus,
     StackStatus,
     StackStatusReason,
 )
@@ -35,6 +41,10 @@ from localstack.utils.strings import short_uid
 
 class ResolvedResource(TypedDict):
     Properties: dict
+    PhysicalResourceId: str
+    LogicalResourceId: str
+    Status: ResourceStatus
+    Type: ResourceType
 
 
 class Stack:
@@ -95,7 +105,7 @@ class Stack:
         if reason:
             self.status_reason = reason
 
-    def describe_details(self) -> ApiStack:
+    def describe_stack_details(self) -> ApiStack:
         result = {
             "ChangeSetId": self.change_set_id,
             "CreationTime": self.creation_time,
@@ -126,6 +136,33 @@ class Stack:
                 )
             result["Outputs"] = describe_outputs
         return result
+
+    def resource_status(self, logical_resource_id: str) -> StackResourceDetail:
+        resource = self.resolved_resources[logical_resource_id]
+        return StackResourceDetail(
+            StackName=self.stack_name,
+            StackId=self.stack_id,
+            LogicalResourceId=logical_resource_id,
+            PhysicalResourceId=resource["PhysicalResourceId"],
+            ResourceType=resource["Type"],
+            LastUpdatedTimestamp=datetime.now(tz=timezone.utc),  # TODO: set in the executor
+            ResourceStatus=resource["Status"],
+        )
+
+    def describe_resource(self, logical_resource_id: str) -> StackResource:
+        resource = self.resolved_resources[logical_resource_id]
+        return StackResource(
+            StackName=self.stack_name,
+            StackId=self.stack_id,
+            LogicalResourceId=logical_resource_id,
+            PhysicalResourceId=resource["PhysicalResourceId"],
+            ResourceType=resource["Type"],
+            Timestamp=datetime.now(tz=timezone.utc),  # TODO: set in the executor
+            ResourceStatus=resource["Status"],
+            DriftInformation=StackResourceDriftInformation(
+                StackResourceDriftStatus=StackResourceDriftStatus.NOT_CHECKED,
+            ),
+        )
 
 
 class ChangeSet:

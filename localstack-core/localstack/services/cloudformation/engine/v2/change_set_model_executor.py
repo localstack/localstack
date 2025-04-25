@@ -4,7 +4,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Final, Optional
 
-from localstack.aws.api.cloudformation import ChangeAction, StackStatus
+from localstack.aws.api.cloudformation import ChangeAction, ResourceStatus, StackStatus
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeOutput,
@@ -239,6 +239,19 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 # XXX for legacy delete_stack compatibility
                 self.resources[logical_resource_id]["LogicalResourceId"] = logical_resource_id
                 self.resources[logical_resource_id]["Type"] = resource_type
+                match action:
+                    case ChangeAction.Add:
+                        self.resources[logical_resource_id]["Status"] = (
+                            ResourceStatus.CREATE_COMPLETE
+                        )
+                    case ChangeAction.Remove:
+                        self.resources[logical_resource_id]["Status"] = (
+                            ResourceStatus.DELETE_COMPLETE
+                        )
+                    case ChangeAction.Modify | ChangeAction.Dynamic:
+                        self.resources[logical_resource_id]["Status"] = (
+                            ResourceStatus.UPDATE_COMPLETE
+                        )
             case OperationStatus.FAILED:
                 reason = event.message
                 LOG.warning(
