@@ -42,7 +42,7 @@
     "last_validated_date": "2025-04-13T16:39:43+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_maximum_record_age_exceeded_discard_records": {
-    "last_validated_date": "2025-04-13T17:05:13+00:00"
+    "last_validated_date": "2025-04-23T21:42:09+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failure_scenarios[empty_string_item_identifier_failure]": {
     "last_validated_date": "2024-12-13T14:23:18+00:00"
