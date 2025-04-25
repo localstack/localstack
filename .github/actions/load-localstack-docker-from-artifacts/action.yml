@@ -1,0 +1,29 @@
+name: 'Load Localstack Docker image'
+description: 'Composite action that loads a LocalStack Docker image from a tar archive stored in GitHub Workflow Artifacts into the local Docker image cache'
+inputs:
+  platform:
+    required: false
+    description: Target architecture for running the Docker image
+    default: "amd64"
+runs:
+  using: "composite"
+  steps:
+    - name: Download Docker Image
+      uses: actions/download-artifact@v4
+      with:
+        name: localstack-docker-image-${{ inputs.platform }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: '.python-version'
+        cache: 'pip'
+        cache-dependency-path: 'requirements-dev.txt'
+
+    - name: Install docker helper dependencies
+      shell: bash
+      run: pip install --upgrade setuptools setuptools_scm
+
+    - name: Load Docker Image
+      shell: bash
+      run: bin/docker-helper.sh load

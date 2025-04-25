@@ -37,88 +37,13 @@ env:
   PYTEST_LOGLEVEL: ${{ inputs.PYTEST_LOGLEVEL || 'WARNING' }}
   IMAGE_NAME: "localstack/localstack"
   TINYBIRD_DATASOURCE: "community_tests"
-  TESTSELECTION_PYTEST_ARGS: "${{ !inputs.disableTestSelection && '--path-filter=../../dist/testselection/test-selection.txt ' || '' }}"
+  TESTSELECTION_PYTEST_ARGS: "${{ !inputs.disableTestSelection && '--path-filter=dist/testselection/test-selection.txt ' || '' }}"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  test-preflight:
-    name: "Preflight & Unit-Tests"
-    runs-on: ubuntu-latest
-    steps:
-      # <-- Consider changing to composite action
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          # setuptools_scm requires the git history (at least until the last tag) to determine the version
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version-file: '.python-version'
-          cache: 'pip'
-          cache-dependency-path: 'requirements-dev.txt'
-
-      - name: Install Community Dependencies
-        run: make install-dev
-
-      - name: Setup environment
-        run: |
-          make install
-          mkdir -p target/reports
-          mkdir -p target/coverage
-
-      #  Consider changing to composite action -->
-
-      - name: Linting
-        run: make lint
-
-      - name: Check AWS compatibility markers
-        run: make check-aws-markers
-
-      - name: Determine Test Selection
-        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        run: |
-          source .venv/bin/activate
-          if [ -z "${{ github.event.pull_request.base.sha }}" ]; then
-            echo "Do test selection based on branch name"
-          else
-            echo "Do test selection based on Pull Request event"
-            SCRIPT_OPTS="--base-commit-sha ${{ github.event.pull_request.base.sha }} --head-commit-sha ${{ github.event.pull_request.head.sha }}"
-          fi
-          source .venv/bin/activate
-          python -m localstack.testing.testselection.scripts.generate_test_selection $(pwd) dist/testselection/test-selection.txt $SCRIPT_OPTS
-          echo "Test selection:"
-          cat dist/testselection/test-selection.txt
-
-      - name: Run Unit Tests
-        timeout-minutes: 8
-        env:
-          # add the GitHub API token to avoid rate limit issues
-          #GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEBUG: 1
-          TEST_PATH: "tests/unit"
-          JUNIT_REPORTS_FILE: "pytest-junit-unit.xml"
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} -o junit_suite_name=unit-tests"
-          COVERAGE_FILE: ".coverage.unit"
-          # Set job-specific environment variables for pytest-tinybird
-          CI_JOB_NAME: ${{ github.job }}-unit
-          CI_JOB_ID: ${{ github.job }}-unit
-        run: make test-coverage
-
-      - name: Archive Test Results
-        uses: actions/upload-artifact@v4
-        if: success() || failure()
-        with:
-          name: test-results-preflight
-          path: |
-            pytest-junit-unit.xml
-            .coverage.unit
-          retention-days: 30
-
   build:
     name: "Build Docker Image (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }})"
     needs:
@@ -147,6 +72,81 @@ jobs:
           disableCaching: ${{ inputs.disableCaching == true && 'true' || 'false' }}
           dockerhubPullUsername: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
           dockerhubPullToken: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
+  test-preflight:
+    name: "Preflight & Unit-Tests"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # setuptools_scm requires the git history (at least until the last tag) to determine the version
+          fetch-depth: 0
+
+      - name: Prepare Local Test Environment
+        uses: localstack/localstack/.github/actions/setup-test-env@master
+
+      - name: Linting
+        run: make lint
+
+      - name: Check AWS compatibility markers
+        run: make check-aws-markers
+
+      - name: Determine Test Selection
+        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
+        run: |
+          source .venv/bin/activate
+          if [ -z "${{ github.event.pull_request.base.sha }}" ]; then
+            echo "Do test selection based on branch name"
+          else
+            echo "Do test selection based on Pull Request event"
+            SCRIPT_OPTS="--base-commit-sha ${{ github.event.pull_request.base.sha }} --head-commit-sha ${{ github.event.pull_request.head.sha }}"
+          fi
+          source .venv/bin/activate
+          python -m localstack.testing.testselection.scripts.generate_test_selection $(pwd) dist/testselection/test-selection.txt $SCRIPT_OPTS || (mkdir -p dist/testselection && echo "SENTINEL_ALL_TESTS" >> dist/testselection/test-selection.txt)
+          echo "Test selection:"
+          cat dist/testselection/test-selection.txt
+
+      - name: Archive Test Selection
+        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-selection
+          path: |
+            dist/testselection/test-selection.txt
+          retention-days: 1
+
+      - name: List files
+        shell: bash
+        run: |
+          ls -a
+          ls -a dist/testselection/
+
+      - name: Run Unit Tests
+        timeout-minutes: 8
+        env:
+          # add the GitHub API token to avoid rate limit issues
+          #GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEBUG: 1
+          TEST_PATH: "tests/unit"
+          JUNIT_REPORTS_FILE: "pytest-junit-unit.xml"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} -o junit_suite_name=unit-tests"
+          COVERAGE_FILE: ".coverage.unit"
+          # Set job-specific environment variables for pytest-tinybird
+          CI_JOB_NAME: ${{ github.job }}-unit
+          CI_JOB_ID: ${{ github.job }}-unit
+        run: make test-coverage
+
+      - name: Archive Test Results
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: test-results-preflight
+          include-hidden-files: true
+          path: |
+            pytest-junit-unit.xml
+            .coverage.unit
+          retention-days: 30
 
   test-integration:
     name: "Integration Tests (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }} - ${{ matrix.group }})"
@@ -187,21 +187,23 @@ jobs:
         run: |
           echo "${{ inputs.testEnvironmentVariables }}" | sed "s/;/\n/" >> $GITHUB_ENV
 
-      - name: Artifact name
-        run: |
-          echo ${{ needs.build.outputs.image-artifact-name }}
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # setuptools_scm requires the git history (at least until the last tag) to determine the version
+          fetch-depth: 0
 
-      - name: Prepare Local Test Execution
-        uses: localstack/localstack/.github/actions/setup-tests-env-against-docker@master
+      - name: Prepare Local Test Environment
+        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
         with:
           platform: "${{ env.PLATFORM }}"
 
-      #      - name: Download Test Selection
-      #        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-      #        uses: actions/download-artifact@v4
-      #        with:
-      #          name: test-selection
-      #          path: dist/testselection/
+      - name: Download Test Selection
+        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
+        uses: actions/download-artifact@v4
+        with:
+          name: test-selection
+          path: dist/testselection/
 
       - name: Run Integration Tests
         timeout-minutes: 120
@@ -209,10 +211,12 @@ jobs:
           # add the GitHub API token to avoid rate limit issues
           #GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --splits 2 --group ${{ matrix.group }} --store-durations --clean-durations --ignore=tests/unit/ --ignore=tests/bootstrap"
-          COVERAGE_FILE: ".coverage.main-${{ env.PLATFORM }}-${{ matrix.group }}"
-          JUNIT_REPORTS_FILE: "pytest-junit-main-${{ env.PLATFORM }}-${{ matrix.group }}.xml"
-        #          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
-        #          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+          COVERAGE_FILE: ".coverage.integration-${{ env.PLATFORM }}-${{ matrix.group }}"
+          JUNIT_REPORTS_FILE: "pytest-junit-integration-${{ env.PLATFORM }}-${{ matrix.group }}.xml"
+          #          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+          #          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+          # increase Docker SDK timeout to avoid timeouts on BuildJet runners - https://github.com/docker/docker-py/issues/2266
+          DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS: 300
         run: make docker-run-tests
 
       - name: Archive Test Durations
@@ -229,9 +233,10 @@ jobs:
         if: success() || failure()
         with:
           name: test-results-main-${{ env.PLATFORM }}-${{ matrix.group }}
+          include-hidden-files: true
           path: |
-            pytest-junit-main-${{ env.PLATFORM }}-${{ matrix.group }}.xml
-            .coverage.main-${{ env.PLATFORM }}-${{ matrix.group }}
+            pytest-junit-integration-${{ env.PLATFORM }}-${{ matrix.group }}.xml
+            .coverage.integration-${{ env.PLATFORM }}-${{ matrix.group }}
           retention-days: 30
 
   test-bootstrap:
@@ -247,10 +252,17 @@ jobs:
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
     steps:
-      - name: Prepare Local Test Execution
-        uses: localstack/localstack/.github/actions/setup-tests-env-against-docker@master
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          platform: "${{ env.PLATFORM }}"
+          # setuptools_scm requires the git history (at least until the last tag) to determine the version
+          fetch-depth: 0
+
+      - name: Prepare Local Test Environment
+        uses: localstack/localstack/.github/actions/setup-test-env@master
+
+      - name: Load Localstack Docker Image
+        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
 
       - name: Run Bootstrap Tests
         timeout-minutes: 30
@@ -259,20 +271,106 @@ jobs:
           #            GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: 1
           TEST_PATH: "tests/bootstrap"
+          COVERAGE_FILE: ".coverage.bootstrap"
           JUNIT_REPORTS_FILE: "pytest-junit-bootstrap.xml"
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} -o junit_suite_name=bootstrap-tests"
-          COVERAGE_ARGS: "-p"
         run: make test-coverage
-
-      # Store coverage results
 
       - name: Archive Test Results
         uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
           name: test-results-bootstrap
+          include-hidden-files: true
           path: |
-            localstack-core/pytest-junit-bootstrap.xml
+            pytest-junit-bootstrap.xml
+            .coverage.bootstrap
+          retention-days: 30
+
+  test-acceptance:
+    name: "Acceptance Tests (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }} - ${{ matrix.group }})"
+    if: ${{ !inputs.onlyAcceptanceTests }}
+    needs:
+      - build
+    strategy:
+      matrix:
+        group: [ 1 ]
+        runner:
+          - ubuntu-latest
+        #          - ubuntu-24.04-arm
+        exclude:
+          # skip the ARM integration tests in case we are not on the master and not on the upgrade-dependencies branch and forceARMTests is not set to true
+          - runner: ${{ (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'ubuntu-24.04-arm' || ''}}
+      fail-fast: false
+    runs-on: ${{ matrix.runner }}
+    env:
+      # Set job-specific environment variables for pytest-tinybird
+      CI_JOB_NAME: ${{ github.job }}-${{ contains(matrix.runner, 'arm') && 'arm' || 'amd' }}
+      CI_JOB_ID: ${{ github.job }}-${{ contains(matrix.runner, 'arm') && 'arm' || 'amd' }}
+    steps:
+      - name: Determine Runner Architecture
+        shell: bash
+        run: echo "PLATFORM=${{ (runner.arch == 'X64' && 'amd64') || (runner.arch == 'ARM64' && 'arm64') || '' }}" >> $GITHUB_ENV
+
+      #      - name: Login to Docker Hub
+      #        # login to DockerHub to avoid rate limiting issues on custom runners
+      #        uses: docker/login-action@v3
+      #        with:
+      #          username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+      #          password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
+      - name: Set environment
+        if: ${{ inputs.testEnvironmentVariables != ''}}
+        shell: bash
+        run: |
+          echo "${{ inputs.testEnvironmentVariables }}" | sed "s/;/\n/" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # setuptools_scm requires the git history (at least until the last tag) to determine the version
+          fetch-depth: 0
+
+      - name: Load Localstack Docker Image
+        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+
+      - name: Download Test Selection
+        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
+        uses: actions/download-artifact@v4
+        with:
+          name: test-selection
+          path: dist/testselection/
+
+      - name: List files
+        shell: bash
+        run: |
+          ls -a
+          ls -a dist/testselection/
+
+      - name: Run Acceptance Tests
+        timeout-minutes: 120
+        env:
+          # add the GitHub API token to avoid rate limit issues
+          #GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEBUG: 1
+          LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC: 1
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --reruns 3 -m acceptance_test -o junit_suite_name='acceptance_test'"
+          COVERAGE_FILE: ".coverage.acceptance-${{ env.PLATFORM }}-${{ matrix.group }}"
+          JUNIT_REPORTS_FILE: "pytest-junit-acceptance-${{ env.PLATFORM }}-${{ matrix.group }}.xml"
+          TEST_PATH: "tests/aws/"
+        #          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+        #          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+        run: make docker-run-tests
+
+      - name: Archive Test Results
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: test-results-main-${{ env.PLATFORM }}-${{ matrix.group }}
+          include-hidden-files: true
+          path: |
+            pytest-junit-acceptance-${{ env.PLATFORM }}-${{ matrix.group }}.xml
+            .coverage.acceptance-${{ env.PLATFORM }}-${{ matrix.group }}
           retention-days: 30
 
   test-cloudwatch-v1:
@@ -288,8 +386,13 @@ jobs:
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
     steps:
-      - name: Prepare Local Test Execution
-        uses: localstack/localstack/.github/actions/setup-tests-env@master
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # TO-DO: remove, single commit is probably enough
+
+      - name: Prepare Local Test Environment
+        uses: localstack/localstack/.github/actions/setup-test-env@master
 
       - name: Run Cloudwatch v1 Provider Tests
         timeout-minutes: 30
@@ -297,23 +400,22 @@ jobs:
           # add the GitHub API token to avoid rate limit issues
           #            GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: 1
-          COVERAGE_FILE: "target/coverage/.coverage.cloudwatch_v1"
+          COVERAGE_FILE: ".coverage.cloudwatch_v1"
           TEST_PATH: "tests/aws/services/cloudwatch/"
           JUNIT_REPORTS_FILE: "pytest-junit-cloudwatch-v1.xml"
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} --reruns 3 -o junit_suite_name=cloudwatch_v1"
-          COVERAGE_ARGS: "-p"
           PROVIDER_OVERRIDE_CLOUDWATCH: "v1"
         run: make test-coverage
-
-      # Store coverage results
 
       - name: Archive Test Results
         uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
           name: test-results-cloudwatch-v1
+          include-hidden-files: true
           path: |
             pytest-junit-cloudwatch-v1.xml
+            .coverage.cloudwatch_v1
           retention-days: 30
 
   test-ddb-v2:
@@ -329,31 +431,35 @@ jobs:
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
     steps:
-      - name: Prepare Local Test Execution
-        uses: localstack/localstack/.github/actions/setup-tests-env@master
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # TO-DO: remove, single commit is probably enough
+
+      - name: Prepare Local Test Environment
+        uses: localstack/localstack/.github/actions/setup-test-env@master
 
       - name: Run DynamoDB(Streams) v2 Provider Tests
         timeout-minutes: 30
         env:
           # add the GitHub API token to avoid rate limit issues
           #            GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COVERAGE_FILE: "target/coverage/.coverage.dynamodb_v2"
+          COVERAGE_FILE: ".coverage.dynamodb_v2"
           TEST_PATH: "tests/aws/services/dynamodb/ tests/aws/services/dynamodbstreams/ tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py"
           JUNIT_REPORTS_FILE: "pytest-junit-dynamodb-v2.xml"
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} --reruns 3 -o junit_suite_name=dynamodb_v2"
-          COVERAGE_ARGS: "-p"
           PROVIDER_OVERRIDE_DYNAMODB: "v2"
         run: make test-coverage
-
-      # Store coverage results
 
       - name: Archive Test Results
         uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
           name: test-results-dynamodb-v2
+          include-hidden-files: true
           path: |
             pytest-junit-dynamodb-v2.xml
+            .coverage.dynamodb_v2
           retention-days: 30
 
   test-events-v1:
@@ -369,8 +475,8 @@ jobs:
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
     steps:
-      - name: Prepare Local Test Execution
-        uses: localstack/localstack/.github/actions/setup-tests-env@master
+      - name: Prepare Local Test Environment
+        uses: localstack/localstack/.github/actions/setup-test-env@master
 
       - name: Run EventBridge v1 Provider Tests
         timeout-minutes: 30
@@ -378,11 +484,10 @@ jobs:
           # add the GitHub API token to avoid rate limit issues
           #            GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: 1
-          COVERAGE_FILE: "target/coverage/.coverage.events_v1"
+          COVERAGE_FILE: ".coverage.events_v1"
           TEST_PATH: "tests/aws/services/events/"
           JUNIT_REPORTS_FILE: "pytest-junit-events-v1.xml"
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} --reruns 3 -o junit_suite_name=events_v1"
-          COVERAGE_ARGS: "-p"
           PROVIDER_OVERRIDE_EVENTS: "v1"
         run: make test-coverage
 
@@ -393,4 +498,65 @@ jobs:
           name: test-results-events-v1
           path: |
             pytest-junit-events-v1.xml
+            .coverage.events_v1
+          retention-days: 30
+
+  capture-not-implemented:
+    name: "Capture Not Implemented"
+    if: ${{ !inputs.onlyAcceptanceTests && github.ref == 'refs/heads/master' }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      #      - name: Login to Docker Hub
+      #        # login to DockerHub to avoid rate limiting issues on custom runners
+      #        uses: docker/login-action@v3
+      #        with:
+      #          username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+      #          password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # setuptools_scm requires the git history (at least until the last tag) to determine the version
+          fetch-depth: 0
+
+      - name: Load Localstack Docker Image
+        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+
+      - name: Install Community Dependencies #to-do might use setup tests on runner
+        run: make install-dev
+
+      - name: Start LocalStack
+        env:
+          # add the GitHub API token to avoid rate limit issues
+          GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISABLE_EVENTS: "1"
+          DEBUG: 1
+          IMAGE_NAME: "localstack/localstack:latest"
+        run: |
+          source .venv/bin/activate
+          localstack start -d
+          localstack wait -t 120 || (localstack logs && false)
+
+      - name: Run capture-not-implemented
+        run: |
+          source .venv/bin/activate
+          cd scripts
+          python -m capture_notimplemented_responses
+
+      - name: Print the logs
+        run: |
+          source .venv/bin/activate
+          localstack logs
+
+      - name: Stop localstack
+        run: |
+          source .venv/bin/activate
+          localstack stop
+
+      - name: Archive Capture-Not-Implemented Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: capture-notimplemented
+          path: results/
           retention-days: 30
