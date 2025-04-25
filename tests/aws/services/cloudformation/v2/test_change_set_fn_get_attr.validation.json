@@ -14,6 +14,9 @@
   "tests/aws/services/cloudformation/v2/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_resource_addition": {
     "last_validated_date": "2025-04-08T12:33:53+00:00"
   },
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_resource_addition_with_read_only_property": {
+    "last_validated_date": "2025-04-25T13:55:46+00:00"
+  },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_resource_deletion": {
     "last_validated_date": "2025-04-08T12:36:40+00:00"
   }
