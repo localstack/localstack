@@ -1,11 +1,12 @@
 import logging
 import os
 import threading
+from abc import abstractmethod
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from localstack import config
-from localstack.services.kinesis.packages import kinesismock_package
+from localstack.services.kinesis.packages import KinesisMockEngine, kinesismock_package
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
 from localstack.utils.run import FuncThread
 from localstack.utils.serving import Server
@@ -21,7 +22,7 @@ class KinesisMockServer(Server):
     def __init__(
         self,
         port: int,
-        js_path: Path,
+        exe_path: Path,
         latency: str,
         account_id: str,
         host: str = "localhost",
@@ -32,7 +33,7 @@ class KinesisMockServer(Server):
         self._latency = latency
         self._data_dir = data_dir
         self._data_filename = f"{self._account_id}.json"
-        self._js_path = js_path
+        self._exe_path = exe_path
         self._log_level = log_level
         super().__init__(port, host)
 
@@ -51,15 +52,9 @@ class KinesisMockServer(Server):
         t.start()
         return t
 
-    def _create_shell_command(self) -> Tuple[List, Dict]:
-        """
-        Helper method for creating kinesis mock invocation command
-        :return: returns a tuple containing the command list and a dictionary with the environment variables
-        """
-
+    @property
+    def _environment_variables(self) -> Dict:
         env_vars = {
-            # Use the `server.json` packaged next to the main.js
-            "KINESIS_MOCK_CERT_PATH": str((self._js_path.parent / "server.json").absolute()),
             "KINESIS_MOCK_PLAIN_PORT": self.port,
             # Each kinesis-mock instance listens to two ports - secure and insecure.
             # LocalStack uses only one - the insecure one. Block the secure port to avoid conflicts.
@@ -91,11 +86,62 @@ class KinesisMockServer(Server):
             env_vars["PERSIST_INTERVAL"] = config.KINESIS_MOCK_PERSIST_INTERVAL
 
         env_vars["LOG_LEVEL"] = self._log_level
-        cmd = ["node", self._js_path]
-        return cmd, env_vars
+
+        return env_vars
+
+    @abstractmethod
+    def _create_shell_command(self) -> Tuple[List, Dict]:
+        """
+        Helper method for creating kinesis mock invocation command
+        :return: returns a tuple containing the command list and a dictionary with the environment variables
+        """
+        pass
 
     def _log_listener(self, line, **_kwargs):
         LOG.info(line.rstrip())
+
+
+class KinesisMockScalaServer(KinesisMockServer):
+    def _create_shell_command(self) -> Tuple[List, Dict]:
+        cmd = ["java", "-jar", *self._get_java_vm_options(), str(self._exe_path)]
+        return cmd, self._environment_variables
+
+    @property
+    def _environment_variables(self) -> Dict:
+        default_env_vars = super()._environment_variables
+        kinesis_mock_installer = kinesismock_package.get_installer()
+        return {
+            **default_env_vars,
+            **kinesis_mock_installer.get_java_env_vars(),
+        }
+
+    def _get_java_vm_options(self) -> list[str]:
+        return [
+            f"-Xms{config.KINESIS_MOCK_INITIAL_HEAP_SIZE}",
+            f"-Xmx{config.KINESIS_MOCK_MAXIMUM_HEAP_SIZE}",
+            "-XX:+UseG1GC",
+            "-XX:MaxGCPauseMillis=500",
+            "-XX:+UseGCOverheadLimit",
+            "-XX:+ExplicitGCInvokesConcurrent",
+            "-XX:+HeapDumpOnOutOfMemoryError",
+            "-XX:+ExitOnOutOfMemoryError",
+        ]
+
+
+class KinesisMockNodeServer(KinesisMockServer):
+    @property
+    def _environment_variables(self) -> Dict:
+        node_env_vars = {
+            # Use the `server.json` packaged next to the main.js
+            "KINESIS_MOCK_CERT_PATH": str((self._exe_path.parent / "server.json").absolute()),
+        }
+
+        default_env_vars = super()._environment_variables
+        return {**node_env_vars, **default_env_vars}
+
+    def _create_shell_command(self) -> Tuple[List, Dict]:
+        cmd = ["node", self._exe_path]
+        return cmd, self._environment_variables
 
 
 class KinesisServerManager:
@@ -137,7 +183,7 @@ class KinesisServerManager:
         """
         port = get_free_tcp_port()
         kinesismock_package.install()
-        kinesis_mock_js_path = Path(kinesismock_package.get_installer().get_executable_path())
+        kinesis_mock_path = Path(kinesismock_package.get_installer().get_executable_path())
 
         # kinesis-mock stores state in json files <account_id>.json, so we can dump everything into `kinesis/`
         persist_path = os.path.join(config.dirs.data, "kinesis")
@@ -159,12 +205,21 @@ class KinesisServerManager:
             log_level = "INFO"
         latency = config.KINESIS_LATENCY + "ms"
 
-        server = KinesisMockServer(
+        if kinesismock_package.engine == KinesisMockEngine.SCALA:
+            return KinesisMockScalaServer(
+                port=port,
+                exe_path=kinesis_mock_path,
+                log_level=log_level,
+                latency=latency,
+                data_dir=persist_path,
+                account_id=account_id,
+            )
+
+        return KinesisMockNodeServer(
             port=port,
-            js_path=kinesis_mock_js_path,
+            exe_path=kinesis_mock_path,
             log_level=log_level,
             latency=latency,
             data_dir=persist_path,
             account_id=account_id,
         )
-        return server
