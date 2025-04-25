@@ -1111,8 +1111,9 @@ class TestKinesisSource:
         ]["StreamARN"]
 
         if not is_aws_cloud():
-            # Override the MaximumRecordAgeInSeconds to make test shorter in LS
-            # which would otherwise fail validations (where MaximumRecordAgeInSeconds >= 60s).
+            # LocalStack test optimization: Override MaximumRecordAgeInSeconds directly
+            # in the poller to bypass the AWS API validation (where MaximumRecordAgeInSeconds >= 60s).
+            # This saves 55s waiting time.
             def _patched_stream_parameters(self):
                 params = self.source_parameters.get("KinesisStreamParameters", {})
                 params["MaximumRecordAgeInSeconds"] = 5
@@ -1195,6 +1196,8 @@ class TestKinesisSource:
         snapshot.add_transformer(snapshot.transform.key_value("ReceiptHandle"))
         snapshot.add_transformer(snapshot.transform.key_value("startSequenceNumber"))
 
+        # PutRecords does not have guaranteed ordering so we should sort the retrieved records to ensure consistency
+        # between runs.
         snapshot.add_transformer(
             SortingTransformer(
                 "Records", lambda x: base64.b64decode(x["kinesis"]["data"]).decode("utf-8")
@@ -1208,6 +1211,7 @@ class TestKinesisSource:
         if not is_aws_cloud():
             wait_before_processing = 5
 
+            # LS test optimization
             def _patched_stream_parameters(self):
                 params = self.source_parameters.get("KinesisStreamParameters", {})
                 params["MaximumRecordAgeInSeconds"] = wait_before_processing
