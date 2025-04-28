@@ -128,7 +128,7 @@ jobs:
         timeout-minutes: 8
         env:
           # add the GitHub API token to avoid rate limit issues
-          #GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: 1
           TEST_PATH: "tests/unit"
           JUNIT_REPORTS_FILE: "pytest-junit-unit.xml"
@@ -229,7 +229,7 @@ jobs:
         timeout-minutes: 120
         env:
           # add the GitHub API token to avoid rate limit issues
-          #GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --splits 2 --group ${{ matrix.group }} --store-durations --clean-durations --ignore=tests/unit/ --ignore=tests/bootstrap"
           COVERAGE_FILE: "target/.coverage.integration-${{ env.PLATFORM }}-${{ matrix.group }}"
           JUNIT_REPORTS_FILE: "target/pytest-junit-integration-${{ env.PLATFORM }}-${{ matrix.group }}.xml"
@@ -316,7 +316,7 @@ jobs:
         group: [ 1, 2 ]
         runner:
           - ubuntu-latest
-        #          - ubuntu-24.04-arm
+          - ubuntu-24.04-arm
         exclude:
           # skip the ARM integration tests in case we are not on the master and not on the upgrade-dependencies branch and forceARMTests is not set to true
           - runner: ${{ (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'ubuntu-24.04-arm' || ''}}
@@ -370,7 +370,7 @@ jobs:
         timeout-minutes: 120
         env:
           # add the GitHub API token to avoid rate limit issues
-          #GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: 1
           LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC: 1
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --reruns 3 -m acceptance_test -o junit_suite_name='acceptance_test'"
@@ -453,7 +453,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # TO-DO: remove, single commit is probably enough
+          fetch-depth: 0
 
       - name: Prepare Local Test Environment
         uses: ./.github/actions/setup-test-env
