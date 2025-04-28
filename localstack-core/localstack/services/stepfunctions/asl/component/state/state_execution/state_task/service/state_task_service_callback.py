@@ -176,6 +176,8 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         outcome: CallbackOutcome | Any
         try:
             if self.resource.condition == ResourceCondition.WaitForTaskToken:
+                # WaitForTaskToken workflows are evaluated the same way,
+                # whether running in mock mode or not.
                 outcome = self._eval_wait_for_task_token(
                     env=env,
                     timeout_seconds=timeout_seconds,
