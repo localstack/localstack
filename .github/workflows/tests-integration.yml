@@ -69,7 +69,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build Image
-        uses: localstack/localstack/.github/actions/build-image@circleci-to-gh-actions-full-run
+        uses: ./.github/actions/build-image
         with:
           disableCaching: ${{ inputs.disableCaching == true && 'true' || 'false' }}
           dockerhubPullUsername: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
@@ -86,7 +86,7 @@ jobs:
           fetch-depth: 0
 
       - name: Prepare Local Test Environment
-        uses: localstack/localstack/.github/actions/setup-test-env@circleci-to-gh-actions-full-run
+        uses: ./.github/actions/setup-test-env
 
       - name: Linting
         run: make lint
@@ -214,7 +214,7 @@ jobs:
           key: ${{ steps.cached-lambda-common-restore.outputs.cache-primary-key }}
 
       - name: Prepare Local Test Environment
-        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@circleci-to-gh-actions-full-run
+        uses: ./.github/actions/load-localstack-docker-from-artifacts
         with:
           platform: "${{ env.PLATFORM }}"
 
@@ -280,10 +280,10 @@ jobs:
           fetch-depth: 0
 
       - name: Prepare Local Test Environment
-        uses: localstack/localstack/.github/actions/setup-test-env@circleci-to-gh-actions-full-run
+        uses: ./.github/actions/setup-test-env
 
       - name: Load Localstack Docker Image
-        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@circleci-to-gh-actions-full-run
+        uses: ./.github/actions/load-localstack-docker-from-artifacts
 
       - name: Run Bootstrap Tests
         timeout-minutes: 30
@@ -351,7 +351,7 @@ jobs:
           fetch-depth: 0
 
       - name: Load Localstack Docker Image
-        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@circleci-to-gh-actions-full-run
+        uses: ./.github/actions/load-localstack-docker-from-artifacts
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
@@ -411,7 +411,7 @@ jobs:
           fetch-depth: 0
 
       - name: Prepare Local Test Environment
-        uses: localstack/localstack/.github/actions/setup-test-env@circleci-to-gh-actions-full-run
+        uses: ./.github/actions/setup-test-env
 
       - name: Run Cloudwatch v1 Provider Tests
         timeout-minutes: 30
@@ -456,7 +456,7 @@ jobs:
           fetch-depth: 0 # TO-DO: remove, single commit is probably enough
 
       - name: Prepare Local Test Environment
-        uses: localstack/localstack/.github/actions/setup-test-env@circleci-to-gh-actions-full-run
+        uses: ./.github/actions/setup-test-env
 
       - name: Run DynamoDB(Streams) v2 Provider Tests
         timeout-minutes: 30
@@ -495,7 +495,7 @@ jobs:
       CI_JOB_ID: ${{ github.job }}
     steps:
       - name: Prepare Local Test Environment
-        uses: localstack/localstack/.github/actions/setup-test-env@circleci-to-gh-actions-full-run
+        uses: ./.github/actions/setup-test-env
 
       - name: Run EventBridge v1 Provider Tests
         timeout-minutes: 30
@@ -541,7 +541,7 @@ jobs:
           fetch-depth: 0
 
       - name: Prepare Local Test Environment
-        uses: k-a-il/localstack/.github/actions/setup-test-env@circleci-to-gh-actions-full-run
+        uses: ./.github/actions/setup-test-env
 
       - name: Run CloudFormation Engine v2 Tests
         timeout-minutes: 30
@@ -586,7 +586,7 @@ jobs:
           fetch-depth: 0
 
       - name: Load Localstack Docker Image
-        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@circleci-to-gh-actions-full-run
+        uses: ./.github/actions/load-localstack-docker-from-artifacts
 
       - name: Install Community Dependencies
         run: make install-dev
