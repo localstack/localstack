@@ -1,5 +1,23 @@
 {
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_dynamodb_put_get_item": {
+    "last_validated_date": "2025-04-23T15:32:30+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_events_put_events": {
+    "last_validated_date": "2025-04-23T14:28:24+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_lambda_invoke": {
+    "last_validated_date": "2025-04-22T10:30:21+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_lambda_service_invoke": {
     "last_validated_date": "2025-04-14T18:51:50+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_map_state_lambda": {
+    "last_validated_date": "2025-04-24T11:11:05+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_sns_publish_base": {
+    "last_validated_date": "2025-04-23T13:52:23+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_sqs_send_message": {
+    "last_validated_date": "2025-04-22T19:39:14+00:00"
   }
 }

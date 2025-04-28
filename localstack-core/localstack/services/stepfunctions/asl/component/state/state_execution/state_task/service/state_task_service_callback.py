@@ -176,12 +176,18 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         outcome: CallbackOutcome | Any
         try:
             if self.resource.condition == ResourceCondition.WaitForTaskToken:
+                # WaitForTaskToken workflows are evaluated the same way,
+                # whether running in mock mode or not.
                 outcome = self._eval_wait_for_task_token(
                     env=env,
                     timeout_seconds=timeout_seconds,
                     callback_endpoint=callback_endpoint,
                     heartbeat_endpoint=heartbeat_endpoint,
                 )
+            elif env.is_mocked_mode():
+                # Sync operation in mock mode: sync and sync2 workflows are skipped and the outcome
+                # treated as the overall operation output.
+                outcome = task_output
             else:
                 # Sync operations require the task output as input.
                 env.stack.append(task_output)

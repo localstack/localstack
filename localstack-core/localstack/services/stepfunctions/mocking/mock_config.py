@@ -57,10 +57,10 @@ class StateMockedResponses:
         self.state_name = state_name
         self.mocked_response_name = mocked_response_name
         self.mocked_responses = list()
-        last_range_end: int = 0
+        last_range_end: int = -1
         mocked_responses_sorted = sorted(mocked_responses, key=lambda mr: mr.range_start)
         for mocked_response in mocked_responses_sorted:
-            if not mocked_response.range_start - last_range_end == 0:
+            if not mocked_response.range_start - last_range_end == 1:
                 raise RuntimeError(
                     f"Inconsistent event numbering detected for state '{state_name}': "
                     f"the previous mocked response ended at event '{last_range_end}' "

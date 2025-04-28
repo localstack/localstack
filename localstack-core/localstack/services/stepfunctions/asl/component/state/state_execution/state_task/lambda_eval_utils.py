@@ -6,9 +6,13 @@ from localstack.aws.api.lambda_ import InvocationResponse
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
     StateCredentials,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.mock_eval_utils import (
+    eval_mocked_response,
+)
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.services.stepfunctions.mocking.mock_config import MockedResponse
 from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import to_bytes
 
@@ -38,26 +42,46 @@ def _from_payload(payload_streaming_body: IO[bytes]) -> Union[json, str]:
         return decoded_data
 
 
-def exec_lambda_function(
-    env: Environment, parameters: dict, region: str, state_credentials: StateCredentials
-) -> None:
+def _mocked_invoke_lambda_function(env: Environment) -> InvocationResponse:
+    mocked_response: MockedResponse = env.get_current_mocked_response()
+    eval_mocked_response(env=env, mocked_response=mocked_response)
+    invocation_resp: InvocationResponse = env.stack.pop()
+    return invocation_resp
+
+
+def _invoke_lambda_function(
+    parameters: dict, region: str, state_credentials: StateCredentials
+) -> InvocationResponse:
     lambda_client = boto_client_for(
         service="lambda", region=region, state_credentials=state_credentials
     )
 
-    invocation_resp: InvocationResponse = lambda_client.invoke(**parameters)
+    invocation_response: InvocationResponse = lambda_client.invoke(**parameters)
 
-    func_error: Optional[str] = invocation_resp.get("FunctionError")
-
-    payload = invocation_resp["Payload"]
+    payload = invocation_response["Payload"]
     payload_json = _from_payload(payload)
-    if func_error:
+    invocation_response["Payload"] = payload_json
+
+    return invocation_response
+
+
+def execute_lambda_function_integration(
+    env: Environment, parameters: dict, region: str, state_credentials: StateCredentials
+) -> None:
+    if env.is_mocked_mode():
+        invocation_response: InvocationResponse = _mocked_invoke_lambda_function(env=env)
+    else:
+        invocation_response: InvocationResponse = _invoke_lambda_function(
+            parameters=parameters, region=region, state_credentials=state_credentials
+        )
+
+    function_error: Optional[str] = invocation_response.get("FunctionError")
+    if function_error:
+        payload_json = invocation_response["Payload"]
         payload_str = json.dumps(payload_json, separators=(",", ":"))
-        raise LambdaFunctionErrorException(func_error, payload_str)
+        raise LambdaFunctionErrorException(function_error, payload_str)
 
-    invocation_resp["Payload"] = payload_json
-
-    response = select_from_typed_dict(typed_dict=InvocationResponse, obj=invocation_resp)
+    response = select_from_typed_dict(typed_dict=InvocationResponse, obj=invocation_response)  # noqa
     env.stack.append(response)
 
 

@@ -435,5 +435,1633 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_lambda_invoke": {
+    "recorded-date": "22-04-2025, 10:30:21",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "body": "string body"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "body": "string body"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "step1"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "body": "string body"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:lambda_function_name"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": {
+                "body": "string body"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "step1",
+              "output": {
+                "body": "string body"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "body": "string body"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_sqs_send_message": {
+    "recorded-date": "22-04-2025, 19:39:14",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "sqs-queue-url",
+                "MessageBody": "test_message_body"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:<partition>:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "sqs-queue-url",
+                "MessageBody": "test_message_body"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SendSQS"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "QueueUrl": "sqs-queue-url",
+                "MessageBody": "test_message_body"
+              },
+              "region": "<region>",
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "106"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "x-amzn-RequestId"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "SendSQS",
+              "output": {
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "106"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "x-amzn-RequestId"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "106"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "x-amzn-RequestId"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_sns_publish_base": {
+    "recorded-date": "23-04-2025, 13:52:23",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TopicArn": "topic-arn",
+                "Message": {
+                  "message": "string-literal"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TopicArn": "topic-arn",
+                "Message": {
+                  "message": "string-literal"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Publish"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TopicArn": "topic-arn",
+                "Message": {
+                  "message": "string-literal"
+                }
+              },
+              "region": "<region>",
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "x-amzn-RequestId"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "publish",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Publish",
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "x-amzn-RequestId"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "x-amzn-RequestId"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_events_put_events": {
+    "recorded-date": "23-04-2025, 14:28:24",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Entries": [
+                  {
+                    "Detail": "{\"Message\": \"string-literal\"}",
+                    "DetailType": "detail-type",
+                    "Source": "some.source"
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Entries": [
+                  {
+                    "Detail": "{\"Message\": \"string-literal\"}",
+                    "DetailType": "detail-type",
+                    "Source": "some.source"
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "PutEvents"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Entries": [
+                  {
+                    "Detail": "{\"Message\": \"string-literal\"}",
+                    "DetailType": "detail-type",
+                    "Source": "some.source"
+                  }
+                ]
+              },
+              "region": "<region>",
+              "resource": "putEvents",
+              "resourceType": "events"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "putEvents",
+              "resourceType": "events"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Entries": [
+                  {
+                    "EventId": "<uuid:1>"
+                  }
+                ],
+                "FailedEntryCount": 0
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "putEvents",
+              "resourceType": "events"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "PutEvents",
+              "output": {
+                "Entries": [
+                  {
+                    "EventId": "<uuid:1>"
+                  }
+                ],
+                "FailedEntryCount": 0
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Entries": [
+                  {
+                    "EventId": "<uuid:1>"
+                  }
+                ],
+                "FailedEntryCount": 0
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_dynamodb_put_get_item": {
+    "recorded-date": "23-04-2025, 15:32:30",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TableName": "table-name",
+                "Item": {
+                  "data": {
+                    "S": "string-literal"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TableName": "table-name",
+                "Item": {
+                  "data": {
+                    "S": "string-literal"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "PutItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TableName": "table-name",
+                "Item": {
+                  "data": {
+                    "S": "string-literal"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "region": "<region>",
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "Server": [
+                      "Server"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "x-amz-crc32": "x-amz-crc32",
+                    "Content-Length": [
+                      "2"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "2",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "Server": "Server",
+                    "x-amz-crc32": "x-amz-crc32",
+                    "x-amzn-RequestId": "x-amzn-RequestId"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "PutItem",
+              "output": {
+                "TableName": "table-name",
+                "Item": {
+                  "data": {
+                    "S": "string-literal"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": "date",
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "date",
+                      "Server": "Server",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "RequestId"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TableName": "table-name",
+                "Item": {
+                  "data": {
+                    "S": "string-literal"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": "date",
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "date",
+                      "Server": "Server",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "RequestId"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "GetItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TableName": "table-name",
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "region": "<region>",
+              "resource": "getItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "taskStartedEventDetails": {
+              "resource": "getItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Item": {
+                  "data": {
+                    "S": "string-literal"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "Server": [
+                      "Server"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "x-amz-crc32": "x-amz-crc32",
+                    "Content-Length": [
+                      "57"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "57",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "Server": "Server",
+                    "x-amz-crc32": "x-amz-crc32",
+                    "x-amzn-RequestId": "x-amzn-RequestId"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "getItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateExitedEventDetails": {
+              "name": "GetItem",
+              "output": {
+                "TableName": "table-name",
+                "Item": {
+                  "data": {
+                    "S": "string-literal"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": "date",
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "date",
+                      "Server": "Server",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "RequestId"
+                  }
+                },
+                "getItemOutput": {
+                  "Item": {
+                    "data": {
+                      "S": "string-literal"
+                    },
+                    "id": {
+                      "S": "id1"
+                    }
+                  },
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "Content-Length": [
+                        "57"
+                      ],
+                      "Date": "date",
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "57",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "date",
+                      "Server": "Server",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "RequestId"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "TableName": "table-name",
+                "Item": {
+                  "data": {
+                    "S": "string-literal"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": "date",
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "date",
+                      "Server": "Server",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "RequestId"
+                  }
+                },
+                "getItemOutput": {
+                  "Item": {
+                    "data": {
+                      "S": "string-literal"
+                    },
+                    "id": {
+                      "S": "id1"
+                    }
+                  },
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": "x-amzn-RequestId",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "Content-Length": [
+                        "57"
+                      ],
+                      "Date": "date",
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "57",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "date",
+                      "Server": "Server",
+                      "x-amz-crc32": "x-amz-crc32",
+                      "x-amzn-RequestId": "x-amzn-RequestId"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "RequestId"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 12,
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_map_state_lambda": {
+    "recorded-date": "24-04-2025, 11:11:05",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "StartState"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "StartState",
+              "output": {
+                "Iterations": 2,
+                "Values": [
+                  {
+                    "body": "string body"
+                  }
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Iterations": 2,
+                "Values": [
+                  {
+                    "body": "string body"
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "BeforeIteration"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "BeforeIteration",
+              "output": {
+                "Values": [
+                  {
+                    "body": "string body"
+                  }
+                ],
+                "Iterations": 1
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Values": [
+                  {
+                    "body": "string body"
+                  }
+                ],
+                "Iterations": 1
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "IterationBody"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 7,
+            "mapStateStartedEventDetails": {
+              "length": 1
+            },
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 8,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "map_run_arn"
+            },
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 11,
+            "previousEventId": 8,
+            "stateExitedEventDetails": {
+              "name": "IterationBody",
+              "output": {
+                "Values": [
+                  {
+                    "body": "string body"
+                  }
+                ],
+                "Iterations": 1
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Values": [
+                  {
+                    "body": "string body"
+                  }
+                ],
+                "Iterations": 1
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "CheckIteration"
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateEntered"
+          },
+          {
+            "id": 13,
+            "previousEventId": 12,
+            "stateExitedEventDetails": {
+              "name": "CheckIteration",
+              "output": {
+                "Values": [
+                  {
+                    "body": "string body"
+                  }
+                ],
+                "Iterations": 1
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateExited"
+          },
+          {
+            "id": 14,
+            "previousEventId": 13,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Values": [
+                  {
+                    "body": "string body"
+                  }
+                ],
+                "Iterations": 1
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "BeforeIteration"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "stateExitedEventDetails": {
+              "name": "BeforeIteration",
+              "output": {
+                "Values": [
+                  {
+                    "body": "string body"
+                  }
+                ],
+                "Iterations": 0
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 16,
+            "previousEventId": 15,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Values": [
+                  {
+                    "body": "string body"
+                  }
+                ],
+                "Iterations": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "IterationBody"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 17,
+            "mapStateStartedEventDetails": {
+              "length": 1
+            },
+            "previousEventId": 16,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 18,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "map_run_arn"
+            },
+            "previousEventId": 17,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 19,
+            "previousEventId": 18,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 20,
+            "previousEventId": 19,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 21,
+            "previousEventId": 18,
+            "stateExitedEventDetails": {
+              "name": "IterationBody",
+              "output": {
+                "Values": [
+                  {
+                    "body": "string body"
+                  }
+                ],
+                "Iterations": 0
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 22,
+            "previousEventId": 21,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Values": [
+                  {
+                    "body": "string body"
+                  }
+                ],
+                "Iterations": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "CheckIteration"
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateEntered"
+          },
+          {
+            "id": 23,
+            "previousEventId": 22,
+            "stateExitedEventDetails": {
+              "name": "CheckIteration",
+              "output": {
+                "Values": [
+                  {
+                    "body": "string body"
+                  }
+                ],
+                "Iterations": 0
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateExited"
+          },
+          {
+            "id": 24,
+            "previousEventId": 23,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Values": [
+                  {
+                    "body": "string body"
+                  }
+                ],
+                "Iterations": 0
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Terminate"
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateEntered"
+          },
+          {
+            "id": 25,
+            "previousEventId": 24,
+            "stateExitedEventDetails": {
+              "name": "Terminate",
+              "output": {
+                "Values": [
+                  {
+                    "body": "string body"
+                  }
+                ],
+                "Iterations": 0
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Values": [
+                  {
+                    "body": "string body"
+                  }
+                ],
+                "Iterations": 0
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 26,
+            "previousEventId": 25,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

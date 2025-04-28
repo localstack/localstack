@@ -124,7 +124,7 @@ class StateTaskServiceLambda(StateTaskServiceCallback):
         normalised_parameters: dict,
         state_credentials: StateCredentials,
     ):
-        lambda_eval_utils.exec_lambda_function(
+        lambda_eval_utils.execute_lambda_function_integration(
             env=env,
             parameters=normalised_parameters,
             region=resource_runtime_part.region,

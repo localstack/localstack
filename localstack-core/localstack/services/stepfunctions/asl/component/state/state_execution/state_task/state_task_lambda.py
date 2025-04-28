@@ -164,7 +164,7 @@ class StateTaskLambda(StateTask):
         resource_runtime_part: ResourceRuntimePart = env.stack.pop()
 
         parameters["Payload"] = lambda_eval_utils.to_payload_type(parameters["Payload"])
-        lambda_eval_utils.exec_lambda_function(
+        lambda_eval_utils.execute_lambda_function_integration(
             env=env,
             parameters=parameters,
             region=resource_runtime_part.region,
