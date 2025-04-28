@@ -1,10 +1,16 @@
-name: Community Integration Tests
+name: AWS Integration Tests
 
 on:
-  #  push:
-  #    branches: [ master ]
-  #  pull_request:
-  #    branches: [ '**' ]
+  schedule:
+    - cron: 0 2 * * MON-FRI
+  push:
+    paths-ignore:
+      - 'CODEOWNERS'
+      - 'README.md'
+      - '.gitignore'
+      - '.git-blame-ignore-revs'
+    branches-ignore:
+      - master
   workflow_dispatch:
     inputs:
       disableCaching:
@@ -38,10 +44,6 @@ env:
   IMAGE_NAME: "localstack/localstack"
   TINYBIRD_DATASOURCE: "community_tests"
   TESTSELECTION_PYTEST_ARGS: "${{ !inputs.disableTestSelection && '--path-filter=dist/testselection/test-selection.txt ' || '' }}"
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   build:
@@ -156,7 +158,7 @@ jobs:
       - test-preflight
     strategy:
       matrix:
-        group: [ 1 ]
+        group: [ 1, 2 ]
         runner:
           - ubuntu-latest
           - ubuntu-24.04-arm
@@ -174,12 +176,12 @@ jobs:
         shell: bash
         run: echo "PLATFORM=${{ (runner.arch == 'X64' && 'amd64') || (runner.arch == 'ARM64' && 'arm64') || '' }}" >> $GITHUB_ENV
 
-      #      - name: Login to Docker Hub
-      #        # login to DockerHub to avoid rate limiting issues on custom runners
-      #        uses: docker/login-action@v3
-      #        with:
-      #          username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
-      #          password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+      - name: Login to Docker Hub
+        # login to DockerHub to avoid rate limiting issues on custom runners
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
       - name: Set environment
         if: ${{ inputs.testEnvironmentVariables != ''}}
@@ -192,6 +194,24 @@ jobs:
         with:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
+
+      - name: Restore Lambda common runtime packages
+        id: cached-lambda-common-restore
+        if: inputs.disableCaching != true
+        uses: actions/cache/restore@v4
+        with:
+          path: tests/aws/services/lambda_/functions/common
+          key: common-it-${{ runner.os }}-${{ runner.arch }}-lambda-common-${{ hashFiles('tests/aws/services/lambda_/functions/common/**/src/*', 'tests/aws/services/lambda_/functions/common/**/Makefile') }}
+
+      - name: Prebuild lambda common packages
+        run: ./scripts/build_common_test_functions.sh `pwd`/tests/aws/services/lambda_/functions/common
+
+      - name: Save Lambda common runtime packages
+        if: inputs.disableCaching != true
+        uses: actions/cache/save@v4
+        with:
+          path: tests/aws/services/lambda_/functions/common
+          key: ${{ steps.cached-lambda-common-restore.outputs.cache-primary-key }}
 
       - name: Prepare Local Test Environment
         uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
@@ -211,10 +231,10 @@ jobs:
           # add the GitHub API token to avoid rate limit issues
           #GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --splits 2 --group ${{ matrix.group }} --store-durations --clean-durations --ignore=tests/unit/ --ignore=tests/bootstrap"
-          COVERAGE_FILE: ".coverage.integration-${{ env.PLATFORM }}-${{ matrix.group }}"
-          JUNIT_REPORTS_FILE: "pytest-junit-integration-${{ env.PLATFORM }}-${{ matrix.group }}.xml"
-          #          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
-          #          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+          COVERAGE_FILE: "target/.coverage.integration-${{ env.PLATFORM }}-${{ matrix.group }}"
+          JUNIT_REPORTS_FILE: "target/pytest-junit-integration-${{ env.PLATFORM }}-${{ matrix.group }}.xml"
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
           # increase Docker SDK timeout to avoid timeouts on BuildJet runners - https://github.com/docker/docker-py/issues/2266
           DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS: 300
         run: make docker-run-tests
@@ -235,8 +255,8 @@ jobs:
           name: test-results-main-${{ env.PLATFORM }}-${{ matrix.group }}
           include-hidden-files: true
           path: |
-            pytest-junit-integration-${{ env.PLATFORM }}-${{ matrix.group }}.xml
-            .coverage.integration-${{ env.PLATFORM }}-${{ matrix.group }}
+            target/pytest-junit-integration-${{ env.PLATFORM }}-${{ matrix.group }}.xml
+            target/.coverage.integration-${{ env.PLATFORM }}-${{ matrix.group }}
           retention-days: 30
 
   test-bootstrap:
@@ -248,6 +268,7 @@ jobs:
       - build
     timeout-minutes: 60
     env:
+      PLATFORM: 'amd64'
       # Set job-specific environment variables for pytest-tinybird
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
@@ -268,8 +289,7 @@ jobs:
         timeout-minutes: 30
         env:
           # add the GitHub API token to avoid rate limit issues
-          #            GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEBUG: 1
+          GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TEST_PATH: "tests/bootstrap"
           COVERAGE_FILE: ".coverage.bootstrap"
           JUNIT_REPORTS_FILE: "pytest-junit-bootstrap.xml"
@@ -289,12 +309,11 @@ jobs:
 
   test-acceptance:
     name: "Acceptance Tests (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }} - ${{ matrix.group }})"
-    if: ${{ !inputs.onlyAcceptanceTests }}
     needs:
       - build
     strategy:
       matrix:
-        group: [ 1 ]
+        group: [ 1, 2 ]
         runner:
           - ubuntu-latest
         #          - ubuntu-24.04-arm
@@ -312,12 +331,12 @@ jobs:
         shell: bash
         run: echo "PLATFORM=${{ (runner.arch == 'X64' && 'amd64') || (runner.arch == 'ARM64' && 'arm64') || '' }}" >> $GITHUB_ENV
 
-      #      - name: Login to Docker Hub
-      #        # login to DockerHub to avoid rate limiting issues on custom runners
-      #        uses: docker/login-action@v3
-      #        with:
-      #          username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
-      #          password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+      - name: Login to Docker Hub
+        # login to DockerHub to avoid rate limiting issues on custom runners
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
       - name: Set environment
         if: ${{ inputs.testEnvironmentVariables != ''}}
@@ -355,11 +374,11 @@ jobs:
           DEBUG: 1
           LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC: 1
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --reruns 3 -m acceptance_test -o junit_suite_name='acceptance_test'"
-          COVERAGE_FILE: ".coverage.acceptance-${{ env.PLATFORM }}-${{ matrix.group }}"
-          JUNIT_REPORTS_FILE: "pytest-junit-acceptance-${{ env.PLATFORM }}-${{ matrix.group }}.xml"
+          COVERAGE_FILE: "target/.coverage.acceptance-${{ env.PLATFORM }}-${{ matrix.group }}"
+          JUNIT_REPORTS_FILE: "target/pytest-junit-acceptance-${{ env.PLATFORM }}-${{ matrix.group }}.xml"
           TEST_PATH: "tests/aws/"
-        #          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
-        #          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
         run: make docker-run-tests
 
       - name: Archive Test Results
@@ -369,8 +388,8 @@ jobs:
           name: test-results-main-${{ env.PLATFORM }}-${{ matrix.group }}
           include-hidden-files: true
           path: |
-            pytest-junit-acceptance-${{ env.PLATFORM }}-${{ matrix.group }}.xml
-            .coverage.acceptance-${{ env.PLATFORM }}-${{ matrix.group }}
+            target/pytest-junit-acceptance-${{ env.PLATFORM }}-${{ matrix.group }}.xml
+            target/.coverage.acceptance-${{ env.PLATFORM }}-${{ matrix.group }}
           retention-days: 30
 
   test-cloudwatch-v1:
@@ -389,7 +408,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # TO-DO: remove, single commit is probably enough
+          fetch-depth: 0
 
       - name: Prepare Local Test Environment
         uses: localstack/localstack/.github/actions/setup-test-env@master
@@ -398,7 +417,7 @@ jobs:
         timeout-minutes: 30
         env:
           # add the GitHub API token to avoid rate limit issues
-          #            GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: 1
           COVERAGE_FILE: ".coverage.cloudwatch_v1"
           TEST_PATH: "tests/aws/services/cloudwatch/"
@@ -443,7 +462,7 @@ jobs:
         timeout-minutes: 30
         env:
           # add the GitHub API token to avoid rate limit issues
-          #            GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERAGE_FILE: ".coverage.dynamodb_v2"
           TEST_PATH: "tests/aws/services/dynamodb/ tests/aws/services/dynamodbstreams/ tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py"
           JUNIT_REPORTS_FILE: "pytest-junit-dynamodb-v2.xml"
@@ -482,7 +501,7 @@ jobs:
         timeout-minutes: 30
         env:
           # add the GitHub API token to avoid rate limit issues
-          #            GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: 1
           COVERAGE_FILE: ".coverage.events_v1"
           TEST_PATH: "tests/aws/services/events/"
@@ -501,18 +520,64 @@ jobs:
             .coverage.events_v1
           retention-days: 30
 
+  test-cfn-v2-engine:
+    name: Test CloudFront Engine v2
+    if: ${{ !inputs.onlyAcceptanceTests }}
+    runs-on: ubuntu-latest
+    needs:
+      - test-preflight
+      - build
+    timeout-minutes: 60
+    env:
+      COVERAGE_FILE: ".coverage.cloudformation_v2"
+      JUNIT_REPORTS_FILE: "pytest-junit-cloudformation-v2.xml"
+      # Set job-specific environment variables for pytest-tinybird
+      CI_JOB_NAME: ${{ github.job }}
+      CI_JOB_ID: ${{ github.job }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prepare Local Test Environment
+        uses: k-a-il/localstack/.github/actions/setup-test-env@master
+
+      - name: Run CloudFormation Engine v2 Tests
+        timeout-minutes: 30
+        env:
+          # add the GitHub API token to avoid rate limit issues
+          GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_PATH: "tests/aws/services/cloudformation/v2"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} --reruns 3 -o junit_suite_name='cloudformation_v2'"
+          PROVIDER_OVERRIDE_CLOUDFORMATION: "engine-v2"
+        run: make test-coverage
+
+      - name: Archive Test Results
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: test-results-cloudformation-v2
+          include-hidden-files: true
+          path: |
+            ${{ env.COVERAGE_FILE }}
+            ${{ env.JUNIT_REPORTS_FILE }}
+          retention-days: 30
+
   capture-not-implemented:
     name: "Capture Not Implemented"
     if: ${{ !inputs.onlyAcceptanceTests && github.ref == 'refs/heads/master' }}
     runs-on: ubuntu-latest
     needs: build
+    env:
+      PLATFORM: 'amd64'
     steps:
-      #      - name: Login to Docker Hub
-      #        # login to DockerHub to avoid rate limiting issues on custom runners
-      #        uses: docker/login-action@v3
-      #        with:
-      #          username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
-      #          password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+      - name: Login to Docker Hub
+        # login to DockerHub to avoid rate limiting issues on custom runners
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -523,7 +588,7 @@ jobs:
       - name: Load Localstack Docker Image
         uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
 
-      - name: Install Community Dependencies #to-do might use setup tests on runner
+      - name: Install Community Dependencies
         run: make install-dev
 
       - name: Start LocalStack
