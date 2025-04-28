@@ -1,0 +1,14 @@
+{
+  "0": {
+    "Return": {
+      "Item": {
+        "data": {
+          "S": "string-literal"
+        },
+        "id": {
+          "S": "id1"
+        },
+      }
+    }
+  }
+}

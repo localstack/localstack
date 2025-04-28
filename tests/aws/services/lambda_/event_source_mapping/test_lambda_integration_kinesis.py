@@ -1,3 +1,4 @@
+import base64
 import json
 import math
 import time
@@ -5,9 +6,12 @@ from datetime import datetime
 
 import pytest
 from botocore.exceptions import ClientError
-from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
+from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer, SortingTransformer
 
 from localstack.aws.api.lambda_ import Runtime
+from localstack.services.lambda_.event_source_mapping.pollers.kinesis_poller import (
+    KinesisPoller,
+)
 from localstack.testing.aws.lambda_utils import (
     _await_event_source_mapping_enabled,
     _await_event_source_mapping_state,
@@ -1071,7 +1075,7 @@ class TestKinesisSource:
             # The record expired while retrying
             pytest.param(0, -1, id="expire-while-retrying"),
             # The record expired prior to arriving (no retries expected)
-            pytest.param(60, 0, id="expire-before-ingestion"),
+            pytest.param(60 if is_aws_cloud() else 5, 0, id="expire-before-ingestion"),
         ],
     )
     def test_kinesis_maximum_record_age_exceeded(
@@ -1084,7 +1088,6 @@ class TestKinesisSource:
         wait_for_stream_ready,
         snapshot,
         aws_client,
-        region_name,
         sqs_create_queue,
         monkeypatch,
         # Parametrized arguments
@@ -1107,15 +1110,27 @@ class TestKinesisSource:
             "StreamDescription"
         ]["StreamARN"]
 
+        if not is_aws_cloud():
+            # LocalStack test optimization: Override MaximumRecordAgeInSeconds directly
+            # in the poller to bypass the AWS API validation (where MaximumRecordAgeInSeconds >= 60s).
+            # This saves 55s waiting time.
+            def _patched_stream_parameters(self):
+                params = self.source_parameters.get("KinesisStreamParameters", {})
+                params["MaximumRecordAgeInSeconds"] = 5
+                return params
+
+            monkeypatch.setattr(
+                KinesisPoller, "stream_parameters", property(_patched_stream_parameters)
+            )
+
         aws_client.kinesis.put_record(
             Data="stream-data",
             PartitionKey="test",
             StreamName=stream_name,
         )
 
-        if processing_delay_seconds > 0:
-            # Optionally delay the ESM creation, allowing a record to expire prior to being ingested.
-            time.sleep(processing_delay_seconds)
+        # Optionally delay the ESM creation, allowing a record to expire prior to being ingested.
+        time.sleep(processing_delay_seconds)
 
         create_lambda_function(
             handler_file=TEST_LAMBDA_ECHO_FAILURE,
@@ -1174,14 +1189,37 @@ class TestKinesisSource:
         snapshot,
         aws_client,
         sqs_create_queue,
+        monkeypatch,
     ):
         # snapshot setup
         snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
         snapshot.add_transformer(snapshot.transform.key_value("ReceiptHandle"))
         snapshot.add_transformer(snapshot.transform.key_value("startSequenceNumber"))
 
+        # PutRecords does not have guaranteed ordering so we should sort the retrieved records to ensure consistency
+        # between runs.
+        snapshot.add_transformer(
+            SortingTransformer(
+                "Records", lambda x: base64.b64decode(x["kinesis"]["data"]).decode("utf-8")
+            ),
+        )
+
         function_name = f"lambda_func-{short_uid()}"
         stream_name = f"test-kinesis-{short_uid()}"
+        wait_before_processing = 80
+
+        if not is_aws_cloud():
+            wait_before_processing = 5
+
+            # LS test optimization
+            def _patched_stream_parameters(self):
+                params = self.source_parameters.get("KinesisStreamParameters", {})
+                params["MaximumRecordAgeInSeconds"] = wait_before_processing
+                return params
+
+            monkeypatch.setattr(
+                KinesisPoller, "stream_parameters", property(_patched_stream_parameters)
+            )
 
         kinesis_create_stream(StreamName=stream_name, ShardCount=1)
         wait_for_stream_ready(stream_name=stream_name)
@@ -1198,15 +1236,13 @@ class TestKinesisSource:
         )
 
         # Ensure that the first record has expired
-        time.sleep(60)
+        time.sleep(wait_before_processing)
 
-        # The first record in the batch has expired with the remaining batch not exceeding any age-limits.
-        for i in range(5):
-            aws_client.kinesis.put_record(
-                Data=f"stream-data-{i + 1}",
-                PartitionKey="test",
-                StreamName=stream_name,
-            )
+        # The first record in the batch will have expired with the remaining batch not exceeding any age-limits.
+        aws_client.kinesis.put_records(
+            Records=[{"Data": f"stream-data-{i + 1}", "PartitionKey": "test"} for i in range(5)],
+            StreamName=stream_name,
+        )
 
         destination_queue_url = sqs_create_queue()
         create_lambda_function(

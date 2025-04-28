@@ -8,6 +8,7 @@ from localstack.aws.api.cloudformation import (
     CreateChangeSetInput,
     DescribeChangeSetOutput,
     ExecutionStatus,
+    Output,
     Parameter,
     StackDriftInformation,
     StackDriftStatus,
@@ -48,6 +49,7 @@ class Stack:
     # state after deploy
     resolved_parameters: dict[str, str]
     resolved_resources: dict[str, ResolvedResource]
+    resolved_outputs: dict[str, str]
 
     def __init__(
         self,
@@ -85,6 +87,7 @@ class Stack:
         # state after deploy
         self.resolved_parameters = {}
         self.resolved_resources = {}
+        self.resolved_outputs = {}
 
     def set_stack_status(self, status: StackStatus, reason: StackStatusReason | None = None):
         self.status = status
@@ -92,7 +95,7 @@ class Stack:
             self.status_reason = reason
 
     def describe_details(self) -> ApiStack:
-        return {
+        result = {
             "CreationTime": self.creation_time,
             "StackId": self.stack_id,
             "StackName": self.stack_name,
@@ -108,6 +111,19 @@ class Stack:
             "RollbackConfiguration": {},
             "Tags": [],
         }
+        if self.resolved_outputs:
+            describe_outputs = []
+            for key, value in self.resolved_outputs.items():
+                describe_outputs.append(
+                    Output(
+                        # TODO(parity): Description, ExportName
+                        # TODO(parity): what happens on describe stack when the stack has not been deployed yet?
+                        OutputKey=key,
+                        OutputValue=value,
+                    )
+                )
+            result["Outputs"] = describe_outputs
+        return result
 
 
 class ChangeSet:

@@ -311,9 +311,8 @@ class StreamPoller(Poller):
 
                 # Discard all successful events and re-process from sequence number of failed event
                 _, events = self.bisect_events(lowest_sequence_id, events)
-            except (BatchFailureError, Exception) as ex:
-                if isinstance(ex, BatchFailureError):
-                    error_payload = ex.error
+            except BatchFailureError as ex:
+                error_payload = ex.error
 
                 # FIXME partner_resource_arn is not defined in ESM
                 LOG.debug(
@@ -321,6 +320,16 @@ class StreamPoller(Poller):
                     attempts,
                     self.partner_resource_arn or self.source_arn,
                     events,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
+            except Exception:
+                # FIXME partner_resource_arn is not defined in ESM
+                LOG.error(
+                    "Attempt %d failed with unexpected error while processing %s with events: %s",
+                    attempts,
+                    self.partner_resource_arn or self.source_arn,
+                    events,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
             finally:
                 # Retry polling until the record expires at the source

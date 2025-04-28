@@ -187,6 +187,7 @@ def format_event(
     event: PutEventsRequestEntry, region: str, account_id: str, event_bus_name: EventBusName
 ) -> FormattedEvent:
     # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
+    # region_name and account_id of original event is preserved fro cross-region event bus communication
     trace_header = event.get("TraceHeader")
     message = {}
     if trace_header:
