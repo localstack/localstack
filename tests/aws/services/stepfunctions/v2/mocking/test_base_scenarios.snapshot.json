@@ -2063,5 +2063,417 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_parallel_state_lambda": {
+    "recorded-date": "28-04-2025, 12:36:06",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionNameBranch1": "function_name_branch1",
+                "FunctionNameBranch2": "function_name_branch2",
+                "Payload": [
+                  "string-literal"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionNameBranch1": "function_name_branch1",
+                "FunctionNameBranch2": "function_name_branch2",
+                "Payload": [
+                  "string-literal"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ParallelState"
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ParallelStateStarted"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionNameBranch1": "function_name_branch1",
+                "FunctionNameBranch2": "function_name_branch2",
+                "Payload": [
+                  "string-literal"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Branch1"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionNameBranch1": "function_name_branch1",
+                "FunctionNameBranch2": "function_name_branch2",
+                "Payload": [
+                  "string-literal"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Branch2"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateExitedEventDetails": {
+              "name": "Branch1",
+              "output": {
+                "ExecutedVersion": "$LATEST",
+                "Payload": [
+                  "string-literal"
+                ],
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "X-Amz-Executed-Version": [
+                      "$LATEST"
+                    ],
+                    "x-amzn-Remapped-Content-Length": [
+                      "0"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "Content-Length": [
+                      "18"
+                    ],
+                    "Date": "date",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                    "Content-Type": [
+                      "application/json"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "18",
+                    "Content-Type": "application/json",
+                    "Date": "date",
+                    "X-Amz-Executed-Version": "$LATEST",
+                    "x-amzn-Remapped-Content-Length": "0",
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                },
+                "StatusCode": 200
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateExitedEventDetails": {
+              "name": "Branch2",
+              "output": {
+                "ExecutedVersion": "$LATEST",
+                "Payload": "input-event-['string-literal']",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "X-Amz-Executed-Version": [
+                      "$LATEST"
+                    ],
+                    "x-amzn-Remapped-Content-Length": [
+                      "0"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "Content-Length": [
+                      "32"
+                    ],
+                    "Date": "date",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                    "Content-Type": [
+                      "application/json"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "32",
+                    "Content-Type": "application/json",
+                    "Date": "date",
+                    "X-Amz-Executed-Version": "$LATEST",
+                    "x-amzn-Remapped-Content-Length": "0",
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                },
+                "StatusCode": 200
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "function_name_branch1",
+                "Payload": [
+                  "string-literal"
+                ]
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "function_name_branch2",
+                "Payload": [
+                  "string-literal"
+                ]
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "taskSucceededEventDetails": {
+              "output": {
+                "ExecutedVersion": "$LATEST",
+                "Payload": "input-event-['string-literal']",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "X-Amz-Executed-Version": [
+                      "$LATEST"
+                    ],
+                    "x-amzn-Remapped-Content-Length": [
+                      "0"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "Content-Length": [
+                      "32"
+                    ],
+                    "Date": "date",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                    "Content-Type": [
+                      "application/json"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "32",
+                    "Content-Type": "application/json",
+                    "Date": "date",
+                    "X-Amz-Executed-Version": "$LATEST",
+                    "x-amzn-Remapped-Content-Length": "0",
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                },
+                "StatusCode": 200
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "taskSucceededEventDetails": {
+              "output": {
+                "ExecutedVersion": "$LATEST",
+                "Payload": [
+                  "string-literal"
+                ],
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "X-Amz-Executed-Version": [
+                      "$LATEST"
+                    ],
+                    "x-amzn-Remapped-Content-Length": [
+                      "0"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "Content-Length": [
+                      "18"
+                    ],
+                    "Date": "date",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                    "Content-Type": [
+                      "application/json"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "18",
+                    "Content-Type": "application/json",
+                    "Date": "date",
+                    "X-Amz-Executed-Version": "$LATEST",
+                    "x-amzn-Remapped-Content-Length": "0",
+                    "x-amzn-RequestId": "x-amzn-RequestId",
+                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "RequestId"
+                },
+                "StatusCode": 200
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 15,
+            "previousEventId": 13,
+            "stateExitedEventDetails": {
+              "name": "ParallelState",
+              "output": "[{\"ExecutedVersion\":\"$LATEST\",\"Payload\":[\"string-literal\"],\"SdkHttpMetadata\":{\"AllHttpHeaders\":{\"X-Amz-Executed-Version\":[\"$LATEST\"],\"x-amzn-Remapped-Content-Length\":[\"0\"],\"Connection\":[\"keep-alive\"],\"x-amzn-RequestId\":[\"c455c86f-6cb5-4d5d-8a71-4f0a98b33059\"],\"Content-Length\":[\"18\"],\"Date\":[\"Mon, 28 Apr 2025 12:36:05 GMT\"],\"X-Amzn-Trace-Id\":[\"Root=1-680f7635-0182b6d14f9778376d202e25;Parent=7880c132e0e2009b;Sampled=0;Lineage=1:816810b0:0\"],\"Content-Type\":[\"application/json\"]},\"HttpHeaders\":{\"Connection\":\"keep-alive\",\"Content-Length\":\"18\",\"Content-Type\":\"application/json\",\"Date\":\"Mon, 28 Apr 2025 12:36:05 GMT\",\"X-Amz-Executed-Version\":\"$LATEST\",\"x-amzn-Remapped-Content-Length\":\"0\",\"x-amzn-RequestId\":\"c455c86f-6cb5-4d5d-8a71-4f0a98b33059\",\"X-Amzn-Trace-Id\":\"Root=1-680f7635-0182b6d14f9778376d202e25;Parent=7880c132e0e2009b;Sampled=0;Lineage=1:816810b0:0\"},\"HttpStatusCode\":200},\"SdkResponseMetadata\":{\"RequestId\":\"c455c86f-6cb5-4d5d-8a71-4f0a98b33059\"},\"StatusCode\":200},{\"ExecutedVersion\":\"$LATEST\",\"Payload\":\"input-event-['string-literal']\",\"SdkHttpMetadata\":{\"AllHttpHeaders\":{\"X-Amz-Executed-Version\":[\"$LATEST\"],\"x-amzn-Remapped-Content-Length\":[\"0\"],\"Connection\":[\"keep-alive\"],\"x-amzn-RequestId\":[\"bee07bb2-41e2-4c9f-9f6f-1a70696cc112\"],\"Content-Length\":[\"32\"],\"Date\":[\"Mon, 28 Apr 2025 12:36:05 GMT\"],\"X-Amzn-Trace-Id\":[\"Root=1-680f7635-5bd01853792e73951459090c;Parent=56aa9955dca169e9;Sampled=0;Lineage=1:786b2a01:0\"],\"Content-Type\":[\"application/json\"]},\"HttpHeaders\":{\"Connection\":\"keep-alive\",\"Content-Length\":\"32\",\"Content-Type\":\"application/json\",\"Date\":\"Mon, 28 Apr 2025 12:36:05 GMT\",\"X-Amz-Executed-Version\":\"$LATEST\",\"x-amzn-Remapped-Content-Length\":\"0\",\"x-amzn-RequestId\":\"bee07bb2-41e2-4c9f-9f6f-1a70696cc112\",\"X-Amzn-Trace-Id\":\"Root=1-680f7635-5bd01853792e73951459090c;Parent=56aa9955dca169e9;Sampled=0;Lineage=1:786b2a01:0\"},\"HttpStatusCode\":200},\"SdkResponseMetadata\":{\"RequestId\":\"bee07bb2-41e2-4c9f-9f6f-1a70696cc112\"},\"StatusCode\":200}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"ExecutedVersion\":\"$LATEST\",\"Payload\":[\"string-literal\"],\"SdkHttpMetadata\":{\"AllHttpHeaders\":{\"X-Amz-Executed-Version\":[\"$LATEST\"],\"x-amzn-Remapped-Content-Length\":[\"0\"],\"Connection\":[\"keep-alive\"],\"x-amzn-RequestId\":[\"c455c86f-6cb5-4d5d-8a71-4f0a98b33059\"],\"Content-Length\":[\"18\"],\"Date\":[\"Mon, 28 Apr 2025 12:36:05 GMT\"],\"X-Amzn-Trace-Id\":[\"Root=1-680f7635-0182b6d14f9778376d202e25;Parent=7880c132e0e2009b;Sampled=0;Lineage=1:816810b0:0\"],\"Content-Type\":[\"application/json\"]},\"HttpHeaders\":{\"Connection\":\"keep-alive\",\"Content-Length\":\"18\",\"Content-Type\":\"application/json\",\"Date\":\"Mon, 28 Apr 2025 12:36:05 GMT\",\"X-Amz-Executed-Version\":\"$LATEST\",\"x-amzn-Remapped-Content-Length\":\"0\",\"x-amzn-RequestId\":\"c455c86f-6cb5-4d5d-8a71-4f0a98b33059\",\"X-Amzn-Trace-Id\":\"Root=1-680f7635-0182b6d14f9778376d202e25;Parent=7880c132e0e2009b;Sampled=0;Lineage=1:816810b0:0\"},\"HttpStatusCode\":200},\"SdkResponseMetadata\":{\"RequestId\":\"c455c86f-6cb5-4d5d-8a71-4f0a98b33059\"},\"StatusCode\":200},{\"ExecutedVersion\":\"$LATEST\",\"Payload\":\"input-event-['string-literal']\",\"SdkHttpMetadata\":{\"AllHttpHeaders\":{\"X-Amz-Executed-Version\":[\"$LATEST\"],\"x-amzn-Remapped-Content-Length\":[\"0\"],\"Connection\":[\"keep-alive\"],\"x-amzn-RequestId\":[\"bee07bb2-41e2-4c9f-9f6f-1a70696cc112\"],\"Content-Length\":[\"32\"],\"Date\":[\"Mon, 28 Apr 2025 12:36:05 GMT\"],\"X-Amzn-Trace-Id\":[\"Root=1-680f7635-5bd01853792e73951459090c;Parent=56aa9955dca169e9;Sampled=0;Lineage=1:786b2a01:0\"],\"Content-Type\":[\"application/json\"]},\"HttpHeaders\":{\"Connection\":\"keep-alive\",\"Content-Length\":\"32\",\"Content-Type\":\"application/json\",\"Date\":\"Mon, 28 Apr 2025 12:36:05 GMT\",\"X-Amz-Executed-Version\":\"$LATEST\",\"x-amzn-Remapped-Content-Length\":\"0\",\"x-amzn-RequestId\":\"bee07bb2-41e2-4c9f-9f6f-1a70696cc112\",\"X-Amzn-Trace-Id\":\"Root=1-680f7635-5bd01853792e73951459090c;Parent=56aa9955dca169e9;Sampled=0;Lineage=1:786b2a01:0\"},\"HttpStatusCode\":200},\"SdkResponseMetadata\":{\"RequestId\":\"bee07bb2-41e2-4c9f-9f6f-1a70696cc112\"},\"StatusCode\":200}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 16,
+            "previousEventId": 15,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

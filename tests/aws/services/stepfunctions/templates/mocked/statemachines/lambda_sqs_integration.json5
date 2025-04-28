@@ -1,0 +1,36 @@
+{
+  "Comment": "This state machine is called: LambdaSQSIntegration",
+  "StartAt": "LambdaState",
+  "States": {
+    "LambdaState": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "HelloWorldFunction"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          // The aws demo calls for "MaxAttempts: 3" and 4 retry outcomes in "RetryPath" test case.
+          // However, through snapshot testing, we know that this is 1 too many retry outcomes for
+          // this definition. Hence, in an effort to keep parity with AWS Step Functions, we the
+          // attempts numbers was adjusted to 4.
+          "MaxAttempts": 4
+        }
+      ],
+      "Next": "SQSState"
+    },
+    "SQSState": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage",
+      "Parameters": {
+        "QueueUrl": "https://sqs.us-east-1.amazonaws.com/account-id/myQueue",
+        "MessageBody.$": "$"
+      },
+      "End": true
+    }
+  }
+}

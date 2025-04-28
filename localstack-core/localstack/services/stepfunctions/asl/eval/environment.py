@@ -270,7 +270,10 @@ class Environment:
         return self.execution_type == StateMachineType.STANDARD
 
     def is_mocked_mode(self) -> bool:
-        return self.mock_test_case is not None
+        return (
+            self.mock_test_case is not None
+            and self.next_state_name in self.mock_test_case.state_mocked_responses
+        )
 
     def get_current_mocked_response(self) -> MockedResponse:
         if not self.is_mocked_mode():

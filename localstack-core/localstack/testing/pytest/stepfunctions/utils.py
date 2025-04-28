@@ -10,6 +10,7 @@ from localstack_snapshot.snapshots.transformer import (
     TransformContext,
 )
 
+from localstack import config
 from localstack.aws.api.stepfunctions import (
     Arn,
     CloudWatchLogsLogGroup,
@@ -590,6 +591,40 @@ def create_and_record_mocked_execution(
     launch_and_record_mocked_execution(
         target_aws_client, sfn_snapshot, state_machine_arn, execution_input, test_name
     )
+
+
+def create_and_run_mock(
+    target_aws_client,
+    monkeypatch,
+    mock_config_file,
+    mock_config: dict,
+    state_machine_name: str,
+    definition_template: dict,
+    execution_input: str,
+    test_name: str,
+):
+    mock_config_file_path = mock_config_file(mock_config)
+    monkeypatch.setattr(config, "SFN_MOCK_CONFIG", mock_config_file_path)
+
+    sfn_client = target_aws_client.stepfunctions
+
+    state_machine_name: str = state_machine_name or f"mocked_statemachine_{short_uid()}"
+    definition = json.dumps(definition_template)
+    creation_response = sfn_client.create_state_machine(
+        name=state_machine_name,
+        definition=definition,
+        roleArn="arn:aws:iam::111111111111:role/mock-role/mocked-run",
+    )
+    state_machine_arn = creation_response["stateMachineArn"]
+
+    test_case_arn = f"{state_machine_arn}#{test_name}"
+    execution = sfn_client.start_execution(stateMachineArn=test_case_arn, input=execution_input)
+    execution_arn = execution["executionArn"]
+
+    await_execution_terminated(stepfunctions_client=sfn_client, execution_arn=execution_arn)
+    sfn_client.delete_state_machine(stateMachineArn=state_machine_arn)
+
+    return execution_arn
 
 
 def create_and_record_logs(

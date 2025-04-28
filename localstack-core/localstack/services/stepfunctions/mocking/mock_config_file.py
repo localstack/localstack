@@ -1,9 +1,10 @@
 import logging
 import os
 from functools import lru_cache
+from json import JSONDecodeError
 from typing import Dict, Final, Optional
 
-from pydantic import BaseModel, RootModel, model_validator
+from pydantic import BaseModel, RootModel, ValidationError, model_validator
 
 from localstack import config
 
@@ -122,11 +123,43 @@ def _read_sfn_raw_mock_config(file_path: str, modified_epoch: int) -> Optional[R
             mock_config_str = df.read()
         mock_config: RawMockConfig = RawMockConfig.model_validate_json(mock_config_str)
         return mock_config
-    except Exception as ex:
-        LOG.warning(
-            "Unable to load step functions mock configuration file at '%s' due to %s",
+    except (OSError, IOError) as file_error:
+        LOG.error("Failed to open mock configuration file '%s'. Error: %s", file_path, file_error)
+        return None
+    except ValidationError as validation_error:
+        errors = validation_error.errors()
+        if not errors:
+            # No detailed errors provided by Pydantic
+            LOG.error(
+                "Validation failed for mock configuration file at '%s'. "
+                "The file must contain a valid mock configuration.",
+                file_path,
+            )
+        else:
+            for err in errors:
+                location = ".".join(str(loc) for loc in err["loc"])
+                message = err["msg"]
+                error_type = err["type"]
+                LOG.error(
+                    "Mock configuration file error at '%s': %s (%s)",
+                    location,
+                    message,
+                    error_type,
+                )
+        LOG.info(
+            "Changes to the mock configuration file will be applied at the "
+            "next mock execution without requiring a LocalStack restart."
+        )
+        return None
+    except JSONDecodeError as json_error:
+        LOG.error(
+            "Malformed JSON in mock configuration file at '%s'. Error: %s",
             file_path,
-            ex,
+            json_error,
+        )
+        LOG.info(
+            "Changes to the mock configuration file will be applied at the "
+            "next mock execution without requiring a LocalStack restart."
         )
         return None
 

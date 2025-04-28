@@ -1,0 +1,71 @@
+{
+  "StateMachines": {
+    "LambdaSQSIntegration": {
+      "TestCases": {
+        "HappyPath": {
+          "LambdaState": "MockedLambdaSuccess",
+          "SQSState": "MockedSQSSuccess"
+        },
+        "RetryPath": {
+          "LambdaState": "MockedLambdaRetry",
+          "SQSState": "MockedSQSSuccess"
+        },
+        "HybridPath": {
+          "LambdaState": "MockedLambdaSuccess"
+        }
+      }
+    }
+  },
+  "MockedResponses": {
+    "MockedLambdaSuccess": {
+      "0": {
+        "Return": {
+          "StatusCode": 200,
+          "Payload": {
+            "StatusCode": 200,
+            "body": "Hello from Lambda!"
+          }
+        }
+      }
+    },
+    "LambdaMockedResourceNotReady": {
+      "0": {
+        "Throw": {
+          "Error": "Lambda.ResourceNotReadyException",
+          "Cause": "Lambda resource is not ready."
+        }
+      }
+    },
+    "MockedSQSSuccess": {
+      "0": {
+        "Return": {
+          "MD5OfMessageBody": "3bcb6e8e-7h85-4375-b0bc-1a59812c6e51",
+          "MessageId": "3bcb6e8e-8b51-4375-b0bc-1a59812c6e51"
+        }
+      }
+    },
+    "MockedLambdaRetry": {
+      "0": {
+        "Throw": {
+          "Error": "Lambda.ResourceNotReadyException",
+          "Cause": "Lambda resource is not ready."
+        }
+      },
+      "1-2": {
+        "Throw": {
+          "Error": "Lambda.TimeoutException",
+          "Cause": "Lambda timed out."
+        }
+      },
+      "3": {
+        "Return": {
+          "StatusCode": 200,
+          "Payload": {
+            "StatusCode": 200,
+            "body": "Hello from Lambda!"
+          }
+        }
+      }
+    }
+  }
+}

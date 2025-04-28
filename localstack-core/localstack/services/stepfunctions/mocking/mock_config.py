@@ -69,7 +69,7 @@ class StateMockedResponses:
                     "Mock responses must be consecutively numbered. "
                     f"Expected the next response to begin at event {last_range_end + 1}."
                 )
-            repeats = mocked_response.range_start - mocked_response.range_end + 1
+            repeats = mocked_response.range_end - mocked_response.range_start + 1
             self.mocked_responses.extend([mocked_response] * repeats)
             last_range_end = mocked_response.range_end
 

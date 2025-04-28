@@ -3,6 +3,9 @@ import json
 import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer
 
+from aws.services.stepfunctions.mocked_service_integrations.mocked_service_integrations import (
+    MockedServiceIntegrationsLoader,
+)
 from localstack import config
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -12,9 +15,6 @@ from localstack.testing.pytest.stepfunctions.utils import (
     create_state_machine_with_iam_role,
 )
 from localstack.utils.strings import short_uid
-from tests.aws.services.stepfunctions.mocked_responses.mocked_response_loader import (
-    MockedResponseLoader,
-)
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 from tests.aws.services.stepfunctions.templates.callbacks.callback_templates import (
     CallbackTemplates,
@@ -42,11 +42,11 @@ class TestBaseScenarios:
         [
             (
                 CallbackTemplates.SFN_START_EXECUTION_SYNC,
-                MockedResponseLoader.STATES_200_START_EXECUTION_SYNC,
+                MockedServiceIntegrationsLoader.MOCKED_RESPONSE_STATES_200_START_EXECUTION_SYNC,
             ),
             (
                 CallbackTemplates.SFN_START_EXECUTION_SYNC2,
-                MockedResponseLoader.STATES_200_START_EXECUTION_SYNC2,
+                MockedServiceIntegrationsLoader.MOCKED_RESPONSE_STATES_200_START_EXECUTION_SYNC2,
             ),
         ],
         ids=["SFN_SYNC", "SFN_SYNC2"],
@@ -123,7 +123,7 @@ class TestBaseScenarios:
         else:
             state_machine_name = f"mocked_state_machine_{short_uid()}"
             test_name = "TestCaseName"
-            mocked_response = MockedResponseLoader.load(mocked_response_filepath)
+            mocked_response = MockedServiceIntegrationsLoader.load(mocked_response_filepath)
             mock_config = {
                 "StateMachines": {
                     state_machine_name: {
