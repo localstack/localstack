@@ -17,8 +17,8 @@
 /Dockerfile @alexrashed
 
 # Git, Pipelines, GitHub config
-/.circleci @alexrashed @dfangl @dominikschubert
-/.github @alexrashed @dfangl @dominikschubert
+/.circleci @alexrashed @dfangl @dominikschubert @silv-io @k-a-il
+/.github @alexrashed @dfangl @dominikschubert @silv-io @k-a-il
 /.test_durations @alexrashed
 /.git-blame-ignore-revs @alexrashed @thrau
 /bin/release-dev.sh @thrau @alexrashed
