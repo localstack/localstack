@@ -1849,7 +1849,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
         trace_header = context.trace_context["aws_trace_header"]
 
-        self._proxy_capture_input_event(event_formatted, trace_header)
+        self._proxy_capture_input_event(event_formatted, trace_header, region, account_id)
 
         # Always add the successful EventId entry, even if target processing might fail
         processed_entries.append({"EventId": event_formatted["id"]})
@@ -1867,8 +1867,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 )
             )
 
-    def _proxy_capture_input_event(self, event: FormattedEvent, trace_header: TraceHeader) -> None:
-        # only required for eventstudio to capture input event if no rule is configured
+    def _proxy_capture_input_event(
+        self, event: FormattedEvent, trace_header: TraceHeader, region: str, account_id: str
+    ) -> None:
+        # only required for EventStudio to capture input event if no rule is configured
         pass
 
     def _process_rules(
