@@ -1,12 +1,12 @@
-from aws.services.stepfunctions.mocked_service_integrations.mocked_service_integrations import (
-    MockedServiceIntegrationsLoader,
-)
 from localstack import config
 from localstack.services.stepfunctions.mocking.mock_config import (
     MockTestCase,
     load_mock_test_case_for,
 )
 from localstack.testing.pytest import markers
+from tests.aws.services.stepfunctions.mocked_service_integrations.mocked_service_integrations import (
+    MockedServiceIntegrationsLoader,
+)
 
 
 class TestMockConfigFile:

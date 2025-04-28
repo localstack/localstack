@@ -2,9 +2,6 @@ import json
 
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
-from aws.services.stepfunctions.mocked_service_integrations.mocked_service_integrations import (
-    MockedServiceIntegrationsLoader,
-)
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.stepfunctions import HistoryEventType
@@ -17,6 +14,9 @@ from localstack.testing.pytest.stepfunctions.utils import (
     create_and_record_mocked_execution,
 )
 from localstack.utils.strings import short_uid
+from tests.aws.services.stepfunctions.mocked_service_integrations.mocked_service_integrations import (
+    MockedServiceIntegrationsLoader,
+)
 from tests.aws.services.stepfunctions.templates.scenarios.scenarios_templates import (
     ScenariosTemplate,
 )

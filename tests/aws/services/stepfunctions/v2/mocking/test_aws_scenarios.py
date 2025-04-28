@@ -1,12 +1,12 @@
 import json
 
-from aws.services.stepfunctions.mocked_service_integrations.mocked_service_integrations import (
-    MockedServiceIntegrationsLoader,
-)
-from aws.services.stepfunctions.templates.mocked.mocked_templates import MockedTemplates
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import create_and_run_mock
 from localstack.utils.strings import short_uid
+from tests.aws.services.stepfunctions.mocked_service_integrations.mocked_service_integrations import (
+    MockedServiceIntegrationsLoader,
+)
+from tests.aws.services.stepfunctions.templates.mocked.mocked_templates import MockedTemplates
 
 
 class TestBaseScenarios:

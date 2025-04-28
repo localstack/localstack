@@ -3,9 +3,6 @@ import json
 import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer
 
-from aws.services.stepfunctions.mocked_service_integrations.mocked_service_integrations import (
-    MockedServiceIntegrationsLoader,
-)
 from localstack import config
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -15,6 +12,9 @@ from localstack.testing.pytest.stepfunctions.utils import (
     create_state_machine_with_iam_role,
 )
 from localstack.utils.strings import short_uid
+from tests.aws.services.stepfunctions.mocked_service_integrations.mocked_service_integrations import (
+    MockedServiceIntegrationsLoader,
+)
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 from tests.aws.services.stepfunctions.templates.callbacks.callback_templates import (
     CallbackTemplates,
