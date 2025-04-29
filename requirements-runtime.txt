@@ -31,7 +31,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.39.0
     # via localstack-core (pyproject.toml)
-awscrt==0.26.1
+awscrt==0.27.0
     # via localstack-core
 boto3==1.38.0
     # via
@@ -58,13 +58,13 @@ cachetools==5.5.2
     #   localstack-core (pyproject.toml)
 cbor2==5.6.5
     # via localstack-core
-certifi==2025.1.31
+certifi==2025.4.26
     # via
     #   opensearch-py
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.34.1
+cfn-lint==1.34.2
     # via moto-ext
 charset-normalizer==3.4.1
     # via requests
@@ -110,7 +110,7 @@ events==0.5
     # via opensearch-py
 graphql-core==3.2.6
     # via moto-ext
-h11==0.14.0
+h11==0.16.0
     # via
     #   hypercorn
     #   wsproto
@@ -170,7 +170,7 @@ jsonschema-path==0.3.4
     # via
     #   openapi-core
     #   openapi-spec-validator
-jsonschema-specifications==2024.10.1
+jsonschema-specifications==2025.4.1
     # via
     #   jsonschema
     #   openapi-schema-validator
@@ -326,7 +326,7 @@ six==1.17.0
     #   jsonpath-rw
     #   python-dateutil
     #   rfc3339-validator
-sympy==1.13.3
+sympy==1.14.0
     # via cfn-lint
 tailer==0.4.1
     # via

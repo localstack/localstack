@@ -9,7 +9,7 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.26.1
+awscrt==0.27.0
     # via localstack-core (pyproject.toml)
 boto3==1.38.0
     # via localstack-core (pyproject.toml)
@@ -24,7 +24,7 @@ cachetools==5.5.2
     # via localstack-core (pyproject.toml)
 cbor2==5.6.5
     # via localstack-core (pyproject.toml)
-certifi==2025.1.31
+certifi==2025.4.26
     # via requests
 cffi==1.17.1
     # via cryptography
@@ -46,7 +46,7 @@ dnspython==2.7.0
     # via localstack-core (pyproject.toml)
 docker==7.1.0
     # via localstack-core (pyproject.toml)
-h11==0.14.0
+h11==0.16.0
     # via
     #   hypercorn
     #   wsproto
@@ -88,7 +88,7 @@ jsonschema-path==0.3.4
     # via
     #   openapi-core
     #   openapi-spec-validator
-jsonschema-specifications==2024.10.1
+jsonschema-specifications==2025.4.1
     # via
     #   jsonschema
     #   openapi-schema-validator
