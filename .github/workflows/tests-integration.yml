@@ -118,12 +118,6 @@ jobs:
             dist/testselection/test-selection.txt
           retention-days: 1
 
-      - name: List files
-        shell: bash
-        run: |
-          ls -a
-          ls -a dist/testselection/
-
       - name: Run Unit Tests
         timeout-minutes: 8
         env:
@@ -213,7 +207,7 @@ jobs:
           path: tests/aws/services/lambda_/functions/common
           key: ${{ steps.cached-lambda-common-restore.outputs.cache-primary-key }}
 
-      - name: Prepare Local Test Environment
+      - name: Load Localstack Docker Image
         uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
         with:
           platform: "${{ env.PLATFORM }}"
@@ -284,6 +278,8 @@ jobs:
 
       - name: Load Localstack Docker Image
         uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+        with:
+          platform: "${{ env.PLATFORM }}"
 
       - name: Run Bootstrap Tests
         timeout-minutes: 30
@@ -352,6 +348,8 @@ jobs:
 
       - name: Load Localstack Docker Image
         uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+        with:
+          platform: "${{ env.PLATFORM }}"
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
@@ -359,12 +357,6 @@ jobs:
         with:
           name: test-selection
           path: dist/testselection/
-
-      - name: List files
-        shell: bash
-        run: |
-          ls -a
-          ls -a dist/testselection/
 
       - name: Run Acceptance Tests
         timeout-minutes: 120
@@ -494,6 +486,11 @@ jobs:
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Prepare Local Test Environment
         uses: localstack/localstack/.github/actions/setup-test-env@master
 
@@ -587,6 +584,8 @@ jobs:
 
       - name: Load Localstack Docker Image
         uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+        with:
+          platform: "${{ env.PLATFORM }}"
 
       - name: Install Community Dependencies
         run: make install-dev
