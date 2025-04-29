@@ -2,7 +2,7 @@ import logging
 import os
 from functools import lru_cache
 from json import JSONDecodeError
-from typing import Dict, Final, Optional
+from typing import Any, Dict, Final, Optional
 
 from pydantic import BaseModel, RootModel, ValidationError, model_validator
 
@@ -14,13 +14,13 @@ _RETURN_KEY: Final[str] = "Return"
 _THROW_KEY: Final[str] = "Throw"
 
 
-class RawReturnResponse(BaseModel):
+class RawReturnResponse(RootModel[Any]):
     """
     Represents a return response.
     Accepts any fields.
     """
 
-    model_config = {"extra": "allow", "frozen": True}
+    model_config = {"frozen": True}
 
 
 class RawThrowResponse(BaseModel):

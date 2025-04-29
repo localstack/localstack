@@ -37,6 +37,12 @@ class MockedServiceIntegrationsLoader(abc.ABC):
     MOCKED_RESPONSE_STATES_200_START_EXECUTION_SYNC2: Final[str] = os.path.join(
         _THIS_FOLDER, "mocked_responses/states/200_start_execution_sync2.json5"
     )
+    MOCKED_RESPONSE_CALLBACK_TASK_SUCCESS_STRING_LITERAL: Final[str] = os.path.join(
+        _THIS_FOLDER, "mocked_responses/callback/task_success_string_literal.json5"
+    )
+    MOCKED_RESPONSE_CALLBACK_TASK_FAILURE: Final[str] = os.path.join(
+        _THIS_FOLDER, "mocked_responses/callback/task_failure.json5"
+    )
 
     MOCK_CONFIG_FILE_LAMBDA_SQS_INTEGRATION: Final[str] = os.path.join(
         _THIS_FOLDER, "mock_config_files/lambda_sqs_integration.json5"

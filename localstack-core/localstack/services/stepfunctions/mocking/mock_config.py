@@ -29,9 +29,9 @@ class MockedResponse(abc.ABC):
 
 
 class MockedResponseReturn(MockedResponse):
-    payload: Final[dict[Any, Any]]
+    payload: Final[Any]
 
-    def __init__(self, range_start: int, range_end: int, payload: dict[Any, Any]):
+    def __init__(self, range_start: int, range_end: int, payload: Any):
         super().__init__(range_start=range_start, range_end=range_end)
         self.payload = payload
 

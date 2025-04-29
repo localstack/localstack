@@ -4,5 +4,11 @@
   },
   "tests/aws/services/stepfunctions/v2/mocking/test_base_callbacks.py::TestBaseScenarios::test_sfn_start_execution_sync[SFN_SYNC]": {
     "last_validated_date": "2025-04-24T10:05:48+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_callbacks.py::TestBaseScenarios::test_sqs_wait_for_task_token": {
+    "last_validated_date": "2025-04-29T10:17:01+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_callbacks.py::TestBaseScenarios::test_sqs_wait_for_task_token_task_failure": {
+    "last_validated_date": "2025-04-29T11:15:14+00:00"
   }
 }
