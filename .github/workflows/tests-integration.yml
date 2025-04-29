@@ -309,7 +309,7 @@ jobs:
       - build
     strategy:
       matrix:
-        group: [ 1, 2 ]
+        group: [ 1 ]
         runner:
           - ubuntu-latest
           - ubuntu-24.04-arm
@@ -358,7 +358,7 @@ jobs:
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: 1
           LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC: 1
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --reruns 3 -m acceptance_test -o junit_suite_name='acceptance_test'"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --splits 1 --group ${{ matrix.group }} --reruns 3 -m acceptance_test -o junit_suite_name='acceptance_test'"
           COVERAGE_FILE: "target/.coverage.acceptance-${{ env.PLATFORM }}-${{ matrix.group }}"
           JUNIT_REPORTS_FILE: "target/pytest-junit-acceptance-${{ env.PLATFORM }}-${{ matrix.group }}.xml"
           TEST_PATH: "tests/aws/"
