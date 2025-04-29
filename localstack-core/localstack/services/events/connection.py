@@ -64,6 +64,7 @@ class ConnectionService:
             connection.account_id,
             connection.authorization_type,
             connection.auth_parameters,
+            create_secret=False,
         )
         connection_service.connection = connection
         return connection_service
