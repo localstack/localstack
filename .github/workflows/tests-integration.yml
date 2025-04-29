@@ -42,7 +42,7 @@ on:
 env:
   PYTEST_LOGLEVEL: ${{ inputs.PYTEST_LOGLEVEL || 'WARNING' }}
   IMAGE_NAME: "localstack/localstack"
-  TINYBIRD_DATASOURCE: "community_tests"
+  TINYBIRD_DATASOURCE: "community_tests_integration"
   TESTSELECTION_PYTEST_ARGS: "${{ !inputs.disableTestSelection && '--path-filter=dist/testselection/test-selection.txt ' || '' }}"
 
 jobs:
@@ -351,13 +351,6 @@ jobs:
         with:
           platform: "${{ env.PLATFORM }}"
 
-      - name: Download Test Selection
-        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        uses: actions/download-artifact@v4
-        with:
-          name: test-selection
-          path: dist/testselection/
-
       - name: Run Acceptance Tests
         timeout-minutes: 120
         env:
@@ -399,8 +392,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Prepare Local Test Environment
         uses: localstack/localstack/.github/actions/setup-test-env@master
@@ -444,8 +435,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Prepare Local Test Environment
         uses: localstack/localstack/.github/actions/setup-test-env@master
@@ -488,8 +477,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Prepare Local Test Environment
         uses: localstack/localstack/.github/actions/setup-test-env@master
@@ -534,8 +521,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Prepare Local Test Environment
         uses: localstack/localstack/.github/actions/setup-test-env@master
