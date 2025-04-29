@@ -7,6 +7,7 @@ import re
 import socket
 import threading
 from functools import lru_cache
+from itertools import chain
 from time import sleep
 from typing import Dict, List, Optional, Tuple, Union, cast
 from urllib.parse import quote
@@ -712,8 +713,20 @@ class SdkDockerClient(ContainerClient):
         log_config: Optional[LogConfig] = None,
     ) -> str:
         LOG.debug("Creating container with attributes: %s", locals())
+
         extra_hosts = None
+
         if additional_flags:
+            env_vars, extra_hosts, volumes, labels, ulimits, dns, ports = (
+                dict(env_vars or dict()),
+                dict(extra_hosts or dict()),
+                list(volumes or tuple()),
+                dict(labels or dict()),
+                list(ulimits or tuple()),
+                list(dns or tuple()),
+                ports or PortMappings(),
+            )
+
             parsed_flags = Util.parse_additional_flags(
                 additional_flags,
                 env_vars=env_vars,
@@ -726,17 +739,38 @@ class SdkDockerClient(ContainerClient):
                 user=user,
                 dns=dns,
             )
-            env_vars = parsed_flags.env_vars
-            extra_hosts = parsed_flags.extra_hosts
-            volumes = parsed_flags.volumes
-            labels = parsed_flags.labels
-            network = parsed_flags.network
-            platform = parsed_flags.platform
-            privileged = parsed_flags.privileged
-            ports = parsed_flags.ports
-            ulimits = parsed_flags.ulimits
-            user = parsed_flags.user
-            dns = parsed_flags.dns
+
+            user = parsed_flags.user or user
+            network = parsed_flags.network or network
+            platform = parsed_flags.platform or platform
+
+            labels = {**labels, **(parsed_flags.labels or dict())}
+            env_vars = {**env_vars, **(parsed_flags.env_vars or dict())}
+            extra_hosts = {**extra_hosts, **(parsed_flags.extra_hosts or dict())}
+            volumes = list(filter(None, {*volumes, *(parsed_flags.volumes or tuple())}))
+            ulimits = list(
+                {
+                    limit.name: limit for limit in chain(ulimits, parsed_flags.ulimits or tuple())
+                }.values()
+            )
+
+            if isinstance(parsed_flags.privileged, bool):
+                privileged = parsed_flags.privileged
+
+            if isinstance(parsed_flags.ports, PortMappings):
+                ports = ports._merge(parsed_flags.ports)
+
+            dns = list(
+                set(
+                    filter(
+                        None,
+                        (
+                            *ensure_list(dns or []),
+                            *ensure_list(parsed_flags.dns or []),
+                        ),
+                    )
+                )
+            )
 
         try:
             kwargs = {}

@@ -33,6 +33,14 @@ from localstack.utils.files import TMP_FILES, chmod_r, rm_rf, save_file
 from localstack.utils.no_exit_argument_parser import NoExitArgumentParser
 from localstack.utils.strings import short_uid
 
+try:
+    from typing import Self
+except ImportError:
+    from typing import TypeVar
+
+    Self = TypeVar("Self")
+
+
 LOG = logging.getLogger(__name__)
 
 # list of well-known image repo prefixes that should be stripped off to canonicalize image names
@@ -361,6 +369,12 @@ class PortMappings:
         self.mappings[(HashableList(new_key), protocol)] = self.mappings.pop(
             (HashableList(old_key), protocol)
         )
+
+    def _merge(self, other: Self) -> Self:
+        merged = PortMappings(other.bind_host or self.bind_host)
+        merged.mappings = {**self.mappings, **other.mappings}
+
+        return merged
 
     def __repr__(self):
         return f"<PortMappings: {self.to_dict()}>"
