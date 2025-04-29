@@ -32,12 +32,16 @@ class ConnectionService:
         auth_parameters: CreateConnectionAuthRequestParameters,
         description: ConnectionDescription | None = None,
         invocation_connectivity_parameters: ConnectivityResourceParameters | None = None,
+        create_secret: bool = True,
     ):
         self._validate_input(name, authorization_type)
         state = self._get_initial_state(authorization_type)
-        secret_arn = self.create_connection_secret(
-            region, account_id, name, authorization_type, auth_parameters
-        )
+
+        secret_arn = None
+        if create_secret:
+            secret_arn = self.create_connection_secret(
+                region, account_id, name, authorization_type, auth_parameters
+            )
         public_auth_parameters = self._get_public_parameters(authorization_type, auth_parameters)
 
         self.connection = Connection(
@@ -51,6 +55,18 @@ class ConnectionService:
             description,
             invocation_connectivity_parameters,
         )
+
+    @classmethod
+    def from_connection(cls, connection: Connection):
+        connection_service = cls(
+            connection.name,
+            connection.region,
+            connection.account_id,
+            connection.authorization_type,
+            connection.auth_parameters,
+        )
+        connection_service.connection = connection
+        return connection_service
 
     @property
     def arn(self) -> Arn:
