@@ -252,7 +252,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
-          name: test-results-main-${{ env.PLATFORM }}-${{ matrix.group }}
+          name: test-results-integration-${{ env.PLATFORM }}-${{ matrix.group }}
           include-hidden-files: true
           path: |
             target/pytest-junit-integration-${{ env.PLATFORM }}-${{ matrix.group }}.xml
@@ -385,7 +385,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
-          name: test-results-main-${{ env.PLATFORM }}-${{ matrix.group }}
+          name: test-results-acceptance-${{ env.PLATFORM }}-${{ matrix.group }}
           include-hidden-files: true
           path: |
             target/pytest-junit-acceptance-${{ env.PLATFORM }}-${{ matrix.group }}.xml
