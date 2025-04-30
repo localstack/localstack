@@ -1,16 +1,6 @@
 name: AWS Integration Tests
 
 on:
-  schedule:
-    - cron: 0 2 * * MON-FRI
-  push:
-    paths-ignore:
-      - 'CODEOWNERS'
-      - 'README.md'
-      - '.gitignore'
-      - '.git-blame-ignore-revs'
-    branches-ignore:
-      - master
   workflow_dispatch:
     inputs:
       disableCaching:
@@ -19,9 +9,46 @@ on:
         type: boolean
         default: false
       PYTEST_LOGLEVEL:
-        type: string
-        required: false
+        type: choice
         description: Loglevel for PyTest
+        options:
+          - DEBUG
+          - INFO
+          - WARNING
+          - ERROR
+          - CRITICAL
+        default: WARNING
+      disableTestSelection:
+        description: 'Disable Test Selection'
+        required: false
+        type: boolean
+        default: false
+      randomize-aws-credentials:
+        description: "Randomize AWS credentials"
+        default: false
+        required: false
+        type: boolean
+      onlyAcceptanceTests:
+        description: "Run only acceptance tests"
+        default: false
+        required: false
+        type: boolean
+  workflow_call:
+    inputs:
+      disableCaching:
+        description: 'Disable Caching'
+        required: false
+        type: boolean
+        default: false
+      PYTEST_LOGLEVEL:
+        type: choice
+        description: Loglevel for PyTest
+        options:
+          - DEBUG
+          - INFO
+          - WARNING
+          - ERROR
+          - CRITICAL
         default: WARNING
       disableTestSelection:
         description: 'Disable Test Selection'
@@ -152,7 +179,7 @@ jobs:
       - test-preflight
     strategy:
       matrix:
-        group: [ 1, 2 ]
+        group: [ 1, 2, 3, 4 ]
         runner:
           - ubuntu-latest
           - ubuntu-24.04-arm
@@ -224,7 +251,7 @@ jobs:
         env:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --splits 2 --group ${{ matrix.group }} --store-durations --clean-durations --ignore=tests/unit/ --ignore=tests/bootstrap"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --splits 4 --group ${{ matrix.group }} --store-durations --clean-durations --ignore=tests/unit/ --ignore=tests/bootstrap"
           COVERAGE_FILE: "target/.coverage.integration-${{ env.PLATFORM }}-${{ matrix.group }}"
           JUNIT_REPORTS_FILE: "target/pytest-junit-integration-${{ env.PLATFORM }}-${{ matrix.group }}.xml"
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
@@ -304,12 +331,11 @@ jobs:
           retention-days: 30
 
   test-acceptance:
-    name: "Acceptance Tests (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }} - ${{ matrix.group }})"
+    name: "Acceptance Tests (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }}"
     needs:
       - build
     strategy:
       matrix:
-        group: [ 1 ]
         runner:
           - ubuntu-latest
           - ubuntu-24.04-arm
@@ -358,9 +384,9 @@ jobs:
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: 1
           LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC: 1
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --splits 1 --group ${{ matrix.group }} --reruns 3 -m acceptance_test -o junit_suite_name='acceptance_test'"
-          COVERAGE_FILE: "target/.coverage.acceptance-${{ env.PLATFORM }}-${{ matrix.group }}"
-          JUNIT_REPORTS_FILE: "target/pytest-junit-acceptance-${{ env.PLATFORM }}-${{ matrix.group }}.xml"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --reruns 3 -m acceptance_test -o junit_suite_name='acceptance_test'"
+          COVERAGE_FILE: "target/.coverage.acceptance-${{ env.PLATFORM }}"
+          JUNIT_REPORTS_FILE: "target/pytest-junit-acceptance-${{ env.PLATFORM }}.xml"
           TEST_PATH: "tests/aws/"
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
           DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
@@ -370,11 +396,11 @@ jobs:
         uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
-          name: test-results-acceptance-${{ env.PLATFORM }}-${{ matrix.group }}
+          name: test-results-acceptance-${{ env.PLATFORM }}
           include-hidden-files: true
           path: |
-            target/pytest-junit-acceptance-${{ env.PLATFORM }}-${{ matrix.group }}.xml
-            target/.coverage.acceptance-${{ env.PLATFORM }}-${{ matrix.group }}
+            target/pytest-junit-acceptance-${{ env.PLATFORM }}.xml
+            target/.coverage.acceptance-${{ env.PLATFORM }}
           retention-days: 30
 
   test-cloudwatch-v1:
@@ -591,7 +617,7 @@ jobs:
         run: |
           source .venv/bin/activate
           cd scripts
-          python -m capture_notimplemented_responses
+          python -m capture_notimplemented_responses ../results
 
       - name: Print the logs
         run: |
