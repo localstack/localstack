@@ -1,5 +1,7 @@
 from rolo.gateway import CompositeHandler
 
+from localstack.services.apigateway.analytics import invocation_counter
+
 from .analytics import IntegrationUsageCounter
 from .api_key_validation import ApiKeyValidationHandler
 from .gateway_exception import GatewayExceptionHandler
@@ -24,4 +26,4 @@ method_response_handler = MethodResponseHandler()
 gateway_exception_handler = GatewayExceptionHandler()
 api_key_validation_handler = ApiKeyValidationHandler()
 response_enricher = InvocationResponseEnricher()
-usage_counter = IntegrationUsageCounter()
+usage_counter = IntegrationUsageCounter(counter=invocation_counter)
