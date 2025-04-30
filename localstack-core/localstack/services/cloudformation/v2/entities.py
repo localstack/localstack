@@ -40,6 +40,7 @@ class ResolvedResource(TypedDict):
 class Stack:
     stack_name: str
     parameters: list[Parameter]
+    change_set_id: str | None
     change_set_name: str | None
     status: StackStatus
     status_reason: StackStatusReason | None
@@ -96,6 +97,7 @@ class Stack:
 
     def describe_details(self) -> ApiStack:
         result = {
+            "ChangeSetId": self.change_set_id,
             "CreationTime": self.creation_time,
             "StackId": self.stack_id,
             "StackName": self.stack_name,
@@ -197,6 +199,7 @@ class ChangeSet:
         result = {
             "Status": self.status,
             "ChangeSetType": self.change_set_type,
+            "ChangeSetId": self.change_set_id,
             "ChangeSetName": self.change_set_name,
             "ExecutionStatus": self.execution_status,
             "RollbackConfiguration": {},
