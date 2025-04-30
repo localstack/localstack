@@ -29,9 +29,9 @@ class MockedResponse(abc.ABC):
 
 
 class MockedResponseReturn(MockedResponse):
-    payload: Final[dict[Any, Any]]
+    payload: Final[Any]
 
-    def __init__(self, range_start: int, range_end: int, payload: dict[Any, Any]):
+    def __init__(self, range_start: int, range_end: int, payload: Any):
         super().__init__(range_start=range_start, range_end=range_end)
         self.payload = payload
 
@@ -69,7 +69,7 @@ class StateMockedResponses:
                     "Mock responses must be consecutively numbered. "
                     f"Expected the next response to begin at event {last_range_end + 1}."
                 )
-            repeats = mocked_response.range_start - mocked_response.range_end + 1
+            repeats = mocked_response.range_end - mocked_response.range_start + 1
             self.mocked_responses.extend([mocked_response] * repeats)
             last_range_end = mocked_response.range_end
 

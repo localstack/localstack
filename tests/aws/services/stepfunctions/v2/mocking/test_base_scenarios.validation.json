@@ -14,6 +14,9 @@
   "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_map_state_lambda": {
     "last_validated_date": "2025-04-24T11:11:05+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_parallel_state_lambda": {
+    "last_validated_date": "2025-04-28T12:36:06+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_sns_publish_base": {
     "last_validated_date": "2025-04-23T13:52:23+00:00"
   },

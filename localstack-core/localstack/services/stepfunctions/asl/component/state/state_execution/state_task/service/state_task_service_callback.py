@@ -176,18 +176,12 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         outcome: CallbackOutcome | Any
         try:
             if self.resource.condition == ResourceCondition.WaitForTaskToken:
-                # WaitForTaskToken workflows are evaluated the same way,
-                # whether running in mock mode or not.
                 outcome = self._eval_wait_for_task_token(
                     env=env,
                     timeout_seconds=timeout_seconds,
                     callback_endpoint=callback_endpoint,
                     heartbeat_endpoint=heartbeat_endpoint,
                 )
-            elif env.is_mocked_mode():
-                # Sync operation in mock mode: sync and sync2 workflows are skipped and the outcome
-                # treated as the overall operation output.
-                outcome = task_output
             else:
                 # Sync operations require the task output as input.
                 env.stack.append(task_output)
@@ -334,6 +328,9 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         normalised_parameters: dict,
         state_credentials: StateCredentials,
     ) -> None:
+        # TODO: In Mock mode, when simulating a failure, the mock response is handled by
+        # super()._eval_execution, so this block is never executed. Consequently, the
+        # "TaskSubmitted" event isn’t recorded in the event history.
         if self._is_integration_pattern():
             output = env.stack[-1]
             env.event_manager.add_event(
@@ -348,13 +345,13 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
                     )
                 ),
             )
-            self._eval_integration_pattern(
-                env=env,
-                resource_runtime_part=resource_runtime_part,
-                normalised_parameters=normalised_parameters,
-                state_credentials=state_credentials,
-            )
-
+            if not env.is_mocked_mode():
+                self._eval_integration_pattern(
+                    env=env,
+                    resource_runtime_part=resource_runtime_part,
+                    normalised_parameters=normalised_parameters,
+                    state_credentials=state_credentials,
+                )
         super()._after_eval_execution(
             env=env,
             resource_runtime_part=resource_runtime_part,

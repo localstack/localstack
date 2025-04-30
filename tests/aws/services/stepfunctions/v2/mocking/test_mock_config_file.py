@@ -4,8 +4,8 @@ from localstack.services.stepfunctions.mocking.mock_config import (
     load_mock_test_case_for,
 )
 from localstack.testing.pytest import markers
-from tests.aws.services.stepfunctions.mocked_responses.mocked_response_loader import (
-    MockedResponseLoader,
+from tests.aws.services.stepfunctions.mocked_service_integrations.mocked_service_integrations import (
+    MockedServiceIntegrationsLoader,
 )
 
 
@@ -19,8 +19,8 @@ class TestMockConfigFile:
 
     @markers.aws.only_localstack
     def test_is_mock_config_flag_detected_set(self, mock_config_file, monkeypatch):
-        lambda_200_string_body = MockedResponseLoader.load(
-            MockedResponseLoader.LAMBDA_200_STRING_BODY
+        lambda_200_string_body = MockedServiceIntegrationsLoader.load(
+            MockedServiceIntegrationsLoader.MOCKED_RESPONSE_LAMBDA_200_STRING_BODY
         )
         # TODO: add typing for MockConfigFile.json components
         mock_config = {
