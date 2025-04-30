@@ -617,7 +617,8 @@ jobs:
         run: |
           source .venv/bin/activate
           cd scripts
-          python -m capture_notimplemented_responses ../results
+          mkdir ../results
+          python -m capture_notimplemented_responses ../results/
 
       - name: Print the logs
         run: |
