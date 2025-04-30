@@ -146,10 +146,12 @@ def _read_sfn_raw_mock_config(file_path: str, modified_epoch: int) -> Optional[R
                     message,
                     error_type,
                 )
-        LOG.info(
-            "Changes to the mock configuration file will be applied at the "
-            "next mock execution without requiring a LocalStack restart."
-        )
+        # TODO: add tests to ensure the hot-reloading of the mock configuration
+        #  file works as expected, and inform the user with the info below:
+        # LOG.info(
+        #     "Changes to the mock configuration file will be applied at the "
+        #     "next mock execution without requiring a LocalStack restart."
+        # )
         return None
     except JSONDecodeError as json_error:
         LOG.error(
@@ -157,10 +159,12 @@ def _read_sfn_raw_mock_config(file_path: str, modified_epoch: int) -> Optional[R
             file_path,
             json_error,
         )
-        LOG.info(
-            "Changes to the mock configuration file will be applied at the "
-            "next mock execution without requiring a LocalStack restart."
-        )
+        # TODO: add tests to ensure the hot-reloading of the mock configuration
+        #  file works as expected, and inform the user with the info below:
+        # LOG.info(
+        #     "Changes to the mock configuration file will be applied at the "
+        #     "next mock execution without requiring a LocalStack restart."
+        # )
         return None
 
 

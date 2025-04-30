@@ -1,3 +1,4 @@
+// Source: https://docs.aws.amazon.com/step-functions/latest/dg/sfn-local-test-sm-exec.html, April 2025
 {
   "StateMachines": {
     "LambdaSQSIntegration": {

@@ -1,3 +1,4 @@
+// Source: https://docs.aws.amazon.com/step-functions/latest/dg/sfn-local-test-sm-exec.html, April 2025
 {
   "Comment": "This state machine is called: LambdaSQSIntegration",
   "StartAt": "LambdaState",
@@ -16,7 +17,7 @@
           ],
           // The aws demo calls for "MaxAttempts: 3" and 4 retry outcomes in "RetryPath" test case.
           // However, through snapshot testing, we know that this is 1 too many retry outcomes for
-          // this definition. Hence, in an effort to keep parity with AWS Step Functions, we the
+          // this definition. Hence, in an effort to keep parity with AWS Step Functions, the
           // attempts numbers was adjusted to 4.
           "MaxAttempts": 4
         }

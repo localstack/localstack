@@ -270,6 +270,11 @@ class Environment:
         return self.execution_type == StateMachineType.STANDARD
 
     def is_mocked_mode(self) -> bool:
+        """
+        Returns True if the state machine is running in mock mode and the current
+        state has a defined mock configuration in the target environment or frame;
+        otherwise, returns False.
+        """
         return (
             self.mock_test_case is not None
             and self.next_state_name in self.mock_test_case.state_mocked_responses
