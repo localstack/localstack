@@ -6,8 +6,6 @@
 #
 airspeed-ext==0.6.7
     # via localstack-core
-amazon-kclpy==3.0.3
-    # via localstack-core
 annotated-types==0.7.0
     # via pydantic
 antlr4-python3-runtime==4.13.2
@@ -19,7 +17,7 @@ anyio==4.9.0
 apispec==6.8.1
     # via localstack-core
 argparse==1.4.0
-    # via amazon-kclpy
+    # via kclpy-ext
 attrs==25.3.0
     # via
     #   cattrs
@@ -27,13 +25,13 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.233
+aws-cdk-asset-awscli-v1==2.2.234
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==41.2.0
     # via aws-cdk-lib
-aws-cdk-lib==2.192.0
+aws-cdk-lib==2.194.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.97.0
     # via
@@ -43,12 +41,12 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.39.0
     # via localstack-core
-awscrt==0.27.0
+awscrt==0.26.1
     # via localstack-core
 boto3==1.38.0
     # via
-    #   amazon-kclpy
     #   aws-sam-translator
+    #   kclpy-ext
     #   localstack-core
     #   moto-ext
 botocore==1.38.0
@@ -82,7 +80,7 @@ cffi==1.17.1
     # via cryptography
 cfn-lint==1.34.2
     # via moto-ext
-charset-normalizer==3.4.1
+charset-normalizer==3.4.2
     # via requests
 click==8.1.8
     # via
@@ -218,6 +216,8 @@ jsonschema-specifications==2025.4.1
     # via
     #   jsonschema
     #   openapi-schema-validator
+kclpy-ext==3.0.3
+    # via localstack-core
 lazy-object-proxy==1.11.0
     # via openapi-spec-validator
 localstack-snapshot==0.2.0
@@ -301,13 +301,13 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.11.3
+pydantic==2.11.4
     # via aws-sam-translator
-pydantic-core==2.33.1
+pydantic-core==2.33.2
     # via pydantic
 pygments==2.19.1
     # via rich
-pymongo==4.12.0
+pymongo==4.12.1
     # via localstack-core
 pyopenssl==25.0.0
     # via
