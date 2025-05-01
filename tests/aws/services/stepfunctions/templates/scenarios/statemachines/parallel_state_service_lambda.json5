@@ -1,0 +1,39 @@
+{
+  "StartAt": "ParallelState",
+  "States": {
+    "ParallelState": {
+      "Type": "Parallel",
+      "End": true,
+      "Branches": [
+        {
+          "StartAt": "Branch1",
+          "States": {
+            "Branch1": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName.$": "$.FunctionNameBranch1",
+                "Payload.$": "$.Payload"
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Branch2",
+          "States": {
+            "Branch2": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName.$": "$.FunctionNameBranch2",
+                "Payload.$": "$.Payload"
+              },
+              "End": true
+            }
+          }
+        }
+      ]
+    }
+  }
+}
