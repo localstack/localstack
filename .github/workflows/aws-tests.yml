@@ -41,14 +41,9 @@ on:
         type: boolean
         default: false
       PYTEST_LOGLEVEL:
-        type: choice
+        type: string
+        required: false
         description: Loglevel for PyTest
-        options:
-          - DEBUG
-          - INFO
-          - WARNING
-          - ERROR
-          - CRITICAL
         default: WARNING
       disableTestSelection:
         description: 'Disable Test Selection'
@@ -88,6 +83,10 @@ jobs:
       fail-fast: false
     runs-on: ${{ matrix.runner }}
     steps:
+      - name: Determine Runner Architecture
+        shell: bash
+        run: echo "PLATFORM=${{ (runner.arch == 'X64' && 'amd64') || (runner.arch == 'ARM64' && 'arm64') || '' }}" >> $GITHUB_ENV
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -101,6 +100,33 @@ jobs:
           disableCaching: ${{ inputs.disableCaching == true && 'true' || 'false' }}
           dockerhubPullUsername: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
           dockerhubPullToken: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
+      - name: Restore Lambda common runtime packages
+        id: cached-lambda-common-restore
+        if: inputs.disableCaching != true
+        uses: actions/cache/restore@v4
+        with:
+          path: localstack/tests/aws/services/lambda_/functions/common
+          key: common-it-${{ runner.os }}-${{ runner.arch }}-lambda-common-${{ hashFiles('localstack/tests/aws/services/lambda_/functions/common/**/src/*', 'localstack/tests/aws/services/lambda_/functions/common/**/Makefile') }}
+
+      - name: Prebuild lambda common packages
+        run: ./localstack/scripts/build_common_test_functions.sh `pwd`/localstack/tests/aws/services/lambda_/functions/common
+
+      - name: Save Lambda common runtime packages
+        if: inputs.disableCaching != true
+        uses: actions/cache/save@v4
+        with:
+          path: localstack/tests/aws/services/lambda_/functions/common
+          key: ${{ steps.cached-lambda-common-restore.outputs.cache-primary-key }}
+
+      - name: Archive Lambda common packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-common-${{ env.PLATFORM }}
+          path: |
+            localstack/tests/aws/services/lambda_/functions/common
+          retention-days: 1
+
 
   test-preflight:
     name: "Preflight & Unit-Tests"
@@ -216,23 +242,12 @@ jobs:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
 
-      - name: Restore Lambda common runtime packages
-        id: cached-lambda-common-restore
-        if: inputs.disableCaching != true
-        uses: actions/cache/restore@v4
+      - name: Download Lambda Common packages
+        uses: actions/download-artifact@v4
         with:
-          path: tests/aws/services/lambda_/functions/common
-          key: common-it-${{ runner.os }}-${{ runner.arch }}-lambda-common-${{ hashFiles('tests/aws/services/lambda_/functions/common/**/src/*', 'tests/aws/services/lambda_/functions/common/**/Makefile') }}
-
-      - name: Prebuild lambda common packages
-        run: ./scripts/build_common_test_functions.sh `pwd`/tests/aws/services/lambda_/functions/common
-
-      - name: Save Lambda common runtime packages
-        if: inputs.disableCaching != true
-        uses: actions/cache/save@v4
-        with:
-          path: tests/aws/services/lambda_/functions/common
-          key: ${{ steps.cached-lambda-common-restore.outputs.cache-primary-key }}
+          name: lambda-common-${{ env.PLATFORM }}
+          path: |
+            tests/aws/services/lambda_/functions/common
 
       - name: Load Localstack Docker Image
         uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
@@ -345,6 +360,8 @@ jobs:
       fail-fast: false
     runs-on: ${{ matrix.runner }}
     env:
+      # Acceptance tests are executed for all test cases, without any test selection
+      TESTSELECTION_PYTEST_ARGS: ""
       # Set job-specific environment variables for pytest-tinybird
       CI_JOB_NAME: ${{ github.job }}-${{ contains(matrix.runner, 'arm') && 'arm' || 'amd' }}
       CI_JOB_ID: ${{ github.job }}-${{ contains(matrix.runner, 'arm') && 'arm' || 'amd' }}
@@ -465,6 +482,13 @@ jobs:
       - name: Prepare Local Test Environment
         uses: localstack/localstack/.github/actions/setup-test-env@master
 
+      - name: Download Test Selection
+        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
+        uses: actions/download-artifact@v4
+        with:
+          name: test-selection
+          path: dist/testselection/
+
       - name: Run DynamoDB(Streams) v2 Provider Tests
         timeout-minutes: 30
         env:
@@ -506,6 +530,13 @@ jobs:
 
       - name: Prepare Local Test Environment
         uses: localstack/localstack/.github/actions/setup-test-env@master
+
+      - name: Download Test Selection
+        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
+        uses: actions/download-artifact@v4
+        with:
+          name: test-selection
+          path: dist/testselection/
 
       - name: Run EventBridge v1 Provider Tests
         timeout-minutes: 30
@@ -550,6 +581,13 @@ jobs:
 
       - name: Prepare Local Test Environment
         uses: localstack/localstack/.github/actions/setup-test-env@master
+
+      - name: Download Test Selection
+        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
+        uses: actions/download-artifact@v4
+        with:
+          name: test-selection
+          path: dist/testselection/
 
       - name: Run CloudFormation Engine v2 Tests
         timeout-minutes: 30
