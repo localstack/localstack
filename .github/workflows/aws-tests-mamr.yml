@@ -1,0 +1,45 @@
+name: AWS / MA/MR tests
+
+on:
+  schedule:
+    - cron: 0 1 * * MON-FRI
+  pull_request:
+    paths:
+      - '.github/workflows/aws-tests-mamr.yml'
+  workflow_dispatch:
+    inputs:
+      disableCaching:
+        description: 'Disable Caching'
+        required: false
+        type: boolean
+        default: false
+      PYTEST_LOGLEVEL:
+        type: choice
+        description: Loglevel for PyTest
+        options:
+          - DEBUG
+          - INFO
+          - WARNING
+          - ERROR
+          - CRITICAL
+        default: WARNING
+
+env:
+  # Docker Image name and default tag used by docker-helper.sh
+  IMAGE_NAME: "localstack/localstack"
+  # differentiate between "acceptance only" and "proper / full" runs
+  TINYBIRD_DATASOURCE: ${{ 'community_tests_circleci_ma_mr' }}
+
+jobs:
+  test-ma-mr:
+    name: "Run integration tests"
+    uses: ./.github/workflows/aws-tests.yml
+    env:
+
+    with:
+      # default "disableCaching" to `false` if it's a push or schedule event
+      disableCaching: ${{ inputs.disableCaching == true }}
+      PYTEST_LOGLEVEL: ${{ inputs.PYTEST_LOGLEVEL }}
+    secrets:
+      DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+      DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
