@@ -30,7 +30,7 @@
     "last_validated_date": "2024-05-31T19:17:51+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_selection_patterns": {
-    "last_validated_date": "2023-09-05T19:54:21+00:00"
+    "last_validated_date": "2025-05-05T14:10:11+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_lambda.py::test_put_integration_aws_proxy_uri": {
     "last_validated_date": "2025-03-03T12:58:39+00:00"
