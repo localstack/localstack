@@ -33,6 +33,9 @@ jobs:
     name: "Run integration tests"
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Generate random AWS Credentials
         id: generate-aws-values
         run: |
