@@ -33,11 +33,8 @@ env:
 
 jobs:
   test-ma-mr:
-    name: Run integration tests
+    name: "Run integration tests"
     uses: ./.github/workflows/aws-tests.yml
     with:
       disableCaching: ${{ inputs.disableCaching == true }}
       PYTEST_LOGLEVEL: ${{ inputs.PYTEST_LOGLEVEL }}
-    secrets:
-      DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
-      DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
