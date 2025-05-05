@@ -25,21 +25,36 @@ on:
         default: WARNING
 
 env:
-  # Docker Image name and default tag used by docker-helper.sh
   IMAGE_NAME: "localstack/localstack"
-  # differentiate between "acceptance only" and "proper / full" runs
-  TINYBIRD_DATASOURCE: ${{ 'community_tests_circleci_ma_mr' }}
+  TINYBIRD_DATASOURCE: "community_tests_circleci_ma_mr"
 
 jobs:
   test-ma-mr:
     name: "Run integration tests"
-    uses: ./.github/workflows/aws-tests.yml
-    env:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate random AWS Credentials
+        id: generate-aws-values
+        run: |
+          # Generate a random 12-digit number for TEST_AWS_ACCOUNT_ID
+          ACCOUNT_ID=$(shuf -i 100000000000-999999999999 -n 1)
+          echo "account_id=$ACCOUNT_ID" >> $GITHUB_OUTPUT
 
-    with:
-      # default "disableCaching" to `false` if it's a push or schedule event
-      disableCaching: ${{ inputs.disableCaching == true }}
-      PYTEST_LOGLEVEL: ${{ inputs.PYTEST_LOGLEVEL }}
-    secrets:
-      DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
-      DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+          # Set TEST_AWS_REGION_NAME to a random AWS region other than us-east-1
+          REGIONS=("us-east-2" "us-west-1" "us-west-2" "ap-southeast-2" "ap-northeast-1" "eu-central-1" "eu-west-1")
+          REGION=${REGIONS[RANDOM % ${#REGIONS[@]}]}
+          echo "region=$REGION" >> $GITHUB_OUTPUT
+
+      - name: Run integration workflow
+        uses: ./.github/workflows/aws-tests.yml
+        env:
+          TEST_AWS_REGION_NAME: ${{ steps.generate-aws-values.outputs.region }}
+          TEST_AWS_ACCOUNT_ID: ${{ steps.generate-aws-values.outputs.account_id }}
+          TEST_AWS_ACCESS_KEY_ID: ${{ steps.generate-aws-values.outputs.account_id }}
+        with:
+          disableCaching: ${{ inputs.disableCaching == true }}
+          PYTEST_LOGLEVEL: ${{ inputs.PYTEST_LOGLEVEL }}
+          randomize-aws-credentials: true
+        secrets:
+          DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+          DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
