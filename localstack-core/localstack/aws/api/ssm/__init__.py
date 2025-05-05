@@ -4,6 +4,9 @@ from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
+AccessKeyIdType = str
+AccessKeySecretType = str
+AccessRequestId = str
 Account = str
 AccountId = str
 ActivationCode = str
@@ -349,6 +352,7 @@ SessionMaxResults = int
 SessionOwner = str
 SessionReason = str
 SessionTarget = str
+SessionTokenType = str
 SharedDocumentVersion = str
 SnapshotDownloadUrl = str
 SnapshotId = str
@@ -362,6 +366,7 @@ StatusName = str
 StepExecutionFilterValue = str
 StreamUrl = str
 String = str
+String1to256 = str
 StringDateTime = str
 TagKey = str
 TagValue = str
@@ -379,6 +384,14 @@ UUID = str
 Url = str
 ValidNextStep = str
 Version = str
+
+
+class AccessRequestStatus(StrEnum):
+    Approved = "Approved"
+    Rejected = "Rejected"
+    Revoked = "Revoked"
+    Expired = "Expired"
+    Pending = "Pending"
 
 
 class AssociationComplianceSeverity(StrEnum):
@@ -478,6 +491,7 @@ class AutomationExecutionStatus(StrEnum):
 
 class AutomationSubtype(StrEnum):
     ChangeRequest = "ChangeRequest"
+    AccessRequest = "AccessRequest"
 
 
 class AutomationType(StrEnum):
@@ -632,6 +646,8 @@ class DocumentType(StrEnum):
     CloudFormation = "CloudFormation"
     ConformancePackTemplate = "ConformancePackTemplate"
     QuickSetup = "QuickSetup"
+    ManualApprovalPolicy = "ManualApprovalPolicy"
+    AutoApprovalPolicy = "AutoApprovalPolicy"
 
 
 class ExecutionMode(StrEnum):
@@ -881,6 +897,15 @@ class OpsItemFilterKey(StrEnum):
     Category = "Category"
     Severity = "Severity"
     OpsItemType = "OpsItemType"
+    AccessRequestByRequesterArn = "AccessRequestByRequesterArn"
+    AccessRequestByRequesterId = "AccessRequestByRequesterId"
+    AccessRequestByApproverArn = "AccessRequestByApproverArn"
+    AccessRequestByApproverId = "AccessRequestByApproverId"
+    AccessRequestBySourceAccountId = "AccessRequestBySourceAccountId"
+    AccessRequestBySourceOpsItemId = "AccessRequestBySourceOpsItemId"
+    AccessRequestBySourceRegion = "AccessRequestBySourceRegion"
+    AccessRequestByIsReplica = "AccessRequestByIsReplica"
+    AccessRequestByTargetResourceId = "AccessRequestByTargetResourceId"
     ChangeRequestByRequesterArn = "ChangeRequestByRequesterArn"
     ChangeRequestByRequesterName = "ChangeRequestByRequesterName"
     ChangeRequestByApproverArn = "ChangeRequestByApproverArn"
@@ -926,6 +951,7 @@ class OpsItemStatus(StrEnum):
     ChangeCalendarOverrideRejected = "ChangeCalendarOverrideRejected"
     PendingApproval = "PendingApproval"
     Approved = "Approved"
+    Revoked = "Revoked"
     Rejected = "Rejected"
     Closed = "Closed"
 
@@ -1100,6 +1126,7 @@ class SignalType(StrEnum):
     StartStep = "StartStep"
     StopStep = "StopStep"
     Resume = "Resume"
+    Revoke = "Revoke"
 
 
 class SourceType(StrEnum):
@@ -1123,6 +1150,12 @@ class StepExecutionFilterKey(StrEnum):
 class StopType(StrEnum):
     Complete = "Complete"
     Cancel = "Cancel"
+
+
+class AccessDeniedException(ServiceException):
+    code: str = "AccessDeniedException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class AlreadyExistsException(ServiceException):
@@ -1855,6 +1888,16 @@ class ResourcePolicyNotFoundException(ServiceException):
     status_code: int = 400
 
 
+class ServiceQuotaExceededException(ServiceException):
+    code: str = "ServiceQuotaExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
+    ResourceId: Optional[String]
+    ResourceType: Optional[String]
+    QuotaCode: String
+    ServiceCode: String
+
+
 class ServiceSettingNotFound(ServiceException):
     code: str = "ServiceSettingNotFound"
     sender_fault: bool = False
@@ -1883,6 +1926,14 @@ class TargetNotConnected(ServiceException):
     code: str = "TargetNotConnected"
     sender_fault: bool = False
     status_code: int = 400
+
+
+class ThrottlingException(ServiceException):
+    code: str = "ThrottlingException"
+    sender_fault: bool = False
+    status_code: int = 400
+    QuotaCode: Optional[String]
+    ServiceCode: Optional[String]
 
 
 class TooManyTagsError(ServiceException):
@@ -3032,6 +3083,13 @@ class CreateResourceDataSyncRequest(ServiceRequest):
 
 class CreateResourceDataSyncResult(TypedDict, total=False):
     pass
+
+
+class Credentials(TypedDict, total=False):
+    AccessKeyId: AccessKeyIdType
+    SecretAccessKey: AccessKeySecretType
+    SessionToken: SessionTokenType
+    ExpirationTime: DateTime
 
 
 class DeleteActivationRequest(ServiceRequest):
@@ -4285,6 +4343,15 @@ class ExecutionPreview(TypedDict, total=False):
     Automation: Optional[AutomationExecutionPreview]
 
 
+class GetAccessTokenRequest(ServiceRequest):
+    AccessRequestId: AccessRequestId
+
+
+class GetAccessTokenResponse(TypedDict, total=False):
+    Credentials: Optional[Credentials]
+    AccessRequestStatus: Optional[AccessRequestStatus]
+
+
 class GetAutomationExecutionRequest(ServiceRequest):
     AutomationExecutionId: AutomationExecutionId
 
@@ -5536,6 +5603,16 @@ SessionManagerParameterValueList = List[SessionManagerParameterValue]
 SessionManagerParameters = Dict[SessionManagerParameterName, SessionManagerParameterValueList]
 
 
+class StartAccessRequestRequest(ServiceRequest):
+    Reason: String1to256
+    Targets: Targets
+    Tags: Optional[TagList]
+
+
+class StartAccessRequestResponse(TypedDict, total=False):
+    AccessRequestId: Optional[AccessRequestId]
+
+
 class StartAssociationsOnceRequest(ServiceRequest):
     AssociationIds: AssociationIdList
 
@@ -6613,6 +6690,12 @@ class SsmApi:
     ) -> DisassociateOpsItemRelatedItemResponse:
         raise NotImplementedError
 
+    @handler("GetAccessToken")
+    def get_access_token(
+        self, context: RequestContext, access_request_id: AccessRequestId, **kwargs
+    ) -> GetAccessTokenResponse:
+        raise NotImplementedError
+
     @handler("GetAutomationExecution")
     def get_automation_execution(
         self, context: RequestContext, automation_execution_id: AutomationExecutionId, **kwargs
@@ -7249,6 +7332,17 @@ class SsmApi:
         alarm_configuration: AlarmConfiguration = None,
         **kwargs,
     ) -> SendCommandResult:
+        raise NotImplementedError
+
+    @handler("StartAccessRequest")
+    def start_access_request(
+        self,
+        context: RequestContext,
+        reason: String1to256,
+        targets: Targets,
+        tags: TagList = None,
+        **kwargs,
+    ) -> StartAccessRequestResponse:
         raise NotImplementedError
 
     @handler("StartAssociationsOnce")

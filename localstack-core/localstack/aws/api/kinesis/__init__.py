@@ -494,11 +494,8 @@ class ListStreamsOutput(TypedDict, total=False):
     StreamSummaries: Optional[StreamSummaryList]
 
 
-class ListTagsForStreamInput(ServiceRequest):
-    StreamName: Optional[StreamName]
-    ExclusiveStartTagKey: Optional[TagKey]
-    Limit: Optional[ListTagsForStreamInputLimit]
-    StreamARN: Optional[StreamARN]
+class ListTagsForResourceInput(ServiceRequest):
+    ResourceARN: ResourceARN
 
 
 class Tag(TypedDict, total=False):
@@ -507,6 +504,17 @@ class Tag(TypedDict, total=False):
 
 
 TagList = List[Tag]
+
+
+class ListTagsForResourceOutput(TypedDict, total=False):
+    Tags: Optional[TagList]
+
+
+class ListTagsForStreamInput(ServiceRequest):
+    StreamName: Optional[StreamName]
+    ExclusiveStartTagKey: Optional[TagKey]
+    Limit: Optional[ListTagsForStreamInputLimit]
+    StreamARN: Optional[StreamARN]
 
 
 class ListTagsForStreamOutput(TypedDict, total=False):
@@ -575,6 +583,7 @@ class PutResourcePolicyInput(ServiceRequest):
 class RegisterStreamConsumerInput(ServiceRequest):
     StreamARN: StreamARN
     ConsumerName: ConsumerName
+    Tags: Optional[TagMap]
 
 
 class RegisterStreamConsumerOutput(TypedDict, total=False):
@@ -645,6 +654,16 @@ class SubscribeToShardInput(ServiceRequest):
 
 class SubscribeToShardOutput(TypedDict, total=False):
     EventStream: Iterator[SubscribeToShardEventStream]
+
+
+class TagResourceInput(ServiceRequest):
+    Tags: TagMap
+    ResourceARN: ResourceARN
+
+
+class UntagResourceInput(ServiceRequest):
+    TagKeys: TagKeyList
+    ResourceARN: ResourceARN
 
 
 class UpdateShardCountInput(ServiceRequest):
@@ -871,6 +890,12 @@ class KinesisApi:
     ) -> ListStreamsOutput:
         raise NotImplementedError
 
+    @handler("ListTagsForResource")
+    def list_tags_for_resource(
+        self, context: RequestContext, resource_arn: ResourceARN, **kwargs
+    ) -> ListTagsForResourceOutput:
+        raise NotImplementedError
+
     @handler("ListTagsForStream")
     def list_tags_for_stream(
         self,
@@ -928,7 +953,12 @@ class KinesisApi:
 
     @handler("RegisterStreamConsumer")
     def register_stream_consumer(
-        self, context: RequestContext, stream_arn: StreamARN, consumer_name: ConsumerName, **kwargs
+        self,
+        context: RequestContext,
+        stream_arn: StreamARN,
+        consumer_name: ConsumerName,
+        tags: TagMap = None,
+        **kwargs,
     ) -> RegisterStreamConsumerOutput:
         raise NotImplementedError
 
@@ -988,6 +1018,18 @@ class KinesisApi:
         starting_position: StartingPosition,
         **kwargs,
     ) -> SubscribeToShardOutput:
+        raise NotImplementedError
+
+    @handler("TagResource")
+    def tag_resource(
+        self, context: RequestContext, tags: TagMap, resource_arn: ResourceARN, **kwargs
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("UntagResource")
+    def untag_resource(
+        self, context: RequestContext, tag_keys: TagKeyList, resource_arn: ResourceARN, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("UpdateShardCount")
