@@ -139,7 +139,7 @@ jobs:
           fetch-depth: 0
 
       - name: Prepare Local Test Environment
-        uses: localstack/localstack/.github/actions/setup-test-env
+        uses: localstack/localstack/.github/actions/setup-test-env@master
 
       - name: Linting
         run: make lint
