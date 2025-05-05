@@ -68,8 +68,6 @@ jobs:
     secrets:
       DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
       DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
-#      TINYBIRD_PARITY_ANALYTICS_TOKEN: ${{ secrets.TINYBIRD_PARITY_ANALYTICS_TOKEN }}
-#      TINYBIRD_CI_TOKEN: ${{ secrets.TINYBIRD_CI_TOKEN }}
 
   push:
     name: "Push Images"
@@ -166,5 +164,6 @@ jobs:
           # delete the docker images shared within the jobs (storage on GitHub is expensive)
           name: |
             localstack-docker-image-*
+            lambda-common-*
           failOnError: false
           token: ${{ secrets.GITHUB_TOKEN }}
