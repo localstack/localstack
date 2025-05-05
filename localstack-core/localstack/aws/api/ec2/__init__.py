@@ -2316,6 +2316,11 @@ class IpamManagementState(StrEnum):
     ignored = "ignored"
 
 
+class IpamMeteredAccount(StrEnum):
+    ipam_owner = "ipam-owner"
+    resource_owner = "resource-owner"
+
+
 class IpamNetworkInterfaceAttachmentStatus(StrEnum):
     available = "available"
     in_use = "in-use"
@@ -7012,7 +7017,7 @@ class FleetLaunchTemplateOverridesRequest(TypedDict, total=False):
     Placement: Optional[Placement]
     BlockDeviceMappings: Optional[FleetBlockDeviceMappingRequestList]
     InstanceRequirements: Optional[InstanceRequirementsRequest]
-    ImageId: Optional[String]
+    ImageId: Optional[ImageId]
 
 
 FleetLaunchTemplateOverridesListRequest = List[FleetLaunchTemplateOverridesRequest]
@@ -7382,6 +7387,7 @@ class CreateIpamRequest(ServiceRequest):
     ClientToken: Optional[String]
     Tier: Optional[IpamTier]
     EnablePrivateGua: Optional[Boolean]
+    MeteredAccount: Optional[IpamMeteredAccount]
 
 
 class CreateIpamResourceDiscoveryRequest(ServiceRequest):
@@ -7441,6 +7447,7 @@ class Ipam(TypedDict, total=False):
     StateMessage: Optional[String]
     Tier: Optional[IpamTier]
     EnablePrivateGua: Optional[Boolean]
+    MeteredAccount: Optional[IpamMeteredAccount]
 
 
 class CreateIpamResult(TypedDict, total=False):
@@ -18368,6 +18375,7 @@ class ModifyIpamRequest(ServiceRequest):
     RemoveOperatingRegions: Optional[RemoveIpamOperatingRegionSet]
     Tier: Optional[IpamTier]
     EnablePrivateGua: Optional[Boolean]
+    MeteredAccount: Optional[IpamMeteredAccount]
 
 
 class ModifyIpamResourceCidrRequest(ServiceRequest):
@@ -21212,6 +21220,7 @@ class Ec2Api:
         client_token: String = None,
         tier: IpamTier = None,
         enable_private_gua: Boolean = None,
+        metered_account: IpamMeteredAccount = None,
         **kwargs,
     ) -> CreateIpamResult:
         raise NotImplementedError
@@ -26845,6 +26854,7 @@ class Ec2Api:
         remove_operating_regions: RemoveIpamOperatingRegionSet = None,
         tier: IpamTier = None,
         enable_private_gua: Boolean = None,
+        metered_account: IpamMeteredAccount = None,
         **kwargs,
     ) -> ModifyIpamResult:
         raise NotImplementedError

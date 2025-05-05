@@ -23,6 +23,10 @@ TagValue = str
 ValidationExceptionMessage = str
 
 
+class CertificateManagedBy(StrEnum):
+    CLOUDFRONT = "CLOUDFRONT"
+
+
 class CertificateStatus(StrEnum):
     PENDING_VALIDATION = "PENDING_VALIDATION"
     ISSUED = "ISSUED"
@@ -131,6 +135,7 @@ class RevocationReason(StrEnum):
     CA_COMPROMISE = "CA_COMPROMISE"
     AFFILIATION_CHANGED = "AFFILIATION_CHANGED"
     SUPERCEDED = "SUPERCEDED"
+    SUPERSEDED = "SUPERSEDED"
     CESSATION_OF_OPERATION = "CESSATION_OF_OPERATION"
     CERTIFICATE_HOLD = "CERTIFICATE_HOLD"
     REMOVE_FROM_CRL = "REMOVE_FROM_CRL"
@@ -150,6 +155,7 @@ class SortOrder(StrEnum):
 class ValidationMethod(StrEnum):
     EMAIL = "EMAIL"
     DNS = "DNS"
+    HTTP = "HTTP"
 
 
 class AccessDeniedException(ServiceException):
@@ -285,6 +291,11 @@ KeyUsageList = List[KeyUsage]
 TStamp = datetime
 
 
+class HttpRedirect(TypedDict, total=False):
+    RedirectFrom: Optional[String]
+    RedirectTo: Optional[String]
+
+
 class ResourceRecord(TypedDict, total=False):
     Name: String
     Type: RecordType
@@ -300,6 +311,7 @@ class DomainValidation(TypedDict, total=False):
     ValidationDomain: Optional[DomainNameString]
     ValidationStatus: Optional[DomainStatus]
     ResourceRecord: Optional[ResourceRecord]
+    HttpRedirect: Optional[HttpRedirect]
     ValidationMethod: Optional[ValidationMethod]
 
 
@@ -321,6 +333,7 @@ class CertificateDetail(TypedDict, total=False):
     CertificateArn: Optional[Arn]
     DomainName: Optional[DomainNameString]
     SubjectAlternativeNames: Optional[DomainList]
+    ManagedBy: Optional[CertificateManagedBy]
     DomainValidationOptions: Optional[DomainValidationList]
     Serial: Optional[String]
     Subject: Optional[String]
@@ -370,6 +383,7 @@ class CertificateSummary(TypedDict, total=False):
     IssuedAt: Optional[TStamp]
     ImportedAt: Optional[TStamp]
     RevokedAt: Optional[TStamp]
+    ManagedBy: Optional[CertificateManagedBy]
 
 
 CertificateSummaryList = List[CertificateSummary]
@@ -422,6 +436,7 @@ class Filters(TypedDict, total=False):
     extendedKeyUsage: Optional[ExtendedKeyUsageFilterList]
     keyUsage: Optional[KeyUsageFilterList]
     keyTypes: Optional[KeyAlgorithmList]
+    managedBy: Optional[CertificateManagedBy]
 
 
 class GetAccountConfigurationResponse(TypedDict, total=False):
@@ -498,6 +513,7 @@ class RequestCertificateRequest(ServiceRequest):
     CertificateAuthorityArn: Optional[PcaArn]
     Tags: Optional[TagList]
     KeyAlgorithm: Optional[KeyAlgorithm]
+    ManagedBy: Optional[CertificateManagedBy]
 
 
 class RequestCertificateResponse(TypedDict, total=False):
@@ -619,6 +635,7 @@ class AcmApi:
         certificate_authority_arn: PcaArn = None,
         tags: TagList = None,
         key_algorithm: KeyAlgorithm = None,
+        managed_by: CertificateManagedBy = None,
         **kwargs,
     ) -> RequestCertificateResponse:
         raise NotImplementedError
