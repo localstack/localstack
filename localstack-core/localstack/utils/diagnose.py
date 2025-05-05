@@ -10,7 +10,7 @@ from localstack.constants import DEFAULT_VOLUME_DIR
 from localstack.services.lambda_.invocation.docker_runtime_executor import IMAGE_PREFIX
 from localstack.services.lambda_.runtimes import IMAGE_MAPPING
 from localstack.utils import bootstrap
-from localstack.utils.analytics import usage
+from localstack.utils.analytics.metrics import MetricRegistry
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import ContainerException, NoSuchImage
 from localstack.utils.docker_utils import DOCKER_CLIENT
@@ -153,4 +153,4 @@ def get_host_kernel_version() -> str:
 
 
 def get_usage():
-    return usage.aggregate()
+    return MetricRegistry().collect()
