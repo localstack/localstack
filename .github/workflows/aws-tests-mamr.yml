@@ -3,9 +3,12 @@ name: AWS / MA/MR tests
 on:
   schedule:
     - cron: 0 1 * * MON-FRI
-  pull_request:
+  push:
     paths:
       - '.github/workflows/aws-tests-mamr.yml'
+#  pull_request:
+#    paths:
+#      - '.github/workflows/aws-tests-mamr.yml'
   workflow_dispatch:
     inputs:
       disableCaching:
