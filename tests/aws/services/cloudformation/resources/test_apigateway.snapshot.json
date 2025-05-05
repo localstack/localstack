@@ -669,5 +669,61 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_apigateway_swagger_import": {
+    "recorded-date": "05-05-2025, 14:23:13",
+    "recorded-content": {
+      "imported-api": {
+        "apiKeySource": "HEADER",
+        "binaryMediaTypes": [
+          "*/*"
+        ],
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "ipv4",
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "tags": {
+          "aws:cloudformation:logical-id": "Api",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<aws:cloudformation:stack-name:1>/<resource:1>",
+          "aws:cloudformation:stack-name": "<aws:cloudformation:stack-name:1>"
+        },
+        "version": "1.0"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_apigateway_rest_api": {
+    "recorded-date": "05-05-2025, 14:50:14",
+    "recorded-content": {
+      "rest-api": {
+        "apiKeySource": "HEADER",
+        "binaryMediaTypes": [
+          "image/jpg",
+          "image/png"
+        ],
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "ipv4",
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "DemoApi_dev",
+        "rootResourceId": "<root-resource-id:1>",
+        "tags": {
+          "aws:cloudformation:logical-id": "<aws:cloudformation:logical-id:1>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<aws:cloudformation:stack-name:1>/<resource:1>",
+          "aws:cloudformation:stack-name": "<aws:cloudformation:stack-name:1>"
+        }
+      }
+    }
   }
 }

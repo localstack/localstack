@@ -54,7 +54,11 @@
                             }
                         ]
                     ]
-                }
+                },
+                "BinaryMediaTypes": [
+                    "image/jpg",
+                    "image/png"
+                ]
             },
             "Metadata": {
                 "AWS::CloudFormation::Designer": {
