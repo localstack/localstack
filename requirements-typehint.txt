@@ -25,7 +25,7 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.234
+aws-cdk-asset-awscli-v1==2.2.235
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
@@ -49,7 +49,7 @@ boto3==1.38.8
     #   kclpy-ext
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.38.7
+boto3-stubs==1.38.9
     # via localstack-core (pyproject.toml)
 botocore==1.38.8
     # via
@@ -59,7 +59,7 @@ botocore==1.38.8
     #   localstack-core
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.38.7
+botocore-stubs==1.38.9
     # via boto3-stubs
 build==1.2.2.post1
     # via
@@ -106,7 +106,7 @@ coveralls==4.0.1
     # via localstack-core
 crontab==1.0.4
     # via localstack-core
-cryptography==44.0.2
+cryptography==44.0.3
     # via
     #   joserfc
     #   localstack-core
@@ -324,11 +324,11 @@ mypy-boto3-dynamodb==1.38.4
     # via boto3-stubs
 mypy-boto3-dynamodbstreams==1.38.0
     # via boto3-stubs
-mypy-boto3-ec2==1.38.6
+mypy-boto3-ec2==1.38.9
     # via boto3-stubs
 mypy-boto3-ecr==1.38.6
     # via boto3-stubs
-mypy-boto3-ecs==1.38.3
+mypy-boto3-ecs==1.38.9
     # via boto3-stubs
 mypy-boto3-efs==1.38.0
     # via boto3-stubs
@@ -370,7 +370,7 @@ mypy-boto3-iotwireless==1.38.0
     # via boto3-stubs
 mypy-boto3-kafka==1.38.0
     # via boto3-stubs
-mypy-boto3-kinesis==1.38.5
+mypy-boto3-kinesis==1.38.8
     # via boto3-stubs
 mypy-boto3-kinesisanalytics==1.38.0
     # via boto3-stubs
@@ -386,7 +386,7 @@ mypy-boto3-logs==1.38.6
     # via boto3-stubs
 mypy-boto3-managedblockchain==1.38.0
     # via boto3-stubs
-mypy-boto3-mediaconvert==1.38.0
+mypy-boto3-mediaconvert==1.38.9
     # via boto3-stubs
 mypy-boto3-mediastore==1.38.0
     # via boto3-stubs
@@ -803,7 +803,7 @@ urllib3==2.4.0
     #   opensearch-py
     #   requests
     #   responses
-virtualenv==20.30.0
+virtualenv==20.31.1
     # via pre-commit
 websocket-client==1.8.0
     # via localstack-core

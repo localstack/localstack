@@ -25,7 +25,7 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.234
+aws-cdk-asset-awscli-v1==2.2.235
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
@@ -96,7 +96,7 @@ coverage==7.8.0
     # via localstack-core (pyproject.toml)
 crontab==1.0.4
     # via localstack-core
-cryptography==44.0.2
+cryptography==44.0.3
     # via
     #   joserfc
     #   localstack-core
