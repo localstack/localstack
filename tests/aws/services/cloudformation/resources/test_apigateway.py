@@ -111,6 +111,12 @@ def test_cfn_apigateway_aws_integration(deploy_cfn_template, aws_client):
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        # TODO: not returned by LS
+        "$..endpointConfiguration.ipAddressType",
+    ]
+)
 def test_cfn_apigateway_swagger_import(
     deploy_cfn_template, echo_http_server_post, aws_client, snapshot
 ):
