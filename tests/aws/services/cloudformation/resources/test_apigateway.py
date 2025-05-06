@@ -3,6 +3,7 @@ import os.path
 from operator import itemgetter
 
 import requests
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import constants
 from localstack.aws.api.lambda_ import Runtime
@@ -326,12 +327,16 @@ def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_cl
         "$.get-stage.lastUpdatedDate",
         "$.get-stage.methodSettings",
         "$.get-stage.tags",
+        "$..endpointConfiguration.ipAddressType",
     ]
 )
 def test_cfn_deploy_apigateway_from_s3_swagger(
     deploy_cfn_template, snapshot, aws_client, s3_bucket
 ):
     snapshot.add_transformer(snapshot.transform.key_value("deploymentId"))
+    # FIXME: we need to sort the binaryMediaTypes as we don't return it in the same order as AWS, but this does not have
+    # behavior incidence
+    snapshot.add_transformer(SortingTransformer("binaryMediaTypes"))
     # put the swagger file in S3
     swagger_template = load_file(
         os.path.join(os.path.dirname(__file__), "../../../files/pets.json")

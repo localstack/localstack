@@ -12,6 +12,9 @@ Resources:
   ApiGatewayRestApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
+      BinaryMediaTypes:
+        - "image/gif"
+        - "application/pdf"
       BodyS3Location:
         Bucket:
           Ref: S3BodyBucket

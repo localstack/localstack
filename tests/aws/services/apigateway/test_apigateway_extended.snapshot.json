@@ -1,6 +1,6 @@
 {
   "tests/aws/services/apigateway/test_apigateway_extended.py::test_export_swagger_openapi[TEST_IMPORT_PETSTORE_SWAGGER]": {
-    "recorded-date": "15-04-2024, 21:43:25",
+    "recorded-date": "06-05-2025, 18:20:26",
     "recorded-content": {
       "import-api": {
         "apiKeySource": "HEADER",
@@ -8,6 +8,7 @@
         "description": "Your first API with Amazon API Gateway. This is a sample API that integrates via HTTP with our demo Pet Store endpoints",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -638,13 +639,18 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_extended.py::test_export_swagger_openapi[TEST_IMPORT_PETS]": {
-    "recorded-date": "15-04-2024, 21:43:56",
+    "recorded-date": "06-05-2025, 18:21:08",
     "recorded-content": {
       "import-api": {
         "apiKeySource": "HEADER",
+        "binaryMediaTypes": [
+          "image/png",
+          "image/jpg"
+        ],
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -727,6 +733,7 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "http",
                   "httpMethod": "GET",
                   "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets",
                   "responses": {
@@ -734,8 +741,7 @@
                       "statusCode": "200"
                     }
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "http"
+                  "passthroughBehavior": "when_no_match"
                 }
               }
             },
@@ -755,6 +761,7 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "http",
                   "httpMethod": "GET",
                   "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets/{id}",
                   "responses": {
@@ -765,12 +772,15 @@
                   "requestParameters": {
                     "integration.request.path.id": "method.request.path.petId"
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "http"
+                  "passthroughBehavior": "when_no_match"
                 }
               }
             }
-          }
+          },
+          "x-amazon-apigateway-binary-media-types": [
+            "image/png",
+            "image/jpg"
+          ]
         },
         "contentDisposition": "attachment; filename=\"swagger_1.0.0.json\"",
         "contentType": "application/octet-stream",
@@ -782,7 +792,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_extended.py::test_export_oas30_openapi[TEST_IMPORT_PETSTORE_SWAGGER]": {
-    "recorded-date": "15-04-2024, 21:45:03",
+    "recorded-date": "06-05-2025, 18:34:11",
     "recorded-content": {
       "import-api": {
         "apiKeySource": "HEADER",
@@ -790,6 +800,7 @@
         "description": "Your first API with Amazon API Gateway. This is a sample API that integrates via HTTP with our demo Pet Store endpoints",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -1140,6 +1151,7 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "http",
                   "httpMethod": "GET",
                   "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets",
                   "responses": {
@@ -1154,8 +1166,7 @@
                     "integration.request.querystring.page": "method.request.querystring.page",
                     "integration.request.querystring.type": "method.request.querystring.type"
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "http"
+                  "passthroughBehavior": "when_no_match"
                 }
               },
               "post": {
@@ -1190,6 +1201,7 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "http",
                   "httpMethod": "POST",
                   "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets",
                   "responses": {
@@ -1200,8 +1212,7 @@
                       }
                     }
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "http"
+                  "passthroughBehavior": "when_no_match"
                 }
               },
               "options": {
@@ -1235,6 +1246,7 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "mock",
                   "responses": {
                     "default": {
                       "statusCode": "200",
@@ -1248,8 +1260,7 @@
                   "requestTemplates": {
                     "application/json": "{\"statusCode\": 200}"
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "mock"
+                  "passthroughBehavior": "when_no_match"
                 }
               }
             },
@@ -1286,6 +1297,7 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "http",
                   "httpMethod": "GET",
                   "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets/{petId}",
                   "responses": {
@@ -1299,8 +1311,7 @@
                   "requestParameters": {
                     "integration.request.path.petId": "method.request.path.petId"
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "http"
+                  "passthroughBehavior": "when_no_match"
                 }
               },
               "options": {
@@ -1344,6 +1355,7 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "mock",
                   "responses": {
                     "default": {
                       "statusCode": "200",
@@ -1357,8 +1369,7 @@
                   "requestTemplates": {
                     "application/json": "{\"statusCode\": 200}"
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "mock"
+                  "passthroughBehavior": "when_no_match"
                 }
               }
             },
@@ -1378,6 +1389,7 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "mock",
                   "responses": {
                     "default": {
                       "statusCode": "200",
@@ -1392,8 +1404,7 @@
                   "requestTemplates": {
                     "application/json": "{\"statusCode\": 200}"
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "mock"
+                  "passthroughBehavior": "when_no_match"
                 }
               }
             }
@@ -1468,13 +1479,18 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_extended.py::test_export_oas30_openapi[TEST_IMPORT_PETS]": {
-    "recorded-date": "15-04-2024, 21:45:07",
+    "recorded-date": "06-05-2025, 18:34:49",
     "recorded-content": {
       "import-api": {
         "apiKeySource": "HEADER",
+        "binaryMediaTypes": [
+          "image/png",
+          "image/jpg"
+        ],
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -1620,7 +1636,11 @@
               }
             }
           },
-          "components": {}
+          "components": {},
+          "x-amazon-apigateway-binary-media-types": [
+            "image/png",
+            "image/jpg"
+          ]
         },
         "contentDisposition": "attachment; filename=\"oas30_1.0.0.json\"",
         "contentType": "application/octet-stream",

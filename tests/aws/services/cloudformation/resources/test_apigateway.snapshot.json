@@ -107,13 +107,20 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_from_s3_swagger": {
-    "recorded-date": "24-09-2024, 20:22:38",
+    "recorded-date": "06-05-2025, 18:31:54",
     "recorded-content": {
       "rest-api": {
         "apiKeySource": "HEADER",
+        "binaryMediaTypes": [
+          "application/pdf",
+          "image/gif",
+          "image/jpg",
+          "image/png"
+        ],
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "REGIONAL"
           ]

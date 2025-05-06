@@ -492,8 +492,10 @@ def import_api_from_openapi_spec(
     region_name = context.region
 
     # TODO:
-    # 1. validate the "mode" property of the spec document, "merge" or "overwrite"
+    # 1. validate the "mode" property of the spec document, "merge" or "overwrite", and properly apply it
+    #    for now, it only considers it for the binaryMediaTypes
     # 2. validate the document type, "swagger" or "openapi"
+    mode = request.get("mode", "merge")
 
     rest_api.version = (
         str(version) if (version := resolved_schema.get("info", {}).get("version")) else None
@@ -948,7 +950,14 @@ def import_api_from_openapi_spec(
         get_or_create_path(base_path + path, base_path=base_path)
 
     # binary types
-    rest_api.binaryMediaTypes = resolved_schema.get(OpenAPIExt.BINARY_MEDIA_TYPES, [])
+    if mode == "merge":
+        existing_modes = rest_api.binaryMediaTypes or []
+    else:
+        existing_modes = []
+
+    rest_api.binaryMediaTypes = existing_modes + resolved_schema.get(
+        OpenAPIExt.BINARY_MEDIA_TYPES, []
+    )
 
     policy = resolved_schema.get(OpenAPIExt.POLICY)
     if policy:

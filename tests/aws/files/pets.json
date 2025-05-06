@@ -7,6 +7,10 @@
   "schemes": [
     "https"
   ],
+  "x-amazon-apigateway-binary-media-types": [
+    "image/png",
+    "image/jpg"
+  ],
   "paths": {
     "/pets": {
       "get": {
