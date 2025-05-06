@@ -65,7 +65,7 @@ class APIDestinationService:
         )
 
     @classmethod
-    def from_api_destination_and_connection(
+    def restore_from_api_destination_and_connection(
         cls, api_destination: ApiDestination, connection: Connection
     ):
         api_destination_service = cls(

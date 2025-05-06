@@ -57,7 +57,7 @@ class ConnectionService:
         )
 
     @classmethod
-    def from_connection(cls, connection: Connection):
+    def restore_from_connection(cls, connection: Connection):
         connection_service = cls(
             connection.name,
             connection.region,
