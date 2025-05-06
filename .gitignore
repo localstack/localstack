@@ -75,3 +75,9 @@ gen/
 
 # setuptools_scm version.py
 */*/version.py
+
+# mypy cache
+*.mypy_cache
+
+# ruff cache
+*.ruff_cache
