@@ -69,7 +69,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         # we first need to find the right IntegrationResponse based on their selection template, linked to the status
         # code of the Response
         if integration_type == IntegrationType.AWS and "lambda:path/" in integration["uri"]:
-            selection_value = self.parse_error_message_from_lambda(body) or str(status_code)
+            selection_value = self.parse_error_message_from_lambda(body)
         else:
             selection_value = str(status_code)
 

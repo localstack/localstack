@@ -832,6 +832,7 @@ def test_lambda_selection_patterns(
         resourceId=resource_id,
         httpMethod="GET",
         statusCode="200",
+        selectionPattern="",
     )
     # 4xx
     aws_client.apigateway.put_integration_response(
@@ -839,15 +840,27 @@ def test_lambda_selection_patterns(
         resourceId=resource_id,
         httpMethod="GET",
         statusCode="405",
-        selectionPattern=".*400.*",
+        selectionPattern=".*four hundred.*",
     )
+
     # 5xx
     aws_client.apigateway.put_integration_response(
         restApiId=api_id,
         resourceId=resource_id,
         httpMethod="GET",
         statusCode="502",
-        selectionPattern=".*5\\d\\d.*",
+        selectionPattern=".+",
+    )
+
+    # assert that this does not get matched even though it's the status code returned by the Lambda, showing that
+    # AWS does match on the status code for this specific integration
+    # https://docs.aws.amazon.com/apigateway/latest/api/API_IntegrationResponse.html
+    aws_client.apigateway.put_integration_response(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        statusCode="504",
+        selectionPattern="200",
     )
 
     aws_client.apigateway.create_deployment(restApiId=api_id, stageName="dev")
