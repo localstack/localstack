@@ -34,7 +34,7 @@ click==8.1.8
     # via localstack-core (pyproject.toml)
 constantly==23.10.4
     # via localstack-twisted
-cryptography==44.0.2
+cryptography==44.0.3
     # via
     #   localstack-core (pyproject.toml)
     #   pyopenssl
