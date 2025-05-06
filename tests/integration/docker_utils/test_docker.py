@@ -125,7 +125,6 @@ def create_network(docker_client: ContainerClient):
             LOG.debug("Error while cleaning up network %s: %s", network, e)
 
 
-@pytest.mark.skip(reason="Failing in GH Actions")
 class TestDockerClient:
     def test_get_system_info(self, docker_client: ContainerClient):
         info = docker_client.get_system_info()

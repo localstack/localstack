@@ -3,14 +3,10 @@ name: AWS / MA/MR tests
 on:
   schedule:
     - cron: 0 1 * * MON-FRI
-  push:
-    paths: # TODO: change before the merge
+  pull_request:
+    paths:
       - '.github/workflows/aws-tests-mamr.yml'
       - '.github/workflows/aws-tests.yml'
-#  pull_request:
-#    paths:
-#      - '.github/workflows/aws-tests-mamr.yml'
-#      - '.github/workflows/aws-tests.yml'
   workflow_dispatch:
     inputs:
       disableCaching:

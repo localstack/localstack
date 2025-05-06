@@ -112,7 +112,7 @@ jobs:
           - ubuntu-24.04-arm
         exclude:
           # skip the ARM integration tests in case we are not on the master and not on the upgrade-dependencies branch and forceARMTests is not set to true
-          - runner: ${{ (github.ref != 'refs/heads/master' && github.ref != 'refs/heads/circleci-ga-mamr' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'ubuntu-24.04-arm' || ''}}
+          - runner: ${{ (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'ubuntu-24.04-arm' || ''}}
       fail-fast: false
     runs-on: ${{ matrix.runner }}
     steps:
@@ -244,7 +244,7 @@ jobs:
           - ubuntu-24.04-arm
         exclude:
           # skip the ARM integration tests in case we are not on the master and not on the upgrade-dependencies branch and forceARMTests is not set to true
-          - runner: ${{ (github.ref != 'refs/heads/master' && github.ref != 'refs/heads/circleci-ga-mamr' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'ubuntu-24.04-arm' || ''}}
+          - runner: ${{ (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'ubuntu-24.04-arm' || ''}}
       fail-fast: false
     runs-on: ${{ matrix.runner }}
     env:
@@ -256,12 +256,12 @@ jobs:
         shell: bash
         run: echo "PLATFORM=${{ (runner.arch == 'X64' && 'amd64') || (runner.arch == 'ARM64' && 'arm64') || '' }}" >> $GITHUB_ENV
 
-#      - name: Login to Docker Hub
-#        # login to DockerHub to avoid rate limiting issues on custom runners
-#        uses: docker/login-action@v3
-#        with:
-#          username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
-#          password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+      - name: Login to Docker Hub
+        # login to DockerHub to avoid rate limiting issues on custom runners
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
       - name: Set environment
         if: ${{ inputs.testEnvironmentVariables != ''}}
@@ -389,7 +389,7 @@ jobs:
           - ubuntu-24.04-arm
         exclude:
           # skip the ARM integration tests in case we are not on the master and not on the upgrade-dependencies branch and forceARMTests is not set to true
-          - runner: ${{ (github.ref != 'refs/heads/master' && github.ref != 'refs/heads/circleci-ga-mamr' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'ubuntu-24.04-arm' || ''}}
+          - runner: ${{ (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'ubuntu-24.04-arm' || ''}}
       fail-fast: false
     runs-on: ${{ matrix.runner }}
     env:
@@ -403,12 +403,12 @@ jobs:
         shell: bash
         run: echo "PLATFORM=${{ (runner.arch == 'X64' && 'amd64') || (runner.arch == 'ARM64' && 'arm64') || '' }}" >> $GITHUB_ENV
 
-#      - name: Login to Docker Hub
-#        # login to DockerHub to avoid rate limiting issues on custom runners
-#        uses: docker/login-action@v3
-#        with:
-#          username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
-#          password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+      - name: Login to Docker Hub
+        # login to DockerHub to avoid rate limiting issues on custom runners
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
       - name: Set environment
         if: ${{ inputs.testEnvironmentVariables != ''}}
@@ -645,18 +645,18 @@ jobs:
 
   capture-not-implemented:
     name: "Capture Not Implemented"
-    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/circleci-ga-mamr') }}
+    if: ${{ !inputs.onlyAcceptanceTests && github.ref == 'refs/heads/master' }}
     runs-on: ubuntu-latest
     needs: build
     env:
       PLATFORM: 'amd64'
     steps:
-#      - name: Login to Docker Hub
-#        # login to DockerHub to avoid rate limiting issues on custom runners
-#        uses: docker/login-action@v3
-#        with:
-#          username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
-#          password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+      - name: Login to Docker Hub
+        # login to DockerHub to avoid rate limiting issues on custom runners
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
       - name: Checkout
         uses: actions/checkout@v4
