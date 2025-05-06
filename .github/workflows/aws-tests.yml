@@ -645,7 +645,7 @@ jobs:
 
   capture-not-implemented:
     name: "Capture Not Implemented"
-    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/master' || && github.ref == 'refs/heads/circleci-ga-mamr') }}
+    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/circleci-ga-mamr') }}
     runs-on: ubuntu-latest
     needs: build
     env:
