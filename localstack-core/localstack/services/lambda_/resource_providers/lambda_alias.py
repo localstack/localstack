@@ -84,7 +84,7 @@ class LambdaAliasProvider(ResourceProvider[LambdaAliasProperties]):
             if model.get("ProvisionedConcurrencyConfig"):
                 lambda_.put_provisioned_concurrency_config(
                     FunctionName=model["FunctionName"],
-                    Qualifier=model["FunctionVersion"],
+                    Qualifier=model["Name"],
                     ProvisionedConcurrentExecutions=model["ProvisionedConcurrencyConfig"][
                         "ProvisionedConcurrentExecutions"
                     ],
@@ -100,7 +100,7 @@ class LambdaAliasProvider(ResourceProvider[LambdaAliasProperties]):
             # get provisioned config status
             result = lambda_.get_provisioned_concurrency_config(
                 FunctionName=model["FunctionName"],
-                Qualifier=model["FunctionVersion"],
+                Qualifier=model["Name"],
             )
             if result["Status"] == "IN_PROGRESS":
                 return ProgressEvent(
