@@ -43,7 +43,13 @@ def apigw_create_api_key(aws_client):
     [TEST_IMPORT_PETSTORE_SWAGGER, TEST_IMPORT_PETS],
     ids=["TEST_IMPORT_PETSTORE_SWAGGER", "TEST_IMPORT_PETS"],
 )
-@markers.snapshot.skip_snapshot_verify(paths=["$..body.host"])
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..body.host",
+        # TODO: not returned by LS
+        "$..endpointConfiguration.ipAddressType",
+    ]
+)
 def test_export_swagger_openapi(aws_client, snapshot, import_apigw, import_file, region_name):
     snapshot.add_transformer(
         [
@@ -82,7 +88,13 @@ def test_export_swagger_openapi(aws_client, snapshot, import_apigw, import_file,
     [TEST_IMPORT_PETSTORE_SWAGGER, TEST_IMPORT_PETS],
     ids=["TEST_IMPORT_PETSTORE_SWAGGER", "TEST_IMPORT_PETS"],
 )
-@markers.snapshot.skip_snapshot_verify(paths=["$..body.servers..url"])
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..body.servers..url",
+        # TODO: not returned by LS
+        "$..endpointConfiguration.ipAddressType",
+    ]
+)
 def test_export_oas30_openapi(aws_client, snapshot, import_apigw, region_name, import_file):
     snapshot.add_transformer(
         [

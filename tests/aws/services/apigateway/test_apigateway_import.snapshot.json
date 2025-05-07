@@ -1382,13 +1382,14 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_apis_with_base_path_swagger[ignore]": {
-    "recorded-date": "15-04-2024, 21:33:04",
+    "recorded-date": "06-05-2025, 18:24:25",
     "recorded-content": {
       "put-rest-api-swagger-json": {
         "apiKeySource": "HEADER",
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -1765,13 +1766,14 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_apis_with_base_path_swagger[prepend]": {
-    "recorded-date": "15-04-2024, 21:34:01",
+    "recorded-date": "06-05-2025, 18:25:39",
     "recorded-content": {
       "put-rest-api-swagger-json": {
         "apiKeySource": "HEADER",
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -2154,13 +2156,14 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_apis_with_base_path_swagger[split]": {
-    "recorded-date": "15-04-2024, 21:34:50",
+    "recorded-date": "06-05-2025, 18:26:25",
     "recorded-content": {
       "put-rest-api-swagger-json": {
         "apiKeySource": "HEADER",
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -5303,6 +5306,151 @@
           "method.response.header.Access-Control-Allow-Origin": "'*'"
         },
         "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_put_rest_api_mode_binary_media_types[merge]": {
+    "recorded-date": "06-05-2025, 18:14:29",
+    "recorded-content": {
+      "create-rest-api": {
+        "apiKeySource": "HEADER",
+        "binaryMediaTypes": [
+          "image/heif"
+        ],
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "ipv4",
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-rest-api": {
+        "apiKeySource": "HEADER",
+        "binaryMediaTypes": [
+          "image/heif"
+        ],
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "ipv4",
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-api": {
+        "apiKeySource": "HEADER",
+        "binaryMediaTypes": [
+          "image/heif",
+          "image/png",
+          "image/jpg"
+        ],
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "ipv4",
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:2>",
+        "rootResourceId": "<root-resource-id:1>",
+        "tags": {},
+        "version": "1.0.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_put_rest_api_mode_binary_media_types[overwrite]": {
+    "recorded-date": "06-05-2025, 18:15:09",
+    "recorded-content": {
+      "create-rest-api": {
+        "apiKeySource": "HEADER",
+        "binaryMediaTypes": [
+          "image/heif"
+        ],
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "ipv4",
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-rest-api": {
+        "apiKeySource": "HEADER",
+        "binaryMediaTypes": [
+          "image/heif"
+        ],
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "ipv4",
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-api": {
+        "apiKeySource": "HEADER",
+        "binaryMediaTypes": [
+          "image/png",
+          "image/jpg"
+        ],
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "ipv4",
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:2>",
+        "rootResourceId": "<root-resource-id:1>",
+        "tags": {},
+        "version": "1.0.0",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

@@ -18,13 +18,13 @@
     "last_validated_date": "2024-12-12T22:45:20+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_apis_with_base_path_swagger[ignore]": {
-    "last_validated_date": "2024-04-15T21:32:25+00:00"
+    "last_validated_date": "2025-05-06T18:23:50+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_apis_with_base_path_swagger[prepend]": {
-    "last_validated_date": "2024-04-15T21:33:49+00:00"
+    "last_validated_date": "2025-05-06T18:25:10+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_apis_with_base_path_swagger[split]": {
-    "last_validated_date": "2024-04-15T21:34:46+00:00"
+    "last_validated_date": "2025-05-06T18:26:24+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_swagger_api": {
     "last_validated_date": "2024-04-15T21:30:39+00:00"
@@ -49,5 +49,11 @@
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_stage_variables": {
     "last_validated_date": "2024-08-12T13:42:13+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_put_rest_api_mode_binary_media_types[merge]": {
+    "last_validated_date": "2025-05-06T18:14:28+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_put_rest_api_mode_binary_media_types[overwrite]": {
+    "last_validated_date": "2025-05-06T18:14:45+00:00"
   }
 }

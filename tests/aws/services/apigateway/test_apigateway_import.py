@@ -389,12 +389,13 @@ class TestApiGatewayImportRestApi:
             "$.get-resources-swagger-json.items..resourceMethods.OPTIONS",
             "$.get-resources-no-base-path-swagger.items..resourceMethods.GET",
             "$.get-resources-no-base-path-swagger.items..resourceMethods.OPTIONS",
+            # TODO: not returned by LS
+            "$..endpointConfiguration.ipAddressType",
         ]
     )
     def test_import_rest_apis_with_base_path_swagger(
         self,
         base_path_type,
-        create_rest_apigw,
         apigw_create_rest_api,
         import_apigw,
         aws_client,
@@ -925,3 +926,41 @@ class TestApiGatewayImportRestApi:
         # this fixture will iterate over every resource and match its method, methodResponse, integration and
         # integrationResponse
         apigw_snapshot_imported_resources(rest_api_id=rest_api_id, resources=response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "put_mode",
+        ["merge", "overwrite"],
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # not yet implemented
+            "$..endpointConfiguration.ipAddressType",
+            # issue because we create a new API internally, so we recreate names and resources
+            "$..name",
+            "$..rootResourceId",
+            # not returned even if empty in LocalStack
+            "$.get-rest-api.tags",
+        ]
+    )
+    def test_put_rest_api_mode_binary_media_types(
+        self, aws_client, apigw_create_rest_api, snapshot, put_mode
+    ):
+        base_api = apigw_create_rest_api(binaryMediaTypes=["image/heif"])
+        rest_api_id = base_api["id"]
+        snapshot.match("create-rest-api", base_api)
+
+        get_api = aws_client.apigateway.get_rest_api(restApiId=rest_api_id)
+        snapshot.match("get-rest-api", get_api)
+
+        spec_file = load_file(TEST_IMPORT_REST_API_FILE)
+        put_api = aws_client.apigateway.put_rest_api(
+            restApiId=rest_api_id,
+            body=spec_file,
+            mode=put_mode,
+        )
+        snapshot.match("put-api", put_api)
+
+        if is_aws_cloud():
+            # waiting before cleaning up to avoid TooManyRequests, as we create multiple REST APIs
+            time.sleep(15)
