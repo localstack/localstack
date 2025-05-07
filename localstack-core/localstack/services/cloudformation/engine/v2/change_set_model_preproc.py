@@ -18,7 +18,6 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeProperty,
     NodeResource,
     NodeTemplate,
-    NothingType,
     Scope,
     TerminalValue,
     TerminalValueCreated,
@@ -147,18 +146,55 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         for node_resource in node_template.resources.resources:
             if node_resource.name == resource_name:
                 return node_resource
-        # TODO
-        raise RuntimeError()
+        raise RuntimeError(f"No resource '{resource_name}' was found")
 
     def _get_node_property_for(
         self, property_name: str, node_resource: NodeResource
-    ) -> NodeProperty:
+    ) -> Optional[NodeProperty]:
         # TODO: this could be improved with hashmap lookups if the Node contained bindings and not lists.
         for node_property in node_resource.properties.properties:
             if node_property.name == property_name:
                 return node_property
-        # TODO
-        raise RuntimeError()
+        return None
+
+    @staticmethod
+    def _deployed_property_value_of(
+        resource_logical_id: str, property_name: str, resolved_resources: dict
+    ) -> Any:
+        # TODO: typing around resolved resources is needed and should be reflected here.
+        resolved_resource = resolved_resources.get(resource_logical_id)
+        if resolved_resource is None:
+            raise RuntimeError(
+                f"No deployed instances of resource '{resource_logical_id}' were found"
+            )
+        property_value: Optional[Any] = resolved_resource.get(property_name)
+        if property_value is None:
+            # TODO: typing for resolved properties
+            # TODO: investigate why the properties of resolved resources here are not resolved.
+            # TODO: consider flattening the resolved resources
+            properties = resolved_resource.get("Properties", dict())
+            property_value = properties.get(property_name)
+        if property_value is None:
+            raise RuntimeError(
+                f"No '{property_name}' found for deployed resource '{resource_logical_id}' was found"
+            )
+        return property_value
+
+    def _before_deployed_property_value_of(
+        self, resource_logical_id: str, property_name: str
+    ) -> Any:
+        return self._deployed_property_value_of(
+            resource_logical_id=resource_logical_id,
+            property_name=property_name,
+            resolved_resources=self._before_resolved_resources,
+        )
+
+    def _after_deployed_property_value_of(
+        self, resource_logical_id: str, property_name: str
+    ) -> Optional[str]:
+        return self._before_deployed_property_value_of(
+            resource_logical_id=resource_logical_id, property_name=property_name
+        )
 
     def _get_node_mapping(self, map_name: str) -> NodeMapping:
         mappings: list[NodeMapping] = self._node_template.mappings.mappings
@@ -185,18 +221,19 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 return condition
         return None
 
-    def _resolve_reference(self, logical_id: str) -> PreprocEntityDelta:
+    def _resolve_condition(self, logical_id: str) -> PreprocEntityDelta:
         node_condition = self._get_node_condition_if_exists(condition_name=logical_id)
         if isinstance(node_condition, NodeCondition):
             condition_delta = self.visit(node_condition)
             return condition_delta
+        raise RuntimeError(f"No condition '{logical_id}' was found.")
 
+    def _resolve_reference(self, logical_id: str) -> PreprocEntityDelta:
         node_parameter = self._get_node_parameter_if_exists(parameter_name=logical_id)
         if isinstance(node_parameter, NodeParameter):
             parameter_delta = self.visit(node_parameter)
             return parameter_delta
 
-        # TODO: check for KNOWN AFTER APPLY values for logical ids coming from intrinsic functions as arguments.
         node_resource = self._get_node_resource_for(
             resource_name=logical_id, node_template=self._node_template
         )
@@ -216,19 +253,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         second_level_value = top_level_value.bindings.get(second_level_key)
         mapping_value_delta = self.visit(second_level_value)
         return mapping_value_delta
-
-    def _resolve_reference_binding(
-        self, before_logical_id: Optional[str], after_logical_id: Optional[str]
-    ) -> PreprocEntityDelta:
-        before = None
-        if before_logical_id is not None:
-            before_delta = self._resolve_reference(logical_id=before_logical_id)
-            before = before_delta.before
-        after = None
-        if after_logical_id is not None:
-            after_delta = self._resolve_reference(logical_id=after_logical_id)
-            after = after_delta.after
-        return PreprocEntityDelta(before=before, after=after)
 
     def visit(self, change_set_entity: ChangeSetEntity) -> PreprocEntityDelta:
         delta = self._processed.get(change_set_entity.scope)
@@ -299,18 +323,27 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         if before_argument_list:
             before_logical_name_of_resource = before_argument_list[0]
             before_attribute_name = before_argument_list[1]
+
             before_node_resource = self._get_node_resource_for(
                 resource_name=before_logical_name_of_resource, node_template=self._node_template
             )
-            before_node_property = self._get_node_property_for(
+            before_node_property: Optional[NodeProperty] = self._get_node_property_for(
                 property_name=before_attribute_name, node_resource=before_node_resource
             )
-            before_property_delta = self.visit(before_node_property)
-            before = before_property_delta.before
+            if before_node_property is not None:
+                # The property is statically defined in the template and its value can be computed.
+                before_property_delta = self.visit(before_node_property)
+                before = before_property_delta.before
+            else:
+                # The property is not statically defined and must therefore be available in
+                # the properties deployed set.
+                before = self._before_deployed_property_value_of(
+                    resource_logical_id=before_logical_name_of_resource,
+                    property_name=before_attribute_name,
+                )
 
         after = None
         if after_argument_list:
-            # TODO: when are values only accessible at runtime?
             after_logical_name_of_resource = after_argument_list[0]
             after_attribute_name = after_argument_list[1]
             after_node_resource = self._get_node_resource_for(
@@ -319,15 +352,23 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             after_node_property = self._get_node_property_for(
                 property_name=after_attribute_name, node_resource=after_node_resource
             )
-            after_property_delta = self.visit(after_node_property)
-            after = after_property_delta.after
+            if after_node_property is not None:
+                # The property is statically defined in the template and its value can be computed.
+                after_property_delta = self.visit(after_node_property)
+                after = after_property_delta.after
+            else:
+                # The property is not statically defined and must therefore be available in
+                # the properties deployed set.
+                after = self._after_deployed_property_value_of(
+                    resource_logical_id=after_logical_name_of_resource,
+                    property_name=after_attribute_name,
+                )
 
         return PreprocEntityDelta(before=before, after=after)
 
     def visit_node_intrinsic_function_fn_equals(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        # TODO: check for KNOWN AFTER APPLY values for logical ids coming from intrinsic functions as arguments.
         arguments_delta = self.visit(node_intrinsic_function.arguments)
         before_values = arguments_delta.before
         after_values = arguments_delta.after
@@ -342,12 +383,11 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def visit_node_intrinsic_function_fn_if(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        # TODO: check for KNOWN AFTER APPLY values for logical ids coming from intrinsic functions as arguments.
         arguments_delta = self.visit(node_intrinsic_function.arguments)
 
         def _compute_delta_for_if_statement(args: list[Any]) -> PreprocEntityDelta:
             condition_name = args[0]
-            boolean_expression_delta = self._resolve_reference(logical_id=condition_name)
+            boolean_expression_delta = self._resolve_condition(logical_id=condition_name)
             return PreprocEntityDelta(
                 before=args[1] if boolean_expression_delta.before else args[2],
                 after=args[1] if boolean_expression_delta.after else args[2],
@@ -363,8 +403,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def visit_node_intrinsic_function_fn_not(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        # TODO: check for KNOWN AFTER APPLY values for logical ids coming from intrinsic functions as arguments.
-        # TODO: add type checking/validation for result unit?
         arguments_delta = self.visit(node_intrinsic_function.arguments)
         before_condition = arguments_delta.before
         after_condition = arguments_delta.after
@@ -382,10 +420,34 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         # Implicit change type computation.
         return PreprocEntityDelta(before=before, after=after)
 
+    def visit_node_intrinsic_function_fn_join(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        arguments_before = arguments_delta.before
+        arguments_after = arguments_delta.after
+
+        def _compute_join(args: list[Any]) -> str:
+            # TODO: add support for schema validation.
+            # TODO: add tests for joining non string values.
+            delimiter: str = str(args[0])
+            values: list[Any] = args[1]
+            if not isinstance(values, list):
+                raise RuntimeError("Invalid arguments list definition for Fn::Join")
+            join_result = delimiter.join(map(str, values))
+            return join_result
+
+        before = None
+        if isinstance(arguments_before, list) and len(arguments_before) == 2:
+            before = _compute_join(arguments_before)
+        after = None
+        if isinstance(arguments_after, list) and len(arguments_after) == 2:
+            after = _compute_join(arguments_after)
+        return PreprocEntityDelta(before=before, after=after)
+
     def visit_node_intrinsic_function_fn_find_in_map(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        # TODO: check for KNOWN AFTER APPLY values for logical ids coming from intrinsic functions as arguments.
         # TODO: add type checking/validation for result unit?
         arguments_delta = self.visit(node_intrinsic_function.arguments)
         before_arguments = arguments_delta.before
@@ -424,24 +486,22 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
     def _resource_physical_resource_id_from(
         self, logical_resource_id: str, resolved_resources: dict
-    ) -> Optional[str]:
+    ) -> str:
         # TODO: typing around resolved resources is needed and should be reflected here.
-        resolved_resource = resolved_resources.get(logical_resource_id)
-        if resolved_resource is None:
-            return None
+        resolved_resource = resolved_resources.get(logical_resource_id, dict())
         physical_resource_id: Optional[str] = resolved_resource.get("PhysicalResourceId")
         if not isinstance(physical_resource_id, str):
             raise RuntimeError(f"No PhysicalResourceId found for resource '{logical_resource_id}'")
         return physical_resource_id
 
-    def _before_resource_physical_id(self, resource_logical_id: str) -> Optional[str]:
+    def _before_resource_physical_id(self, resource_logical_id: str) -> str:
         # TODO: typing around resolved resources is needed and should be reflected here.
         return self._resource_physical_resource_id_from(
             logical_resource_id=resource_logical_id,
             resolved_resources=self._before_resolved_resources,
         )
 
-    def _after_resource_physical_id(self, resource_logical_id: str) -> Optional[str]:
+    def _after_resource_physical_id(self, resource_logical_id: str) -> str:
         return self._before_resource_physical_id(resource_logical_id=resource_logical_id)
 
     def visit_node_intrinsic_function_ref(
@@ -473,9 +533,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         after = list()
         for change_set_entity in node_array.array:
             delta: PreprocEntityDelta = self.visit(change_set_entity=change_set_entity)
-            if delta.before:
+            if delta.before is not None:
                 before.append(delta.before)
-            if delta.after:
+            if delta.after is not None:
                 after.append(delta.after)
         return PreprocEntityDelta(before=before, after=after)
 
@@ -501,12 +561,15 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def _resolve_resource_condition_reference(self, reference: TerminalValue) -> PreprocEntityDelta:
         reference_delta = self.visit(reference)
         before_reference = reference_delta.before
+        before = None
+        if before_reference is not None:
+            before_delta = self._resolve_condition(logical_id=before_reference)
+            before = before_delta.before
+        after = None
         after_reference = reference_delta.after
-        condition_delta = self._resolve_reference_binding(
-            before_logical_id=before_reference, after_logical_id=after_reference
-        )
-        before = condition_delta.before if not isinstance(before_reference, NothingType) else True
-        after = condition_delta.after if not isinstance(after_reference, NothingType) else True
+        if after_reference is not None:
+            after_delta = self._resolve_condition(logical_id=after_reference)
+            after = after_delta.after
         return PreprocEntityDelta(before=before, after=after)
 
     def visit_node_resource(
@@ -543,9 +606,12 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             )
         if change_type != ChangeType.REMOVED and condition_after is None or condition_after:
             logical_resource_id = node_resource.name
-            after_physical_resource_id = self._after_resource_physical_id(
-                resource_logical_id=logical_resource_id
-            )
+            try:
+                after_physical_resource_id = self._after_resource_physical_id(
+                    resource_logical_id=logical_resource_id
+                )
+            except RuntimeError:
+                after_physical_resource_id = None
             after = PreprocResource(
                 logical_id=logical_resource_id,
                 physical_resource_id=after_physical_resource_id,

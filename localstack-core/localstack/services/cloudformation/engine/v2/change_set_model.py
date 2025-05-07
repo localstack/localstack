@@ -367,15 +367,17 @@ ExportKey: Final[str] = "Export"
 OutputsKey: Final[str] = "Outputs"
 # TODO: expand intrinsic functions set.
 RefKey: Final[str] = "Ref"
-FnIf: Final[str] = "Fn::If"
-FnNot: Final[str] = "Fn::Not"
+FnIfKey: Final[str] = "Fn::If"
+FnNotKey: Final[str] = "Fn::Not"
+FnJoinKey: Final[str] = "Fn::Join"
 FnGetAttKey: Final[str] = "Fn::GetAtt"
 FnEqualsKey: Final[str] = "Fn::Equals"
 FnFindInMapKey: Final[str] = "Fn::FindInMap"
 INTRINSIC_FUNCTIONS: Final[set[str]] = {
     RefKey,
-    FnIf,
-    FnNot,
+    FnIfKey,
+    FnNotKey,
+    FnJoinKey,
     FnEqualsKey,
     FnGetAttKey,
     FnFindInMapKey,
@@ -587,7 +589,12 @@ class ChangeSetModel:
                 scope=value_scope, before_value=before_value, after_value=after_value
             )
             array.append(value)
-        change_type = self._change_type_for_parent_of([value.change_type for value in array])
+        if self._is_created(before=before_array, after=after_array):
+            change_type = ChangeType.CREATED
+        elif self._is_removed(before=before_array, after=after_array):
+            change_type = ChangeType.REMOVED
+        else:
+            change_type = self._change_type_for_parent_of([value.change_type for value in array])
         return NodeArray(scope=scope, change_type=change_type, array=array)
 
     def _visit_object(
@@ -596,8 +603,12 @@ class ChangeSetModel:
         node_object = self._visited_scopes.get(scope)
         if isinstance(node_object, NodeObject):
             return node_object
-
-        change_type = ChangeType.UNCHANGED
+        if self._is_created(before=before_object, after=after_object):
+            change_type = ChangeType.CREATED
+        elif self._is_removed(before=before_object, after=after_object):
+            change_type = ChangeType.REMOVED
+        else:
+            change_type = ChangeType.UNCHANGED
         binding_names = self._safe_keys_of(before_object, after_object)
         bindings: dict[str, ChangeSetEntity] = dict()
         for binding_name in binding_names:

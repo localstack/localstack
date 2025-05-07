@@ -110,6 +110,9 @@ class ChangeSetModelVisitor(abc.ABC):
     def visit_node_intrinsic_function_fn_not(self, node_intrinsic_function: NodeIntrinsicFunction):
         self.visit_children(node_intrinsic_function)
 
+    def visit_node_intrinsic_function_fn_join(self, node_intrinsic_function: NodeIntrinsicFunction):
+        self.visit_children(node_intrinsic_function)
+
     def visit_node_intrinsic_function_fn_find_in_map(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ):
