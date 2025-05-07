@@ -26,4 +26,6 @@ runs:
 
     - name: Load Docker Image
       shell: bash
+      env:
+        PLATFORM: ${{ inputs.platform }}
       run: bin/docker-helper.sh load
