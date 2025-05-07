@@ -84,21 +84,14 @@ def setup_logging_from_config():
 
     raw_logging_override = config.LOG_LEVEL_OVERRIDES
     if raw_logging_override:
-        try:
-            logging_overrides = key_value_pairs_to_dict(raw_logging_override)
-            for logger, level_name in logging_overrides.items():
-                level = getattr(logging, level_name, None)
-                if not level:
-                    raise ValueError(
-                        f"Failed to configure logging overrides ({raw_logging_override}): '{level_name}' is not a valid log level"
-                    )
-                logging.getLogger(logger).setLevel(level)
-        except ValueError:
-            raise
-        except Exception as e:
-            raise RuntimeError(
-                f"Failed to configure logging overrides ({raw_logging_override})"
-            ) from e
+        logging_overrides = key_value_pairs_to_dict(raw_logging_override)
+        for logger, level_name in logging_overrides.items():
+            level = getattr(logging, level_name, None)
+            if not level:
+                raise ValueError(
+                    f"Failed to configure logging overrides ({raw_logging_override}): '{level_name}' is not a valid log level"
+                )
+            logging.getLogger(logger).setLevel(level)
 
 
 def create_default_handler(log_level: int):
