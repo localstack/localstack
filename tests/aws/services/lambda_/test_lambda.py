@@ -2544,6 +2544,8 @@ class TestLambdaConcurrency:
         """
         Tests provisioned concurrency created and invoked using an alias
         """
+        # TODO can you set provisioned concurrency on both alias and function version?
+        # TODO can you set provisioned concurrency on multiple aliases pointing to the same function version?
         min_concurrent_executions = 10 + 5
         check_concurrency_quota(aws_client, min_concurrent_executions)
 

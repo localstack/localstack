@@ -156,6 +156,12 @@ class CountingService:
                 provisioned_concurrency_config = function.provisioned_concurrency_configs.get(
                     function_version.id.qualifier
                 )
+                if not provisioned_concurrency_config:
+                    for alias in function.aliases.values():
+                        if alias.function_version == function_version.id.qualifier:
+                            provisioned_concurrency_config = (
+                                function.provisioned_concurrency_configs.get(alias.name)
+                            )
                 if provisioned_concurrency_config:
                     available_provisioned_concurrency = (
                         provisioned_concurrency_config.provisioned_concurrent_executions
