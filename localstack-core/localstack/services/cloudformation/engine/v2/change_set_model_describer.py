@@ -7,7 +7,6 @@ import localstack.aws.api.cloudformation as cfn_api
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeIntrinsicFunction,
     NodeResource,
-    NodeTemplate,
     PropertiesKey,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
@@ -16,6 +15,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
     PreprocProperties,
     PreprocResource,
 )
+from localstack.services.cloudformation.v2.entities import ChangeSet
 
 CHANGESET_KNOWN_AFTER_APPLY: Final[str] = "{{changeSet:KNOWN_AFTER_APPLY}}"
 
@@ -26,13 +26,10 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
 
     def __init__(
         self,
-        node_template: NodeTemplate,
-        before_resolved_resources: dict,
+        change_set: ChangeSet,
         include_property_values: bool,
     ):
-        super().__init__(
-            node_template=node_template, before_resolved_resources=before_resolved_resources
-        )
+        super().__init__(change_set=change_set)
         self._include_property_values = include_property_values
         self._changes = list()
 

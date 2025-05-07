@@ -26,9 +26,6 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetModel,
     NodeTemplate,
 )
-from localstack.services.cloudformation.engine.v2.change_set_model_describer import (
-    ChangeSetModelDescriber,
-)
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 
@@ -189,9 +186,17 @@ class ChangeSet:
         self.update_graph = change_set_model.get_update_model()
 
     def describe_details(self, include_property_values: bool) -> DescribeChangeSetOutput:
+        # FIXME: A ChangeSet is a property of a ChangeSetModelPreProc, as it operates on
+        #        a ChangeSet. However, the describe_details function cannot be freed of this
+        #        responsibility due to its large use in the v1 provider. Moving forward, the responsibility
+        #        of describing a ChangeSet should be in the hands of the provider; similarly to the
+        #        execution of a ChangeSet.
+        from localstack.services.cloudformation.engine.v2.change_set_model_describer import (
+            ChangeSetModelDescriber,
+        )
+
         change_set_describer = ChangeSetModelDescriber(
-            node_template=self.update_graph,
-            before_resolved_resources=self.stack.resolved_resources,
+            change_set=self,
             include_property_values=include_property_values,
         )
         changes: Changes = change_set_describer.get_changes()
