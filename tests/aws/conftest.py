@@ -84,6 +84,7 @@ def cdk_template_path():
 # Note: Don't move this into testing lib
 @pytest.fixture(scope="session")
 def infrastructure_setup(cdk_template_path, aws_client):
+    # Note: import needs to be local to avoid CDK import on every test run, which takes quite some time
     from localstack.testing.scenario.provisioning import InfraProvisioner
 
     def _infrastructure_setup(
