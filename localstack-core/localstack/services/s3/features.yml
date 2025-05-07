@@ -1,0 +1,82 @@
+name: S3
+service: S3
+aws_provider:
+  api: s3
+emulation_level: emulated
+features:
+  - name: "Buckets"
+    description: "A container for objects stored in Amazon S3"
+    aws_documentation_url: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingBucket.html"
+    api_methods:
+      - "CreateBucket"
+      - "DeleteBucket"
+      - "ListBuckets"
+    status: supported
+
+  - name: "Storage classes"
+    description: "Storage classes to optimize costs and performance for various use cases"
+    aws_documentation_url: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html"
+    status: "supported"
+
+  - name: "Cross-Origin resource sharing"
+    description: "Cross-Origin Resource Sharing (CORS) defines a way for client web applications that are loaded in one domain to interact with resources in a different domain"
+    aws_documentation_url: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/cors.html"
+    api_methods:
+      - "GetBucketCors"
+      - "PutBucketCors"
+      - "DeleteBucketCors"
+    status: "supported"
+
+  - name: "Bucket Metrics Configuration"
+    description: "Bucket metrics configurations allow users to set, retrieve, delete, and list metrics configurations for monitoring Amazon S3 buckets using CloudWatch"
+    aws_documentation_url: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/cloudwatch-monitoring.html"
+    api_methods:
+      - "PutBucketMetricsConfiguration"
+      - "GetBucketMetricsConfiguration"
+      - "DeleteBucketMetricsConfiguration"
+      - "ListBucketMetricsConfigurations"
+    status: "unsupported"
+
+  - name: "Logging and Monitoring"
+    description: "Enable your bucket to send notifications of specified bucket events"
+    aws_documentation_url: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventNotifications.html"
+    api_methods:
+      - "GetBucketNotificationConfiguration"
+      - "PutBucketNotificationConfiguration"
+    emulation_level: "CRUD"
+    status: "supported"
+    limitations:
+      - "Metrics configuration"
+
+  - name: "Lifecycle Management"
+    description: "Manage object lifecycles by transitioning them to lower-cost storage classes or deleting expired objects"
+    aws_documentation_url: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html"
+    api_methods:
+      - "DeleteBucketLifecycle"
+      - "GetBucketLifecycleConfiguration"
+      - "PutBucketLifecycleConfiguration"
+    status: "supported"
+    emulation_level: "CRUD"
+
+  - name: "Access Control"
+    description: "Control access to resources using bucket policies, IAM roles, and ACLs"
+    aws_documentation_url: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-management.html"
+    api_methods:
+      - "PutBucketAcl"
+      - "GetBucketAcl"
+      - "PutObjectAcl"
+      - "GetObjectAcl"
+      - "PutBucketPolicy"
+      - "GetBucketPolicy"
+      - "DeleteBucketPolicy"
+    status: "supported"
+
+  - name: "Tagging"
+    description: "Assign tags to categorize storage"
+    aws_documentation_url: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-tagging.html"
+    api_methods:
+      - "PutObjectTagging"
+      - "GetObjectTagging"
+      - "DeleteObjectTagging"
+    emulation_level: "emulated"
+    status: "supported"
