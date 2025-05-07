@@ -4,7 +4,7 @@ import warnings
 
 from localstack import config, constants
 
-from ..utils.collections import parse_key_value_pairs
+from ..utils.strings import key_value_pairs_to_dict
 from .format import AddFormattedAttributes, DefaultFormatter
 
 # The log levels for modules are evaluated incrementally for logging granularity,
@@ -82,18 +82,18 @@ def setup_logging_from_config():
         for name, level in trace_internal_log_levels.items():
             logging.getLogger(name).setLevel(level)
 
-    raw_logging_override = config.LOGGING_OVERRIDE
+    raw_logging_override = config.LOG_LEVEL_OVERRIDES
     if raw_logging_override:
         try:
-            logging_overrides = parse_key_value_pairs(raw_logging_override)
+            logging_overrides = key_value_pairs_to_dict(raw_logging_override)
             for logger, level_name in logging_overrides.items():
                 level = getattr(logging, level_name, None)
                 if not level:
-                    raise RuntimeError(
+                    raise ValueError(
                         f"Failed to configure logging overrides ({raw_logging_override}): '{level_name}' is not a valid log level"
                     )
                 logging.getLogger(logger).setLevel(level)
-        except RuntimeError:
+        except ValueError:
             raise
         except Exception as e:
             raise RuntimeError(

@@ -443,7 +443,7 @@ LAMBDA_DEBUG_MODE = is_env_true("LAMBDA_DEBUG_MODE")
 LAMBDA_DEBUG_MODE_CONFIG_PATH = os.environ.get("LAMBDA_DEBUG_MODE_CONFIG_PATH")
 
 # EXPERIMENTAL: allow setting custom log levels for individual loggers
-LOGGING_OVERRIDE = os.environ.get("LOGGING_OVERRIDE", "")
+LOG_LEVEL_OVERRIDES = os.environ.get("LOG_LEVEL_OVERRIDES", "")
 
 # whether to enable debugpy
 DEVELOP = is_env_true("DEVELOP")

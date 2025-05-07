@@ -534,24 +534,3 @@ def is_comma_delimited_list(string: str, item_regex: Optional[str] = None) -> bo
     if pattern.match(string) is None:
         return False
     return True
-
-
-def parse_key_value_pairs(raw_text: str) -> dict:
-    """
-    Parse a series of key-value pairs, in an environment variable format into a dictionary
-
-    >>> input = "a=b,c=d"
-    >>> assert parse_key_value_pairs(input) == {"a": "b", "c": "d"}
-    """
-    result = {}
-    for pair in raw_text.split(","):
-        items = pair.split("=")
-        if len(items) != 2:
-            raise ValueError(f"invalid key/value pair: '{pair}'")
-        raw_key, raw_value = items[0].strip(), items[1].strip()
-        if not raw_key:
-            raise ValueError(f"missing key: '{pair}'")
-        if not raw_value:
-            raise ValueError(f"missing value: '{pair}'")
-        result[raw_key] = raw_value
-    return result
