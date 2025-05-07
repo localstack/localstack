@@ -157,11 +157,14 @@ class CountingService:
                     function_version.id.qualifier
                 )
                 if not provisioned_concurrency_config:
+                    # check if any aliases point to the current version, and check the provisioned concurrency config
+                    # for them. There can be only one config for a version, not matter if defined on the alias or version itself.
                     for alias in function.aliases.values():
                         if alias.function_version == function_version.id.qualifier:
                             provisioned_concurrency_config = (
                                 function.provisioned_concurrency_configs.get(alias.name)
                             )
+                            break
                 if provisioned_concurrency_config:
                     available_provisioned_concurrency = (
                         provisioned_concurrency_config.provisioned_concurrent_executions
