@@ -9,12 +9,11 @@ on:
       - '.github/actions/**'
       - '.github/workflows/aws-main.yml'
       - '.github/workflows/aws-tests.yml'
-    paths-ignore:
-      - 'CODEOWNERS'
-      - 'README.md'
-      - '.gitignore'
-      - '.git-blame-ignore-revs'
-      - '.github/**'
+      - '!CODEOWNERS'
+      - '!README.md'
+      - '!.gitignore'
+      - '!.git-blame-ignore-revs'
+      - '!.github/**'
     branches:
       - master
   workflow_dispatch:
