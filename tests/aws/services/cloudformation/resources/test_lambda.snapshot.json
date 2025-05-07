@@ -68,8 +68,20 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_alias": {
-    "recorded-date": "09-04-2024, 07:19:19",
+    "recorded-date": "07-05-2025, 15:39:26",
     "recorded-content": {
+      "invoke_result": {
+        "ExecutedVersion": "1",
+        "Payload": {
+          "function_version": "1",
+          "initialization_type": null
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "stack_resource_descriptions": {
         "StackResources": [
           {
@@ -132,6 +144,17 @@
         "FunctionVersion": "1",
         "Name": "<alias-name>",
         "RevisionId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "provisioned_concurrency_config": {
+        "AllocatedProvisionedConcurrentExecutions": 1,
+        "AvailableProvisionedConcurrentExecutions": 1,
+        "LastModified": "date",
+        "RequestedProvisionedConcurrentExecutions": 1,
+        "Status": "READY",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

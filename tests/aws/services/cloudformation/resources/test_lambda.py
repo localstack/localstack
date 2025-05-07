@@ -239,6 +239,12 @@ def test_lambda_alias(deploy_cfn_template, snapshot, aws_client):
         parameters={"FunctionName": function_name, "AliasName": alias_name},
     )
 
+    invoke_result = aws_client.lambda_.invoke(
+        FunctionName=function_name, Qualifier=alias_name, Payload=b"{}"
+    )
+    assert "FunctionError" not in invoke_result
+    snapshot.match("invoke_result", invoke_result)
+
     role_arn = aws_client.lambda_.get_function(FunctionName=function_name)["Configuration"]["Role"]
     snapshot.add_transformer(
         snapshot.transform.regex(role_arn.partition("role/")[-1], "<role-name>"), priority=-1
@@ -251,6 +257,12 @@ def test_lambda_alias(deploy_cfn_template, snapshot, aws_client):
 
     alias = aws_client.lambda_.get_alias(FunctionName=function_name, Name=alias_name)
     snapshot.match("Alias", alias)
+
+    provisioned_concurrency_config = aws_client.lambda_.get_provisioned_concurrency_config(
+        FunctionName=function_name,
+        Qualifier=alias_name,
+    )
+    snapshot.match("provisioned_concurrency_config", provisioned_concurrency_config)
 
 
 @markers.aws.validated
