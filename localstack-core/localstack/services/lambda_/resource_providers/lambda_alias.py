@@ -149,6 +149,7 @@ class LambdaAliasProvider(ResourceProvider[LambdaAliasProperties]):
         lambda_ = request.aws_client_factory.lambda_
 
         try:
+            # provisioned concurrency is automatically deleted upon deleting a function alias
             lambda_.delete_alias(
                 FunctionName=model["FunctionName"],
                 Name=model["Name"],

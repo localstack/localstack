@@ -150,6 +150,7 @@ class LambdaVersionProvider(ResourceProvider[LambdaVersionProperties]):
         lambda_client = request.aws_client_factory.lambda_
 
         # without qualifier entire function is deleted instead of just version
+        # provisioned concurrency is automatically deleted upon deleting a function or function version
         lambda_client.delete_function(FunctionName=model["Id"], Qualifier=model["Version"])
 
         return ProgressEvent(
