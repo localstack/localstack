@@ -59,6 +59,7 @@ class SdkDockerClient(ContainerClient):
     docker_client: Optional[DockerClient]
 
     def __init__(self):
+        super().__init__()
         try:
             self.docker_client = self._create_client()
             logging.getLogger("urllib3").setLevel(logging.INFO)
