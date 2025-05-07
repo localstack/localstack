@@ -351,21 +351,22 @@ def test_lambda_version(deploy_cfn_template, snapshot, aws_client):
         template_path=os.path.join(
             os.path.dirname(__file__), "../../../templates/cfn_lambda_version.yaml"
         ),
-        max_wait=240,
+        max_wait=180,
     )
+    function_name = deployment.outputs["FunctionName"]
+    function_version = deployment.outputs["FunctionVersion"]
 
     invoke_result = aws_client.lambda_.invoke(
-        FunctionName=deployment.outputs["FunctionName"], Payload=b"{}"
+        FunctionName=function_name, Qualifier=function_version, Payload=b"{}"
     )
-    assert 200 <= invoke_result["StatusCode"] < 300
+    assert "FunctionError" not in invoke_result
+    snapshot.match("invoke_result", invoke_result)
 
     stack_resources = aws_client.cloudformation.describe_stack_resources(
         StackName=deployment.stack_id
     )
     snapshot.match("stack_resources", stack_resources)
 
-    function_name = deployment.outputs["FunctionName"]
-    function_version = deployment.outputs["FunctionVersion"]
     versions_by_fn = aws_client.lambda_.list_versions_by_function(FunctionName=function_name)
     get_function_version = aws_client.lambda_.get_function(
         FunctionName=function_name, Qualifier=function_version
@@ -373,6 +374,60 @@ def test_lambda_version(deploy_cfn_template, snapshot, aws_client):
 
     snapshot.match("versions_by_fn", versions_by_fn)
     snapshot.match("get_function_version", get_function_version)
+
+
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        # Lambda ZIP flaky in CI
+        "$..CodeSize",
+    ]
+)
+@markers.aws.validated
+def test_lambda_version_provisioned_concurrency(deploy_cfn_template, snapshot, aws_client):
+    """Provisioned concurrency slows down the test case considerably (~2min 40s on AWS)
+    because CloudFormation waits until the provisioned Lambda functions are ready.
+    """
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.lambda_api())
+    snapshot.add_transformer(
+        SortingTransformer("StackResources", lambda sr: sr["LogicalResourceId"])
+    )
+    snapshot.add_transformer(snapshot.transform.key_value("CodeSha256"))
+
+    deployment = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__),
+            "../../../templates/cfn_lambda_version_provisioned_concurrency.yaml",
+        ),
+        max_wait=240,
+    )
+    function_name = deployment.outputs["FunctionName"]
+    function_version = deployment.outputs["FunctionVersion"]
+
+    invoke_result = aws_client.lambda_.invoke(
+        FunctionName=function_name, Qualifier=function_version, Payload=b"{}"
+    )
+    assert "FunctionError" not in invoke_result
+    snapshot.match("invoke_result", invoke_result)
+
+    stack_resources = aws_client.cloudformation.describe_stack_resources(
+        StackName=deployment.stack_id
+    )
+    snapshot.match("stack_resources", stack_resources)
+
+    versions_by_fn = aws_client.lambda_.list_versions_by_function(FunctionName=function_name)
+    get_function_version = aws_client.lambda_.get_function(
+        FunctionName=function_name, Qualifier=function_version
+    )
+
+    snapshot.match("versions_by_fn", versions_by_fn)
+    snapshot.match("get_function_version", get_function_version)
+
+    provisioned_concurrency_config = aws_client.lambda_.get_provisioned_concurrency_config(
+        FunctionName=function_name,
+        Qualifier=function_version,
+    )
+    snapshot.match("provisioned_concurrency_config", provisioned_concurrency_config)
 
 
 @markers.aws.validated

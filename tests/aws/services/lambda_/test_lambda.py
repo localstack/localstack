@@ -2621,7 +2621,7 @@ class TestLambdaConcurrency:
         )
         snapshot.match("get_provisioned_postwait", get_provisioned_postwait)
 
-        # Schedule Lambda to provisioned concurrency instead of launching a new on-demand instance
+        # Invoke should favor provisioned concurrency function over launching a new on-demand instance
         invoke_result = aws_client.lambda_.invoke(
             FunctionName=func_name,
             Qualifier=v1["Version"],

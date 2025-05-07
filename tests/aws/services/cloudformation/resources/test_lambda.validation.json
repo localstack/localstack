@@ -45,7 +45,10 @@
     "last_validated_date": "2025-04-08T12:12:01+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_version": {
-    "last_validated_date": "2024-04-09T07:21:37+00:00"
+    "last_validated_date": "2025-05-07T13:19:10+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_version_provisioned_concurrency": {
+    "last_validated_date": "2025-05-07T13:23:25+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_w_dynamodb_event_filter_update": {
     "last_validated_date": "2024-12-11T09:03:52+00:00"

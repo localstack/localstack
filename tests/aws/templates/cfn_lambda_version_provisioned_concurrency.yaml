@@ -23,9 +23,9 @@ Resources:
           import os
 
           def handler(event, context):
-              function_version = os.environ["AWS_LAMBDA_FUNCTION_VERSION"]
-              print(f"{function_version=}")
-              return {"function_version": function_version}
+              init_type = os.environ["AWS_LAMBDA_INITIALIZATION_TYPE"]
+              print(f"{init_type=}")
+              return {"initialization_type": init_type}
       Role:
         Fn::GetAtt:
           - fnServiceRole5D180AFD
@@ -40,6 +40,9 @@ Resources:
       FunctionName:
         Ref: fn5FF616E3
       Description: test description
+      ProvisionedConcurrencyConfig:
+        ProvisionedConcurrentExecutions: 1
+
 Outputs:
   FunctionName:
     Value:
