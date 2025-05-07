@@ -58,3 +58,6 @@ jobs:
       testAWSRegion: ${{ needs.generate-random-creds.outputs.region }}
       testAWSAccountId: ${{ needs.generate-random-creds.outputs.account_id }}
       testAWSAccessKeyId: ${{ needs.generate-random-creds.outputs.account_id }}
+    secrets:
+      DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+      DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}

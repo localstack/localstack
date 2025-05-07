@@ -90,6 +90,13 @@ on:
         required: false
         type: string
         default: 'test'
+    secrets:
+      DOCKERHUB_PULL_USERNAME:
+        description: 'A DockerHub username - Used to avoid rate limiting issues.'
+        required: true
+      DOCKERHUB_PULL_TOKEN:
+        description: 'A DockerHub token - Used to avoid rate limiting issues.'
+        required: true
 
 env:
   PYTEST_LOGLEVEL: ${{ inputs.PYTEST_LOGLEVEL || 'WARNING' }}
