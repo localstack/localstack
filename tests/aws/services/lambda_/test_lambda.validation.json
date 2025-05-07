@@ -74,6 +74,9 @@
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_provisioned_concurrency": {
     "last_validated_date": "2024-04-08T17:04:20+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_provisioned_concurrency_on_alias": {
+    "last_validated_date": "2025-05-07T09:26:54+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_reserved_concurrency": {
     "last_validated_date": "2024-04-08T17:08:10+00:00"
   },
