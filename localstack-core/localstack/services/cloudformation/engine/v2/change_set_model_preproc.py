@@ -167,13 +167,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             raise RuntimeError(
                 f"No deployed instances of resource '{resource_logical_id}' were found"
             )
-        property_value: Optional[Any] = resolved_resource.get(property_name)
-        if property_value is None:
-            # TODO: typing for resolved properties
-            # TODO: investigate why the properties of resolved resources here are not resolved.
-            # TODO: consider flattening the resolved resources
-            properties = resolved_resource.get("Properties", dict())
-            property_value = properties.get(property_name)
+        properties = resolved_resource.get("Properties", dict())
+        property_value: Optional[Any] = properties.get(property_name)
         if property_value is None:
             raise RuntimeError(
                 f"No '{property_name}' found for deployed resource '{resource_logical_id}' was found"
