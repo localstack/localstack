@@ -8,7 +8,6 @@ from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack import config as localstack_config
 from localstack import constants
-from localstack.testing.scenario.provisioning import InfraProvisioner
 from localstack.testing.snapshots.transformer_utility import (
     SNAPSHOT_BASIC_TRANSFORMER,
     SNAPSHOT_BASIC_TRANSFORMER_NEW,
@@ -85,6 +84,8 @@ def cdk_template_path():
 # Note: Don't move this into testing lib
 @pytest.fixture(scope="session")
 def infrastructure_setup(cdk_template_path, aws_client):
+    from localstack.testing.scenario.provisioning import InfraProvisioner
+
     def _infrastructure_setup(
         namespace: str, force_synth: Optional[bool] = False
     ) -> InfraProvisioner:
