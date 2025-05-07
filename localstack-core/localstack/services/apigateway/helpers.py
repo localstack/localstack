@@ -951,11 +951,11 @@ def import_api_from_openapi_spec(
 
     # binary types
     if mode == "merge":
-        existing_modes = rest_api.binaryMediaTypes or []
+        existing_binary_media_types = rest_api.binaryMediaTypes or []
     else:
-        existing_modes = []
+        existing_binary_media_types = []
 
-    rest_api.binaryMediaTypes = existing_modes + resolved_schema.get(
+    rest_api.binaryMediaTypes = existing_binary_media_types + resolved_schema.get(
         OpenAPIExt.BINARY_MEDIA_TYPES, []
     )
 
