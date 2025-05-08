@@ -314,29 +314,6 @@ class CloudformationProviderV2(CloudformationProvider):
             ],
             Changes=changes,
         )
-
-        # result = {
-        #     "Status": self.status,
-        #     "ChangeSetType": self.change_set_type,
-        #     "ChangeSetId": self.change_set_id,
-        #     "ChangeSetName": self.change_set_name,
-        #     "ExecutionStatus": self.execution_status,
-        #     "RollbackConfiguration": {},
-        #     "StackId": self.stack.stack_id,
-        #     "StackName": self.stack.stack_name,
-        #     "StackStatus": self.stack.status,
-        #     "CreationTime": self.creation_time,
-        #     "LastUpdatedTime": "",
-        #     "DisableRollback": "",
-        #     "EnableTerminationProtection": "",
-        #     "Transform": "",
-        #     # TODO: mask no echo
-        #     "Parameters": [
-        #         Parameter(ParameterKey=key, ParameterValue=value)
-        #         for (key, value) in self.stack.resolved_parameters.items()
-        #     ],
-        #     "Changes": changes,
-        # }
         return result
 
     @handler("DescribeChangeSet")
