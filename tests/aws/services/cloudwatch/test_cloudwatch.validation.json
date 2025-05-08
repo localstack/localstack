@@ -57,7 +57,7 @@
     "last_validated_date": "2024-07-29T07:56:05+00:00"
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm": {
-    "last_validated_date": "2024-01-19T14:26:26+00:00"
+    "last_validated_date": "2025-05-08T16:09:45+00:00"
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_data_values_list": {
     "last_validated_date": "2023-09-25T08:26:17+00:00"
