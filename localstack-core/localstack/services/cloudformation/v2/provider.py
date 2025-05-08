@@ -3,6 +3,7 @@ from typing import Any
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.cloudformation import (
+    Changes,
     ChangeSetNameOrId,
     ChangeSetNotFoundException,
     ChangeSetStatus,
@@ -24,12 +25,16 @@ from localstack.aws.api.cloudformation import (
     RetainExceptOnCreate,
     RetainResources,
     RoleARN,
+    RollbackConfiguration,
     StackName,
     StackNameOrId,
     StackStatus,
 )
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import template_preparer
+from localstack.services.cloudformation.engine.v2.change_set_model_describer import (
+    ChangeSetModelDescriber,
+)
 from localstack.services.cloudformation.engine.v2.change_set_model_executor import (
     ChangeSetModelExecutor,
 )
@@ -285,6 +290,55 @@ class CloudformationProviderV2(CloudformationProvider):
 
         return ExecuteChangeSetOutput()
 
+    def _describe_change_set(
+        self, change_set: ChangeSet, include_property_values: bool
+    ) -> DescribeChangeSetOutput:
+        change_set_describer = ChangeSetModelDescriber(
+            change_set=change_set, include_property_values=include_property_values
+        )
+        changes: Changes = change_set_describer.get_changes()
+
+        result = DescribeChangeSetOutput(
+            Status=change_set.status,
+            # ChangeSetType=change_set.change_set_type,
+            ChangeSetId=change_set.change_set_id,
+            ChangeSetName=change_set.change_set_name,
+            ExecutionStatus=change_set.execution_status,
+            RollbackConfiguration=RollbackConfiguration(),
+            StackId=change_set.stack.stack_id,
+            StackName=change_set.stack.stack_name,
+            CreationTime=change_set.creation_time,
+            Parameters=[
+                Parameter(ParameterKey=key, ParameterValue=value)
+                for (key, value) in change_set.stack.resolved_parameters.items()
+            ],
+            Changes=changes,
+        )
+
+        # result = {
+        #     "Status": self.status,
+        #     "ChangeSetType": self.change_set_type,
+        #     "ChangeSetId": self.change_set_id,
+        #     "ChangeSetName": self.change_set_name,
+        #     "ExecutionStatus": self.execution_status,
+        #     "RollbackConfiguration": {},
+        #     "StackId": self.stack.stack_id,
+        #     "StackName": self.stack.stack_name,
+        #     "StackStatus": self.stack.status,
+        #     "CreationTime": self.creation_time,
+        #     "LastUpdatedTime": "",
+        #     "DisableRollback": "",
+        #     "EnableTerminationProtection": "",
+        #     "Transform": "",
+        #     # TODO: mask no echo
+        #     "Parameters": [
+        #         Parameter(ParameterKey=key, ParameterValue=value)
+        #         for (key, value) in self.stack.resolved_parameters.items()
+        #     ],
+        #     "Changes": changes,
+        # }
+        return result
+
     @handler("DescribeChangeSet")
     def describe_change_set(
         self,
@@ -301,9 +355,8 @@ class CloudformationProviderV2(CloudformationProvider):
         change_set = find_change_set_v2(state, change_set_name, stack_name)
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
-
-        result = change_set.describe_details(
-            include_property_values=include_property_values or False
+        result = self._describe_change_set(
+            change_set=change_set, include_property_values=include_property_values or False
         )
         return result
 
