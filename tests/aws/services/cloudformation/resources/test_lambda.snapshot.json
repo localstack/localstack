@@ -68,8 +68,20 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_alias": {
-    "recorded-date": "09-04-2024, 07:19:19",
+    "recorded-date": "07-05-2025, 15:39:26",
     "recorded-content": {
+      "invoke_result": {
+        "ExecutedVersion": "1",
+        "Payload": {
+          "function_version": "1",
+          "initialization_type": null
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "stack_resource_descriptions": {
         "StackResources": [
           {
@@ -132,6 +144,17 @@
         "FunctionVersion": "1",
         "Name": "<alias-name>",
         "RevisionId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "provisioned_concurrency_config": {
+        "AllocatedProvisionedConcurrentExecutions": 1,
+        "AvailableProvisionedConcurrentExecutions": 1,
+        "LastModified": "date",
+        "RequestedProvisionedConcurrentExecutions": 1,
+        "Status": "READY",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -655,8 +678,19 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_version": {
-    "recorded-date": "09-04-2024, 07:21:37",
+    "recorded-date": "07-05-2025, 13:19:10",
     "recorded-content": {
+      "invoke_result": {
+        "ExecutedVersion": "1",
+        "Payload": {
+          "function_version": "1"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "stack_resources": {
         "StackResources": [
           {
@@ -725,7 +759,7 @@
             "PackageType": "Zip",
             "RevisionId": "<uuid:1>",
             "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
-            "Runtime": "python3.9",
+            "Runtime": "python3.12",
             "SnapStart": {
               "ApplyOn": "None",
               "OptimizationStatus": "Off"
@@ -758,7 +792,7 @@
             "PackageType": "Zip",
             "RevisionId": "<uuid:2>",
             "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
-            "Runtime": "python3.9",
+            "Runtime": "python3.12",
             "SnapStart": {
               "ApplyOn": "None",
               "OptimizationStatus": "Off"
@@ -803,7 +837,7 @@
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
           "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:5>"
           },
@@ -1659,6 +1693,199 @@
         "LogFormat": "JSON",
         "LogGroup": "/aws/lambda/<function-name>",
         "SystemLogLevel": "INFO"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_version_provisioned_concurrency": {
+    "recorded-date": "07-05-2025, 13:23:25",
+    "recorded-content": {
+      "invoke_result": {
+        "ExecutedVersion": "1",
+        "Payload": {
+          "initialization_type": "provisioned-concurrency"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stack_resources": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fn5FF616E3",
+            "PhysicalResourceId": "<resource:3>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Function",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fnServiceRole5D180AFD",
+            "PhysicalResourceId": "<resource:4>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "fnVersion7BF8AE5A",
+            "PhysicalResourceId": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Version",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "versions_by_fn": {
+        "Versions": [
+          {
+            "Architectures": [
+              "x86_64"
+            ],
+            "CodeSha256": "<code-sha256:1>",
+            "CodeSize": "<code-size>",
+            "Description": "",
+            "EphemeralStorage": {
+              "Size": 512
+            },
+            "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>:$LATEST",
+            "FunctionName": "<resource:3>",
+            "Handler": "index.handler",
+            "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<resource:3>"
+            },
+            "MemorySize": 128,
+            "PackageType": "Zip",
+            "RevisionId": "<uuid:1>",
+            "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
+            "Runtime": "python3.12",
+            "SnapStart": {
+              "ApplyOn": "None",
+              "OptimizationStatus": "Off"
+            },
+            "Timeout": 3,
+            "TracingConfig": {
+              "Mode": "PassThrough"
+            },
+            "Version": "$LATEST"
+          },
+          {
+            "Architectures": [
+              "x86_64"
+            ],
+            "CodeSha256": "<code-sha256:1>",
+            "CodeSize": "<code-size>",
+            "Description": "test description",
+            "EphemeralStorage": {
+              "Size": 512
+            },
+            "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+            "FunctionName": "<resource:3>",
+            "Handler": "index.handler",
+            "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<resource:3>"
+            },
+            "MemorySize": 128,
+            "PackageType": "Zip",
+            "RevisionId": "<uuid:2>",
+            "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
+            "Runtime": "python3.12",
+            "SnapStart": {
+              "ApplyOn": "None",
+              "OptimizationStatus": "Off"
+            },
+            "Timeout": 3,
+            "TracingConfig": {
+              "Mode": "PassThrough"
+            },
+            "Version": "1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_version": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "test description",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
+          "FunctionName": "<resource:3>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<resource:3>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
+          "Runtime": "python3.12",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:5>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "provisioned_concurrency_config": {
+        "AllocatedProvisionedConcurrentExecutions": 1,
+        "AvailableProvisionedConcurrentExecutions": 1,
+        "LastModified": "date",
+        "RequestedProvisionedConcurrentExecutions": 1,
+        "Status": "READY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   }
