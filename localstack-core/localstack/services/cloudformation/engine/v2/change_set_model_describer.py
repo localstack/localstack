@@ -44,7 +44,7 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
     def visit_node_intrinsic_function_fn_get_att(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        # TODO: If we can properly compute the before and after value, why should we
+        # Consideration: If we can properly compute the before and after value, why should we
         #  artificially limit the precision of our output to match AWS's?
 
         arguments_delta = self.visit(node_intrinsic_function.arguments)
@@ -71,16 +71,36 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
             after_node_resource = self._get_node_resource_for(
                 resource_name=after_logical_name_of_resource, node_template=self._node_template
             )
+            after_property_delta: PreprocEntityDelta
             after_node_property = self._get_node_property_for(
                 property_name=after_attribute_name, node_resource=after_node_resource
             )
-            after_property_delta = self.visit(after_node_property)
+            if after_node_property is not None:
+                after_property_delta = self.visit(after_node_property)
+            else:
+                after_property_delta = PreprocEntityDelta(after=CHANGESET_KNOWN_AFTER_APPLY)
             if after_property_delta.before == after_property_delta.after:
                 after = after_property_delta.after
             else:
                 after = CHANGESET_KNOWN_AFTER_APPLY
 
         return PreprocEntityDelta(before=before, after=after)
+
+    def visit_node_intrinsic_function_fn_join(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        # TODO: investigate the behaviour and impact of this logic with the user defining
+        #       {{changeSet:KNOWN_AFTER_APPLY}} string literals as delimiters or arguments.
+        delta = super().visit_node_intrinsic_function_fn_join(
+            node_intrinsic_function=node_intrinsic_function
+        )
+        delta_before = delta.before
+        if isinstance(delta_before, str) and CHANGESET_KNOWN_AFTER_APPLY in delta_before:
+            delta.before = CHANGESET_KNOWN_AFTER_APPLY
+        delta_after = delta.after
+        if isinstance(delta_after, str) and CHANGESET_KNOWN_AFTER_APPLY in delta_after:
+            delta.after = CHANGESET_KNOWN_AFTER_APPLY
+        return delta
 
     def _register_resource_change(
         self,

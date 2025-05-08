@@ -66,7 +66,17 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         self.resolved_parameters[node_parameter.name] = delta.after
         return delta
 
-    def _after_resource_physical_id(self, resource_logical_id: str) -> Optional[str]:
+    def _after_deployed_property_value_of(
+        self, resource_logical_id: str, property_name: str
+    ) -> str:
+        after_resolved_resources = self.resources
+        return self._deployed_property_value_of(
+            resource_logical_id=resource_logical_id,
+            property_name=property_name,
+            resolved_resources=after_resolved_resources,
+        )
+
+    def _after_resource_physical_id(self, resource_logical_id: str) -> str:
         after_resolved_resources = self.resources
         return self._resource_physical_resource_id_from(
             logical_resource_id=resource_logical_id, resolved_resources=after_resolved_resources
