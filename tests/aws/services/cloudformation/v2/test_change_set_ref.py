@@ -309,3 +309,37 @@ class TestChangeSetRef:
             }
         }
         capture_update_process(snapshot, template_1, template_2)
+
+    @markers.aws.validated
+    def test_supported_pseudo_parameter(
+        self,
+        snapshot,
+        capture_update_process,
+    ):
+        topic_name = f"topic-name-1-{long_uid()}"
+        snapshot.add_transformer(RegexTransformer(topic_name, "topic-name"))
+        test_name = f"test-name-{long_uid()}"
+        snapshot.add_transformer(RegexTransformer(test_name, "test-name"))
+        template_1 = {
+            "Resources": {
+                "Topic": {"Type": "AWS::SNS::Topic", "Properties": {"TopicName": topic_name}},
+            }
+        }
+        template_2 = {
+            "Resources": {
+                "Role": {
+                    "Type": "AWS::Logs::LogGroup",
+                    "Properties": {
+                        "LogGroupName": test_name,
+                        "Tags": [
+                            {"Key": "Partition", "Value": {"Ref": "AWS::Partition"}},
+                            {"Key": "AccountId", "Value": {"Ref": "AWS::AccountId"}},
+                            {"Key": "Region", "Value": {"Ref": "AWS::Region"}},
+                            {"Key": "StackName", "Value": {"Ref": "AWS::StackName"}},
+                            {"Key": "StackId", "Value": {"Ref": "AWS::StackId"}},
+                        ],
+                    },
+                },
+            }
+        }
+        capture_update_process(snapshot, template_1, template_2)
