@@ -300,7 +300,6 @@ class CloudformationProviderV2(CloudformationProvider):
 
         result = DescribeChangeSetOutput(
             Status=change_set.status,
-            # ChangeSetType=change_set.change_set_type,
             ChangeSetId=change_set.change_set_id,
             ChangeSetName=change_set.change_set_name,
             ExecutionStatus=change_set.execution_status,
