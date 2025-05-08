@@ -2,11 +2,9 @@ from datetime import datetime, timezone
 from typing import TypedDict
 
 from localstack.aws.api.cloudformation import (
-    Changes,
     ChangeSetStatus,
     ChangeSetType,
     CreateChangeSetInput,
-    DescribeChangeSetOutput,
     ExecutionStatus,
     Output,
     Parameter,
