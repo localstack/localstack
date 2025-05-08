@@ -318,6 +318,8 @@ def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_cl
         "$.get-stage.lastUpdatedDate",
         "$.get-stage.methodSettings",
         "$.get-stage.tags",
+        "$..endpointConfiguration.ipAddressType",
+        "$..binaryMediaTypes",
     ]
 )
 def test_cfn_deploy_apigateway_from_s3_swagger(

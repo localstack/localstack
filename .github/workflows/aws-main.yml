@@ -1,0 +1,170 @@
+name: AWS / Build, Test, Push
+
+on:
+  schedule:
+    - cron: 0 2 * * MON-FRI
+  push:
+    paths:
+      - '**'
+      - '.github/actions/**'
+      - '.github/workflows/aws-main.yml'
+      - '.github/workflows/aws-tests.yml'
+      - '!CODEOWNERS'
+      - '!README.md'
+      - '!.gitignore'
+      - '!.git-blame-ignore-revs'
+      - '!.github/**'
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      onlyAcceptanceTests:
+        description: 'Only run acceptance tests'
+        required: false
+        type: boolean
+        default: false
+      enableTestSelection:
+        description: 'Enable Test Selection'
+        required: false
+        type: boolean
+        default: false
+      disableCaching:
+        description: 'Disable Caching'
+        required: false
+        type: boolean
+        default: false
+      PYTEST_LOGLEVEL:
+        type: choice
+        description: Loglevel for PyTest
+        options:
+        - DEBUG
+        - INFO
+        - WARNING
+        - ERROR
+        - CRITICAL
+        default: WARNING
+
+env:
+  # Docker Image name and default tag used by docker-helper.sh
+  IMAGE_NAME: "localstack/localstack"
+  DEFAULT_TAG: "latest"
+  PLATFORM_NAME_AMD64: "amd64"
+  PLATFORM_NAME_ARM64: "arm64"
+
+jobs:
+  test:
+    name: "Run integration tests"
+    uses: ./.github/workflows/aws-tests.yml
+    with:
+      # onlyAcceptance test is either explicitly set, or it's a push event.
+      # otherwise it's false (schedule event, workflow_dispatch event without setting it to true)
+      onlyAcceptanceTests: ${{ inputs.onlyAcceptanceTests == true || github.event_name == 'push' }}
+      # default "disableCaching" to `false` if it's a push or schedule event
+      disableCaching: ${{ inputs.disableCaching == true }}
+      # default "disableTestSelection" to `true` if it's a push or schedule event
+      disableTestSelection: ${{ inputs.enableTestSelection != true }}
+      PYTEST_LOGLEVEL: ${{ inputs.PYTEST_LOGLEVEL }}
+    secrets:
+      DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+      DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
+  push:
+    name: "Push Images"
+    runs-on: ubuntu-latest
+    # push image on master, target branch not set, and the dependent steps were either successful or skipped
+    # TO-DO: enable job after workflow in CircleCI is disabled
+    if: false
+#    if: github.ref == 'refs/heads/master' && !failure() && !cancelled()
+    needs:
+      # all tests need to be successful for the image to be pushed
+      - test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # setuptools_scm requires the git history (at least until the last tag) to determine the version
+          fetch-depth: 0
+
+      - name: Load Localstack ${{ env.PLATFORM_NAME_AMD64 }} Docker Image
+        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+        with:
+          platform: ${{ env.PLATFORM_NAME_AMD64 }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
+
+      - name: Push ${{ env.PLATFORM_NAME_AMD64 }} Docker Image
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_PUSH_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
+          PLATFORM: ${{ env.PLATFORM_NAME_AMD64 }}
+        run: |
+          # Push to Docker Hub
+          ./bin/docker-helper.sh push
+          # Push to Amazon Public ECR
+          TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" ./bin/docker-helper.sh push
+
+      - name: Load Localstack ${{ env.PLATFORM_NAME_ARM64 }} Docker Image
+        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+        with:
+          platform: ${{ env.PLATFORM_NAME_ARM64 }}
+
+      - name: Push ${{ env.PLATFORM_NAME_ARM64 }} Docker Image
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_PUSH_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
+          PLATFORM: ${{ env.PLATFORM_NAME_ARM64 }}
+        run: |
+          # Push to Docker Hub
+          ./bin/docker-helper.sh push
+          # Push to Amazon Public ECR
+          TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" ./bin/docker-helper.sh push
+
+      - name: Push Multi-Arch Manifest
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_PUSH_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
+        run: |
+          # Push to Docker Hub
+          ./bin/docker-helper.sh push-manifests
+          # Push to Amazon Public ECR
+          IMAGE_NAME="public.ecr.aws/localstack/localstack" ./bin/docker-helper.sh push-manifests
+
+      - name: Publish dev release
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_PUSH_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
+        run: |
+          if git describe --exact-match --tags >/dev/null 2>&1; then
+            echo "not publishing a dev release as this is a tagged commit"
+          else
+            source .venv/bin/activate
+            make publish || echo "dev release failed (maybe it is already published)"
+          fi
+
+  cleanup:
+    name: "Cleanup"
+    runs-on: ubuntu-latest
+    # only remove the image artifacts if the build was successful
+    # (this allows a re-build of failed jobs until for the time of the retention period)
+    if: success()
+    needs: push
+    steps:
+      - uses: geekyeggo/delete-artifact@v5
+        with:
+          # delete the docker images shared within the jobs (storage on GitHub is expensive)
+          name: |
+            localstack-docker-image-*
+            lambda-common-*
+          failOnError: false
+          token: ${{ secrets.GITHUB_TOKEN }}

@@ -1473,23 +1473,23 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_selection_patterns": {
-    "recorded-date": "05-09-2023, 21:54:21",
+    "recorded-date": "05-05-2025, 14:10:11",
     "recorded-content": {
       "lambda-selection-pattern-200": "Pass",
       "lambda-selection-pattern-400": {
-        "errorMessage": "Error: Raising 400 from within the Lambda function",
+        "errorMessage": "Error: Raising four hundred from within the Lambda function",
         "errorType": "Exception",
         "requestId": "<uuid:1>",
         "stackTrace": [
-          "  File \"/var/task/lambda_select_pattern.py\", line 7, in handler\n    raise Exception(\"Error: Raising 400 from within the Lambda function\")\n"
+          "  File \"/var/task/lambda_select_pattern.py\", line 7, in handler\n    raise Exception(\"Error: Raising four hundred from within the Lambda function\")\n"
         ]
       },
       "lambda-selection-pattern-500": {
-        "errorMessage": "Error: Raising 500 from within the Lambda function",
+        "errorMessage": "Error: Raising five hundred from within the Lambda function",
         "errorType": "Exception",
         "requestId": "<uuid:2>",
         "stackTrace": [
-          "  File \"/var/task/lambda_select_pattern.py\", line 9, in handler\n    raise Exception(\"Error: Raising 500 from within the Lambda function\")\n"
+          "  File \"/var/task/lambda_select_pattern.py\", line 9, in handler\n    raise Exception(\"Error: Raising five hundred from within the Lambda function\")\n"
         ]
       }
     }

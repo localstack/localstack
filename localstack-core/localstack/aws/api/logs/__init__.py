@@ -231,6 +231,7 @@ class IntegrationType(StrEnum):
 class LogGroupClass(StrEnum):
     STANDARD = "STANDARD"
     INFREQUENT_ACCESS = "INFREQUENT_ACCESS"
+    DELIVERY = "DELIVERY"
 
 
 class OpenSearchResourceStatusType(StrEnum):

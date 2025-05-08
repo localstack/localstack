@@ -1,0 +1,63 @@
+name: AWS / MA/MR tests
+
+on:
+  schedule:
+    - cron: 0 1 * * MON-FRI
+  pull_request:
+    paths:
+      - '.github/workflows/aws-tests-mamr.yml'
+      - '.github/workflows/aws-tests.yml'
+  workflow_dispatch:
+    inputs:
+      disableCaching:
+        description: 'Disable Caching'
+        required: false
+        type: boolean
+        default: false
+      PYTEST_LOGLEVEL:
+        type: choice
+        description: Loglevel for PyTest
+        options:
+          - DEBUG
+          - INFO
+          - WARNING
+          - ERROR
+          - CRITICAL
+        default: WARNING
+
+env:
+  IMAGE_NAME: "localstack/localstack"
+  TINYBIRD_DATASOURCE: "community_tests_circleci_ma_mr"
+
+jobs:
+  generate-random-creds:
+    name: "Generate random AWS credentials"
+    runs-on: ubuntu-latest
+    outputs:
+      region: ${{ steps.generate-aws-values.outputs.region }}
+      account_id: ${{ steps.generate-aws-values.outputs.account_id }}
+    steps:
+      - name: Generate values
+        id: generate-aws-values
+        run: |
+          # Generate a random 12-digit number for TEST_AWS_ACCOUNT_ID
+          ACCOUNT_ID=$(shuf -i 100000000000-999999999999 -n 1)
+          echo "account_id=$ACCOUNT_ID" >> $GITHUB_OUTPUT
+          # Set TEST_AWS_REGION_NAME to a random AWS region other than us-east-1
+          REGIONS=("us-east-2" "us-west-1" "us-west-2" "ap-southeast-2" "ap-northeast-1" "eu-central-1" "eu-west-1")
+          REGION=${REGIONS[RANDOM % ${#REGIONS[@]}]}
+          echo "region=$REGION" >> $GITHUB_OUTPUT
+
+  test-ma-mr:
+    name: "Run integration tests"
+    needs: generate-random-creds
+    uses: ./.github/workflows/aws-tests.yml
+    with:
+      disableCaching: ${{ inputs.disableCaching == true }}
+      PYTEST_LOGLEVEL: ${{ inputs.PYTEST_LOGLEVEL }}
+      testAWSRegion: ${{ needs.generate-random-creds.outputs.region }}
+      testAWSAccountId: ${{ needs.generate-random-creds.outputs.account_id }}
+      testAWSAccessKeyId: ${{ needs.generate-random-creds.outputs.account_id }}
+    secrets:
+      DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+      DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}

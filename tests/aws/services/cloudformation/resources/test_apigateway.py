@@ -3,14 +3,17 @@ import os.path
 from operator import itemgetter
 
 import requests
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import constants
 from localstack.aws.api.lambda_ import Runtime
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 from localstack.utils.files import load_file
 from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
+from localstack.utils.sync import retry
 from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url
 
 PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -108,7 +111,24 @@ def test_cfn_apigateway_aws_integration(deploy_cfn_template, aws_client):
 
 
 @markers.aws.validated
-def test_cfn_apigateway_swagger_import(deploy_cfn_template, echo_http_server_post, aws_client):
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        # TODO: not returned by LS
+        "$..endpointConfiguration.ipAddressType",
+    ]
+)
+def test_cfn_apigateway_swagger_import(
+    deploy_cfn_template, echo_http_server_post, aws_client, snapshot
+):
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("aws:cloudformation:stack-name"),
+            snapshot.transform.resource_name(),
+            snapshot.transform.key_value("id"),
+            snapshot.transform.key_value("name"),
+            snapshot.transform.key_value("rootResourceId"),
+        ]
+    )
     api_name = f"rest-api-{short_uid()}"
     deploy_cfn_template(
         template=TEST_TEMPLATE_1,
@@ -121,13 +141,25 @@ def test_cfn_apigateway_swagger_import(deploy_cfn_template, echo_http_server_pos
     ]
     assert len(apis) == 1
     api_id = apis[0]["id"]
+    snapshot.match("imported-api", apis[0])
 
     # construct API endpoint URL
     url = api_invoke_url(api_id, stage="dev", path="/test")
 
     # invoke API endpoint, assert results
-    result = requests.post(url, data="test 123")
-    assert result.ok
+    def _invoke():
+        _result = requests.post(url, data="test 123")
+        assert _result.ok
+        return _result
+
+    if is_aws_cloud():
+        sleep = 2
+        retries = 20
+    else:
+        sleep = 0.1
+        retries = 3
+
+    result = retry(_invoke, sleep=sleep, retries=retries)
     content = json.loads(to_str(result.content))
     assert content["data"] == "test 123"
     assert content["url"].endswith("/post")
@@ -301,12 +333,16 @@ def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_cl
         "$.get-stage.lastUpdatedDate",
         "$.get-stage.methodSettings",
         "$.get-stage.tags",
+        "$..endpointConfiguration.ipAddressType",
     ]
 )
 def test_cfn_deploy_apigateway_from_s3_swagger(
     deploy_cfn_template, snapshot, aws_client, s3_bucket
 ):
     snapshot.add_transformer(snapshot.transform.key_value("deploymentId"))
+    # FIXME: we need to sort the binaryMediaTypes as we don't return it in the same order as AWS, but this does not have
+    # behavior incidence
+    snapshot.add_transformer(SortingTransformer("binaryMediaTypes"))
     # put the swagger file in S3
     swagger_template = load_file(
         os.path.join(os.path.dirname(__file__), "../../../files/pets.json")
@@ -344,7 +380,20 @@ def test_cfn_deploy_apigateway_from_s3_swagger(
 
 
 @markers.aws.validated
-def test_cfn_apigateway_rest_api(deploy_cfn_template, aws_client):
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..endpointConfiguration.ipAddressType"],
+)
+def test_cfn_apigateway_rest_api(deploy_cfn_template, aws_client, snapshot):
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("aws:cloudformation:logical-id"),
+            snapshot.transform.key_value("aws:cloudformation:stack-name"),
+            snapshot.transform.resource_name(),
+            snapshot.transform.key_value("id"),
+            snapshot.transform.key_value("rootResourceId"),
+        ]
+    )
+
     stack = deploy_cfn_template(
         template_path=os.path.join(os.path.dirname(__file__), "../../../templates/apigateway.json")
     )
@@ -362,6 +411,7 @@ def test_cfn_apigateway_rest_api(deploy_cfn_template, aws_client):
     rs = aws_client.apigateway.get_rest_apis()
     apis = [item for item in rs["items"] if item["name"] == "DemoApi_dev"]
     assert len(apis) == 1
+    snapshot.match("rest-api", apis[0])
 
     rs = aws_client.apigateway.get_models(restApiId=apis[0]["id"])
     assert len(rs["items"]) == 3

@@ -190,7 +190,15 @@ class _OpenApiSwaggerExporter(_BaseOpenApiExporter):
         self._add_paths(spec, resources, with_extension)
         self._add_models(spec, models["items"], "#/definitions")
 
-        return getattr(spec, self.export_formats.get(export_format))()
+        response = getattr(spec, self.export_formats.get(export_format))()
+        if (
+            with_extension
+            and isinstance(response, dict)
+            and (binary_media_types := rest_api.get("binaryMediaTypes")) is not None
+        ):
+            response[OpenAPIExt.BINARY_MEDIA_TYPES] = binary_media_types
+
+        return response
 
 
 class _OpenApiOAS30Exporter(_BaseOpenApiExporter):
@@ -298,8 +306,16 @@ class _OpenApiOAS30Exporter(_BaseOpenApiExporter):
         self._add_models(spec, models["items"], "#/components/schemas")
 
         response = getattr(spec, self.export_formats.get(export_format))()
-        if isinstance(response, dict) and "components" not in response:
-            response["components"] = {}
+        if isinstance(response, dict):
+            if "components" not in response:
+                response["components"] = {}
+
+            if (
+                with_extension
+                and (binary_media_types := rest_api.get("binaryMediaTypes")) is not None
+            ):
+                response[OpenAPIExt.BINARY_MEDIA_TYPES] = binary_media_types
+
         return response
 
 

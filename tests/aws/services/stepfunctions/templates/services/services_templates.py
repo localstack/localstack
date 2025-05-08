@@ -109,3 +109,6 @@ class ServicesTemplates(TemplateLoader):
     LAMBDA_RETURN_BYTES_STR: Final[str] = os.path.join(
         _THIS_FOLDER, "lambdafunctions/return_bytes_str.py"
     )
+    LAMBDA_RETURN_DECORATED_INPUT: Final[str] = os.path.join(
+        _THIS_FOLDER, "lambdafunctions/return_decorated_input.py"
+    )

@@ -64,6 +64,23 @@ class APIDestinationService:
             description,
         )
 
+    @classmethod
+    def restore_from_api_destination_and_connection(
+        cls, api_destination: ApiDestination, connection: Connection
+    ):
+        api_destination_service = cls(
+            name=api_destination.name,
+            region=api_destination.region,
+            account_id=api_destination.account_id,
+            connection_arn=api_destination.connection_arn,
+            connection=connection,
+            invocation_endpoint=api_destination.invocation_endpoint,
+            http_method=api_destination.http_method,
+            invocation_rate_limit_per_second=api_destination.invocation_rate_limit_per_second,
+        )
+        api_destination_service.api_destination = api_destination
+        return api_destination_service
+
     @property
     def arn(self) -> Arn:
         return self.api_destination.arn

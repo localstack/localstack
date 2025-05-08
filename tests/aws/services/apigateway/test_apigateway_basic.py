@@ -78,7 +78,6 @@ TEST_STAGE_NAME = "testing"
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_SWAGGER_FILE_JSON = os.path.join(THIS_FOLDER, "../../files/swagger.json")
 TEST_SWAGGER_FILE_YAML = os.path.join(THIS_FOLDER, "../../files/swagger.yaml")
-TEST_IMPORT_REST_API_FILE = os.path.join(THIS_FOLDER, "../../files/pets.json")
 TEST_IMPORT_MOCK_INTEGRATION = os.path.join(THIS_FOLDER, "../../files/openapi-mock.json")
 TEST_IMPORT_REST_API_ASYNC_LAMBDA = os.path.join(THIS_FOLDER, "../../files/api_definition.yaml")
 

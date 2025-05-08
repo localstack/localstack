@@ -851,7 +851,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             if mock_test_case is None:
                 raise InvalidName(
                     f"Invalid mock test case name '{mock_test_case_name}' "
-                    f"for state machine '{state_machine_name}'"
+                    f"for state machine '{state_machine_name}'."
+                    "Either the test case is not defined or the mock configuration file "
+                    "could not be loaded. See logs for details."
                 )
 
         execution = Execution(

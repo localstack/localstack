@@ -8,7 +8,7 @@ from inspect import getmodule
 from threading import RLock
 from typing import Any, Callable, Generic, List, Optional, ParamSpec, TypeVar
 
-from plux import Plugin, PluginManager, PluginSpec  # type: ignore[import-untyped]
+from plux import Plugin, PluginManager, PluginSpec  # type: ignore
 
 from localstack import config
 
