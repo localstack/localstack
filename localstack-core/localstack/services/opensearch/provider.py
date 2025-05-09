@@ -365,9 +365,8 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
         ),
         DomainEndpointOptions=stored_status.get("DomainEndpointOptions")
         or DEFAULT_OPENSEARCH_DOMAIN_ENDPOINT_OPTIONS,
-        AdvancedSecurityOptions=AdvancedSecurityOptions(
-            Enabled=False, InternalUserDatabaseEnabled=False
-        ),
+        AdvancedSecurityOptions=stored_status.get("AdvancedSecurityOptions")
+        or AdvancedSecurityOptions(Enabled=False, InternalUserDatabaseEnabled=False),
         AutoTuneOptions=AutoTuneOptionsOutput(State=AutoTuneState.ENABLE_IN_PROGRESS),
     )
     return new_status
