@@ -1,0 +1,35 @@
+{
+  "tests/aws/services/cloudformation/v2/test_deletion.py::test_single_resource": {
+    "recorded-date": "08-05-2025, 13:41:07",
+    "recorded-content": {
+      "get-value": {
+        "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/<parameter-name>",
+        "DataType": "text",
+        "LastModifiedDate": "datetime",
+        "Name": "<parameter-name>",
+        "Type": "String",
+        "Value": "<value-1>",
+        "Version": 1
+      },
+      "get-value-2": {
+        "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/<parameter-name>",
+        "DataType": "text",
+        "LastModifiedDate": "datetime",
+        "Name": "<parameter-name>",
+        "Type": "String",
+        "Value": "<value-2>",
+        "Version": 2
+      },
+      "exc-value": {
+        "Error": {
+          "Code": "ParameterNotFound",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}

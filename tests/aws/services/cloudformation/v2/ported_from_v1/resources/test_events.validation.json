@@ -1,0 +1,41 @@
+{
+  "tests/aws/services/cloudformation/resources/test_events.py::test_cfn_event_api_destination_resource": {
+    "last_validated_date": "2024-04-16T06:36:56+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_events.py::test_event_rule_creation_without_target": {
+    "last_validated_date": "2025-01-22T14:15:04+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_events.py::test_eventbus_policy_statement": {
+    "last_validated_date": "2024-11-14T21:46:23+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_events.py::test_rule_pattern_transformation": {
+    "last_validated_date": "2024-11-08T15:49:06+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_events.py::test_rule_properties": {
+    "last_validated_date": "2023-12-01T14:03:52+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_events.py::test_cfn_event_api_destination_resource": {
+    "last_validated_date": "2025-05-08T15:38:01+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_events.py::test_cfn_event_bus_resource": {
+    "last_validated_date": "2025-05-08T15:42:28+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_events.py::test_event_rule_creation_without_target": {
+    "last_validated_date": "2025-05-08T15:41:23+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_events.py::test_event_rule_to_logs": {
+    "last_validated_date": "2025-05-08T15:40:08+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_events.py::test_eventbus_policies": {
+    "last_validated_date": "2025-05-08T15:38:25+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_events.py::test_eventbus_policy_statement": {
+    "last_validated_date": "2025-05-08T15:38:44+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_events.py::test_rule_pattern_transformation": {
+    "last_validated_date": "2025-05-08T15:45:03+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_events.py::test_rule_properties": {
+    "last_validated_date": "2025-05-08T15:43:11+00:00"
+  }
+}

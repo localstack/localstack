@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/v2/test_deletion.py::test_single_resource": {
+    "last_validated_date": "2025-05-08T13:41:07+00:00"
+  }
+}
