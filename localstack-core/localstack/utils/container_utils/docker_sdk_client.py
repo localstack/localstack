@@ -59,6 +59,7 @@ class SdkDockerClient(ContainerClient):
     docker_client: Optional[DockerClient]
 
     def __init__(self):
+        super().__init__()
         try:
             self.docker_client = self._create_client()
             logging.getLogger("urllib3").setLevel(logging.INFO)
@@ -337,6 +338,8 @@ class SdkDockerClient(ContainerClient):
     def pull_image(self, docker_image: str, platform: Optional[DockerPlatform] = None) -> None:
         LOG.debug("Pulling Docker image: %s", docker_image)
         # some path in the docker image string indicates a custom repository
+
+        docker_image = self.registry_resolver_strategy.resolve(docker_image)
         try:
             self.client().images.pull(docker_image, platform=platform)
         except ImageNotFound:
@@ -777,6 +780,8 @@ class SdkDockerClient(ContainerClient):
             mounts = None
             if volumes:
                 mounts = Util.convert_mount_list_to_dict(volumes)
+
+            image_name = self.registry_resolver_strategy.resolve(image_name)
 
             def create_container():
                 return self.client().containers.create(
