@@ -6,6 +6,7 @@ import re
 import time
 from typing import Final, Optional
 
+import localstack.services.stepfunctions.usage as UsageMetrics
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.stepfunctions import (
     ActivityDoesNotExist,
@@ -788,6 +789,10 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         mock_test_case_name = (
             state_machine_arn_parts[1] if len(state_machine_arn_parts) == 2 else None
         )
+
+        # Count metrics about the execution type.
+        is_mock_test_case: bool = mock_test_case_name is not None
+        UsageMetrics.execution_type_counter.labels(is_mock_test_case=is_mock_test_case).increment()
 
         store = self.get_store(context=context)
 

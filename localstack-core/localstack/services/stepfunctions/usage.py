@@ -10,3 +10,8 @@ language_features_counter = Counter(
     name="language_features_used",
     labels=["query_language", "uses_variables"],
 )
+
+# Initialize a counter to record the use of each execution type.
+execution_type_counter = Counter(
+    namespace="stepfunctions", name="execution_type", labels=["is_mock_test_case"]
+)
