@@ -1,16 +1,16 @@
 from typing import List
 
-from localstack.packages import Package, PackageInstaller
+from localstack.packages import Package
 from localstack.packages.core import PythonPackageInstaller
 
 _VOSK_DEFAULT_VERSION = "0.3.43"
 
 
-class VoskPackage(Package):
+class VoskPackage(Package[PythonPackageInstaller]):
     def __init__(self, default_version: str = _VOSK_DEFAULT_VERSION):
         super().__init__(name="Vosk", default_version=default_version)
 
-    def _get_installer(self, version: str) -> PackageInstaller:
+    def _get_installer(self, version: str) -> PythonPackageInstaller:
         return VoskPackageInstaller(version)
 
     def get_versions(self) -> List[str]:

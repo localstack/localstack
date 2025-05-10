@@ -28,7 +28,7 @@ class ServiceException(Exception):
     sender_fault: bool
     message: str
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: str, **kwargs: str):
         super(ServiceException, self).__init__(*args)
 
         if len(args) >= 1:
