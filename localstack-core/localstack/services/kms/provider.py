@@ -109,6 +109,8 @@ from localstack.aws.api.kms import (
     VerifyResponse,
     WrappingKeySpec,
 )
+from localstack.feature_catalog.api_limitation import ApiLimitation
+from localstack.feature_catalog.services import kms_api, kms_feature
 from localstack.services.kms.exceptions import ValidationException
 from localstack.services.kms.models import (
     MULTI_REGION_PATTERN,
@@ -381,6 +383,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     #
 
     @handler("CreateKey", expand=False)
+    @kms_feature.Provisioning
+    @kms_api.CreateKey
+    @ApiLimitation(limitation="Status 'Updating' is not supported.")
     def create_key(
         self,
         context: RequestContext,
@@ -390,6 +395,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return CreateKeyResponse(KeyMetadata=key.metadata)
 
     @handler("ScheduleKeyDeletion", expand=False)
+    @kms_feature.Deletion
     def schedule_key_deletion(
         self, context: RequestContext, request: ScheduleKeyDeletionRequest
     ) -> ScheduleKeyDeletionResponse:
@@ -412,6 +418,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return ScheduleKeyDeletionResponse(**result)
 
     @handler("CancelKeyDeletion", expand=False)
+    @kms_feature.Deletion
     def cancel_key_deletion(
         self, context: RequestContext, request: CancelKeyDeletionRequest
     ) -> CancelKeyDeletionResponse:
@@ -429,6 +436,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return CancelKeyDeletionResponse(KeyId=key.metadata.get("Arn"))
 
     @handler("DisableKey", expand=False)
+    @kms_feature.StateControl
     def disable_key(self, context: RequestContext, request: DisableKeyRequest) -> None:
         # Technically, AWS allows DisableKey for keys that are already disabled.
         key = self._get_kms_key(
@@ -442,6 +450,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key.metadata["Enabled"] = False
 
     @handler("EnableKey", expand=False)
+    @kms_feature.StateControl
     def enable_key(self, context: RequestContext, request: EnableKeyRequest) -> None:
         key = self._get_kms_key(
             context.account_id,
@@ -454,6 +463,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key.metadata["Enabled"] = True
 
     @handler("ListKeys", expand=False)
+    @kms_feature.Viewing
     def list_keys(self, context: RequestContext, request: ListKeysRequest) -> ListKeysResponse:
         # https://docs.aws.amazon.com/kms/latest/APIReference/API_ListKeys.html#API_ListKeys_ResponseSyntax
         # Out of whole KeyMetadata only two fields are present in the response.
@@ -474,6 +484,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return ListKeysResponse(Keys=page, **kwargs)
 
     @handler("DescribeKey", expand=False)
+    @kms_feature.Viewing
     def describe_key(
         self, context: RequestContext, request: DescribeKeyRequest
     ) -> DescribeKeyResponse:
@@ -482,6 +493,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return DescribeKeyResponse(KeyMetadata=key.metadata)
 
     @handler("ReplicateKey", expand=False)
+    @kms_feature.MultiRegion
     def replicate_key(
         self, context: RequestContext, request: ReplicateKeyRequest
     ) -> ReplicateKeyResponse:
@@ -518,6 +530,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         )
 
     @handler("UpdateKeyDescription", expand=False)
+    @kms_feature.Provisioning
     def update_key_description(
         self, context: RequestContext, request: UpdateKeyDescriptionRequest
     ) -> None:
@@ -531,6 +544,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key.metadata["Description"] = request.get("Description")
 
     @handler("CreateGrant", expand=False)
+    @kms_feature.Grant
     def create_grant(
         self, context: RequestContext, request: CreateGrantRequest
     ) -> CreateGrantResponse:
@@ -565,6 +579,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return CreateGrantResponse(GrantId=grant.metadata["GrantId"], GrantToken=grant.token)
 
     @handler("ListGrants", expand=False)
+    @kms_feature.Grant
     def list_grants(
         self, context: RequestContext, request: ListGrantsRequest
     ) -> ListGrantsResponse:
@@ -620,6 +635,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         store.grant_names.pop((grant.metadata.get("Name"), key_id), None)
         store.grants.pop(grant_id)
 
+    @kms_feature.Grant
     def revoke_grant(
         self,
         context: RequestContext,
@@ -640,6 +656,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         self._delete_grant(store, grant_id, key_id)
 
+    @kms_feature.Grant
     def retire_grant(
         self,
         context: RequestContext,
@@ -676,6 +693,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         self._delete_grant(grant_store, grant_id, key_id)
 
+    @kms_feature.Grant
     def list_retirable_grants(
         self,
         context: RequestContext,
@@ -703,6 +721,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         return ListGrantsResponse(Grants=page, **kwargs)
 
+    @kms_feature.Viewing
     def get_public_key(
         self,
         context: RequestContext,
@@ -760,7 +779,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             "PublicKey": crypto_key.public_key,
         }
 
-    @handler("GenerateDataKeyPair")
+    @kms_feature.Data
     def generate_data_key_pair(
         self,
         context: RequestContext,
@@ -778,6 +797,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return GenerateDataKeyPairResponse(**result)
 
     @handler("GenerateRandom", expand=False)
+    @kms_feature.Random
     def generate_random(
         self, context: RequestContext, request: GenerateRandomRequest
     ) -> GenerateRandomResponse:
@@ -799,7 +819,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         return GenerateRandomResponse(Plaintext=byte_string)
 
-    @handler("GenerateDataKeyPairWithoutPlaintext")
+    @kms_feature.Data
     def generate_data_key_pair_without_plaintext(
         self,
         context: RequestContext,
@@ -835,6 +855,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         }
 
     @handler("GenerateDataKey", expand=False)
+    @kms_feature.Data
     def generate_data_key(
         self, context: RequestContext, request: GenerateDataKeyRequest
     ) -> GenerateDataKeyResponse:
@@ -844,6 +865,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return GenerateDataKeyResponse(**result)
 
     @handler("GenerateDataKeyWithoutPlaintext", expand=False)
+    @kms_feature.Data
     def generate_data_key_without_plaintext(
         self, context: RequestContext, request: GenerateDataKeyWithoutPlaintextRequest
     ) -> GenerateDataKeyWithoutPlaintextResponse:
@@ -854,6 +876,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return GenerateDataKeyWithoutPlaintextResponse(**result)
 
     @handler("GenerateMac", expand=False)
+    @kms_feature.HMAC
     def generate_mac(
         self,
         context: RequestContext,
@@ -875,6 +898,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return GenerateMacResponse(Mac=mac, MacAlgorithm=algorithm, KeyId=key.metadata.get("Arn"))
 
     @handler("VerifyMac", expand=False)
+    @kms_feature.HMAC
     def verify_mac(
         self,
         context: RequestContext,
@@ -898,6 +922,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         )
 
     @handler("Sign", expand=False)
+    @kms_feature.Asymmetric
     def sign(self, context: RequestContext, request: SignRequest) -> SignResponse:
         account_id, region_name, key_id = self._parse_key_id(request["KeyId"], context)
         key = self._get_kms_key(account_id, region_name, key_id)
@@ -919,6 +944,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
     # Currently LocalStack only calculates SHA256 digests no matter what the signing algorithm is.
     @handler("Verify", expand=False)
+    @kms_feature.Asymmetric
     def verify(self, context: RequestContext, request: VerifyRequest) -> VerifyResponse:
         account_id, region_name, key_id = self._parse_key_id(request["KeyId"], context)
         key = self._get_kms_key(account_id, region_name, key_id)
@@ -940,6 +966,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         }
         return VerifyResponse(**result)
 
+    @kms_feature.Symmetric
+    @kms_feature.Asymmetric
     def re_encrypt(
         self,
         context: RequestContext,
@@ -957,6 +985,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # TODO: when implementing, ensure cross-account support for source_key_id and destination_key_id
         raise NotImplementedError
 
+    @kms_feature.Symmetric
+    @kms_feature.Asymmetric
     def encrypt(
         self,
         context: RequestContext,
@@ -986,6 +1016,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         )
 
     # TODO We currently do not even check encryption_context, while moto does. Should add the corresponding logic later.
+    @kms_feature.Symmetric
+    @kms_feature.Asymmetric
     def decrypt(
         self,
         context: RequestContext,
@@ -1053,6 +1085,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             EncryptionAlgorithm=encryption_algorithm,
         )
 
+    @kms_feature.Import
     def get_parameters_for_import(
         self,
         context: RequestContext,
@@ -1098,6 +1131,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             ParametersValidTo=expiry_date,
         )
 
+    @kms_feature.Import
     def import_key_material(
         self,
         context: RequestContext,
@@ -1158,6 +1192,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         return ImportKeyMaterialResponse()
 
+    @kms_feature.Import
     def delete_imported_key_material(
         self, context: RequestContext, key_id: KeyIdType, **kwargs
     ) -> None:
@@ -1174,6 +1209,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key.metadata.pop("ExpirationModel", None)
 
     @handler("CreateAlias", expand=False)
+    @kms_feature.Alias
     def create_alias(self, context: RequestContext, request: CreateAliasRequest) -> None:
         store = self._get_store(context.account_id, context.region)
         alias_name = request["AliasName"]
@@ -1195,6 +1231,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         self._create_kms_alias(context.account_id, context.region, request)
 
     @handler("DeleteAlias", expand=False)
+    @kms_feature.Alias
     def delete_alias(self, context: RequestContext, request: DeleteAliasRequest) -> None:
         # We do not check the state of the key, as, according to AWS docs, all key states, that are possible in
         # LocalStack, are supported by this operation.
@@ -1207,6 +1244,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         store.aliases.pop(alias_name, None)
 
     @handler("UpdateAlias", expand=False)
+    @kms_feature.Alias
     def update_alias(self, context: RequestContext, request: UpdateAliasRequest) -> None:
         # https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html
         # "If the source KMS key is pending deletion, the command succeeds. If the destination KMS key is pending
@@ -1231,7 +1269,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         alias.metadata["TargetKeyId"] = key_id
         alias.update_date_of_last_update()
 
-    @handler("ListAliases")
+    @kms_feature.Alias
     def list_aliases(
         self,
         context: RequestContext,
@@ -1265,6 +1303,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return ListAliasesResponse(Aliases=page, **kwargs)
 
     @handler("GetKeyRotationStatus", expand=False)
+    @kms_feature.Rotation
     def get_key_rotation_status(
         self, context: RequestContext, request: GetKeyRotationStatusRequest
     ) -> GetKeyRotationStatusResponse:
@@ -1285,6 +1324,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return response
 
     @handler("DisableKeyRotation", expand=False)
+    @kms_feature.Rotation
     def disable_key_rotation(
         self, context: RequestContext, request: DisableKeyRotationRequest
     ) -> None:
@@ -1295,6 +1335,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key.is_key_rotation_enabled = False
 
     @handler("EnableKeyRotation", expand=False)
+    @kms_feature.Rotation
     def enable_key_rotation(
         self, context: RequestContext, request: EnableKeyRotationRequest
     ) -> None:
@@ -1308,6 +1349,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key._update_key_rotation_date()
 
     @handler("ListKeyPolicies", expand=False)
+    @kms_feature.Policy
     def list_key_policies(
         self, context: RequestContext, request: ListKeyPoliciesRequest
     ) -> ListKeyPoliciesResponse:
@@ -1320,6 +1362,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return ListKeyPoliciesResponse(PolicyNames=["default"], Truncated=False)
 
     @handler("PutKeyPolicy", expand=False)
+    @kms_feature.Policy
     def put_key_policy(self, context: RequestContext, request: PutKeyPolicyRequest) -> None:
         key = self._get_kms_key(
             context.account_id, context.region, request.get("KeyId"), any_key_state_allowed=True
@@ -1329,6 +1372,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key.policy = request.get("Policy")
 
     @handler("GetKeyPolicy", expand=False)
+    @kms_feature.Policy
     def get_key_policy(
         self, context: RequestContext, request: GetKeyPolicyRequest
     ) -> GetKeyPolicyResponse:
@@ -1340,6 +1384,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return GetKeyPolicyResponse(Policy=key.policy)
 
     @handler("ListResourceTags", expand=False)
+    @kms_feature.Tagging
     def list_resource_tags(
         self, context: RequestContext, request: ListResourceTagsRequest
     ) -> ListResourceTagsResponse:
@@ -1379,6 +1424,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         )
 
     @handler("TagResource", expand=False)
+    @kms_feature.Tagging
     def tag_resource(self, context: RequestContext, request: TagResourceRequest) -> None:
         key = self._get_kms_key(
             context.account_id,
@@ -1390,6 +1436,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key.add_tags(request.get("Tags"))
 
     @handler("UntagResource", expand=False)
+    @kms_feature.Tagging
     def untag_resource(self, context: RequestContext, request: UntagResourceRequest) -> None:
         key = self._get_kms_key(
             context.account_id,
