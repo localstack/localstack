@@ -50,6 +50,8 @@ from localstack.aws.api.ec2 import (
     DnsOptionsSpecification,
     DnsRecordIpType,
     Ec2Api,
+    GetSecurityGroupsForVpcRequest,
+    GetSecurityGroupsForVpcResult,
     InstanceType,
     IpAddressType,
     LaunchTemplate,
@@ -70,6 +72,7 @@ from localstack.aws.api.ec2 import (
     RevokeSecurityGroupEgressRequest,
     RevokeSecurityGroupEgressResult,
     RIProductDescription,
+    SecurityGroupForVpc,
     String,
     SubnetConfigurationsList,
     Tenancy,
@@ -538,6 +541,30 @@ class Ec2Provider(Ec2Api, ABC, ServiceLifecycleHook):
             response = call_moto(context)
 
         return response
+
+    @handler("GetSecurityGroupsForVpc", expand=False)
+    def get_security_groups_for_vpc(
+        self,
+        context: RequestContext,
+        get_security_groups_for_vpc_request: GetSecurityGroupsForVpcRequest,
+    ) -> GetSecurityGroupsForVpcResult:
+        vpc_id = get_security_groups_for_vpc_request.get("VpcId")
+        backend = get_ec2_backend(context.account_id, context.region)
+        filters = {"vpc-id": [vpc_id]}
+        filtered_sgs = backend.describe_security_groups(filters=filters)
+
+        sgs = [
+            SecurityGroupForVpc(
+                Description=sg.description,
+                GroupId=sg.id,
+                GroupName=sg.name,
+                OwnerId=context.account_id,
+                PrimaryVpcId=sg.vpc_id,
+                Tags=[{"Key": k, "Value": v} for k, v in (sg.get_tags() or {}).items()],
+            )
+            for sg in filtered_sgs
+        ]
+        return GetSecurityGroupsForVpcResult(SecurityGroupForVpcs=sgs, NextToken=None)
 
 
 @patch(SubnetBackend.modify_subnet_attribute)
