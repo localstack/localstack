@@ -51,6 +51,7 @@ env:
   PLATFORM_NAME_AMD64: "amd64"
   PLATFORM_NAME_ARM64: "arm64"
 
+
 jobs:
   test:
     name: "Run integration tests"
@@ -151,6 +152,24 @@ jobs:
             source .venv/bin/activate
             make publish || echo "dev release failed (maybe it is already published)"
           fi
+
+  push-to-tinybird:
+    name: Push Workflow Status to Tinybird
+    if: always() && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    needs:
+      - test
+    steps:
+      - name: Push to Tinybird
+        uses: localstack/tinybird-workflow-push@v3
+        with:
+          # differentiate between "acceptance only" and "proper / full" runs
+          workflow_id: ${{ inputs.onlyAcceptanceTests && 'tests_acceptance' || 'tests_full' }}
+          tinybird_token: ${{ secrets.TINYBIRD_CI_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tinybird_datasource: "ci_workflows"
+          # determine the output only for the jobs that are direct dependencies of this job (to avoid issues with workflow_call embeddings)
+          outcome: ${{ ((contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')) && 'failure') || 'success' }}
 
   cleanup:
     name: "Cleanup"
