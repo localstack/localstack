@@ -88,6 +88,12 @@ jobs:
           shell: bash
           run: make install-dev
 
+        - name: Load all test results
+          uses: actions/download-artifact@v4
+          with:
+            name: test-results-*
+            path: target/coverage/
+
         - name: Combine coverage results from acceptance tests
           run: |
             source .venv/bin/activate
@@ -138,7 +144,7 @@ jobs:
             mkdir $OUTPUT_DIR
             python -m scripts.metrics_coverage.diff_metrics_coverage
 
-        - name: Archive test artifacts
+        - name: Archive coverage and parity metrics
           uses: actions/upload-artifact@v4
           with:
             name: coverage-and-parity-metrics
