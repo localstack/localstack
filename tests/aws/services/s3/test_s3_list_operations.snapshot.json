@@ -3085,5 +3085,95 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_prefix": {
+    "recorded-date": "12-05-2025, 17:09:59",
+    "recorded-content": {
+      "list-objects-by-prefix": {
+        "Buckets": [
+          {
+            "BucketRegion": "<region>",
+            "CreationDate": "datetime",
+            "Name": "<bucket-name:1>"
+          }
+        ],
+        "Owner": {
+          "DisplayName": "<display-name>",
+          "ID": "<owner-id>"
+        },
+        "Prefix": "<bucket-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_with_max_buckets": {
+    "recorded-date": "12-05-2025, 17:10:08",
+    "recorded-content": {
+      "list-objects-with-max-buckets": {
+        "Buckets": [
+          {
+            "BucketRegion": "<region>",
+            "CreationDate": "datetime",
+            "Name": "<bucket-name:1>"
+          }
+        ],
+        "ContinuationToken": "19q8mEPF1r8_Ra_NOYw.O189_XK05XnbMmjtCCZLBl0eWIkOP77iU8.A3RGmSDt2L9aUSBfiqSgPNGQAlwpl7zQ--",
+        "Owner": {
+          "DisplayName": "<display-name>",
+          "ID": "<owner-id>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_bucket_region": {
+    "recorded-date": "12-05-2025, 17:13:58",
+    "recorded-content": {
+      "list-objects-by-bucket-region": {
+        "Buckets": [
+          {
+            "BucketRegion": "<region>",
+            "CreationDate": "datetime",
+            "Name": "<bucket-name:1>"
+          }
+        ],
+        "Owner": {
+          "DisplayName": "<display-name>",
+          "ID": "<owner-id>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_with_continuation_token": {
+    "recorded-date": "12-05-2025, 17:21:49",
+    "recorded-content": {
+      "list-objects-with-continuation": {
+        "Buckets": [
+          {
+            "BucketRegion": "<region>",
+            "CreationDate": "datetime",
+            "Name": "<bucket-name:1>"
+          }
+        ],
+        "Owner": {
+          "DisplayName": "<display-name>",
+          "ID": "<owner-id>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
