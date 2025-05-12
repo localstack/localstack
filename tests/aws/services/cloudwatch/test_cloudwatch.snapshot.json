@@ -369,7 +369,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm": {
-    "recorded-date": "08-05-2025, 16:09:45",
+    "recorded-date": "12-05-2025, 16:20:57",
     "recorded-content": {
       "describe-alarm": {
         "CompositeAlarms": [],
@@ -397,7 +397,7 @@
             "OKActions": [
               "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
             ],
-            "Period": 30,
+            "Period": 10,
             "StateReason": "Unchecked: Initial alarm creation",
             "StateTransitionedTimestamp": "timestamp",
             "StateUpdatedTimestamp": "timestamp",
@@ -443,7 +443,7 @@
           "EvaluationPeriods": 1,
           "MetricName": "my-metric1",
           "Namespace": "<namespace:1>",
-          "Period": 30,
+          "Period": 10,
           "Statistic": "AVERAGE",
           "StatisticType": "Statistic",
           "Threshold": 21.0,
@@ -471,7 +471,7 @@
                   "startDate": "date",
                   "unit": "Seconds",
                   "statistic": "Average",
-                  "period": 30,
+                  "period": 10,
                   "recentDatapoints": [
                     21.5
                   ],
@@ -521,7 +521,7 @@
             "OKActions": [
               "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
             ],
-            "Period": 30,
+            "Period": 10,
             "StateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
             "StateReasonData": {
               "version": "1.0",
@@ -529,7 +529,7 @@
               "startDate": "date",
               "unit": "Seconds",
               "statistic": "Average",
-              "period": 30,
+              "period": 10,
               "recentDatapoints": [
                 21.5
               ],

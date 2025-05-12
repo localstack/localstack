@@ -1318,7 +1318,7 @@ class TestCloudwatch:
             MetricName=metric_name,
             Namespace=namespace,
             ActionsEnabled=True,
-            Period=30,
+            Period=10,
             Threshold=21,
             Dimensions=dimension,
             Unit="Seconds",
