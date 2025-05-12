@@ -3,8 +3,8 @@ import importlib.util
 import inspect
 import pkgutil
 import re
-from types import FunctionType, ModuleType
-from typing import Optional, Pattern
+from types import FunctionType, ModuleType, NoneType, UnionType
+from typing import Optional, Pattern, get_args
 
 
 def _import_submodules(
@@ -123,10 +123,45 @@ def check_provider_signature(sub_class: type, base_class: type, method_name: str
 
         sub_spec = inspect.getfullargspec(sub_function)
         base_spec = inspect.getfullargspec(base_function)
-        assert sub_spec == base_spec, (
-            f"{sub_class.__name__}#{method_name} breaks with {base_class.__name__}#{method_name}. "
-            f"This can also be caused by 'from __future__ import annotations' in a provider file!"
+
+        error_msg = f"{sub_class.__name__}#{method_name} breaks with {base_class.__name__}#{method_name}. This can also be caused by 'from __future__ import annotations' in a provider file!"
+
+        # Assert that the signature is correct
+        assert sub_spec.args == base_spec.args, error_msg
+        assert sub_spec.varargs == base_spec.varargs, error_msg
+        assert sub_spec.varkw == base_spec.varkw, error_msg
+        assert sub_spec.defaults == base_spec.defaults, (
+            error_msg + f"\n{sub_spec.defaults} != {base_spec.defaults}"
         )
+        assert sub_spec.kwonlyargs == base_spec.kwonlyargs, error_msg
+        assert sub_spec.kwonlydefaults == base_spec.kwonlydefaults, error_msg
+
+        # Assert that the typing of the implementation is equal to the base
+        for kwarg in sub_spec.annotations:
+            if kwarg == "return":
+                assert sub_spec.annotations[kwarg] == base_spec.annotations[kwarg]
+            else:
+                # The API currently marks everything as required, and optional args are configured as:
+                #    arg: ArgType = None
+                # which is obviously incorrect.
+                # Implementations sometimes do this correctly:
+                #    arg: ArgType | None = None
+                # These should be considered equal, so until the API is fixed, we remove any Optionals
+                # This also gives us the flexibility to correct the API without fixing all implementations at the same time
+                sub_type = _remove_optional(sub_spec.annotations[kwarg])
+                base_type = _remove_optional(base_spec.annotations[kwarg])
+                assert sub_type == base_type, (
+                    f"Types for {kwarg} are different - {sub_type} instead of {base_type}"
+                )
+
     except AttributeError:
         # the function is not defined in the superclass
         pass
+
+
+def _remove_optional(_type: type) -> list[type]:
+    if type(_type) == UnionType:
+        union_types = list(get_args(_type))
+        union_types.remove(NoneType)
+        return union_types
+    return [_type]
