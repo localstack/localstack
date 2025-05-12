@@ -1338,8 +1338,8 @@ class TestCloudwatch:
         retry(
             _sqs_messages_snapshot,
             retries=60,
-            sleep=3,
-            sleep_before=5,
+            sleep=3 if is_aws_cloud() else 1,
+            sleep_before=5 if is_aws_cloud() else 0,
             expected_state="ALARM",
             sqs_client=aws_client.sqs,
             sqs_queue=sqs_queue,
