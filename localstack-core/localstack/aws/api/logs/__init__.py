@@ -129,6 +129,7 @@ Service = str
 SessionId = str
 Source = str
 SourceTimezone = str
+SplitStringDelimiter = str
 StartFromHead = bool
 StatsValue = float
 Success = bool
@@ -1563,7 +1564,7 @@ class SubstituteString(TypedDict, total=False):
 
 class SplitStringEntry(TypedDict, total=False):
     source: Source
-    delimiter: Delimiter
+    delimiter: SplitStringDelimiter
 
 
 SplitStringEntries = List[SplitStringEntry]

@@ -60,6 +60,7 @@ DeclarativePoliciesMaxResults = int
 DeclarativePoliciesReportId = str
 DedicatedHostFlag = bool
 DedicatedHostId = str
+DefaultEnaQueueCountPerInterface = int
 DefaultNetworkCardIndex = int
 DefaultingDhcpOptionsId = str
 DescribeAddressTransfersMaxResults = int
@@ -236,6 +237,8 @@ MaxResults = int
 MaxResultsParam = int
 MaximumBandwidthInMbps = int
 MaximumEfaInterfaces = int
+MaximumEnaQueueCount = int
+MaximumEnaQueueCountPerInterface = int
 MaximumIops = int
 MaximumNetworkCards = int
 MaximumThroughputInMBps = float
@@ -267,6 +270,8 @@ NextToken = str
 NitroTpmSupportedVersionType = str
 OfferingId = str
 OutpostArn = str
+OutpostLagId = str
+OutpostLagMaxResults = int
 PasswordData = str
 PeakBandwidthInGbps = float
 PlacementGroupArn = str
@@ -314,6 +319,8 @@ SecurityGroupName = str
 SecurityGroupRuleId = str
 SensitiveUrl = str
 SensitiveUserData = str
+ServiceLinkMaxResults = int
+ServiceLinkVirtualInterfaceId = str
 ServiceNetworkArn = str
 SnapshotCompletionDurationMinutesRequest = int
 SnapshotCompletionDurationMinutesResponse = int
@@ -1113,6 +1120,11 @@ class FleetType(StrEnum):
     request = "request"
     maintain = "maintain"
     instant = "instant"
+
+
+class FlexibleEnaQueuesSupport(StrEnum):
+    unsupported = "unsupported"
+    supported = "supported"
 
 
 class FlowLogsResourceType(StrEnum):
@@ -2584,6 +2596,21 @@ class LocalGatewayRouteType(StrEnum):
     propagated = "propagated"
 
 
+class LocalGatewayVirtualInterfaceConfigurationState(StrEnum):
+    pending = "pending"
+    available = "available"
+    deleting = "deleting"
+    deleted = "deleted"
+
+
+class LocalGatewayVirtualInterfaceGroupConfigurationState(StrEnum):
+    pending = "pending"
+    incomplete = "incomplete"
+    available = "available"
+    deleting = "deleting"
+    deleted = "deleted"
+
+
 class LocalStorage(StrEnum):
     included = "included"
     required = "required"
@@ -2983,6 +3010,7 @@ class ResourceType(StrEnum):
     network_insights_path = "network-insights-path"
     network_insights_access_scope = "network-insights-access-scope"
     network_insights_access_scope_analysis = "network-insights-access-scope-analysis"
+    outpost_lag = "outpost-lag"
     placement_group = "placement-group"
     prefix_list = "prefix-list"
     replace_root_volume_task = "replace-root-volume-task"
@@ -2990,6 +3018,7 @@ class ResourceType(StrEnum):
     route_table = "route-table"
     security_group = "security-group"
     security_group_rule = "security-group-rule"
+    service_link_virtual_interface = "service-link-virtual-interface"
     snapshot = "snapshot"
     spot_fleet_request = "spot-fleet-request"
     spot_instances_request = "spot-instances-request"
@@ -3171,6 +3200,13 @@ class SelfServicePortal(StrEnum):
 class ServiceConnectivityType(StrEnum):
     ipv4 = "ipv4"
     ipv6 = "ipv6"
+
+
+class ServiceLinkVirtualInterfaceConfigurationState(StrEnum):
+    pending = "pending"
+    available = "available"
+    deleting = "deleting"
+    deleted = "deleted"
 
 
 class ServiceManaged(StrEnum):
@@ -5129,6 +5165,7 @@ class EnaSrdSpecification(TypedDict, total=False):
 class AttachNetworkInterfaceRequest(ServiceRequest):
     NetworkCardIndex: Optional[Integer]
     EnaSrdSpecification: Optional[EnaSrdSpecification]
+    EnaQueueCount: Optional[Integer]
     DryRun: Optional[Boolean]
     NetworkInterfaceId: NetworkInterfaceId
     InstanceId: InstanceId
@@ -5531,6 +5568,7 @@ class EbsBlockDevice(TypedDict, total=False):
     Throughput: Optional[Integer]
     OutpostArn: Optional[String]
     Encrypted: Optional[Boolean]
+    VolumeInitializationRate: Optional[Integer]
 
 
 class BlockDeviceMapping(TypedDict, total=False):
@@ -7017,7 +7055,7 @@ class FleetLaunchTemplateOverridesRequest(TypedDict, total=False):
     Placement: Optional[Placement]
     BlockDeviceMappings: Optional[FleetBlockDeviceMappingRequestList]
     InstanceRequirements: Optional[InstanceRequirementsRequest]
-    ImageId: Optional[ImageId]
+    ImageId: Optional[String]
 
 
 FleetLaunchTemplateOverridesListRequest = List[FleetLaunchTemplateOverridesRequest]
@@ -7661,6 +7699,7 @@ class LaunchTemplateInstanceNetworkInterfaceSpecificationRequest(TypedDict, tota
     PrimaryIpv6: Optional[Boolean]
     EnaSrdSpecification: Optional[EnaSrdSpecificationRequest]
     ConnectionTrackingSpecification: Optional[ConnectionTrackingSpecificationRequest]
+    EnaQueueCount: Optional[Integer]
 
 
 LaunchTemplateInstanceNetworkInterfaceSpecificationRequestList = List[
@@ -7677,6 +7716,7 @@ class LaunchTemplateEbsBlockDeviceRequest(TypedDict, total=False):
     VolumeSize: Optional[Integer]
     VolumeType: Optional[VolumeType]
     Throughput: Optional[Integer]
+    VolumeInitializationRate: Optional[Integer]
 
 
 class LaunchTemplateBlockDeviceMappingRequest(TypedDict, total=False):
@@ -7947,6 +7987,7 @@ class LaunchTemplateInstanceNetworkInterfaceSpecification(TypedDict, total=False
     PrimaryIpv6: Optional[Boolean]
     EnaSrdSpecification: Optional[LaunchTemplateEnaSrdSpecification]
     ConnectionTrackingSpecification: Optional[ConnectionTrackingSpecification]
+    EnaQueueCount: Optional[Integer]
 
 
 LaunchTemplateInstanceNetworkInterfaceSpecificationList = List[
@@ -7963,6 +8004,7 @@ class LaunchTemplateEbsBlockDevice(TypedDict, total=False):
     VolumeSize: Optional[Integer]
     VolumeType: Optional[VolumeType]
     Throughput: Optional[Integer]
+    VolumeInitializationRate: Optional[Integer]
 
 
 class LaunchTemplateBlockDeviceMapping(TypedDict, total=False):
@@ -8136,6 +8178,66 @@ class LocalGatewayRouteTableVpcAssociation(TypedDict, total=False):
 
 class CreateLocalGatewayRouteTableVpcAssociationResult(TypedDict, total=False):
     LocalGatewayRouteTableVpcAssociation: Optional[LocalGatewayRouteTableVpcAssociation]
+
+
+class CreateLocalGatewayVirtualInterfaceGroupRequest(ServiceRequest):
+    LocalGatewayId: LocalGatewayId
+    LocalBgpAsn: Optional[Integer]
+    LocalBgpAsnExtended: Optional[Long]
+    TagSpecifications: Optional[TagSpecificationList]
+    DryRun: Optional[Boolean]
+
+
+LocalGatewayVirtualInterfaceIdSet = List[LocalGatewayVirtualInterfaceId]
+
+
+class LocalGatewayVirtualInterfaceGroup(TypedDict, total=False):
+    LocalGatewayVirtualInterfaceGroupId: Optional[LocalGatewayVirtualInterfaceGroupId]
+    LocalGatewayVirtualInterfaceIds: Optional[LocalGatewayVirtualInterfaceIdSet]
+    LocalGatewayId: Optional[String]
+    OwnerId: Optional[String]
+    LocalBgpAsn: Optional[Integer]
+    LocalBgpAsnExtended: Optional[Long]
+    LocalGatewayVirtualInterfaceGroupArn: Optional[ResourceArn]
+    Tags: Optional[TagList]
+    ConfigurationState: Optional[LocalGatewayVirtualInterfaceGroupConfigurationState]
+
+
+class CreateLocalGatewayVirtualInterfaceGroupResult(TypedDict, total=False):
+    LocalGatewayVirtualInterfaceGroup: Optional[LocalGatewayVirtualInterfaceGroup]
+
+
+class CreateLocalGatewayVirtualInterfaceRequest(ServiceRequest):
+    LocalGatewayVirtualInterfaceGroupId: LocalGatewayVirtualInterfaceGroupId
+    OutpostLagId: OutpostLagId
+    Vlan: Integer
+    LocalAddress: String
+    PeerAddress: String
+    PeerBgpAsn: Optional[Integer]
+    TagSpecifications: Optional[TagSpecificationList]
+    DryRun: Optional[Boolean]
+    PeerBgpAsnExtended: Optional[Long]
+
+
+class LocalGatewayVirtualInterface(TypedDict, total=False):
+    LocalGatewayVirtualInterfaceId: Optional[LocalGatewayVirtualInterfaceId]
+    LocalGatewayId: Optional[String]
+    LocalGatewayVirtualInterfaceGroupId: Optional[LocalGatewayVirtualInterfaceGroupId]
+    LocalGatewayVirtualInterfaceArn: Optional[ResourceArn]
+    OutpostLagId: Optional[String]
+    Vlan: Optional[Integer]
+    LocalAddress: Optional[String]
+    PeerAddress: Optional[String]
+    LocalBgpAsn: Optional[Integer]
+    PeerBgpAsn: Optional[Integer]
+    PeerBgpAsnExtended: Optional[Long]
+    OwnerId: Optional[String]
+    Tags: Optional[TagList]
+    ConfigurationState: Optional[LocalGatewayVirtualInterfaceConfigurationState]
+
+
+class CreateLocalGatewayVirtualInterfaceResult(TypedDict, total=False):
+    LocalGatewayVirtualInterface: Optional[LocalGatewayVirtualInterface]
 
 
 class CreateManagedPrefixListRequest(ServiceRequest):
@@ -8448,6 +8550,7 @@ class NetworkInterfaceAttachment(TypedDict, total=False):
     InstanceOwnerId: Optional[String]
     Status: Optional[AttachmentStatus]
     EnaSrdSpecification: Optional[AttachmentEnaSrdSpecification]
+    EnaQueueCount: Optional[Integer]
 
 
 class NetworkInterface(TypedDict, total=False):
@@ -8528,6 +8631,7 @@ class CreateReplaceRootVolumeTaskRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
     ImageId: Optional[ImageId]
     DeleteReplacedRootVolume: Optional[Boolean]
+    VolumeInitializationRate: Optional[Long]
 
 
 class ReplaceRootVolumeTask(TypedDict, total=False):
@@ -9626,6 +9730,7 @@ class CreateVolumeRequest(ServiceRequest):
     MultiAttachEnabled: Optional[Boolean]
     Throughput: Optional[Integer]
     ClientToken: Optional[String]
+    VolumeInitializationRate: Optional[Integer]
     Operator: Optional[OperatorRequest]
     DryRun: Optional[Boolean]
 
@@ -10493,6 +10598,24 @@ class DeleteLocalGatewayRouteTableVpcAssociationRequest(ServiceRequest):
 
 class DeleteLocalGatewayRouteTableVpcAssociationResult(TypedDict, total=False):
     LocalGatewayRouteTableVpcAssociation: Optional[LocalGatewayRouteTableVpcAssociation]
+
+
+class DeleteLocalGatewayVirtualInterfaceGroupRequest(ServiceRequest):
+    LocalGatewayVirtualInterfaceGroupId: LocalGatewayVirtualInterfaceGroupId
+    DryRun: Optional[Boolean]
+
+
+class DeleteLocalGatewayVirtualInterfaceGroupResult(TypedDict, total=False):
+    LocalGatewayVirtualInterfaceGroup: Optional[LocalGatewayVirtualInterfaceGroup]
+
+
+class DeleteLocalGatewayVirtualInterfaceRequest(ServiceRequest):
+    LocalGatewayVirtualInterfaceId: LocalGatewayVirtualInterfaceId
+    DryRun: Optional[Boolean]
+
+
+class DeleteLocalGatewayVirtualInterfaceResult(TypedDict, total=False):
+    LocalGatewayVirtualInterface: Optional[LocalGatewayVirtualInterface]
 
 
 class DeleteManagedPrefixListRequest(ServiceRequest):
@@ -12632,6 +12755,9 @@ class NetworkCardInfo(TypedDict, total=False):
     MaximumNetworkInterfaces: Optional[MaxNetworkInterfaces]
     BaselineBandwidthInGbps: Optional[BaselineBandwidthInGbps]
     PeakBandwidthInGbps: Optional[PeakBandwidthInGbps]
+    DefaultEnaQueueCountPerInterface: Optional[DefaultEnaQueueCountPerInterface]
+    MaximumEnaQueueCount: Optional[MaximumEnaQueueCount]
+    MaximumEnaQueueCountPerInterface: Optional[MaximumEnaQueueCountPerInterface]
 
 
 NetworkCardInfoList = List[NetworkCardInfo]
@@ -12652,6 +12778,7 @@ class NetworkInfo(TypedDict, total=False):
     EncryptionInTransitSupported: Optional[EncryptionInTransitSupported]
     EnaSrdSupported: Optional[EnaSrdSupported]
     BandwidthWeightings: Optional[BandwidthWeightingTypeList]
+    FlexibleEnaQueuesSupport: Optional[FlexibleEnaQueuesSupport]
 
 
 class EbsOptimizedInfo(TypedDict, total=False):
@@ -12862,6 +12989,7 @@ class InstanceNetworkInterfaceAttachment(TypedDict, total=False):
     Status: Optional[AttachmentStatus]
     NetworkCardIndex: Optional[Integer]
     EnaSrdSpecification: Optional[InstanceAttachmentEnaSrdSpecification]
+    EnaQueueCount: Optional[Integer]
 
 
 class InstanceNetworkInterface(TypedDict, total=False):
@@ -13315,17 +13443,6 @@ class DescribeLocalGatewayVirtualInterfaceGroupsRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
 
-LocalGatewayVirtualInterfaceIdSet = List[LocalGatewayVirtualInterfaceId]
-
-
-class LocalGatewayVirtualInterfaceGroup(TypedDict, total=False):
-    LocalGatewayVirtualInterfaceGroupId: Optional[LocalGatewayVirtualInterfaceGroupId]
-    LocalGatewayVirtualInterfaceIds: Optional[LocalGatewayVirtualInterfaceIdSet]
-    LocalGatewayId: Optional[String]
-    OwnerId: Optional[String]
-    Tags: Optional[TagList]
-
-
 LocalGatewayVirtualInterfaceGroupSet = List[LocalGatewayVirtualInterfaceGroup]
 
 
@@ -13340,18 +13457,6 @@ class DescribeLocalGatewayVirtualInterfacesRequest(ServiceRequest):
     MaxResults: Optional[LocalGatewayMaxResults]
     NextToken: Optional[String]
     DryRun: Optional[Boolean]
-
-
-class LocalGatewayVirtualInterface(TypedDict, total=False):
-    LocalGatewayVirtualInterfaceId: Optional[LocalGatewayVirtualInterfaceId]
-    LocalGatewayId: Optional[String]
-    Vlan: Optional[Integer]
-    LocalAddress: Optional[String]
-    PeerAddress: Optional[String]
-    LocalBgpAsn: Optional[Integer]
-    PeerBgpAsn: Optional[Integer]
-    OwnerId: Optional[String]
-    Tags: Optional[TagList]
 
 
 LocalGatewayVirtualInterfaceSet = List[LocalGatewayVirtualInterface]
@@ -13593,6 +13698,7 @@ class NetworkInsightsAnalysis(TypedDict, total=False):
     NetworkInsightsPathId: Optional[NetworkInsightsPathId]
     AdditionalAccounts: Optional[ValueStringList]
     FilterInArns: Optional[ArnList]
+    FilterOutArns: Optional[ArnList]
     StartDate: Optional[MillisecondDateTime]
     Status: Optional[AnalysisStatus]
     StatusMessage: Optional[String]
@@ -13682,6 +13788,38 @@ NetworkInterfaceList = List[NetworkInterface]
 
 class DescribeNetworkInterfacesResult(TypedDict, total=False):
     NetworkInterfaces: Optional[NetworkInterfaceList]
+    NextToken: Optional[String]
+
+
+OutpostLagIdSet = List[OutpostLagId]
+
+
+class DescribeOutpostLagsRequest(ServiceRequest):
+    OutpostLagIds: Optional[OutpostLagIdSet]
+    Filters: Optional[FilterList]
+    MaxResults: Optional[OutpostLagMaxResults]
+    NextToken: Optional[String]
+    DryRun: Optional[Boolean]
+
+
+ServiceLinkVirtualInterfaceIdSet = List[ServiceLinkVirtualInterfaceId]
+
+
+class OutpostLag(TypedDict, total=False):
+    OutpostArn: Optional[String]
+    OwnerId: Optional[String]
+    State: Optional[String]
+    OutpostLagId: Optional[OutpostLagId]
+    LocalGatewayVirtualInterfaceIds: Optional[LocalGatewayVirtualInterfaceIdSet]
+    ServiceLinkVirtualInterfaceIds: Optional[ServiceLinkVirtualInterfaceIdSet]
+    Tags: Optional[TagList]
+
+
+OutpostLagSet = List[OutpostLag]
+
+
+class DescribeOutpostLagsResult(TypedDict, total=False):
+    OutpostLags: Optional[OutpostLagSet]
     NextToken: Optional[String]
 
 
@@ -14269,6 +14407,37 @@ class DescribeSecurityGroupsResult(TypedDict, total=False):
     SecurityGroups: Optional[SecurityGroupList]
 
 
+class DescribeServiceLinkVirtualInterfacesRequest(ServiceRequest):
+    ServiceLinkVirtualInterfaceIds: Optional[ServiceLinkVirtualInterfaceIdSet]
+    Filters: Optional[FilterList]
+    MaxResults: Optional[ServiceLinkMaxResults]
+    NextToken: Optional[String]
+    DryRun: Optional[Boolean]
+
+
+class ServiceLinkVirtualInterface(TypedDict, total=False):
+    ServiceLinkVirtualInterfaceId: Optional[ServiceLinkVirtualInterfaceId]
+    ServiceLinkVirtualInterfaceArn: Optional[ResourceArn]
+    OutpostId: Optional[String]
+    OutpostArn: Optional[String]
+    OwnerId: Optional[String]
+    LocalAddress: Optional[String]
+    PeerAddress: Optional[String]
+    PeerBgpAsn: Optional[Long]
+    Vlan: Optional[Integer]
+    OutpostLagId: Optional[OutpostLagId]
+    Tags: Optional[TagList]
+    ConfigurationState: Optional[ServiceLinkVirtualInterfaceConfigurationState]
+
+
+ServiceLinkVirtualInterfaceSet = List[ServiceLinkVirtualInterface]
+
+
+class DescribeServiceLinkVirtualInterfacesResult(TypedDict, total=False):
+    ServiceLinkVirtualInterfaces: Optional[ServiceLinkVirtualInterfaceSet]
+    NextToken: Optional[String]
+
+
 class DescribeSnapshotAttributeRequest(ServiceRequest):
     Attribute: SnapshotAttributeName
     SnapshotId: SnapshotId
@@ -14486,6 +14655,7 @@ class InstanceNetworkInterfaceSpecification(TypedDict, total=False):
     PrimaryIpv6: Optional[Boolean]
     EnaSrdSpecification: Optional[EnaSrdSpecificationRequest]
     ConnectionTrackingSpecification: Optional[ConnectionTrackingSpecificationRequest]
+    EnaQueueCount: Optional[Integer]
 
 
 InstanceNetworkInterfaceSpecificationList = List[InstanceNetworkInterfaceSpecification]
@@ -15362,6 +15532,7 @@ class Volume(TypedDict, total=False):
     Throughput: Optional[Integer]
     SseType: Optional[SSEType]
     Operator: Optional[OperatorResponse]
+    VolumeInitializationRate: Optional[Integer]
     VolumeId: Optional[String]
     Size: Optional[Integer]
     SnapshotId: Optional[String]
@@ -18474,6 +18645,8 @@ class ModifyManagedPrefixListResult(TypedDict, total=False):
 
 
 class NetworkInterfaceAttachmentChanges(TypedDict, total=False):
+    DefaultEnaQueueCount: Optional[Boolean]
+    EnaQueueCount: Optional[Integer]
     AttachmentId: Optional[NetworkInterfaceAttachmentId]
     DeleteOnTermination: Optional[Boolean]
 
@@ -20054,6 +20227,7 @@ class StartNetworkInsightsAnalysisRequest(ServiceRequest):
     NetworkInsightsPathId: NetworkInsightsPathId
     AdditionalAccounts: Optional[ValueStringList]
     FilterInArns: Optional[ArnList]
+    FilterOutArns: Optional[ArnList]
     DryRun: Optional[Boolean]
     TagSpecifications: Optional[TagSpecificationList]
     ClientToken: String
@@ -20655,6 +20829,7 @@ class Ec2Api:
         device_index: Integer,
         network_card_index: Integer = None,
         ena_srd_specification: EnaSrdSpecification = None,
+        ena_queue_count: Integer = None,
         dry_run: Boolean = None,
         **kwargs,
     ) -> AttachNetworkInterfaceResult:
@@ -21382,6 +21557,36 @@ class Ec2Api:
     ) -> CreateLocalGatewayRouteTableVpcAssociationResult:
         raise NotImplementedError
 
+    @handler("CreateLocalGatewayVirtualInterface")
+    def create_local_gateway_virtual_interface(
+        self,
+        context: RequestContext,
+        local_gateway_virtual_interface_group_id: LocalGatewayVirtualInterfaceGroupId,
+        outpost_lag_id: OutpostLagId,
+        vlan: Integer,
+        local_address: String,
+        peer_address: String,
+        peer_bgp_asn: Integer = None,
+        tag_specifications: TagSpecificationList = None,
+        dry_run: Boolean = None,
+        peer_bgp_asn_extended: Long = None,
+        **kwargs,
+    ) -> CreateLocalGatewayVirtualInterfaceResult:
+        raise NotImplementedError
+
+    @handler("CreateLocalGatewayVirtualInterfaceGroup")
+    def create_local_gateway_virtual_interface_group(
+        self,
+        context: RequestContext,
+        local_gateway_id: LocalGatewayId,
+        local_bgp_asn: Integer = None,
+        local_bgp_asn_extended: Long = None,
+        tag_specifications: TagSpecificationList = None,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> CreateLocalGatewayVirtualInterfaceGroupResult:
+        raise NotImplementedError
+
     @handler("CreateManagedPrefixList")
     def create_managed_prefix_list(
         self,
@@ -21553,6 +21758,7 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         image_id: ImageId = None,
         delete_replaced_root_volume: Boolean = None,
+        volume_initialization_rate: Long = None,
         **kwargs,
     ) -> CreateReplaceRootVolumeTaskResult:
         raise NotImplementedError
@@ -22066,6 +22272,7 @@ class Ec2Api:
         multi_attach_enabled: Boolean = None,
         throughput: Integer = None,
         client_token: String = None,
+        volume_initialization_rate: Integer = None,
         operator: OperatorRequest = None,
         dry_run: Boolean = None,
         **kwargs,
@@ -22460,6 +22667,26 @@ class Ec2Api:
         dry_run: Boolean = None,
         **kwargs,
     ) -> DeleteLocalGatewayRouteTableVpcAssociationResult:
+        raise NotImplementedError
+
+    @handler("DeleteLocalGatewayVirtualInterface")
+    def delete_local_gateway_virtual_interface(
+        self,
+        context: RequestContext,
+        local_gateway_virtual_interface_id: LocalGatewayVirtualInterfaceId,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> DeleteLocalGatewayVirtualInterfaceResult:
+        raise NotImplementedError
+
+    @handler("DeleteLocalGatewayVirtualInterfaceGroup")
+    def delete_local_gateway_virtual_interface_group(
+        self,
+        context: RequestContext,
+        local_gateway_virtual_interface_group_id: LocalGatewayVirtualInterfaceGroupId,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> DeleteLocalGatewayVirtualInterfaceGroupResult:
         raise NotImplementedError
 
     @handler("DeleteManagedPrefixList")
@@ -24212,6 +24439,19 @@ class Ec2Api:
     ) -> DescribeNetworkInterfacesResult:
         raise NotImplementedError
 
+    @handler("DescribeOutpostLags")
+    def describe_outpost_lags(
+        self,
+        context: RequestContext,
+        outpost_lag_ids: OutpostLagIdSet = None,
+        filters: FilterList = None,
+        max_results: OutpostLagMaxResults = None,
+        next_token: String = None,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> DescribeOutpostLagsResult:
+        raise NotImplementedError
+
     @handler("DescribePlacementGroups")
     def describe_placement_groups(
         self,
@@ -24469,6 +24709,19 @@ class Ec2Api:
         filters: FilterList = None,
         **kwargs,
     ) -> DescribeSecurityGroupsResult:
+        raise NotImplementedError
+
+    @handler("DescribeServiceLinkVirtualInterfaces")
+    def describe_service_link_virtual_interfaces(
+        self,
+        context: RequestContext,
+        service_link_virtual_interface_ids: ServiceLinkVirtualInterfaceIdSet = None,
+        filters: FilterList = None,
+        max_results: ServiceLinkMaxResults = None,
+        next_token: String = None,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> DescribeServiceLinkVirtualInterfacesResult:
         raise NotImplementedError
 
     @handler("DescribeSnapshotAttribute")
@@ -28253,6 +28506,7 @@ class Ec2Api:
         client_token: String,
         additional_accounts: ValueStringList = None,
         filter_in_arns: ArnList = None,
+        filter_out_arns: ArnList = None,
         dry_run: Boolean = None,
         tag_specifications: TagSpecificationList = None,
         **kwargs,
