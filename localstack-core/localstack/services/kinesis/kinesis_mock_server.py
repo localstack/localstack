@@ -2,16 +2,29 @@ import logging
 import os
 import threading
 from abc import abstractmethod
+from enum import StrEnum
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from localstack import config
-from localstack.services.kinesis.packages import KinesisMockEngine, kinesismock_package
+from localstack.services.kinesis.packages import kinesismock_node_package, kinesismock_scala_package
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
 from localstack.utils.run import FuncThread
 from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)
+
+
+class KinesisMockEngine(StrEnum):
+    NODE = "node"
+    SCALA = "scala"
+
+    @classmethod
+    def _missing_(cls, value: str | Any) -> str:
+        # default to 'node' if invalid enum
+        if not isinstance(value, str):
+            return cls(cls.NODE)
+        return cls.__members__.get(value.upper(), cls.NODE)
 
 
 class KinesisMockServer(Server):
@@ -109,7 +122,7 @@ class KinesisMockScalaServer(KinesisMockServer):
     @property
     def _environment_variables(self) -> Dict:
         default_env_vars = super()._environment_variables
-        kinesis_mock_installer = kinesismock_package.get_installer()
+        kinesis_mock_installer = kinesismock_scala_package.get_installer()
         return {
             **default_env_vars,
             **kinesis_mock_installer.get_java_env_vars(),
@@ -119,11 +132,7 @@ class KinesisMockScalaServer(KinesisMockServer):
         return [
             f"-Xms{config.KINESIS_MOCK_INITIAL_HEAP_SIZE}",
             f"-Xmx{config.KINESIS_MOCK_MAXIMUM_HEAP_SIZE}",
-            "-XX:+UseG1GC",
             "-XX:MaxGCPauseMillis=500",
-            "-XX:+UseGCOverheadLimit",
-            "-XX:+ExplicitGCInvokesConcurrent",
-            "-XX:+HeapDumpOnOutOfMemoryError",
             "-XX:+ExitOnOutOfMemoryError",
         ]
 
@@ -182,8 +191,6 @@ class KinesisServerManager:
         config.KINESIS_LATENCY -> configure stream latency (in milliseconds)
         """
         port = get_free_tcp_port()
-        kinesismock_package.install()
-        kinesis_mock_path = Path(kinesismock_package.get_installer().get_executable_path())
 
         # kinesis-mock stores state in json files <account_id>.json, so we can dump everything into `kinesis/`
         persist_path = os.path.join(config.dirs.data, "kinesis")
@@ -205,7 +212,13 @@ class KinesisServerManager:
             log_level = "INFO"
         latency = config.KINESIS_LATENCY + "ms"
 
-        if kinesismock_package.engine == KinesisMockEngine.SCALA:
+        # Install the Scala Kinesis Mock build if specified in KINESIS_MOCK_PROVIDER_ENGINE
+        if KinesisMockEngine(config.KINESIS_MOCK_PROVIDER_ENGINE) == KinesisMockEngine.SCALA:
+            kinesismock_scala_package.install()
+            kinesis_mock_path = Path(
+                kinesismock_scala_package.get_installer().get_executable_path()
+            )
+
             return KinesisMockScalaServer(
                 port=port,
                 exe_path=kinesis_mock_path,
@@ -214,6 +227,10 @@ class KinesisServerManager:
                 data_dir=persist_path,
                 account_id=account_id,
             )
+
+        # Otherwise, install the NodeJS version (default)
+        kinesismock_node_package.install()
+        kinesis_mock_path = Path(kinesismock_node_package.get_installer().get_executable_path())
 
         return KinesisMockNodeServer(
             port=port,

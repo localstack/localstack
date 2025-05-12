@@ -1,26 +1,12 @@
 import os
-from enum import StrEnum
-from functools import cached_property, lru_cache
-from typing import Any, List
+from functools import lru_cache
+from typing import List
 
-from localstack import config
 from localstack.packages import InstallTarget, Package
 from localstack.packages.core import GitHubReleaseInstaller, NodePackageInstaller
 from localstack.packages.java import JavaInstallerMixin, java_package
 
 _KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.4.12"
-
-
-class KinesisMockEngine(StrEnum):
-    NODE = "node"
-    SCALA = "scala"
-
-    @classmethod
-    def _missing_(cls, value: str | Any) -> str:
-        # default to 'node' if invalid enum
-        if not isinstance(value, str):
-            return cls(cls.NODE)
-        return cls.__members__.get(value.upper(), cls.NODE)
 
 
 class KinesisMockNodePackageInstaller(NodePackageInstaller):
@@ -48,30 +34,35 @@ class KinesisMockScalaPackageInstaller(JavaInstallerMixin, GitHubReleaseInstalle
         return java_package.get_installer(self.java_version).get_java_home()
 
 
-class KinesisMockPackage(
-    Package[KinesisMockNodePackageInstaller | KinesisMockScalaPackageInstaller]
-):
+class KinesisMockScalaPackage(Package[KinesisMockScalaPackageInstaller]):
     def __init__(
         self,
         default_version: str = _KINESIS_MOCK_VERSION,
     ):
         super().__init__(name="Kinesis Mock", default_version=default_version)
 
-    @cached_property
-    def engine(self) -> KinesisMockEngine:
-        return KinesisMockEngine(config.KINESIS_MOCK_PROVIDER_ENGINE)
+    @lru_cache
+    def _get_installer(self, version: str) -> KinesisMockScalaPackageInstaller:
+        return KinesisMockScalaPackageInstaller(version)
+
+    def get_versions(self) -> List[str]:
+        return [_KINESIS_MOCK_VERSION]  # Only supported on v0.4.12+
+
+
+class KinesisMockNodePackage(Package[KinesisMockNodePackageInstaller]):
+    def __init__(
+        self,
+        default_version: str = _KINESIS_MOCK_VERSION,
+    ):
+        super().__init__(name="Kinesis Mock", default_version=default_version)
 
     @lru_cache
-    def _get_installer(
-        self, version: str
-    ) -> KinesisMockNodePackageInstaller | KinesisMockScalaPackageInstaller:
-        if self.engine == KinesisMockEngine.SCALA:
-            return KinesisMockScalaPackageInstaller(version)
-
+    def _get_installer(self, version: str) -> KinesisMockNodePackageInstaller:
         return KinesisMockNodePackageInstaller(version)
 
     def get_versions(self) -> List[str]:
         return [_KINESIS_MOCK_VERSION]
 
 
-kinesismock_package = KinesisMockPackage()
+kinesismock_node_package = KinesisMockNodePackage()
+kinesismock_scala_package = KinesisMockScalaPackage()
