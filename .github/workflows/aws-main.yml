@@ -68,8 +68,50 @@ jobs:
       DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
       DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
+  report:
+    name: "Publish test results"
+    runs-on: ubuntu-latest
+    steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Set up Python
+          uses: actions/setup-python@v5
+          with:
+            python-version-file: '.python-version'
+            cache: 'pip'
+            cache-dependency-path: 'requirements-dev.txt'
+
+        - name: Install Community Dependencies
+          shell: bash
+          run: make install-dev
+
+        - name: Combine coverage results from acceptance tests
+          run: |
+            source .venv/bin/activate
+            mkdir target/coverage/acceptance
+            cp target/coverage/.coverage.acceptance* target/coverage/acceptance
+            cd target/coverage/acceptance
+            coverage combine
+            mv .coverage ../../../.coverage.acceptance
+
+        - name: Combine all coverage results
+          run: |
+            source .venv/bin/activate
+            cd target/coverage
+            ls -la
+            coverage combine
+            mv .coverage ../../
+
+        - name: Report coverage statistics
+          run: |
+            python -m coverage report || true
+            python -m coverage html || true
+            coveralls || true
+
+
   push:
-    name: "Push Images"
+    name: "Push images"
     runs-on: ubuntu-latest
     # push image on master, target branch not set, and the dependent steps were either successful or skipped
     # TO-DO: enable job after workflow in CircleCI is disabled
