@@ -1394,8 +1394,8 @@ class StepfunctionsApi:
         self,
         context: RequestContext,
         name: Name,
-        tags: TagList = None,
-        encryption_configuration: EncryptionConfiguration = None,
+        tags: TagList | None = None,
+        encryption_configuration: EncryptionConfiguration | None = None,
         **kwargs,
     ) -> CreateActivityOutput:
         raise NotImplementedError
@@ -1412,7 +1412,7 @@ class StepfunctionsApi:
         context: RequestContext,
         name: CharacterRestrictedName,
         routing_configuration: RoutingConfigurationList,
-        description: AliasDescription = None,
+        description: AliasDescription | None = None,
         **kwargs,
     ) -> CreateStateMachineAliasOutput:
         raise NotImplementedError
@@ -1452,7 +1452,7 @@ class StepfunctionsApi:
         self,
         context: RequestContext,
         execution_arn: Arn,
-        included_data: IncludedData = None,
+        included_data: IncludedData | None = None,
         **kwargs,
     ) -> DescribeExecutionOutput:
         raise NotImplementedError
@@ -1468,7 +1468,7 @@ class StepfunctionsApi:
         self,
         context: RequestContext,
         state_machine_arn: Arn,
-        included_data: IncludedData = None,
+        included_data: IncludedData | None = None,
         **kwargs,
     ) -> DescribeStateMachineOutput:
         raise NotImplementedError
@@ -1484,14 +1484,14 @@ class StepfunctionsApi:
         self,
         context: RequestContext,
         execution_arn: Arn,
-        included_data: IncludedData = None,
+        included_data: IncludedData | None = None,
         **kwargs,
     ) -> DescribeStateMachineForExecutionOutput:
         raise NotImplementedError
 
     @handler("GetActivityTask")
     def get_activity_task(
-        self, context: RequestContext, activity_arn: Arn, worker_name: Name = None, **kwargs
+        self, context: RequestContext, activity_arn: Arn, worker_name: Name | None = None, **kwargs
     ) -> GetActivityTaskOutput:
         raise NotImplementedError
 
@@ -1500,10 +1500,10 @@ class StepfunctionsApi:
         self,
         context: RequestContext,
         execution_arn: Arn,
-        max_results: PageSize = None,
-        reverse_order: ReverseOrder = None,
-        next_token: PageToken = None,
-        include_execution_data: IncludeExecutionDataGetExecutionHistory = None,
+        max_results: PageSize | None = None,
+        reverse_order: ReverseOrder | None = None,
+        next_token: PageToken | None = None,
+        include_execution_data: IncludeExecutionDataGetExecutionHistory | None = None,
         **kwargs,
     ) -> GetExecutionHistoryOutput:
         raise NotImplementedError
@@ -1512,8 +1512,8 @@ class StepfunctionsApi:
     def list_activities(
         self,
         context: RequestContext,
-        max_results: PageSize = None,
-        next_token: PageToken = None,
+        max_results: PageSize | None = None,
+        next_token: PageToken | None = None,
         **kwargs,
     ) -> ListActivitiesOutput:
         raise NotImplementedError
@@ -1522,12 +1522,12 @@ class StepfunctionsApi:
     def list_executions(
         self,
         context: RequestContext,
-        state_machine_arn: Arn = None,
-        status_filter: ExecutionStatus = None,
-        max_results: PageSize = None,
-        next_token: ListExecutionsPageToken = None,
-        map_run_arn: LongArn = None,
-        redrive_filter: ExecutionRedriveFilter = None,
+        state_machine_arn: Arn | None = None,
+        status_filter: ExecutionStatus | None = None,
+        max_results: PageSize | None = None,
+        next_token: ListExecutionsPageToken | None = None,
+        map_run_arn: LongArn | None = None,
+        redrive_filter: ExecutionRedriveFilter | None = None,
         **kwargs,
     ) -> ListExecutionsOutput:
         raise NotImplementedError
@@ -1537,8 +1537,8 @@ class StepfunctionsApi:
         self,
         context: RequestContext,
         execution_arn: Arn,
-        max_results: PageSize = None,
-        next_token: PageToken = None,
+        max_results: PageSize | None = None,
+        next_token: PageToken | None = None,
         **kwargs,
     ) -> ListMapRunsOutput:
         raise NotImplementedError
@@ -1548,8 +1548,8 @@ class StepfunctionsApi:
         self,
         context: RequestContext,
         state_machine_arn: Arn,
-        next_token: PageToken = None,
-        max_results: PageSize = None,
+        next_token: PageToken | None = None,
+        max_results: PageSize | None = None,
         **kwargs,
     ) -> ListStateMachineAliasesOutput:
         raise NotImplementedError
@@ -1559,8 +1559,8 @@ class StepfunctionsApi:
         self,
         context: RequestContext,
         state_machine_arn: Arn,
-        next_token: PageToken = None,
-        max_results: PageSize = None,
+        next_token: PageToken | None = None,
+        max_results: PageSize | None = None,
         **kwargs,
     ) -> ListStateMachineVersionsOutput:
         raise NotImplementedError
@@ -1569,8 +1569,8 @@ class StepfunctionsApi:
     def list_state_machines(
         self,
         context: RequestContext,
-        max_results: PageSize = None,
-        next_token: PageToken = None,
+        max_results: PageSize | None = None,
+        next_token: PageToken | None = None,
         **kwargs,
     ) -> ListStateMachinesOutput:
         raise NotImplementedError
@@ -1586,8 +1586,8 @@ class StepfunctionsApi:
         self,
         context: RequestContext,
         state_machine_arn: Arn,
-        revision_id: RevisionId = None,
-        description: VersionDescription = None,
+        revision_id: RevisionId | None = None,
+        description: VersionDescription | None = None,
         **kwargs,
     ) -> PublishStateMachineVersionOutput:
         raise NotImplementedError
@@ -1597,7 +1597,7 @@ class StepfunctionsApi:
         self,
         context: RequestContext,
         execution_arn: Arn,
-        client_token: ClientToken = None,
+        client_token: ClientToken | None = None,
         **kwargs,
     ) -> RedriveExecutionOutput:
         raise NotImplementedError
@@ -1607,8 +1607,8 @@ class StepfunctionsApi:
         self,
         context: RequestContext,
         task_token: TaskToken,
-        error: SensitiveError = None,
-        cause: SensitiveCause = None,
+        error: SensitiveError | None = None,
+        cause: SensitiveCause | None = None,
         **kwargs,
     ) -> SendTaskFailureOutput:
         raise NotImplementedError
@@ -1630,9 +1630,9 @@ class StepfunctionsApi:
         self,
         context: RequestContext,
         state_machine_arn: Arn,
-        name: Name = None,
-        input: SensitiveData = None,
-        trace_header: TraceHeader = None,
+        name: Name | None = None,
+        input: SensitiveData | None = None,
+        trace_header: TraceHeader | None = None,
         **kwargs,
     ) -> StartExecutionOutput:
         raise NotImplementedError
@@ -1642,10 +1642,10 @@ class StepfunctionsApi:
         self,
         context: RequestContext,
         state_machine_arn: Arn,
-        name: Name = None,
-        input: SensitiveData = None,
-        trace_header: TraceHeader = None,
-        included_data: IncludedData = None,
+        name: Name | None = None,
+        input: SensitiveData | None = None,
+        trace_header: TraceHeader | None = None,
+        included_data: IncludedData | None = None,
         **kwargs,
     ) -> StartSyncExecutionOutput:
         raise NotImplementedError
@@ -1655,8 +1655,8 @@ class StepfunctionsApi:
         self,
         context: RequestContext,
         execution_arn: Arn,
-        error: SensitiveError = None,
-        cause: SensitiveCause = None,
+        error: SensitiveError | None = None,
+        cause: SensitiveCause | None = None,
         **kwargs,
     ) -> StopExecutionOutput:
         raise NotImplementedError
@@ -1672,11 +1672,11 @@ class StepfunctionsApi:
         self,
         context: RequestContext,
         definition: Definition,
-        role_arn: Arn = None,
-        input: SensitiveData = None,
-        inspection_level: InspectionLevel = None,
-        reveal_secrets: RevealSecrets = None,
-        variables: SensitiveData = None,
+        role_arn: Arn | None = None,
+        input: SensitiveData | None = None,
+        inspection_level: InspectionLevel | None = None,
+        reveal_secrets: RevealSecrets | None = None,
+        variables: SensitiveData | None = None,
         **kwargs,
     ) -> TestStateOutput:
         raise NotImplementedError
@@ -1692,9 +1692,9 @@ class StepfunctionsApi:
         self,
         context: RequestContext,
         map_run_arn: LongArn,
-        max_concurrency: MaxConcurrency = None,
-        tolerated_failure_percentage: ToleratedFailurePercentage = None,
-        tolerated_failure_count: ToleratedFailureCount = None,
+        max_concurrency: MaxConcurrency | None = None,
+        tolerated_failure_percentage: ToleratedFailurePercentage | None = None,
+        tolerated_failure_count: ToleratedFailureCount | None = None,
         **kwargs,
     ) -> UpdateMapRunOutput:
         raise NotImplementedError
@@ -1704,13 +1704,13 @@ class StepfunctionsApi:
         self,
         context: RequestContext,
         state_machine_arn: Arn,
-        definition: Definition = None,
-        role_arn: Arn = None,
-        logging_configuration: LoggingConfiguration = None,
-        tracing_configuration: TracingConfiguration = None,
-        publish: Publish = None,
-        version_description: VersionDescription = None,
-        encryption_configuration: EncryptionConfiguration = None,
+        definition: Definition | None = None,
+        role_arn: Arn | None = None,
+        logging_configuration: LoggingConfiguration | None = None,
+        tracing_configuration: TracingConfiguration | None = None,
+        publish: Publish | None = None,
+        version_description: VersionDescription | None = None,
+        encryption_configuration: EncryptionConfiguration | None = None,
         **kwargs,
     ) -> UpdateStateMachineOutput:
         raise NotImplementedError
@@ -1720,8 +1720,8 @@ class StepfunctionsApi:
         self,
         context: RequestContext,
         state_machine_alias_arn: Arn,
-        description: AliasDescription = None,
-        routing_configuration: RoutingConfigurationList = None,
+        description: AliasDescription | None = None,
+        routing_configuration: RoutingConfigurationList | None = None,
         **kwargs,
     ) -> UpdateStateMachineAliasOutput:
         raise NotImplementedError

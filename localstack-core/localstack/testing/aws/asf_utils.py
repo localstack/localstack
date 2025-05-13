@@ -4,7 +4,7 @@ import inspect
 import pkgutil
 import re
 from types import FunctionType, ModuleType, NoneType, UnionType
-from typing import Optional, Pattern, get_args
+from typing import Optional, Pattern, Union, get_args, get_origin
 
 
 def _import_submodules(
@@ -160,8 +160,12 @@ def check_provider_signature(sub_class: type, base_class: type, method_name: str
 
 
 def _remove_optional(_type: type) -> list[type]:
-    if type(_type) == UnionType:
+    if get_origin(_type) in [Union, UnionType]:
         union_types = list(get_args(_type))
-        union_types.remove(NoneType)
+        try:
+            union_types.remove(NoneType)
+        except ValueError:
+            # Union of some other kind, like 'str | int'
+            pass
         return union_types
     return [_type]

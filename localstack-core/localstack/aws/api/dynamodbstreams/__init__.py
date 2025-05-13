@@ -230,8 +230,8 @@ class DynamodbstreamsApi:
         self,
         context: RequestContext,
         stream_arn: StreamArn,
-        limit: PositiveIntegerObject = None,
-        exclusive_start_shard_id: ShardId = None,
+        limit: PositiveIntegerObject | None = None,
+        exclusive_start_shard_id: ShardId | None = None,
         **kwargs,
     ) -> DescribeStreamOutput:
         raise NotImplementedError
@@ -241,7 +241,7 @@ class DynamodbstreamsApi:
         self,
         context: RequestContext,
         shard_iterator: ShardIterator,
-        limit: PositiveIntegerObject = None,
+        limit: PositiveIntegerObject | None = None,
         **kwargs,
     ) -> GetRecordsOutput:
         raise NotImplementedError
@@ -253,7 +253,7 @@ class DynamodbstreamsApi:
         stream_arn: StreamArn,
         shard_id: ShardId,
         shard_iterator_type: ShardIteratorType,
-        sequence_number: SequenceNumber = None,
+        sequence_number: SequenceNumber | None = None,
         **kwargs,
     ) -> GetShardIteratorOutput:
         raise NotImplementedError
@@ -262,9 +262,9 @@ class DynamodbstreamsApi:
     def list_streams(
         self,
         context: RequestContext,
-        table_name: TableName = None,
-        limit: PositiveIntegerObject = None,
-        exclusive_start_stream_arn: StreamArn = None,
+        table_name: TableName | None = None,
+        limit: PositiveIntegerObject | None = None,
+        exclusive_start_stream_arn: StreamArn | None = None,
         **kwargs,
     ) -> ListStreamsOutput:
         raise NotImplementedError

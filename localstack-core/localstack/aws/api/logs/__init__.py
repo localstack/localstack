@@ -2124,8 +2124,8 @@ class LogsApi:
         self,
         context: RequestContext,
         kms_key_id: KmsKeyId,
-        log_group_name: LogGroupName = None,
-        resource_identifier: ResourceIdentifier = None,
+        log_group_name: LogGroupName | None = None,
+        resource_identifier: ResourceIdentifier | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -2140,10 +2140,10 @@ class LogsApi:
         context: RequestContext,
         delivery_source_name: DeliverySourceName,
         delivery_destination_arn: Arn,
-        record_fields: RecordFields = None,
-        field_delimiter: FieldDelimiter = None,
-        s3_delivery_configuration: S3DeliveryConfiguration = None,
-        tags: Tags = None,
+        record_fields: RecordFields | None = None,
+        field_delimiter: FieldDelimiter | None = None,
+        s3_delivery_configuration: S3DeliveryConfiguration | None = None,
+        tags: Tags | None = None,
         **kwargs,
     ) -> CreateDeliveryResponse:
         raise NotImplementedError
@@ -2159,12 +2159,12 @@ class LogsApi:
         self,
         context: RequestContext,
         log_group_arn_list: LogGroupArnList,
-        detector_name: DetectorName = None,
-        evaluation_frequency: EvaluationFrequency = None,
-        filter_pattern: FilterPattern = None,
-        kms_key_id: DetectorKmsKeyArn = None,
-        anomaly_visibility_time: AnomalyVisibilityTime = None,
-        tags: Tags = None,
+        detector_name: DetectorName | None = None,
+        evaluation_frequency: EvaluationFrequency | None = None,
+        filter_pattern: FilterPattern | None = None,
+        kms_key_id: DetectorKmsKeyArn | None = None,
+        anomaly_visibility_time: AnomalyVisibilityTime | None = None,
+        tags: Tags | None = None,
         **kwargs,
     ) -> CreateLogAnomalyDetectorResponse:
         raise NotImplementedError
@@ -2174,9 +2174,9 @@ class LogsApi:
         self,
         context: RequestContext,
         log_group_name: LogGroupName,
-        kms_key_id: KmsKeyId = None,
-        tags: Tags = None,
-        log_group_class: LogGroupClass = None,
+        kms_key_id: KmsKeyId | None = None,
+        tags: Tags | None = None,
+        log_group_class: LogGroupClass | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -2242,7 +2242,7 @@ class LogsApi:
         self,
         context: RequestContext,
         integration_name: IntegrationName,
-        force: Force = None,
+        force: Force | None = None,
         **kwargs,
     ) -> DeleteIntegrationResponse:
         raise NotImplementedError
@@ -2287,7 +2287,7 @@ class LogsApi:
 
     @handler("DeleteResourcePolicy")
     def delete_resource_policy(
-        self, context: RequestContext, policy_name: PolicyName = None, **kwargs
+        self, context: RequestContext, policy_name: PolicyName | None = None, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -2318,9 +2318,9 @@ class LogsApi:
         self,
         context: RequestContext,
         policy_type: PolicyType,
-        policy_name: PolicyName = None,
-        account_identifiers: AccountIds = None,
-        next_token: NextToken = None,
+        policy_name: PolicyName | None = None,
+        account_identifiers: AccountIds | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeAccountPoliciesResponse:
         raise NotImplementedError
@@ -2329,12 +2329,12 @@ class LogsApi:
     def describe_configuration_templates(
         self,
         context: RequestContext,
-        service: Service = None,
-        log_types: LogTypes = None,
-        resource_types: ResourceTypes = None,
-        delivery_destination_types: DeliveryDestinationTypes = None,
-        next_token: NextToken = None,
-        limit: DescribeLimit = None,
+        service: Service | None = None,
+        log_types: LogTypes | None = None,
+        resource_types: ResourceTypes | None = None,
+        delivery_destination_types: DeliveryDestinationTypes | None = None,
+        next_token: NextToken | None = None,
+        limit: DescribeLimit | None = None,
         **kwargs,
     ) -> DescribeConfigurationTemplatesResponse:
         raise NotImplementedError
@@ -2343,8 +2343,8 @@ class LogsApi:
     def describe_deliveries(
         self,
         context: RequestContext,
-        next_token: NextToken = None,
-        limit: DescribeLimit = None,
+        next_token: NextToken | None = None,
+        limit: DescribeLimit | None = None,
         **kwargs,
     ) -> DescribeDeliveriesResponse:
         raise NotImplementedError
@@ -2353,8 +2353,8 @@ class LogsApi:
     def describe_delivery_destinations(
         self,
         context: RequestContext,
-        next_token: NextToken = None,
-        limit: DescribeLimit = None,
+        next_token: NextToken | None = None,
+        limit: DescribeLimit | None = None,
         **kwargs,
     ) -> DescribeDeliveryDestinationsResponse:
         raise NotImplementedError
@@ -2363,8 +2363,8 @@ class LogsApi:
     def describe_delivery_sources(
         self,
         context: RequestContext,
-        next_token: NextToken = None,
-        limit: DescribeLimit = None,
+        next_token: NextToken | None = None,
+        limit: DescribeLimit | None = None,
         **kwargs,
     ) -> DescribeDeliverySourcesResponse:
         raise NotImplementedError
@@ -2373,9 +2373,9 @@ class LogsApi:
     def describe_destinations(
         self,
         context: RequestContext,
-        destination_name_prefix: DestinationName = None,
-        next_token: NextToken = None,
-        limit: DescribeLimit = None,
+        destination_name_prefix: DestinationName | None = None,
+        next_token: NextToken | None = None,
+        limit: DescribeLimit | None = None,
         **kwargs,
     ) -> DescribeDestinationsResponse:
         raise NotImplementedError
@@ -2384,10 +2384,10 @@ class LogsApi:
     def describe_export_tasks(
         self,
         context: RequestContext,
-        task_id: ExportTaskId = None,
-        status_code: ExportTaskStatusCode = None,
-        next_token: NextToken = None,
-        limit: DescribeLimit = None,
+        task_id: ExportTaskId | None = None,
+        status_code: ExportTaskStatusCode | None = None,
+        next_token: NextToken | None = None,
+        limit: DescribeLimit | None = None,
         **kwargs,
     ) -> DescribeExportTasksResponse:
         raise NotImplementedError
@@ -2397,7 +2397,7 @@ class LogsApi:
         self,
         context: RequestContext,
         log_group_identifiers: DescribeFieldIndexesLogGroupIdentifiers,
-        next_token: NextToken = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeFieldIndexesResponse:
         raise NotImplementedError
@@ -2407,7 +2407,7 @@ class LogsApi:
         self,
         context: RequestContext,
         log_group_identifiers: DescribeIndexPoliciesLogGroupIdentifiers,
-        next_token: NextToken = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeIndexPoliciesResponse:
         raise NotImplementedError
@@ -2416,13 +2416,13 @@ class LogsApi:
     def describe_log_groups(
         self,
         context: RequestContext,
-        account_identifiers: AccountIds = None,
-        log_group_name_prefix: LogGroupName = None,
-        log_group_name_pattern: LogGroupNamePattern = None,
-        next_token: NextToken = None,
-        limit: DescribeLimit = None,
-        include_linked_accounts: IncludeLinkedAccounts = None,
-        log_group_class: LogGroupClass = None,
+        account_identifiers: AccountIds | None = None,
+        log_group_name_prefix: LogGroupName | None = None,
+        log_group_name_pattern: LogGroupNamePattern | None = None,
+        next_token: NextToken | None = None,
+        limit: DescribeLimit | None = None,
+        include_linked_accounts: IncludeLinkedAccounts | None = None,
+        log_group_class: LogGroupClass | None = None,
         **kwargs,
     ) -> DescribeLogGroupsResponse:
         raise NotImplementedError
@@ -2431,13 +2431,13 @@ class LogsApi:
     def describe_log_streams(
         self,
         context: RequestContext,
-        log_group_name: LogGroupName = None,
-        log_group_identifier: LogGroupIdentifier = None,
-        log_stream_name_prefix: LogStreamName = None,
-        order_by: OrderBy = None,
-        descending: Descending = None,
-        next_token: NextToken = None,
-        limit: DescribeLimit = None,
+        log_group_name: LogGroupName | None = None,
+        log_group_identifier: LogGroupIdentifier | None = None,
+        log_stream_name_prefix: LogStreamName | None = None,
+        order_by: OrderBy | None = None,
+        descending: Descending | None = None,
+        next_token: NextToken | None = None,
+        limit: DescribeLimit | None = None,
         **kwargs,
     ) -> DescribeLogStreamsResponse:
         raise NotImplementedError
@@ -2446,12 +2446,12 @@ class LogsApi:
     def describe_metric_filters(
         self,
         context: RequestContext,
-        log_group_name: LogGroupName = None,
-        filter_name_prefix: FilterName = None,
-        next_token: NextToken = None,
-        limit: DescribeLimit = None,
-        metric_name: MetricName = None,
-        metric_namespace: MetricNamespace = None,
+        log_group_name: LogGroupName | None = None,
+        filter_name_prefix: FilterName | None = None,
+        next_token: NextToken | None = None,
+        limit: DescribeLimit | None = None,
+        metric_name: MetricName | None = None,
+        metric_namespace: MetricNamespace | None = None,
         **kwargs,
     ) -> DescribeMetricFiltersResponse:
         raise NotImplementedError
@@ -2460,11 +2460,11 @@ class LogsApi:
     def describe_queries(
         self,
         context: RequestContext,
-        log_group_name: LogGroupName = None,
-        status: QueryStatus = None,
-        max_results: DescribeQueriesMaxResults = None,
-        next_token: NextToken = None,
-        query_language: QueryLanguage = None,
+        log_group_name: LogGroupName | None = None,
+        status: QueryStatus | None = None,
+        max_results: DescribeQueriesMaxResults | None = None,
+        next_token: NextToken | None = None,
+        query_language: QueryLanguage | None = None,
         **kwargs,
     ) -> DescribeQueriesResponse:
         raise NotImplementedError
@@ -2473,10 +2473,10 @@ class LogsApi:
     def describe_query_definitions(
         self,
         context: RequestContext,
-        query_language: QueryLanguage = None,
-        query_definition_name_prefix: QueryDefinitionName = None,
-        max_results: QueryListMaxResults = None,
-        next_token: NextToken = None,
+        query_language: QueryLanguage | None = None,
+        query_definition_name_prefix: QueryDefinitionName | None = None,
+        max_results: QueryListMaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeQueryDefinitionsResponse:
         raise NotImplementedError
@@ -2485,8 +2485,8 @@ class LogsApi:
     def describe_resource_policies(
         self,
         context: RequestContext,
-        next_token: NextToken = None,
-        limit: DescribeLimit = None,
+        next_token: NextToken | None = None,
+        limit: DescribeLimit | None = None,
         **kwargs,
     ) -> DescribeResourcePoliciesResponse:
         raise NotImplementedError
@@ -2496,9 +2496,9 @@ class LogsApi:
         self,
         context: RequestContext,
         log_group_name: LogGroupName,
-        filter_name_prefix: FilterName = None,
-        next_token: NextToken = None,
-        limit: DescribeLimit = None,
+        filter_name_prefix: FilterName | None = None,
+        next_token: NextToken | None = None,
+        limit: DescribeLimit | None = None,
         **kwargs,
     ) -> DescribeSubscriptionFiltersResponse:
         raise NotImplementedError
@@ -2507,8 +2507,8 @@ class LogsApi:
     def disassociate_kms_key(
         self,
         context: RequestContext,
-        log_group_name: LogGroupName = None,
-        resource_identifier: ResourceIdentifier = None,
+        log_group_name: LogGroupName | None = None,
+        resource_identifier: ResourceIdentifier | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -2517,17 +2517,17 @@ class LogsApi:
     def filter_log_events(
         self,
         context: RequestContext,
-        log_group_name: LogGroupName = None,
-        log_group_identifier: LogGroupIdentifier = None,
-        log_stream_names: InputLogStreamNames = None,
-        log_stream_name_prefix: LogStreamName = None,
-        start_time: Timestamp = None,
-        end_time: Timestamp = None,
-        filter_pattern: FilterPattern = None,
-        next_token: NextToken = None,
-        limit: EventsLimit = None,
-        interleaved: Interleaved = None,
-        unmask: Unmask = None,
+        log_group_name: LogGroupName | None = None,
+        log_group_identifier: LogGroupIdentifier | None = None,
+        log_stream_names: InputLogStreamNames | None = None,
+        log_stream_name_prefix: LogStreamName | None = None,
+        start_time: Timestamp | None = None,
+        end_time: Timestamp | None = None,
+        filter_pattern: FilterPattern | None = None,
+        next_token: NextToken | None = None,
+        limit: EventsLimit | None = None,
+        interleaved: Interleaved | None = None,
+        unmask: Unmask | None = None,
         **kwargs,
     ) -> FilterLogEventsResponse:
         raise NotImplementedError
@@ -2579,14 +2579,14 @@ class LogsApi:
         self,
         context: RequestContext,
         log_stream_name: LogStreamName,
-        log_group_name: LogGroupName = None,
-        log_group_identifier: LogGroupIdentifier = None,
-        start_time: Timestamp = None,
-        end_time: Timestamp = None,
-        next_token: NextToken = None,
-        limit: EventsLimit = None,
-        start_from_head: StartFromHead = None,
-        unmask: Unmask = None,
+        log_group_name: LogGroupName | None = None,
+        log_group_identifier: LogGroupIdentifier | None = None,
+        start_time: Timestamp | None = None,
+        end_time: Timestamp | None = None,
+        next_token: NextToken | None = None,
+        limit: EventsLimit | None = None,
+        start_from_head: StartFromHead | None = None,
+        unmask: Unmask | None = None,
         **kwargs,
     ) -> GetLogEventsResponse:
         raise NotImplementedError
@@ -2595,9 +2595,9 @@ class LogsApi:
     def get_log_group_fields(
         self,
         context: RequestContext,
-        log_group_name: LogGroupName = None,
-        time: Timestamp = None,
-        log_group_identifier: LogGroupIdentifier = None,
+        log_group_name: LogGroupName | None = None,
+        time: Timestamp | None = None,
+        log_group_identifier: LogGroupIdentifier | None = None,
         **kwargs,
     ) -> GetLogGroupFieldsResponse:
         raise NotImplementedError
@@ -2607,7 +2607,7 @@ class LogsApi:
         self,
         context: RequestContext,
         log_record_pointer: LogRecordPointer,
-        unmask: Unmask = None,
+        unmask: Unmask | None = None,
         **kwargs,
     ) -> GetLogRecordResponse:
         raise NotImplementedError
@@ -2628,10 +2628,10 @@ class LogsApi:
     def list_anomalies(
         self,
         context: RequestContext,
-        anomaly_detector_arn: AnomalyDetectorArn = None,
-        suppression_state: SuppressionState = None,
-        limit: ListAnomaliesLimit = None,
-        next_token: NextToken = None,
+        anomaly_detector_arn: AnomalyDetectorArn | None = None,
+        suppression_state: SuppressionState | None = None,
+        limit: ListAnomaliesLimit | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> ListAnomaliesResponse:
         raise NotImplementedError
@@ -2640,9 +2640,9 @@ class LogsApi:
     def list_integrations(
         self,
         context: RequestContext,
-        integration_name_prefix: IntegrationNamePrefix = None,
-        integration_type: IntegrationType = None,
-        integration_status: IntegrationStatus = None,
+        integration_name_prefix: IntegrationNamePrefix | None = None,
+        integration_type: IntegrationType | None = None,
+        integration_status: IntegrationStatus | None = None,
         **kwargs,
     ) -> ListIntegrationsResponse:
         raise NotImplementedError
@@ -2651,9 +2651,9 @@ class LogsApi:
     def list_log_anomaly_detectors(
         self,
         context: RequestContext,
-        filter_log_group_arn: LogGroupArn = None,
-        limit: ListLogAnomalyDetectorsLimit = None,
-        next_token: NextToken = None,
+        filter_log_group_arn: LogGroupArn | None = None,
+        limit: ListLogAnomalyDetectorsLimit | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> ListLogAnomalyDetectorsResponse:
         raise NotImplementedError
@@ -2663,8 +2663,8 @@ class LogsApi:
         self,
         context: RequestContext,
         query_id: QueryId,
-        next_token: NextToken = None,
-        max_results: ListLogGroupsForQueryMaxResults = None,
+        next_token: NextToken | None = None,
+        max_results: ListLogGroupsForQueryMaxResults | None = None,
         **kwargs,
     ) -> ListLogGroupsForQueryResponse:
         raise NotImplementedError
@@ -2688,8 +2688,8 @@ class LogsApi:
         policy_name: PolicyName,
         policy_document: AccountPolicyDocument,
         policy_type: PolicyType,
-        scope: Scope = None,
-        selection_criteria: SelectionCriteria = None,
+        scope: Scope | None = None,
+        selection_criteria: SelectionCriteria | None = None,
         **kwargs,
     ) -> PutAccountPolicyResponse:
         raise NotImplementedError
@@ -2710,8 +2710,8 @@ class LogsApi:
         context: RequestContext,
         name: DeliveryDestinationName,
         delivery_destination_configuration: DeliveryDestinationConfiguration,
-        output_format: OutputFormat = None,
-        tags: Tags = None,
+        output_format: OutputFormat | None = None,
+        tags: Tags | None = None,
         **kwargs,
     ) -> PutDeliveryDestinationResponse:
         raise NotImplementedError
@@ -2733,7 +2733,7 @@ class LogsApi:
         name: DeliverySourceName,
         resource_arn: Arn,
         log_type: LogType,
-        tags: Tags = None,
+        tags: Tags | None = None,
         **kwargs,
     ) -> PutDeliverySourceResponse:
         raise NotImplementedError
@@ -2745,7 +2745,7 @@ class LogsApi:
         destination_name: DestinationName,
         target_arn: TargetArn,
         role_arn: RoleArn,
-        tags: Tags = None,
+        tags: Tags | None = None,
         **kwargs,
     ) -> PutDestinationResponse:
         raise NotImplementedError
@@ -2756,7 +2756,7 @@ class LogsApi:
         context: RequestContext,
         destination_name: DestinationName,
         access_policy: AccessPolicy,
-        force_update: ForceUpdate = None,
+        force_update: ForceUpdate | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -2789,8 +2789,8 @@ class LogsApi:
         log_group_name: LogGroupName,
         log_stream_name: LogStreamName,
         log_events: InputLogEvents,
-        sequence_token: SequenceToken = None,
-        entity: Entity = None,
+        sequence_token: SequenceToken | None = None,
+        entity: Entity | None = None,
         **kwargs,
     ) -> PutLogEventsResponse:
         raise NotImplementedError
@@ -2803,7 +2803,7 @@ class LogsApi:
         filter_name: FilterName,
         filter_pattern: FilterPattern,
         metric_transformations: MetricTransformations,
-        apply_on_transformed_logs: ApplyOnTransformedLogs = None,
+        apply_on_transformed_logs: ApplyOnTransformedLogs | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -2814,10 +2814,10 @@ class LogsApi:
         context: RequestContext,
         name: QueryDefinitionName,
         query_string: QueryDefinitionString,
-        query_language: QueryLanguage = None,
-        query_definition_id: QueryId = None,
-        log_group_names: LogGroupNames = None,
-        client_token: ClientToken = None,
+        query_language: QueryLanguage | None = None,
+        query_definition_id: QueryId | None = None,
+        log_group_names: LogGroupNames | None = None,
+        client_token: ClientToken | None = None,
         **kwargs,
     ) -> PutQueryDefinitionResponse:
         raise NotImplementedError
@@ -2826,8 +2826,8 @@ class LogsApi:
     def put_resource_policy(
         self,
         context: RequestContext,
-        policy_name: PolicyName = None,
-        policy_document: PolicyDocument = None,
+        policy_name: PolicyName | None = None,
+        policy_document: PolicyDocument | None = None,
         **kwargs,
     ) -> PutResourcePolicyResponse:
         raise NotImplementedError
@@ -2850,9 +2850,9 @@ class LogsApi:
         filter_name: FilterName,
         filter_pattern: FilterPattern,
         destination_arn: DestinationArn,
-        role_arn: RoleArn = None,
-        distribution: Distribution = None,
-        apply_on_transformed_logs: ApplyOnTransformedLogs = None,
+        role_arn: RoleArn | None = None,
+        distribution: Distribution | None = None,
+        apply_on_transformed_logs: ApplyOnTransformedLogs | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -2872,9 +2872,9 @@ class LogsApi:
         self,
         context: RequestContext,
         log_group_identifiers: StartLiveTailLogGroupIdentifiers,
-        log_stream_names: InputLogStreamNames = None,
-        log_stream_name_prefixes: InputLogStreamNames = None,
-        log_event_filter_pattern: FilterPattern = None,
+        log_stream_names: InputLogStreamNames | None = None,
+        log_stream_name_prefixes: InputLogStreamNames | None = None,
+        log_event_filter_pattern: FilterPattern | None = None,
         **kwargs,
     ) -> StartLiveTailResponse:
         raise NotImplementedError
@@ -2886,11 +2886,11 @@ class LogsApi:
         start_time: Timestamp,
         end_time: Timestamp,
         query_string: QueryString,
-        query_language: QueryLanguage = None,
-        log_group_name: LogGroupName = None,
-        log_group_names: LogGroupNames = None,
-        log_group_identifiers: LogGroupIdentifiers = None,
-        limit: EventsLimit = None,
+        query_language: QueryLanguage | None = None,
+        log_group_name: LogGroupName | None = None,
+        log_group_names: LogGroupNames | None = None,
+        log_group_identifiers: LogGroupIdentifiers | None = None,
+        limit: EventsLimit | None = None,
         **kwargs,
     ) -> StartQueryResponse:
         raise NotImplementedError
@@ -2952,11 +2952,11 @@ class LogsApi:
         self,
         context: RequestContext,
         anomaly_detector_arn: AnomalyDetectorArn,
-        anomaly_id: AnomalyId = None,
-        pattern_id: PatternId = None,
-        suppression_type: SuppressionType = None,
-        suppression_period: SuppressionPeriod = None,
-        baseline: Baseline = None,
+        anomaly_id: AnomalyId | None = None,
+        pattern_id: PatternId | None = None,
+        suppression_type: SuppressionType | None = None,
+        suppression_period: SuppressionPeriod | None = None,
+        baseline: Baseline | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -2966,9 +2966,9 @@ class LogsApi:
         self,
         context: RequestContext,
         id: DeliveryId,
-        record_fields: RecordFields = None,
-        field_delimiter: FieldDelimiter = None,
-        s3_delivery_configuration: S3DeliveryConfiguration = None,
+        record_fields: RecordFields | None = None,
+        field_delimiter: FieldDelimiter | None = None,
+        s3_delivery_configuration: S3DeliveryConfiguration | None = None,
         **kwargs,
     ) -> UpdateDeliveryConfigurationResponse:
         raise NotImplementedError
@@ -2979,9 +2979,9 @@ class LogsApi:
         context: RequestContext,
         anomaly_detector_arn: AnomalyDetectorArn,
         enabled: Boolean,
-        evaluation_frequency: EvaluationFrequency = None,
-        filter_pattern: FilterPattern = None,
-        anomaly_visibility_time: AnomalyVisibilityTime = None,
+        evaluation_frequency: EvaluationFrequency | None = None,
+        filter_pattern: FilterPattern | None = None,
+        anomaly_visibility_time: AnomalyVisibilityTime | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError

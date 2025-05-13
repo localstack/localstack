@@ -274,16 +274,16 @@ class StsApi:
         context: RequestContext,
         role_arn: arnType,
         role_session_name: roleSessionNameType,
-        policy_arns: policyDescriptorListType = None,
-        policy: unrestrictedSessionPolicyDocumentType = None,
-        duration_seconds: roleDurationSecondsType = None,
-        tags: tagListType = None,
-        transitive_tag_keys: tagKeyListType = None,
-        external_id: externalIdType = None,
-        serial_number: serialNumberType = None,
-        token_code: tokenCodeType = None,
-        source_identity: sourceIdentityType = None,
-        provided_contexts: ProvidedContextsListType = None,
+        policy_arns: policyDescriptorListType | None = None,
+        policy: unrestrictedSessionPolicyDocumentType | None = None,
+        duration_seconds: roleDurationSecondsType | None = None,
+        tags: tagListType | None = None,
+        transitive_tag_keys: tagKeyListType | None = None,
+        external_id: externalIdType | None = None,
+        serial_number: serialNumberType | None = None,
+        token_code: tokenCodeType | None = None,
+        source_identity: sourceIdentityType | None = None,
+        provided_contexts: ProvidedContextsListType | None = None,
         **kwargs,
     ) -> AssumeRoleResponse:
         raise NotImplementedError
@@ -295,9 +295,9 @@ class StsApi:
         role_arn: arnType,
         principal_arn: arnType,
         saml_assertion: SAMLAssertionType,
-        policy_arns: policyDescriptorListType = None,
-        policy: sessionPolicyDocumentType = None,
-        duration_seconds: roleDurationSecondsType = None,
+        policy_arns: policyDescriptorListType | None = None,
+        policy: sessionPolicyDocumentType | None = None,
+        duration_seconds: roleDurationSecondsType | None = None,
         **kwargs,
     ) -> AssumeRoleWithSAMLResponse:
         raise NotImplementedError
@@ -309,10 +309,10 @@ class StsApi:
         role_arn: arnType,
         role_session_name: roleSessionNameType,
         web_identity_token: clientTokenType,
-        provider_id: urlType = None,
-        policy_arns: policyDescriptorListType = None,
-        policy: sessionPolicyDocumentType = None,
-        duration_seconds: roleDurationSecondsType = None,
+        provider_id: urlType | None = None,
+        policy_arns: policyDescriptorListType | None = None,
+        policy: sessionPolicyDocumentType | None = None,
+        duration_seconds: roleDurationSecondsType | None = None,
         **kwargs,
     ) -> AssumeRoleWithWebIdentityResponse:
         raise NotImplementedError
@@ -323,7 +323,7 @@ class StsApi:
         context: RequestContext,
         target_principal: TargetPrincipalType,
         task_policy_arn: PolicyDescriptorType,
-        duration_seconds: RootDurationSecondsType = None,
+        duration_seconds: RootDurationSecondsType | None = None,
         **kwargs,
     ) -> AssumeRootResponse:
         raise NotImplementedError
@@ -349,10 +349,10 @@ class StsApi:
         self,
         context: RequestContext,
         name: userNameType,
-        policy: sessionPolicyDocumentType = None,
-        policy_arns: policyDescriptorListType = None,
-        duration_seconds: durationSecondsType = None,
-        tags: tagListType = None,
+        policy: sessionPolicyDocumentType | None = None,
+        policy_arns: policyDescriptorListType | None = None,
+        duration_seconds: durationSecondsType | None = None,
+        tags: tagListType | None = None,
         **kwargs,
     ) -> GetFederationTokenResponse:
         raise NotImplementedError
@@ -361,9 +361,9 @@ class StsApi:
     def get_session_token(
         self,
         context: RequestContext,
-        duration_seconds: durationSecondsType = None,
-        serial_number: serialNumberType = None,
-        token_code: tokenCodeType = None,
+        duration_seconds: durationSecondsType | None = None,
+        serial_number: serialNumberType | None = None,
+        token_code: tokenCodeType | None = None,
         **kwargs,
     ) -> GetSessionTokenResponse:
         raise NotImplementedError

@@ -411,7 +411,7 @@ def generate_service_api(output, service: ServiceModel, doc=True):
                 type_name = to_valid_python_name(m_shape.name)
                 if m == streaming_payload_member:
                     type_name = f"IO[{type_name}]"
-                parameters[xform_name(m)] = f"{type_name} = None"
+                parameters[xform_name(m)] = f"{type_name} | None = None"
 
         if any(map(is_bad_param_name, parameters.keys())):
             # if we cannot render the parameter name, don't expand the parameters in the handler

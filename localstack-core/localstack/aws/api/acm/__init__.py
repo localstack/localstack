@@ -575,9 +575,9 @@ class AcmApi:
         context: RequestContext,
         certificate: CertificateBodyBlob,
         private_key: PrivateKeyBlob,
-        certificate_arn: Arn = None,
-        certificate_chain: CertificateChainBlob = None,
-        tags: TagList = None,
+        certificate_arn: Arn | None = None,
+        certificate_chain: CertificateChainBlob | None = None,
+        tags: TagList | None = None,
         **kwargs,
     ) -> ImportCertificateResponse:
         raise NotImplementedError
@@ -586,12 +586,12 @@ class AcmApi:
     def list_certificates(
         self,
         context: RequestContext,
-        certificate_statuses: CertificateStatuses = None,
-        includes: Filters = None,
-        next_token: NextToken = None,
-        max_items: MaxItems = None,
-        sort_by: SortBy = None,
-        sort_order: SortOrder = None,
+        certificate_statuses: CertificateStatuses | None = None,
+        includes: Filters | None = None,
+        next_token: NextToken | None = None,
+        max_items: MaxItems | None = None,
+        sort_by: SortBy | None = None,
+        sort_order: SortOrder | None = None,
         **kwargs,
     ) -> ListCertificatesResponse:
         raise NotImplementedError
@@ -607,7 +607,7 @@ class AcmApi:
         self,
         context: RequestContext,
         idempotency_token: IdempotencyToken,
-        expiry_events: ExpiryEventsConfiguration = None,
+        expiry_events: ExpiryEventsConfiguration | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -627,15 +627,15 @@ class AcmApi:
         self,
         context: RequestContext,
         domain_name: DomainNameString,
-        validation_method: ValidationMethod = None,
-        subject_alternative_names: DomainList = None,
-        idempotency_token: IdempotencyToken = None,
-        domain_validation_options: DomainValidationOptionList = None,
-        options: CertificateOptions = None,
-        certificate_authority_arn: PcaArn = None,
-        tags: TagList = None,
-        key_algorithm: KeyAlgorithm = None,
-        managed_by: CertificateManagedBy = None,
+        validation_method: ValidationMethod | None = None,
+        subject_alternative_names: DomainList | None = None,
+        idempotency_token: IdempotencyToken | None = None,
+        domain_validation_options: DomainValidationOptionList | None = None,
+        options: CertificateOptions | None = None,
+        certificate_authority_arn: PcaArn | None = None,
+        tags: TagList | None = None,
+        key_algorithm: KeyAlgorithm | None = None,
+        managed_by: CertificateManagedBy | None = None,
         **kwargs,
     ) -> RequestCertificateResponse:
         raise NotImplementedError
