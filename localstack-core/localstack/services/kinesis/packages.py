@@ -1,12 +1,25 @@
 import os
+from enum import StrEnum
 from functools import lru_cache
-from typing import List
+from typing import Any, List
 
 from localstack.packages import InstallTarget, Package
 from localstack.packages.core import GitHubReleaseInstaller, NodePackageInstaller
 from localstack.packages.java import JavaInstallerMixin, java_package
 
 _KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.4.12"
+
+
+class KinesisMockEngine(StrEnum):
+    NODE = "node"
+    SCALA = "scala"
+
+    @classmethod
+    def _missing_(cls, value: str | Any) -> str:
+        # default to 'node' if invalid enum
+        if not isinstance(value, str):
+            return cls(cls.NODE)
+        return cls.__members__.get(value.upper(), cls.NODE)
 
 
 class KinesisMockNodePackageInstaller(NodePackageInstaller):
@@ -64,5 +77,6 @@ class KinesisMockNodePackage(Package[KinesisMockNodePackageInstaller]):
         return [_KINESIS_MOCK_VERSION]
 
 
-kinesismock_node_package = KinesisMockNodePackage()
+# leave as 'kinesismock_package' for backwards compatability
+kinesismock_package = KinesisMockNodePackage()
 kinesismock_scala_package = KinesisMockScalaPackage()

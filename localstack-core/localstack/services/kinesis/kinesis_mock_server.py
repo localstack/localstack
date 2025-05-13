@@ -2,29 +2,20 @@ import logging
 import os
 import threading
 from abc import abstractmethod
-from enum import StrEnum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from localstack import config
-from localstack.services.kinesis.packages import kinesismock_node_package, kinesismock_scala_package
+from localstack.services.kinesis.packages import (
+    KinesisMockEngine,
+    kinesismock_package,
+    kinesismock_scala_package,
+)
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
 from localstack.utils.run import FuncThread
 from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)
-
-
-class KinesisMockEngine(StrEnum):
-    NODE = "node"
-    SCALA = "scala"
-
-    @classmethod
-    def _missing_(cls, value: str | Any) -> str:
-        # default to 'node' if invalid enum
-        if not isinstance(value, str):
-            return cls(cls.NODE)
-        return cls.__members__.get(value.upper(), cls.NODE)
 
 
 class KinesisMockServer(Server):
@@ -229,8 +220,8 @@ class KinesisServerManager:
             )
 
         # Otherwise, install the NodeJS version (default)
-        kinesismock_node_package.install()
-        kinesis_mock_path = Path(kinesismock_node_package.get_installer().get_executable_path())
+        kinesismock_package.install()
+        kinesis_mock_path = Path(kinesismock_package.get_installer().get_executable_path())
 
         return KinesisMockNodeServer(
             port=port,
