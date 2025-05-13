@@ -9,7 +9,7 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.26.1
+awscrt==0.27.1
     # via localstack-core (pyproject.toml)
 boto3==1.38.13
     # via localstack-core (pyproject.toml)
@@ -30,7 +30,7 @@ cffi==1.17.1
     # via cryptography
 charset-normalizer==3.4.2
     # via requests
-click==8.1.8
+click==8.2.0
     # via localstack-core (pyproject.toml)
 constantly==23.10.4
     # via localstack-twisted
