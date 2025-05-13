@@ -2013,7 +2013,7 @@ def ec2_create_security_group(aws_client):
         # Making sure the call to CreateSecurityGroup gets the right arguments
         _args = select_from_typed_dict(CreateSecurityGroupRequest, kwargs)
         security_group = aws_client.ec2.create_security_group(**_args)
-
+        security_group_id = security_group["GroupId"]
         permissions = [
             {
                 "FromPort": port,
@@ -2023,20 +2023,12 @@ def ec2_create_security_group(aws_client):
             }
             for port in ports or []
         ]
-        if "VpcId" not in kwargs:
-            # default vpc group can use the group-name
-            aws_client.ec2.authorize_security_group_ingress(
-                GroupName=kwargs["GroupName"],
-                IpPermissions=permissions,
-            )
-        else:
-            # non default, has to use the group-id
-            aws_client.ec2.authorize_security_group_ingress(
-                GroupId=security_group["GroupId"],
-                IpPermissions=permissions,
-            )
+        aws_client.ec2.authorize_security_group_ingress(
+            GroupId=security_group_id,
+            IpPermissions=permissions,
+        )
 
-        ec2_sgs.append(security_group["GroupId"])
+        ec2_sgs.append(security_group_id)
         return security_group
 
     yield factory
