@@ -91,8 +91,9 @@ jobs:
         - name: Load all test results
           uses: actions/download-artifact@v4
           with:
-            name: test-results-*
+            pattern: test-results-*
             path: target/coverage/
+            merge-multiple: true
 
         - name: Combine coverage results from acceptance tests
           run: |
@@ -112,7 +113,10 @@ jobs:
             mv .coverage ../../
 
         - name: Report coverage statistics
+          env:
+            COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
           run: |
+            source .venv/bin/activate
             coverage report || true
             coverage html || true
             coveralls || true
