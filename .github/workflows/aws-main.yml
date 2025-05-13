@@ -155,7 +155,7 @@ jobs:
 
   push-to-tinybird:
     name: Push Workflow Status to Tinybird
-    if: always() && github.ref == 'refs/heads/master'
+    if: always() # && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     needs:
       - test

@@ -119,7 +119,9 @@ env:
   CI_COMMIT_SHA: ${{ github.sha }}
   CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
   # report to tinybird if executed on master on ext AND community (targetRef not set) AND additional environment variables/pytest args are not set.
-  TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
+  # TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
+  TINYBIRD_PYTEST_ARGS: '--report-to-tinybird '
+
 
 
 jobs:
