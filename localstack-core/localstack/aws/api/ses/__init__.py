@@ -1449,7 +1449,7 @@ class SesApi:
         context: RequestContext,
         rule_set_name: ReceiptRuleSetName,
         rule: ReceiptRule,
-        after: ReceiptRuleName = None,
+        after: ReceiptRuleName | None = None,
         **kwargs,
     ) -> CreateReceiptRuleResponse:
         raise NotImplementedError
@@ -1551,7 +1551,7 @@ class SesApi:
         self,
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
-        configuration_set_attribute_names: ConfigurationSetAttributeList = None,
+        configuration_set_attribute_names: ConfigurationSetAttributeList | None = None,
         **kwargs,
     ) -> DescribeConfigurationSetResponse:
         raise NotImplementedError
@@ -1632,8 +1632,8 @@ class SesApi:
     def list_configuration_sets(
         self,
         context: RequestContext,
-        next_token: NextToken = None,
-        max_items: MaxItems = None,
+        next_token: NextToken | None = None,
+        max_items: MaxItems | None = None,
         **kwargs,
     ) -> ListConfigurationSetsResponse:
         raise NotImplementedError
@@ -1642,8 +1642,8 @@ class SesApi:
     def list_custom_verification_email_templates(
         self,
         context: RequestContext,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> ListCustomVerificationEmailTemplatesResponse:
         raise NotImplementedError
@@ -1652,9 +1652,9 @@ class SesApi:
     def list_identities(
         self,
         context: RequestContext,
-        identity_type: IdentityType = None,
-        next_token: NextToken = None,
-        max_items: MaxItems = None,
+        identity_type: IdentityType | None = None,
+        next_token: NextToken | None = None,
+        max_items: MaxItems | None = None,
         **kwargs,
     ) -> ListIdentitiesResponse:
         raise NotImplementedError
@@ -1671,7 +1671,7 @@ class SesApi:
 
     @handler("ListReceiptRuleSets")
     def list_receipt_rule_sets(
-        self, context: RequestContext, next_token: NextToken = None, **kwargs
+        self, context: RequestContext, next_token: NextToken | None = None, **kwargs
     ) -> ListReceiptRuleSetsResponse:
         raise NotImplementedError
 
@@ -1679,8 +1679,8 @@ class SesApi:
     def list_templates(
         self,
         context: RequestContext,
-        next_token: NextToken = None,
-        max_items: MaxItems = None,
+        next_token: NextToken | None = None,
+        max_items: MaxItems | None = None,
         **kwargs,
     ) -> ListTemplatesResponse:
         raise NotImplementedError
@@ -1696,7 +1696,7 @@ class SesApi:
         self,
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
-        delivery_options: DeliveryOptions = None,
+        delivery_options: DeliveryOptions | None = None,
         **kwargs,
     ) -> PutConfigurationSetDeliveryOptionsResponse:
         raise NotImplementedError
@@ -1729,9 +1729,9 @@ class SesApi:
         original_message_id: MessageId,
         bounce_sender: Address,
         bounced_recipient_info_list: BouncedRecipientInfoList,
-        explanation: Explanation = None,
-        message_dsn: MessageDsn = None,
-        bounce_sender_arn: AmazonResourceName = None,
+        explanation: Explanation | None = None,
+        message_dsn: MessageDsn | None = None,
+        bounce_sender_arn: AmazonResourceName | None = None,
         **kwargs,
     ) -> SendBounceResponse:
         raise NotImplementedError
@@ -1744,13 +1744,13 @@ class SesApi:
         template: TemplateName,
         default_template_data: TemplateData,
         destinations: BulkEmailDestinationList,
-        source_arn: AmazonResourceName = None,
-        reply_to_addresses: AddressList = None,
-        return_path: Address = None,
-        return_path_arn: AmazonResourceName = None,
-        configuration_set_name: ConfigurationSetName = None,
-        default_tags: MessageTagList = None,
-        template_arn: AmazonResourceName = None,
+        source_arn: AmazonResourceName | None = None,
+        reply_to_addresses: AddressList | None = None,
+        return_path: Address | None = None,
+        return_path_arn: AmazonResourceName | None = None,
+        configuration_set_name: ConfigurationSetName | None = None,
+        default_tags: MessageTagList | None = None,
+        template_arn: AmazonResourceName | None = None,
         **kwargs,
     ) -> SendBulkTemplatedEmailResponse:
         raise NotImplementedError
@@ -1761,7 +1761,7 @@ class SesApi:
         context: RequestContext,
         email_address: Address,
         template_name: TemplateName,
-        configuration_set_name: ConfigurationSetName = None,
+        configuration_set_name: ConfigurationSetName | None = None,
         **kwargs,
     ) -> SendCustomVerificationEmailResponse:
         raise NotImplementedError
@@ -1773,12 +1773,12 @@ class SesApi:
         source: Address,
         destination: Destination,
         message: Message,
-        reply_to_addresses: AddressList = None,
-        return_path: Address = None,
-        source_arn: AmazonResourceName = None,
-        return_path_arn: AmazonResourceName = None,
-        tags: MessageTagList = None,
-        configuration_set_name: ConfigurationSetName = None,
+        reply_to_addresses: AddressList | None = None,
+        return_path: Address | None = None,
+        source_arn: AmazonResourceName | None = None,
+        return_path_arn: AmazonResourceName | None = None,
+        tags: MessageTagList | None = None,
+        configuration_set_name: ConfigurationSetName | None = None,
         **kwargs,
     ) -> SendEmailResponse:
         raise NotImplementedError
@@ -1788,13 +1788,13 @@ class SesApi:
         self,
         context: RequestContext,
         raw_message: RawMessage,
-        source: Address = None,
-        destinations: AddressList = None,
-        from_arn: AmazonResourceName = None,
-        source_arn: AmazonResourceName = None,
-        return_path_arn: AmazonResourceName = None,
-        tags: MessageTagList = None,
-        configuration_set_name: ConfigurationSetName = None,
+        source: Address | None = None,
+        destinations: AddressList | None = None,
+        from_arn: AmazonResourceName | None = None,
+        source_arn: AmazonResourceName | None = None,
+        return_path_arn: AmazonResourceName | None = None,
+        tags: MessageTagList | None = None,
+        configuration_set_name: ConfigurationSetName | None = None,
         **kwargs,
     ) -> SendRawEmailResponse:
         raise NotImplementedError
@@ -1807,20 +1807,20 @@ class SesApi:
         destination: Destination,
         template: TemplateName,
         template_data: TemplateData,
-        reply_to_addresses: AddressList = None,
-        return_path: Address = None,
-        source_arn: AmazonResourceName = None,
-        return_path_arn: AmazonResourceName = None,
-        tags: MessageTagList = None,
-        configuration_set_name: ConfigurationSetName = None,
-        template_arn: AmazonResourceName = None,
+        reply_to_addresses: AddressList | None = None,
+        return_path: Address | None = None,
+        source_arn: AmazonResourceName | None = None,
+        return_path_arn: AmazonResourceName | None = None,
+        tags: MessageTagList | None = None,
+        configuration_set_name: ConfigurationSetName | None = None,
+        template_arn: AmazonResourceName | None = None,
         **kwargs,
     ) -> SendTemplatedEmailResponse:
         raise NotImplementedError
 
     @handler("SetActiveReceiptRuleSet")
     def set_active_receipt_rule_set(
-        self, context: RequestContext, rule_set_name: ReceiptRuleSetName = None, **kwargs
+        self, context: RequestContext, rule_set_name: ReceiptRuleSetName | None = None, **kwargs
     ) -> SetActiveReceiptRuleSetResponse:
         raise NotImplementedError
 
@@ -1852,8 +1852,8 @@ class SesApi:
         self,
         context: RequestContext,
         identity: Identity,
-        mail_from_domain: MailFromDomainName = None,
-        behavior_on_mx_failure: BehaviorOnMXFailure = None,
+        mail_from_domain: MailFromDomainName | None = None,
+        behavior_on_mx_failure: BehaviorOnMXFailure | None = None,
         **kwargs,
     ) -> SetIdentityMailFromDomainResponse:
         raise NotImplementedError
@@ -1864,7 +1864,7 @@ class SesApi:
         context: RequestContext,
         identity: Identity,
         notification_type: NotificationType,
-        sns_topic: NotificationTopic = None,
+        sns_topic: NotificationTopic | None = None,
         **kwargs,
     ) -> SetIdentityNotificationTopicResponse:
         raise NotImplementedError
@@ -1875,7 +1875,7 @@ class SesApi:
         context: RequestContext,
         rule_set_name: ReceiptRuleSetName,
         rule_name: ReceiptRuleName,
-        after: ReceiptRuleName = None,
+        after: ReceiptRuleName | None = None,
         **kwargs,
     ) -> SetReceiptRulePositionResponse:
         raise NotImplementedError
@@ -1892,7 +1892,7 @@ class SesApi:
 
     @handler("UpdateAccountSendingEnabled")
     def update_account_sending_enabled(
-        self, context: RequestContext, enabled: Enabled = None, **kwargs
+        self, context: RequestContext, enabled: Enabled | None = None, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1941,11 +1941,11 @@ class SesApi:
         self,
         context: RequestContext,
         template_name: TemplateName,
-        from_email_address: FromAddress = None,
-        template_subject: Subject = None,
-        template_content: TemplateContent = None,
-        success_redirection_url: SuccessRedirectionURL = None,
-        failure_redirection_url: FailureRedirectionURL = None,
+        from_email_address: FromAddress | None = None,
+        template_subject: Subject | None = None,
+        template_content: TemplateContent | None = None,
+        success_redirection_url: SuccessRedirectionURL | None = None,
+        failure_redirection_url: FailureRedirectionURL | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError

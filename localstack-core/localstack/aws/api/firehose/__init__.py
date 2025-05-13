@@ -1487,23 +1487,27 @@ class FirehoseApi:
         self,
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
-        delivery_stream_type: DeliveryStreamType = None,
-        direct_put_source_configuration: DirectPutSourceConfiguration = None,
-        kinesis_stream_source_configuration: KinesisStreamSourceConfiguration = None,
-        delivery_stream_encryption_configuration_input: DeliveryStreamEncryptionConfigurationInput = None,
-        s3_destination_configuration: S3DestinationConfiguration = None,
-        extended_s3_destination_configuration: ExtendedS3DestinationConfiguration = None,
-        redshift_destination_configuration: RedshiftDestinationConfiguration = None,
-        elasticsearch_destination_configuration: ElasticsearchDestinationConfiguration = None,
-        amazonopensearchservice_destination_configuration: AmazonopensearchserviceDestinationConfiguration = None,
-        splunk_destination_configuration: SplunkDestinationConfiguration = None,
-        http_endpoint_destination_configuration: HttpEndpointDestinationConfiguration = None,
-        tags: TagDeliveryStreamInputTagList = None,
-        amazon_open_search_serverless_destination_configuration: AmazonOpenSearchServerlessDestinationConfiguration = None,
-        msk_source_configuration: MSKSourceConfiguration = None,
-        snowflake_destination_configuration: SnowflakeDestinationConfiguration = None,
-        iceberg_destination_configuration: IcebergDestinationConfiguration = None,
-        database_source_configuration: DatabaseSourceConfiguration = None,
+        delivery_stream_type: DeliveryStreamType | None = None,
+        direct_put_source_configuration: DirectPutSourceConfiguration | None = None,
+        kinesis_stream_source_configuration: KinesisStreamSourceConfiguration | None = None,
+        delivery_stream_encryption_configuration_input: DeliveryStreamEncryptionConfigurationInput
+        | None = None,
+        s3_destination_configuration: S3DestinationConfiguration | None = None,
+        extended_s3_destination_configuration: ExtendedS3DestinationConfiguration | None = None,
+        redshift_destination_configuration: RedshiftDestinationConfiguration | None = None,
+        elasticsearch_destination_configuration: ElasticsearchDestinationConfiguration
+        | None = None,
+        amazonopensearchservice_destination_configuration: AmazonopensearchserviceDestinationConfiguration
+        | None = None,
+        splunk_destination_configuration: SplunkDestinationConfiguration | None = None,
+        http_endpoint_destination_configuration: HttpEndpointDestinationConfiguration | None = None,
+        tags: TagDeliveryStreamInputTagList | None = None,
+        amazon_open_search_serverless_destination_configuration: AmazonOpenSearchServerlessDestinationConfiguration
+        | None = None,
+        msk_source_configuration: MSKSourceConfiguration | None = None,
+        snowflake_destination_configuration: SnowflakeDestinationConfiguration | None = None,
+        iceberg_destination_configuration: IcebergDestinationConfiguration | None = None,
+        database_source_configuration: DatabaseSourceConfiguration | None = None,
         **kwargs,
     ) -> CreateDeliveryStreamOutput:
         raise NotImplementedError
@@ -1513,7 +1517,7 @@ class FirehoseApi:
         self,
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
-        allow_force_delete: BooleanObject = None,
+        allow_force_delete: BooleanObject | None = None,
         **kwargs,
     ) -> DeleteDeliveryStreamOutput:
         raise NotImplementedError
@@ -1523,8 +1527,8 @@ class FirehoseApi:
         self,
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
-        limit: DescribeDeliveryStreamInputLimit = None,
-        exclusive_start_destination_id: DestinationId = None,
+        limit: DescribeDeliveryStreamInputLimit | None = None,
+        exclusive_start_destination_id: DestinationId | None = None,
         **kwargs,
     ) -> DescribeDeliveryStreamOutput:
         raise NotImplementedError
@@ -1533,9 +1537,9 @@ class FirehoseApi:
     def list_delivery_streams(
         self,
         context: RequestContext,
-        limit: ListDeliveryStreamsInputLimit = None,
-        delivery_stream_type: DeliveryStreamType = None,
-        exclusive_start_delivery_stream_name: DeliveryStreamName = None,
+        limit: ListDeliveryStreamsInputLimit | None = None,
+        delivery_stream_type: DeliveryStreamType | None = None,
+        exclusive_start_delivery_stream_name: DeliveryStreamName | None = None,
         **kwargs,
     ) -> ListDeliveryStreamsOutput:
         raise NotImplementedError
@@ -1545,8 +1549,8 @@ class FirehoseApi:
         self,
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
-        exclusive_start_tag_key: TagKey = None,
-        limit: ListTagsForDeliveryStreamInputLimit = None,
+        exclusive_start_tag_key: TagKey | None = None,
+        limit: ListTagsForDeliveryStreamInputLimit | None = None,
         **kwargs,
     ) -> ListTagsForDeliveryStreamOutput:
         raise NotImplementedError
@@ -1576,7 +1580,8 @@ class FirehoseApi:
         self,
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
-        delivery_stream_encryption_configuration_input: DeliveryStreamEncryptionConfigurationInput = None,
+        delivery_stream_encryption_configuration_input: DeliveryStreamEncryptionConfigurationInput
+        | None = None,
         **kwargs,
     ) -> StartDeliveryStreamEncryptionOutput:
         raise NotImplementedError
@@ -1614,16 +1619,18 @@ class FirehoseApi:
         delivery_stream_name: DeliveryStreamName,
         current_delivery_stream_version_id: DeliveryStreamVersionId,
         destination_id: DestinationId,
-        s3_destination_update: S3DestinationUpdate = None,
-        extended_s3_destination_update: ExtendedS3DestinationUpdate = None,
-        redshift_destination_update: RedshiftDestinationUpdate = None,
-        elasticsearch_destination_update: ElasticsearchDestinationUpdate = None,
-        amazonopensearchservice_destination_update: AmazonopensearchserviceDestinationUpdate = None,
-        splunk_destination_update: SplunkDestinationUpdate = None,
-        http_endpoint_destination_update: HttpEndpointDestinationUpdate = None,
-        amazon_open_search_serverless_destination_update: AmazonOpenSearchServerlessDestinationUpdate = None,
-        snowflake_destination_update: SnowflakeDestinationUpdate = None,
-        iceberg_destination_update: IcebergDestinationUpdate = None,
+        s3_destination_update: S3DestinationUpdate | None = None,
+        extended_s3_destination_update: ExtendedS3DestinationUpdate | None = None,
+        redshift_destination_update: RedshiftDestinationUpdate | None = None,
+        elasticsearch_destination_update: ElasticsearchDestinationUpdate | None = None,
+        amazonopensearchservice_destination_update: AmazonopensearchserviceDestinationUpdate
+        | None = None,
+        splunk_destination_update: SplunkDestinationUpdate | None = None,
+        http_endpoint_destination_update: HttpEndpointDestinationUpdate | None = None,
+        amazon_open_search_serverless_destination_update: AmazonOpenSearchServerlessDestinationUpdate
+        | None = None,
+        snowflake_destination_update: SnowflakeDestinationUpdate | None = None,
+        iceberg_destination_update: IcebergDestinationUpdate | None = None,
         **kwargs,
     ) -> UpdateDestinationOutput:
         raise NotImplementedError

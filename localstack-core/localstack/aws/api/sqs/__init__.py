@@ -615,8 +615,8 @@ class SqsApi:
         self,
         context: RequestContext,
         queue_name: String,
-        attributes: QueueAttributeMap = None,
-        tags: TagMap = None,
+        attributes: QueueAttributeMap | None = None,
+        tags: TagMap | None = None,
         **kwargs,
     ) -> CreateQueueResult:
         raise NotImplementedError
@@ -646,7 +646,7 @@ class SqsApi:
         self,
         context: RequestContext,
         queue_url: String,
-        attribute_names: AttributeNameList = None,
+        attribute_names: AttributeNameList | None = None,
         **kwargs,
     ) -> GetQueueAttributesResult:
         raise NotImplementedError
@@ -656,7 +656,7 @@ class SqsApi:
         self,
         context: RequestContext,
         queue_name: String,
-        queue_owner_aws_account_id: String = None,
+        queue_owner_aws_account_id: String | None = None,
         **kwargs,
     ) -> GetQueueUrlResult:
         raise NotImplementedError
@@ -666,8 +666,8 @@ class SqsApi:
         self,
         context: RequestContext,
         queue_url: String,
-        next_token: Token = None,
-        max_results: BoxedInteger = None,
+        next_token: Token | None = None,
+        max_results: BoxedInteger | None = None,
         **kwargs,
     ) -> ListDeadLetterSourceQueuesResult:
         raise NotImplementedError
@@ -677,7 +677,7 @@ class SqsApi:
         self,
         context: RequestContext,
         source_arn: String,
-        max_results: NullableInteger = None,
+        max_results: NullableInteger | None = None,
         **kwargs,
     ) -> ListMessageMoveTasksResult:
         raise NotImplementedError
@@ -692,9 +692,9 @@ class SqsApi:
     def list_queues(
         self,
         context: RequestContext,
-        queue_name_prefix: String = None,
-        next_token: Token = None,
-        max_results: BoxedInteger = None,
+        queue_name_prefix: String | None = None,
+        next_token: Token | None = None,
+        max_results: BoxedInteger | None = None,
         **kwargs,
     ) -> ListQueuesResult:
         raise NotImplementedError
@@ -708,13 +708,13 @@ class SqsApi:
         self,
         context: RequestContext,
         queue_url: String,
-        attribute_names: AttributeNameList = None,
-        message_system_attribute_names: MessageSystemAttributeList = None,
-        message_attribute_names: MessageAttributeNameList = None,
-        max_number_of_messages: NullableInteger = None,
-        visibility_timeout: NullableInteger = None,
-        wait_time_seconds: NullableInteger = None,
-        receive_request_attempt_id: String = None,
+        attribute_names: AttributeNameList | None = None,
+        message_system_attribute_names: MessageSystemAttributeList | None = None,
+        message_attribute_names: MessageAttributeNameList | None = None,
+        max_number_of_messages: NullableInteger | None = None,
+        visibility_timeout: NullableInteger | None = None,
+        wait_time_seconds: NullableInteger | None = None,
+        receive_request_attempt_id: String | None = None,
         **kwargs,
     ) -> ReceiveMessageResult:
         raise NotImplementedError
@@ -731,11 +731,11 @@ class SqsApi:
         context: RequestContext,
         queue_url: String,
         message_body: String,
-        delay_seconds: NullableInteger = None,
-        message_attributes: MessageBodyAttributeMap = None,
-        message_system_attributes: MessageBodySystemAttributeMap = None,
-        message_deduplication_id: String = None,
-        message_group_id: String = None,
+        delay_seconds: NullableInteger | None = None,
+        message_attributes: MessageBodyAttributeMap | None = None,
+        message_system_attributes: MessageBodySystemAttributeMap | None = None,
+        message_deduplication_id: String | None = None,
+        message_group_id: String | None = None,
         **kwargs,
     ) -> SendMessageResult:
         raise NotImplementedError
@@ -761,8 +761,8 @@ class SqsApi:
         self,
         context: RequestContext,
         source_arn: String,
-        destination_arn: String = None,
-        max_number_of_messages_per_second: NullableInteger = None,
+        destination_arn: String | None = None,
+        max_number_of_messages_per_second: NullableInteger | None = None,
         **kwargs,
     ) -> StartMessageMoveTaskResult:
         raise NotImplementedError

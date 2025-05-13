@@ -1257,8 +1257,8 @@ class TranscribeApi:
         context: RequestContext,
         category_name: CategoryName,
         rules: RuleList,
-        tags: TagList = None,
-        input_type: InputType = None,
+        tags: TagList | None = None,
+        input_type: InputType | None = None,
         **kwargs,
     ) -> CreateCallAnalyticsCategoryResponse:
         raise NotImplementedError
@@ -1271,7 +1271,7 @@ class TranscribeApi:
         base_model_name: BaseModelName,
         model_name: ModelName,
         input_data_config: InputDataConfig,
-        tags: TagList = None,
+        tags: TagList | None = None,
         **kwargs,
     ) -> CreateLanguageModelResponse:
         raise NotImplementedError
@@ -1283,7 +1283,7 @@ class TranscribeApi:
         vocabulary_name: VocabularyName,
         language_code: LanguageCode,
         vocabulary_file_uri: Uri,
-        tags: TagList = None,
+        tags: TagList | None = None,
         **kwargs,
     ) -> CreateMedicalVocabularyResponse:
         raise NotImplementedError
@@ -1294,10 +1294,10 @@ class TranscribeApi:
         context: RequestContext,
         vocabulary_name: VocabularyName,
         language_code: LanguageCode,
-        phrases: Phrases = None,
-        vocabulary_file_uri: Uri = None,
-        tags: TagList = None,
-        data_access_role_arn: DataAccessRoleArn = None,
+        phrases: Phrases | None = None,
+        vocabulary_file_uri: Uri | None = None,
+        tags: TagList | None = None,
+        data_access_role_arn: DataAccessRoleArn | None = None,
         **kwargs,
     ) -> CreateVocabularyResponse:
         raise NotImplementedError
@@ -1308,10 +1308,10 @@ class TranscribeApi:
         context: RequestContext,
         vocabulary_filter_name: VocabularyFilterName,
         language_code: LanguageCode,
-        words: Words = None,
-        vocabulary_filter_file_uri: Uri = None,
-        tags: TagList = None,
-        data_access_role_arn: DataAccessRoleArn = None,
+        words: Words | None = None,
+        vocabulary_filter_file_uri: Uri | None = None,
+        tags: TagList | None = None,
+        data_access_role_arn: DataAccessRoleArn | None = None,
         **kwargs,
     ) -> CreateVocabularyFilterResponse:
         raise NotImplementedError
@@ -1434,8 +1434,8 @@ class TranscribeApi:
     def list_call_analytics_categories(
         self,
         context: RequestContext,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> ListCallAnalyticsCategoriesResponse:
         raise NotImplementedError
@@ -1444,10 +1444,10 @@ class TranscribeApi:
     def list_call_analytics_jobs(
         self,
         context: RequestContext,
-        status: CallAnalyticsJobStatus = None,
-        job_name_contains: CallAnalyticsJobName = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        status: CallAnalyticsJobStatus | None = None,
+        job_name_contains: CallAnalyticsJobName | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> ListCallAnalyticsJobsResponse:
         raise NotImplementedError
@@ -1456,10 +1456,10 @@ class TranscribeApi:
     def list_language_models(
         self,
         context: RequestContext,
-        status_equals: ModelStatus = None,
-        name_contains: ModelName = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        status_equals: ModelStatus | None = None,
+        name_contains: ModelName | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> ListLanguageModelsResponse:
         raise NotImplementedError
@@ -1468,10 +1468,10 @@ class TranscribeApi:
     def list_medical_scribe_jobs(
         self,
         context: RequestContext,
-        status: MedicalScribeJobStatus = None,
-        job_name_contains: TranscriptionJobName = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        status: MedicalScribeJobStatus | None = None,
+        job_name_contains: TranscriptionJobName | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> ListMedicalScribeJobsResponse:
         raise NotImplementedError
@@ -1480,10 +1480,10 @@ class TranscribeApi:
     def list_medical_transcription_jobs(
         self,
         context: RequestContext,
-        status: TranscriptionJobStatus = None,
-        job_name_contains: TranscriptionJobName = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        status: TranscriptionJobStatus | None = None,
+        job_name_contains: TranscriptionJobName | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> ListMedicalTranscriptionJobsResponse:
         raise NotImplementedError
@@ -1492,10 +1492,10 @@ class TranscribeApi:
     def list_medical_vocabularies(
         self,
         context: RequestContext,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
-        state_equals: VocabularyState = None,
-        name_contains: VocabularyName = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
+        state_equals: VocabularyState | None = None,
+        name_contains: VocabularyName | None = None,
         **kwargs,
     ) -> ListMedicalVocabulariesResponse:
         raise NotImplementedError
@@ -1510,10 +1510,10 @@ class TranscribeApi:
     def list_transcription_jobs(
         self,
         context: RequestContext,
-        status: TranscriptionJobStatus = None,
-        job_name_contains: TranscriptionJobName = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        status: TranscriptionJobStatus | None = None,
+        job_name_contains: TranscriptionJobName | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> ListTranscriptionJobsResponse:
         raise NotImplementedError
@@ -1522,10 +1522,10 @@ class TranscribeApi:
     def list_vocabularies(
         self,
         context: RequestContext,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
-        state_equals: VocabularyState = None,
-        name_contains: VocabularyName = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
+        state_equals: VocabularyState | None = None,
+        name_contains: VocabularyName | None = None,
         **kwargs,
     ) -> ListVocabulariesResponse:
         raise NotImplementedError
@@ -1534,9 +1534,9 @@ class TranscribeApi:
     def list_vocabulary_filters(
         self,
         context: RequestContext,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
-        name_contains: VocabularyFilterName = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
+        name_contains: VocabularyFilterName | None = None,
         **kwargs,
     ) -> ListVocabularyFiltersResponse:
         raise NotImplementedError
@@ -1547,12 +1547,12 @@ class TranscribeApi:
         context: RequestContext,
         call_analytics_job_name: CallAnalyticsJobName,
         media: Media,
-        output_location: Uri = None,
-        output_encryption_kms_key_id: KMSKeyId = None,
-        data_access_role_arn: DataAccessRoleArn = None,
-        settings: CallAnalyticsJobSettings = None,
-        tags: TagList = None,
-        channel_definitions: ChannelDefinitions = None,
+        output_location: Uri | None = None,
+        output_encryption_kms_key_id: KMSKeyId | None = None,
+        data_access_role_arn: DataAccessRoleArn | None = None,
+        settings: CallAnalyticsJobSettings | None = None,
+        tags: TagList | None = None,
+        channel_definitions: ChannelDefinitions | None = None,
         **kwargs,
     ) -> StartCallAnalyticsJobResponse:
         raise NotImplementedError
@@ -1566,10 +1566,10 @@ class TranscribeApi:
         output_bucket_name: OutputBucketName,
         data_access_role_arn: DataAccessRoleArn,
         settings: MedicalScribeSettings,
-        output_encryption_kms_key_id: KMSKeyId = None,
-        kms_encryption_context: KMSEncryptionContextMap = None,
-        channel_definitions: MedicalScribeChannelDefinitions = None,
-        tags: TagList = None,
+        output_encryption_kms_key_id: KMSKeyId | None = None,
+        kms_encryption_context: KMSEncryptionContextMap | None = None,
+        channel_definitions: MedicalScribeChannelDefinitions | None = None,
+        tags: TagList | None = None,
         **kwargs,
     ) -> StartMedicalScribeJobResponse:
         raise NotImplementedError
@@ -1586,24 +1586,24 @@ class TranscribeApi:
         context: RequestContext,
         transcription_job_name: TranscriptionJobName,
         media: Media,
-        language_code: LanguageCode = None,
-        media_sample_rate_hertz: MediaSampleRateHertz = None,
-        media_format: MediaFormat = None,
-        output_bucket_name: OutputBucketName = None,
-        output_key: OutputKey = None,
-        output_encryption_kms_key_id: KMSKeyId = None,
-        kms_encryption_context: KMSEncryptionContextMap = None,
-        settings: Settings = None,
-        model_settings: ModelSettings = None,
-        job_execution_settings: JobExecutionSettings = None,
-        content_redaction: ContentRedaction = None,
-        identify_language: Boolean = None,
-        identify_multiple_languages: Boolean = None,
-        language_options: LanguageOptions = None,
-        subtitles: Subtitles = None,
-        tags: TagList = None,
-        language_id_settings: LanguageIdSettingsMap = None,
-        toxicity_detection: ToxicityDetection = None,
+        language_code: LanguageCode | None = None,
+        media_sample_rate_hertz: MediaSampleRateHertz | None = None,
+        media_format: MediaFormat | None = None,
+        output_bucket_name: OutputBucketName | None = None,
+        output_key: OutputKey | None = None,
+        output_encryption_kms_key_id: KMSKeyId | None = None,
+        kms_encryption_context: KMSEncryptionContextMap | None = None,
+        settings: Settings | None = None,
+        model_settings: ModelSettings | None = None,
+        job_execution_settings: JobExecutionSettings | None = None,
+        content_redaction: ContentRedaction | None = None,
+        identify_language: Boolean | None = None,
+        identify_multiple_languages: Boolean | None = None,
+        language_options: LanguageOptions | None = None,
+        subtitles: Subtitles | None = None,
+        tags: TagList | None = None,
+        language_id_settings: LanguageIdSettingsMap | None = None,
+        toxicity_detection: ToxicityDetection | None = None,
         **kwargs,
     ) -> StartTranscriptionJobResponse:
         raise NotImplementedError
@@ -1626,7 +1626,7 @@ class TranscribeApi:
         context: RequestContext,
         category_name: CategoryName,
         rules: RuleList,
-        input_type: InputType = None,
+        input_type: InputType | None = None,
         **kwargs,
     ) -> UpdateCallAnalyticsCategoryResponse:
         raise NotImplementedError
@@ -1648,9 +1648,9 @@ class TranscribeApi:
         context: RequestContext,
         vocabulary_name: VocabularyName,
         language_code: LanguageCode,
-        phrases: Phrases = None,
-        vocabulary_file_uri: Uri = None,
-        data_access_role_arn: DataAccessRoleArn = None,
+        phrases: Phrases | None = None,
+        vocabulary_file_uri: Uri | None = None,
+        data_access_role_arn: DataAccessRoleArn | None = None,
         **kwargs,
     ) -> UpdateVocabularyResponse:
         raise NotImplementedError
@@ -1660,9 +1660,9 @@ class TranscribeApi:
         self,
         context: RequestContext,
         vocabulary_filter_name: VocabularyFilterName,
-        words: Words = None,
-        vocabulary_filter_file_uri: Uri = None,
-        data_access_role_arn: DataAccessRoleArn = None,
+        words: Words | None = None,
+        vocabulary_filter_file_uri: Uri | None = None,
+        data_access_role_arn: DataAccessRoleArn | None = None,
         **kwargs,
     ) -> UpdateVocabularyFilterResponse:
         raise NotImplementedError
