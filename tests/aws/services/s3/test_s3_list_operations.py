@@ -53,6 +53,7 @@ class TestS3ListBuckets:
         self, s3_create_bucket, aws_client, snapshot
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("Prefix"))
 
         bucket_name = f"test-bucket-{short_uid()}"
         s3_create_bucket(Bucket=bucket_name)
@@ -61,13 +62,15 @@ class TestS3ListBuckets:
         response = aws_client.s3.list_buckets(Prefix=bucket_name.upper())
         assert len(response["Buckets"]) == 0
 
+        snapshot.match("list-objects-by-prefix-empty", response)
+
         response = aws_client.s3.list_buckets(Prefix=bucket_name)
         assert len(response["Buckets"]) == 1
 
         returned_bucket = response["Buckets"][0]
         assert returned_bucket["Name"] == bucket_name
 
-        snapshot.match("list-objects-by-prefix", response)
+        snapshot.match("list-objects-by-prefix-not-empty", response)
 
     @markers.aws.validated
     def test_list_buckets_with_max_buckets(self, s3_create_bucket, aws_client, snapshot):
@@ -103,24 +106,30 @@ class TestS3ListBuckets:
     ):
         region_us_west_2 = "us-west-2"
         snapshot.add_transformer(snapshot.transform.s3_api())
-        snapshot.add_transformer(snapshot.transform.key_value("ContinuationToken"))
         snapshot.add_transformer(snapshot.transform.regex(region_us_west_2, "<region>"))
 
         s3_create_bucket()
 
-        client_us_west_2 = aws_client_factory(region_name="us-west-2").s3
+        region_eu_central_1 = "eu-central-1"
+        client_eu_central_1 = aws_client_factory(region_name=region_eu_central_1).s3
+        response = client_eu_central_1.list_buckets(BucketRegion=region_eu_central_1, MaxBuckets=1)
+        assert len(response["Buckets"]) == 0
+
+        snapshot.match("list-objects-by-bucket-region-empty", response)
+
+        client_us_west_2 = aws_client_factory(region_name=region_us_west_2).s3
         s3_create_bucket_with_client(
             client_us_west_2,
             Bucket=f"test-bucket-{short_uid()}",
             CreateBucketConfiguration={"LocationConstraint": region_us_west_2},
         )
 
-        response = client_us_west_2.list_buckets(BucketRegion=region_us_west_2)
+        response = client_us_west_2.list_buckets(BucketRegion=region_us_west_2, MaxBuckets=1)
 
         returned_bucket = response["Buckets"][0]
         assert returned_bucket["BucketRegion"] == region_us_west_2
 
-        snapshot.match("list-objects-by-bucket-region", response)
+        snapshot.match("list-objects-by-bucket-region-not-empty", response)
 
     @markers.aws.validated
     def test_list_buckets_with_continuation_token(self, s3_create_bucket, aws_client, snapshot):

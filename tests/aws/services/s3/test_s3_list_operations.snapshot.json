@@ -3087,7 +3087,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_with_max_buckets": {
-    "recorded-date": "13-05-2025, 14:36:23",
+    "recorded-date": "13-05-2025, 17:26:52",
     "recorded-content": {
       "list-objects-with-max-buckets": {
         "Buckets": [
@@ -3109,30 +3109,8 @@
       }
     }
   },
-  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_bucket_region": {
-    "recorded-date": "13-05-2025, 14:36:27",
-    "recorded-content": {
-      "list-objects-by-bucket-region": {
-        "Buckets": [
-          {
-            "BucketRegion": "<region>",
-            "CreationDate": "datetime",
-            "Name": "<bucket-name:1>"
-          }
-        ],
-        "Owner": {
-          "DisplayName": "<display-name>",
-          "ID": "<owner-id>"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_with_continuation_token": {
-    "recorded-date": "13-05-2025, 14:46:32",
+    "recorded-date": "13-05-2025, 17:27:02",
     "recorded-content": {
       "list-objects-with-continuation": {
         "Buckets": [
@@ -3154,10 +3132,45 @@
       }
     }
   },
-  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_prefix_with_case_sensitivity": {
-    "recorded-date": "13-05-2025, 14:36:20",
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_when_continuation_token_is_empty": {
+    "recorded-date": "13-05-2025, 17:26:55",
     "recorded-content": {
-      "list-objects-by-prefix": {
+      "list-objects-with-empty-continuation-token": {
+        "Buckets": [
+          {
+            "BucketRegion": "<region>",
+            "CreationDate": "datetime",
+            "Name": "<bucket-name:1>"
+          }
+        ],
+        "ContinuationToken": "<continuation-token:1>",
+        "Owner": {
+          "DisplayName": "<display-name>",
+          "ID": "<owner-id>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_prefix_with_case_sensitivity": {
+    "recorded-date": "13-05-2025, 17:26:49",
+    "recorded-content": {
+      "list-objects-by-prefix-empty": {
+        "Buckets": [],
+        "Owner": {
+          "DisplayName": "<display-name>",
+          "ID": "<owner-id>"
+        },
+        "Prefix": "<prefix:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-by-prefix-not-empty": {
         "Buckets": [
           {
             "BucketRegion": "<region>",
@@ -3177,10 +3190,20 @@
       }
     }
   },
-  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_when_continuation_token_is_empty": {
-    "recorded-date": "13-05-2025, 15:06:12",
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_bucket_region": {
+    "recorded-date": "13-05-2025, 17:26:59",
     "recorded-content": {
-      "list-objects-with-empty-continuation-token": {
+      "list-objects-by-bucket-region-empty": {
+        "Buckets": [],
+        "Owner": {
+          "ID": "<owner-id>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-by-bucket-region-not-empty": {
         "Buckets": [
           {
             "BucketRegion": "<region>",
@@ -3188,7 +3211,6 @@
             "Name": "<bucket-name:1>"
           }
         ],
-        "ContinuationToken": "<continuation-token:1>",
         "Owner": {
           "DisplayName": "<display-name>",
           "ID": "<owner-id>"

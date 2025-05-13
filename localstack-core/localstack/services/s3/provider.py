@@ -617,6 +617,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             buckets.append(output_bucket)
             count += 1
 
+        # Weird behavior of AWS that we need to reproduce to keep parity
+        if len(buckets) == 0 and not prefix:
+            del owner["DisplayName"]
+
         return ListBucketsOutput(
             Owner=owner, Buckets=buckets, Prefix=prefix, ContinuationToken=next_continuation_token
         )
