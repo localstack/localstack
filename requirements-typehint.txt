@@ -41,7 +41,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.40.12
     # via localstack-core
-awscrt==0.27.1
+awscrt==0.26.1
     # via localstack-core
 boto3==1.38.13
     # via

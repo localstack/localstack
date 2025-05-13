@@ -9,7 +9,7 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.27.1
+awscrt==0.26.1
     # via localstack-core (pyproject.toml)
 boto3==1.38.13
     # via localstack-core (pyproject.toml)
