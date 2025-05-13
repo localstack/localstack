@@ -87,6 +87,7 @@ from botocore.model import (
 from cbor2._decoder import loads as cbor2_loads
 from werkzeug.exceptions import BadRequest, NotFound
 
+from localstack import config
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
 from localstack.http import Request
 
@@ -1069,7 +1070,17 @@ class S3RequestParser(RestXMLRequestParser):
         def _is_vhost_address_get_bucket(request: Request) -> str | None:
             from localstack.services.s3.utils import uses_host_addressing
 
-            return uses_host_addressing(request.headers)
+            if bucket_name := uses_host_addressing(request.headers):
+                return bucket_name
+
+            # FIXME: this is a hack to allow recognizing some virtual-hosted S3 requests targeting the regular
+            #  LocalStack endpoint, and not the `s3.`-prefixed one.
+            #  this is the case for CDK, that doesn't allow easy configuration of service specific endpoints. However,
+            #  while this allows us to understand the S3 request, this is "limited support" as it doesn't work for
+            #  pre-signed URL and S3-specific CORS.
+            request_host = request.headers.get("host", "")
+            if host_prefix := request_host.removesuffix(f".{config.LOCALSTACK_HOST}"):
+                return host_prefix.strip(".")
 
     @_handle_exceptions
     def parse(self, request: Request) -> Tuple[OperationModel, Any]:

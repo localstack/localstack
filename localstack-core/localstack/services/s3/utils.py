@@ -9,13 +9,14 @@ import time
 import zlib
 from enum import StrEnum
 from secrets import token_bytes
-from typing import Any, Dict, Literal, NamedTuple, Optional, Protocol, Tuple, Union
+from typing import Any, Literal, NamedTuple, Optional, Protocol, Tuple, Union
 from urllib import parse as urlparser
 from zoneinfo import ZoneInfo
 
 import xmltodict
 from botocore.exceptions import ClientError
 from botocore.utils import InvalidArnException
+from werkzeug.datastructures import Headers
 
 from localstack import config, constants
 from localstack.aws.api import CommonServiceException, RequestContext
@@ -482,7 +483,7 @@ def is_valid_canonical_id(canonical_id: str) -> bool:
         return False
 
 
-def uses_host_addressing(headers: Dict[str, str]) -> str | None:
+def uses_host_addressing(headers: dict[str, str] | Headers) -> str | None:
     """
     Determines if the request is targeting S3 with virtual host addressing
     :param headers: the request headers
