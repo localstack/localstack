@@ -3087,7 +3087,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_with_max_buckets": {
-    "recorded-date": "12-05-2025, 17:10:08",
+    "recorded-date": "13-05-2025, 14:19:01",
     "recorded-content": {
       "list-objects-with-max-buckets": {
         "Buckets": [
@@ -3097,7 +3097,7 @@
             "Name": "<bucket-name:1>"
           }
         ],
-        "ContinuationToken": "19q8mEPF1r8_Ra_NOYw.O189_XK05XnbMmjtCCZLBl0eWIkOP77iU8.A3RGmSDt2L9aUSBfiqSgPNGQAlwpl7zQ--",
+        "ContinuationToken": "<continuation-token:1>",
         "Owner": {
           "DisplayName": "<display-name>",
           "ID": "<owner-id>"
@@ -3110,7 +3110,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_bucket_region": {
-    "recorded-date": "13-05-2025, 10:44:15",
+    "recorded-date": "13-05-2025, 14:20:50",
     "recorded-content": {
       "list-objects-by-bucket-region": {
         "Buckets": [
@@ -3132,7 +3132,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_with_continuation_token": {
-    "recorded-date": "12-05-2025, 17:21:49",
+    "recorded-date": "13-05-2025, 14:21:05",
     "recorded-content": {
       "list-objects-with-continuation": {
         "Buckets": [
@@ -3154,7 +3154,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_prefix_with_case_sensitivity": {
-    "recorded-date": "13-05-2025, 10:42:20",
+    "recorded-date": "13-05-2025, 14:18:29",
     "recorded-content": {
       "list-objects-by-prefix": {
         "Buckets": [
@@ -3177,7 +3177,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_when_continuation_token_is_empty": {
-    "recorded-date": "13-05-2025, 14:13:09",
+    "recorded-date": "13-05-2025, 14:19:32",
     "recorded-content": {
       "list-objects-with-empty-continuation-token": {
         "Buckets": [],
