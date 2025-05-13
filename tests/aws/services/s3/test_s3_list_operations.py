@@ -11,7 +11,6 @@ import xmltodict
 from botocore.auth import SigV4Auth
 from botocore.client import Config
 from botocore.exceptions import ClientError
-from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack import config
 from localstack.config import S3_VIRTUAL_HOSTNAME
@@ -55,9 +54,9 @@ class TestS3ListBuckets:
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
-        bucket_name = f"test.bucket.{short_uid()}"
+        bucket_name = f"test-bucket-{short_uid()}"
         s3_create_bucket(Bucket=bucket_name)
-        s3_create_bucket(Bucket=f"ignored.bucket.{short_uid()}")
+        s3_create_bucket(Bucket=f"ignored-bucket-{short_uid()}")
 
         response = aws_client.s3.list_buckets(Prefix=bucket_name.upper())
         assert len(response["Buckets"]) == 0
@@ -71,9 +70,9 @@ class TestS3ListBuckets:
         snapshot.match("list-objects-by-prefix", response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..ContinuationToken"])
     def test_list_buckets_with_max_buckets(self, s3_create_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("ContinuationToken"))
 
         s3_create_bucket()
         s3_create_bucket()
@@ -84,13 +83,21 @@ class TestS3ListBuckets:
         snapshot.match("list-objects-with-max-buckets", response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..ContinuationToken"])
+    def test_list_buckets_when_continuation_token_is_empty(self, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
+        response = aws_client.s3.list_buckets(ContinuationToken="")
+
+        snapshot.match("list-objects-with-empty-continuation-token", response)
+
+    @markers.aws.validated
     def test_list_buckets_by_bucket_region(
         self, s3_create_bucket, s3_create_bucket_with_client, aws_client_factory, snapshot
     ):
         region_us_west_2 = "us-west-2"
         snapshot.add_transformer(snapshot.transform.s3_api())
-        snapshot.add_transformer(RegexTransformer(region_us_west_2, "<region>"))
+        snapshot.add_transformer(snapshot.transform.key_value("ContinuationToken"))
+        snapshot.add_transformer(snapshot.transform.regex(region_us_west_2, "<region>"))
 
         s3_create_bucket()
 
@@ -109,9 +116,9 @@ class TestS3ListBuckets:
         snapshot.match("list-objects-by-bucket-region", response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..ContinuationToken"])
     def test_list_buckets_with_continuation_token(self, s3_create_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("ContinuationToken"))
 
         s3_create_bucket()
         s3_create_bucket()

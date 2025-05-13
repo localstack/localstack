@@ -581,12 +581,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket_region: BucketRegion = None,
         **kwargs,
     ) -> ListBucketsOutput:
-        if continuation_token == "":
-            raise InvalidArgument(
-                "The continuation token provided is incorrect",
-                ArgumentName="continuation-token",
-            )
-
         owner = get_owner_for_account_id(context.account_id)
         store = self.get_store(context.account_id, context.region)
 
