@@ -3087,7 +3087,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_with_max_buckets": {
-    "recorded-date": "13-05-2025, 14:19:01",
+    "recorded-date": "13-05-2025, 14:36:23",
     "recorded-content": {
       "list-objects-with-max-buckets": {
         "Buckets": [
@@ -3110,7 +3110,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_bucket_region": {
-    "recorded-date": "13-05-2025, 14:20:50",
+    "recorded-date": "13-05-2025, 14:36:27",
     "recorded-content": {
       "list-objects-by-bucket-region": {
         "Buckets": [
@@ -3132,7 +3132,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_with_continuation_token": {
-    "recorded-date": "13-05-2025, 14:21:05",
+    "recorded-date": "13-05-2025, 14:46:32",
     "recorded-content": {
       "list-objects-with-continuation": {
         "Buckets": [
@@ -3142,6 +3142,7 @@
             "Name": "<bucket-name:1>"
           }
         ],
+        "ContinuationToken": "<continuation-token:1>",
         "Owner": {
           "DisplayName": "<display-name>",
           "ID": "<owner-id>"
@@ -3154,7 +3155,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_prefix_with_case_sensitivity": {
-    "recorded-date": "13-05-2025, 14:18:29",
+    "recorded-date": "13-05-2025, 14:36:20",
     "recorded-content": {
       "list-objects-by-prefix": {
         "Buckets": [
@@ -3177,10 +3178,16 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_when_continuation_token_is_empty": {
-    "recorded-date": "13-05-2025, 14:19:32",
+    "recorded-date": "13-05-2025, 14:42:45",
     "recorded-content": {
       "list-objects-with-empty-continuation-token": {
-        "Buckets": [],
+        "Buckets": [
+          {
+            "BucketRegion": "<region>",
+            "CreationDate": "datetime",
+            "Name": "<bucket-name:1>"
+          }
+        ],
         "Owner": {
           "DisplayName": "<display-name>",
           "ID": "<owner-id>"

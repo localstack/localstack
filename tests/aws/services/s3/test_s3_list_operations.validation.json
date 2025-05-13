@@ -1,18 +1,18 @@
 {
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_bucket_region": {
-    "last_validated_date": "2025-05-13T14:20:40+00:00"
+    "last_validated_date": "2025-05-13T14:37:07+00:00"
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_prefix_with_case_sensitivity": {
-    "last_validated_date": "2025-05-13T14:18:39+00:00"
+    "last_validated_date": "2025-05-13T14:37:02+00:00"
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_when_continuation_token_is_empty": {
-    "last_validated_date": "2025-05-13T14:19:40+00:00"
+    "last_validated_date": "2025-05-13T14:44:34+00:00"
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_with_continuation_token": {
-    "last_validated_date": "2025-05-13T14:21:15+00:00"
+    "last_validated_date": "2025-05-13T14:46:44+00:00"
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_with_max_buckets": {
-    "last_validated_date": "2025-05-13T14:19:11+00:00"
+    "last_validated_date": "2025-05-13T14:37:05+00:00"
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListMultipartUploads::test_list_multipart_uploads_marker_common_prefixes": {
     "last_validated_date": "2025-01-21T18:15:14+00:00"

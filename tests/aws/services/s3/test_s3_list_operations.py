@@ -83,10 +83,16 @@ class TestS3ListBuckets:
         snapshot.match("list-objects-with-max-buckets", response)
 
     @markers.aws.validated
-    def test_list_buckets_when_continuation_token_is_empty(self, aws_client, snapshot):
+    def test_list_buckets_when_continuation_token_is_empty(
+        self, s3_create_bucket, aws_client, snapshot
+    ):
         snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("ContinuationToken"))
+
+        s3_create_bucket()
 
         response = aws_client.s3.list_buckets(ContinuationToken="")
+        assert len(response["Buckets"]) > 0
 
         snapshot.match("list-objects-with-empty-continuation-token", response)
 
@@ -120,6 +126,7 @@ class TestS3ListBuckets:
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformer(snapshot.transform.key_value("ContinuationToken"))
 
+        s3_create_bucket()
         s3_create_bucket()
         s3_create_bucket()
         response = aws_client.s3.list_buckets(MaxBuckets=1)
