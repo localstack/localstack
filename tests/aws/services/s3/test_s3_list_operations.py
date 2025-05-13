@@ -91,8 +91,8 @@ class TestS3ListBuckets:
 
         s3_create_bucket()
 
-        response = aws_client.s3.list_buckets(ContinuationToken="")
-        assert len(response["Buckets"]) > 0
+        response = aws_client.s3.list_buckets(ContinuationToken="", MaxBuckets=1)
+        assert len(response["Buckets"]) == 1
 
         snapshot.match("list-objects-with-empty-continuation-token", response)
 
