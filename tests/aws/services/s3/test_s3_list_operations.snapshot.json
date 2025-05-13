@@ -3086,29 +3086,6 @@
       }
     }
   },
-  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_prefix": {
-    "recorded-date": "12-05-2025, 17:09:59",
-    "recorded-content": {
-      "list-objects-by-prefix": {
-        "Buckets": [
-          {
-            "BucketRegion": "<region>",
-            "CreationDate": "datetime",
-            "Name": "<bucket-name:1>"
-          }
-        ],
-        "Owner": {
-          "DisplayName": "<display-name>",
-          "ID": "<owner-id>"
-        },
-        "Prefix": "<bucket-name:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_with_max_buckets": {
     "recorded-date": "12-05-2025, 17:10:08",
     "recorded-content": {
@@ -3133,7 +3110,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_bucket_region": {
-    "recorded-date": "12-05-2025, 17:13:58",
+    "recorded-date": "13-05-2025, 10:44:15",
     "recorded-content": {
       "list-objects-by-bucket-region": {
         "Buckets": [
@@ -3169,6 +3146,29 @@
           "DisplayName": "<display-name>",
           "ID": "<owner-id>"
         },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_prefix_with_case_sensitivity": {
+    "recorded-date": "13-05-2025, 10:42:20",
+    "recorded-content": {
+      "list-objects-by-prefix": {
+        "Buckets": [
+          {
+            "BucketRegion": "<region>",
+            "CreationDate": "datetime",
+            "Name": "<bucket-name:1>"
+          }
+        ],
+        "Owner": {
+          "DisplayName": "<display-name>",
+          "ID": "<owner-id>"
+        },
+        "Prefix": "<bucket-name:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

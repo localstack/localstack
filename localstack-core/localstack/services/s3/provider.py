@@ -600,6 +600,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         buckets: list[Bucket] = []
         next_continuation_token = None
 
+        # Comparing strings with case sensitivity since AWS is case-sensitive
         for bucket in sorted(store.buckets.values(), key=lambda r: r.name):
             if continuation_token and bucket.name < decoded_continuation_token:
                 continue

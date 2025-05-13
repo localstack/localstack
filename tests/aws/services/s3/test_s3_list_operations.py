@@ -50,12 +50,17 @@ def assert_timestamp_is_iso8061_s3_format(timestamp: str):
 
 class TestS3ListBuckets:
     @markers.aws.validated
-    def test_list_buckets_by_prefix(self, s3_create_bucket, aws_client, snapshot):
+    def test_list_buckets_by_prefix_with_case_sensitivity(
+        self, s3_create_bucket, aws_client, snapshot
+    ):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
         bucket_name = f"test.bucket.{short_uid()}"
         s3_create_bucket(Bucket=bucket_name)
         s3_create_bucket(Bucket=f"ignored.bucket.{short_uid()}")
+
+        response = aws_client.s3.list_buckets(Prefix=bucket_name.upper())
+        assert len(response["Buckets"]) == 0
 
         response = aws_client.s3.list_buckets(Prefix=bucket_name)
         assert len(response["Buckets"]) == 1

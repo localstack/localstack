@@ -1,9 +1,9 @@
 {
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_bucket_region": {
-    "last_validated_date": "2025-05-12T17:13:58+00:00"
+    "last_validated_date": "2025-05-13T10:44:15+00:00"
   },
-  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_prefix": {
-    "last_validated_date": "2025-05-12T17:09:59+00:00"
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_prefix_with_case_sensitivity": {
+    "last_validated_date": "2025-05-13T10:42:20+00:00"
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_with_continuation_token": {
     "last_validated_date": "2025-05-12T17:21:49+00:00"
