@@ -6,7 +6,7 @@
     "last_validated_date": "2025-05-13T14:37:02+00:00"
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_when_continuation_token_is_empty": {
-    "last_validated_date": "2025-05-13T14:55:55+00:00"
+    "last_validated_date": "2025-05-13T15:06:47+00:00"
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_with_continuation_token": {
     "last_validated_date": "2025-05-13T14:46:44+00:00"

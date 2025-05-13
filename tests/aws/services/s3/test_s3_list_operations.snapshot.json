@@ -3178,7 +3178,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_when_continuation_token_is_empty": {
-    "recorded-date": "13-05-2025, 14:55:43",
+    "recorded-date": "13-05-2025, 15:06:12",
     "recorded-content": {
       "list-objects-with-empty-continuation-token": {
         "Buckets": [
@@ -3188,6 +3188,7 @@
             "Name": "<bucket-name:1>"
           }
         ],
+        "ContinuationToken": "<continuation-token:1>",
         "Owner": {
           "DisplayName": "<display-name>",
           "ID": "<owner-id>"

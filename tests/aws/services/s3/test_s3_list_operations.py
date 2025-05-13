@@ -90,6 +90,7 @@ class TestS3ListBuckets:
         snapshot.add_transformer(snapshot.transform.key_value("ContinuationToken"))
 
         s3_create_bucket()
+        s3_create_bucket()
 
         response = aws_client.s3.list_buckets(ContinuationToken="", MaxBuckets=1)
         assert len(response["Buckets"]) == 1
