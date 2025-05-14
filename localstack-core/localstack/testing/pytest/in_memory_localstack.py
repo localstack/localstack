@@ -24,6 +24,7 @@ from _pytest.main import Session
 from localstack import config as localstack_config
 from localstack.config import is_env_true
 from localstack.constants import ENV_INTERNAL_TEST_RUN
+from localstack.utils.processlock import CrossProcessCriticalSection
 
 LOG = logging.getLogger(__name__)
 LOG.info("Pytest plugin for in-memory-localstack session loaded.")
@@ -32,6 +33,9 @@ if localstack_config.is_collect_metrics_mode():
     pytest_plugins = "localstack.testing.pytest.metric_collection"
 
 _started = threading.Event()
+
+
+critical_section = CrossProcessCriticalSection()
 
 
 def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
