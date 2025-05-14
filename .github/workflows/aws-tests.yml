@@ -256,6 +256,33 @@ jobs:
             .coverage.unit
           retention-days: 30
 
+  publish-preflight-test-results:
+    name: Publish Preflight- & Unit-Test Results
+    needs: test-preflight
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: read
+      issues: read
+    # execute on success or failure, but not if the workflow is cancelled or any of the dependencies has been skipped
+    if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-preflight
+
+      - name: Publish Preflight- & Unit-Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: success() || failure()
+        with:
+          files: |
+            test-results-preflight/*.xml
+          check_name: "Preflight- & Unit-Test Results"
+          action_fail_on_inconclusive: true
+
+
   test-integration:
     name: "Integration Tests (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }} - ${{ matrix.group }})"
     if: ${{ !inputs.onlyAcceptanceTests }}
