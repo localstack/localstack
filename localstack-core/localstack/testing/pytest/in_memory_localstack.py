@@ -35,9 +35,6 @@ if localstack_config.is_collect_metrics_mode():
 _started = threading.Event()
 
 
-critical_section = CrossProcessCriticalSection()
-
-
 def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
     parser.addoption(
         "--start-localstack",
@@ -79,14 +76,25 @@ def pytest_runtestloop(session: Session):
 
     from localstack.runtime import current
 
-    _started.set()
-    runtime = current.initialize_runtime()
-    # start runtime asynchronously
-    threading.Thread(target=runtime.run).start()
+    def work():
+        _started.set()
+        runtime = current.initialize_runtime()
 
-    # wait for runtime to be ready
-    if not runtime.ready.wait(timeout=120):
-        raise TimeoutError("gave up waiting for runtime to be ready")
+        # start runtime asynchronously
+        def target():
+            try:
+                runtime.run()
+            except Exception:
+                LOG.warning("error starting runtime", exc_info=LOG.isEnabledFor(logging.DEBUG))
+
+        threading.Thread(target=target).start()
+
+        # wait for runtime to be ready
+        if not runtime.ready.wait(timeout=120):
+            raise TimeoutError("gave up waiting for runtime to be ready")
+
+    critical_section = CrossProcessCriticalSection("runtime.start", work)
+    critical_section.run_once()
 
 
 @pytest.hookimpl(trylast=True)
@@ -103,9 +111,16 @@ def pytest_sessionfinish(session: Session):
         LOG.warning("Could not access the current runtime in a pytest sessionfinish hook.")
         return
 
-    get_current_runtime().shutdown()
-    LOG.info("waiting for runtime to stop")
+    def work():
+        get_current_runtime().shutdown()
+        LOG.info("waiting for runtime to stop")
 
-    # wait for runtime to shut down
-    if not get_current_runtime().stopped.wait(timeout=20):
-        LOG.warning("gave up waiting for runtime to stop, returning anyway")
+        # wait for runtime to shut down
+        if not get_current_runtime().stopped.wait(timeout=20):
+            LOG.warning("gave up waiting for runtime to stop, returning anyway")
+
+    critical_section = CrossProcessCriticalSection("runtime.shutdown", work)
+    try:
+        critical_section.run_once()
+    except Exception:
+        LOG.warning("error shutting runtime down", exc_info=LOG.isEnabledFor(logging.DEBUG))

@@ -1,51 +1,73 @@
 import atexit
+import logging
 import os
+import time
 from pathlib import Path
 from typing import Callable
 
 from filelock import FileLock
 
-LOCKFILE = Path("/tmp/my_task.lock")
-DONEFILE = Path("/tmp/my_task.done")
-PIDFILE = Path("/tmp/my_task.pids")
-LOCK_TIMEOUT = 60  # seconds
+from localstack.logging.setup import setup_logging_from_config
+from localstack.utils.functions import run_safe
+
+LOG = logging.getLogger(__name__)
+logging.getLogger("filelock").setLevel(logging.WARNING)
 
 
 class CrossProcessCriticalSection:
-    def __init__(self, work: Callable[[], None] | None = None):
+    def __init__(self, name: str, work: Callable[[], None]):
+        self.name = name
         self.work = work
+        self.lockfile = Path(f"/tmp/my_task.{name}.lock")
+        self.donefile = Path(f"/tmp/my_task.{name}.done")
+        self.lock_timeout = 60  # seconds
+
         self.pid = os.getpid()
 
-    def _log(self, message: str):
-        print(f"[{self.pid}]: {message}")
-
     def run_once(self):
-        if not self.work:
-            raise RuntimeError("Work not defined")
-
-        self._log("waiting for file lock")
-        with FileLock(str(LOCKFILE), timeout=LOCK_TIMEOUT):
-            self._log("got file lock")
-            if DONEFILE.is_file():
-                self._log("donefile exists, exiting critical section")
+        self._log("waiting for lock")
+        with FileLock(str(self.lockfile), timeout=self.lock_timeout):
+            self._log("lock achieved")
+            if self.donefile.is_file():
+                self._log("work already complete")
                 # we are not the first process so end this critical section
                 return
 
             # we are the first to reach this critical section, so make sure the done file does not exist
             # and run the work
-            self._log("donefile does not exist, registering cleanup")
+            self._log("registering atexit")
             atexit.register(self.cleanup)
 
-            self._log("adding donefile")
-            with DONEFILE.open("w") as outfile:
+            with self.donefile.open("w") as outfile:
                 outfile.write("1")
 
-            self._log("performing work")
+            self._log("starting work")
             self.work()
             self._log("work finished")
 
-        self._log("ended critical section")
+            run_safe(lambda: os.remove(self.lockfile))
 
     def cleanup(self):
         self._log("cleaning up")
-        os.remove(DONEFILE)
+        for path in [self.lockfile, self.donefile]:
+            run_safe(lambda: os.remove(path))
+
+    def _log(self, message: str):
+        LOG.debug("[%s:%d] %s", self.name, self.pid, message)
+
+
+def __main__():
+    setup_logging_from_config()
+
+    def work():
+        print("Should only run once")
+        time.sleep(10)
+
+    cpcs = CrossProcessCriticalSection(work)
+    cpcs.run_once()
+
+    time.sleep(5)
+
+
+if __name__ == "__main__":
+    __main__()
