@@ -246,11 +246,10 @@ def test_call_with_sns_with_full_uri():
         headers={"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"},
     )
     sns_service = load_service("sns")
-    context = RequestContext()
+    context = RequestContext(sns_request)
     context.account = "test"
     context.region = "us-west-1"
     context.service = sns_service
-    context.request = sns_request
     context.operation = sns_service.operation_model("CreateTopic")
 
     create_topic_response = moto.call_moto(context)

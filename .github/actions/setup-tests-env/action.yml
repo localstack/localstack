@@ -8,11 +8,11 @@ runs:
       with:
         python-version-file: '.python-version'
         cache: 'pip'
-        cache-dependency-path: 'requirements-dev.txt'
+        cache-dependency-path: 'requirements-typehint.txt'
 
     - name: Install Community Dependencies
       shell: bash
-      run: make install-dev
+      run: make install-dev-types
 
     - name: Setup environment
       shell: bash

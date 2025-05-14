@@ -111,8 +111,7 @@ class TestServiceResponseHandler:
         assert context.service_response is None
 
     def test_nothing_set_does_nothing(self, service_response_handler_chain):
-        context = RequestContext()
-        context.request = Request("GET", "/_localstack/health")
+        context = RequestContext(request=Request("GET", "/_localstack/health"))
 
         service_response_handler_chain.handle(context, Response("ok", 200))
 
