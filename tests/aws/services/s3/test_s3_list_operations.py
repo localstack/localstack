@@ -101,6 +101,10 @@ class TestS3ListBuckets:
         snapshot.match("list-objects-with-empty-continuation-token", response)
 
     @markers.aws.validated
+    # In some regions AWS returns the Owner display name (us-west-2) but in some it doesnt (eu-central-1)
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$.list-objects-by-bucket-region-empty..Owner.DisplayName"]
+    )
     def test_list_buckets_by_bucket_region(
         self, s3_create_bucket, s3_create_bucket_with_client, aws_client_factory, snapshot
     ):
@@ -109,22 +113,26 @@ class TestS3ListBuckets:
         snapshot.add_transformer(snapshot.transform.regex(region_us_west_2, "<region>"))
 
         s3_create_bucket()
+        client_us_west_2 = aws_client_factory(region_name=region_us_west_2).s3
+
+        bucket_name = f"test-bucket-{short_uid()}"
+        s3_create_bucket_with_client(
+            client_us_west_2,
+            Bucket=bucket_name,
+            CreateBucketConfiguration={"LocationConstraint": region_us_west_2},
+        )
 
         region_eu_central_1 = "eu-central-1"
         client_eu_central_1 = aws_client_factory(region_name=region_eu_central_1).s3
-        response = client_eu_central_1.list_buckets(BucketRegion=region_eu_central_1, MaxBuckets=1)
+        response = client_eu_central_1.list_buckets(
+            BucketRegion=region_eu_central_1, Prefix=bucket_name
+        )
         assert len(response["Buckets"]) == 0
 
         snapshot.match("list-objects-by-bucket-region-empty", response)
 
-        client_us_west_2 = aws_client_factory(region_name=region_us_west_2).s3
-        s3_create_bucket_with_client(
-            client_us_west_2,
-            Bucket=f"test-bucket-{short_uid()}",
-            CreateBucketConfiguration={"LocationConstraint": region_us_west_2},
-        )
-
-        response = client_us_west_2.list_buckets(BucketRegion=region_us_west_2, MaxBuckets=1)
+        response = client_us_west_2.list_buckets(BucketRegion=region_us_west_2, Prefix=bucket_name)
+        assert len(response["Buckets"]) == 1
 
         returned_bucket = response["Buckets"][0]
         assert returned_bucket["BucketRegion"] == region_us_west_2
