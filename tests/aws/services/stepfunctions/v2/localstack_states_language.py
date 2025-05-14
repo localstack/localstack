@@ -31,7 +31,7 @@ class TestLocalStackStatesLanguage:
                 last_name=jsonata($user_surname)
             )
             payload_value = jsonata($greeting_output.Payload)
-            succeed where output jsonata($payload_value)
+            return jsonata($payload_value)
         """)
         definition = json.dumps(state_machine)
 
@@ -115,7 +115,7 @@ class TestLocalStackStatesLanguage:
     @markers.aws.only_localstack
     def test_assign_and_succeed(self, aws_client):
         state_machine = LocalStackStateLanguageParser.parse("""
-            WorkflowSucceeded(value) = succeed where output jsonata($value)
+            WorkflowSucceeded(value) = return jsonata($value)
             output_message = jsonata("Hello" & " " & "World!")
             WorkflowSucceeded(value = jsonata($output_message))
         """)
@@ -144,7 +144,7 @@ class TestLocalStackStatesLanguage:
     @markers.aws.only_localstack
     def test_succeed_template(self, aws_client):
         state_machine = LocalStackStateLanguageParser.parse("""
-            WorkflowSucceeded(value) = succeed where output jsonata($value)
+            WorkflowSucceeded(value) = return jsonata($value)
             WorkflowSucceeded(value = {"message": "string-literal"})
         """)
         definition = json.dumps(state_machine)
@@ -172,7 +172,7 @@ class TestLocalStackStatesLanguage:
     @markers.aws.only_localstack
     def test_succeed_inplace(self, aws_client):
         state_machine = LocalStackStateLanguageParser.parse("""
-            WorkflowSucceeded as succeed where output jsonata('string' & ' ' & 'literal')
+            WorkflowSucceeded as return jsonata('string' & ' ' & 'literal')
         """)
         definition = json.dumps(state_machine)
 
@@ -199,7 +199,7 @@ class TestLocalStackStatesLanguage:
     @markers.aws.only_localstack
     def test_succeed_anonymous_inplace(self, aws_client):
         state_machine = LocalStackStateLanguageParser.parse("""
-            succeed where output jsonata('string' & ' ' & 'literal')
+            return jsonata('string' & ' ' & 'literal')
         """)
         definition = json.dumps(state_machine)
 

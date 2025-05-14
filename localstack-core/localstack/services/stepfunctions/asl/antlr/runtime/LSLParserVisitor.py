@@ -44,8 +44,8 @@ class LSLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by LSLParser#state_succeed.
-    def visitState_succeed(self, ctx:LSLParser.State_succeedContext):
+    # Visit a parse tree produced by LSLParser#state_return.
+    def visitState_return(self, ctx:LSLParser.State_returnContext):
         return self.visitChildren(ctx)
 
 
@@ -61,11 +61,6 @@ class LSLParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by LSLParser#fail_where.
     def visitFail_where(self, ctx:LSLParser.Fail_whereContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by LSLParser#succeed_where.
-    def visitSucceed_where(self, ctx:LSLParser.Succeed_whereContext):
         return self.visitChildren(ctx)
 
 
@@ -106,11 +101,6 @@ class LSLParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by LSLParser#cause.
     def visitCause(self, ctx:LSLParser.CauseContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by LSLParser#output_block.
-    def visitOutput_block(self, ctx:LSLParser.Output_blockContext):
         return self.visitChildren(ctx)
 
 

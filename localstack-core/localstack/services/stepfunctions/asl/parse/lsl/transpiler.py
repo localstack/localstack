@@ -137,18 +137,10 @@ class Transpiler(LSLParserVisitor):
                 parameters.append(parameter_identifier)
         return parameters
 
-    def visitState_succeed(self, ctx: LSLParser.State_succeedContext):
-        where = self.visit(ctx.succeed_where())
-        output_prepare_state = {"Type": "Pass", "End": True, **where}
+    def visitState_return(self, ctx: LSLParser.State_returnContext):
+        output_expression = self.visit(ctx.json_value())
+        output_prepare_state = {"Type": "Pass", "End": True, "Output": output_expression}
         return output_prepare_state
-
-    def visitSucceed_where(self, ctx: LSLParser.Succeed_whereContext):
-        output_expression = self.visit(ctx.output_block())
-        return {"Output": output_expression}
-
-    def visitOutput_block(self, ctx: LSLParser.Output_blockContext):
-        value = self.visit(ctx.json_value())
-        return value
 
     def visitState_fail(self, ctx: LSLParser.State_failContext):
         where = self.visit(ctx.fail_where())

@@ -48,7 +48,7 @@ WHERE: 'where';
 AS: 'as';
 FAIL: 'fail';
 OUTPUT: 'output';
-SUCCEED: 'succeed';
+RETURN: 'return';
 ERROR: 'error';
 CAUSE: 'cause';
 LAMBDA: 'lambda';

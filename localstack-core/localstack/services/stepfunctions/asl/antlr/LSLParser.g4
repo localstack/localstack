@@ -23,14 +23,13 @@ state_call:
 state:
     service_name COLON IDEN task_where  # state_task
     | FAIL fail_where                   # state_fail
-    | SUCCEED succeed_where             # state_succeed
+    | RETURN json_value                 # state_return
 ;
 
 service_name: LAMBDA;
 
 task_where: WHERE arguments? catch_block?;
 fail_where: WHERE error cause?;
-succeed_where: WHERE output_block;
 
 arguments: ARGUMENTS json_value;
 catch_block: CATCH LBRACE catch_case (catch_case)* RBRACE;
@@ -47,8 +46,6 @@ args_assign: IDEN EQUALS json_value;
 
 error: ERROR string_or_jsonata;
 cause: CAUSE string_or_jsonata;
-
-output_block: OUTPUT json_value;
 
 var_assign:
     IDEN EQUALS state_call    # var_assign_state_call

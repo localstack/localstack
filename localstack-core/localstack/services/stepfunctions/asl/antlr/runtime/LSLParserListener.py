@@ -71,12 +71,12 @@ class LSLParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by LSLParser#state_succeed.
-    def enterState_succeed(self, ctx:LSLParser.State_succeedContext):
+    # Enter a parse tree produced by LSLParser#state_return.
+    def enterState_return(self, ctx:LSLParser.State_returnContext):
         pass
 
-    # Exit a parse tree produced by LSLParser#state_succeed.
-    def exitState_succeed(self, ctx:LSLParser.State_succeedContext):
+    # Exit a parse tree produced by LSLParser#state_return.
+    def exitState_return(self, ctx:LSLParser.State_returnContext):
         pass
 
 
@@ -104,15 +104,6 @@ class LSLParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by LSLParser#fail_where.
     def exitFail_where(self, ctx:LSLParser.Fail_whereContext):
-        pass
-
-
-    # Enter a parse tree produced by LSLParser#succeed_where.
-    def enterSucceed_where(self, ctx:LSLParser.Succeed_whereContext):
-        pass
-
-    # Exit a parse tree produced by LSLParser#succeed_where.
-    def exitSucceed_where(self, ctx:LSLParser.Succeed_whereContext):
         pass
 
 
@@ -185,15 +176,6 @@ class LSLParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by LSLParser#cause.
     def exitCause(self, ctx:LSLParser.CauseContext):
-        pass
-
-
-    # Enter a parse tree produced by LSLParser#output_block.
-    def enterOutput_block(self, ctx:LSLParser.Output_blockContext):
-        pass
-
-    # Exit a parse tree produced by LSLParser#output_block.
-    def exitOutput_block(self, ctx:LSLParser.Output_blockContext):
         pass
 
 
