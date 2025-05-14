@@ -69,7 +69,7 @@ jobs:
       DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
   report:
-    name: "Publish test results"
+    name: "Publish coverage and parity metrics"
     runs-on: ubuntu-latest
     needs:
       - test
