@@ -431,6 +431,53 @@ jobs:
             .coverage.bootstrap
           retention-days: 30
 
+  publish-test-results:
+    name: Publish Test Results
+    strategy:
+      matrix:
+        runner:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+        exclude:
+          # skip the ARM integration tests in case we are not on the master and not on the upgrade-dependencies branch and forceARMTests is not set to true
+          - runner: ${{ (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'ubuntu-24.04-arm' || ''}}
+    needs:
+      - test-integration
+      - test-bootstrap
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: read
+      issues: read
+    # execute on success or failure, but not if the workflow is cancelled or any of the dependencies has been skipped
+    if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
+    steps:
+      - name: Determine Runner Architecture
+        shell: bash
+        run: echo "PLATFORM=${{ (runner.arch == 'X64' && 'amd64') || (runner.arch == 'ARM64' && 'arm64') || '' }}" >> $GITHUB_ENV
+
+      - name: Download Bootstrap Artifacts
+        uses: actions/download-artifact@v4
+        if: ${{ env.PLATFORM == 'amd64' }}
+        with:
+          pattern: test-results-bootstrap
+
+      - name: Download Integration Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-integration-${{ env.PLATFORM }}-*
+
+      - name: Publish Bootstrap and Integration Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: success() || failure()
+        with:
+          files: |
+            **/pytest-junit-*.xml
+          check_name: "Test Results (${{ env.PLATFORM }}) - Integration${{ env.PLATFORM == 'amd64' && ', Bootstrap' || ''}}"
+          action_fail_on_inconclusive: true
+
+
   test-acceptance:
     name: "Acceptance Tests (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }}"
     needs:
