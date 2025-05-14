@@ -1142,12 +1142,12 @@ class CloudwatchApi:
     def delete_anomaly_detector(
         self,
         context: RequestContext,
-        namespace: Namespace = None,
-        metric_name: MetricName = None,
-        dimensions: Dimensions = None,
-        stat: AnomalyDetectorMetricStat = None,
-        single_metric_anomaly_detector: SingleMetricAnomalyDetector = None,
-        metric_math_anomaly_detector: MetricMathAnomalyDetector = None,
+        namespace: Namespace | None = None,
+        metric_name: MetricName | None = None,
+        dimensions: Dimensions | None = None,
+        stat: AnomalyDetectorMetricStat | None = None,
+        single_metric_anomaly_detector: SingleMetricAnomalyDetector | None = None,
+        metric_math_anomaly_detector: MetricMathAnomalyDetector | None = None,
         **kwargs,
     ) -> DeleteAnomalyDetectorOutput:
         raise NotImplementedError
@@ -1174,14 +1174,14 @@ class CloudwatchApi:
     def describe_alarm_history(
         self,
         context: RequestContext,
-        alarm_name: AlarmName = None,
-        alarm_types: AlarmTypes = None,
-        history_item_type: HistoryItemType = None,
-        start_date: Timestamp = None,
-        end_date: Timestamp = None,
-        max_records: MaxRecords = None,
-        next_token: NextToken = None,
-        scan_by: ScanBy = None,
+        alarm_name: AlarmName | None = None,
+        alarm_types: AlarmTypes | None = None,
+        history_item_type: HistoryItemType | None = None,
+        start_date: Timestamp | None = None,
+        end_date: Timestamp | None = None,
+        max_records: MaxRecords | None = None,
+        next_token: NextToken | None = None,
+        scan_by: ScanBy | None = None,
         **kwargs,
     ) -> DescribeAlarmHistoryOutput:
         raise NotImplementedError
@@ -1190,15 +1190,15 @@ class CloudwatchApi:
     def describe_alarms(
         self,
         context: RequestContext,
-        alarm_names: AlarmNames = None,
-        alarm_name_prefix: AlarmNamePrefix = None,
-        alarm_types: AlarmTypes = None,
-        children_of_alarm_name: AlarmName = None,
-        parents_of_alarm_name: AlarmName = None,
-        state_value: StateValue = None,
-        action_prefix: ActionPrefix = None,
-        max_records: MaxRecords = None,
-        next_token: NextToken = None,
+        alarm_names: AlarmNames | None = None,
+        alarm_name_prefix: AlarmNamePrefix | None = None,
+        alarm_types: AlarmTypes | None = None,
+        children_of_alarm_name: AlarmName | None = None,
+        parents_of_alarm_name: AlarmName | None = None,
+        state_value: StateValue | None = None,
+        action_prefix: ActionPrefix | None = None,
+        max_records: MaxRecords | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeAlarmsOutput:
         raise NotImplementedError
@@ -1209,11 +1209,11 @@ class CloudwatchApi:
         context: RequestContext,
         metric_name: MetricName,
         namespace: Namespace,
-        statistic: Statistic = None,
-        extended_statistic: ExtendedStatistic = None,
-        dimensions: Dimensions = None,
-        period: Period = None,
-        unit: StandardUnit = None,
+        statistic: Statistic | None = None,
+        extended_statistic: ExtendedStatistic | None = None,
+        dimensions: Dimensions | None = None,
+        period: Period | None = None,
+        unit: StandardUnit | None = None,
         **kwargs,
     ) -> DescribeAlarmsForMetricOutput:
         raise NotImplementedError
@@ -1222,12 +1222,12 @@ class CloudwatchApi:
     def describe_anomaly_detectors(
         self,
         context: RequestContext,
-        next_token: NextToken = None,
-        max_results: MaxReturnedResultsCount = None,
-        namespace: Namespace = None,
-        metric_name: MetricName = None,
-        dimensions: Dimensions = None,
-        anomaly_detector_types: AnomalyDetectorTypes = None,
+        next_token: NextToken | None = None,
+        max_results: MaxReturnedResultsCount | None = None,
+        namespace: Namespace | None = None,
+        metric_name: MetricName | None = None,
+        dimensions: Dimensions | None = None,
+        anomaly_detector_types: AnomalyDetectorTypes | None = None,
         **kwargs,
     ) -> DescribeAnomalyDetectorsOutput:
         raise NotImplementedError
@@ -1236,8 +1236,8 @@ class CloudwatchApi:
     def describe_insight_rules(
         self,
         context: RequestContext,
-        next_token: NextToken = None,
-        max_results: InsightRuleMaxResults = None,
+        next_token: NextToken | None = None,
+        max_results: InsightRuleMaxResults | None = None,
         **kwargs,
     ) -> DescribeInsightRulesOutput:
         raise NotImplementedError
@@ -1280,9 +1280,9 @@ class CloudwatchApi:
         start_time: Timestamp,
         end_time: Timestamp,
         period: Period,
-        max_contributor_count: InsightRuleUnboundInteger = None,
-        metrics: InsightRuleMetricList = None,
-        order_by: InsightRuleOrderBy = None,
+        max_contributor_count: InsightRuleUnboundInteger | None = None,
+        metrics: InsightRuleMetricList | None = None,
+        order_by: InsightRuleOrderBy | None = None,
         **kwargs,
     ) -> GetInsightRuleReportOutput:
         raise NotImplementedError
@@ -1294,10 +1294,10 @@ class CloudwatchApi:
         metric_data_queries: MetricDataQueries,
         start_time: Timestamp,
         end_time: Timestamp,
-        next_token: NextToken = None,
-        scan_by: ScanBy = None,
-        max_datapoints: GetMetricDataMaxDatapoints = None,
-        label_options: LabelOptions = None,
+        next_token: NextToken | None = None,
+        scan_by: ScanBy | None = None,
+        max_datapoints: GetMetricDataMaxDatapoints | None = None,
+        label_options: LabelOptions | None = None,
         **kwargs,
     ) -> GetMetricDataOutput:
         raise NotImplementedError
@@ -1311,10 +1311,10 @@ class CloudwatchApi:
         start_time: Timestamp,
         end_time: Timestamp,
         period: Period,
-        dimensions: Dimensions = None,
-        statistics: Statistics = None,
-        extended_statistics: ExtendedStatistics = None,
-        unit: StandardUnit = None,
+        dimensions: Dimensions | None = None,
+        statistics: Statistics | None = None,
+        extended_statistics: ExtendedStatistics | None = None,
+        unit: StandardUnit | None = None,
         **kwargs,
     ) -> GetMetricStatisticsOutput:
         raise NotImplementedError
@@ -1330,7 +1330,7 @@ class CloudwatchApi:
         self,
         context: RequestContext,
         metric_widget: MetricWidget,
-        output_format: OutputFormat = None,
+        output_format: OutputFormat | None = None,
         **kwargs,
     ) -> GetMetricWidgetImageOutput:
         raise NotImplementedError
@@ -1339,8 +1339,8 @@ class CloudwatchApi:
     def list_dashboards(
         self,
         context: RequestContext,
-        dashboard_name_prefix: DashboardNamePrefix = None,
-        next_token: NextToken = None,
+        dashboard_name_prefix: DashboardNamePrefix | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> ListDashboardsOutput:
         raise NotImplementedError
@@ -1350,8 +1350,8 @@ class CloudwatchApi:
         self,
         context: RequestContext,
         resource_arn: AmazonResourceName,
-        next_token: NextToken = None,
-        max_results: InsightRuleMaxResults = None,
+        next_token: NextToken | None = None,
+        max_results: InsightRuleMaxResults | None = None,
         **kwargs,
     ) -> ListManagedInsightRulesOutput:
         raise NotImplementedError
@@ -1360,8 +1360,8 @@ class CloudwatchApi:
     def list_metric_streams(
         self,
         context: RequestContext,
-        next_token: NextToken = None,
-        max_results: ListMetricStreamsMaxResults = None,
+        next_token: NextToken | None = None,
+        max_results: ListMetricStreamsMaxResults | None = None,
         **kwargs,
     ) -> ListMetricStreamsOutput:
         raise NotImplementedError
@@ -1370,13 +1370,13 @@ class CloudwatchApi:
     def list_metrics(
         self,
         context: RequestContext,
-        namespace: Namespace = None,
-        metric_name: MetricName = None,
-        dimensions: DimensionFilters = None,
-        next_token: NextToken = None,
-        recently_active: RecentlyActive = None,
-        include_linked_accounts: IncludeLinkedAccounts = None,
-        owning_account: AccountId = None,
+        namespace: Namespace | None = None,
+        metric_name: MetricName | None = None,
+        dimensions: DimensionFilters | None = None,
+        next_token: NextToken | None = None,
+        recently_active: RecentlyActive | None = None,
+        include_linked_accounts: IncludeLinkedAccounts | None = None,
+        owning_account: AccountId | None = None,
         **kwargs,
     ) -> ListMetricsOutput:
         raise NotImplementedError
@@ -1391,14 +1391,14 @@ class CloudwatchApi:
     def put_anomaly_detector(
         self,
         context: RequestContext,
-        namespace: Namespace = None,
-        metric_name: MetricName = None,
-        dimensions: Dimensions = None,
-        stat: AnomalyDetectorMetricStat = None,
-        configuration: AnomalyDetectorConfiguration = None,
-        metric_characteristics: MetricCharacteristics = None,
-        single_metric_anomaly_detector: SingleMetricAnomalyDetector = None,
-        metric_math_anomaly_detector: MetricMathAnomalyDetector = None,
+        namespace: Namespace | None = None,
+        metric_name: MetricName | None = None,
+        dimensions: Dimensions | None = None,
+        stat: AnomalyDetectorMetricStat | None = None,
+        configuration: AnomalyDetectorConfiguration | None = None,
+        metric_characteristics: MetricCharacteristics | None = None,
+        single_metric_anomaly_detector: SingleMetricAnomalyDetector | None = None,
+        metric_math_anomaly_detector: MetricMathAnomalyDetector | None = None,
         **kwargs,
     ) -> PutAnomalyDetectorOutput:
         raise NotImplementedError
@@ -1409,15 +1409,15 @@ class CloudwatchApi:
         context: RequestContext,
         alarm_name: AlarmName,
         alarm_rule: AlarmRule,
-        actions_enabled: ActionsEnabled = None,
-        alarm_actions: ResourceList = None,
-        alarm_description: AlarmDescription = None,
-        insufficient_data_actions: ResourceList = None,
-        ok_actions: ResourceList = None,
-        tags: TagList = None,
-        actions_suppressor: AlarmArn = None,
-        actions_suppressor_wait_period: SuppressorPeriod = None,
-        actions_suppressor_extension_period: SuppressorPeriod = None,
+        actions_enabled: ActionsEnabled | None = None,
+        alarm_actions: ResourceList | None = None,
+        alarm_description: AlarmDescription | None = None,
+        insufficient_data_actions: ResourceList | None = None,
+        ok_actions: ResourceList | None = None,
+        tags: TagList | None = None,
+        actions_suppressor: AlarmArn | None = None,
+        actions_suppressor_wait_period: SuppressorPeriod | None = None,
+        actions_suppressor_extension_period: SuppressorPeriod | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -1438,8 +1438,8 @@ class CloudwatchApi:
         context: RequestContext,
         rule_name: InsightRuleName,
         rule_definition: InsightRuleDefinition,
-        rule_state: InsightRuleState = None,
-        tags: TagList = None,
+        rule_state: InsightRuleState | None = None,
+        tags: TagList | None = None,
         **kwargs,
     ) -> PutInsightRuleOutput:
         raise NotImplementedError
@@ -1457,25 +1457,25 @@ class CloudwatchApi:
         alarm_name: AlarmName,
         evaluation_periods: EvaluationPeriods,
         comparison_operator: ComparisonOperator,
-        alarm_description: AlarmDescription = None,
-        actions_enabled: ActionsEnabled = None,
-        ok_actions: ResourceList = None,
-        alarm_actions: ResourceList = None,
-        insufficient_data_actions: ResourceList = None,
-        metric_name: MetricName = None,
-        namespace: Namespace = None,
-        statistic: Statistic = None,
-        extended_statistic: ExtendedStatistic = None,
-        dimensions: Dimensions = None,
-        period: Period = None,
-        unit: StandardUnit = None,
-        datapoints_to_alarm: DatapointsToAlarm = None,
-        threshold: Threshold = None,
-        treat_missing_data: TreatMissingData = None,
-        evaluate_low_sample_count_percentile: EvaluateLowSampleCountPercentile = None,
-        metrics: MetricDataQueries = None,
-        tags: TagList = None,
-        threshold_metric_id: MetricId = None,
+        alarm_description: AlarmDescription | None = None,
+        actions_enabled: ActionsEnabled | None = None,
+        ok_actions: ResourceList | None = None,
+        alarm_actions: ResourceList | None = None,
+        insufficient_data_actions: ResourceList | None = None,
+        metric_name: MetricName | None = None,
+        namespace: Namespace | None = None,
+        statistic: Statistic | None = None,
+        extended_statistic: ExtendedStatistic | None = None,
+        dimensions: Dimensions | None = None,
+        period: Period | None = None,
+        unit: StandardUnit | None = None,
+        datapoints_to_alarm: DatapointsToAlarm | None = None,
+        threshold: Threshold | None = None,
+        treat_missing_data: TreatMissingData | None = None,
+        evaluate_low_sample_count_percentile: EvaluateLowSampleCountPercentile | None = None,
+        metrics: MetricDataQueries | None = None,
+        tags: TagList | None = None,
+        threshold_metric_id: MetricId | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -1485,9 +1485,9 @@ class CloudwatchApi:
         self,
         context: RequestContext,
         namespace: Namespace,
-        metric_data: MetricData = None,
-        entity_metric_data: EntityMetricDataList = None,
-        strict_entity_validation: StrictEntityValidation = None,
+        metric_data: MetricData | None = None,
+        entity_metric_data: EntityMetricDataList | None = None,
+        strict_entity_validation: StrictEntityValidation | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -1500,11 +1500,11 @@ class CloudwatchApi:
         firehose_arn: AmazonResourceName,
         role_arn: AmazonResourceName,
         output_format: MetricStreamOutputFormat,
-        include_filters: MetricStreamFilters = None,
-        exclude_filters: MetricStreamFilters = None,
-        tags: TagList = None,
-        statistics_configurations: MetricStreamStatisticsConfigurations = None,
-        include_linked_accounts_metrics: IncludeLinkedAccountsMetrics = None,
+        include_filters: MetricStreamFilters | None = None,
+        exclude_filters: MetricStreamFilters | None = None,
+        tags: TagList | None = None,
+        statistics_configurations: MetricStreamStatisticsConfigurations | None = None,
+        include_linked_accounts_metrics: IncludeLinkedAccountsMetrics | None = None,
         **kwargs,
     ) -> PutMetricStreamOutput:
         raise NotImplementedError
@@ -1516,7 +1516,7 @@ class CloudwatchApi:
         alarm_name: AlarmName,
         state_value: StateValue,
         state_reason: StateReason,
-        state_reason_data: StateReasonData = None,
+        state_reason_data: StateReasonData | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError

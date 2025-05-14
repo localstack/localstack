@@ -192,10 +192,10 @@ class TranscribeProvider(TranscribeApi):
     def list_transcription_jobs(
         self,
         context: RequestContext,
-        status: TranscriptionJobStatus = None,
-        job_name_contains: TranscriptionJobName = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        status: TranscriptionJobStatus | None = None,
+        job_name_contains: TranscriptionJobName | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> ListTranscriptionJobsResponse:
         store = transcribe_stores[context.account_id][context.region]

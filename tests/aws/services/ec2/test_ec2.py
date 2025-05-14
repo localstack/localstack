@@ -695,13 +695,13 @@ class TestEc2Integrations:
         assert e.value.response["Error"]["Code"] == "InvalidSecurityGroupId.DuplicateCustomId"
 
     @markers.snapshot.skip_snapshot_verify(
-    paths=[
-        "$..Tags",
-        "$..SecurityGroupForVpcs..Description",
-        "$..SecurityGroupForVpcs..GroupId",
-        "$..SecurityGroupForVpcs..GroupName"
-    ]
-)
+        paths=[
+            "$..Tags",
+            "$..SecurityGroupForVpcs..Description",
+            "$..SecurityGroupForVpcs..GroupId",
+            "$..SecurityGroupForVpcs..GroupName",
+        ]
+    )
     @markers.aws.validated
     def test_get_security_groups_for_vpc(
         self, snapshot, cleanups, aws_client, create_vpc, ec2_create_security_group
@@ -713,7 +713,7 @@ class TestEc2Integrations:
                 snapshot.transform.key_value("vpc-id"),
             ]
         )
-        
+
         # Create a VPC
         vpc: dict = create_vpc(
             cidr_block="10.0.0.0/16",
@@ -731,17 +731,17 @@ class TestEc2Integrations:
 
         # Create security groups in the VPC
         sg1 = ec2_create_security_group(
-            GroupName="test-security-group-1", 
-            Description="Test Security Group 1 Description", 
-            VpcId=vpc_id
+            GroupName="test-security-group-1",
+            Description="Test Security Group 1 Description",
+            VpcId=vpc_id,
         )
         sg1_id = sg1["GroupId"]
         snapshot.match("create_security_group_1", sg1)
 
         sg2 = ec2_create_security_group(
-            GroupName="test-security-group-2", 
-            Description="Test Security Group 2 Description", 
-            VpcId=vpc_id
+            GroupName="test-security-group-2",
+            Description="Test Security Group 2 Description",
+            VpcId=vpc_id,
         )
         sg2_id = sg2["GroupId"]
         snapshot.match("create_security_group_2", sg2)
@@ -753,9 +753,9 @@ class TestEc2Integrations:
         default_vpc_id = default_vpc["Vpcs"][0]["VpcId"]
 
         sg3 = ec2_create_security_group(
-            GroupName="test-security-group-3", 
-            Description="Test Security Group 3 Description", 
-            VpcId=default_vpc_id
+            GroupName="test-security-group-3",
+            Description="Test Security Group 3 Description",
+            VpcId=default_vpc_id,
         )
         sg3_id = sg3["GroupId"]
         snapshot.match("create_security_group_3", sg3)
@@ -773,6 +773,7 @@ class TestEc2Integrations:
         cleanups.append(lambda: aws_client.ec2.delete_security_group(GroupId=sg1_id))
         cleanups.append(lambda: aws_client.ec2.delete_security_group(GroupId=sg2_id))
         cleanups.append(lambda: aws_client.ec2.delete_security_group(GroupId=sg3_id))
+
 
 @markers.snapshot.skip_snapshot_verify(
     # Moto and LS do not return the ClientToken

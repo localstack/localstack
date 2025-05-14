@@ -21,6 +21,7 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
 from localstack import config
+from localstack.aws.api.ec2 import CreateSecurityGroupRequest
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.services.stores import (
     AccountRegionBundle,
@@ -42,7 +43,7 @@ from localstack.utils.aws.arns import get_partition
 from localstack.utils.aws.client import SigningHttpClient
 from localstack.utils.aws.resources import create_dynamodb_table
 from localstack.utils.bootstrap import is_api_enabled
-from localstack.utils.collections import ensure_list
+from localstack.utils.collections import ensure_list, select_from_typed_dict
 from localstack.utils.functions import call_safe, run_safe
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.id_generator import ResourceIdentifier, localstack_id_manager
@@ -2001,28 +2002,33 @@ def setup_sender_email_address(ses_verify_identity):
 def ec2_create_security_group(aws_client):
     ec2_sgs = []
 
-    def factory(ports=None, **kwargs):
+    def factory(ports=None, ip_protocol: str = "tcp", **kwargs):
+        """
+        Create the target group and authorize the security group ingress.
+        :param ports: list of ports to be authorized for the ingress rule.
+        :param ip_protocol: the ip protocol for the permissions (tcp by default)
+        """
         if "GroupName" not in kwargs:
-            kwargs["GroupName"] = f"test-sg-{short_uid()}"
-        security_group = aws_client.ec2.create_security_group(**kwargs)
-        sg_id = security_group["GroupId"]
-        
-        if ports:
-            permissions = [
-                {
-                    "FromPort": port,
-                    "IpProtocol": "tcp",
-                    "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
-                    "ToPort": port,
-                }
-                for port in ports
-            ]
-            aws_client.ec2.authorize_security_group_ingress(
-                GroupId=sg_id,
-                IpPermissions=permissions,
-            )
+            kwargs["GroupName"] = f"sg-{short_uid()}"
+        # Making sure the call to CreateSecurityGroup gets the right arguments
+        _args = select_from_typed_dict(CreateSecurityGroupRequest, kwargs)
+        security_group = aws_client.ec2.create_security_group(**_args)
+        security_group_id = security_group["GroupId"]
+        permissions = [
+            {
+                "FromPort": port,
+                "IpProtocol": ip_protocol,
+                "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+                "ToPort": port,
+            }
+            for port in ports or []
+        ]
+        aws_client.ec2.authorize_security_group_ingress(
+            GroupId=security_group_id,
+            IpPermissions=permissions,
+        )
 
-        ec2_sgs.append(sg_id)
+        ec2_sgs.append(security_group_id)
         return security_group
 
     yield factory

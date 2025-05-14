@@ -255,13 +255,13 @@ class ResourcegroupstaggingapiApi:
     def get_compliance_summary(
         self,
         context: RequestContext,
-        target_id_filters: TargetIdFilterList = None,
-        region_filters: RegionFilterList = None,
-        resource_type_filters: ResourceTypeFilterList = None,
-        tag_key_filters: TagKeyFilterList = None,
-        group_by: GroupBy = None,
-        max_results: MaxResultsGetComplianceSummary = None,
-        pagination_token: PaginationToken = None,
+        target_id_filters: TargetIdFilterList | None = None,
+        region_filters: RegionFilterList | None = None,
+        resource_type_filters: ResourceTypeFilterList | None = None,
+        tag_key_filters: TagKeyFilterList | None = None,
+        group_by: GroupBy | None = None,
+        max_results: MaxResultsGetComplianceSummary | None = None,
+        pagination_token: PaginationToken | None = None,
         **kwargs,
     ) -> GetComplianceSummaryOutput:
         raise NotImplementedError
@@ -270,21 +270,21 @@ class ResourcegroupstaggingapiApi:
     def get_resources(
         self,
         context: RequestContext,
-        pagination_token: PaginationToken = None,
-        tag_filters: TagFilterList = None,
-        resources_per_page: ResourcesPerPage = None,
-        tags_per_page: TagsPerPage = None,
-        resource_type_filters: ResourceTypeFilterList = None,
-        include_compliance_details: IncludeComplianceDetails = None,
-        exclude_compliant_resources: ExcludeCompliantResources = None,
-        resource_arn_list: ResourceARNListForGet = None,
+        pagination_token: PaginationToken | None = None,
+        tag_filters: TagFilterList | None = None,
+        resources_per_page: ResourcesPerPage | None = None,
+        tags_per_page: TagsPerPage | None = None,
+        resource_type_filters: ResourceTypeFilterList | None = None,
+        include_compliance_details: IncludeComplianceDetails | None = None,
+        exclude_compliant_resources: ExcludeCompliantResources | None = None,
+        resource_arn_list: ResourceARNListForGet | None = None,
         **kwargs,
     ) -> GetResourcesOutput:
         raise NotImplementedError
 
     @handler("GetTagKeys")
     def get_tag_keys(
-        self, context: RequestContext, pagination_token: PaginationToken = None, **kwargs
+        self, context: RequestContext, pagination_token: PaginationToken | None = None, **kwargs
     ) -> GetTagKeysOutput:
         raise NotImplementedError
 
@@ -293,7 +293,7 @@ class ResourcegroupstaggingapiApi:
         self,
         context: RequestContext,
         key: TagKey,
-        pagination_token: PaginationToken = None,
+        pagination_token: PaginationToken | None = None,
         **kwargs,
     ) -> GetTagValuesOutput:
         raise NotImplementedError

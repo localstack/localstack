@@ -774,7 +774,7 @@ class SnsApi:
         context: RequestContext,
         topic_arn: topicARN,
         token: token,
-        authenticate_on_unsubscribe: authenticateOnUnsubscribe = None,
+        authenticate_on_unsubscribe: authenticateOnUnsubscribe | None = None,
         **kwargs,
     ) -> ConfirmSubscriptionResponse:
         raise NotImplementedError
@@ -796,8 +796,8 @@ class SnsApi:
         context: RequestContext,
         platform_application_arn: String,
         token: String,
-        custom_user_data: String = None,
-        attributes: MapStringToString = None,
+        custom_user_data: String | None = None,
+        attributes: MapStringToString | None = None,
         **kwargs,
     ) -> CreateEndpointResponse:
         raise NotImplementedError
@@ -807,7 +807,7 @@ class SnsApi:
         self,
         context: RequestContext,
         phone_number: PhoneNumberString,
-        language_code: LanguageCodeString = None,
+        language_code: LanguageCodeString | None = None,
         **kwargs,
     ) -> CreateSMSSandboxPhoneNumberResult:
         raise NotImplementedError
@@ -817,9 +817,9 @@ class SnsApi:
         self,
         context: RequestContext,
         name: topicName,
-        attributes: TopicAttributesMap = None,
-        tags: TagList = None,
-        data_protection_policy: attributeValue = None,
+        attributes: TopicAttributesMap | None = None,
+        tags: TagList | None = None,
+        data_protection_policy: attributeValue | None = None,
         **kwargs,
     ) -> CreateTopicResponse:
         raise NotImplementedError
@@ -864,7 +864,7 @@ class SnsApi:
 
     @handler("GetSMSAttributes")
     def get_sms_attributes(
-        self, context: RequestContext, attributes: ListString = None, **kwargs
+        self, context: RequestContext, attributes: ListString | None = None, **kwargs
     ) -> GetSMSAttributesResponse:
         raise NotImplementedError
 
@@ -891,7 +891,7 @@ class SnsApi:
         self,
         context: RequestContext,
         platform_application_arn: String,
-        next_token: String = None,
+        next_token: String | None = None,
         **kwargs,
     ) -> ListEndpointsByPlatformApplicationResponse:
         raise NotImplementedError
@@ -900,21 +900,21 @@ class SnsApi:
     def list_origination_numbers(
         self,
         context: RequestContext,
-        next_token: nextToken = None,
-        max_results: MaxItemsListOriginationNumbers = None,
+        next_token: nextToken | None = None,
+        max_results: MaxItemsListOriginationNumbers | None = None,
         **kwargs,
     ) -> ListOriginationNumbersResult:
         raise NotImplementedError
 
     @handler("ListPhoneNumbersOptedOut")
     def list_phone_numbers_opted_out(
-        self, context: RequestContext, next_token: string = None, **kwargs
+        self, context: RequestContext, next_token: string | None = None, **kwargs
     ) -> ListPhoneNumbersOptedOutResponse:
         raise NotImplementedError
 
     @handler("ListPlatformApplications")
     def list_platform_applications(
-        self, context: RequestContext, next_token: String = None, **kwargs
+        self, context: RequestContext, next_token: String | None = None, **kwargs
     ) -> ListPlatformApplicationsResponse:
         raise NotImplementedError
 
@@ -922,21 +922,25 @@ class SnsApi:
     def list_sms_sandbox_phone_numbers(
         self,
         context: RequestContext,
-        next_token: nextToken = None,
-        max_results: MaxItems = None,
+        next_token: nextToken | None = None,
+        max_results: MaxItems | None = None,
         **kwargs,
     ) -> ListSMSSandboxPhoneNumbersResult:
         raise NotImplementedError
 
     @handler("ListSubscriptions")
     def list_subscriptions(
-        self, context: RequestContext, next_token: nextToken = None, **kwargs
+        self, context: RequestContext, next_token: nextToken | None = None, **kwargs
     ) -> ListSubscriptionsResponse:
         raise NotImplementedError
 
     @handler("ListSubscriptionsByTopic")
     def list_subscriptions_by_topic(
-        self, context: RequestContext, topic_arn: topicARN, next_token: nextToken = None, **kwargs
+        self,
+        context: RequestContext,
+        topic_arn: topicARN,
+        next_token: nextToken | None = None,
+        **kwargs,
     ) -> ListSubscriptionsByTopicResponse:
         raise NotImplementedError
 
@@ -948,7 +952,7 @@ class SnsApi:
 
     @handler("ListTopics")
     def list_topics(
-        self, context: RequestContext, next_token: nextToken = None, **kwargs
+        self, context: RequestContext, next_token: nextToken | None = None, **kwargs
     ) -> ListTopicsResponse:
         raise NotImplementedError
 
@@ -963,14 +967,14 @@ class SnsApi:
         self,
         context: RequestContext,
         message: message,
-        topic_arn: topicARN = None,
-        target_arn: String = None,
-        phone_number: PhoneNumber = None,
-        subject: subject = None,
-        message_structure: messageStructure = None,
-        message_attributes: MessageAttributeMap = None,
-        message_deduplication_id: String = None,
-        message_group_id: String = None,
+        topic_arn: topicARN | None = None,
+        target_arn: String | None = None,
+        phone_number: PhoneNumber | None = None,
+        subject: subject | None = None,
+        message_structure: messageStructure | None = None,
+        message_attributes: MessageAttributeMap | None = None,
+        message_deduplication_id: String | None = None,
+        message_group_id: String | None = None,
         **kwargs,
     ) -> PublishResponse:
         raise NotImplementedError
@@ -1029,7 +1033,7 @@ class SnsApi:
         context: RequestContext,
         subscription_arn: subscriptionARN,
         attribute_name: attributeName,
-        attribute_value: attributeValue = None,
+        attribute_value: attributeValue | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -1040,7 +1044,7 @@ class SnsApi:
         context: RequestContext,
         topic_arn: topicARN,
         attribute_name: attributeName,
-        attribute_value: attributeValue = None,
+        attribute_value: attributeValue | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -1051,9 +1055,9 @@ class SnsApi:
         context: RequestContext,
         topic_arn: topicARN,
         protocol: protocol,
-        endpoint: endpoint = None,
-        attributes: SubscriptionAttributesMap = None,
-        return_subscription_arn: boolean = None,
+        endpoint: endpoint | None = None,
+        attributes: SubscriptionAttributesMap | None = None,
+        return_subscription_arn: boolean | None = None,
         **kwargs,
     ) -> SubscribeResponse:
         raise NotImplementedError

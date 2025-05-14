@@ -14,7 +14,7 @@ cffi==1.17.1
     # via cryptography
 charset-normalizer==3.4.2
     # via requests
-click==8.1.8
+click==8.2.0
     # via localstack-core (pyproject.toml)
 cryptography==44.0.3
     # via localstack-core (pyproject.toml)

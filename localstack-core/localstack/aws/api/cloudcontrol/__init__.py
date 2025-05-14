@@ -342,9 +342,9 @@ class CloudcontrolApi:
         context: RequestContext,
         type_name: TypeName,
         desired_state: Properties,
-        type_version_id: TypeVersionId = None,
-        role_arn: RoleArn = None,
-        client_token: ClientToken = None,
+        type_version_id: TypeVersionId | None = None,
+        role_arn: RoleArn | None = None,
+        client_token: ClientToken | None = None,
         **kwargs,
     ) -> CreateResourceOutput:
         raise NotImplementedError
@@ -355,9 +355,9 @@ class CloudcontrolApi:
         context: RequestContext,
         type_name: TypeName,
         identifier: Identifier,
-        type_version_id: TypeVersionId = None,
-        role_arn: RoleArn = None,
-        client_token: ClientToken = None,
+        type_version_id: TypeVersionId | None = None,
+        role_arn: RoleArn | None = None,
+        client_token: ClientToken | None = None,
         **kwargs,
     ) -> DeleteResourceOutput:
         raise NotImplementedError
@@ -368,8 +368,8 @@ class CloudcontrolApi:
         context: RequestContext,
         type_name: TypeName,
         identifier: Identifier,
-        type_version_id: TypeVersionId = None,
-        role_arn: RoleArn = None,
+        type_version_id: TypeVersionId | None = None,
+        role_arn: RoleArn | None = None,
         **kwargs,
     ) -> GetResourceOutput:
         raise NotImplementedError
@@ -384,9 +384,9 @@ class CloudcontrolApi:
     def list_resource_requests(
         self,
         context: RequestContext,
-        max_results: MaxResults = None,
-        next_token: NextToken = None,
-        resource_request_status_filter: ResourceRequestStatusFilter = None,
+        max_results: MaxResults | None = None,
+        next_token: NextToken | None = None,
+        resource_request_status_filter: ResourceRequestStatusFilter | None = None,
         **kwargs,
     ) -> ListResourceRequestsOutput:
         raise NotImplementedError
@@ -396,11 +396,11 @@ class CloudcontrolApi:
         self,
         context: RequestContext,
         type_name: TypeName,
-        type_version_id: TypeVersionId = None,
-        role_arn: RoleArn = None,
-        next_token: HandlerNextToken = None,
-        max_results: MaxResults = None,
-        resource_model: Properties = None,
+        type_version_id: TypeVersionId | None = None,
+        role_arn: RoleArn | None = None,
+        next_token: HandlerNextToken | None = None,
+        max_results: MaxResults | None = None,
+        resource_model: Properties | None = None,
         **kwargs,
     ) -> ListResourcesOutput:
         raise NotImplementedError
@@ -412,9 +412,9 @@ class CloudcontrolApi:
         type_name: TypeName,
         identifier: Identifier,
         patch_document: PatchDocument,
-        type_version_id: TypeVersionId = None,
-        role_arn: RoleArn = None,
-        client_token: ClientToken = None,
+        type_version_id: TypeVersionId | None = None,
+        role_arn: RoleArn | None = None,
+        client_token: ClientToken | None = None,
         **kwargs,
     ) -> UpdateResourceOutput:
         raise NotImplementedError
