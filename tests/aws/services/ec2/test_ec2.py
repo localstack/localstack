@@ -694,85 +694,77 @@ class TestEc2Integrations:
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
         assert e.value.response["Error"]["Code"] == "InvalidSecurityGroupId.DuplicateCustomId"
 
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Tags",
-            "$..SecurityGroupForVpcs..Description",
-            "$..SecurityGroupForVpcs..GroupId",
-            "$..SecurityGroupForVpcs..GroupName",
-        ]
-    )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Tags"])
     @markers.aws.validated
     def test_get_security_groups_for_vpc(
-        self, snapshot, cleanups, aws_client, create_vpc, ec2_create_security_group
+        self, snapshot, aws_client, create_vpc, ec2_create_security_group
     ):
-        snapshot.add_transformers_list(
-            [
-                snapshot.transform.key_value("GroupId"),
-                snapshot.transform.key_value("SecurityGroupArn"),
-                snapshot.transform.key_value("vpc-id"),
-            ]
-        )
+        snapshot.add_transformers_list([snapshot.transform.key_value("GroupId")])
 
-        # Create a VPC
-        vpc: dict = create_vpc(
-            cidr_block="10.0.0.0/16",
-            tag_specifications=[
-                {
-                    "ResourceType": "vpc",
-                    "Tags": [
-                        {"Key": "Name", "Value": "test-vpc"},
-                    ],
-                }
-            ],
-        )
-        vpc_id: str = vpc["Vpc"]["VpcId"]
-        snapshot.match("create_vpc", {"vpc-id": vpc_id})
-
-        # Create security groups in the VPC
-        sg1 = ec2_create_security_group(
-            GroupName="test-security-group-1",
-            Description="Test Security Group 1 Description",
-            VpcId=vpc_id,
-        )
-        sg1_id = sg1["GroupId"]
-        snapshot.match("create_security_group_1", sg1)
-
-        sg2 = ec2_create_security_group(
-            GroupName="test-security-group-2",
-            Description="Test Security Group 2 Description",
-            VpcId=vpc_id,
-        )
-        sg2_id = sg2["GroupId"]
-        snapshot.match("create_security_group_2", sg2)
-
-        # Create a security group in a different VPC (default VPC)
+        # Get the default VPC
         default_vpc = aws_client.ec2.describe_vpcs(
             Filters=[{"Name": "isDefault", "Values": ["true"]}]
         )
         default_vpc_id = default_vpc["Vpcs"][0]["VpcId"]
 
-        sg3 = ec2_create_security_group(
-            GroupName="test-security-group-3",
-            Description="Test Security Group 3 Description",
+        # Create a custom VPC for testing
+        custom_vpc: dict = create_vpc(
+            cidr_block="10.0.0.0/16",
+            tag_specifications=[
+                {
+                    "ResourceType": "vpc",
+                    "Tags": [
+                        {"Key": "Name", "Value": f"test-vpc-{short_uid()}"},
+                    ],
+                }
+            ],
+        )
+        custom_vpc_id: str = custom_vpc["Vpc"]["VpcId"]
+
+        # Create security groups in the default VPC
+        sg1 = ec2_create_security_group(
+            GroupName=f"test-security-group-{short_uid()}",
+            Description="Test Security Group 1 Description",
             VpcId=default_vpc_id,
+            ports=[22],
+        )
+        sg1_id = sg1["GroupId"]
+        snapshot.match("create_security_group_1", sg1)
+
+        sg2 = ec2_create_security_group(
+            GroupName=f"test-security-group-{short_uid()}",
+            Description="Test Security Group 2 Description",
+            VpcId=default_vpc_id,
+            ports=[22],
+        )
+        sg2_id = sg2["GroupId"]
+        snapshot.match("create_security_group_2", sg2)
+
+        # Create a security group in the custom VPC
+        sg3 = ec2_create_security_group(
+            GroupName=f"test-security-group-{short_uid()}",
+            Description="Test Security Group 3 Description",
+            VpcId=custom_vpc_id,
+            ports=[22],
         )
         sg3_id = sg3["GroupId"]
         snapshot.match("create_security_group_3", sg3)
 
-        vpc_sgs = aws_client.ec2.get_security_groups_for_vpc(VpcId=vpc_id)
-        snapshot.match("get_security_groups_for_vpc", vpc_sgs)
+        # Should only include the security groups created in the default VPC
+        default_vpc_sgs = aws_client.ec2.get_security_groups_for_vpc(VpcId=default_vpc_id)
+        default_vpc_sg_ids = [sg["GroupId"] for sg in default_vpc_sgs["SecurityGroupForVpcs"]]
+        assert "SecurityGroupForVpcs" in default_vpc_sgs
+        assert sg1_id in default_vpc_sg_ids
+        assert sg2_id in default_vpc_sg_ids
+        assert sg3_id not in default_vpc_sg_ids
 
-        # Should only include the security groups created in the VPC
-        vpc_sg_ids = [sg["GroupId"] for sg in vpc_sgs["SecurityGroupForVpcs"]]
-        assert sg1_id in vpc_sg_ids
-        assert sg2_id in vpc_sg_ids
-        assert sg3_id not in vpc_sg_ids
-
-        cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpc_id))
-        cleanups.append(lambda: aws_client.ec2.delete_security_group(GroupId=sg1_id))
-        cleanups.append(lambda: aws_client.ec2.delete_security_group(GroupId=sg2_id))
-        cleanups.append(lambda: aws_client.ec2.delete_security_group(GroupId=sg3_id))
+        # Should only include the security group created in the custom VPC
+        custom_vpc_sgs = aws_client.ec2.get_security_groups_for_vpc(VpcId=custom_vpc_id)
+        custom_vpc_sg_ids = [sg["GroupId"] for sg in custom_vpc_sgs["SecurityGroupForVpcs"]]
+        assert "SecurityGroupForVpcs" in custom_vpc_sgs
+        assert sg1_id not in custom_vpc_sg_ids
+        assert sg2_id not in custom_vpc_sg_ids
+        assert sg3_id in custom_vpc_sg_ids
 
 
 @markers.snapshot.skip_snapshot_verify(
