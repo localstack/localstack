@@ -335,5 +335,73 @@
         }
       }
     }
+  },
+  "tests/aws/services/ec2/test_ec2.py::TestEc2Integrations::test_get_security_groups_for_vpc": {
+    "recorded-date": "14-05-2025, 20:05:26",
+    "recorded-content": {
+      "create_vpc": {
+        "vpc-id": "<vpc-id:1>"
+      },
+      "create_security_group_1": {
+        "GroupId": "<group-id:1>",
+        "SecurityGroupArn": "arn:<partition>:ec2:<region>:111111111111:security-group/<group-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_security_group_2": {
+        "GroupId": "<group-id:2>",
+        "SecurityGroupArn": "arn:<partition>:ec2:<region>:111111111111:security-group/<group-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_security_group_3": {
+        "GroupId": "<group-id:3>",
+        "SecurityGroupArn": "arn:<partition>:ec2:<region>:111111111111:security-group/<group-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_security_groups_for_vpc": {
+        "SecurityGroupForVpcs": [
+          {
+            "Description": "Test Security Group 2 Description",
+            "GroupId": "<group-id:2>",
+            "GroupName": "test-security-group-2",
+            "OwnerId": "111111111111",
+            "PrimaryVpcId": "<vpc-id:1>",
+            "Tags": []
+          },
+          {
+            "Description": "default VPC security group",
+            "GroupId": "<group-id:4>",
+            "GroupName": "default",
+            "OwnerId": "111111111111",
+            "PrimaryVpcId": "<vpc-id:1>",
+            "Tags": []
+          },
+          {
+            "Description": "Test Security Group 1 Description",
+            "GroupId": "<group-id:1>",
+            "GroupName": "test-security-group-1",
+            "OwnerId": "111111111111",
+            "PrimaryVpcId": "<vpc-id:1>",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ec2/test_ec2.py::TestEc2Integrations::test_get_security_groups_for_vpc_invalid_inputs": {
+    "recorded-date": "14-05-2025, 20:07:05",
+    "recorded-content": {}
   }
 }
