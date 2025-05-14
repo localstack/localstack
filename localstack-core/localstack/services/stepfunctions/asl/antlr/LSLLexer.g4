@@ -2,12 +2,29 @@
 // $antlr-format allowShortRulesOnASingleLine true, allowShortBlocksOnASingleLine true, minEmptyLines 0, alignSemicolons ownLine
 // $antlr-format alignColons trailing, singleLineOverrulesHangingColon true, alignLexerCommands true, alignLabels true, alignTrailers true
 
-lexer grammar DSLLexer;
+lexer grammar LSLLexer;
 
 // Comments:
 LINECOMMENT: '#' ~[\r\n\f]* -> skip;
 
 JSONATA: 'jsonata(' ~[)]* ')';
+
+// ErrorNames
+ERRORNAMEStatesALL: 'States.ALL';
+ERRORNAMEStatesDataLimitExceeded: 'States.DataLimitExceeded';
+ERRORNAMEStatesHeartbeatTimeout: 'States.HeartbeatTimeout';
+ERRORNAMEStatesTimeout: 'States.Timeout';
+ERRORNAMEStatesTaskFailed: 'States.TaskFailed';
+ERRORNAMEStatesPermissions: 'States.Permissions';
+ERRORNAMEStatesResultPathMatchFailure: 'States.ResultPathMatchFailure';
+ERRORNAMEStatesParameterPathFailure: 'States.ParameterPathFailure';
+ERRORNAMEStatesBranchFailed: 'States.BranchFailed';
+ERRORNAMEStatesNoChoiceMatched: 'States.NoChoiceMatched';
+ERRORNAMEStatesIntrinsicFailure: 'States.IntrinsicFailure';
+ERRORNAMEStatesExceedToleratedFailureThreshold: 'States.ExceedToleratedFailureThreshold';
+ERRORNAMEStatesItemReaderFailed: 'States.ItemReaderFailed';
+ERRORNAMEStatesResultWriterFailed: 'States.ResultWriterFailed';
+ERRORNAMEStatesQueryEvaluationError: 'States.QueryEvaluationError';
 
 // Symbols.
 ARROW: '->';
@@ -27,15 +44,16 @@ FALSE: 'false';
 NULL: 'null';
 
 // Keywords.
-WITH: 'with';
+WHERE: 'where';
 AS: 'as';
 FAIL: 'fail';
+OUTPUT: 'output';
+SUCCEED: 'succeed';
 ERROR: 'error';
 CAUSE: 'cause';
 LAMBDA: 'lambda';
-PARAMETERS: 'parameters';
+ARGUMENTS: 'arguments';
 CATCH: 'catch';
-
 
 STRINGPATH: '"$"' | '"$' ('.' | '[') (ESC | SAFECODEPOINT)* '"';
 
@@ -51,7 +69,6 @@ fragment HEX: [0-9a-fA-F];
 
 fragment SAFECODEPOINT: ~ ["\\\u0000-\u001F];
 
-
 // Numbers.
 INT: '0' | [1-9] [0-9]*;
 
@@ -60,7 +77,6 @@ NUMBER: '-'? INT ('.' [0-9]+)? EXP?;
 fragment EXP: [Ee] [+\-]? INT;
 
 IDEN: [a-zA-Z_0-9-]+;
-
 
 // Whitespace.
 WS: [ \t\n\r]+ -> skip;
