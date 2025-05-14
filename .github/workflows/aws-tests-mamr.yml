@@ -62,6 +62,7 @@ jobs:
     secrets:
       DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
       DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+      TINYBIRD_CI_TOKEN: ${{ secrets.TINYBIRD_CI_TOKEN }}
 
   push-to-tinybird:
     name: Push Workflow Status to Tinybird

@@ -97,6 +97,9 @@ on:
       DOCKERHUB_PULL_TOKEN:
         description: 'A DockerHub token - Used to avoid rate limiting issues.'
         required: true
+      TINYBIRD_CI_TOKEN:
+        description: 'Token for accessing our tinybird ci analytics workspace.'
+        required: true
 
 env:
   PYTEST_LOGLEVEL: ${{ inputs.PYTEST_LOGLEVEL || 'WARNING' }}
