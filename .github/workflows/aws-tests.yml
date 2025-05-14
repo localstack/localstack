@@ -110,7 +110,7 @@ env:
   TEST_AWS_ACCESS_KEY_ID: ${{ inputs.testAWSAccessKeyId }}
   # Set non-job-specific environment variables for pytest-tinybird
   TINYBIRD_URL: https://api.tinybird.co
-  TINYBIRD_DATASOURCE: all_tests
+  TINYBIRD_DATASOURCE: raw_tests
   TINYBIRD_TOKEN: ${{ secrets.TINYBIRD_CI_TOKEN }}
   TINYBIRD_TIMEOUT: 5
   CI_REPOSITORY_NAME: localstack/localstack
