@@ -5,7 +5,7 @@ on:
     - cron: 0 1 * * MON-FRI
   pull_request:
     paths:
-      - '.github/workflows/aws-tests-mamr.yml'
+      - '.github/workflows/aws-mamr.yml'
       - '.github/workflows/aws-tests.yml'
   workflow_dispatch:
     inputs:
@@ -69,7 +69,7 @@ jobs:
     if: always() && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     needs:
-      - test
+      - test-ma-mr
     steps:
       - name: Push to Tinybird
         uses: localstack/tinybird-workflow-push@v3
