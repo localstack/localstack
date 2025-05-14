@@ -108,13 +108,14 @@ def create_client_with_keys(
 def create_request_context(
     service_name: str, operation_name: str, region: str, aws_request: AWSPreparedRequest
 ) -> RequestContext:
-    context = RequestContext()
+    if hasattr(aws_request.body, "read"):
+        aws_request.body = aws_request.body.read()
+    request = create_http_request(aws_request)
+
+    context = RequestContext(request=request)
     context.service = load_service(service_name)
     context.operation = context.service.operation_model(operation_name=operation_name)
     context.region = region
-    if hasattr(aws_request.body, "read"):
-        aws_request.body = aws_request.body.read()
-    context.request = create_http_request(aws_request)
     parser = create_parser(context.service)
     _, instance = parser.parse(context.request)
     context.service_request = instance

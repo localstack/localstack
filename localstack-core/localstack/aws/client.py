@@ -395,8 +395,7 @@ class GatewayShortCircuit:
         operation: OperationModel = request.operation_model
 
         # create request
-        context = RequestContext()
-        context.request = create_http_request(request)
+        context = RequestContext(request=create_http_request(request))
 
         # TODO: just a hacky thing to unblock the service model being set to `sqs-query` blocking for now
         # this is using the same services as `localstack.aws.protocol.service_router.resolve_conflicts`, maybe

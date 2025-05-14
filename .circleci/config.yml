@@ -164,15 +164,16 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: python-requirements-{{ checksum "requirements-dev.txt" }}
+          key: python-requirements-{{ checksum "requirements-typehint.txt" }}
       - run:
           name: Setup environment
           command: |
+            make install-dev-types
             make install
             mkdir -p target/reports
             mkdir -p target/coverage
       - save_cache:
-          key: python-requirements-{{ checksum "requirements-dev.txt" }}
+          key: python-requirements-{{ checksum "requirements-typehint.txt" }}
           paths:
             - "~/.cache/pip"
       - persist_to_workspace:
