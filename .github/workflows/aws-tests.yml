@@ -115,9 +115,9 @@ env:
   TINYBIRD_TIMEOUT: 5
   CI_REPOSITORY_NAME: localstack/localstack
   # differentiate between "acceptance", "mamr" and "full" runs
-  CI_WORKFLOW_NAME: ${{ inputs.onlyAcceptanceTests == 'true' && 'tests_acceptance'
-                   || inputs.testAWSAccountId != '000000000000' && 'tests_mamr'
-                   || 'tests_full' }}
+  CI_WORKFLOW_NAME: ${{ inputs.onlyAcceptanceTests && 'tests_acceptance'
+    || inputs.testAWSAccountId != '000000000000' && 'tests_mamr'
+    || 'tests_full' }}
   CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
   CI_COMMIT_SHA: ${{ github.sha }}
   CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
