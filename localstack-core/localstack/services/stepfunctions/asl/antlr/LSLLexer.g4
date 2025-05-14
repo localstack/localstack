@@ -61,8 +61,6 @@ PARALLEL: 'parallel';
 
 STRINGPATH: '"$"' | '"$' ('.' | '[') (ESC | SAFECODEPOINT)* '"';
 
-VAR: '$' [a-zA-Z_] (ESC | SAFECODEPOINT)*;
-
 STRING: '"' (ESC | SAFECODEPOINT)* '"';
 
 fragment ESC: '\\' (["\\/bfnrt] | UNICODE);

@@ -207,6 +207,21 @@ class Transpiler(LSLParserVisitor):
     def close_scope(self):
         self._scopes.pop()
 
+    def visitState_parallel(self, ctx: LSLParser.State_parallelContext):
+        branches = list()
+        for child in ctx.children:
+            if (
+                isinstance(child, ParserRuleContext)
+                and child.getRuleIndex() == LSLParser.RULE_process
+            ):
+                scope = self.new_inner_scope()
+                self.visit(child)
+                self.close_scope()
+                workflow = scope.to_scope_workflow()
+                branches.append(workflow)
+        state = {"Type": "Parallel", "End": True, "Branches": [*branches]}
+        return state
+
     def visitState_map(self, ctx: LSLParser.State_mapContext):
         scope = self.new_inner_scope()
         items_var_name = from_string_literal(ctx.IDEN())

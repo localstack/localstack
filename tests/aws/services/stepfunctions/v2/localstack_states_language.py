@@ -10,6 +10,81 @@ from localstack.utils.strings import short_uid
 
 class TestLocalStackStatesLanguage:
     @markers.aws.only_localstack
+    def test_parallel_anonymous(
+        self,
+        aws_client,
+        create_lambda_function,
+    ):
+        state_machine = LocalStackStateLanguageParser.parse("""
+            # Uses lambda to gree the user.
+            GreetUser(user_name) = lambda:invoke where
+              arguments {
+                FunctionName: "GreetingFunction",
+                Payload: {
+                  full_name: jsonata("Hello " & $user_name)
+                }
+              }
+            # Users lambda to email the user.
+            EmailUser(user_name) = lambda:invoke where
+              arguments {
+                FunctionName: "GreetingFunction",
+                Payload: {
+                  full_name: jsonata("an email to " & $user_name)
+                }
+              }
+            # Runs all of the tasks for a new user.
+            NewUserTasks(user) = parallel where
+              process {
+                greet = GreetUser(user_name = jsonata($user))
+                return jsonata($greet)
+              }
+              process {
+                email = EmailUser(user_name = jsonata($user))
+                return jsonata($email.Payload)
+              }
+            # Run all the new user tasks for all the users.
+            user_names = ["Lewis", "George", "James"]
+            tasks_outcomes = for next_user_name in jsonata($user_names) where
+              process {
+                NewUserTasks(user = jsonata($next_user_name))
+              }
+            return jsonata($tasks_outcomes)
+        """)
+        definition = json.dumps(state_machine)
+
+        sfn = aws_client.stepfunctions
+
+        create_state_machine_response = sfn.create_state_machine(
+            name=f"autogen-{short_uid()}",
+            definition=definition,
+            roleArn="arn:aws:iam::000000000000:role/dummy",
+        )
+        state_machine_arn = create_state_machine_response["stateMachineArn"]
+
+        function_name = "GreetingFunction"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=ServicesTemplates.LAMBDA_ID_FUNCTION,
+            runtime=Runtime.python3_12,
+        )
+
+        execute_state_machine_response = sfn.start_execution(stateMachineArn=state_machine_arn)
+        execution_arn = execute_state_machine_response["executionArn"]
+
+        await_execution_terminated(
+            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
+        )
+        execution_history_response = sfn.get_execution_history(executionArn=execution_arn)
+        assert "executionSucceededEventDetails" in execution_history_response["events"][-1]
+        details = execution_history_response["events"][-1]["executionSucceededEventDetails"]
+        assert "Hello George" in details["output"]
+        assert "Hello Lewis" in details["output"]
+        assert "Hello James" in details["output"]
+        assert "an email to George" in details["output"]
+        assert "an email to Lewis" in details["output"]
+        assert "an email to James" in details["output"]
+
+    @markers.aws.only_localstack
     def test_map_template_anonymous_inner_task(
         self,
         aws_client,
