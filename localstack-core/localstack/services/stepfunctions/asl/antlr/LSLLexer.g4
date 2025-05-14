@@ -54,6 +54,10 @@ CAUSE: 'cause';
 LAMBDA: 'lambda';
 ARGUMENTS: 'arguments';
 CATCH: 'catch';
+FOR: 'for';
+IN: 'in';
+PROCESS: 'process';
+PARALLEL: 'parallel';
 
 STRINGPATH: '"$"' | '"$' ('.' | '[') (ESC | SAFECODEPOINT)* '"';
 

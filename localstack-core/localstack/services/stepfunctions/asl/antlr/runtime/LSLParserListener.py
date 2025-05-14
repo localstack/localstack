@@ -80,6 +80,24 @@ class LSLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by LSLParser#state_map.
+    def enterState_map(self, ctx:LSLParser.State_mapContext):
+        pass
+
+    # Exit a parse tree produced by LSLParser#state_map.
+    def exitState_map(self, ctx:LSLParser.State_mapContext):
+        pass
+
+
+    # Enter a parse tree produced by LSLParser#state_parallel.
+    def enterState_parallel(self, ctx:LSLParser.State_parallelContext):
+        pass
+
+    # Exit a parse tree produced by LSLParser#state_parallel.
+    def exitState_parallel(self, ctx:LSLParser.State_parallelContext):
+        pass
+
+
     # Enter a parse tree produced by LSLParser#service_name.
     def enterService_name(self, ctx:LSLParser.Service_nameContext):
         pass
@@ -176,6 +194,15 @@ class LSLParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by LSLParser#cause.
     def exitCause(self, ctx:LSLParser.CauseContext):
+        pass
+
+
+    # Enter a parse tree produced by LSLParser#process.
+    def enterProcess(self, ctx:LSLParser.ProcessContext):
+        pass
+
+    # Exit a parse tree produced by LSLParser#process.
+    def exitProcess(self, ctx:LSLParser.ProcessContext):
         pass
 
 

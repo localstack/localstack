@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 from typing import Optional, OrderedDict
 
@@ -16,11 +18,14 @@ class Scope:
     _start_at: Optional[str]
     _states: OrderedDict[str, dict]
 
-    def __init__(self):
+    def __init__(self, upper_scope: Optional[Scope] = None):
         self._last_called = None
         self._start_at = None
+        if upper_scope is not None:
+            self._state_templates = copy.deepcopy(upper_scope._state_templates)
+        else:
+            self._state_templates = dict()
         self._states = OrderedDict()
-        self._state_templates = dict()
 
     def new_template(self, state_name: str, state: dict):
         self._state_templates[state_name] = state
@@ -193,6 +198,50 @@ class Transpiler(LSLParserVisitor):
                 key, value = self.visit(child)
                 where[key] = value
         return where
+
+    def new_inner_scope(self):
+        scope = Scope(self._this_scope())
+        self._scopes.append(scope)
+        return scope
+
+    def close_scope(self):
+        self._scopes.pop()
+
+    def visitState_map(self, ctx: LSLParser.State_mapContext):
+        scope = self.new_inner_scope()
+        items_var_name = from_string_literal(ctx.IDEN())
+        input_state_name = f"map:process:{ctx.start.line}:{ctx.start.column}:input"
+        input_state = {
+            "Type": "Pass",
+            "Assign": {items_var_name: "{% $states.input %}"},
+            "End": True,
+        }
+        scope.set_next(state_name=input_state_name, state=input_state)
+        self.visit(ctx.process())
+        self.close_scope()
+        inner_workflow = scope.to_scope_workflow()
+
+        items_expression = self.visit(ctx.json_value())
+        state = {
+            "Type": "Map",
+            "End": True,
+            "Items": items_expression,
+            "MaxConcurrency": 1,
+            "ItemProcessor": {"ProcessorConfig": {"Mode": "INLINE"}, **inner_workflow},
+        }
+        return state
+
+    def visitProcess(self, ctx: LSLParser.ProcessContext):
+        expressions = list()
+        for child in ctx.children:
+            if isinstance(child, ParserRuleContext) and child.getRuleIndex() in {
+                LSLParser.RULE_state_call,
+                LSLParser.RULE_state_declaration,
+                LSLParser.RULE_var_assign,
+            }:
+                expression = self.visit(child)
+                expressions.append(expression)
+        return expressions
 
     def visitArguments(self, ctx: LSLParser.ArgumentsContext):
         value = self.visit(ctx.json_value())

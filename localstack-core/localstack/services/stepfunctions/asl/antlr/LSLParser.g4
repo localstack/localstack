@@ -21,9 +21,11 @@ state_call:
     ;
 
 state:
-    service_name COLON IDEN task_where  # state_task
-    | FAIL fail_where                   # state_fail
-    | RETURN json_value                 # state_return
+    service_name COLON IDEN task_where      # state_task
+    | FAIL fail_where                       # state_fail
+    | RETURN json_value                     # state_return
+    | FOR IDEN IN json_value WHERE process  # state_map
+    | PARALLEL WHERE process+               # state_parallel
 ;
 
 service_name: LAMBDA;
@@ -46,6 +48,8 @@ args_assign: IDEN EQUALS json_value;
 
 error: ERROR string_or_jsonata;
 cause: CAUSE string_or_jsonata;
+
+process: PROCESS LBRACE (state_declaration | var_assign | state_call)+ RBRACE;
 
 var_assign:
     IDEN EQUALS state_call    # var_assign_state_call

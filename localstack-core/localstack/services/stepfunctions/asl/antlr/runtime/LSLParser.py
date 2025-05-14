@@ -10,76 +10,87 @@ else:
 
 def serializedATN():
     return [
-        4,1,48,207,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
+        4,1,52,234,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
         6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,2,13,7,13,
         2,14,7,14,2,15,7,15,2,16,7,16,2,17,7,17,2,18,7,18,2,19,7,19,2,20,
-        7,20,2,21,7,21,2,22,7,22,1,0,1,0,1,0,4,0,50,8,0,11,0,12,0,51,1,0,
-        1,0,1,1,1,1,1,1,1,1,1,1,1,2,1,2,1,2,1,2,1,2,1,2,3,2,67,8,2,1,3,1,
-        3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,3,3,78,8,3,1,4,1,4,1,5,1,5,3,5,84,
-        8,5,1,5,3,5,87,8,5,1,6,1,6,1,6,3,6,92,8,6,1,7,1,7,1,7,1,8,1,8,1,
-        8,1,8,5,8,101,8,8,10,8,12,8,104,9,8,1,8,1,8,1,9,1,9,1,9,1,9,1,10,
-        1,10,3,10,114,8,10,1,10,1,10,5,10,118,8,10,10,10,12,10,121,9,10,
-        1,10,1,10,1,11,1,11,1,11,1,11,5,11,129,8,11,10,11,12,11,132,9,11,
-        1,11,1,11,1,12,1,12,1,12,1,12,1,13,1,13,1,13,1,14,1,14,1,14,1,15,
-        1,15,1,15,1,15,1,15,1,15,3,15,152,8,15,1,16,1,16,1,16,3,16,157,8,
-        16,1,17,1,17,1,17,1,17,5,17,163,8,17,10,17,12,17,166,9,17,1,17,1,
-        17,1,17,1,17,3,17,172,8,17,1,18,1,18,1,18,1,18,1,19,1,19,1,19,1,
-        19,5,19,182,8,19,10,19,12,19,185,9,19,1,19,1,19,1,19,1,19,3,19,191,
-        8,19,1,20,1,20,1,20,1,20,1,20,1,20,3,20,199,8,20,1,21,1,21,3,21,
-        203,8,21,1,22,1,22,1,22,0,0,23,0,2,4,6,8,10,12,14,16,18,20,22,24,
-        26,28,30,32,34,36,38,40,42,44,0,3,2,0,43,43,46,46,1,0,28,29,2,0,
-        3,17,43,43,210,0,49,1,0,0,0,2,55,1,0,0,0,4,66,1,0,0,0,6,77,1,0,0,
-        0,8,79,1,0,0,0,10,81,1,0,0,0,12,88,1,0,0,0,14,93,1,0,0,0,16,96,1,
-        0,0,0,18,107,1,0,0,0,20,111,1,0,0,0,22,124,1,0,0,0,24,135,1,0,0,
-        0,26,139,1,0,0,0,28,142,1,0,0,0,30,151,1,0,0,0,32,156,1,0,0,0,34,
-        171,1,0,0,0,36,173,1,0,0,0,38,190,1,0,0,0,40,198,1,0,0,0,42,202,
-        1,0,0,0,44,204,1,0,0,0,46,50,3,2,1,0,47,50,3,30,15,0,48,50,3,4,2,
-        0,49,46,1,0,0,0,49,47,1,0,0,0,49,48,1,0,0,0,50,51,1,0,0,0,51,49,
-        1,0,0,0,51,52,1,0,0,0,52,53,1,0,0,0,53,54,5,0,0,1,54,1,1,0,0,0,55,
-        56,5,46,0,0,56,57,3,20,10,0,57,58,5,19,0,0,58,59,3,6,3,0,59,3,1,
-        0,0,0,60,61,5,46,0,0,61,67,3,22,11,0,62,63,5,46,0,0,63,64,5,32,0,
-        0,64,67,3,6,3,0,65,67,3,6,3,0,66,60,1,0,0,0,66,62,1,0,0,0,66,65,
-        1,0,0,0,67,5,1,0,0,0,68,69,3,8,4,0,69,70,5,21,0,0,70,71,5,46,0,0,
-        71,72,3,10,5,0,72,78,1,0,0,0,73,74,5,33,0,0,74,78,3,12,6,0,75,76,
-        5,35,0,0,76,78,3,32,16,0,77,68,1,0,0,0,77,73,1,0,0,0,77,75,1,0,0,
-        0,78,7,1,0,0,0,79,80,5,38,0,0,80,9,1,0,0,0,81,83,5,31,0,0,82,84,
-        3,14,7,0,83,82,1,0,0,0,83,84,1,0,0,0,84,86,1,0,0,0,85,87,3,16,8,
-        0,86,85,1,0,0,0,86,87,1,0,0,0,87,11,1,0,0,0,88,89,5,31,0,0,89,91,
-        3,26,13,0,90,92,3,28,14,0,91,90,1,0,0,0,91,92,1,0,0,0,92,13,1,0,
-        0,0,93,94,5,39,0,0,94,95,3,32,16,0,95,15,1,0,0,0,96,97,5,40,0,0,
-        97,98,5,26,0,0,98,102,3,18,9,0,99,101,3,18,9,0,100,99,1,0,0,0,101,
-        104,1,0,0,0,102,100,1,0,0,0,102,103,1,0,0,0,103,105,1,0,0,0,104,
-        102,1,0,0,0,105,106,5,27,0,0,106,17,1,0,0,0,107,108,3,44,22,0,108,
-        109,5,18,0,0,109,110,3,4,2,0,110,19,1,0,0,0,111,113,5,22,0,0,112,
-        114,5,46,0,0,113,112,1,0,0,0,113,114,1,0,0,0,114,119,1,0,0,0,115,
-        116,5,20,0,0,116,118,5,46,0,0,117,115,1,0,0,0,118,121,1,0,0,0,119,
-        117,1,0,0,0,119,120,1,0,0,0,120,122,1,0,0,0,121,119,1,0,0,0,122,
-        123,5,23,0,0,123,21,1,0,0,0,124,125,5,22,0,0,125,130,3,24,12,0,126,
-        127,5,20,0,0,127,129,3,24,12,0,128,126,1,0,0,0,129,132,1,0,0,0,130,
-        128,1,0,0,0,130,131,1,0,0,0,131,133,1,0,0,0,132,130,1,0,0,0,133,
-        134,5,23,0,0,134,23,1,0,0,0,135,136,5,46,0,0,136,137,5,19,0,0,137,
-        138,3,32,16,0,138,25,1,0,0,0,139,140,5,36,0,0,140,141,3,42,21,0,
-        141,27,1,0,0,0,142,143,5,37,0,0,143,144,3,42,21,0,144,29,1,0,0,0,
-        145,146,5,46,0,0,146,147,5,19,0,0,147,152,3,4,2,0,148,149,5,46,0,
-        0,149,150,5,19,0,0,150,152,3,32,16,0,151,145,1,0,0,0,151,148,1,0,
-        0,0,152,31,1,0,0,0,153,157,3,34,17,0,154,157,3,38,19,0,155,157,3,
-        40,20,0,156,153,1,0,0,0,156,154,1,0,0,0,156,155,1,0,0,0,157,33,1,
-        0,0,0,158,159,5,26,0,0,159,164,3,36,18,0,160,161,5,20,0,0,161,163,
-        3,36,18,0,162,160,1,0,0,0,163,166,1,0,0,0,164,162,1,0,0,0,164,165,
-        1,0,0,0,165,167,1,0,0,0,166,164,1,0,0,0,167,168,5,27,0,0,168,172,
-        1,0,0,0,169,170,5,26,0,0,170,172,5,27,0,0,171,158,1,0,0,0,171,169,
-        1,0,0,0,172,35,1,0,0,0,173,174,7,0,0,0,174,175,5,21,0,0,175,176,
-        3,32,16,0,176,37,1,0,0,0,177,178,5,24,0,0,178,183,3,32,16,0,179,
-        180,5,20,0,0,180,182,3,32,16,0,181,179,1,0,0,0,182,185,1,0,0,0,183,
-        181,1,0,0,0,183,184,1,0,0,0,184,186,1,0,0,0,185,183,1,0,0,0,186,
-        187,5,25,0,0,187,191,1,0,0,0,188,189,5,24,0,0,189,191,5,25,0,0,190,
-        177,1,0,0,0,190,188,1,0,0,0,191,39,1,0,0,0,192,199,5,45,0,0,193,
-        199,5,44,0,0,194,199,7,1,0,0,195,199,5,30,0,0,196,199,5,43,0,0,197,
-        199,5,2,0,0,198,192,1,0,0,0,198,193,1,0,0,0,198,194,1,0,0,0,198,
-        195,1,0,0,0,198,196,1,0,0,0,198,197,1,0,0,0,199,41,1,0,0,0,200,203,
-        5,43,0,0,201,203,5,2,0,0,202,200,1,0,0,0,202,201,1,0,0,0,203,43,
-        1,0,0,0,204,205,7,2,0,0,205,45,1,0,0,0,19,49,51,66,77,83,86,91,102,
-        113,119,130,151,156,164,171,183,190,198,202
+        7,20,2,21,7,21,2,22,7,22,2,23,7,23,1,0,1,0,1,0,4,0,52,8,0,11,0,12,
+        0,53,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,2,1,2,1,2,1,2,1,2,1,2,3,2,69,
+        8,2,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,1,3,
+        1,3,1,3,1,3,1,3,4,3,90,8,3,11,3,12,3,91,3,3,94,8,3,1,4,1,4,1,5,1,
+        5,3,5,100,8,5,1,5,3,5,103,8,5,1,6,1,6,1,6,3,6,108,8,6,1,7,1,7,1,
+        7,1,8,1,8,1,8,1,8,5,8,117,8,8,10,8,12,8,120,9,8,1,8,1,8,1,9,1,9,
+        1,9,1,9,1,10,1,10,3,10,130,8,10,1,10,1,10,5,10,134,8,10,10,10,12,
+        10,137,9,10,1,10,1,10,1,11,1,11,1,11,1,11,5,11,145,8,11,10,11,12,
+        11,148,9,11,1,11,1,11,1,12,1,12,1,12,1,12,1,13,1,13,1,13,1,14,1,
+        14,1,14,1,15,1,15,1,15,1,15,1,15,4,15,167,8,15,11,15,12,15,168,1,
+        15,1,15,1,16,1,16,1,16,1,16,1,16,1,16,3,16,179,8,16,1,17,1,17,1,
+        17,3,17,184,8,17,1,18,1,18,1,18,1,18,5,18,190,8,18,10,18,12,18,193,
+        9,18,1,18,1,18,1,18,1,18,3,18,199,8,18,1,19,1,19,1,19,1,19,1,20,
+        1,20,1,20,1,20,5,20,209,8,20,10,20,12,20,212,9,20,1,20,1,20,1,20,
+        1,20,3,20,218,8,20,1,21,1,21,1,21,1,21,1,21,1,21,3,21,226,8,21,1,
+        22,1,22,3,22,230,8,22,1,23,1,23,1,23,0,0,24,0,2,4,6,8,10,12,14,16,
+        18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,0,3,2,0,47,47,50,50,
+        1,0,28,29,2,0,3,17,47,47,242,0,51,1,0,0,0,2,57,1,0,0,0,4,68,1,0,
+        0,0,6,93,1,0,0,0,8,95,1,0,0,0,10,97,1,0,0,0,12,104,1,0,0,0,14,109,
+        1,0,0,0,16,112,1,0,0,0,18,123,1,0,0,0,20,127,1,0,0,0,22,140,1,0,
+        0,0,24,151,1,0,0,0,26,155,1,0,0,0,28,158,1,0,0,0,30,161,1,0,0,0,
+        32,178,1,0,0,0,34,183,1,0,0,0,36,198,1,0,0,0,38,200,1,0,0,0,40,217,
+        1,0,0,0,42,225,1,0,0,0,44,229,1,0,0,0,46,231,1,0,0,0,48,52,3,2,1,
+        0,49,52,3,32,16,0,50,52,3,4,2,0,51,48,1,0,0,0,51,49,1,0,0,0,51,50,
+        1,0,0,0,52,53,1,0,0,0,53,51,1,0,0,0,53,54,1,0,0,0,54,55,1,0,0,0,
+        55,56,5,0,0,1,56,1,1,0,0,0,57,58,5,50,0,0,58,59,3,20,10,0,59,60,
+        5,19,0,0,60,61,3,6,3,0,61,3,1,0,0,0,62,63,5,50,0,0,63,69,3,22,11,
+        0,64,65,5,50,0,0,65,66,5,32,0,0,66,69,3,6,3,0,67,69,3,6,3,0,68,62,
+        1,0,0,0,68,64,1,0,0,0,68,67,1,0,0,0,69,5,1,0,0,0,70,71,3,8,4,0,71,
+        72,5,21,0,0,72,73,5,50,0,0,73,74,3,10,5,0,74,94,1,0,0,0,75,76,5,
+        33,0,0,76,94,3,12,6,0,77,78,5,35,0,0,78,94,3,34,17,0,79,80,5,41,
+        0,0,80,81,5,50,0,0,81,82,5,42,0,0,82,83,3,34,17,0,83,84,5,31,0,0,
+        84,85,3,30,15,0,85,94,1,0,0,0,86,87,5,44,0,0,87,89,5,31,0,0,88,90,
+        3,30,15,0,89,88,1,0,0,0,90,91,1,0,0,0,91,89,1,0,0,0,91,92,1,0,0,
+        0,92,94,1,0,0,0,93,70,1,0,0,0,93,75,1,0,0,0,93,77,1,0,0,0,93,79,
+        1,0,0,0,93,86,1,0,0,0,94,7,1,0,0,0,95,96,5,38,0,0,96,9,1,0,0,0,97,
+        99,5,31,0,0,98,100,3,14,7,0,99,98,1,0,0,0,99,100,1,0,0,0,100,102,
+        1,0,0,0,101,103,3,16,8,0,102,101,1,0,0,0,102,103,1,0,0,0,103,11,
+        1,0,0,0,104,105,5,31,0,0,105,107,3,26,13,0,106,108,3,28,14,0,107,
+        106,1,0,0,0,107,108,1,0,0,0,108,13,1,0,0,0,109,110,5,39,0,0,110,
+        111,3,34,17,0,111,15,1,0,0,0,112,113,5,40,0,0,113,114,5,26,0,0,114,
+        118,3,18,9,0,115,117,3,18,9,0,116,115,1,0,0,0,117,120,1,0,0,0,118,
+        116,1,0,0,0,118,119,1,0,0,0,119,121,1,0,0,0,120,118,1,0,0,0,121,
+        122,5,27,0,0,122,17,1,0,0,0,123,124,3,46,23,0,124,125,5,18,0,0,125,
+        126,3,4,2,0,126,19,1,0,0,0,127,129,5,22,0,0,128,130,5,50,0,0,129,
+        128,1,0,0,0,129,130,1,0,0,0,130,135,1,0,0,0,131,132,5,20,0,0,132,
+        134,5,50,0,0,133,131,1,0,0,0,134,137,1,0,0,0,135,133,1,0,0,0,135,
+        136,1,0,0,0,136,138,1,0,0,0,137,135,1,0,0,0,138,139,5,23,0,0,139,
+        21,1,0,0,0,140,141,5,22,0,0,141,146,3,24,12,0,142,143,5,20,0,0,143,
+        145,3,24,12,0,144,142,1,0,0,0,145,148,1,0,0,0,146,144,1,0,0,0,146,
+        147,1,0,0,0,147,149,1,0,0,0,148,146,1,0,0,0,149,150,5,23,0,0,150,
+        23,1,0,0,0,151,152,5,50,0,0,152,153,5,19,0,0,153,154,3,34,17,0,154,
+        25,1,0,0,0,155,156,5,36,0,0,156,157,3,44,22,0,157,27,1,0,0,0,158,
+        159,5,37,0,0,159,160,3,44,22,0,160,29,1,0,0,0,161,162,5,43,0,0,162,
+        166,5,26,0,0,163,167,3,2,1,0,164,167,3,32,16,0,165,167,3,4,2,0,166,
+        163,1,0,0,0,166,164,1,0,0,0,166,165,1,0,0,0,167,168,1,0,0,0,168,
+        166,1,0,0,0,168,169,1,0,0,0,169,170,1,0,0,0,170,171,5,27,0,0,171,
+        31,1,0,0,0,172,173,5,50,0,0,173,174,5,19,0,0,174,179,3,4,2,0,175,
+        176,5,50,0,0,176,177,5,19,0,0,177,179,3,34,17,0,178,172,1,0,0,0,
+        178,175,1,0,0,0,179,33,1,0,0,0,180,184,3,36,18,0,181,184,3,40,20,
+        0,182,184,3,42,21,0,183,180,1,0,0,0,183,181,1,0,0,0,183,182,1,0,
+        0,0,184,35,1,0,0,0,185,186,5,26,0,0,186,191,3,38,19,0,187,188,5,
+        20,0,0,188,190,3,38,19,0,189,187,1,0,0,0,190,193,1,0,0,0,191,189,
+        1,0,0,0,191,192,1,0,0,0,192,194,1,0,0,0,193,191,1,0,0,0,194,195,
+        5,27,0,0,195,199,1,0,0,0,196,197,5,26,0,0,197,199,5,27,0,0,198,185,
+        1,0,0,0,198,196,1,0,0,0,199,37,1,0,0,0,200,201,7,0,0,0,201,202,5,
+        21,0,0,202,203,3,34,17,0,203,39,1,0,0,0,204,205,5,24,0,0,205,210,
+        3,34,17,0,206,207,5,20,0,0,207,209,3,34,17,0,208,206,1,0,0,0,209,
+        212,1,0,0,0,210,208,1,0,0,0,210,211,1,0,0,0,211,213,1,0,0,0,212,
+        210,1,0,0,0,213,214,5,25,0,0,214,218,1,0,0,0,215,216,5,24,0,0,216,
+        218,5,25,0,0,217,204,1,0,0,0,217,215,1,0,0,0,218,41,1,0,0,0,219,
+        226,5,49,0,0,220,226,5,48,0,0,221,226,7,1,0,0,222,226,5,30,0,0,223,
+        226,5,47,0,0,224,226,5,2,0,0,225,219,1,0,0,0,225,220,1,0,0,0,225,
+        221,1,0,0,0,225,222,1,0,0,0,225,223,1,0,0,0,225,224,1,0,0,0,226,
+        43,1,0,0,0,227,230,5,47,0,0,228,230,5,2,0,0,229,227,1,0,0,0,229,
+        228,1,0,0,0,230,45,1,0,0,0,231,232,7,2,0,0,232,47,1,0,0,0,22,51,
+        53,68,91,93,99,102,107,118,129,135,146,166,168,178,183,191,198,210,
+        217,225,229
     ]
 
 class LSLParser ( Parser ):
@@ -103,7 +114,7 @@ class LSLParser ( Parser ):
                      "':'", "'('", "')'", "'['", "']'", "'{'", "'}'", "'true'", 
                      "'false'", "'null'", "'where'", "'as'", "'fail'", "'output'", 
                      "'return'", "'error'", "'cause'", "'lambda'", "'arguments'", 
-                     "'catch'" ]
+                     "'catch'", "'for'", "'in'", "'process'", "'parallel'" ]
 
     symbolicNames = [ "<INVALID>", "LINECOMMENT", "JSONATA", "ERRORNAMEStatesALL", 
                       "ERRORNAMEStatesDataLimitExceeded", "ERRORNAMEStatesHeartbeatTimeout", 
@@ -117,8 +128,9 @@ class LSLParser ( Parser ):
                       "COMMA", "COLON", "LPAREN", "RPAREN", "LBRACK", "RBRACK", 
                       "LBRACE", "RBRACE", "TRUE", "FALSE", "NULL", "WHERE", 
                       "AS", "FAIL", "OUTPUT", "RETURN", "ERROR", "CAUSE", 
-                      "LAMBDA", "ARGUMENTS", "CATCH", "STRINGPATH", "VAR", 
-                      "STRING", "INT", "NUMBER", "IDEN", "WS", "TOK" ]
+                      "LAMBDA", "ARGUMENTS", "CATCH", "FOR", "IN", "PROCESS", 
+                      "PARALLEL", "STRINGPATH", "VAR", "STRING", "INT", 
+                      "NUMBER", "IDEN", "WS", "TOK" ]
 
     RULE_state_machine = 0
     RULE_state_declaration = 1
@@ -135,21 +147,22 @@ class LSLParser ( Parser ):
     RULE_args_assign = 12
     RULE_error = 13
     RULE_cause = 14
-    RULE_var_assign = 15
-    RULE_json_value = 16
-    RULE_json_object = 17
-    RULE_json_binding = 18
-    RULE_json_arr = 19
-    RULE_json_value_lit = 20
-    RULE_string_or_jsonata = 21
-    RULE_error_name = 22
+    RULE_process = 15
+    RULE_var_assign = 16
+    RULE_json_value = 17
+    RULE_json_object = 18
+    RULE_json_binding = 19
+    RULE_json_arr = 20
+    RULE_json_value_lit = 21
+    RULE_string_or_jsonata = 22
+    RULE_error_name = 23
 
     ruleNames =  [ "state_machine", "state_declaration", "state_call", "state", 
                    "service_name", "task_where", "fail_where", "arguments", 
                    "catch_block", "catch_case", "parameter_list", "args_assign_list", 
-                   "args_assign", "error", "cause", "var_assign", "json_value", 
-                   "json_object", "json_binding", "json_arr", "json_value_lit", 
-                   "string_or_jsonata", "error_name" ]
+                   "args_assign", "error", "cause", "process", "var_assign", 
+                   "json_value", "json_object", "json_binding", "json_arr", 
+                   "json_value_lit", "string_or_jsonata", "error_name" ]
 
     EOF = Token.EOF
     LINECOMMENT=1
@@ -192,14 +205,18 @@ class LSLParser ( Parser ):
     LAMBDA=38
     ARGUMENTS=39
     CATCH=40
-    STRINGPATH=41
-    VAR=42
-    STRING=43
-    INT=44
-    NUMBER=45
-    IDEN=46
-    WS=47
-    TOK=48
+    FOR=41
+    IN=42
+    PROCESS=43
+    PARALLEL=44
+    STRINGPATH=45
+    VAR=46
+    STRING=47
+    INT=48
+    NUMBER=49
+    IDEN=50
+    WS=51
+    TOK=52
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
@@ -268,36 +285,36 @@ class LSLParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 49 
+            self.state = 51 
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while True:
-                self.state = 49
+                self.state = 51
                 self._errHandler.sync(self)
                 la_ = self._interp.adaptivePredict(self._input,0,self._ctx)
                 if la_ == 1:
-                    self.state = 46
+                    self.state = 48
                     self.state_declaration()
                     pass
 
                 elif la_ == 2:
-                    self.state = 47
+                    self.state = 49
                     self.var_assign()
                     pass
 
                 elif la_ == 3:
-                    self.state = 48
+                    self.state = 50
                     self.state_call()
                     pass
 
 
-                self.state = 51 
+                self.state = 53 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & 70686571757568) != 0)):
+                if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & 1146008943722496) != 0)):
                     break
 
-            self.state = 53
+            self.state = 55
             self.match(LSLParser.EOF)
         except RecognitionException as re:
             localctx.exception = re
@@ -355,13 +372,13 @@ class LSLParser ( Parser ):
         self.enterRule(localctx, 2, self.RULE_state_declaration)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 55
-            self.match(LSLParser.IDEN)
-            self.state = 56
-            self.parameter_list()
             self.state = 57
-            self.match(LSLParser.EQUALS)
+            self.match(LSLParser.IDEN)
             self.state = 58
+            self.parameter_list()
+            self.state = 59
+            self.match(LSLParser.EQUALS)
+            self.state = 60
             self.state_()
         except RecognitionException as re:
             localctx.exception = re
@@ -476,33 +493,33 @@ class LSLParser ( Parser ):
         localctx = LSLParser.State_callContext(self, self._ctx, self.state)
         self.enterRule(localctx, 4, self.RULE_state_call)
         try:
-            self.state = 66
+            self.state = 68
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,2,self._ctx)
             if la_ == 1:
                 localctx = LSLParser.State_call_templateContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
-                self.state = 60
+                self.state = 62
                 self.match(LSLParser.IDEN)
-                self.state = 61
+                self.state = 63
                 self.args_assign_list()
                 pass
 
             elif la_ == 2:
                 localctx = LSLParser.State_call_namedContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
-                self.state = 62
-                self.match(LSLParser.IDEN)
-                self.state = 63
-                self.match(LSLParser.AS)
                 self.state = 64
+                self.match(LSLParser.IDEN)
+                self.state = 65
+                self.match(LSLParser.AS)
+                self.state = 66
                 self.state_()
                 pass
 
             elif la_ == 3:
                 localctx = LSLParser.State_call_anonymousContext(self, localctx)
                 self.enterOuterAlt(localctx, 3)
-                self.state = 65
+                self.state = 67
                 self.state_()
                 pass
 
@@ -587,6 +604,38 @@ class LSLParser ( Parser ):
                 return visitor.visitChildren(self)
 
 
+    class State_parallelContext(StateContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a LSLParser.StateContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def PARALLEL(self):
+            return self.getToken(LSLParser.PARALLEL, 0)
+        def WHERE(self):
+            return self.getToken(LSLParser.WHERE, 0)
+        def process(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(LSLParser.ProcessContext)
+            else:
+                return self.getTypedRuleContext(LSLParser.ProcessContext,i)
+
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterState_parallel" ):
+                listener.enterState_parallel(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitState_parallel" ):
+                listener.exitState_parallel(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitState_parallel" ):
+                return visitor.visitState_parallel(self)
+            else:
+                return visitor.visitChildren(self)
+
+
     class State_taskContext(StateContext):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a LSLParser.StateContext
@@ -619,42 +668,115 @@ class LSLParser ( Parser ):
                 return visitor.visitChildren(self)
 
 
+    class State_mapContext(StateContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a LSLParser.StateContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def FOR(self):
+            return self.getToken(LSLParser.FOR, 0)
+        def IDEN(self):
+            return self.getToken(LSLParser.IDEN, 0)
+        def IN(self):
+            return self.getToken(LSLParser.IN, 0)
+        def json_value(self):
+            return self.getTypedRuleContext(LSLParser.Json_valueContext,0)
+
+        def WHERE(self):
+            return self.getToken(LSLParser.WHERE, 0)
+        def process(self):
+            return self.getTypedRuleContext(LSLParser.ProcessContext,0)
+
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterState_map" ):
+                listener.enterState_map(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitState_map" ):
+                listener.exitState_map(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitState_map" ):
+                return visitor.visitState_map(self)
+            else:
+                return visitor.visitChildren(self)
+
+
 
     def state_(self):
 
         localctx = LSLParser.StateContext(self, self._ctx, self.state)
         self.enterRule(localctx, 6, self.RULE_state)
+        self._la = 0 # Token type
         try:
-            self.state = 77
+            self.state = 93
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [38]:
                 localctx = LSLParser.State_taskContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
-                self.state = 68
-                self.service_name()
-                self.state = 69
-                self.match(LSLParser.COLON)
                 self.state = 70
-                self.match(LSLParser.IDEN)
+                self.service_name()
                 self.state = 71
+                self.match(LSLParser.COLON)
+                self.state = 72
+                self.match(LSLParser.IDEN)
+                self.state = 73
                 self.task_where()
                 pass
             elif token in [33]:
                 localctx = LSLParser.State_failContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
-                self.state = 73
+                self.state = 75
                 self.match(LSLParser.FAIL)
-                self.state = 74
+                self.state = 76
                 self.fail_where()
                 pass
             elif token in [35]:
                 localctx = LSLParser.State_returnContext(self, localctx)
                 self.enterOuterAlt(localctx, 3)
-                self.state = 75
+                self.state = 77
                 self.match(LSLParser.RETURN)
-                self.state = 76
+                self.state = 78
                 self.json_value()
+                pass
+            elif token in [41]:
+                localctx = LSLParser.State_mapContext(self, localctx)
+                self.enterOuterAlt(localctx, 4)
+                self.state = 79
+                self.match(LSLParser.FOR)
+                self.state = 80
+                self.match(LSLParser.IDEN)
+                self.state = 81
+                self.match(LSLParser.IN)
+                self.state = 82
+                self.json_value()
+                self.state = 83
+                self.match(LSLParser.WHERE)
+                self.state = 84
+                self.process()
+                pass
+            elif token in [44]:
+                localctx = LSLParser.State_parallelContext(self, localctx)
+                self.enterOuterAlt(localctx, 5)
+                self.state = 86
+                self.match(LSLParser.PARALLEL)
+                self.state = 87
+                self.match(LSLParser.WHERE)
+                self.state = 89 
+                self._errHandler.sync(self)
+                _la = self._input.LA(1)
+                while True:
+                    self.state = 88
+                    self.process()
+                    self.state = 91 
+                    self._errHandler.sync(self)
+                    _la = self._input.LA(1)
+                    if not (_la==43):
+                        break
+
                 pass
             else:
                 raise NoViableAltException(self)
@@ -704,7 +826,7 @@ class LSLParser ( Parser ):
         self.enterRule(localctx, 8, self.RULE_service_name)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 79
+            self.state = 95
             self.match(LSLParser.LAMBDA)
         except RecognitionException as re:
             localctx.exception = re
@@ -760,21 +882,21 @@ class LSLParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 81
+            self.state = 97
             self.match(LSLParser.WHERE)
-            self.state = 83
+            self.state = 99
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             if _la==39:
-                self.state = 82
+                self.state = 98
                 self.arguments()
 
 
-            self.state = 86
+            self.state = 102
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             if _la==40:
-                self.state = 85
+                self.state = 101
                 self.catch_block()
 
 
@@ -832,15 +954,15 @@ class LSLParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 88
+            self.state = 104
             self.match(LSLParser.WHERE)
-            self.state = 89
+            self.state = 105
             self.error()
-            self.state = 91
+            self.state = 107
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             if _la==37:
-                self.state = 90
+                self.state = 106
                 self.cause()
 
 
@@ -893,9 +1015,9 @@ class LSLParser ( Parser ):
         self.enterRule(localctx, 14, self.RULE_arguments)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 93
+            self.state = 109
             self.match(LSLParser.ARGUMENTS)
-            self.state = 94
+            self.state = 110
             self.json_value()
         except RecognitionException as re:
             localctx.exception = re
@@ -956,23 +1078,23 @@ class LSLParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 96
+            self.state = 112
             self.match(LSLParser.CATCH)
-            self.state = 97
+            self.state = 113
             self.match(LSLParser.LBRACE)
-            self.state = 98
+            self.state = 114
             self.catch_case()
-            self.state = 102
+            self.state = 118
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 8796093284344) != 0):
-                self.state = 99
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 140737488617464) != 0):
+                self.state = 115
                 self.catch_case()
-                self.state = 104
+                self.state = 120
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
 
-            self.state = 105
+            self.state = 121
             self.match(LSLParser.RBRACE)
         except RecognitionException as re:
             localctx.exception = re
@@ -1027,11 +1149,11 @@ class LSLParser ( Parser ):
         self.enterRule(localctx, 18, self.RULE_catch_case)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 107
+            self.state = 123
             self.error_name()
-            self.state = 108
+            self.state = 124
             self.match(LSLParser.ARROW)
-            self.state = 109
+            self.state = 125
             self.state_call()
         except RecognitionException as re:
             localctx.exception = re
@@ -1094,29 +1216,29 @@ class LSLParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 111
+            self.state = 127
             self.match(LSLParser.LPAREN)
-            self.state = 113
+            self.state = 129
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==46:
-                self.state = 112
+            if _la==50:
+                self.state = 128
                 self.match(LSLParser.IDEN)
 
 
-            self.state = 119
+            self.state = 135
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while _la==20:
-                self.state = 115
+                self.state = 131
                 self.match(LSLParser.COMMA)
-                self.state = 116
+                self.state = 132
                 self.match(LSLParser.IDEN)
-                self.state = 121
+                self.state = 137
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
 
-            self.state = 122
+            self.state = 138
             self.match(LSLParser.RPAREN)
         except RecognitionException as re:
             localctx.exception = re
@@ -1180,23 +1302,23 @@ class LSLParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 124
+            self.state = 140
             self.match(LSLParser.LPAREN)
-            self.state = 125
+            self.state = 141
             self.args_assign()
-            self.state = 130
+            self.state = 146
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while _la==20:
-                self.state = 126
+                self.state = 142
                 self.match(LSLParser.COMMA)
-                self.state = 127
+                self.state = 143
                 self.args_assign()
-                self.state = 132
+                self.state = 148
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
 
-            self.state = 133
+            self.state = 149
             self.match(LSLParser.RPAREN)
         except RecognitionException as re:
             localctx.exception = re
@@ -1250,11 +1372,11 @@ class LSLParser ( Parser ):
         self.enterRule(localctx, 24, self.RULE_args_assign)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 135
+            self.state = 151
             self.match(LSLParser.IDEN)
-            self.state = 136
+            self.state = 152
             self.match(LSLParser.EQUALS)
-            self.state = 137
+            self.state = 153
             self.json_value()
         except RecognitionException as re:
             localctx.exception = re
@@ -1305,9 +1427,9 @@ class LSLParser ( Parser ):
         self.enterRule(localctx, 26, self.RULE_error)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 139
+            self.state = 155
             self.match(LSLParser.ERROR)
-            self.state = 140
+            self.state = 156
             self.string_or_jsonata()
         except RecognitionException as re:
             localctx.exception = re
@@ -1358,10 +1480,118 @@ class LSLParser ( Parser ):
         self.enterRule(localctx, 28, self.RULE_cause)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 142
+            self.state = 158
             self.match(LSLParser.CAUSE)
-            self.state = 143
+            self.state = 159
             self.string_or_jsonata()
+        except RecognitionException as re:
+            localctx.exception = re
+            self._errHandler.reportError(self, re)
+            self._errHandler.recover(self, re)
+        finally:
+            self.exitRule()
+        return localctx
+
+
+    class ProcessContext(ParserRuleContext):
+        __slots__ = 'parser'
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
+            self.parser = parser
+
+        def PROCESS(self):
+            return self.getToken(LSLParser.PROCESS, 0)
+
+        def LBRACE(self):
+            return self.getToken(LSLParser.LBRACE, 0)
+
+        def RBRACE(self):
+            return self.getToken(LSLParser.RBRACE, 0)
+
+        def state_declaration(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(LSLParser.State_declarationContext)
+            else:
+                return self.getTypedRuleContext(LSLParser.State_declarationContext,i)
+
+
+        def var_assign(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(LSLParser.Var_assignContext)
+            else:
+                return self.getTypedRuleContext(LSLParser.Var_assignContext,i)
+
+
+        def state_call(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(LSLParser.State_callContext)
+            else:
+                return self.getTypedRuleContext(LSLParser.State_callContext,i)
+
+
+        def getRuleIndex(self):
+            return LSLParser.RULE_process
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterProcess" ):
+                listener.enterProcess(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitProcess" ):
+                listener.exitProcess(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitProcess" ):
+                return visitor.visitProcess(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+
+
+    def process(self):
+
+        localctx = LSLParser.ProcessContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 30, self.RULE_process)
+        self._la = 0 # Token type
+        try:
+            self.enterOuterAlt(localctx, 1)
+            self.state = 161
+            self.match(LSLParser.PROCESS)
+            self.state = 162
+            self.match(LSLParser.LBRACE)
+            self.state = 166 
+            self._errHandler.sync(self)
+            _la = self._input.LA(1)
+            while True:
+                self.state = 166
+                self._errHandler.sync(self)
+                la_ = self._interp.adaptivePredict(self._input,12,self._ctx)
+                if la_ == 1:
+                    self.state = 163
+                    self.state_declaration()
+                    pass
+
+                elif la_ == 2:
+                    self.state = 164
+                    self.var_assign()
+                    pass
+
+                elif la_ == 3:
+                    self.state = 165
+                    self.state_call()
+                    pass
+
+
+                self.state = 168 
+                self._errHandler.sync(self)
+                _la = self._input.LA(1)
+                if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & 1146008943722496) != 0)):
+                    break
+
+            self.state = 170
+            self.match(LSLParser.RBRACE)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -1450,30 +1680,30 @@ class LSLParser ( Parser ):
     def var_assign(self):
 
         localctx = LSLParser.Var_assignContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 30, self.RULE_var_assign)
+        self.enterRule(localctx, 32, self.RULE_var_assign)
         try:
-            self.state = 151
+            self.state = 178
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,11,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input,14,self._ctx)
             if la_ == 1:
                 localctx = LSLParser.Var_assign_state_callContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
-                self.state = 145
+                self.state = 172
                 self.match(LSLParser.IDEN)
-                self.state = 146
+                self.state = 173
                 self.match(LSLParser.EQUALS)
-                self.state = 147
+                self.state = 174
                 self.state_call()
                 pass
 
             elif la_ == 2:
                 localctx = LSLParser.Var_assign_json_valueContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
-                self.state = 148
+                self.state = 175
                 self.match(LSLParser.IDEN)
-                self.state = 149
+                self.state = 176
                 self.match(LSLParser.EQUALS)
-                self.state = 150
+                self.state = 177
                 self.json_value()
                 pass
 
@@ -1529,24 +1759,24 @@ class LSLParser ( Parser ):
     def json_value(self):
 
         localctx = LSLParser.Json_valueContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 32, self.RULE_json_value)
+        self.enterRule(localctx, 34, self.RULE_json_value)
         try:
-            self.state = 156
+            self.state = 183
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [26]:
                 self.enterOuterAlt(localctx, 1)
-                self.state = 153
+                self.state = 180
                 self.json_object()
                 pass
             elif token in [24]:
                 self.enterOuterAlt(localctx, 2)
-                self.state = 154
+                self.state = 181
                 self.json_arr()
                 pass
-            elif token in [2, 28, 29, 30, 43, 44, 45]:
+            elif token in [2, 28, 29, 30, 47, 48, 49]:
                 self.enterOuterAlt(localctx, 3)
-                self.state = 155
+                self.state = 182
                 self.json_value_lit()
                 pass
             else:
@@ -1610,39 +1840,39 @@ class LSLParser ( Parser ):
     def json_object(self):
 
         localctx = LSLParser.Json_objectContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 34, self.RULE_json_object)
+        self.enterRule(localctx, 36, self.RULE_json_object)
         self._la = 0 # Token type
         try:
-            self.state = 171
+            self.state = 198
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,14,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input,17,self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
-                self.state = 158
+                self.state = 185
                 self.match(LSLParser.LBRACE)
-                self.state = 159
+                self.state = 186
                 self.json_binding()
-                self.state = 164
+                self.state = 191
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while _la==20:
-                    self.state = 160
+                    self.state = 187
                     self.match(LSLParser.COMMA)
-                    self.state = 161
+                    self.state = 188
                     self.json_binding()
-                    self.state = 166
+                    self.state = 193
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
 
-                self.state = 167
+                self.state = 194
                 self.match(LSLParser.RBRACE)
                 pass
 
             elif la_ == 2:
                 self.enterOuterAlt(localctx, 2)
-                self.state = 169
+                self.state = 196
                 self.match(LSLParser.LBRACE)
-                self.state = 170
+                self.state = 197
                 self.match(LSLParser.RBRACE)
                 pass
 
@@ -1699,20 +1929,20 @@ class LSLParser ( Parser ):
     def json_binding(self):
 
         localctx = LSLParser.Json_bindingContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 36, self.RULE_json_binding)
+        self.enterRule(localctx, 38, self.RULE_json_binding)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 173
+            self.state = 200
             _la = self._input.LA(1)
-            if not(_la==43 or _la==46):
+            if not(_la==47 or _la==50):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
                 self.consume()
-            self.state = 174
+            self.state = 201
             self.match(LSLParser.COLON)
-            self.state = 175
+            self.state = 202
             self.json_value()
         except RecognitionException as re:
             localctx.exception = re
@@ -1772,39 +2002,39 @@ class LSLParser ( Parser ):
     def json_arr(self):
 
         localctx = LSLParser.Json_arrContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 38, self.RULE_json_arr)
+        self.enterRule(localctx, 40, self.RULE_json_arr)
         self._la = 0 # Token type
         try:
-            self.state = 190
+            self.state = 217
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,16,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input,19,self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
-                self.state = 177
+                self.state = 204
                 self.match(LSLParser.LBRACK)
-                self.state = 178
+                self.state = 205
                 self.json_value()
-                self.state = 183
+                self.state = 210
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while _la==20:
-                    self.state = 179
+                    self.state = 206
                     self.match(LSLParser.COMMA)
-                    self.state = 180
+                    self.state = 207
                     self.json_value()
-                    self.state = 185
+                    self.state = 212
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
 
-                self.state = 186
+                self.state = 213
                 self.match(LSLParser.RBRACK)
                 pass
 
             elif la_ == 2:
                 self.enterOuterAlt(localctx, 2)
-                self.state = 188
+                self.state = 215
                 self.match(LSLParser.LBRACK)
-                self.state = 189
+                self.state = 216
                 self.match(LSLParser.RBRACK)
                 pass
 
@@ -1985,28 +2215,28 @@ class LSLParser ( Parser ):
     def json_value_lit(self):
 
         localctx = LSLParser.Json_value_litContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 40, self.RULE_json_value_lit)
+        self.enterRule(localctx, 42, self.RULE_json_value_lit)
         self._la = 0 # Token type
         try:
-            self.state = 198
+            self.state = 225
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [45]:
+            if token in [49]:
                 localctx = LSLParser.Json_value_floatContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
-                self.state = 192
+                self.state = 219
                 self.match(LSLParser.NUMBER)
                 pass
-            elif token in [44]:
+            elif token in [48]:
                 localctx = LSLParser.Json_value_intContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
-                self.state = 193
+                self.state = 220
                 self.match(LSLParser.INT)
                 pass
             elif token in [28, 29]:
                 localctx = LSLParser.Json_value_boolContext(self, localctx)
                 self.enterOuterAlt(localctx, 3)
-                self.state = 194
+                self.state = 221
                 _la = self._input.LA(1)
                 if not(_la==28 or _la==29):
                     self._errHandler.recoverInline(self)
@@ -2017,19 +2247,19 @@ class LSLParser ( Parser ):
             elif token in [30]:
                 localctx = LSLParser.Json_value_nullContext(self, localctx)
                 self.enterOuterAlt(localctx, 4)
-                self.state = 195
+                self.state = 222
                 self.match(LSLParser.NULL)
                 pass
-            elif token in [43]:
+            elif token in [47]:
                 localctx = LSLParser.Json_value_strContext(self, localctx)
                 self.enterOuterAlt(localctx, 5)
-                self.state = 196
+                self.state = 223
                 self.match(LSLParser.STRING)
                 pass
             elif token in [2]:
                 localctx = LSLParser.Json_value_jsonataContext(self, localctx)
                 self.enterOuterAlt(localctx, 6)
-                self.state = 197
+                self.state = 224
                 self.match(LSLParser.JSONATA)
                 pass
             else:
@@ -2113,21 +2343,21 @@ class LSLParser ( Parser ):
     def string_or_jsonata(self):
 
         localctx = LSLParser.String_or_jsonataContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 42, self.RULE_string_or_jsonata)
+        self.enterRule(localctx, 44, self.RULE_string_or_jsonata)
         try:
-            self.state = 202
+            self.state = 229
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [43]:
+            if token in [47]:
                 localctx = LSLParser.String_or_jsonata_stringContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
-                self.state = 200
+                self.state = 227
                 self.match(LSLParser.STRING)
                 pass
             elif token in [2]:
                 localctx = LSLParser.String_or_jsonata_jsonataContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
-                self.state = 201
+                self.state = 228
                 self.match(LSLParser.JSONATA)
                 pass
             else:
@@ -2220,13 +2450,13 @@ class LSLParser ( Parser ):
     def error_name(self):
 
         localctx = LSLParser.Error_nameContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 44, self.RULE_error_name)
+        self.enterRule(localctx, 46, self.RULE_error_name)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 204
+            self.state = 231
             _la = self._input.LA(1)
-            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 8796093284344) != 0)):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 140737488617464) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)

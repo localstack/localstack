@@ -49,6 +49,16 @@ class LSLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by LSLParser#state_map.
+    def visitState_map(self, ctx:LSLParser.State_mapContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by LSLParser#state_parallel.
+    def visitState_parallel(self, ctx:LSLParser.State_parallelContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by LSLParser#service_name.
     def visitService_name(self, ctx:LSLParser.Service_nameContext):
         return self.visitChildren(ctx)
@@ -101,6 +111,11 @@ class LSLParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by LSLParser#cause.
     def visitCause(self, ctx:LSLParser.CauseContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by LSLParser#process.
+    def visitProcess(self, ctx:LSLParser.ProcessContext):
         return self.visitChildren(ctx)
 
 
