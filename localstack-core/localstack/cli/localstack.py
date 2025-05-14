@@ -882,6 +882,72 @@ def update_images(image_list: List[str]) -> None:
     )
 
 
+@localstack.group(name="tool", short_help="Manage LocalStack helper tools")
+def localstack_tool() -> None:
+    """
+    Manage LocalStack helper tools.
+    """
+    pass
+
+
+@localstack_tool.command(name="install", short_help="Install a helper tool")
+@click.argument("tool", type=click.Choice(["aws"], case_sensitive=False))
+@publish_invocation
+def cmd_tool_install(tool: str) -> None:
+    """
+    Install a helper tool. Currently supported:
+      aws - installs 'awscli-local' via pip.
+    """
+    mapping = {
+        "aws": "awscli-local",
+    }
+    package = mapping.get(tool.lower())
+    if not package:
+        raise CLIError(f"Unknown tool: {tool}")
+
+    console.rule(f"Installing {package}")
+    try:
+        import subprocess
+        import sys
+        from subprocess import CalledProcessError
+
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+        console.print(f":heavy_check_mark: Installed {package}")
+    except CalledProcessError:
+        console.print(f":heavy_multiplication_x: Failed to install {package}", style="bold red")
+        sys.exit(1)
+
+
+@localstack_tool.command(name="ls", short_help="List available helper tools")
+@publish_invocation
+def cmd_tool_ls() -> None:
+    """
+    List all external LocalStack helper tools found in the user's PATH.
+    """
+    import os
+
+    paths = os.environ.get("PATH", "").split(os.pathsep)
+    tools = set()
+    for dir_path in paths:
+        if not os.path.isdir(dir_path):
+            continue
+        try:
+            for entry in os.listdir(dir_path):
+                if entry.startswith("localstack-"):
+                    full_path = os.path.join(dir_path, entry)
+                    if os.access(full_path, os.X_OK) and not os.path.isdir(full_path):
+                        tools.add(entry)
+        except PermissionError:
+            continue
+
+    if tools:
+        console.print("Available external tools:")
+        for tool in sorted(tools):
+            console.print(f"  - {tool}")
+    else:
+        console.print("No external LocalStack tools found.")
+
+
 @localstack.command(name="completion", short_help="CLI shell completion")
 @click.pass_context
 @click.argument(
