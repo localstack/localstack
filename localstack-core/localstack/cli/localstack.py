@@ -45,6 +45,41 @@ class LocalStackCliGroup(click.Group):
         "replicator",
     ]
 
+    def get_command(self, ctx: click.Context, cmd_name: str):
+        """
+        Look for an external plugin named `localstack-<cmd_name>` in the user's PATH
+        and invoke it if present.
+        """
+        # First try built-in commands
+        cmd = super(LocalStackCliGroup, self).get_command(ctx, cmd_name)
+        if cmd is not None:
+            return cmd
+
+        # Fallback to external plugin
+        from shutil import which
+
+        exe_name = f"localstack-{cmd_name}"
+        exe_path = which(exe_name)
+        if exe_path:
+            import os
+
+            from click.decorators import pass_context
+
+            # Callback to exec the external command with all args
+            def _run_external(ctx, args):
+                os.execvp(exe_path, [exe_path] + list(args))
+
+            _run_external = pass_context(_run_external)
+            return click.Command(
+                name=cmd_name,
+                params=[click.Argument(["args"], nargs=-1)],
+                callback=_run_external,
+                help=f"External plugin command for '{cmd_name}'",
+                add_help_option=False,
+            )
+
+        return None
+
     def invoke(self, ctx: click.Context):
         try:
             return super(LocalStackCliGroup, self).invoke(ctx)
