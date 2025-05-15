@@ -5,7 +5,6 @@ from pathlib import Path
 import click
 import yaml
 
-from localstack.logging.setup import setup_logging_from_config
 from localstack.services.cloudformation.autogen import (
     formatting,
     generation,
@@ -14,8 +13,9 @@ from localstack.services.cloudformation.autogen import (
     specs,
 )
 from localstack.services.cloudformation.autogen.generation import generate_resources_from_spec
+from localstack.utils.functions import run_safe
 
-setup_logging_from_config()
+# setup_logging_from_config()
 
 LOG = logging.getLogger("localstack.services.cloudformation.autogen.cli")
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"], show_default=True)
@@ -27,10 +27,13 @@ def main():
 
 
 @main.command()
-@click.option("-r", "--resource", "resource_name", help="Which resource to generate")
+@click.option("-r", "--resource", "resource_name", help="Which resource to generate", required=True)
 @click.option("-O", "--add-optionals", is_flag=True, help="Also generate additional properties")
 @click.option("-o", "--output", type=click.File("w"), help="Output file to write to", default="-")
 def single(resource_name: str, add_optionals: bool, output: click.File) -> None:
+    """
+    Generate a random resource
+    """
     LOG.info("Generating resource definition for '%s'", resource_name)
 
     spec = specs.read_spec_for(resource_name)
@@ -43,7 +46,9 @@ def single(resource_name: str, add_optionals: bool, output: click.File) -> None:
 
 
 @main.command()
-@click.option("-t", "--resource-type", multiple=True, help="Available resources to choose from")
+@click.option(
+    "-t", "--resource-type", multiple=True, help="Available resources to choose from", required=True
+)
 @click.option(
     "-r",
     "--range",
@@ -54,6 +59,9 @@ def single(resource_name: str, add_optionals: bool, output: click.File) -> None:
 )
 @click.option("-o", "--output", type=click.File("w"), help="Output file to write to", default="-")
 def template(resource_type: list[str], resource_count: tuple[int, int], output: click.File):
+    """
+    Generate a randomised template.
+    """
     resources = generate_resources_from_spec(resource_type, resource_count)
     yaml.safe_dump({"Resources": resources}, output)
 
@@ -67,8 +75,13 @@ def template(resource_type: list[str], resource_count: tuple[int, int], output: 
 )
 @click.option("-o", "--output", "output_path", type=Path, help="Output file", required=True)
 def gen_permutations(output_path: Path, count: int):
+    """
+    Generate permutations of similar templates.
+    """
     output_path.mkdir(parents=True, exist_ok=True)
     permutations.generate_templates(output_path, count=count)
+    for template_path in output_path.glob("*.yml"):
+        run_safe(formatting.format_file, template_path)
 
 
 if __name__ == "__main__":

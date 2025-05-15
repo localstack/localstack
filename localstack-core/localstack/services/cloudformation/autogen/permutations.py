@@ -1,6 +1,7 @@
 import enum
 import io
 import random
+import subprocess as sp
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -77,7 +78,7 @@ class Graph:
             if new_edge.to == edge.from_ and new_edge.from_ == edge.to:
                 return True
 
-        return False
+        return new_edge.to == new_edge.from_
 
     def apply_operation(self, op: Operation):
         print(f"Applying operation {op}")
@@ -152,6 +153,16 @@ class Graph:
 
         return yaml.safe_dump(template)
 
+    def render_png(self, output_path: Path):
+        dot = self.to_dot()
+        sp.run(
+            ["dot", "-Tpng", "-o", str(output_path)],
+            input=dot,
+            text=True,
+            capture_output=False,
+            check=True,
+        )
+
 
 def generate_templates(output_path: Path, count: int = 10):
     # TODO: clear_files(output_path)
@@ -159,6 +170,7 @@ def generate_templates(output_path: Path, count: int = 10):
     for i in range(count):
         with (output_path / f"template_{i}.yml").open("w") as outfile:
             print(g.render_template(), file=outfile)
+        g.render_png(output_path / f"template_{i}.png")
         g = permute_existing_graph(g, count)
 
 
