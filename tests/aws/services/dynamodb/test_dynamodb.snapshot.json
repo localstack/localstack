@@ -1729,37 +1729,6 @@
       }
     }
   },
-  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_stream_on_global_table": {
-    "recorded-date": "14-05-2025, 15:16:41",
-    "recorded-content": {
-      "us-streams": {
-        "Streams": [
-          {
-            "StreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/table-c862ab47/stream/2025-05-14T15:16:14.104",
-            "StreamLabel": "2025-05-14T15:16:14.104",
-            "TableName": "table-c862ab47"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "eu-streams": {
-        "Streams": [
-          {
-            "StreamArn": "arn:<partition>:dynamodb:eu-central-1:111111111111:table/table-c862ab47/stream/2025-05-14T15:16:28.677",
-            "StreamLabel": "2025-05-14T15:16:28.677",
-            "TableName": "table-c862ab47"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_streams_on_global_tables": {
     "recorded-date": "15-05-2025, 09:45:31",
     "recorded-content": {

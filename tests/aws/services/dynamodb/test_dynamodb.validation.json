@@ -74,9 +74,6 @@
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_return_values_on_conditions_check_failure": {
     "last_validated_date": "2024-01-03T17:52:19+00:00"
   },
-  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_stream_on_global_table": {
-    "last_validated_date": "2025-05-14T15:16:40+00:00"
-  },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_streams_on_global_tables": {
     "last_validated_date": "2025-05-15T09:45:30+00:00"
   },
