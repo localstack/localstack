@@ -38,6 +38,8 @@ TEST_DDB_TAGS = [
     {"Key": "TestKey", "Value": "true"},
 ]
 
+WAIT_SEC = 10 if is_aws_cloud() else 1
+
 
 @pytest.fixture(autouse=True)
 def dynamodb_snapshot_transformer(snapshot):
@@ -1170,7 +1172,7 @@ class TestDynamoDB:
         cleanups.append(lambda: us_east_factory.dynamodb.delete_table(TableName=table_name))
         # Note: we might be unable to delete tables that act as source region immediately on AWS
         waiter = us_east_factory.dynamodb.get_waiter("table_exists")
-        waiter.wait(TableName=table_name, WaiterConfig={"Delay": 5, "MaxAttempts": 20})
+        waiter.wait(TableName=table_name, WaiterConfig={"Delay": WAIT_SEC, "MaxAttempts": 20})
         # Update the Table by adding a replica
         us_east_factory.dynamodb.update_table(
             TableName=table_name,
@@ -1178,8 +1180,7 @@ class TestDynamoDB:
         )
         cleanups.append(lambda: eu_central_factory.dynamodb.delete_table(TableName=table_name))
         waiter = eu_central_factory.dynamodb.get_waiter("table_exists")
-        waiter.wait(TableName=table_name, WaiterConfig={"Delay": 5, "MaxAttempts": 20})
-        dynamodb_wait_for_table_active(table_name=table_name, client=eu_central_factory.dynamodb)
+        waiter.wait(TableName=table_name, WaiterConfig={"Delay": WAIT_SEC, "MaxAttempts": 20})
 
         us_streams = us_east_factory.dynamodbstreams.list_streams(TableName=table_name)
         snapshot.match("us-streams", us_streams)
