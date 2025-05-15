@@ -874,6 +874,46 @@ class TestKMS:
     @pytest.mark.parametrize(
         "key_spec,algo",
         [
+            ("SYMMETRIC_DEFAULT", "SYMMETRIC_DEFAULT"),
+            ("RSA_2048", "RSAES_OAEP_SHA_256"),
+        ],
+    )
+
+    @markers.aws.only_localstack
+    def test_re_encript(self, kms_create_key, key_spec, algo, aws_client, snapshot):
+        source_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=key_spec)["KeyId"]
+        destination_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=key_spec)["KeyId"]
+        message = b"test message 123 !%$@ 1234567890"
+        ciphertext = aws_client.kms.encrypt(
+            KeyId=source_key_id,
+            Plaintext=base64.b64encode(message),
+            EncryptionAlgorithm=algo
+        )["CiphertextBlob"]
+        result = aws_client.kms.re_encrypt(
+            SourceKeyId=source_key_id,
+            DestinationKeyId=destination_key_id,
+            CiphertextBlob=ciphertext,
+            SourceEncryptionAlgorithm=algo,
+            DestinationEncryptionAlgorithm=algo
+        )
+        plaintext = aws_client.kms.decrypt(
+            KeyId=source_key_id,
+            CiphertextBlob=ciphertext,
+            EncryptionAlgorithm=algo
+        )["Plaintext"]
+        re_plaintext = aws_client.kms.decrypt(
+            KeyId=destination_key_id,
+            CiphertextBlob=result["CiphertextBlob"],
+            EncryptionAlgorithm=algo
+        )["Plaintext"]
+        assert base64.b64decode(plaintext) == message
+        assert base64.b64decode(re_plaintext) == message
+
+        #snapshot.match("invoke", result)
+        
+    @pytest.mark.parametrize(
+        "key_spec,algo",
+        [
             ("RSA_2048", "RSAES_OAEP_SHA_1"),
             ("RSA_2048", "RSAES_OAEP_SHA_256"),
             ("RSA_3072", "RSAES_OAEP_SHA_1"),
