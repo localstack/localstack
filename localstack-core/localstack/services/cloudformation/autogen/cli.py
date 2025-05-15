@@ -1,11 +1,18 @@
 #!/usr/bin/env python
 import logging
+from typing import cast, IO
 
 import click
 import yaml
 
 from localstack.logging.setup import setup_logging_from_config
-from localstack.services.cloudformation.autogen import formatting, generation, patches, specs
+from localstack.services.cloudformation.autogen import (
+    formatting,
+    generation,
+    patches,
+    permutations,
+    specs,
+)
 from localstack.services.cloudformation.autogen.generation import generate_resources_from_spec
 
 setup_logging_from_config()
@@ -52,6 +59,12 @@ def template(resource_type: list[str], resource_count: tuple[int, int], output: 
 
     if output.name != "<stdout>":
         formatting.format_file(output.name)
+
+
+@main.command(name="permutations")
+@click.option("-o", "--output", type=click.File("w"), help="Output file", required=True)
+def gen_permutations(output: click.File):
+    permutations.generate_permutations(cast(IO[str], output))
 
 
 if __name__ == "__main__":
