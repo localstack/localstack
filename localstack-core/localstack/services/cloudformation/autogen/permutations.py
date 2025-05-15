@@ -1,3 +1,4 @@
+import enum
 import io
 import random
 from dataclasses import dataclass
@@ -13,6 +14,12 @@ EdgeId = str
 
 def gen_id() -> NodeId | EdgeId:
     return random_short_string()
+
+
+class Operation(enum.Enum):
+    Add = enum.auto()
+    Remove = enum.auto()
+    Modify = enum.auto()
 
 
 @dataclass
@@ -72,6 +79,35 @@ class Graph:
 
         return False
 
+    def apply_operation(self, op: Operation):
+        print(f"Applying operation {op}")
+        match op:
+            case Operation.Add:
+                node_id = self.add_node()
+                if random.uniform(0.0, 1.0) < 0.5:
+                    # add random edge
+                    target = self.random_node()
+                    self.add_edge(node_id, target)
+            case Operation.Remove:
+                if len(self.nodes) == 1:
+                    raise RuntimeError("No nodes left to remove")
+
+                chosen_node_id = random.choice(list(self.nodes.keys()))
+
+                edge_ids_to_remove = []
+                for edge in self.edges.values():
+                    if edge.from_ == chosen_node_id or edge.to == chosen_node_id:
+                        edge_ids_to_remove.append(edge.id)
+
+                for edge_id in edge_ids_to_remove:
+                    del self.edges[edge_id]
+
+                # TODO: retarget edges rather than just removing them
+
+            case Operation.Modify:
+                # TODO: update node edges
+                pass
+
     def __str__(self) -> str:
         return self.to_dot()
 
@@ -123,10 +159,11 @@ def generate_templates(output_path: Path, count: int = 10):
     for i in range(count):
         with (output_path / f"template_{i}.yml").open("w") as outfile:
             print(g.render_template(), file=outfile)
-        g = permute_existing_graph(g)
+        g = permute_existing_graph(g, count)
 
 
 def generate_new_graph() -> Graph:
+    print("Generating new graph")
     g = Graph()
     n_nodes = random.randint(5, 20)
     node_ids = []
@@ -152,5 +189,16 @@ def generate_new_graph() -> Graph:
     return g
 
 
-def permute_existing_graph(g: Graph) -> Graph:
+OPERATIONS = [
+    Operation.Add,
+    Operation.Remove,
+    # Operation.Modify,
+]
+
+
+def permute_existing_graph(g: Graph, count: int) -> Graph:
+    print("Permuting existing graph")
+    ops = random.choices(OPERATIONS, k=random.randint(1, count))
+    for op in ops:
+        g.apply_operation(op)
     return g
