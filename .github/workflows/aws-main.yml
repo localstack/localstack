@@ -68,8 +68,104 @@ jobs:
       DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
       DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
+  report:
+    name: "Publish coverage and parity metrics"
+    runs-on: ubuntu-latest
+    needs:
+      - test
+    steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Set up Python
+          uses: actions/setup-python@v5
+          with:
+            python-version-file: '.python-version'
+            cache: 'pip'
+            cache-dependency-path: 'requirements-dev.txt'
+
+        - name: Install Community Dependencies
+          shell: bash
+          run: make install-dev
+
+        - name: Load all test results
+          uses: actions/download-artifact@v4
+          with:
+            pattern: test-results-*
+            path: target/coverage/
+            merge-multiple: true
+
+        - name: Combine coverage results from acceptance tests
+          run: |
+            source .venv/bin/activate
+            mkdir target/coverage/acceptance
+            cp target/coverage/.coverage.acceptance* target/coverage/acceptance
+            cd target/coverage/acceptance
+            coverage combine
+            mv .coverage ../../../.coverage.acceptance
+
+        - name: Combine all coverage results
+          run: |
+            source .venv/bin/activate
+            cd target/coverage
+            ls -la
+            coverage combine
+            mv .coverage ../../
+
+        - name: Report coverage statistics
+          env:
+            COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+          run: |
+            source .venv/bin/activate
+            coverage report || true
+            coverage html || true
+# TO-DO: enable job after workflow in CircleCI is disabled
+#            coveralls || true
+
+        - name: Create Coverage Diff (Code Coverage)
+          # pycobertura diff will return with exit code 0-3 -> we currently expect 2 (2: the changes worsened the overall coverage),
+          # but we still want cirecleci to continue with the tasks, so we return 0.
+          # From the docs:
+          # Upon exit, the diff command may return various exit codes:
+          #    0: all changes are covered, no new uncovered statements have been introduced
+          #    1: some exception occurred (likely due to inappropriate usage or a bug in pycobertura)
+          #    2: the changes worsened the overall coverage
+          #    3: the changes introduced uncovered statements but the overall coverage is still better than before
+          run: |
+            source .venv/bin/activate
+            pip install pycobertura
+            coverage xml --data-file=.coverage -o all.coverage.report.xml --include="localstack-core/localstack/services/*/**" --omit="*/**/__init__.py"
+            coverage xml --data-file=.coverage.acceptance -o acceptance.coverage.report.xml --include="localstack-core/localstack/services/*/**"  --omit="*/**/__init__.py"
+            pycobertura show --format html acceptance.coverage.report.xml -o coverage-acceptance.html
+            bash -c "pycobertura diff --format html all.coverage.report.xml acceptance.coverage.report.xml -o coverage-diff.html; if [[ \$? -eq 1 ]] ; then exit 1 ; else exit 0 ; fi"
+
+        - name: Create Metric Coverage Diff (API Coverage)
+          env:
+            COVERAGE_DIR_ALL: "parity_metrics"
+            COVERAGE_DIR_ACCEPTANCE: "acceptance_parity_metrics"
+            OUTPUT_DIR: "api-coverage"
+          run: |
+            source .venv/bin/activate
+            mkdir $OUTPUT_DIR
+            python -m scripts.metrics_coverage.diff_metrics_coverage
+
+        - name: Archive coverage and parity metrics
+          uses: actions/upload-artifact@v4
+          with:
+            name: coverage-and-parity-metrics
+            path: |
+              .coverage
+              api-coverage/
+              coverage-acceptance.html
+              coverage-diff.html
+              parity_metrics/
+              acceptance_parity_metrics/
+              scripts/implementation_coverage_aggregated.csv
+              scripts/implementation_coverage_full.csv
+            retention-days: 7
+
   push:
-    name: "Push Images"
+    name: "Push images"
     runs-on: ubuntu-latest
     # push image on master, target branch not set, and the dependent steps were either successful or skipped
     # TO-DO: enable job after workflow in CircleCI is disabled
