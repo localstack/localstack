@@ -1,11 +1,11 @@
 {
   "tests/aws/duration/test_duration_recording.py::test_duration_2_seconds": {
     "durations_by_phase": {
-      "call": 1.1085226249997504,
-      "setup": 0.510102750005899,
-      "teardown": 0.0017162080039270222
+      "call": 1.1094574159942567,
+      "setup": 0.5242352090135682,
+      "teardown": 0.0015286669950000942
     },
-    "last_validated_date": "2025-05-15T16:02:31+00:00",
-    "total_duration": 1.6203415830095764
+    "last_validated_date": "2025-05-15T19:17:26+00:00",
+    "total_duration": 1.635221292002825
   }
 }

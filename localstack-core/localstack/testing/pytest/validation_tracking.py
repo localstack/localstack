@@ -102,6 +102,7 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
         # content[item.nodeid] = test_execution_data
 
         # save updates
+        fd.truncate(0)  # Clear existing content
         fd.seek(0)
         json.dump(content, fd, indent=2, sort_keys=True)
         fd.write("\n")  # add trailing newline for linter and Git compliance

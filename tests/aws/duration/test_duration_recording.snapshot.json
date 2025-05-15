@@ -1,6 +1,6 @@
 {
   "tests/aws/duration/test_duration_recording.py::test_duration_2_seconds": {
-    "recorded-date": "15-05-2025, 16:02:31",
+    "recorded-date": "15-05-2025, 19:17:26",
     "recorded-content": {
       "test_duration": {
         "seconds": 1.1
