@@ -73,7 +73,7 @@ def find_change_set_v2(
                     # TODO: check for active stacks
                     if (
                         stack_candidate.stack_name == stack_name
-                        and stack.status != StackStatus.DELETE_COMPLETE
+                        and stack_candidate.status != StackStatus.DELETE_COMPLETE
                     ):
                         stack = stack_candidate
                         break
@@ -223,7 +223,7 @@ class CloudformationProviderV2(CloudformationProvider):
         )
         change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
         stack.change_set_id = change_set.change_set_id
-        stack.change_set_id = change_set.change_set_id
+        stack.change_set_ids.append(change_set.change_set_id)
         state.change_sets[change_set.change_set_id] = change_set
 
         return CreateChangeSetOutput(StackId=stack.stack_id, Id=change_set.change_set_id)
