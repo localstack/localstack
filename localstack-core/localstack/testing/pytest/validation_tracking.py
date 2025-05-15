@@ -99,12 +99,15 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
         durations_by_phase[call.when] = call.duration
         test_execution_data["total_duration"] = sum(durations_by_phase.values())
 
-        # content[item.nodeid] = test_execution_data
+        # For json.dump sorted test entries enable consistent diffs.
+        # But test execution data is more readable in insert order for each step (setup, call, teardown)
+        # Hence not using global sort_keys=True for json.dump but rather additionally sorting top-level dict only.
+        content = dict(sorted(content.items()))
 
         # save updates
         fd.truncate(0)  # Clear existing content
         fd.seek(0)
-        json.dump(content, fd, indent=2, sort_keys=True)
+        json.dump(content, fd, indent=2)
         fd.write("\n")  # add trailing newline for linter and Git compliance
 
     return report
