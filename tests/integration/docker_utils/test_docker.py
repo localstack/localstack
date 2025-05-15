@@ -7,8 +7,10 @@ import re
 import textwrap
 import time
 from typing import Callable, NamedTuple, Type
+from unittest.mock import MagicMock
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 from docker.models.containers import Container
 
 from localstack import config
@@ -23,6 +25,7 @@ from localstack.utils.container_utils.container_client import (
     DockerContainerStats,
     DockerContainerStatus,
     DockerNotAvailable,
+    DockerPlatform,
     LogConfig,
     NoSuchContainer,
     NoSuchImage,
@@ -135,6 +138,89 @@ class TestDockerClient:
     def test_get_system_id(self, docker_client: ContainerClient):
         assert len(docker_client.get_system_id()) > 1
         assert docker_client.get_system_id() == docker_client.get_system_id()
+
+    def test_create_container_additional_flags_merge(
+        self,
+        monkeypatch: MonkeyPatch,
+    ) -> None:
+        """Test that `SdkDockerClient.create_container` correctly merges arguments
+        parsed from `additional_flags` with any other arguments without side effects."""
+
+        with monkeypatch.context() as patcher:
+            mock, containers, container = (
+                MagicMock(),
+                MagicMock(),
+                MagicMock(),
+            )
+
+            container.id = "000000000000"
+            mock.containers = containers
+            containers.create.return_value = container
+
+            patcher.setattr(
+                SdkDockerClient,
+                "_create_client",
+                lambda _: mock,
+                raising=False,
+            )
+
+            client = SdkDockerClient()
+
+            env_vars = {"APP_ENV": "TESTING"}
+            volumes = [("./host.file", "/mnt/data/mounted.file")]
+            network = "test-network"
+            platform = DockerPlatform(DockerPlatform.linux_amd64)
+            privileged = False
+            ports = PortMappings()
+            ports.add(8080, 8080, "tcp")
+            ulimits = [Ulimit(name="cpu", hard_limit=100, soft_limit=100)]
+            user = "0:0"
+            dns = ["1.1.1.1"]
+
+            additional_flags = "\
+            -p 8888:8888 \
+            -e APP_ENV=CI \
+            -e MERGED=true \
+            -v ./test.data:/mnt/data/test.data \
+            --network a-different-network \
+            --platform linux/arm64 \
+            --ulimit nproc=10:100 \
+            --user 1000:1000 \
+            --dns 8.8.8.8 \
+            --add-host some.amazing.server:0.0.0.0"
+
+            client.create_container(
+                "docker.io/library/alpine:latest",
+                additional_flags=additional_flags,
+                env_vars=env_vars,
+                volumes=volumes,
+                network=network,
+                platform=platform,
+                privileged=privileged,
+                ports=ports,
+                ulimits=ulimits,
+                user=user,
+                dns=dns,
+            )
+
+            called = containers.create.call_args.kwargs
+
+            assert called["user"] == "1000:1000"
+            assert called["dns"] == [*dns, "8.8.8.8"]
+            assert called["platform"] == "linux/arm64"
+            assert called["network"] == "a-different-network"
+            assert called["image"] == "docker.io/library/alpine:latest"
+            assert called["environment"] == {**env_vars, "MERGED": "true"}
+            assert called["ports"] == {"8080/tcp": 8080, "8888/tcp": 8888}
+            assert called["extra_hosts"] == {"some.amazing.server": "0.0.0.0"}
+            assert called["ulimits"] == [
+                {"Name": "cpu", "Soft": 100, "Hard": 100},
+                {"Name": "nproc", "Soft": 10, "Hard": 100},
+            ]
+            assert called["volumes"] == {
+                "./host.file": {"bind": "/mnt/data/mounted.file", "mode": "rw"},
+                "./test.data": {"bind": "/mnt/data/test.data", "mode": "rw"},
+            }
 
     def test_container_lifecycle_commands(self, docker_client: ContainerClient):
         container_name = _random_container_name()
