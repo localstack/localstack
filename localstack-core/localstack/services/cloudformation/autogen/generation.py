@@ -8,7 +8,7 @@ from localstack.services.cloudformation.autogen.specs import (
 from localstack.services.cloudformation.autogen.visitors.base import (
     Resource,
     Visitor,
-    _random_short_string,
+    random_short_string,
 )
 
 LOG = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ def generate_resources_from_spec(
 
     resources = {}
     for _ in range(*resource_count):
-        resource_name = _random_short_string()
+        resource_name = random_short_string()
         current_resource_type = random.choice(resource_whitelist)
         if current_resource_type not in spec_cache:
             spec = specs.read_spec_for(current_resource_type)

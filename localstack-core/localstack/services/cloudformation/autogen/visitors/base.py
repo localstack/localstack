@@ -18,7 +18,7 @@ LOG = logging.getLogger(__name__)
 Resource = dict[str, Any]
 
 
-def _random_short_string(count: int = 10, character_set: str = string.ascii_letters) -> str:
+def random_short_string(count: int = 10, character_set: str = string.ascii_letters) -> str:
     return "".join(random.choices(character_set, k=count))
 
 
@@ -103,7 +103,7 @@ class Visitor:
         if allowed_values := property_definition.get("enum"):
             return random.choice(allowed_values)
         else:
-            return _random_short_string()
+            return random_short_string()
 
     def _gen_property_array(self, name: str, property_definition: ArrayProperty) -> list[Any]:
         result = []
