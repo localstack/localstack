@@ -788,6 +788,12 @@
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_pre_signed_url_forward_slash_bucket": {
     "last_validated_date": "2025-01-21T18:25:38+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_pre_signed_url_if_match": {
+    "last_validated_date": "2025-05-15T13:08:44+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_pre_signed_url_if_none_match": {
+    "last_validated_date": "2025-05-15T12:51:09+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_presign_with_additional_query_params": {
     "last_validated_date": "2025-01-21T18:22:43+00:00"
   },

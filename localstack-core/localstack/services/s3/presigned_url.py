@@ -70,6 +70,14 @@ SIGNATURE_V4_POST_FIELDS = [
     "x-amz-date",
 ]
 
+# Boto3 has some issues with some headers that it disregards and does not validate or adds to the signature
+# we need to manually define them
+# see https://github.com/boto/boto3/issues/4367
+SIGNATURE_V4_BOTO_IGNORED_PARAMS = [
+    "if-none-match",
+    "if-match",
+]
+
 # headers to blacklist from request_dict.signed_headers
 BLACKLISTED_HEADERS = ["X-Amz-Security-Token"]
 
@@ -645,7 +653,10 @@ class S3SigV4SignatureContext:
             qs_param_low = qs_parameter.lower()
             if (
                 qs_parameter not in SIGNATURE_V4_PARAMS
-                and qs_param_low.startswith("x-amz-")
+                and (
+                    qs_param_low.startswith("x-amz-")
+                    or qs_param_low in SIGNATURE_V4_BOTO_IGNORED_PARAMS
+                )
                 and qs_param_low not in headers
             ):
                 if qs_param_low in signed_headers:
