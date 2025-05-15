@@ -2,7 +2,7 @@ import json
 
 from aws.services.stepfunctions.templates.services.services_templates import ServicesTemplates
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.stepfunctions.asl.parse.lsl_parser import LocalStackStateLanguageParser
+from localstack.services.stepfunctions.asl.lsl.transpiler import transpile
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import await_execution_terminated
 from localstack.utils.strings import short_uid
@@ -15,7 +15,7 @@ class TestLocalStackStatesLanguage:
         aws_client,
         create_lambda_function,
     ):
-        state_machine = LocalStackStateLanguageParser.parse("""
+        state_machine = transpile("""
             # Uses lambda to gree the user.
             GreetUser(user_name) = lambda:invoke where
               arguments {
@@ -90,7 +90,7 @@ class TestLocalStackStatesLanguage:
         aws_client,
         create_lambda_function,
     ):
-        state_machine = LocalStackStateLanguageParser.parse("""
+        state_machine = transpile("""
             MapState(names) = for name in jsonata($names) where
                 process {
                     greet_result = lambda:invoke where
@@ -143,7 +143,7 @@ class TestLocalStackStatesLanguage:
         aws_client,
         create_lambda_function,
     ):
-        state_machine = LocalStackStateLanguageParser.parse("""
+        state_machine = transpile("""
             LambdaGreet(first_name, last_name) = lambda:invoke where
               arguments {
                 FunctionName: "GreetingFunction",
@@ -197,7 +197,7 @@ class TestLocalStackStatesLanguage:
         aws_client,
         create_lambda_function,
     ):
-        state_machine = LocalStackStateLanguageParser.parse("""
+        state_machine = transpile("""
             LambdaGreet(first_name, last_name) = lambda:invoke where
               arguments {
                 FunctionName: "GreetingFunction",
@@ -250,7 +250,7 @@ class TestLocalStackStatesLanguage:
         aws_client,
         create_lambda_function,
     ):
-        state_machine = LocalStackStateLanguageParser.parse("""
+        state_machine = transpile("""
             LambdaGreet(first_name, last_name) = lambda:invoke where
               arguments {
                 FunctionName: "GreetingFunction",
@@ -296,7 +296,7 @@ class TestLocalStackStatesLanguage:
 
     @markers.aws.only_localstack
     def test_assign_and_succeed(self, aws_client):
-        state_machine = LocalStackStateLanguageParser.parse("""
+        state_machine = transpile("""
             WorkflowSucceeded(value) = return jsonata($value)
             output_message = jsonata("Hello" & " " & "World!")
             WorkflowSucceeded(value = jsonata($output_message))
@@ -325,7 +325,7 @@ class TestLocalStackStatesLanguage:
 
     @markers.aws.only_localstack
     def test_succeed_template(self, aws_client):
-        state_machine = LocalStackStateLanguageParser.parse("""
+        state_machine = transpile("""
             WorkflowSucceeded(value) = return jsonata($value)
             WorkflowSucceeded(value = {"message": "string-literal"})
         """)
@@ -353,7 +353,7 @@ class TestLocalStackStatesLanguage:
 
     @markers.aws.only_localstack
     def test_succeed_inplace(self, aws_client):
-        state_machine = LocalStackStateLanguageParser.parse("""
+        state_machine = transpile("""
             WorkflowSucceeded as return jsonata('string' & ' ' & 'literal')
         """)
         definition = json.dumps(state_machine)
@@ -380,7 +380,7 @@ class TestLocalStackStatesLanguage:
 
     @markers.aws.only_localstack
     def test_succeed_anonymous_inplace(self, aws_client):
-        state_machine = LocalStackStateLanguageParser.parse("""
+        state_machine = transpile("""
             return jsonata('string' & ' ' & 'literal')
         """)
         definition = json.dumps(state_machine)
@@ -411,7 +411,7 @@ class TestLocalStackStatesLanguage:
         aws_client,
         create_lambda_function,
     ):
-        state_machine = LocalStackStateLanguageParser.parse("""
+        state_machine = transpile("""
             lambda:invoke where
               arguments {
                 FunctionName: "GreetingFunction",
@@ -453,7 +453,7 @@ class TestLocalStackStatesLanguage:
         aws_client,
         create_lambda_function,
     ):
-        state_machine = LocalStackStateLanguageParser.parse("""
+        state_machine = transpile("""
             LambdaGreet as lambda:invoke where
               arguments {
                 FunctionName: "GreetingFunction",
@@ -495,7 +495,7 @@ class TestLocalStackStatesLanguage:
         aws_client,
         create_lambda_function,
     ):
-        state_machine = LocalStackStateLanguageParser.parse("""
+        state_machine = transpile("""
             LambdaGreet(first_name, last_name) = lambda:invoke where
               arguments {
                 FunctionName: "GreetingFunction",

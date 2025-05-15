@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 from typing import Optional, OrderedDict
 
+from antlr4 import CommonTokenStream, InputStream
 from antlr4.ParserRuleContext import ParserRuleContext
 from antlr4.tree.Tree import TerminalNodeImpl
 
@@ -12,13 +13,25 @@ from localstack.services.stepfunctions.asl.antlr.runtime.LSLParserVisitor import
 from localstack.services.stepfunctions.asl.antlt4utils.antlr4utils import from_string_literal
 
 
-class Scope:
+def transpile(lsl_derivation: str) -> dict:
+    input_stream = InputStream(lsl_derivation)
+    lexer = LSLLexer(input_stream)
+    stream = CommonTokenStream(lexer)
+    parser = LSLParser(stream)
+    tree = parser.state_machine()
+    transpiler = _Transpiler()
+    transpiler.visit(tree)
+    workflow = transpiler.get_workflow()
+    return workflow
+
+
+class _Scope:
     _last_called: Optional[str]
     _state_templates: dict[str, dict]
     _start_at: Optional[str]
     _states: OrderedDict[str, dict]
 
-    def __init__(self, upper_scope: Optional[Scope] = None):
+    def __init__(self, upper_scope: Optional[_Scope] = None):
         self._last_called = None
         self._start_at = None
         if upper_scope is not None:
@@ -48,12 +61,12 @@ class Scope:
         return {"StartAt": self._start_at, "States": {**self._states}}
 
 
-class Transpiler(LSLParserVisitor):
-    _scopes: list[Scope]
+class _Transpiler(LSLParserVisitor):
+    _scopes: list[_Scope]
 
     def __init__(self):
         self._scopes = list()
-        self._scopes.append(Scope())
+        self._scopes.append(_Scope())
 
     def get_workflow(self) -> dict:
         scope = self._this_scope()
@@ -61,7 +74,7 @@ class Transpiler(LSLParserVisitor):
         workflow = {"Comment": "Auto-generated", "QueryLanguage": "JSONata", **scope_workflow}
         return workflow
 
-    def _this_scope(self) -> Scope:
+    def _this_scope(self) -> _Scope:
         return self._scopes[-1]
 
     def visitState_declaration(self, ctx: LSLParser.State_declarationContext):
@@ -200,7 +213,7 @@ class Transpiler(LSLParserVisitor):
         return where
 
     def new_inner_scope(self):
-        scope = Scope(self._this_scope())
+        scope = _Scope(self._this_scope())
         self._scopes.append(scope)
         return scope
 
