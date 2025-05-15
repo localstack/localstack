@@ -119,7 +119,8 @@ jobs:
             source .venv/bin/activate
             coverage report || true
             coverage html || true
-            coveralls || true
+# TO-DO: enable job after workflow in CircleCI is disabled
+#            coveralls || true
 
         - name: Create Coverage Diff (Code Coverage)
           # pycobertura diff will return with exit code 0-3 -> we currently expect 2 (2: the changes worsened the overall coverage),
