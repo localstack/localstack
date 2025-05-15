@@ -7,14 +7,14 @@ we can periodically re-validate ALL AWS-targeting tests (and therefore not only 
 
 import datetime
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Optional
 
-import pluggy
 import pytest
 
-from localstack.testing.aws.util import is_aws_cloud
+LOG = logging.getLogger(__name__)
 
 
 def find_snapshot_for_item(item: pytest.Item) -> Optional[dict]:
@@ -65,15 +65,48 @@ def record_passed_validation(item: pytest.Item, timestamp: Optional[datetime.dat
 
 # TODO: we should skip if we're updating snapshots
 # make sure this is *AFTER* snapshot comparison => tryfirst=True
-@pytest.hookimpl(hookwrapper=True, tryfirst=True)
-def pytest_runtest_call(item: pytest.Item):
-    outcome: pluggy.Result = yield
+# @pytest.hookimpl(hookwrapper=True, tryfirst=True)
+# def pytest_runtest_call(item: pytest.Item):
+#     outcome: pluggy.Result = yield
+#
+#     # we only want to track passed runs against AWS
+#     if not is_aws_cloud() or outcome.excinfo:
+#         return
+#
+#     record_passed_validation(item)
 
-    # we only want to track passed runs against AWS
-    if not is_aws_cloud() or outcome.excinfo:
-        return
 
-    record_passed_validation(item)
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
+    report = yield
+
+    base_path = os.path.join(item.fspath.dirname, item.fspath.purebasename)
+    file_path = Path(f"{base_path}.validation.json")
+    file_path.touch()
+    with file_path.open(mode="r+") as fd:
+        # read existing state from file
+        try:
+            content = json.load(fd)
+        except json.JSONDecodeError:  # expected on first try (empty file)
+            content = {}
+
+        test_execution_data = content.setdefault(item.nodeid, {})
+
+        timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
+        test_execution_data["last_validated_date"] = timestamp.isoformat(timespec="seconds")
+
+        durations_by_phase = test_execution_data.setdefault("durations_by_phase", {})
+        durations_by_phase[call.when] = call.duration
+        test_execution_data["total_duration"] = sum(durations_by_phase.values())
+
+        # content[item.nodeid] = test_execution_data
+
+        # save updates
+        fd.seek(0)
+        json.dump(content, fd, indent=2, sort_keys=True)
+        fd.write("\n")  # add trailing newline for linter and Git compliance
+
+    return report
 
 
 # this is a sort of utility used for retroactively creating validation files in accordance with existing snapshot files
