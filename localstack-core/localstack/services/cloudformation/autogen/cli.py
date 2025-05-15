@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import logging
-from typing import cast, IO
+from pathlib import Path
 
 import click
 import yaml
@@ -62,9 +62,13 @@ def template(resource_type: list[str], resource_count: tuple[int, int], output: 
 
 
 @main.command(name="permutations")
-@click.option("-o", "--output", type=click.File("w"), help="Output file", required=True)
-def gen_permutations(output: click.File):
-    permutations.generate_permutations(cast(IO[str], output))
+@click.option(
+    "-c", "--count", type=int, default=10, help="Number of template permutations to generate"
+)
+@click.option("-o", "--output", "output_path", type=Path, help="Output file", required=True)
+def gen_permutations(output_path: Path, count: int):
+    output_path.mkdir(parents=True, exist_ok=True)
+    permutations.generate_templates(output_path, count=count)
 
 
 if __name__ == "__main__":

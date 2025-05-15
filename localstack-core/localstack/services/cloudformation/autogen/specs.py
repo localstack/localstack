@@ -74,14 +74,16 @@ class ArrayProperty(TypedDict, total=False):
 class BooleanProperty(TypedDict, total=False):
     type: Literal["boolean"]
 
+
 class IntegerProperty(TypedDict, total=False):
     type: Literal["integer"]
 
     # TODO: minValue, maxValue
 
 
-
-PropertyDefinition = StringProperty | ObjectProperty | ArrayProperty | BooleanProperty | IntegerProperty
+PropertyDefinition = (
+    StringProperty | ObjectProperty | ArrayProperty | BooleanProperty | IntegerProperty
+)
 
 
 class ResourceProviderDefinition(TypedDict):

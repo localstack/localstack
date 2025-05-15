@@ -1,7 +1,7 @@
 import io
 import random
 from dataclasses import dataclass
-from typing import IO
+from pathlib import Path
 
 import yaml
 
@@ -117,7 +117,16 @@ class Graph:
         return yaml.safe_dump(template)
 
 
-def generate_permutations(output: IO[str]):
+def generate_templates(output_path: Path, count: int = 10):
+    # TODO: clear_files(output_path)
+    g = generate_new_graph()
+    for i in range(count):
+        with (output_path / f"template_{i}.yml").open("w") as outfile:
+            print(g.render_template(), file=outfile)
+        g = permute_existing_graph(g)
+
+
+def generate_new_graph() -> Graph:
     g = Graph()
     n_nodes = random.randint(5, 20)
     node_ids = []
@@ -140,5 +149,8 @@ def generate_permutations(output: IO[str]):
         if not success:
             raise RuntimeError("Could not find non-acyclic graph combination")
 
-    print(g)
-    print(g.render_template(), file=output)
+    return g
+
+
+def permute_existing_graph(g: Graph) -> Graph:
+    return g
