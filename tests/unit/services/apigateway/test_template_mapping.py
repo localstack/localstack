@@ -122,9 +122,10 @@ class TestApiGatewayVtlTemplate:
         template = TEMPLATE_JSON if format == APPLICATION_JSON else TEMPLATE_XML
         template += REQUEST_OVERRIDE
 
-        rendered_request, request_override = ApiGatewayVtlTemplate().render_request(
+        rendered_request, context_variable = ApiGatewayVtlTemplate().render_request(
             template=template, variables=variables
         )
+        request_override = context_variable["requestOverride"]
         if format == APPLICATION_JSON:
             rendered_request = json.loads(rendered_request)
             assert rendered_request.get("body") == {"spam": "eggs"}

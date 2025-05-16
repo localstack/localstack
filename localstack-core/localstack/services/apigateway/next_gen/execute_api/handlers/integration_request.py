@@ -125,10 +125,14 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
             # mutate the ContextVariables with the requestOverride result, as we copy the context when rendering the
             # template to avoid mutation on other fields
             # the VTL responseTemplate can access the requestOverride
-            request_override: ContextVarsRequestOverride = context_variables["requestOverride"]
+            request_override: ContextVarsRequestOverride = context_variables.get(
+                "requestOverride", {}
+            )
             context.context_variables["requestOverride"] = request_override
             # Response override attributes set in the request template will be available in the response template
-            context.context_variables["responseOverride"] = context_variables["responseOverride"]
+            context.context_variables["responseOverride"] = context_variables.get(
+                "responseOverride", {}
+            )
             # TODO: log every override that happens afterwards (in a loop on `request_override`)
             merge_recursive(request_override, request_data_mapping, overwrite=True)
 
