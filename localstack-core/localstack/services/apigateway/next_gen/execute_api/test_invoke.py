@@ -159,6 +159,7 @@ def create_test_invocation_context(
         requestOverride=ContextVarsRequestOverride(header={}, path={}, querystring={}),
         responseOverride=ContextVarsResponseOverride(header={}, status=0),
     )
+    invocation_context.trace_id = parse_handler.populate_trace_id({})
     resource = deployment.rest_api.resources[test_request["resourceId"]]
     resource_method = resource["resourceMethods"][http_method]
     invocation_context.resource = resource
