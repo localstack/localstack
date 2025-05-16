@@ -50,11 +50,15 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
 
         test_execution_data = content.setdefault(item.nodeid, {})
 
-        timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
-        test_execution_data["last_validated_date"] = timestamp.isoformat(timespec="seconds")
+        execution_phase = call.when  # this hook is run 3 times: on test setup, call and teardown
+
+        # only update validated date on successful run, not on setup or teardown
+        if execution_phase == "call":
+            timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
+            test_execution_data["last_validated_date"] = timestamp.isoformat(timespec="seconds")
 
         durations_by_phase = test_execution_data.setdefault("durations_by_phase", {})
-        durations_by_phase[call.when] = round(call.duration, 2)
+        durations_by_phase[execution_phase] = round(call.duration, 2)
         total_duration = sum(durations_by_phase.values())
         test_execution_data["total_duration"] = round(total_duration, 2)
 
