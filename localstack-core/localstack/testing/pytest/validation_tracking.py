@@ -35,6 +35,9 @@ def find_validation_data_for_item(item: pytest.Item) -> Optional[dict]:
 def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
     report = yield
 
+    if not is_aws_cloud() or call.excinfo:
+        return report
+
     base_path = os.path.join(item.fspath.dirname, item.fspath.purebasename)
     file_path = Path(f"{base_path}.validation.json")
     file_path.touch()
@@ -44,9 +47,6 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
             content = json.load(fd)
         except json.JSONDecodeError:  # expected on the first try (empty file)
             content = {}
-
-        if not is_aws_cloud() or call.excinfo:
-            return report
 
         test_execution_data = content.setdefault(item.nodeid, {})
 
