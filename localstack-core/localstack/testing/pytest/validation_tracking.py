@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Dict, Optional
 
 import pytest
+from _pytest.reports import TestReport
 from _pytest.stash import StashKey
 
 from localstack.testing.aws.util import is_aws_cloud
@@ -20,6 +21,10 @@ durations_key = StashKey[Dict[str, float]]()
 """
 Used to store information on the test node between execution phases.
 See https://docs.pytest.org/en/latest/reference/reference.html#pytest.Stash
+"""
+test_passed_key = StashKey[bool]()
+"""
+used to store test result from call execution phase.
 """
 
 
@@ -37,14 +42,21 @@ def find_validation_data_for_item(item: pytest.Item) -> Optional[dict]:
 
 @pytest.hookimpl(wrapper=True)
 def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
-    report = yield
+    """
+    This hook is called after each test execution phase (setup, call, teardown).
+    """
+    report: TestReport = yield
+
+    # this hook runs 3 times: on test setup, call and teardown
+    execution_phase = call.when
+
+    item.stash.setdefault(test_passed_key, False)
+    if execution_phase == "call":
+        item.stash[test_passed_key] = report.passed
 
     # only update the file when running against AWS and the test finishes successfully
-    if not is_aws_cloud() or call.excinfo:
+    if not is_aws_cloud() or not item.stash.get(test_passed_key, False):
         return report
-
-    # this hook is run 3 times: on test setup, call and teardown
-    execution_phase = call.when
 
     item.stash.setdefault(durations_key, {})
     item.stash[durations_key][execution_phase] = round(call.duration, 2)
