@@ -10,7 +10,7 @@ import localstack.utils.container_utils.docker_cmd_client
 from localstack import config, constants
 from localstack.cli.localstack import localstack as cli
 from localstack.config import Directories, in_docker
-from localstack.constants import MODULE_MAIN_PATH, TRUE_STRINGS
+from localstack.constants import MODULE_MAIN_PATH
 from localstack.utils import bootstrap
 from localstack.utils.bootstrap import in_ci
 from localstack.utils.common import poll_condition
@@ -272,9 +272,7 @@ class TestHooks:
 
         def _prepare_host(*args, **kwargs):
             # store the configs that will be passed to prepare_host hooks (Docker status, infra process, dirs layout)
-            result_configs.append(
-                (config.is_in_docker, os.getenv(constants.LOCALSTACK_INFRA_PROCESS), config.dirs)
-            )
+            result_configs.append((config.is_in_docker, None, config.dirs))
 
         # patch the prepare_host function which calls the hooks
         monkeypatch.setattr(bootstrap, "prepare_host", _prepare_host)
@@ -294,7 +292,6 @@ class TestHooks:
         dirs: Directories
         in_docker, is_infra_process, dirs = result_configs[0]
         assert in_docker is False
-        assert is_infra_process not in TRUE_STRINGS
         # cache dir should exist and be writeable
         assert os.path.exists(dirs.cache)
         assert os.access(dirs.cache, os.W_OK)
