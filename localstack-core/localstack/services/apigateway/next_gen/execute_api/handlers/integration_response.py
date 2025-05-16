@@ -263,7 +263,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         self, context: RestApiInvocationContext, template: str, body: bytes | str
     ) -> tuple[bytes, ContextVarsResponseOverride]:
         if not template:
-            return to_bytes(body), ContextVarsResponseOverride(status=0, header={})
+            return to_bytes(body), context.context_variables["responseOverride"]
 
         # if there are no template, we can pass binary data through
         if not isinstance(body, str):

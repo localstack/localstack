@@ -20,8 +20,11 @@
   "tests/aws/services/apigateway/test_apigateway_integrations.py::test_integration_mock_with_request_overrides_in_response_template": {
     "last_validated_date": "2024-11-06T23:09:04+00:00"
   },
-  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_integration_mock_with_response_override_in_request_template": {
-    "last_validated_date": "2025-05-16T09:46:05+00:00"
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_integration_mock_with_response_override_in_request_template[False]": {
+    "last_validated_date": "2025-05-16T10:22:27+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_integration_mock_with_response_override_in_request_template[True]": {
+    "last_validated_date": "2025-05-16T10:22:21+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_integrations.py::test_put_integration_response_with_response_template": {
     "last_validated_date": "2024-05-30T16:15:58+00:00"

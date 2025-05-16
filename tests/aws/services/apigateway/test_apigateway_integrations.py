@@ -725,8 +725,9 @@ def test_integration_mock_with_request_overrides_in_response_template(
 
 
 @markers.aws.validated
+@pytest.mark.parametrize("create_response_template", [True, False])
 def test_integration_mock_with_response_override_in_request_template(
-    create_rest_apigw, aws_client, snapshot
+    create_rest_apigw, aws_client, snapshot, create_response_template
 ):
     expected_status = 444
     api_id, _, root_id = create_rest_apigw(
@@ -780,7 +781,9 @@ def test_integration_mock_with_response_override_in_request_template(
         httpMethod="GET",
         statusCode="200",
         selectionPattern="2\\d{2}",
-        responseTemplates={"application/json": response_template},
+        responseTemplates={"application/json": response_template}
+        if create_response_template
+        else {},
     )
     stage_name = "dev"
     aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
@@ -797,7 +800,7 @@ def test_integration_mock_with_response_override_in_request_template(
     snapshot.match(
         "response",
         {
-            "body": response_data.json(),
+            "body": response_data.json() if create_response_template else response_data.content,
             "status_code": response_data.status_code,
         },
     )

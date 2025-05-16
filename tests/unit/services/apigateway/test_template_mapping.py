@@ -16,6 +16,8 @@ from localstack.services.apigateway.next_gen.execute_api.variables import (
     ContextVariables,
     ContextVarsAuthorizer,
     ContextVarsIdentity,
+    ContextVarsRequestOverride,
+    ContextVarsResponseOverride,
 )
 
 
@@ -115,6 +117,7 @@ class TestApiGatewayVtlTemplate:
                 authorizer=ContextVarsAuthorizer(principalId="12233"),
                 identity=ContextVarsIdentity(accountId="00000", apiKey="11111"),
                 resourcePath="/{proxy}",
+                requestOverride=ContextVarsRequestOverride(header={}, path={}, querystring={}),
             ),
             stageVariables={"stageVariable1": "value1", "stageVariable2": "value2"},
         )
@@ -194,6 +197,7 @@ class TestApiGatewayVtlTemplate:
                 authorizer=ContextVarsAuthorizer(principalId="12233"),
                 identity=ContextVarsIdentity(accountId="00000", apiKey="11111"),
                 resourcePath="/{proxy}",
+                responseOverride=ContextVarsResponseOverride(header={}, status=0),
             ),
             stageVariables={"stageVariable1": "value1", "stageVariable2": "value2"},
         )

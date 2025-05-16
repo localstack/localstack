@@ -21,6 +21,8 @@ from localstack.services.apigateway.next_gen.execute_api.handlers.integration_re
 )
 from localstack.services.apigateway.next_gen.execute_api.variables import (
     ContextVariables,
+    ContextVarsRequestOverride,
+    ContextVarsResponseOverride,
 )
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 
@@ -80,6 +82,8 @@ def default_context():
         path=f"{TEST_API_STAGE}/resource/{{proxy}}",
         resourcePath="/resource/{proxy}",
         stage=TEST_API_STAGE,
+        requestOverride=ContextVarsRequestOverride(header={}, path={}, querystring={}),
+        responseOverride=ContextVarsResponseOverride(header={}, status=0),
     )
 
     return context

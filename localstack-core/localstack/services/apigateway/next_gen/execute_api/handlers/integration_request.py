@@ -119,18 +119,18 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
 
             converted_body = self.convert_body(context)
 
-            body, context_variables = self.render_request_template_mapping(
+            body, mapped_context_variables = self.render_request_template_mapping(
                 context=context, body=converted_body, template=request_template
             )
             # mutate the ContextVariables with the requestOverride result, as we copy the context when rendering the
             # template to avoid mutation on other fields
             # the VTL responseTemplate can access the requestOverride
-            request_override: ContextVarsRequestOverride = context_variables.get(
+            request_override: ContextVarsRequestOverride = mapped_context_variables.get(
                 "requestOverride", {}
             )
             context.context_variables["requestOverride"] = request_override
             # Response override attributes set in the request template will be available in the response template
-            context.context_variables["responseOverride"] = context_variables.get(
+            context.context_variables["responseOverride"] = mapped_context_variables.get(
                 "responseOverride", {}
             )
             # TODO: log every override that happens afterwards (in a loop on `request_override`)
@@ -191,14 +191,14 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         request: InvocationRequest = context.invocation_request
 
         if not template:
-            return to_bytes(body), {}
+            return to_bytes(body), context.context_variables
 
         try:
             body_utf8 = to_str(body)
         except UnicodeError:
             raise InternalServerError("Internal server error")
 
-        body, context_variables = self._vtl_template.render_request(
+        body, mapped_context_variables = self._vtl_template.render_request(
             template=template,
             variables=MappingTemplateVariables(
                 context=context.context_variables,
@@ -213,7 +213,7 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
                 ),
             ),
         )
-        return to_bytes(body), context_variables
+        return to_bytes(body), mapped_context_variables
 
     @staticmethod
     def get_request_template(integration: Integration, request: InvocationRequest) -> str:

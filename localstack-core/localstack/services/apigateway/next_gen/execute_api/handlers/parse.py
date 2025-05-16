@@ -18,7 +18,12 @@ from ..context import InvocationRequest, RestApiInvocationContext
 from ..header_utils import should_drop_header_from_invocation
 from ..helpers import generate_trace_id, generate_trace_parent, parse_trace_id
 from ..moto_helpers import get_stage_variables
-from ..variables import ContextVariables, ContextVarsIdentity
+from ..variables import (
+    ContextVariables,
+    ContextVarsIdentity,
+    ContextVarsRequestOverride,
+    ContextVarsResponseOverride,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -159,8 +164,10 @@ class InvocationRequestParser(RestApiGatewayHandler):
             path=f"/{context.stage}{invocation_request['raw_path']}",
             protocol="HTTP/1.1",
             requestId=long_uid(),
+            requestOverride=ContextVarsRequestOverride(querystring={}, header={}, path={}),
             requestTime=timestamp(time=now, format=REQUEST_TIME_DATE_FORMAT),
             requestTimeEpoch=int(now.timestamp() * 1000),
+            responseOverride=ContextVarsResponseOverride(header={}, status=0),
             stage=context.stage,
         )
         return context_variables

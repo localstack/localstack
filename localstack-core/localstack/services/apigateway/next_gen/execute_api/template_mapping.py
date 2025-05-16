@@ -27,7 +27,6 @@ from airspeed.operators import dict_to_string
 from localstack import config
 from localstack.services.apigateway.next_gen.execute_api.variables import (
     ContextVariables,
-    ContextVarsRequestOverride,
     ContextVarsResponseOverride,
 )
 from localstack.utils.aws.templating import APIGW_SOURCE, VelocityUtil, VtlTemplate
@@ -264,12 +263,6 @@ class ApiGatewayVtlTemplate(VtlTemplate):
         self, template: str, variables: MappingTemplateVariables
     ) -> tuple[str, ContextVariables]:
         variables_copy: MappingTemplateVariables = copy.deepcopy(variables)
-        variables_copy["context"]["requestOverride"] = ContextVarsRequestOverride(
-            querystring={}, header={}, path={}
-        )
-        variables_copy["context"]["responseOverride"] = ContextVarsResponseOverride(
-            header={}, status=0
-        )
         result = self.render_vtl(template=template.strip(), variables=variables_copy)
         return result, variables_copy["context"]
 
@@ -277,10 +270,6 @@ class ApiGatewayVtlTemplate(VtlTemplate):
         self, template: str, variables: MappingTemplateVariables
     ) -> tuple[str, ContextVarsResponseOverride]:
         variables_copy: MappingTemplateVariables = copy.deepcopy(variables)
-        if not variables_copy["context"].get("responseOverride"):
-            variables_copy["context"]["responseOverride"] = ContextVarsResponseOverride(
-                header={}, status=0
-            )
         result = self.render_vtl(template=template.strip(), variables=variables_copy)
         return result, variables_copy["context"]["responseOverride"]
 
