@@ -54,8 +54,9 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
         test_execution_data["last_validated_date"] = timestamp.isoformat(timespec="seconds")
 
         durations_by_phase = test_execution_data.setdefault("durations_by_phase", {})
-        durations_by_phase[call.when] = call.duration
-        test_execution_data["total_duration"] = sum(durations_by_phase.values())
+        durations_by_phase[call.when] = round(call.duration, 2)
+        total_duration = sum(durations_by_phase.values())
+        test_execution_data["total_duration"] = round(total_duration, 2)
 
         # For json.dump sorted test entries enable consistent diffs.
         # But test execution data is more readable in insert order for each step (setup, call, teardown)
