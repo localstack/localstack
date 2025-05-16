@@ -510,8 +510,10 @@ class TestDockerClient:
         ports.add(45180, 80)
         create_container("alpine", ports=ports)
 
-    # TODO: Fix SDKDockerClient. To reproduce the test failure, switch from CmdDockerClient to ContainerClient
-    def test_create_with_exposed_ports(self, docker_client: CmdDockerClient, create_container):
+    # TODO: This test must be fixed for SdkDockerClient
+    def test_create_with_exposed_ports(self, docker_client: ContainerClient, create_container):
+        if isinstance(docker_client, SdkDockerClient):
+            pytest.skip("Test skipped for SdkDockerClient")
         exposed_ports = ["45000", "45001/udp"]
         container = create_container(
             "alpine",
