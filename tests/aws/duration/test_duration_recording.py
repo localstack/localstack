@@ -14,4 +14,5 @@ def test_duration_2_seconds(snapshot):
 def test_duration_1_second(snapshot):
     test_duration = {"seconds": 1}
     time.sleep(test_duration["seconds"])
+    raise AssertionError()
     snapshot.match("test_duration_1_second", test_duration)

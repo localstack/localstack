@@ -19,12 +19,12 @@ from localstack.testing.aws.util import is_aws_cloud
 
 durations_key = StashKey[Dict[str, float]]()
 """
-Used to store information on the test node between execution phases.
+Stores phase durations on the test node between execution phases.
 See https://docs.pytest.org/en/latest/reference/reference.html#pytest.Stash
 """
-test_passed_key = StashKey[bool]()
+test_failed_key = StashKey[bool]()
 """
-used to store test result from call execution phase.
+Stores information from call execution phase about whether the test failed.
 """
 
 
@@ -47,23 +47,36 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
     """
     report: TestReport = yield
 
-    # this hook runs 3 times: on test setup, call and teardown
-    execution_phase = call.when
+    if call.when == "setup":
+        _makereport_setup(item, call)
+    elif call.when == "call":
+        _makereport_call(item, call)
+    elif call.when == "teardown":
+        _makereport_teardown(item, call)
 
-    item.stash.setdefault(test_passed_key, False)
-    if execution_phase == "call":
-        item.stash[test_passed_key] = report.passed
+    return report
+
+
+def _stash_phase_duration(call, item):
+    durations_by_phase = item.stash.setdefault(durations_key, {})
+    durations_by_phase[call.when] = round(call.duration, 2)
+
+
+def _makereport_setup(item: pytest.Item, call: pytest.CallInfo):
+    _stash_phase_duration(call, item)
+
+
+def _makereport_call(item: pytest.Item, call: pytest.CallInfo):
+    _stash_phase_duration(call, item)
+    item.stash[test_failed_key] = call.excinfo is not None
+
+
+def _makereport_teardown(item: pytest.Item, call: pytest.CallInfo):
+    _stash_phase_duration(call, item)
 
     # only update the file when running against AWS and the test finishes successfully
-    if not is_aws_cloud() or not item.stash.get(test_passed_key, False):
-        return report
-
-    item.stash.setdefault(durations_key, {})
-    item.stash[durations_key][execution_phase] = round(call.duration, 2)
-
-    # only write to file after the teardown phase
-    if execution_phase != "teardown":
-        return report
+    if not is_aws_cloud() or item.stash.get(test_failed_key, True):
+        return
 
     base_path = os.path.join(item.fspath.dirname, item.fspath.purebasename)
     file_path = Path(f"{base_path}.validation.json")
@@ -96,8 +109,6 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
         fd.seek(0)
         json.dump(content, fd, indent=2)
         fd.write("\n")  # add trailing newline for linter and Git compliance
-
-    return report
 
 
 @pytest.hookimpl
