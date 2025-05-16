@@ -5,7 +5,7 @@ on:
     - cron: 0 1 * * MON-FRI
   pull_request:
     paths:
-      - '.github/workflows/aws-tests-mamr.yml'
+      - '.github/workflows/aws-mamr.yml'
       - '.github/workflows/aws-tests.yml'
   workflow_dispatch:
     inputs:
@@ -27,7 +27,8 @@ on:
 
 env:
   IMAGE_NAME: "localstack/localstack"
-  TINYBIRD_DATASOURCE: "community_tests_circleci_ma_mr"
+
+
 
 jobs:
   generate-random-creds:
@@ -61,3 +62,21 @@ jobs:
     secrets:
       DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
       DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+      TINYBIRD_CI_TOKEN: ${{ secrets.TINYBIRD_CI_TOKEN }}
+
+  push-to-tinybird:
+    name: Push Workflow Status to Tinybird
+    if: always() && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    needs:
+      - test-ma-mr
+    steps:
+      - name: Push to Tinybird
+        uses: localstack/tinybird-workflow-push@v3
+        with:
+          workflow_id: ${{ 'tests_mamr' }}
+          tinybird_token: ${{ secrets.TINYBIRD_CI_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tinybird_datasource: "ci_workflows"
+          # determine the output only for the jobs that are direct dependencies of this job (to avoid issues with workflow_call embeddings)
+          outcome: ${{ ((contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')) && 'failure') || 'success' }}

@@ -97,15 +97,35 @@ on:
       DOCKERHUB_PULL_TOKEN:
         description: 'A DockerHub token - Used to avoid rate limiting issues.'
         required: true
+      TINYBIRD_CI_TOKEN:
+        description: 'Token for accessing our tinybird ci analytics workspace.'
+        required: true
 
 env:
   PYTEST_LOGLEVEL: ${{ inputs.PYTEST_LOGLEVEL || 'WARNING' }}
   IMAGE_NAME: "localstack/localstack"
-  TINYBIRD_DATASOURCE: "community_tests_integration"
   TESTSELECTION_PYTEST_ARGS: "${{ !inputs.disableTestSelection && '--path-filter=dist/testselection/test-selection.txt ' || '' }}"
   TEST_AWS_REGION_NAME: ${{ inputs.testAWSRegion }}
   TEST_AWS_ACCOUNT_ID: ${{ inputs.testAWSAccountId }}
   TEST_AWS_ACCESS_KEY_ID: ${{ inputs.testAWSAccessKeyId }}
+  # Set non-job-specific environment variables for pytest-tinybird
+  TINYBIRD_URL: https://api.tinybird.co
+  TINYBIRD_DATASOURCE: raw_tests
+  TINYBIRD_TOKEN: ${{ secrets.TINYBIRD_CI_TOKEN }}
+  TINYBIRD_TIMEOUT: 5
+  CI_REPOSITORY_NAME: localstack/localstack
+  # differentiate between "acceptance", "mamr" and "full" runs
+  CI_WORKFLOW_NAME: ${{ inputs.onlyAcceptanceTests && 'tests_acceptance'
+    || inputs.testAWSAccountId != '000000000000' && 'tests_mamr'
+    || 'tests_full' }}
+  CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+  CI_COMMIT_SHA: ${{ github.sha }}
+  CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
+  # report to tinybird if executed on master on ext AND community (targetRef not set) AND additional environment variables/pytest args are not set.
+  # TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
+  TINYBIRD_PYTEST_ARGS: '--report-to-tinybird '
+
+
 
 jobs:
   build:
