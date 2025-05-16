@@ -2,6 +2,12 @@
   "tests/aws/services/ssm/test_ssm.py::TestSSM::test_get_parameter_by_arn": {
     "last_validated_date": "2024-07-16T17:17:40+00:00"
   },
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_list_tags_for_nested_parameter": {
+    "last_validated_date": "2025-03-19T02:20:27+00:00"
+  },
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_list_tags_for_parameter": {
+    "last_validated_date": "2025-03-19T02:18:23+00:00"
+  },
   "tests/aws/services/ssm/test_ssm.py::TestSSM::test_parameters_with_path": {
     "last_validated_date": "2025-01-08T17:04:53+00:00"
   }
