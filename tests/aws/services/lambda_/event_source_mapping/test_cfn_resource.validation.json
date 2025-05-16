@@ -1,5 +1,11 @@
 {
   "tests/aws/services/lambda_/event_source_mapping/test_cfn_resource.py::test_adding_tags": {
-    "last_validated_date": "2024-11-06T11:55:29+00:00"
+    "last_validated_date": "2025-05-16T13:03:23+00:00",
+    "durations_by_phase": {
+      "setup": 0.69,
+      "call": 70.23,
+      "teardown": 54.61
+    },
+    "total_duration": 125.53
   }
 }
