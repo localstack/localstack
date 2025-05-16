@@ -65,6 +65,51 @@ class TestChangeSetFnGetAttr:
         }
         capture_update_process(snapshot, template_1, template_2)
 
+    @markers.aws.validated
+    @pytest.mark.skip(reason="Fetching non-computed properties with Fn::GetAtt not supported yet")
+    def test_resource_addition_with_read_only_property(
+        self,
+        snapshot,
+        capture_update_process,
+    ):
+        # Modify a property where a derived property is the getatt target for another resource
+        name1 = f"topic-name-1-{long_uid()}"
+        name2 = f"topic-name-2-{long_uid()}"
+        snapshot.add_transformer(RegexTransformer(name1, "<topic-name-1>"))
+        snapshot.add_transformer(RegexTransformer(name2, "<topic-name-2>"))
+        template_1 = {
+            "Resources": {
+                "Topic1": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {"TopicName": name1},
+                },
+                "Topic2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["Topic1", "TopicArn"]},
+                    },
+                },
+            }
+        }
+
+        template_2 = {
+            "Resources": {
+                "Topic1": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {"TopicName": name2},
+                },
+                "Topic2": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Fn::GetAtt": ["Topic1", "TopicArn"]},
+                    },
+                },
+            }
+        }
+        capture_update_process(snapshot, template_1, template_2)
+
     @pytest.mark.skip(reason="See FIXME in aws_sns_provider::delete")
     @markers.aws.validated
     def test_resource_deletion(
