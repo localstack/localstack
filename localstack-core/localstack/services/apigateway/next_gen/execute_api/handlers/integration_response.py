@@ -263,7 +263,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
         self, context: RestApiInvocationContext, template: str, body: bytes | str
     ) -> tuple[bytes, ContextVarsResponseOverride]:
         if not template:
-            return to_bytes(body), context.context_variables["responseOverride"]
+            return to_bytes(body), context.context_variable_overrides["responseOverride"]
 
         # if there are no template, we can pass binary data through
         if not isinstance(body, str):
@@ -284,6 +284,7 @@ class IntegrationResponseHandler(RestApiGatewayHandler):
                     ),
                 ),
             ),
+            context_overrides=context.context_variable_overrides,
         )
 
         # AWS ignores the status if the override isn't an integer between 100 and 599

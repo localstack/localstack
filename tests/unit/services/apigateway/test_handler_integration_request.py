@@ -20,6 +20,7 @@ from localstack.services.apigateway.next_gen.execute_api.handlers.integration_re
     PassthroughBehavior,
 )
 from localstack.services.apigateway.next_gen.execute_api.variables import (
+    ContextVariableOverrides,
     ContextVariables,
     ContextVarsRequestOverride,
     ContextVarsResponseOverride,
@@ -82,6 +83,8 @@ def default_context():
         path=f"{TEST_API_STAGE}/resource/{{proxy}}",
         resourcePath="/resource/{proxy}",
         stage=TEST_API_STAGE,
+    )
+    context.context_variable_overrides = ContextVariableOverrides(
         requestOverride=ContextVarsRequestOverride(header={}, path={}, querystring={}),
         responseOverride=ContextVarsResponseOverride(header={}, status=0),
     )

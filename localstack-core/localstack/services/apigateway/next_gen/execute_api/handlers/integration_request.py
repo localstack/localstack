@@ -22,7 +22,7 @@ from ..template_mapping import (
     MappingTemplateParams,
     MappingTemplateVariables,
 )
-from ..variables import ContextVariables, ContextVarsRequestOverride
+from ..variables import ContextVariableOverrides, ContextVarsRequestOverride
 
 LOG = logging.getLogger(__name__)
 
@@ -119,19 +119,15 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
 
             converted_body = self.convert_body(context)
 
-            body, mapped_context_variables = self.render_request_template_mapping(
+            body, mapped_overrides = self.render_request_template_mapping(
                 context=context, body=converted_body, template=request_template
             )
+            # Update the context with the returned mapped overrides
+            context.context_variable_overrides = mapped_overrides
             # mutate the ContextVariables with the requestOverride result, as we copy the context when rendering the
             # template to avoid mutation on other fields
-            # the VTL responseTemplate can access the requestOverride
-            request_override: ContextVarsRequestOverride = mapped_context_variables.get(
+            request_override: ContextVarsRequestOverride = mapped_overrides.get(
                 "requestOverride", {}
-            )
-            context.context_variables["requestOverride"] = request_override
-            # Response override attributes set in the request template will be available in the response template
-            context.context_variables["responseOverride"] = mapped_context_variables.get(
-                "responseOverride", {}
             )
             # TODO: log every override that happens afterwards (in a loop on `request_override`)
             merge_recursive(request_override, request_data_mapping, overwrite=True)
@@ -187,18 +183,18 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
         context: RestApiInvocationContext,
         body: str | bytes,
         template: str,
-    ) -> tuple[bytes, ContextVariables]:
+    ) -> tuple[bytes, ContextVariableOverrides]:
         request: InvocationRequest = context.invocation_request
 
         if not template:
-            return to_bytes(body), context.context_variables
+            return to_bytes(body), context.context_variable_overrides
 
         try:
             body_utf8 = to_str(body)
         except UnicodeError:
             raise InternalServerError("Internal server error")
 
-        body, mapped_context_variables = self._vtl_template.render_request(
+        body, mapped_overrides = self._vtl_template.render_request(
             template=template,
             variables=MappingTemplateVariables(
                 context=context.context_variables,
@@ -212,8 +208,9 @@ class IntegrationRequestHandler(RestApiGatewayHandler):
                     ),
                 ),
             ),
+            context_overrides=context.context_variable_overrides,
         )
-        return to_bytes(body), mapped_context_variables
+        return to_bytes(body), mapped_overrides
 
     @staticmethod
     def get_request_template(integration: Integration, request: InvocationRequest) -> str:

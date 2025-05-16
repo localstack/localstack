@@ -8,7 +8,7 @@ from werkzeug.datastructures import Headers
 from localstack.aws.api.apigateway import Integration, Method, Resource
 from localstack.services.apigateway.models import RestApiDeployment
 
-from .variables import ContextVariables, LoggingContextVariables
+from .variables import ContextVariableOverrides, ContextVariables, LoggingContextVariables
 
 
 class InvocationRequest(TypedDict, total=False):
@@ -98,6 +98,9 @@ class RestApiInvocationContext(RequestContext):
     """The Stage variables, also used in parameters mapping and mapping templates"""
     context_variables: Optional[ContextVariables]
     """The $context used in data models, authorizers, mapping templates, and CloudWatch access logging"""
+    context_variable_overrides: Optional[ContextVariableOverrides]
+    """requestOverrides and responseOverrides are passed from request templates to response templates but are
+    not in the integration context"""
     logging_context_variables: Optional[LoggingContextVariables]
     """Additional $context variables available only for access logging, not yet implemented"""
     invocation_request: Optional[InvocationRequest]

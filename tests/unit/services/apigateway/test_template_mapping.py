@@ -13,6 +13,7 @@ from localstack.services.apigateway.next_gen.execute_api.template_mapping import
     VelocityUtilApiGateway,
 )
 from localstack.services.apigateway.next_gen.execute_api.variables import (
+    ContextVariableOverrides,
     ContextVariables,
     ContextVarsAuthorizer,
     ContextVarsIdentity,
@@ -117,16 +118,19 @@ class TestApiGatewayVtlTemplate:
                 authorizer=ContextVarsAuthorizer(principalId="12233"),
                 identity=ContextVarsIdentity(accountId="00000", apiKey="11111"),
                 resourcePath="/{proxy}",
-                requestOverride=ContextVarsRequestOverride(header={}, path={}, querystring={}),
             ),
             stageVariables={"stageVariable1": "value1", "stageVariable2": "value2"},
+        )
+        context_overrides = ContextVariableOverrides(
+            requestOverride=ContextVarsRequestOverride(header={}, path={}, querystring={}),
+            responseOverride=ContextVarsResponseOverride(header={}, status=0),
         )
 
         template = TEMPLATE_JSON if format == APPLICATION_JSON else TEMPLATE_XML
         template += REQUEST_OVERRIDE
 
         rendered_request, context_variable = ApiGatewayVtlTemplate().render_request(
-            template=template, variables=variables
+            template=template, variables=variables, context_overrides=context_overrides
         )
         request_override = context_variable["requestOverride"]
         if format == APPLICATION_JSON:
@@ -197,16 +201,18 @@ class TestApiGatewayVtlTemplate:
                 authorizer=ContextVarsAuthorizer(principalId="12233"),
                 identity=ContextVarsIdentity(accountId="00000", apiKey="11111"),
                 resourcePath="/{proxy}",
-                responseOverride=ContextVarsResponseOverride(header={}, status=0),
             ),
             stageVariables={"stageVariable1": "value1", "stageVariable2": "value2"},
         )
-
+        context_overrides = ContextVariableOverrides(
+            requestOverride=ContextVarsRequestOverride(header={}, path={}, querystring={}),
+            responseOverride=ContextVarsResponseOverride(header={}, status=0),
+        )
         template = TEMPLATE_JSON if format == APPLICATION_JSON else TEMPLATE_XML
         template += RESPONSE_OVERRIDE
 
         rendered_response, response_override = ApiGatewayVtlTemplate().render_response(
-            template=template, variables=variables
+            template=template, variables=variables, context_overrides=context_overrides
         )
         if format == APPLICATION_JSON:
             rendered_response = json.loads(rendered_response)
