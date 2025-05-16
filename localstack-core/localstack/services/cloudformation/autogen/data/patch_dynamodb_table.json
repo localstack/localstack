@@ -1,0 +1,15 @@
+[
+  {
+    "op": "remove",
+    "path": "/properties/KeySchema/oneOf/1"
+  },
+  {
+    "op": "replace",
+    "path": "/required",
+    "value": [
+      "KeySchema",
+      "AttributeDefinitions",
+      "BillingMode"
+    ]
+  }
+]
