@@ -7,7 +7,6 @@ we can periodically re-validate ALL AWS-targeting tests (and therefore not only 
 
 import datetime
 import json
-import logging
 import os
 from pathlib import Path
 from typing import Optional
@@ -15,8 +14,6 @@ from typing import Optional
 import pytest
 
 from localstack.testing.aws.util import is_aws_cloud
-
-LOG = logging.getLogger(__name__)
 
 
 def find_validation_data_for_item(item: pytest.Item) -> Optional[dict]:
