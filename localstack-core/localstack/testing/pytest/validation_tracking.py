@@ -14,6 +14,8 @@ from typing import Optional
 
 import pytest
 
+from localstack.testing.aws.util import is_aws_cloud
+
 LOG = logging.getLogger(__name__)
 
 
@@ -40,8 +42,11 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
         # read existing state from file
         try:
             content = json.load(fd)
-        except json.JSONDecodeError:  # expected on first try (empty file)
+        except json.JSONDecodeError:  # expected on the first try (empty file)
             content = {}
+
+        if not is_aws_cloud() or call.excinfo:
+            return report
 
         test_execution_data = content.setdefault(item.nodeid, {})
 
