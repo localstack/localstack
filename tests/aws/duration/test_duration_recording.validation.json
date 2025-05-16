@@ -1,11 +1,20 @@
 {
-  "tests/aws/duration/test_duration_recording.py::test_duration_2_seconds": {
+  "tests/aws/duration/test_duration_recording.py::test_duration_1_second": {
+    "last_validated_date": "2025-05-16T09:55:19+00:00",
     "durations_by_phase": {
-      "call": 1.1094574159942567,
-      "setup": 0.5242352090135682,
-      "teardown": 0.0015286669950000942
+      "setup": 0.0,
+      "call": 1.01,
+      "teardown": 0.0
     },
-    "last_validated_date": "2025-05-15T19:17:26+00:00",
-    "total_duration": 1.635221292002825
+    "total_duration": 1.01
+  },
+  "tests/aws/duration/test_duration_recording.py::test_duration_2_seconds": {
+    "last_validated_date": "2025-05-16T09:55:18+00:00",
+    "durations_by_phase": {
+      "setup": 0.54,
+      "call": 2.01,
+      "teardown": 0.0
+    },
+    "total_duration": 2.55
   }
 }
