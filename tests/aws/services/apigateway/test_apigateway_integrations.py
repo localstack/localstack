@@ -806,6 +806,81 @@ def test_integration_mock_with_response_override_in_request_template(
     )
 
 
+@markers.aws.validated
+def test_integration_mock_with_vtl_map_assignation(create_rest_apigw, aws_client, snapshot):
+    api_id, _, root_id = create_rest_apigw(
+        name=f"test-api-{short_uid()}",
+        description="this is my api",
+    )
+
+    aws_client.apigateway.put_method(
+        restApiId=api_id,
+        resourceId=root_id,
+        httpMethod="GET",
+        authorizationType="NONE",
+    )
+
+    aws_client.apigateway.put_method_response(
+        restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
+    )
+
+    request_template = textwrap.dedent("""
+    #set($paramName = "foo")
+    #set($context.requestOverride.querystring[$paramName] = "bar")
+    #set($paramPutName = "putfoo")
+    $context.requestOverride.querystring.put($paramPutName, "putBar")
+    {
+      "statusCode": 200
+    }
+    """)
+
+    aws_client.apigateway.put_integration(
+        restApiId=api_id,
+        resourceId=root_id,
+        httpMethod="GET",
+        integrationHttpMethod="POST",
+        type="MOCK",
+        requestParameters={},
+        requestTemplates={"application/json": request_template},
+    )
+    response_template = textwrap.dedent("""
+    #set($value = $context.requestOverride.querystring["foo"])
+    #set($value2 = $context.requestOverride.querystring["putfoo"])
+    {
+        "value": "$value",
+        "value2": "$value2"
+    }
+    """)
+
+    aws_client.apigateway.put_integration_response(
+        restApiId=api_id,
+        resourceId=root_id,
+        httpMethod="GET",
+        statusCode="200",
+        selectionPattern="2\\d{2}",
+        responseTemplates={"application/json": response_template},
+    )
+    stage_name = "dev"
+    aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+    invocation_url = api_invoke_url(api_id=api_id, stage=stage_name)
+
+    def invoke_api(url) -> requests.Response:
+        _response = requests.get(url, verify=False)
+        assert _response.status_code == 200
+        return _response
+
+    response_data = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
+    # assert response_data.headers["foo"] == "bar"
+    snapshot.match(
+        "response",
+        {
+            "body": response_data.json(),
+            "status_code": response_data.status_code,
+        },
+    )
+
+
 @pytest.fixture
 def default_vpc(aws_client):
     vpcs = aws_client.ec2.describe_vpcs()
