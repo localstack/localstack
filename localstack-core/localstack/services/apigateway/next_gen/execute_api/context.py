@@ -132,3 +132,4 @@ class RestApiInvocationContext(RequestContext):
         self.endpoint_response = None
         self.invocation_response = None
         self.trace_id = None
+        self.context_variable_overrides = None
