@@ -35,7 +35,7 @@ from localstack.services.cloudformation.resource_provider import (
     ProgressEvent,
     ResourceProviderExecutor,
     ResourceProviderPayload,
-    get_resource_type,
+    standardise_resource_type,
 )
 from localstack.services.cloudformation.service_models import (
     DependencyNotYetSatisfied,
@@ -364,7 +364,7 @@ def _resolve_refs_recursively(
             )
             resource = resources.get(resource_logical_id)
 
-            resource_type = get_resource_type(resource)
+            resource_type = standardise_resource_type(resource["Type"])
             resolved_getatt = get_attr_from_model_instance(
                 resource,
                 attribute_name,
@@ -812,7 +812,7 @@ def resolve_placeholders_in_string(
             resolved = get_attr_from_model_instance(
                 resources[logical_resource_id],
                 attr_name,
-                get_resource_type(resources[logical_resource_id]),
+                standardise_resource_type(resources[logical_resource_id]["Type"]),
                 logical_resource_id,
             )
             if resolved is None:
@@ -1295,7 +1295,9 @@ class TemplateDeployer:
             action, logical_resource_id=resource_id
         )
 
-        resource_provider = executor.try_load_resource_provider(get_resource_type(resource))
+        resource_provider = executor.try_load_resource_provider(
+            standardise_resource_type(resource["Type"])
+        )
         if resource_provider is not None:
             # add in-progress event
             resource_status = f"{get_action_name_for_resource_change(action)}_IN_PROGRESS"
@@ -1407,7 +1409,7 @@ class TemplateDeployer:
             resource["Properties"] = resource.get(
                 "Properties", clone_safe(resource)
             )  # TODO: why is there a fallback?
-            resource["ResourceType"] = get_resource_type(resource)
+            resource["ResourceType"] = standardise_resource_type(resource["Type"])
 
         ordered_resource_ids = list(
             order_resources(
@@ -1438,7 +1440,9 @@ class TemplateDeployer:
                     len(resources),
                     resource["ResourceType"],
                 )
-                resource_provider = executor.try_load_resource_provider(get_resource_type(resource))
+                resource_provider = executor.try_load_resource_provider(
+                    standardise_resource_type(resource["Type"])
+                )
                 if resource_provider is not None:
                     event = executor.deploy_loop(
                         resource_provider, resource, resource_provider_payload
