@@ -758,7 +758,29 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         limit: LimitMax100 = None,
         **kwargs,
     ) -> ListRuleNamesByTargetResponse:
-        raise NotImplementedError
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(region, account_id)
+        event_bus_name = extract_event_bus_name(event_bus_name)
+        event_bus = self.get_event_bus(event_bus_name, store)
+
+        # Find all rules that have a target with the specified ARN
+        matching_rule_names = []
+        for rule_name, rule in event_bus.rules.items():
+            for target_id, target in rule.targets.items():
+                if target["Arn"] == target_arn:
+                    matching_rule_names.append(rule_name)
+                    break  # Found a match in this rule, no need to check other targets
+
+        limited_rules, next_token = self._get_limited_list_and_next_token(
+            matching_rule_names, next_token, limit
+        )
+
+        response = ListRuleNamesByTargetResponse(RuleNames=limited_rules)
+        if next_token is not None:
+            response["NextToken"] = next_token
+
+        return response
 
     @handler("PutRule")
     def put_rule(
@@ -1513,6 +1535,24 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             else None
         )
         return limited_dict, next_token
+
+    def _get_limited_list_and_next_token(
+        self, input_list: list, next_token: NextToken | None, limit: LimitMax100 | None
+    ) -> tuple[list, NextToken]:
+        """Return a slice of the given list starting from next_token with length of limit
+        and new last index encoded as a next_token for pagination."""
+        input_list_len = len(input_list)
+        start_index = decode_next_token(next_token) if next_token is not None else 0
+        end_index = start_index + limit if limit is not None else input_list_len
+        limited_list = input_list[start_index:end_index]
+
+        next_token = (
+            encode_next_token(end_index)
+            # return a next_token (encoded integer of next starting index) if not all items are returned
+            if end_index < input_list_len
+            else None
+        )
+        return limited_list, next_token
 
     def _check_resource_exists(
         self, resource_arn: Arn, resource_type: ResourceType, store: EventsStore
