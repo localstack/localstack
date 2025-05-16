@@ -86,6 +86,24 @@
   "tests/aws/services/events/test_events.py::TestEventRule::test_disable_re_enable_rule[default]": {
     "last_validated_date": "2025-01-08T15:28:56+00:00"
   },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_list_rule_names_by_target[custom]": {
+    "last_validated_date": "2025-05-16T11:55:33+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_list_rule_names_by_target[default]": {
+    "last_validated_date": "2025-05-16T11:55:34+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_list_rule_names_by_target_no_matches[custom]": {
+    "last_validated_date": "2025-05-16T20:34:26+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_list_rule_names_by_target_no_matches[default]": {
+    "last_validated_date": "2025-05-16T20:34:27+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_list_rule_names_by_target_with_limit[custom]": {
+    "last_validated_date": "2025-05-16T20:05:36+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_list_rule_names_by_target_with_limit[default]": {
+    "last_validated_date": "2025-05-16T20:05:37+00:00"
+  },
   "tests/aws/services/events/test_events.py::TestEventRule::test_list_rule_with_limit": {
     "last_validated_date": "2025-01-08T15:28:51+00:00"
   },

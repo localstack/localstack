@@ -2573,5 +2573,133 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_list_rule_names_by_target[custom]": {
+    "recorded-date": "16-05-2025, 11:55:27",
+    "recorded-content": {
+      "list_rule_names_by_target": {
+        "RuleNames": [
+          "<rule-prefix>0",
+          "<rule-prefix>1",
+          "<rule-prefix>2"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_list_rule_names_by_target[default]": {
+    "recorded-date": "16-05-2025, 11:55:28",
+    "recorded-content": {
+      "list_rule_names_by_target": {
+        "RuleNames": [
+          "<rule-prefix>0",
+          "<rule-prefix>1",
+          "<rule-prefix>2"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_list_rule_names_by_target_with_limit[custom]": {
+    "recorded-date": "16-05-2025, 20:05:21",
+    "recorded-content": {
+      "first_page": {
+        "NextToken": "<next-token>",
+        "RuleNames": [
+          "<rule-prefix>0",
+          "<rule-prefix>1"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "second_page": {
+        "NextToken": "<next-token>",
+        "RuleNames": [
+          "<rule-prefix>2",
+          "<rule-prefix>3"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "third_page": {
+        "RuleNames": [
+          "<rule-prefix>4"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_list_rule_names_by_target_with_limit[default]": {
+    "recorded-date": "16-05-2025, 20:05:22",
+    "recorded-content": {
+      "first_page": {
+        "NextToken": "<next-token>",
+        "RuleNames": [
+          "<rule-prefix>0",
+          "<rule-prefix>1"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "second_page": {
+        "NextToken": "<next-token>",
+        "RuleNames": [
+          "<rule-prefix>2",
+          "<rule-prefix>3"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "third_page": {
+        "RuleNames": [
+          "<rule-prefix>4"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_list_rule_names_by_target_no_matches[custom]": {
+    "recorded-date": "16-05-2025, 20:34:26",
+    "recorded-content": {
+      "list_rule_names_by_target_no_matches": {
+        "RuleNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_list_rule_names_by_target_no_matches[default]": {
+    "recorded-date": "16-05-2025, 20:34:27",
+    "recorded-content": {
+      "list_rule_names_by_target_no_matches": {
+        "RuleNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
