@@ -16,6 +16,11 @@ from .context import InvocationRequest, RestApiInvocationContext
 from .handlers.resource_router import RestAPIResourceRouter
 from .header_utils import build_multi_value_headers
 from .template_mapping import dict_to_string
+from .variables import (
+    ContextVariableOverrides,
+    ContextVarsRequestOverride,
+    ContextVarsResponseOverride,
+)
 
 # TODO: we probably need to write and populate those logs as part of the handler chain itself
 #  and store it in the InvocationContext. That way, we could also retrieve in when calling TestInvoke
@@ -150,8 +155,11 @@ def create_test_invocation_context(
     invocation_context.context_variables = parse_handler.create_context_variables(
         invocation_context
     )
+    invocation_context.context_variable_overrides = ContextVariableOverrides(
+        requestOverride=ContextVarsRequestOverride(header={}, path={}, querystring={}),
+        responseOverride=ContextVarsResponseOverride(header={}, status=0),
+    )
     invocation_context.trace_id = parse_handler.populate_trace_id({})
-
     resource = deployment.rest_api.resources[test_request["resourceId"]]
     resource_method = resource["resourceMethods"][http_method]
     invocation_context.resource = resource

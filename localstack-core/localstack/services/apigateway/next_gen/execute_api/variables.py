@@ -75,6 +75,11 @@ class ContextVarsResponseOverride(TypedDict):
     status: int
 
 
+class ContextVariableOverrides(TypedDict):
+    requestOverride: ContextVarsRequestOverride
+    responseOverride: ContextVarsResponseOverride
+
+
 class GatewayResponseContextVarsError(TypedDict, total=False):
     # This variable can only be used for simple variable substitution in a GatewayResponse body-mapping template,
     # which is not processed by the Velocity Template Language engine, and in access logging.
