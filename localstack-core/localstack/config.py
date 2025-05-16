@@ -442,6 +442,9 @@ LAMBDA_DEBUG_MODE = is_env_true("LAMBDA_DEBUG_MODE")
 # path to the lambda debug mode configuration file.
 LAMBDA_DEBUG_MODE_CONFIG_PATH = os.environ.get("LAMBDA_DEBUG_MODE_CONFIG_PATH")
 
+# EXPERIMENTAL: allow setting custom log levels for individual loggers
+LOG_LEVEL_OVERRIDES = os.environ.get("LOG_LEVEL_OVERRIDES", "")
+
 # whether to enable debugpy
 DEVELOP = is_env_true("DEVELOP")
 
