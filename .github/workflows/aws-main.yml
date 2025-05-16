@@ -37,11 +37,11 @@ on:
         type: choice
         description: Loglevel for PyTest
         options:
-        - DEBUG
-        - INFO
-        - WARNING
-        - ERROR
-        - CRITICAL
+          - DEBUG
+          - INFO
+          - WARNING
+          - ERROR
+          - CRITICAL
         default: WARNING
 
 env:
@@ -172,7 +172,7 @@ jobs:
     # push image on master, target branch not set, and the dependent steps were either successful or skipped
     # TO-DO: enable job after workflow in CircleCI is disabled
     if: false
-#    if: github.ref == 'refs/heads/master' && !failure() && !cancelled()
+    #    if: github.ref == 'refs/heads/master' && !failure() && !cancelled()
     needs:
       # all tests need to be successful for the image to be pushed
       - test
@@ -252,7 +252,7 @@ jobs:
 
   push-to-tinybird:
     name: Push Workflow Status to Tinybird
-    if: always() # && github.ref == 'refs/heads/master'
+    if: always() && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     needs:
       - test
