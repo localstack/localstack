@@ -184,7 +184,7 @@ jobs:
           fetch-depth: 0
 
       - name: Load Localstack ${{ env.PLATFORM_NAME_AMD64 }} Docker Image
-        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+        uses: ./.github/actions/load-localstack-docker-from-artifacts
         with:
           platform: ${{ env.PLATFORM_NAME_AMD64 }}
 
@@ -213,7 +213,7 @@ jobs:
           TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" ./bin/docker-helper.sh push
 
       - name: Load Localstack ${{ env.PLATFORM_NAME_ARM64 }} Docker Image
-        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+        uses: ./.github/actions/load-localstack-docker-from-artifacts
         with:
           platform: ${{ env.PLATFORM_NAME_ARM64 }}
 

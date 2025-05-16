@@ -48,7 +48,7 @@ def test_generate_data_key_pair_invalid_spec_raises_unsupported_exception(
     provider, invalid_spec, dry_run
 ):
     # Arrange
-    context = RequestContext()
+    context = RequestContext(None)
     context.account_id = "000000000000"
     context.region = "us-east-1"
 
@@ -79,7 +79,7 @@ def test_generate_data_key_pair_invalid_spec_raises_validation_exception(
     provider, invalid_spec, dry_run
 ):
     # Arrange
-    context = RequestContext()
+    context = RequestContext(None)
     context.account_id = "000000000000"
     context.region = "us-east-1"
 
@@ -101,7 +101,7 @@ def test_generate_data_key_pair_real_key(provider):
     # Arrange
     account_id = "000000000000"
     region_name = "us-east-1"
-    context = RequestContext()
+    context = RequestContext(None)
     context.account_id = account_id
     context.region = region_name
 
@@ -131,7 +131,7 @@ def test_generate_data_key_pair_dry_run(provider):
     # Arrange
     account_id = "000000000000"
     region_name = "us-east-1"
-    context = RequestContext()
+    context = RequestContext(None)
     context.account_id = account_id
     context.region = region_name
 
@@ -158,7 +158,7 @@ def test_generate_data_key_pair_without_plaintext(provider):
     # Arrange
     account_id = "000000000000"
     region_name = "us-east-1"
-    context = RequestContext()
+    context = RequestContext(None)
     context.account_id = account_id
     context.region = region_name
 
@@ -188,7 +188,7 @@ def test_generate_data_key_pair_without_plaintext_dry_run(provider):
     # Arrange
     account_id = "000000000000"
     region_name = "us-east-1"
-    context = RequestContext()
+    context = RequestContext(None)
     context.account_id = account_id
     context.region = region_name
 

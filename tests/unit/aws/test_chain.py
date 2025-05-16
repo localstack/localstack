@@ -28,7 +28,7 @@ class TestCompositeHandler:
         chain.response_handlers.append(response1)
         chain.finalizers.append(finalizer)
 
-        chain.handle(RequestContext(), Response())
+        chain.handle(RequestContext(None), Response())
         outer1.assert_called_once()
         outer2.assert_not_called()
         inner2.assert_not_called()
@@ -57,7 +57,7 @@ class TestCompositeHandler:
         chain.response_handlers.append(response1)
         chain.finalizers.append(finalizer)
 
-        chain.handle(RequestContext(), Response())
+        chain.handle(RequestContext(None), Response())
         outer1.assert_called_once()
         outer2.assert_not_called()
         inner2.assert_not_called()
@@ -86,7 +86,7 @@ class TestCompositeHandler:
         chain.response_handlers.append(response1)
         chain.finalizers.append(finalizer)
 
-        chain.handle(RequestContext(), Response())
+        chain.handle(RequestContext(None), Response())
         outer1.assert_called_once()
         outer2.assert_not_called()
         inner2.assert_called_once()
@@ -113,7 +113,7 @@ class TestCompositeHandler:
         chain.response_handlers.append(response1)
         chain.finalizers.append(finalizer)
 
-        chain.handle(RequestContext(), Response())
+        chain.handle(RequestContext(None), Response())
         outer1.assert_called_once()
         outer2.assert_called_once()
         inner1.assert_called_once()
@@ -145,7 +145,7 @@ class TestCompositeHandler:
         chain.response_handlers.append(response1)
         chain.finalizers.append(finalizer)
 
-        chain.handle(RequestContext(), Response())
+        chain.handle(RequestContext(None), Response())
         outer1.assert_called_once()
         outer2.assert_not_called()
         inner2.assert_not_called()
