@@ -9,11 +9,18 @@ import datetime
 import json
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 import pytest
+from _pytest.stash import StashKey
 
 from localstack.testing.aws.util import is_aws_cloud
+
+durations_key = StashKey[Dict[str, float]]()
+"""
+Used to store information on the test node between execution phases.
+See https://docs.pytest.org/en/latest/reference/reference.html#pytest.Stash
+"""
 
 
 def find_validation_data_for_item(item: pytest.Item) -> Optional[dict]:
@@ -32,7 +39,18 @@ def find_validation_data_for_item(item: pytest.Item) -> Optional[dict]:
 def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
     report = yield
 
+    # only update the file when running against AWS and the test finishes successfully
     if not is_aws_cloud() or call.excinfo:
+        return report
+
+    # this hook is run 3 times: on test setup, call and teardown
+    execution_phase = call.when
+
+    item.stash.setdefault(durations_key, {})
+    item.stash[durations_key][execution_phase] = round(call.duration, 2)
+
+    # only write to file after the teardown phase
+    if execution_phase != "teardown":
         return report
 
     base_path = os.path.join(item.fspath.dirname, item.fspath.purebasename)
@@ -47,25 +65,22 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
 
         test_execution_data = content.setdefault(item.nodeid, {})
 
-        execution_phase = call.when  # this hook is run 3 times: on test setup, call and teardown
+        timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
+        test_execution_data["last_validated_date"] = timestamp.isoformat(timespec="seconds")
 
-        # only update validated date on successful run, not on setup or teardown
-        if execution_phase == "call":
-            timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
-            test_execution_data["last_validated_date"] = timestamp.isoformat(timespec="seconds")
+        durations_by_phase = item.stash[durations_key]
+        test_execution_data["durations_by_phase"] = durations_by_phase
 
-        durations_by_phase = test_execution_data.setdefault("durations_by_phase", {})
-        durations_by_phase[execution_phase] = round(call.duration, 2)
         total_duration = sum(durations_by_phase.values())
         test_execution_data["total_duration"] = round(total_duration, 2)
 
         # For json.dump sorted test entries enable consistent diffs.
-        # But test execution data is more readable in insert order for each step (setup, call, teardown)
-        # Hence not using global sort_keys=True for json.dump but rather additionally sorting top-level dict only.
+        # But test execution data is more readable in insert order for each step (setup, call, teardown).
+        # Hence, not using global sort_keys=True for json.dump but rather additionally sorting top-level dict only.
         content = dict(sorted(content.items()))
 
         # save updates
-        fd.truncate(0)  # Clear existing content
+        fd.truncate(0)  # clear existing content
         fd.seek(0)
         json.dump(content, fd, indent=2)
         fd.write("\n")  # add trailing newline for linter and Git compliance
