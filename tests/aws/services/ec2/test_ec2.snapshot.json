@@ -335,5 +335,34 @@
         }
       }
     }
+  },
+  "tests/aws/services/ec2/test_ec2.py::TestEc2Integrations::test_get_security_groups_for_vpc": {
+    "recorded-date": "17-05-2025, 11:57:25",
+    "recorded-content": {
+      "create_security_group_1": {
+        "GroupId": "<group-id:1>",
+        "SecurityGroupArn": "arn:<partition>:ec2:<region>:111111111111:security-group/<group-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_security_group_2": {
+        "GroupId": "<group-id:2>",
+        "SecurityGroupArn": "arn:<partition>:ec2:<region>:111111111111:security-group/<group-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_security_group_3": {
+        "GroupId": "<group-id:3>",
+        "SecurityGroupArn": "arn:<partition>:ec2:<region>:111111111111:security-group/<group-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
