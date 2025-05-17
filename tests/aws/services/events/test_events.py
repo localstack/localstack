@@ -1742,6 +1742,293 @@ class TestEventRule:
             )
             snapshot.match(f"events-{num_events}", events)
 
+    @markers.aws.validated
+    @pytest.mark.parametrize("bus_name", ["custom", "default"])
+    def test_list_rule_names_by_target(
+        self,
+        bus_name,
+        events_create_event_bus,
+        events_put_rule,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        aws_client,
+        snapshot,
+        clean_up,
+    ):
+        """Test the ListRuleNamesByTarget API to verify it correctly returns rules associated with a target."""
+        # Create an SQS queue to use as a target
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        queue_arn = sqs_get_queue_arn(queue_url)
+        snapshot.add_transformer(snapshot.transform.regex(queue_arn, "<queue-arn>"))
+
+        # Create an event bus if using custom bus
+        if bus_name == "custom":
+            bus_name = f"bus-{short_uid()}"
+            events_create_event_bus(Name=bus_name)
+            snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
+
+        # Create multiple rules targeting the same SQS queue
+        rule_prefix = f"rule-{short_uid()}-"
+        snapshot.add_transformer(snapshot.transform.regex(rule_prefix, "<rule-prefix>"))
+        rule_names = []
+
+        # Create 3 rules all targeting the same SQS queue
+        for i in range(3):
+            rule_name = f"{rule_prefix}{i}"
+            rule_names.append(rule_name)
+            events_put_rule(
+                Name=rule_name,
+                EventBusName=bus_name,
+                EventPattern=json.dumps({"source": [f"source-{i}"]}),
+            )
+
+            # Add the SQS queue as a target for this rule
+            target_id = f"target-{i}"
+            snapshot.add_transformer(snapshot.transform.regex(target_id, f"<target-id-{i}>"))
+            aws_client.events.put_targets(
+                Rule=rule_name,
+                EventBusName=bus_name,
+                Targets=[{"Id": target_id, "Arn": queue_arn}],
+            )
+
+        # Create a rule targeting a different resource (to verify filtering)
+        other_rule = f"{rule_prefix}other"
+        events_put_rule(
+            Name=other_rule,
+            EventBusName=bus_name,
+            EventPattern=json.dumps({"source": ["other-source"]}),
+        )
+
+        # Test the ListRuleNamesByTarget API
+        response = aws_client.events.list_rule_names_by_target(
+            TargetArn=queue_arn,
+            EventBusName=bus_name,
+        )
+
+        # The response should contain all rules that target our queue
+        snapshot.match("list_rule_names_by_target", response)
+
+        # Verify the response contains the expected rule names
+        assert set(response.get("RuleNames", [])) == set(rule_names)
+        assert other_rule not in response.get("RuleNames", [])
+
+        # Clean up targets and rules
+        for rule_name in rule_names + [other_rule]:
+            try:
+                # Remove targets first (only for rules that have targets)
+                if rule_name in rule_names:  # other_rule has no targets
+                    aws_client.events.remove_targets(
+                        Rule=rule_name,
+                        EventBusName=bus_name,
+                        Ids=[f"target-{rule_names.index(rule_name)}"],
+                    )
+                # Delete rule
+                aws_client.events.delete_rule(
+                    Name=rule_name,
+                    EventBusName=bus_name,
+                    Force=True,
+                )
+            except aws_client.events.exceptions.ResourceNotFoundException:
+                # Ignore if rule or event bus was already deleted
+                pass
+
+        # Delete custom event bus if we created one
+        if bus_name != "default":
+            try:
+                aws_client.events.delete_event_bus(Name=bus_name)
+            except aws_client.events.exceptions.ResourceNotFoundException:
+                # Ignore if event bus was already deleted
+                pass
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("bus_name", ["custom", "default"])
+    def test_list_rule_names_by_target_with_limit(
+        self,
+        bus_name,
+        events_create_event_bus,
+        events_put_rule,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        aws_client,
+        snapshot,
+        clean_up,
+    ):
+        """Test the ListRuleNamesByTarget API with pagination to verify it correctly handles limits and next tokens."""
+        # Create an SQS queue to use as a target
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        queue_arn = sqs_get_queue_arn(queue_url)
+        snapshot.add_transformer(snapshot.transform.regex(queue_arn, "<queue-arn>"))
+
+        # Create an event bus if using custom bus
+        if bus_name == "custom":
+            bus_name = f"bus-{short_uid()}"
+            events_create_event_bus(Name=bus_name)
+            snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
+
+        # Create multiple rules targeting the same SQS queue
+        rule_prefix = f"rule-{short_uid()}-"
+        snapshot.add_transformer(snapshot.transform.regex(rule_prefix, "<rule-prefix>"))
+        rule_names = []
+
+        # Create 5 rules all targeting the same SQS queue
+        for i in range(5):
+            rule_name = f"{rule_prefix}{i}"
+            rule_names.append(rule_name)
+            events_put_rule(
+                Name=rule_name,
+                EventBusName=bus_name,
+                EventPattern=json.dumps({"source": [f"source-{i}"]}),
+            )
+
+            # Add the SQS queue as a target for this rule
+            target_id = f"target-{i}"
+            snapshot.add_transformer(snapshot.transform.regex(target_id, f"<target-id-{i}>"))
+            aws_client.events.put_targets(
+                Rule=rule_name,
+                EventBusName=bus_name,
+                Targets=[{"Id": target_id, "Arn": queue_arn}],
+            )
+
+        # Test pagination with limit=2
+        all_rule_names = []
+        next_token = None
+
+        # First page
+        response = aws_client.events.list_rule_names_by_target(
+            TargetArn=queue_arn,
+            EventBusName=bus_name,
+            Limit=2,
+        )
+        # Store the original NextToken value before replacing it for snapshot comparison
+        original_next_token = response["NextToken"]
+        # Transform NextToken to a fixed value for snapshot comparison
+        if "NextToken" in response:
+            response["NextToken"] = "<next-token>"
+        snapshot.match("first_page", response)
+        all_rule_names.extend(response["RuleNames"])
+        assert len(response["RuleNames"]) == 2
+        assert "NextToken" in response
+
+        # Second page
+        next_token = original_next_token
+        response = aws_client.events.list_rule_names_by_target(
+            TargetArn=queue_arn,
+            EventBusName=bus_name,
+            Limit=2,
+            NextToken=next_token,
+        )
+        # Store the original NextToken value before replacing it for snapshot comparison
+        original_next_token = response["NextToken"]
+        # Transform NextToken to a fixed value for snapshot comparison
+        if "NextToken" in response:
+            response["NextToken"] = "<next-token>"
+        snapshot.match("second_page", response)
+        all_rule_names.extend(response["RuleNames"])
+        assert len(response["RuleNames"]) == 2
+        assert "NextToken" in response
+
+        # Third page (should have 1 remaining)
+        next_token = original_next_token
+        response = aws_client.events.list_rule_names_by_target(
+            TargetArn=queue_arn,
+            EventBusName=bus_name,
+            Limit=2,
+            NextToken=next_token,
+        )
+        # Transform NextToken to a fixed value for snapshot comparison
+        if "NextToken" in response:
+            response["NextToken"] = "<next-token>"
+        snapshot.match("third_page", response)
+        all_rule_names.extend(response["RuleNames"])
+        assert len(response["RuleNames"]) == 1
+        assert "NextToken" not in response
+
+        # Verify we got all rules
+        assert set(all_rule_names) == set(rule_names)
+
+        # Clean up targets and rules
+        for rule_name in rule_names:
+            try:
+                # Remove targets first
+                aws_client.events.remove_targets(
+                    Rule=rule_name,
+                    EventBusName=bus_name,
+                    Ids=[f"target-{rule_names.index(rule_name)}"],
+                )
+                # Delete rule
+                aws_client.events.delete_rule(
+                    Name=rule_name,
+                    EventBusName=bus_name,
+                    Force=True,
+                )
+            except aws_client.events.exceptions.ResourceNotFoundException:
+                # Ignore if rule or event bus was already deleted
+                pass
+
+        # Delete custom event bus if we created one
+        if bus_name != "default":
+            try:
+                aws_client.events.delete_event_bus(Name=bus_name)
+            except aws_client.events.exceptions.ResourceNotFoundException:
+                # Ignore if event bus was already deleted
+                pass
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("bus_name", ["custom", "default"])
+    def test_list_rule_names_by_target_no_matches(
+        self,
+        bus_name,
+        events_create_event_bus,
+        events_put_rule,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        aws_client,
+        snapshot,
+        clean_up,
+    ):
+        """Test that ListRuleNamesByTarget returns empty result when no rules match the target."""
+        # Create two SQS queues
+        search_queue_url = sqs_create_queue()
+        search_queue_arn = sqs_get_queue_arn(search_queue_url)
+
+        target_queue_url = sqs_create_queue()
+        target_queue_arn = sqs_get_queue_arn(target_queue_url)
+
+        # Create event bus if needed
+        if bus_name == "custom":
+            bus_name = f"bus-{short_uid()}"
+            events_create_event_bus(Name=bus_name)
+
+        # Create rules targeting the target queue, but none targeting the search queue
+        rule_name = f"rule-{short_uid()}"
+        events_put_rule(
+            Name=rule_name,
+            EventBusName=bus_name,
+            EventPattern=json.dumps({"source": ["test-source"]}),
+        )
+
+        # Add the target
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            EventBusName=bus_name,
+            Targets=[{"Id": "target-1", "Arn": target_queue_arn}],
+        )
+
+        # Test the ListRuleNamesByTarget API with the search queue ARN
+        response = aws_client.events.list_rule_names_by_target(
+            TargetArn=search_queue_arn,
+            EventBusName=bus_name,
+        )
+
+        snapshot.match("list_rule_names_by_target_no_matches", response)
+
+        # Verify the response contains an empty list
+        assert response.get("RuleNames", None) is not None
+        assert len(response.get("RuleNames")) == 0
+        assert "NextToken" not in response
+
 
 class TestEventPattern:
     @markers.aws.validated
