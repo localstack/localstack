@@ -12,7 +12,7 @@
     "last_validated_date": "2024-06-07T01:11:12+00:00"
   },
   "tests/aws/services/ec2/test_ec2.py::TestEc2Integrations::test_get_security_groups_for_vpc": {
-    "last_validated_date": "2025-05-17T11:57:23+00:00"
+    "last_validated_date": "2025-05-18T18:07:59+00:00"
   },
   "tests/aws/services/ec2/test_ec2.py::TestEc2Integrations::test_vcp_peering_difference_regions": {
     "last_validated_date": "2024-06-07T21:28:25+00:00"

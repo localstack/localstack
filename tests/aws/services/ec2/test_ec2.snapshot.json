@@ -337,17 +337,50 @@
     }
   },
   "tests/aws/services/ec2/test_ec2.py::TestEc2Integrations::test_get_security_groups_for_vpc": {
-    "recorded-date": "17-05-2025, 11:57:25",
+    "recorded-date": "18-05-2025, 18:08:00",
     "recorded-content": {
-      "create_security_group_1": {
-        "GroupId": "<group-id:1>",
-        "SecurityGroupArn": "arn:<partition>:ec2:<region>:111111111111:security-group/<group-id:1>",
+      "create_vpc_response": {
+        "Vpc": {
+          "CidrBlock": "10.0.0.0/16",
+          "CidrBlockAssociationSet": [
+            {
+              "AssociationId": "<association-id:1>",
+              "CidrBlock": "10.0.0.0/16",
+              "CidrBlockState": {
+                "State": "associated"
+              }
+            }
+          ],
+          "DhcpOptionsId": "<dhcp-options-id:1>",
+          "InstanceTenancy": "<group-name:1>",
+          "Ipv6CidrBlockAssociationSet": [],
+          "IsDefault": false,
+          "OwnerId": "111111111111",
+          "State": "pending",
+          "VpcId": "<vpc-id:1>"
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
-      "create_security_group_2": {
+      "get_security_groups_for_vpc": {
+        "SecurityGroupForVpcs": [
+          {
+            "Description": "<group-name:1> VPC security group",
+            "GroupId": "<group-id:1>",
+            "GroupName": "<group-name:1>",
+            "OwnerId": "111111111111",
+            "PrimaryVpcId": "<vpc-id:1>",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_security_group": {
         "GroupId": "<group-id:2>",
         "SecurityGroupArn": "arn:<partition>:ec2:<region>:111111111111:security-group/<group-id:2>",
         "ResponseMetadata": {
@@ -355,9 +388,25 @@
           "HTTPStatusCode": 200
         }
       },
-      "create_security_group_3": {
-        "GroupId": "<group-id:3>",
-        "SecurityGroupArn": "arn:<partition>:ec2:<region>:111111111111:security-group/<group-id:3>",
+      "get_security_groups_for_vpc_after_addition": {
+        "SecurityGroupForVpcs": [
+          {
+            "Description": "<group-name:1> VPC security group",
+            "GroupId": "<group-id:1>",
+            "GroupName": "<group-name:1>",
+            "OwnerId": "111111111111",
+            "PrimaryVpcId": "<vpc-id:1>",
+            "Tags": []
+          },
+          {
+            "Description": "Description for <group-name:2>",
+            "GroupId": "<group-id:2>",
+            "GroupName": "<group-name:2>",
+            "OwnerId": "111111111111",
+            "PrimaryVpcId": "<vpc-id:1>",
+            "Tags": []
+          }
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
