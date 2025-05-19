@@ -885,7 +885,8 @@ class TestKMS:
         source_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=key_spec)["KeyId"]
         destination_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=key_spec)["KeyId"]
         # Encrypt the message using the source key
-        ciphertext = aws_client.kms.encrypt(KeyId=source_key_id, Plaintext=base64.b64encode(message), EncryptionAlgorithm=algo
+        ciphertext = aws_client.kms.encrypt(
+            KeyId=source_key_id, Plaintext=base64.b64encode(message), EncryptionAlgorithm=algo
         )["CiphertextBlob"]
         # Re-encrypt the previously encryted message using the destination key
         result = aws_client.kms.re_encrypt(
@@ -896,7 +897,8 @@ class TestKMS:
             DestinationEncryptionAlgorithm=algo,
         )
         # Decrypt using the source key
-        source_key_plaintext = aws_client.kms.decrypt(KeyId=source_key_id, CiphertextBlob=ciphertext, EncryptionAlgorithm=algo
+        source_key_plaintext = aws_client.kms.decrypt(
+            KeyId=source_key_id, CiphertextBlob=ciphertext, EncryptionAlgorithm=algo
         )["Plaintext"]
         # Decrypt using the destination key
         destination_key_plaintext = aws_client.kms.decrypt(
