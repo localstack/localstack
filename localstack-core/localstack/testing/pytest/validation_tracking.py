@@ -14,6 +14,7 @@ from typing import Dict, Optional
 import pytest
 from _pytest.reports import TestReport
 from _pytest.stash import StashKey
+from pluggy import Result
 
 from localstack.testing.aws.util import is_aws_cloud
 
@@ -40,12 +41,13 @@ def find_validation_data_for_item(item: pytest.Item) -> Optional[dict]:
         return file_content.get(item.nodeid)
 
 
-@pytest.hookimpl(wrapper=True)
+@pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
     """
     This hook is called after each test execution phase (setup, call, teardown).
     """
-    report: TestReport = yield
+    result: Result = yield
+    report: TestReport = result.get_result()
 
     if call.when == "setup":
         _makereport_setup(item, call)
