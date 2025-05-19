@@ -913,7 +913,7 @@ class TestKMS:
         # Both source and destination plain texts should match the original
         assert base64.b64decode(source_key_plaintext) == message
         assert base64.b64decode(destination_key_plaintext) == message
-        
+
     @pytest.mark.parametrize(
         "key_spec,algo",
         [
