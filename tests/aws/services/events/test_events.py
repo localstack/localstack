@@ -1760,13 +1760,11 @@ class TestEventRule:
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         queue_arn = sqs_get_queue_arn(queue_url)
-        snapshot.add_transformer(snapshot.transform.regex(queue_arn, "<queue-arn>"))
 
         # Create an event bus if using custom bus
         if bus_name == "custom":
             bus_name = f"bus-{short_uid()}"
             events_create_event_bus(Name=bus_name)
-            snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
 
         # Create multiple rules targeting the same SQS queue
         rule_prefix = f"rule-{short_uid()}-"
@@ -1785,7 +1783,6 @@ class TestEventRule:
 
             # Add the SQS queue as a target for this rule
             target_id = f"target-{i}"
-            snapshot.add_transformer(snapshot.transform.regex(target_id, f"<target-id-{i}>"))
             aws_client.events.put_targets(
                 Rule=rule_name,
                 EventBusName=bus_name,
@@ -1809,38 +1806,6 @@ class TestEventRule:
         # The response should contain all rules that target our queue
         snapshot.match("list_rule_names_by_target", response)
 
-        # Verify the response contains the expected rule names
-        assert set(response.get("RuleNames", [])) == set(rule_names)
-        assert other_rule not in response.get("RuleNames", [])
-
-        # Clean up targets and rules
-        for rule_name in rule_names + [other_rule]:
-            try:
-                # Remove targets first (only for rules that have targets)
-                if rule_name in rule_names:  # other_rule has no targets
-                    aws_client.events.remove_targets(
-                        Rule=rule_name,
-                        EventBusName=bus_name,
-                        Ids=[f"target-{rule_names.index(rule_name)}"],
-                    )
-                # Delete rule
-                aws_client.events.delete_rule(
-                    Name=rule_name,
-                    EventBusName=bus_name,
-                    Force=True,
-                )
-            except aws_client.events.exceptions.ResourceNotFoundException:
-                # Ignore if rule or event bus was already deleted
-                pass
-
-        # Delete custom event bus if we created one
-        if bus_name != "default":
-            try:
-                aws_client.events.delete_event_bus(Name=bus_name)
-            except aws_client.events.exceptions.ResourceNotFoundException:
-                # Ignore if event bus was already deleted
-                pass
-
     @markers.aws.validated
     @pytest.mark.parametrize("bus_name", ["custom", "default"])
     def test_list_rule_names_by_target_with_limit(
@@ -1859,13 +1824,11 @@ class TestEventRule:
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         queue_arn = sqs_get_queue_arn(queue_url)
-        snapshot.add_transformer(snapshot.transform.regex(queue_arn, "<queue-arn>"))
 
         # Create an event bus if using custom bus
         if bus_name == "custom":
             bus_name = f"bus-{short_uid()}"
             events_create_event_bus(Name=bus_name)
-            snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
 
         # Create multiple rules targeting the same SQS queue
         rule_prefix = f"rule-{short_uid()}-"
@@ -1884,7 +1847,6 @@ class TestEventRule:
 
             # Add the SQS queue as a target for this rule
             target_id = f"target-{i}"
-            snapshot.add_transformer(snapshot.transform.regex(target_id, f"<target-id-{i}>"))
             aws_client.events.put_targets(
                 Rule=rule_name,
                 EventBusName=bus_name,
@@ -1902,17 +1864,19 @@ class TestEventRule:
             Limit=2,
         )
         # Store the original NextToken value before replacing it for snapshot comparison
-        original_next_token = response["NextToken"]
-        # Transform NextToken to a fixed value for snapshot comparison
-        if "NextToken" in response:
-            response["NextToken"] = "<next-token>"
+        next_token = response["NextToken"]
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                jsonpath="$..NextToken",
+                value_replacement="<next-token>",
+                reference_replacement=True,
+            )
+        )
+
         snapshot.match("first_page", response)
         all_rule_names.extend(response["RuleNames"])
-        assert len(response["RuleNames"]) == 2
-        assert "NextToken" in response
 
         # Second page
-        next_token = original_next_token
         response = aws_client.events.list_rule_names_by_target(
             TargetArn=queue_arn,
             EventBusName=bus_name,
@@ -1920,60 +1884,19 @@ class TestEventRule:
             NextToken=next_token,
         )
         # Store the original NextToken value before replacing it for snapshot comparison
-        original_next_token = response["NextToken"]
-        # Transform NextToken to a fixed value for snapshot comparison
-        if "NextToken" in response:
-            response["NextToken"] = "<next-token>"
+        next_token = response["NextToken"]
         snapshot.match("second_page", response)
         all_rule_names.extend(response["RuleNames"])
-        assert len(response["RuleNames"]) == 2
-        assert "NextToken" in response
 
         # Third page (should have 1 remaining)
-        next_token = original_next_token
         response = aws_client.events.list_rule_names_by_target(
             TargetArn=queue_arn,
             EventBusName=bus_name,
             Limit=2,
             NextToken=next_token,
         )
-        # Transform NextToken to a fixed value for snapshot comparison
-        if "NextToken" in response:
-            response["NextToken"] = "<next-token>"
         snapshot.match("third_page", response)
         all_rule_names.extend(response["RuleNames"])
-        assert len(response["RuleNames"]) == 1
-        assert "NextToken" not in response
-
-        # Verify we got all rules
-        assert set(all_rule_names) == set(rule_names)
-
-        # Clean up targets and rules
-        for rule_name in rule_names:
-            try:
-                # Remove targets first
-                aws_client.events.remove_targets(
-                    Rule=rule_name,
-                    EventBusName=bus_name,
-                    Ids=[f"target-{rule_names.index(rule_name)}"],
-                )
-                # Delete rule
-                aws_client.events.delete_rule(
-                    Name=rule_name,
-                    EventBusName=bus_name,
-                    Force=True,
-                )
-            except aws_client.events.exceptions.ResourceNotFoundException:
-                # Ignore if rule or event bus was already deleted
-                pass
-
-        # Delete custom event bus if we created one
-        if bus_name != "default":
-            try:
-                aws_client.events.delete_event_bus(Name=bus_name)
-            except aws_client.events.exceptions.ResourceNotFoundException:
-                # Ignore if event bus was already deleted
-                pass
 
     @markers.aws.validated
     @pytest.mark.parametrize("bus_name", ["custom", "default"])
@@ -2023,11 +1946,6 @@ class TestEventRule:
         )
 
         snapshot.match("list_rule_names_by_target_no_matches", response)
-
-        # Verify the response contains an empty list
-        assert response.get("RuleNames", None) is not None
-        assert len(response.get("RuleNames")) == 0
-        assert "NextToken" not in response
 
 
 class TestEventPattern:
