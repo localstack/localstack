@@ -131,9 +131,7 @@ pycparser==2.22
 pygments==2.19.1
     # via rich
 pyopenssl==25.0.0
-    # via
-    #   localstack-core (pyproject.toml)
-    #   localstack-twisted
+    # via localstack-twisted
 pyproject-hooks==1.2.0
     # via build
 python-dateutil==2.9.0.post0

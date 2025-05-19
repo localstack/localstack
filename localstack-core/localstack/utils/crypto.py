@@ -1,11 +1,16 @@
 import io
+import ipaddress
 import logging
 import os
 import re
 import threading
+from datetime import datetime, timedelta, timezone
 from typing import Tuple
 
+from cryptography import x509
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .files import TMP_FILES, file_exists_not_empty, load_file, new_tmp_file, save_file
@@ -27,6 +32,10 @@ PEM_CERT_END = "-----END CERTIFICATE-----"
 PEM_KEY_START_REGEX = r"-----BEGIN(.*)PRIVATE KEY-----"
 PEM_KEY_END_REGEX = r"-----END(.*)PRIVATE KEY-----"
 
+IPV4_REGEX = re.compile(
+    r"(\b25[0-5]|\b2[0-4][0-9]|\b[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}"
+)
+
 
 @synchronized(lock=SSL_CERT_LOCK)
 def generate_ssl_cert(
@@ -36,10 +45,6 @@ def generate_ssl_cert(
     return_content=False,
     serial_number=None,
 ):
-    # Note: Do NOT import "OpenSSL" at the root scope
-    # (Our test Lambdas are importing this file but don't have the module installed)
-    from OpenSSL import crypto
-
     def all_exist(*files):
         return all(os.path.exists(f) for f in files)
 
@@ -80,48 +85,85 @@ def generate_ssl_cert(
             target_file = "%s.%s" % (target_file, short_uid())
 
     # create a key pair
-    k = crypto.PKey()
-    k.generate_key(crypto.TYPE_RSA, 2048)
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
     host_definition = localstack_host()
 
-    # create a self-signed cert
-    cert = crypto.X509()
-    subj = cert.get_subject()
-    subj.C = "AU"
-    subj.ST = "Some-State"
-    subj.L = "Some-Locality"
-    subj.O = "LocalStack Org"  # noqa
-    subj.OU = "Testing"
-    subj.CN = "localhost"
-    # Note: new requirements for recent OSX versions: https://support.apple.com/en-us/HT210176
-    # More details: https://www.iol.unh.edu/blog/2019/10/10/macos-catalina-and-chrome-trust
-    serial_number = serial_number or 1001
-    cert.set_version(2)
-    cert.set_serial_number(serial_number)
-    cert.gmtime_adj_notBefore(0)
-    cert.gmtime_adj_notAfter(2 * 365 * 24 * 60 * 60)
-    cert.set_issuer(cert.get_subject())
-    cert.set_pubkey(k)
-    alt_names = (
-        f"DNS:localhost,DNS:test.localhost.atlassian.io,DNS:localhost.localstack.cloud,DNS:{host_definition.host}IP:127.0.0.1"
-    ).encode("utf8")
-    cert.add_extensions(
+    issuer = x509.Name(
         [
-            crypto.X509Extension(b"subjectAltName", False, alt_names),
-            crypto.X509Extension(b"basicConstraints", True, b"CA:false"),
-            crypto.X509Extension(
-                b"keyUsage", True, b"nonRepudiation,digitalSignature,keyEncipherment"
-            ),
-            crypto.X509Extension(b"extendedKeyUsage", True, b"serverAuth"),
+            x509.NameAttribute(x509.NameOID.COUNTRY_NAME, "AU"),
+            x509.NameAttribute(x509.NameOID.STATE_OR_PROVINCE_NAME, "Some-State"),
+            x509.NameAttribute(x509.NameOID.LOCALITY_NAME, "Some-Locality"),
+            x509.NameAttribute(x509.NameOID.ORGANIZATION_NAME, "LocalStack Org"),
+            x509.NameAttribute(x509.NameOID.ORGANIZATIONAL_UNIT_NAME, "Testing"),
+            x509.NameAttribute(x509.NameOID.COMMON_NAME, "cryptography.io"),
         ]
     )
-    cert.sign(k, "SHA256")
+
+    # create a self-signed cert
+    public_key = private_key.public_key()
+    builder = (
+        x509.CertificateBuilder()
+        .subject_name(issuer)
+        .issuer_name(issuer)
+        .public_key(public_key)
+        .serial_number(serial_number or 1001)
+        .not_valid_before(datetime.now(tz=timezone.utc))
+        .not_valid_after(datetime.now(tz=timezone.utc) + timedelta(days=365 * 2))
+        .add_extension(x509.BasicConstraints(ca=False, path_length=None), critical=True)
+        .add_extension(
+            x509.KeyUsage(
+                crl_sign=False,
+                key_cert_sign=False,
+                digital_signature=True,
+                content_commitment=False,
+                key_encipherment=True,
+                data_encipherment=False,
+                key_agreement=False,
+                encipher_only=False,
+                decipher_only=False,
+            ),
+            critical=True,
+        )
+        .add_extension(
+            x509.SubjectKeyIdentifier.from_public_key(public_key),
+            critical=False,
+        )
+    )
+
+    dns = [
+        "localhost",
+        "test.localhost.atlassian.io",
+        "localhost.localstack.cloud",
+        host_definition.host,
+        "127.0.0.1",
+    ]
+    # SSL treats IP addresses differently from regular host names
+    # https://cabforum.org/working-groups/server/guidance-ip-addresses-certificates/
+    x509_names_or_ips = [
+        x509.IPAddress(ipaddress.IPv4Address(name))
+        if IPV4_REGEX.match(name)
+        else x509.DNSName(name)
+        for name in dns
+    ]
+    builder = builder.add_extension(x509.SubjectAlternativeName(x509_names_or_ips), critical=False)
+
+    builder = builder.add_extension(
+        x509.ExtendedKeyUsage([x509.ExtendedKeyUsageOID.SERVER_AUTH]), critical=True
+    )
+
+    cert = builder.sign(private_key, hashes.SHA256())
+
+    private_key_bytes = private_key.private_bytes(
+        serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
 
     cert_file = io.StringIO()
     key_file = io.StringIO()
-    cert_file.write(to_str(crypto.dump_certificate(crypto.FILETYPE_PEM, cert)))
-    key_file.write(to_str(crypto.dump_privatekey(crypto.FILETYPE_PEM, k)))
+    cert_file.write(to_str(cert.public_bytes(serialization.Encoding.PEM)))
+    key_file.write(to_str(private_key_bytes))
     cert_file_content = cert_file.getvalue().strip()
     key_file_content = key_file.getvalue().strip()
     file_content = "%s\n%s" % (key_file_content, cert_file_content)
