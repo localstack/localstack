@@ -5,6 +5,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeArray,
     NodeCondition,
     NodeConditions,
+    NodeDependsOn,
     NodeDivergence,
     NodeIntrinsicFunction,
     NodeMapping,
@@ -72,6 +73,9 @@ class ChangeSetModelVisitor(abc.ABC):
 
     def visit_node_condition(self, node_condition: NodeCondition):
         self.visit_children(node_condition)
+
+    def visit_node_depends_on(self, node_depends_on: NodeDependsOn):
+        self.visit_children(node_depends_on)
 
     def visit_node_resources(self, node_resources: NodeResources):
         self.visit_children(node_resources)

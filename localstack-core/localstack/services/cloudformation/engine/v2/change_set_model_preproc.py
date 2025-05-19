@@ -7,6 +7,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
     NodeArray,
     NodeCondition,
+    NodeDependsOn,
     NodeDivergence,
     NodeIntrinsicFunction,
     NodeMapping,
@@ -81,6 +82,7 @@ class PreprocResource:
     condition: Optional[bool]
     resource_type: str
     properties: PreprocProperties
+    depends_on: Optional[list[str]]
 
     def __init__(
         self,
@@ -89,12 +91,14 @@ class PreprocResource:
         condition: Optional[bool],
         resource_type: str,
         properties: PreprocProperties,
+        depends_on: Optional[list[str]],
     ):
         self.logical_id = logical_id
         self.physical_resource_id = physical_resource_id
         self.condition = condition
         self.resource_type = resource_type
         self.properties = properties
+        self.depends_on = depends_on
 
     @staticmethod
     def _compare_conditions(c1: bool, c2: bool):
@@ -533,6 +537,10 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
         return PreprocEntityDelta(before=before, after=after)
 
+    def visit_node_depends_on(self, node_depends_on: NodeDependsOn) -> PreprocEntityDelta:
+        array_identifiers_delta = self.visit(node_depends_on.depends_on)
+        return array_identifiers_delta
+
     def visit_node_condition(self, node_condition: NodeCondition) -> PreprocEntityDelta:
         delta = self.visit(node_condition.body)
         return delta
@@ -638,6 +646,13 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             condition_before = condition_delta.before
             condition_after = condition_delta.after
 
+        depends_on_before = None
+        depends_on_after = None
+        if node_resource.depends_on is not None:
+            depends_on_delta = self.visit_node_depends_on(node_resource.depends_on)
+            depends_on_before = depends_on_delta.before
+            depends_on_after = depends_on_delta.after
+
         type_delta = self.visit(node_resource.type_)
         properties_delta: PreprocEntityDelta[PreprocProperties, PreprocProperties] = self.visit(
             node_resource.properties
@@ -656,6 +671,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 condition=condition_before,
                 resource_type=type_delta.before,
                 properties=properties_delta.before,
+                depends_on=depends_on_before,
             )
         if change_type != ChangeType.REMOVED and condition_after is None or condition_after:
             logical_resource_id = node_resource.name
@@ -671,6 +687,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 condition=condition_after,
                 resource_type=type_delta.after,
                 properties=properties_delta.after,
+                depends_on=depends_on_after,
             )
         return PreprocEntityDelta(before=before, after=after)
 

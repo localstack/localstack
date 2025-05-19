@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/cloudformation/v2/test_change_set_depends_on.py::TestChangeSetDependsOn::test_multiple_dependencies_addition": {
+    "last_validated_date": "2025-05-19T18:10:11+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_depends_on.py::TestChangeSetDependsOn::test_multiple_dependencies_deletion": {
+    "last_validated_date": "2025-05-19T18:13:11+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_depends_on.py::TestChangeSetDependsOn::test_update_depended_resource": {
+    "last_validated_date": "2025-05-19T12:55:09+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_depends_on.py::TestChangeSetDependsOn::test_update_depended_resource_list": {
+    "last_validated_date": "2025-05-19T13:01:34+00:00"
+  }
+}

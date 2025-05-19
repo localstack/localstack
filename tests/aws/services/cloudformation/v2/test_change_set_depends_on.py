@@ -26,15 +26,9 @@ from localstack.utils.strings import long_uid
         "$..PolicyAction",
     ]
 )
-class TestChangeSetConditions:
+class TestChangeSetDependsOn:
     @markers.aws.validated
-    @pytest.mark.skip(
-        reason=(
-            "The inclusion of response parameters in executor is in progress, "
-            "currently it cannot delete due to missing topic arn in the request"
-        )
-    )
-    def test_condition_update_removes_resource(
+    def test_update_depended_resource(
         self,
         snapshot,
         capture_update_process,
@@ -44,33 +38,35 @@ class TestChangeSetConditions:
         snapshot.add_transformer(RegexTransformer(name1, "topic-name-1"))
         snapshot.add_transformer(RegexTransformer(name2, "topic-name-2"))
         template_1 = {
-            "Conditions": {"CreateTopic": {"Fn::Equals": ["true", "true"]}},
             "Resources": {
-                "SNSTopic": {
+                "Topic1": {
                     "Type": "AWS::SNS::Topic",
-                    "Condition": "CreateTopic",
-                    "Properties": {"TopicName": name1},
-                }
-            },
+                    "Properties": {"TopicName": name1, "DisplayName": "display-value-1"},
+                },
+                "Topic2": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {"TopicName": name2, "DisplayName": "display-value-2"},
+                    "DependsOn": "Topic1",
+                },
+            }
         }
         template_2 = {
-            "Conditions": {"CreateTopic": {"Fn::Equals": ["true", "false"]}},
             "Resources": {
-                "SNSTopic": {
+                "Topic1": {
                     "Type": "AWS::SNS::Topic",
-                    "Condition": "CreateTopic",
-                    "Properties": {"TopicName": name1},
+                    "Properties": {"TopicName": name1, "DisplayName": "display-value-1-updated"},
                 },
-                "TopicPlaceholder": {
+                "Topic2": {
                     "Type": "AWS::SNS::Topic",
-                    "Properties": {"TopicName": name2},
+                    "Properties": {"TopicName": name2, "DisplayName": "display-value-2"},
+                    "DependsOn": "Topic1",
                 },
-            },
+            }
         }
         capture_update_process(snapshot, template_1, template_2)
 
     @markers.aws.validated
-    def test_condition_update_adds_resource(
+    def test_update_depended_resource_list(
         self,
         snapshot,
         capture_update_process,
@@ -80,104 +76,117 @@ class TestChangeSetConditions:
         snapshot.add_transformer(RegexTransformer(name1, "topic-name-1"))
         snapshot.add_transformer(RegexTransformer(name2, "topic-name-2"))
         template_1 = {
-            "Conditions": {"CreateTopic": {"Fn::Equals": ["true", "false"]}},
             "Resources": {
-                "SNSTopic": {
+                "Topic1": {
                     "Type": "AWS::SNS::Topic",
-                    "Condition": "CreateTopic",
-                    "Properties": {"TopicName": name1},
+                    "Properties": {"TopicName": name1, "DisplayName": "display-value-1"},
                 },
-                "TopicPlaceholder": {
+                "Topic2": {
                     "Type": "AWS::SNS::Topic",
-                    "Properties": {"TopicName": name2},
+                    "Properties": {"TopicName": name2, "DisplayName": "display-value-2"},
+                    "DependsOn": ["Topic1"],
                 },
-            },
+            }
         }
         template_2 = {
-            "Conditions": {"CreateTopic": {"Fn::Equals": ["true", "true"]}},
             "Resources": {
-                "SNSTopic": {
+                "Topic1": {
                     "Type": "AWS::SNS::Topic",
-                    "Condition": "CreateTopic",
-                    "Properties": {"TopicName": name1},
+                    "Properties": {"TopicName": name1, "DisplayName": "display-value-1-updated"},
                 },
-                "TopicPlaceholder": {
+                "Topic2": {
                     "Type": "AWS::SNS::Topic",
-                    "Properties": {"TopicName": name2},
+                    "Properties": {"TopicName": name2, "DisplayName": "display-value-2"},
+                    "DependsOn": ["Topic1"],
                 },
-            },
+            }
         }
         capture_update_process(snapshot, template_1, template_2)
 
     @markers.aws.validated
-    @pytest.mark.skip(
-        reason="The inclusion of response parameters in executor is in progress, "
-        "currently it cannot delete due to missing topic arn in the request"
-    )
-    def test_condition_add_new_negative_condition_to_existent_resource(
+    def test_multiple_dependencies_addition(
         self,
         snapshot,
         capture_update_process,
     ):
         name1 = f"topic-name-1-{long_uid()}"
         name2 = f"topic-name-2-{long_uid()}"
+        namen = f"topic-name-n-{long_uid()}"
         snapshot.add_transformer(RegexTransformer(name1, "topic-name-1"))
         snapshot.add_transformer(RegexTransformer(name2, "topic-name-2"))
+        snapshot.add_transformer(RegexTransformer(namen, "topic-name-n"))
         template_1 = {
             "Resources": {
-                "SNSTopic": {
+                "Topic1": {
                     "Type": "AWS::SNS::Topic",
-                    "Properties": {"TopicName": name1},
+                    "Properties": {"TopicName": name1, "DisplayName": "display-value-1"},
                 },
-            },
+                "Topicn": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {"TopicName": namen, "DisplayName": "display-value-n"},
+                    "DependsOn": ["Topic1"],
+                },
+            }
         }
         template_2 = {
-            "Conditions": {"CreateTopic": {"Fn::Equals": ["true", "false"]}},
             "Resources": {
-                "SNSTopic": {
+                "Topic1": {
                     "Type": "AWS::SNS::Topic",
-                    "Condition": "CreateTopic",
-                    "Properties": {"TopicName": name1},
+                    "Properties": {"TopicName": name1, "DisplayName": "display-value-1"},
                 },
-                "TopicPlaceholder": {
+                "Topicn": {
                     "Type": "AWS::SNS::Topic",
-                    "Properties": {"TopicName": name2},
+                    "Properties": {"TopicName": namen, "DisplayName": "display-value-n"},
+                    "DependsOn": ["Topic1", "Topic2"],
                 },
-            },
+                "Topic2": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {"TopicName": name2, "DisplayName": "display-value-2"},
+                },
+            }
         }
         capture_update_process(snapshot, template_1, template_2)
 
     @markers.aws.validated
-    def test_condition_add_new_positive_condition_to_existent_resource(
+    def test_multiple_dependencies_deletion(
         self,
         snapshot,
         capture_update_process,
     ):
         name1 = f"topic-name-1-{long_uid()}"
         name2 = f"topic-name-2-{long_uid()}"
+        namen = f"topic-name-n-{long_uid()}"
         snapshot.add_transformer(RegexTransformer(name1, "topic-name-1"))
         snapshot.add_transformer(RegexTransformer(name2, "topic-name-2"))
+        snapshot.add_transformer(RegexTransformer(namen, "topic-name-n"))
         template_1 = {
             "Resources": {
-                "SNSTopic1": {
+                "Topic1": {
                     "Type": "AWS::SNS::Topic",
-                    "Properties": {"TopicName": name1},
+                    "Properties": {"TopicName": name1, "DisplayName": "display-value-1"},
                 },
-            },
+                "Topic2": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {"TopicName": name2, "DisplayName": "display-value-2"},
+                },
+                "Topicn": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {"TopicName": namen, "DisplayName": "display-value-n"},
+                    "DependsOn": ["Topic1", "Topic2"],
+                },
+            }
         }
         template_2 = {
-            "Conditions": {"CreateTopic": {"Fn::Equals": ["true", "true"]}},
             "Resources": {
-                "SNSTopic1": {
+                "Topic1": {
                     "Type": "AWS::SNS::Topic",
-                    "Condition": "CreateTopic",
-                    "Properties": {"TopicName": name1},
+                    "Properties": {"TopicName": name1, "DisplayName": "display-value-1"},
                 },
-                "SNSTopic2": {
+                "Topicn": {
                     "Type": "AWS::SNS::Topic",
-                    "Condition": "CreateTopic",
-                    "Properties": {"TopicName": name2},
+                    "Properties": {"TopicName": namen, "DisplayName": "display-value-n"},
+                    "DependsOn": ["Topic1"],
                 },
-            },
+            }
         }
         capture_update_process(snapshot, template_1, template_2)
