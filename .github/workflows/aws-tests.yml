@@ -279,7 +279,7 @@ jobs:
         with:
           files: |
             test-results-preflight/*.xml
-          check_name: "Preflight- & Unit-Test Results ${{ inputs.testAWSAccountId != '000000000000' && '(MA/MR)' || ''}}"
+          check_name: "Test Results ${{ inputs.testAWSAccountId != '000000000000' && '(MA/MR) ' || ''}}- Preflight, Unit"
           action_fail_on_inconclusive: true
 
 
