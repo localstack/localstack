@@ -1138,7 +1138,8 @@ class TestDynamoDB:
         assert "Replicas" not in response["Table"]
 
     @markers.aws.validated
-    # The stream label on the replica and replicated stream are the same. The region changes accordingly in the ARN
+    # The stream label on the replica and replicated stream are the same (while they differ on AWS).
+    #   The region changes accordingly in the ARN. We test this with assertions.
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Streams..StreamArn", "$..Streams..StreamLabel"]
     )
@@ -1150,7 +1151,7 @@ class TestDynamoDB:
         snapshot,
         region_name,
         secondary_region_name,
-        dynamodbstreams_snapshot_transformers,
+        dynamodbstreams_snapshot_transformers
     ):
         """
         This test exposes an issue in LocalStack with Global tables and streams. In AWS, each regional replica should
@@ -1215,8 +1216,10 @@ class TestDynamoDB:
         # Verify that we can list streams on both regions
         streams_region_1 = region_1_factory.dynamodbstreams.list_streams(TableName=table_name)
         snapshot.match("region-streams", streams_region_1)
+        assert region_name in streams_region_1["Streams"][0]["StreamArn"]
         streams_region_2 = region_2_factory.dynamodbstreams.list_streams(TableName=table_name)
         snapshot.match("secondary-region-streams", streams_region_2)
+        assert secondary_region_name in streams_region_2["Streams"][0]["StreamArn"]
 
     @markers.aws.only_localstack
     def test_global_tables(self, aws_client, ddb_test_table):
