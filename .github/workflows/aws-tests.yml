@@ -279,7 +279,7 @@ jobs:
         with:
           files: |
             test-results-preflight/*.xml
-          check_name: "Preflight- & Unit-Test Results"
+          check_name: "Preflight- & Unit-Test Results ${{ inputs.testAWSAccountId != '000000000000' && '(MA/MR)' || ''}}"
           action_fail_on_inconclusive: true
 
 
@@ -474,7 +474,7 @@ jobs:
         with:
           files: |
             **/pytest-junit-*.xml
-          check_name: "Test Results (${{ env.PLATFORM }}) - Integration${{ env.PLATFORM == 'amd64' && ', Bootstrap' || ''}}"
+          check_name: "Test Results (${{ env.PLATFORM }}${{ inputs.testAWSAccountId != '000000000000' && ', MA/MR' || ''}}) - Integration${{ env.PLATFORM == 'amd64' && ', Bootstrap' || ''}}"
           action_fail_on_inconclusive: true
 
 
@@ -583,13 +583,13 @@ jobs:
         with:
           pattern: test-results-acceptance-${{ env.PLATFORM }}
 
-      - name: Publish Bootstrap and Integration Test Results
+      - name: Publish Acceptance Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: success() || failure()
         with:
           files: |
             **/pytest-junit-*.xml
-          check_name: "Test Results (${{ env.PLATFORM }}) - Acceptance"
+          check_name: "Test Results (${{ env.PLATFORM }}${{ inputs.testAWSAccountId != '000000000000' && ', MA/MR' || ''}}) - Acceptance"
           action_fail_on_inconclusive: true
 
   test-cloudwatch-v1:
@@ -824,7 +824,7 @@ jobs:
         with:
           files: |
             **/pytest-junit-*.xml
-          check_name: "Test Results (${{ env.PLATFORM }}) - Alternative Runners"
+          check_name: "Test Results ${{ inputs.testAWSAccountId != '000000000000' && '(MA/MR) ' || ''}}- Alternative Providers"
           action_fail_on_inconclusive: true
 
   capture-not-implemented:
