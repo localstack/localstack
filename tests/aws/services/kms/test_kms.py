@@ -884,14 +884,12 @@ class TestKMS:
         message = b"test message 123 !%$@ 1234567890"
         source_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=key_spec)["KeyId"]
         destination_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=key_spec)["KeyId"]
-        
         # Encrypt the message using the source key
         ciphertext = aws_client.kms.encrypt(
             KeyId=source_key_id,
             Plaintext=base64.b64encode(message),
             EncryptionAlgorithm=algo
         )["CiphertextBlob"]
-        
         # Re-encrypt the previously encryted message using the destination key
         result = aws_client.kms.re_encrypt(
             SourceKeyId=source_key_id,
@@ -900,21 +898,18 @@ class TestKMS:
             SourceEncryptionAlgorithm=algo,
             DestinationEncryptionAlgorithm=algo
         )
-        
         # Decrypt using the source key
         source_key_plaintext = aws_client.kms.decrypt(
             KeyId=source_key_id,
             CiphertextBlob=ciphertext,
             EncryptionAlgorithm=algo
         )["Plaintext"]
-        
         # Decrypt using the destination key
         destination_key_plaintext = aws_client.kms.decrypt(
             KeyId=destination_key_id,
             CiphertextBlob=result["CiphertextBlob"],
             EncryptionAlgorithm=algo
         )["Plaintext"]
-        
         # Both source and destination plain texts should match the original
         assert base64.b64decode(source_key_plaintext) == message
         assert base64.b64decode(destination_key_plaintext) == message
