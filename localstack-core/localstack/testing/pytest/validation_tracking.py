@@ -96,10 +96,10 @@ def _makereport_teardown(item: pytest.Item, call: pytest.CallInfo):
         test_execution_data["last_validated_date"] = timestamp.isoformat(timespec="seconds")
 
         durations_by_phase = item.stash[durations_key]
-        test_execution_data["durations_by_phase"] = durations_by_phase
+        test_execution_data["durations_in_seconds"] = durations_by_phase
 
         total_duration = sum(durations_by_phase.values())
-        test_execution_data["total_duration"] = round(total_duration, 2)
+        durations_by_phase["total"] = round(total_duration, 2)
 
         # For json.dump sorted test entries enable consistent diffs.
         # But test execution data is more readable in insert order for each step (setup, call, teardown).
