@@ -24,6 +24,7 @@ from localstack.aws.api.dynamodbstreams import (
     TableName,
 )
 from localstack.aws.connect import connect_to
+from localstack.services.dynamodb.v2.provider import DynamoDBProvider
 from localstack.services.dynamodbstreams.dynamodbstreams_api import (
     get_dynamodbstreams_store,
     get_kinesis_client,
@@ -46,7 +47,41 @@ STREAM_STATUS_MAP = {
 }
 
 
+def get_original_region(
+    context: RequestContext, stream_arn: str | None = None, table_name: str | None = None
+) -> str:
+    """
+    In DDB Global tables, we forward all the requests to the original region, instead of really replicating the data.
+    Since each table has a separate stream associated, we need to have a similar forwarding logic for DDB Streams.
+    To determine the original region, we need the table name, that can be either provided here or determined from the
+    ARN of the stream.
+    """
+    if not stream_arn and not table_name:
+        LOG.debug(
+            "No Stream ARN or table name provided. Returning region '%s' from the request",
+            context.region,
+        )
+        return context.region
+
+    table_name = table_name or table_name_from_stream_arn(stream_arn)
+    return DynamoDBProvider.get_global_table_region(context=context, table_name=table_name)
+
+
+def replace_region_in_stream_arn(stream_arn: str | None, old_region: str, new_region: str) -> str:
+    if not stream_arn:
+        return
+    if old_region == new_region:
+        return stream_arn
+    s = stream_arn.replace(old_region, new_region)
+    return s
+
+
 class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
+    shard_iterator_to_region: dict[str, str]
+
+    def __init__(self) -> None:
+        self.shard_iterator_to_region = {}
+
     def describe_stream(
         self,
         context: RequestContext,
@@ -55,13 +90,14 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         exclusive_start_shard_id: ShardId = None,
         **kwargs,
     ) -> DescribeStreamOutput:
-        store = get_dynamodbstreams_store(context.account_id, context.region)
-        kinesis = get_kinesis_client(account_id=context.account_id, region_name=context.region)
+        og_region = get_original_region(context=context, stream_arn=stream_arn)
+        store = get_dynamodbstreams_store(context.account_id, og_region)
+        kinesis = get_kinesis_client(account_id=context.account_id, region_name=og_region)
         for stream in store.ddb_streams.values():
             if stream["StreamArn"] == stream_arn:
                 # get stream details
                 dynamodb = connect_to(
-                    aws_access_key_id=context.account_id, region_name=context.region
+                    aws_access_key_id=context.account_id, region_name=og_region
                 ).dynamodb
                 table_name = table_name_from_stream_arn(stream["StreamArn"])
                 stream_name = get_kinesis_stream_name(table_name)
@@ -90,6 +126,10 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
 
                 stream["Shards"] = stream_shards
                 stream_description = select_from_typed_dict(StreamDescription, stream)
+                if context.region != og_region:
+                    stream_description["StreamArn"] = replace_region_in_stream_arn(
+                        stream_description["StreamArn"], og_region, context.region
+                    )
                 return DescribeStreamOutput(StreamDescription=stream_description)
 
         raise ResourceNotFoundException(
@@ -98,8 +138,13 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
 
     @handler("GetRecords", expand=False)
     def get_records(self, context: RequestContext, payload: GetRecordsInput) -> GetRecordsOutput:
-        kinesis = get_kinesis_client(account_id=context.account_id, region_name=context.region)
-        prefix, _, payload["ShardIterator"] = payload["ShardIterator"].rpartition("|")
+        shard_iterator = payload["ShardIterator"]
+        region = context.region
+        if shard_iterator in self.shard_iterator_to_region:
+            region = self.shard_iterator_to_region.pop(shard_iterator)
+
+        kinesis = get_kinesis_client(account_id=context.account_id, region_name=region)
+        prefix, _, payload["ShardIterator"] = shard_iterator.rpartition("|")
         try:
             kinesis_records = kinesis.get_records(**payload)
         except kinesis.exceptions.ExpiredIteratorException:
@@ -125,8 +170,9 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> GetShardIteratorOutput:
         stream_name = stream_name_from_stream_arn(stream_arn)
+        og_region = get_original_region(context=context, stream_arn=stream_arn)
         stream_shard_id = kinesis_shard_id(shard_id)
-        kinesis = get_kinesis_client(account_id=context.account_id, region_name=context.region)
+        kinesis = get_kinesis_client(account_id=context.account_id, region_name=og_region)
 
         kwargs = {"StartingSequenceNumber": sequence_number} if sequence_number else {}
         result = kinesis.get_shard_iterator(
@@ -138,6 +184,12 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         del result["ResponseMetadata"]
         # TODO not quite clear what the |1| exactly denotes, because at AWS it's sometimes other numbers
         result["ShardIterator"] = f"{stream_arn}|1|{result['ShardIterator']}"
+
+        # In case we are dealing with a stream for a replicated table, we need to keep track of the real region
+        #   of the shard iterator, in order to be able to retrieve the record later.
+        if context.region != og_region:
+            self.shard_iterator_to_region[result["ShardIterator"]] = og_region
+
         return GetShardIteratorOutput(**result)
 
     def list_streams(
@@ -148,8 +200,18 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         exclusive_start_stream_arn: StreamArn = None,
         **kwargs,
     ) -> ListStreamsOutput:
-        store = get_dynamodbstreams_store(context.account_id, context.region)
+        og_region = get_original_region(context=context, table_name=table_name)
+        store = get_dynamodbstreams_store(context.account_id, og_region)
         result = [select_from_typed_dict(Stream, res) for res in store.ddb_streams.values()]
         if table_name:
-            result = [res for res in result if res["TableName"] == table_name]
+            result: list[Stream] = [res for res in result if res["TableName"] == table_name]
+            # If this is a stream from a table replica, we need to change the region in the Stream ARN
+            if context.region != og_region:
+                for stream in result:
+                    stream["StreamArn"] = replace_region_in_stream_arn(
+                        stream_arn=stream["StreamArn"],
+                        old_region=og_region,
+                        new_region=context.region,
+                    )
+
         return ListStreamsOutput(Streams=result)
