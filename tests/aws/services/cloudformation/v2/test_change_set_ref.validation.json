@@ -15,6 +15,6 @@
     "last_validated_date": "2025-04-08T15:22:37+00:00"
   },
   "tests/aws/services/cloudformation/v2/test_change_set_ref.py::TestChangeSetRef::test_supported_pseudo_parameter": {
-    "last_validated_date": "2025-05-07T15:39:00+00:00"
+    "last_validated_date": "2025-05-19T10:22:18+00:00"
   }
 }

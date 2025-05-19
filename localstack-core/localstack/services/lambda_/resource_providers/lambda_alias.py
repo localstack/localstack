@@ -84,7 +84,7 @@ class LambdaAliasProvider(ResourceProvider[LambdaAliasProperties]):
             if model.get("ProvisionedConcurrencyConfig"):
                 lambda_.put_provisioned_concurrency_config(
                     FunctionName=model["FunctionName"],
-                    Qualifier=model["Id"].split(":")[-1],
+                    Qualifier=model["Name"],
                     ProvisionedConcurrentExecutions=model["ProvisionedConcurrencyConfig"][
                         "ProvisionedConcurrentExecutions"
                     ],
@@ -100,12 +100,24 @@ class LambdaAliasProvider(ResourceProvider[LambdaAliasProperties]):
             # get provisioned config status
             result = lambda_.get_provisioned_concurrency_config(
                 FunctionName=model["FunctionName"],
-                Qualifier=model["Id"].split(":")[-1],
+                Qualifier=model["Name"],
             )
             if result["Status"] == "IN_PROGRESS":
                 return ProgressEvent(
                     status=OperationStatus.IN_PROGRESS,
                     resource_model=model,
+                )
+            elif result["Status"] == "READY":
+                return ProgressEvent(
+                    status=OperationStatus.SUCCESS,
+                    resource_model=model,
+                )
+            else:
+                return ProgressEvent(
+                    status=OperationStatus.FAILED,
+                    resource_model=model,
+                    message="",
+                    error_code="VersionStateFailure",  # TODO: not parity tested
                 )
 
         return ProgressEvent(
@@ -137,6 +149,7 @@ class LambdaAliasProvider(ResourceProvider[LambdaAliasProperties]):
         lambda_ = request.aws_client_factory.lambda_
 
         try:
+            # provisioned concurrency is automatically deleted upon deleting a function alias
             lambda_.delete_alias(
                 FunctionName=model["FunctionName"],
                 Name=model["Name"],

@@ -476,7 +476,7 @@ class SupportApi:
         self,
         context: RequestContext,
         attachments: Attachments,
-        attachment_set_id: AttachmentSetId = None,
+        attachment_set_id: AttachmentSetId | None = None,
         **kwargs,
     ) -> AddAttachmentsToSetResponse:
         raise NotImplementedError
@@ -486,9 +486,9 @@ class SupportApi:
         self,
         context: RequestContext,
         communication_body: CommunicationBody,
-        case_id: CaseId = None,
-        cc_email_addresses: CcEmailAddressList = None,
-        attachment_set_id: AttachmentSetId = None,
+        case_id: CaseId | None = None,
+        cc_email_addresses: CcEmailAddressList | None = None,
+        attachment_set_id: AttachmentSetId | None = None,
         **kwargs,
     ) -> AddCommunicationToCaseResponse:
         raise NotImplementedError
@@ -499,13 +499,13 @@ class SupportApi:
         context: RequestContext,
         subject: Subject,
         communication_body: CommunicationBody,
-        service_code: ServiceCode = None,
-        severity_code: SeverityCode = None,
-        category_code: CategoryCode = None,
-        cc_email_addresses: CcEmailAddressList = None,
-        language: Language = None,
-        issue_type: IssueType = None,
-        attachment_set_id: AttachmentSetId = None,
+        service_code: ServiceCode | None = None,
+        severity_code: SeverityCode | None = None,
+        category_code: CategoryCode | None = None,
+        cc_email_addresses: CcEmailAddressList | None = None,
+        language: Language | None = None,
+        issue_type: IssueType | None = None,
+        attachment_set_id: AttachmentSetId | None = None,
         **kwargs,
     ) -> CreateCaseResponse:
         raise NotImplementedError
@@ -520,15 +520,15 @@ class SupportApi:
     def describe_cases(
         self,
         context: RequestContext,
-        case_id_list: CaseIdList = None,
-        display_id: DisplayId = None,
-        after_time: AfterTime = None,
-        before_time: BeforeTime = None,
-        include_resolved_cases: IncludeResolvedCases = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
-        language: Language = None,
-        include_communications: IncludeCommunications = None,
+        case_id_list: CaseIdList | None = None,
+        display_id: DisplayId | None = None,
+        after_time: AfterTime | None = None,
+        before_time: BeforeTime | None = None,
+        include_resolved_cases: IncludeResolvedCases | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
+        language: Language | None = None,
+        include_communications: IncludeCommunications | None = None,
         **kwargs,
     ) -> DescribeCasesResponse:
         raise NotImplementedError
@@ -538,10 +538,10 @@ class SupportApi:
         self,
         context: RequestContext,
         case_id: CaseId,
-        before_time: BeforeTime = None,
-        after_time: AfterTime = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        before_time: BeforeTime | None = None,
+        after_time: AfterTime | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> DescribeCommunicationsResponse:
         raise NotImplementedError
@@ -562,15 +562,15 @@ class SupportApi:
     def describe_services(
         self,
         context: RequestContext,
-        service_code_list: ServiceCodeList = None,
-        language: Language = None,
+        service_code_list: ServiceCodeList | None = None,
+        language: Language | None = None,
         **kwargs,
     ) -> DescribeServicesResponse:
         raise NotImplementedError
 
     @handler("DescribeSeverityLevels")
     def describe_severity_levels(
-        self, context: RequestContext, language: Language = None, **kwargs
+        self, context: RequestContext, language: Language | None = None, **kwargs
     ) -> DescribeSeverityLevelsResponse:
         raise NotImplementedError
 
@@ -593,7 +593,7 @@ class SupportApi:
 
     @handler("DescribeTrustedAdvisorCheckResult")
     def describe_trusted_advisor_check_result(
-        self, context: RequestContext, check_id: String, language: String = None, **kwargs
+        self, context: RequestContext, check_id: String, language: String | None = None, **kwargs
     ) -> DescribeTrustedAdvisorCheckResultResponse:
         raise NotImplementedError
 
@@ -617,6 +617,6 @@ class SupportApi:
 
     @handler("ResolveCase")
     def resolve_case(
-        self, context: RequestContext, case_id: CaseId = None, **kwargs
+        self, context: RequestContext, case_id: CaseId | None = None, **kwargs
     ) -> ResolveCaseResponse:
         raise NotImplementedError

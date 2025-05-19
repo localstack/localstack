@@ -1,13 +1,5 @@
-AWSTemplateFormatVersion: 2010-09-09
-
-Parameters:
-  FunctionName:
-    Type: String
-  AliasName:
-    Type: String
-
 Resources:
-  MyFnServiceRole:
+  fnServiceRole5D180AFD:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -23,44 +15,40 @@ Resources:
             - - "arn:"
               - Ref: AWS::Partition
               - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-
-  LambdaFunction:
+  fn5FF616E3:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Ref FunctionName
       Code:
         ZipFile: |
           import os
 
           def handler(event, context):
-              function_version = os.environ["AWS_LAMBDA_FUNCTION_VERSION"]
-              print(f"{function_version=}")
-              init_type = os.environ.get("_XRAY_SDK_LAMBDA_PLACEMENT_INIT_TYPE", None)
+              init_type = os.environ["AWS_LAMBDA_INITIALIZATION_TYPE"]
               print(f"{init_type=}")
-              return {"function_version": function_version, "initialization_type": init_type}
+              return {"initialization_type": init_type}
       Role:
         Fn::GetAtt:
-          - MyFnServiceRole
+          - fnServiceRole5D180AFD
           - Arn
       Handler: index.handler
       Runtime: python3.12
     DependsOn:
-      - MyFnServiceRole
-
-  Version:
+      - fnServiceRole5D180AFD
+  fnVersion7BF8AE5A:
     Type: AWS::Lambda::Version
     Properties:
-      FunctionName: !Ref LambdaFunction
-      Description: v1
-
-  FunctionAlias:
-    Type: AWS::Lambda::Alias
-    Properties:
-      FunctionName: !Ref FunctionName
-      FunctionVersion: !GetAtt Version.Version
-      Name: !Ref AliasName
+      FunctionName:
+        Ref: fn5FF616E3
+      Description: test description
       ProvisionedConcurrencyConfig:
         ProvisionedConcurrentExecutions: 1
 
-    DependsOn:
-      - LambdaFunction
+Outputs:
+  FunctionName:
+    Value:
+      Ref: fn5FF616E3
+  FunctionVersion:
+    Value:
+      Fn::GetAtt:
+        - fnVersion7BF8AE5A
+        - Version

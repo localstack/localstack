@@ -3085,5 +3085,143 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_with_max_buckets": {
+    "recorded-date": "14-05-2025, 09:10:49",
+    "recorded-content": {
+      "list-objects-with-max-buckets": {
+        "Buckets": [
+          {
+            "BucketRegion": "<region>",
+            "CreationDate": "datetime",
+            "Name": "<bucket-name:1>"
+          }
+        ],
+        "ContinuationToken": "<continuation-token:1>",
+        "Owner": {
+          "DisplayName": "<display-name>",
+          "ID": "<owner-id>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_with_continuation_token": {
+    "recorded-date": "14-05-2025, 09:10:59",
+    "recorded-content": {
+      "list-objects-with-continuation": {
+        "Buckets": [
+          {
+            "BucketRegion": "<region>",
+            "CreationDate": "datetime",
+            "Name": "<bucket-name:1>"
+          }
+        ],
+        "ContinuationToken": "<continuation-token:1>",
+        "Owner": {
+          "DisplayName": "<display-name>",
+          "ID": "<owner-id>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_when_continuation_token_is_empty": {
+    "recorded-date": "14-05-2025, 09:10:50",
+    "recorded-content": {
+      "list-objects-with-empty-continuation-token": {
+        "Buckets": [
+          {
+            "BucketRegion": "<region>",
+            "CreationDate": "datetime",
+            "Name": "<bucket-name:1>"
+          }
+        ],
+        "ContinuationToken": "<continuation-token:1>",
+        "Owner": {
+          "DisplayName": "<display-name>",
+          "ID": "<owner-id>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_prefix_with_case_sensitivity": {
+    "recorded-date": "14-05-2025, 09:10:46",
+    "recorded-content": {
+      "list-objects-by-prefix-empty": {
+        "Buckets": [],
+        "Owner": {
+          "DisplayName": "<display-name>",
+          "ID": "<owner-id>"
+        },
+        "Prefix": "<prefix:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-by-prefix-not-empty": {
+        "Buckets": [
+          {
+            "BucketRegion": "<region>",
+            "CreationDate": "datetime",
+            "Name": "<bucket-name:1>"
+          }
+        ],
+        "Owner": {
+          "DisplayName": "<display-name>",
+          "ID": "<owner-id>"
+        },
+        "Prefix": "<bucket-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_bucket_region": {
+    "recorded-date": "14-05-2025, 09:10:54",
+    "recorded-content": {
+      "list-objects-by-bucket-region-empty": {
+        "Buckets": [],
+        "Owner": {
+          "ID": "<owner-id>"
+        },
+        "Prefix": "<bucket-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-by-bucket-region-not-empty": {
+        "Buckets": [
+          {
+            "BucketRegion": "<region>",
+            "CreationDate": "datetime",
+            "Name": "<bucket-name:1>"
+          }
+        ],
+        "Owner": {
+          "DisplayName": "<display-name>",
+          "ID": "<owner-id>"
+        },
+        "Prefix": "<bucket-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

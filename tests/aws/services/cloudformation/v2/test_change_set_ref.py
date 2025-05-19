@@ -316,27 +316,30 @@ class TestChangeSetRef:
         snapshot,
         capture_update_process,
     ):
-        topic_name = f"topic-name-1-{long_uid()}"
-        snapshot.add_transformer(RegexTransformer(topic_name, "topic-name"))
-        test_name = f"test-name-{long_uid()}"
-        snapshot.add_transformer(RegexTransformer(test_name, "test-name"))
+        topic_name_1 = f"topic-name-1-{long_uid()}"
+        snapshot.add_transformer(RegexTransformer(topic_name_1, "topic_name_1"))
+        topic_name_2 = f"topic-name-2-{long_uid()}"
+        snapshot.add_transformer(RegexTransformer(topic_name_2, "topic_name_2"))
+        snapshot.add_transformer(RegexTransformer("amazonaws.com", "url_suffix"))
+        snapshot.add_transformer(RegexTransformer("localhost.localstack.cloud", "url_suffix"))
         template_1 = {
             "Resources": {
-                "Topic": {"Type": "AWS::SNS::Topic", "Properties": {"TopicName": topic_name}},
+                "Topic1": {"Type": "AWS::SNS::Topic", "Properties": {"TopicName": topic_name_1}},
             }
         }
         template_2 = {
             "Resources": {
-                "Role": {
-                    "Type": "AWS::Logs::LogGroup",
+                "Topic2": {
+                    "Type": "AWS::SNS::Topic",
                     "Properties": {
-                        "LogGroupName": test_name,
+                        "TopicName": topic_name_2,
                         "Tags": [
                             {"Key": "Partition", "Value": {"Ref": "AWS::Partition"}},
                             {"Key": "AccountId", "Value": {"Ref": "AWS::AccountId"}},
                             {"Key": "Region", "Value": {"Ref": "AWS::Region"}},
                             {"Key": "StackName", "Value": {"Ref": "AWS::StackName"}},
                             {"Key": "StackId", "Value": {"Ref": "AWS::StackId"}},
+                            {"Key": "URLSuffix", "Value": {"Ref": "AWS::URLSuffix"}},
                         ],
                     },
                 },

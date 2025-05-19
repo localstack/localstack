@@ -2290,7 +2290,7 @@ class DynamodbApi:
         self,
         context: RequestContext,
         statements: PartiQLBatchRequest,
-        return_consumed_capacity: ReturnConsumedCapacity = None,
+        return_consumed_capacity: ReturnConsumedCapacity | None = None,
         **kwargs,
     ) -> BatchExecuteStatementOutput:
         raise NotImplementedError
@@ -2300,7 +2300,7 @@ class DynamodbApi:
         self,
         context: RequestContext,
         request_items: BatchGetRequestMap,
-        return_consumed_capacity: ReturnConsumedCapacity = None,
+        return_consumed_capacity: ReturnConsumedCapacity | None = None,
         **kwargs,
     ) -> BatchGetItemOutput:
         raise NotImplementedError
@@ -2310,8 +2310,8 @@ class DynamodbApi:
         self,
         context: RequestContext,
         request_items: BatchWriteItemRequestMap,
-        return_consumed_capacity: ReturnConsumedCapacity = None,
-        return_item_collection_metrics: ReturnItemCollectionMetrics = None,
+        return_consumed_capacity: ReturnConsumedCapacity | None = None,
+        return_item_collection_metrics: ReturnItemCollectionMetrics | None = None,
         **kwargs,
     ) -> BatchWriteItemOutput:
         raise NotImplementedError
@@ -2339,18 +2339,18 @@ class DynamodbApi:
         attribute_definitions: AttributeDefinitions,
         table_name: TableArn,
         key_schema: KeySchema,
-        local_secondary_indexes: LocalSecondaryIndexList = None,
-        global_secondary_indexes: GlobalSecondaryIndexList = None,
-        billing_mode: BillingMode = None,
-        provisioned_throughput: ProvisionedThroughput = None,
-        stream_specification: StreamSpecification = None,
-        sse_specification: SSESpecification = None,
-        tags: TagList = None,
-        table_class: TableClass = None,
-        deletion_protection_enabled: DeletionProtectionEnabled = None,
-        warm_throughput: WarmThroughput = None,
-        resource_policy: ResourcePolicy = None,
-        on_demand_throughput: OnDemandThroughput = None,
+        local_secondary_indexes: LocalSecondaryIndexList | None = None,
+        global_secondary_indexes: GlobalSecondaryIndexList | None = None,
+        billing_mode: BillingMode | None = None,
+        provisioned_throughput: ProvisionedThroughput | None = None,
+        stream_specification: StreamSpecification | None = None,
+        sse_specification: SSESpecification | None = None,
+        tags: TagList | None = None,
+        table_class: TableClass | None = None,
+        deletion_protection_enabled: DeletionProtectionEnabled | None = None,
+        warm_throughput: WarmThroughput | None = None,
+        resource_policy: ResourcePolicy | None = None,
+        on_demand_throughput: OnDemandThroughput | None = None,
         **kwargs,
     ) -> CreateTableOutput:
         raise NotImplementedError
@@ -2367,15 +2367,15 @@ class DynamodbApi:
         context: RequestContext,
         table_name: TableArn,
         key: Key,
-        expected: ExpectedAttributeMap = None,
-        conditional_operator: ConditionalOperator = None,
-        return_values: ReturnValue = None,
-        return_consumed_capacity: ReturnConsumedCapacity = None,
-        return_item_collection_metrics: ReturnItemCollectionMetrics = None,
-        condition_expression: ConditionExpression = None,
-        expression_attribute_names: ExpressionAttributeNameMap = None,
-        expression_attribute_values: ExpressionAttributeValueMap = None,
-        return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure = None,
+        expected: ExpectedAttributeMap | None = None,
+        conditional_operator: ConditionalOperator | None = None,
+        return_values: ReturnValue | None = None,
+        return_consumed_capacity: ReturnConsumedCapacity | None = None,
+        return_item_collection_metrics: ReturnItemCollectionMetrics | None = None,
+        condition_expression: ConditionExpression | None = None,
+        expression_attribute_names: ExpressionAttributeNameMap | None = None,
+        expression_attribute_values: ExpressionAttributeValueMap | None = None,
+        return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure | None = None,
         **kwargs,
     ) -> DeleteItemOutput:
         raise NotImplementedError
@@ -2385,7 +2385,7 @@ class DynamodbApi:
         self,
         context: RequestContext,
         resource_arn: ResourceArnString,
-        expected_revision_id: PolicyRevisionId = None,
+        expected_revision_id: PolicyRevisionId | None = None,
         **kwargs,
     ) -> DeleteResourcePolicyOutput:
         raise NotImplementedError
@@ -2410,7 +2410,11 @@ class DynamodbApi:
 
     @handler("DescribeContributorInsights")
     def describe_contributor_insights(
-        self, context: RequestContext, table_name: TableArn, index_name: IndexName = None, **kwargs
+        self,
+        context: RequestContext,
+        table_name: TableArn,
+        index_name: IndexName | None = None,
+        **kwargs,
     ) -> DescribeContributorInsightsOutput:
         raise NotImplementedError
 
@@ -2476,7 +2480,7 @@ class DynamodbApi:
         context: RequestContext,
         table_name: TableArn,
         stream_arn: StreamArn,
-        enable_kinesis_streaming_configuration: EnableKinesisStreamingConfiguration = None,
+        enable_kinesis_streaming_configuration: EnableKinesisStreamingConfiguration | None = None,
         **kwargs,
     ) -> KinesisStreamingDestinationOutput:
         raise NotImplementedError
@@ -2487,7 +2491,7 @@ class DynamodbApi:
         context: RequestContext,
         table_name: TableArn,
         stream_arn: StreamArn,
-        enable_kinesis_streaming_configuration: EnableKinesisStreamingConfiguration = None,
+        enable_kinesis_streaming_configuration: EnableKinesisStreamingConfiguration | None = None,
         **kwargs,
     ) -> KinesisStreamingDestinationOutput:
         raise NotImplementedError
@@ -2497,12 +2501,12 @@ class DynamodbApi:
         self,
         context: RequestContext,
         statement: PartiQLStatement,
-        parameters: PreparedStatementParameters = None,
-        consistent_read: ConsistentRead = None,
-        next_token: PartiQLNextToken = None,
-        return_consumed_capacity: ReturnConsumedCapacity = None,
-        limit: PositiveIntegerObject = None,
-        return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure = None,
+        parameters: PreparedStatementParameters | None = None,
+        consistent_read: ConsistentRead | None = None,
+        next_token: PartiQLNextToken | None = None,
+        return_consumed_capacity: ReturnConsumedCapacity | None = None,
+        limit: PositiveIntegerObject | None = None,
+        return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure | None = None,
         **kwargs,
     ) -> ExecuteStatementOutput:
         raise NotImplementedError
@@ -2512,8 +2516,8 @@ class DynamodbApi:
         self,
         context: RequestContext,
         transact_statements: ParameterizedStatements,
-        client_request_token: ClientRequestToken = None,
-        return_consumed_capacity: ReturnConsumedCapacity = None,
+        client_request_token: ClientRequestToken | None = None,
+        return_consumed_capacity: ReturnConsumedCapacity | None = None,
         **kwargs,
     ) -> ExecuteTransactionOutput:
         raise NotImplementedError
@@ -2524,15 +2528,15 @@ class DynamodbApi:
         context: RequestContext,
         table_arn: TableArn,
         s3_bucket: S3Bucket,
-        export_time: ExportTime = None,
-        client_token: ClientToken = None,
-        s3_bucket_owner: S3BucketOwner = None,
-        s3_prefix: S3Prefix = None,
-        s3_sse_algorithm: S3SseAlgorithm = None,
-        s3_sse_kms_key_id: S3SseKmsKeyId = None,
-        export_format: ExportFormat = None,
-        export_type: ExportType = None,
-        incremental_export_specification: IncrementalExportSpecification = None,
+        export_time: ExportTime | None = None,
+        client_token: ClientToken | None = None,
+        s3_bucket_owner: S3BucketOwner | None = None,
+        s3_prefix: S3Prefix | None = None,
+        s3_sse_algorithm: S3SseAlgorithm | None = None,
+        s3_sse_kms_key_id: S3SseKmsKeyId | None = None,
+        export_format: ExportFormat | None = None,
+        export_type: ExportType | None = None,
+        incremental_export_specification: IncrementalExportSpecification | None = None,
         **kwargs,
     ) -> ExportTableToPointInTimeOutput:
         raise NotImplementedError
@@ -2543,11 +2547,11 @@ class DynamodbApi:
         context: RequestContext,
         table_name: TableArn,
         key: Key,
-        attributes_to_get: AttributeNameList = None,
-        consistent_read: ConsistentRead = None,
-        return_consumed_capacity: ReturnConsumedCapacity = None,
-        projection_expression: ProjectionExpression = None,
-        expression_attribute_names: ExpressionAttributeNameMap = None,
+        attributes_to_get: AttributeNameList | None = None,
+        consistent_read: ConsistentRead | None = None,
+        return_consumed_capacity: ReturnConsumedCapacity | None = None,
+        projection_expression: ProjectionExpression | None = None,
+        expression_attribute_names: ExpressionAttributeNameMap | None = None,
         **kwargs,
     ) -> GetItemOutput:
         raise NotImplementedError
@@ -2565,9 +2569,9 @@ class DynamodbApi:
         s3_bucket_source: S3BucketSource,
         input_format: InputFormat,
         table_creation_parameters: TableCreationParameters,
-        client_token: ClientToken = None,
-        input_format_options: InputFormatOptions = None,
-        input_compression_type: InputCompressionType = None,
+        client_token: ClientToken | None = None,
+        input_format_options: InputFormatOptions | None = None,
+        input_compression_type: InputCompressionType | None = None,
         **kwargs,
     ) -> ImportTableOutput:
         raise NotImplementedError
@@ -2576,12 +2580,12 @@ class DynamodbApi:
     def list_backups(
         self,
         context: RequestContext,
-        table_name: TableArn = None,
-        limit: BackupsInputLimit = None,
-        time_range_lower_bound: TimeRangeLowerBound = None,
-        time_range_upper_bound: TimeRangeUpperBound = None,
-        exclusive_start_backup_arn: BackupArn = None,
-        backup_type: BackupTypeFilter = None,
+        table_name: TableArn | None = None,
+        limit: BackupsInputLimit | None = None,
+        time_range_lower_bound: TimeRangeLowerBound | None = None,
+        time_range_upper_bound: TimeRangeUpperBound | None = None,
+        exclusive_start_backup_arn: BackupArn | None = None,
+        backup_type: BackupTypeFilter | None = None,
         **kwargs,
     ) -> ListBackupsOutput:
         raise NotImplementedError
@@ -2590,9 +2594,9 @@ class DynamodbApi:
     def list_contributor_insights(
         self,
         context: RequestContext,
-        table_name: TableArn = None,
-        next_token: NextTokenString = None,
-        max_results: ListContributorInsightsLimit = None,
+        table_name: TableArn | None = None,
+        next_token: NextTokenString | None = None,
+        max_results: ListContributorInsightsLimit | None = None,
         **kwargs,
     ) -> ListContributorInsightsOutput:
         raise NotImplementedError
@@ -2601,9 +2605,9 @@ class DynamodbApi:
     def list_exports(
         self,
         context: RequestContext,
-        table_arn: TableArn = None,
-        max_results: ListExportsMaxLimit = None,
-        next_token: ExportNextToken = None,
+        table_arn: TableArn | None = None,
+        max_results: ListExportsMaxLimit | None = None,
+        next_token: ExportNextToken | None = None,
         **kwargs,
     ) -> ListExportsOutput:
         raise NotImplementedError
@@ -2612,9 +2616,9 @@ class DynamodbApi:
     def list_global_tables(
         self,
         context: RequestContext,
-        exclusive_start_global_table_name: TableName = None,
-        limit: PositiveIntegerObject = None,
-        region_name: RegionName = None,
+        exclusive_start_global_table_name: TableName | None = None,
+        limit: PositiveIntegerObject | None = None,
+        region_name: RegionName | None = None,
         **kwargs,
     ) -> ListGlobalTablesOutput:
         raise NotImplementedError
@@ -2623,9 +2627,9 @@ class DynamodbApi:
     def list_imports(
         self,
         context: RequestContext,
-        table_arn: TableArn = None,
-        page_size: ListImportsMaxLimit = None,
-        next_token: ImportNextToken = None,
+        table_arn: TableArn | None = None,
+        page_size: ListImportsMaxLimit | None = None,
+        next_token: ImportNextToken | None = None,
         **kwargs,
     ) -> ListImportsOutput:
         raise NotImplementedError
@@ -2634,8 +2638,8 @@ class DynamodbApi:
     def list_tables(
         self,
         context: RequestContext,
-        exclusive_start_table_name: TableName = None,
-        limit: ListTablesInputLimit = None,
+        exclusive_start_table_name: TableName | None = None,
+        limit: ListTablesInputLimit | None = None,
         **kwargs,
     ) -> ListTablesOutput:
         raise NotImplementedError
@@ -2645,7 +2649,7 @@ class DynamodbApi:
         self,
         context: RequestContext,
         resource_arn: ResourceArnString,
-        next_token: NextTokenString = None,
+        next_token: NextTokenString | None = None,
         **kwargs,
     ) -> ListTagsOfResourceOutput:
         raise NotImplementedError
@@ -2656,15 +2660,15 @@ class DynamodbApi:
         context: RequestContext,
         table_name: TableArn,
         item: PutItemInputAttributeMap,
-        expected: ExpectedAttributeMap = None,
-        return_values: ReturnValue = None,
-        return_consumed_capacity: ReturnConsumedCapacity = None,
-        return_item_collection_metrics: ReturnItemCollectionMetrics = None,
-        conditional_operator: ConditionalOperator = None,
-        condition_expression: ConditionExpression = None,
-        expression_attribute_names: ExpressionAttributeNameMap = None,
-        expression_attribute_values: ExpressionAttributeValueMap = None,
-        return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure = None,
+        expected: ExpectedAttributeMap | None = None,
+        return_values: ReturnValue | None = None,
+        return_consumed_capacity: ReturnConsumedCapacity | None = None,
+        return_item_collection_metrics: ReturnItemCollectionMetrics | None = None,
+        conditional_operator: ConditionalOperator | None = None,
+        condition_expression: ConditionExpression | None = None,
+        expression_attribute_names: ExpressionAttributeNameMap | None = None,
+        expression_attribute_values: ExpressionAttributeValueMap | None = None,
+        return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure | None = None,
         **kwargs,
     ) -> PutItemOutput:
         raise NotImplementedError
@@ -2675,8 +2679,8 @@ class DynamodbApi:
         context: RequestContext,
         resource_arn: ResourceArnString,
         policy: ResourcePolicy,
-        expected_revision_id: PolicyRevisionId = None,
-        confirm_remove_self_resource_access: ConfirmRemoveSelfResourceAccess = None,
+        expected_revision_id: PolicyRevisionId | None = None,
+        confirm_remove_self_resource_access: ConfirmRemoveSelfResourceAccess | None = None,
         **kwargs,
     ) -> PutResourcePolicyOutput:
         raise NotImplementedError
@@ -2686,22 +2690,22 @@ class DynamodbApi:
         self,
         context: RequestContext,
         table_name: TableArn,
-        index_name: IndexName = None,
-        select: Select = None,
-        attributes_to_get: AttributeNameList = None,
-        limit: PositiveIntegerObject = None,
-        consistent_read: ConsistentRead = None,
-        key_conditions: KeyConditions = None,
-        query_filter: FilterConditionMap = None,
-        conditional_operator: ConditionalOperator = None,
-        scan_index_forward: BooleanObject = None,
-        exclusive_start_key: Key = None,
-        return_consumed_capacity: ReturnConsumedCapacity = None,
-        projection_expression: ProjectionExpression = None,
-        filter_expression: ConditionExpression = None,
-        key_condition_expression: KeyExpression = None,
-        expression_attribute_names: ExpressionAttributeNameMap = None,
-        expression_attribute_values: ExpressionAttributeValueMap = None,
+        index_name: IndexName | None = None,
+        select: Select | None = None,
+        attributes_to_get: AttributeNameList | None = None,
+        limit: PositiveIntegerObject | None = None,
+        consistent_read: ConsistentRead | None = None,
+        key_conditions: KeyConditions | None = None,
+        query_filter: FilterConditionMap | None = None,
+        conditional_operator: ConditionalOperator | None = None,
+        scan_index_forward: BooleanObject | None = None,
+        exclusive_start_key: Key | None = None,
+        return_consumed_capacity: ReturnConsumedCapacity | None = None,
+        projection_expression: ProjectionExpression | None = None,
+        filter_expression: ConditionExpression | None = None,
+        key_condition_expression: KeyExpression | None = None,
+        expression_attribute_names: ExpressionAttributeNameMap | None = None,
+        expression_attribute_values: ExpressionAttributeValueMap | None = None,
         **kwargs,
     ) -> QueryOutput:
         raise NotImplementedError
@@ -2712,12 +2716,12 @@ class DynamodbApi:
         context: RequestContext,
         target_table_name: TableName,
         backup_arn: BackupArn,
-        billing_mode_override: BillingMode = None,
-        global_secondary_index_override: GlobalSecondaryIndexList = None,
-        local_secondary_index_override: LocalSecondaryIndexList = None,
-        provisioned_throughput_override: ProvisionedThroughput = None,
-        on_demand_throughput_override: OnDemandThroughput = None,
-        sse_specification_override: SSESpecification = None,
+        billing_mode_override: BillingMode | None = None,
+        global_secondary_index_override: GlobalSecondaryIndexList | None = None,
+        local_secondary_index_override: LocalSecondaryIndexList | None = None,
+        provisioned_throughput_override: ProvisionedThroughput | None = None,
+        on_demand_throughput_override: OnDemandThroughput | None = None,
+        sse_specification_override: SSESpecification | None = None,
         **kwargs,
     ) -> RestoreTableFromBackupOutput:
         raise NotImplementedError
@@ -2727,16 +2731,16 @@ class DynamodbApi:
         self,
         context: RequestContext,
         target_table_name: TableName,
-        source_table_arn: TableArn = None,
-        source_table_name: TableName = None,
-        use_latest_restorable_time: BooleanObject = None,
-        restore_date_time: Date = None,
-        billing_mode_override: BillingMode = None,
-        global_secondary_index_override: GlobalSecondaryIndexList = None,
-        local_secondary_index_override: LocalSecondaryIndexList = None,
-        provisioned_throughput_override: ProvisionedThroughput = None,
-        on_demand_throughput_override: OnDemandThroughput = None,
-        sse_specification_override: SSESpecification = None,
+        source_table_arn: TableArn | None = None,
+        source_table_name: TableName | None = None,
+        use_latest_restorable_time: BooleanObject | None = None,
+        restore_date_time: Date | None = None,
+        billing_mode_override: BillingMode | None = None,
+        global_secondary_index_override: GlobalSecondaryIndexList | None = None,
+        local_secondary_index_override: LocalSecondaryIndexList | None = None,
+        provisioned_throughput_override: ProvisionedThroughput | None = None,
+        on_demand_throughput_override: OnDemandThroughput | None = None,
+        sse_specification_override: SSESpecification | None = None,
         **kwargs,
     ) -> RestoreTableToPointInTimeOutput:
         raise NotImplementedError
@@ -2746,21 +2750,21 @@ class DynamodbApi:
         self,
         context: RequestContext,
         table_name: TableArn,
-        index_name: IndexName = None,
-        attributes_to_get: AttributeNameList = None,
-        limit: PositiveIntegerObject = None,
-        select: Select = None,
-        scan_filter: FilterConditionMap = None,
-        conditional_operator: ConditionalOperator = None,
-        exclusive_start_key: Key = None,
-        return_consumed_capacity: ReturnConsumedCapacity = None,
-        total_segments: ScanTotalSegments = None,
-        segment: ScanSegment = None,
-        projection_expression: ProjectionExpression = None,
-        filter_expression: ConditionExpression = None,
-        expression_attribute_names: ExpressionAttributeNameMap = None,
-        expression_attribute_values: ExpressionAttributeValueMap = None,
-        consistent_read: ConsistentRead = None,
+        index_name: IndexName | None = None,
+        attributes_to_get: AttributeNameList | None = None,
+        limit: PositiveIntegerObject | None = None,
+        select: Select | None = None,
+        scan_filter: FilterConditionMap | None = None,
+        conditional_operator: ConditionalOperator | None = None,
+        exclusive_start_key: Key | None = None,
+        return_consumed_capacity: ReturnConsumedCapacity | None = None,
+        total_segments: ScanTotalSegments | None = None,
+        segment: ScanSegment | None = None,
+        projection_expression: ProjectionExpression | None = None,
+        filter_expression: ConditionExpression | None = None,
+        expression_attribute_names: ExpressionAttributeNameMap | None = None,
+        expression_attribute_values: ExpressionAttributeValueMap | None = None,
+        consistent_read: ConsistentRead | None = None,
         **kwargs,
     ) -> ScanOutput:
         raise NotImplementedError
@@ -2776,7 +2780,7 @@ class DynamodbApi:
         self,
         context: RequestContext,
         transact_items: TransactGetItemList,
-        return_consumed_capacity: ReturnConsumedCapacity = None,
+        return_consumed_capacity: ReturnConsumedCapacity | None = None,
         **kwargs,
     ) -> TransactGetItemsOutput:
         raise NotImplementedError
@@ -2786,9 +2790,9 @@ class DynamodbApi:
         self,
         context: RequestContext,
         transact_items: TransactWriteItemList,
-        return_consumed_capacity: ReturnConsumedCapacity = None,
-        return_item_collection_metrics: ReturnItemCollectionMetrics = None,
-        client_request_token: ClientRequestToken = None,
+        return_consumed_capacity: ReturnConsumedCapacity | None = None,
+        return_item_collection_metrics: ReturnItemCollectionMetrics | None = None,
+        client_request_token: ClientRequestToken | None = None,
         **kwargs,
     ) -> TransactWriteItemsOutput:
         raise NotImplementedError
@@ -2819,7 +2823,7 @@ class DynamodbApi:
         context: RequestContext,
         table_name: TableArn,
         contributor_insights_action: ContributorInsightsAction,
-        index_name: IndexName = None,
+        index_name: IndexName | None = None,
         **kwargs,
     ) -> UpdateContributorInsightsOutput:
         raise NotImplementedError
@@ -2839,11 +2843,13 @@ class DynamodbApi:
         self,
         context: RequestContext,
         global_table_name: TableName,
-        global_table_billing_mode: BillingMode = None,
-        global_table_provisioned_write_capacity_units: PositiveLongObject = None,
-        global_table_provisioned_write_capacity_auto_scaling_settings_update: AutoScalingSettingsUpdate = None,
-        global_table_global_secondary_index_settings_update: GlobalTableGlobalSecondaryIndexSettingsUpdateList = None,
-        replica_settings_update: ReplicaSettingsUpdateList = None,
+        global_table_billing_mode: BillingMode | None = None,
+        global_table_provisioned_write_capacity_units: PositiveLongObject | None = None,
+        global_table_provisioned_write_capacity_auto_scaling_settings_update: AutoScalingSettingsUpdate
+        | None = None,
+        global_table_global_secondary_index_settings_update: GlobalTableGlobalSecondaryIndexSettingsUpdateList
+        | None = None,
+        replica_settings_update: ReplicaSettingsUpdateList | None = None,
         **kwargs,
     ) -> UpdateGlobalTableSettingsOutput:
         raise NotImplementedError
@@ -2854,17 +2860,17 @@ class DynamodbApi:
         context: RequestContext,
         table_name: TableArn,
         key: Key,
-        attribute_updates: AttributeUpdates = None,
-        expected: ExpectedAttributeMap = None,
-        conditional_operator: ConditionalOperator = None,
-        return_values: ReturnValue = None,
-        return_consumed_capacity: ReturnConsumedCapacity = None,
-        return_item_collection_metrics: ReturnItemCollectionMetrics = None,
-        update_expression: UpdateExpression = None,
-        condition_expression: ConditionExpression = None,
-        expression_attribute_names: ExpressionAttributeNameMap = None,
-        expression_attribute_values: ExpressionAttributeValueMap = None,
-        return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure = None,
+        attribute_updates: AttributeUpdates | None = None,
+        expected: ExpectedAttributeMap | None = None,
+        conditional_operator: ConditionalOperator | None = None,
+        return_values: ReturnValue | None = None,
+        return_consumed_capacity: ReturnConsumedCapacity | None = None,
+        return_item_collection_metrics: ReturnItemCollectionMetrics | None = None,
+        update_expression: UpdateExpression | None = None,
+        condition_expression: ConditionExpression | None = None,
+        expression_attribute_names: ExpressionAttributeNameMap | None = None,
+        expression_attribute_values: ExpressionAttributeValueMap | None = None,
+        return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure | None = None,
         **kwargs,
     ) -> UpdateItemOutput:
         raise NotImplementedError
@@ -2875,7 +2881,7 @@ class DynamodbApi:
         context: RequestContext,
         table_name: TableArn,
         stream_arn: StreamArn,
-        update_kinesis_streaming_configuration: UpdateKinesisStreamingConfiguration = None,
+        update_kinesis_streaming_configuration: UpdateKinesisStreamingConfiguration | None = None,
         **kwargs,
     ) -> UpdateKinesisStreamingDestinationOutput:
         raise NotImplementedError
@@ -2885,18 +2891,18 @@ class DynamodbApi:
         self,
         context: RequestContext,
         table_name: TableArn,
-        attribute_definitions: AttributeDefinitions = None,
-        billing_mode: BillingMode = None,
-        provisioned_throughput: ProvisionedThroughput = None,
-        global_secondary_index_updates: GlobalSecondaryIndexUpdateList = None,
-        stream_specification: StreamSpecification = None,
-        sse_specification: SSESpecification = None,
-        replica_updates: ReplicationGroupUpdateList = None,
-        table_class: TableClass = None,
-        deletion_protection_enabled: DeletionProtectionEnabled = None,
-        multi_region_consistency: MultiRegionConsistency = None,
-        on_demand_throughput: OnDemandThroughput = None,
-        warm_throughput: WarmThroughput = None,
+        attribute_definitions: AttributeDefinitions | None = None,
+        billing_mode: BillingMode | None = None,
+        provisioned_throughput: ProvisionedThroughput | None = None,
+        global_secondary_index_updates: GlobalSecondaryIndexUpdateList | None = None,
+        stream_specification: StreamSpecification | None = None,
+        sse_specification: SSESpecification | None = None,
+        replica_updates: ReplicationGroupUpdateList | None = None,
+        table_class: TableClass | None = None,
+        deletion_protection_enabled: DeletionProtectionEnabled | None = None,
+        multi_region_consistency: MultiRegionConsistency | None = None,
+        on_demand_throughput: OnDemandThroughput | None = None,
+        warm_throughput: WarmThroughput | None = None,
         **kwargs,
     ) -> UpdateTableOutput:
         raise NotImplementedError
@@ -2906,9 +2912,9 @@ class DynamodbApi:
         self,
         context: RequestContext,
         table_name: TableArn,
-        global_secondary_index_updates: GlobalSecondaryIndexAutoScalingUpdateList = None,
-        provisioned_write_capacity_auto_scaling_update: AutoScalingSettingsUpdate = None,
-        replica_updates: ReplicaAutoScalingUpdateList = None,
+        global_secondary_index_updates: GlobalSecondaryIndexAutoScalingUpdateList | None = None,
+        provisioned_write_capacity_auto_scaling_update: AutoScalingSettingsUpdate | None = None,
+        replica_updates: ReplicaAutoScalingUpdateList | None = None,
         **kwargs,
     ) -> UpdateTableReplicaAutoScalingOutput:
         raise NotImplementedError

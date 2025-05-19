@@ -53,10 +53,10 @@ Issues = "https://github.com/localstack/localstack/issues"
 # minimal required to actually run localstack on the host for services natively implemented in python
 base-runtime = [
     # pinned / updated by ASF update action
-    "boto3==1.38.8",
+    "boto3==1.38.13",
     # pinned / updated by ASF update action
-    "botocore==1.38.8",
-    "awscrt>=0.13.14",
+    "botocore==1.38.13",
+    "awscrt>=0.13.14,!=0.27.1",
     "cbor2>=5.5.0",
     "dnspython>=1.16.0",
     "docker>=6.1.1",
@@ -111,7 +111,7 @@ test = [
     "pytest-split>=0.8.0",
     "pytest-httpserver>=1.1.2",
     "pytest-rerunfailures>=12.0",
-    "pytest-tinybird>=0.2.0",
+    "pytest-tinybird>=0.5.0",
     "aws-cdk-lib>=2.88.0",
     "websocket-client>=1.7.0",
     "localstack-snapshot>=0.1.1",

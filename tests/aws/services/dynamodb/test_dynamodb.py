@@ -14,7 +14,11 @@ from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
-from localstack.aws.api.dynamodb import PointInTimeRecoverySpecification
+from localstack.aws.api.dynamodb import (
+    PointInTimeRecoverySpecification,
+    StreamSpecification,
+    StreamViewType,
+)
 from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
@@ -33,6 +37,8 @@ TEST_DDB_TAGS = [
     {"Key": "Name", "Value": "test-table"},
     {"Key": "TestKey", "Value": "true"},
 ]
+
+WAIT_SEC = 10 if is_aws_cloud() else 1
 
 
 @pytest.fixture(autouse=True)
@@ -1130,6 +1136,68 @@ class TestDynamoDB:
         )
         response = dynamodb_ap_south_1.describe_table(TableName=table_name)
         assert "Replicas" not in response["Table"]
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=not is_aws_cloud(), reason="Streams do not work on the regional replica"
+    )
+    def test_streams_on_global_tables(
+        self,
+        aws_client_factory,
+        dynamodb_wait_for_table_active,
+        cleanups,
+        snapshot,
+        region_name,
+        secondary_region_name,
+    ):
+        """
+        This test exposes an issue in LocalStack with Global tables and streams. In AWS, each regional replica should
+        get a separate DynamoDB Stream. This does not happen in LocalStack since DynamoDB Stream does not have any
+        redirect logic towards the original region (unlike DDB).
+        """
+        region_1_factory = aws_client_factory(region_name=region_name)
+        region_2_factory = aws_client_factory(region_name=secondary_region_name)
+        snapshot.add_transformer(snapshot.transform.regex(secondary_region_name, "<region-2>"))
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath("$..Streams..StreamLabel", "stream-label")
+        )
+
+        # Create table in the original region
+        table_name = f"table-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(table_name, "<table-name>"))
+        region_1_factory.dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[
+                {"AttributeName": "Artist", "KeyType": "HASH"},
+                {"AttributeName": "SongTitle", "KeyType": "RANGE"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "Artist", "AttributeType": "S"},
+                {"AttributeName": "SongTitle", "AttributeType": "S"},
+            ],
+            BillingMode="PAY_PER_REQUEST",
+            StreamSpecification=StreamSpecification(
+                StreamEnabled=True, StreamViewType=StreamViewType.NEW_AND_OLD_IMAGES
+            ),
+        )
+        cleanups.append(lambda: region_1_factory.dynamodb.delete_table(TableName=table_name))
+        # Note: we might be unable to delete tables that act as source region immediately on AWS
+        waiter = region_1_factory.dynamodb.get_waiter("table_exists")
+        waiter.wait(TableName=table_name, WaiterConfig={"Delay": WAIT_SEC, "MaxAttempts": 20})
+        # Update the Table by adding a replica
+        region_1_factory.dynamodb.update_table(
+            TableName=table_name,
+            ReplicaUpdates=[{"Create": {"RegionName": secondary_region_name}}],
+        )
+        cleanups.append(lambda: region_2_factory.dynamodb.delete_table(TableName=table_name))
+        waiter = region_2_factory.dynamodb.get_waiter("table_exists")
+        waiter.wait(TableName=table_name, WaiterConfig={"Delay": WAIT_SEC, "MaxAttempts": 20})
+
+        us_streams = region_1_factory.dynamodbstreams.list_streams(TableName=table_name)
+        snapshot.match("region-streams", us_streams)
+        # FIXME: LS doesn't have a stream on the replica region
+        eu_streams = region_2_factory.dynamodbstreams.list_streams(TableName=table_name)
+        snapshot.match("secondary-region-streams", eu_streams)
 
     @markers.aws.only_localstack
     def test_global_tables(self, aws_client, ddb_test_table):

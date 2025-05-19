@@ -758,6 +758,25 @@ class TestKinesisJavaSDK:
         assert response_content == "ok"
 
 
+@pytest.mark.skipif(
+    condition=is_aws_cloud(),
+    reason="Duplicate of all tests in TestKinesis. Since we cannot unmark test cases, only run against LocalStack.",
+)
+class TestKinesisMockScala(TestKinesis):
+    @pytest.fixture(autouse=True)
+    def set_kinesis_mock_scala_engine(self, monkeypatch):
+        monkeypatch.setattr(config, "KINESIS_MOCK_PROVIDER_ENGINE", "scala")
+
+    @pytest.fixture(autouse=True, scope="function")
+    def override_snapshot_session(self, _snapshot_session):
+        # Replace the scope_key of the snapshot session to reference parent class' recorded snapshots
+        _snapshot_session.scope_key = _snapshot_session.scope_key.replace(
+            "TestKinesisMockScala", "TestKinesis"
+        )
+        # Ensure we load in the previously recorded state now that the scope key has been updated
+        _snapshot_session.recorded_state = _snapshot_session._load_state()
+
+
 class TestKinesisPythonClient:
     @markers.skip_offline
     @markers.aws.only_localstack

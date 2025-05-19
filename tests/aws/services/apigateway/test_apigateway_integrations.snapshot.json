@@ -1078,5 +1078,27 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_integration_mock_with_response_override_in_request_template[True]": {
+    "recorded-date": "16-05-2025, 10:22:21",
+    "recorded-content": {
+      "response": {
+        "body": {
+          "custom": "is also passed around",
+          "fooHeader": "bar",
+          "statusOverride": "444"
+        },
+        "status_code": 444
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_integration_mock_with_response_override_in_request_template[False]": {
+    "recorded-date": "16-05-2025, 10:22:27",
+    "recorded-content": {
+      "response": {
+        "body": "b''",
+        "status_code": 444
+      }
+    }
   }
 }

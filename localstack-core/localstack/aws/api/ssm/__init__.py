@@ -5997,7 +5997,7 @@ class SsmApi:
         self,
         context: RequestContext,
         command_id: CommandId,
-        instance_ids: InstanceIdList = None,
+        instance_ids: InstanceIdList | None = None,
         **kwargs,
     ) -> CancelCommandResult:
         raise NotImplementedError
@@ -6013,12 +6013,12 @@ class SsmApi:
         self,
         context: RequestContext,
         iam_role: IamRole,
-        description: ActivationDescription = None,
-        default_instance_name: DefaultInstanceName = None,
-        registration_limit: RegistrationLimit = None,
-        expiration_date: ExpirationDate = None,
-        tags: TagList = None,
-        registration_metadata: RegistrationMetadataList = None,
+        description: ActivationDescription | None = None,
+        default_instance_name: DefaultInstanceName | None = None,
+        registration_limit: RegistrationLimit | None = None,
+        expiration_date: ExpirationDate | None = None,
+        tags: TagList | None = None,
+        registration_metadata: RegistrationMetadataList | None = None,
         **kwargs,
     ) -> CreateActivationResult:
         raise NotImplementedError
@@ -6028,26 +6028,26 @@ class SsmApi:
         self,
         context: RequestContext,
         name: DocumentARN,
-        document_version: DocumentVersion = None,
-        instance_id: InstanceId = None,
-        parameters: Parameters = None,
-        targets: Targets = None,
-        schedule_expression: ScheduleExpression = None,
-        output_location: InstanceAssociationOutputLocation = None,
-        association_name: AssociationName = None,
-        automation_target_parameter_name: AutomationTargetParameterName = None,
-        max_errors: MaxErrors = None,
-        max_concurrency: MaxConcurrency = None,
-        compliance_severity: AssociationComplianceSeverity = None,
-        sync_compliance: AssociationSyncCompliance = None,
-        apply_only_at_cron_interval: ApplyOnlyAtCronInterval = None,
-        calendar_names: CalendarNameOrARNList = None,
-        target_locations: TargetLocations = None,
-        schedule_offset: ScheduleOffset = None,
-        duration: Duration = None,
-        target_maps: TargetMaps = None,
-        tags: TagList = None,
-        alarm_configuration: AlarmConfiguration = None,
+        document_version: DocumentVersion | None = None,
+        instance_id: InstanceId | None = None,
+        parameters: Parameters | None = None,
+        targets: Targets | None = None,
+        schedule_expression: ScheduleExpression | None = None,
+        output_location: InstanceAssociationOutputLocation | None = None,
+        association_name: AssociationName | None = None,
+        automation_target_parameter_name: AutomationTargetParameterName | None = None,
+        max_errors: MaxErrors | None = None,
+        max_concurrency: MaxConcurrency | None = None,
+        compliance_severity: AssociationComplianceSeverity | None = None,
+        sync_compliance: AssociationSyncCompliance | None = None,
+        apply_only_at_cron_interval: ApplyOnlyAtCronInterval | None = None,
+        calendar_names: CalendarNameOrARNList | None = None,
+        target_locations: TargetLocations | None = None,
+        schedule_offset: ScheduleOffset | None = None,
+        duration: Duration | None = None,
+        target_maps: TargetMaps | None = None,
+        tags: TagList | None = None,
+        alarm_configuration: AlarmConfiguration | None = None,
         **kwargs,
     ) -> CreateAssociationResult:
         raise NotImplementedError
@@ -6064,14 +6064,14 @@ class SsmApi:
         context: RequestContext,
         content: DocumentContent,
         name: DocumentName,
-        requires: DocumentRequiresList = None,
-        attachments: AttachmentsSourceList = None,
-        display_name: DocumentDisplayName = None,
-        version_name: DocumentVersionName = None,
-        document_type: DocumentType = None,
-        document_format: DocumentFormat = None,
-        target_type: TargetType = None,
-        tags: TagList = None,
+        requires: DocumentRequiresList | None = None,
+        attachments: AttachmentsSourceList | None = None,
+        display_name: DocumentDisplayName | None = None,
+        version_name: DocumentVersionName | None = None,
+        document_type: DocumentType | None = None,
+        document_format: DocumentFormat | None = None,
+        target_type: TargetType | None = None,
+        tags: TagList | None = None,
         **kwargs,
     ) -> CreateDocumentResult:
         raise NotImplementedError
@@ -6085,13 +6085,13 @@ class SsmApi:
         duration: MaintenanceWindowDurationHours,
         cutoff: MaintenanceWindowCutoff,
         allow_unassociated_targets: MaintenanceWindowAllowUnassociatedTargets,
-        description: MaintenanceWindowDescription = None,
-        start_date: MaintenanceWindowStringDateTime = None,
-        end_date: MaintenanceWindowStringDateTime = None,
-        schedule_timezone: MaintenanceWindowTimezone = None,
-        schedule_offset: MaintenanceWindowOffset = None,
-        client_token: ClientToken = None,
-        tags: TagList = None,
+        description: MaintenanceWindowDescription | None = None,
+        start_date: MaintenanceWindowStringDateTime | None = None,
+        end_date: MaintenanceWindowStringDateTime | None = None,
+        schedule_timezone: MaintenanceWindowTimezone | None = None,
+        schedule_offset: MaintenanceWindowOffset | None = None,
+        client_token: ClientToken | None = None,
+        tags: TagList | None = None,
         **kwargs,
     ) -> CreateMaintenanceWindowResult:
         raise NotImplementedError
@@ -6103,19 +6103,19 @@ class SsmApi:
         description: OpsItemDescription,
         source: OpsItemSource,
         title: OpsItemTitle,
-        ops_item_type: OpsItemType = None,
-        operational_data: OpsItemOperationalData = None,
-        notifications: OpsItemNotifications = None,
-        priority: OpsItemPriority = None,
-        related_ops_items: RelatedOpsItems = None,
-        tags: TagList = None,
-        category: OpsItemCategory = None,
-        severity: OpsItemSeverity = None,
-        actual_start_time: DateTime = None,
-        actual_end_time: DateTime = None,
-        planned_start_time: DateTime = None,
-        planned_end_time: DateTime = None,
-        account_id: OpsItemAccountId = None,
+        ops_item_type: OpsItemType | None = None,
+        operational_data: OpsItemOperationalData | None = None,
+        notifications: OpsItemNotifications | None = None,
+        priority: OpsItemPriority | None = None,
+        related_ops_items: RelatedOpsItems | None = None,
+        tags: TagList | None = None,
+        category: OpsItemCategory | None = None,
+        severity: OpsItemSeverity | None = None,
+        actual_start_time: DateTime | None = None,
+        actual_end_time: DateTime | None = None,
+        planned_start_time: DateTime | None = None,
+        planned_end_time: DateTime | None = None,
+        account_id: OpsItemAccountId | None = None,
         **kwargs,
     ) -> CreateOpsItemResponse:
         raise NotImplementedError
@@ -6125,8 +6125,8 @@ class SsmApi:
         self,
         context: RequestContext,
         resource_id: OpsMetadataResourceId,
-        metadata: MetadataMap = None,
-        tags: TagList = None,
+        metadata: MetadataMap | None = None,
+        tags: TagList | None = None,
         **kwargs,
     ) -> CreateOpsMetadataResult:
         raise NotImplementedError
@@ -6136,19 +6136,19 @@ class SsmApi:
         self,
         context: RequestContext,
         name: BaselineName,
-        operating_system: OperatingSystem = None,
-        global_filters: PatchFilterGroup = None,
-        approval_rules: PatchRuleGroup = None,
-        approved_patches: PatchIdList = None,
-        approved_patches_compliance_level: PatchComplianceLevel = None,
-        approved_patches_enable_non_security: Boolean = None,
-        rejected_patches: PatchIdList = None,
-        rejected_patches_action: PatchAction = None,
-        description: BaselineDescription = None,
-        sources: PatchSourceList = None,
-        available_security_updates_compliance_status: PatchComplianceStatus = None,
-        client_token: ClientToken = None,
-        tags: TagList = None,
+        operating_system: OperatingSystem | None = None,
+        global_filters: PatchFilterGroup | None = None,
+        approval_rules: PatchRuleGroup | None = None,
+        approved_patches: PatchIdList | None = None,
+        approved_patches_compliance_level: PatchComplianceLevel | None = None,
+        approved_patches_enable_non_security: Boolean | None = None,
+        rejected_patches: PatchIdList | None = None,
+        rejected_patches_action: PatchAction | None = None,
+        description: BaselineDescription | None = None,
+        sources: PatchSourceList | None = None,
+        available_security_updates_compliance_status: PatchComplianceStatus | None = None,
+        client_token: ClientToken | None = None,
+        tags: TagList | None = None,
         **kwargs,
     ) -> CreatePatchBaselineResult:
         raise NotImplementedError
@@ -6158,9 +6158,9 @@ class SsmApi:
         self,
         context: RequestContext,
         sync_name: ResourceDataSyncName,
-        s3_destination: ResourceDataSyncS3Destination = None,
-        sync_type: ResourceDataSyncType = None,
-        sync_source: ResourceDataSyncSource = None,
+        s3_destination: ResourceDataSyncS3Destination | None = None,
+        sync_type: ResourceDataSyncType | None = None,
+        sync_source: ResourceDataSyncSource | None = None,
         **kwargs,
     ) -> CreateResourceDataSyncResult:
         raise NotImplementedError
@@ -6175,9 +6175,9 @@ class SsmApi:
     def delete_association(
         self,
         context: RequestContext,
-        name: DocumentARN = None,
-        instance_id: InstanceId = None,
-        association_id: AssociationId = None,
+        name: DocumentARN | None = None,
+        instance_id: InstanceId | None = None,
+        association_id: AssociationId | None = None,
         **kwargs,
     ) -> DeleteAssociationResult:
         raise NotImplementedError
@@ -6187,9 +6187,9 @@ class SsmApi:
         self,
         context: RequestContext,
         name: DocumentName,
-        document_version: DocumentVersion = None,
-        version_name: DocumentVersionName = None,
-        force: Boolean = None,
+        document_version: DocumentVersion | None = None,
+        version_name: DocumentVersionName | None = None,
+        force: Boolean | None = None,
         **kwargs,
     ) -> DeleteDocumentResult:
         raise NotImplementedError
@@ -6199,9 +6199,9 @@ class SsmApi:
         self,
         context: RequestContext,
         type_name: InventoryItemTypeName,
-        schema_delete_option: InventorySchemaDeleteOption = None,
-        dry_run: DryRun = None,
-        client_token: UUID = None,
+        schema_delete_option: InventorySchemaDeleteOption | None = None,
+        dry_run: DryRun | None = None,
+        client_token: UUID | None = None,
         **kwargs,
     ) -> DeleteInventoryResult:
         raise NotImplementedError
@@ -6247,7 +6247,7 @@ class SsmApi:
         self,
         context: RequestContext,
         sync_name: ResourceDataSyncName,
-        sync_type: ResourceDataSyncType = None,
+        sync_type: ResourceDataSyncType | None = None,
         **kwargs,
     ) -> DeleteResourceDataSyncResult:
         raise NotImplementedError
@@ -6281,7 +6281,7 @@ class SsmApi:
         context: RequestContext,
         window_id: MaintenanceWindowId,
         window_target_id: MaintenanceWindowTargetId,
-        safe: Boolean = None,
+        safe: Boolean | None = None,
         **kwargs,
     ) -> DeregisterTargetFromMaintenanceWindowResult:
         raise NotImplementedError
@@ -6300,9 +6300,9 @@ class SsmApi:
     def describe_activations(
         self,
         context: RequestContext,
-        filters: DescribeActivationsFilterList = None,
-        max_results: MaxResults = None,
-        next_token: NextToken = None,
+        filters: DescribeActivationsFilterList | None = None,
+        max_results: MaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeActivationsResult:
         raise NotImplementedError
@@ -6311,10 +6311,10 @@ class SsmApi:
     def describe_association(
         self,
         context: RequestContext,
-        name: DocumentARN = None,
-        instance_id: InstanceId = None,
-        association_id: AssociationId = None,
-        association_version: AssociationVersion = None,
+        name: DocumentARN | None = None,
+        instance_id: InstanceId | None = None,
+        association_id: AssociationId | None = None,
+        association_version: AssociationVersion | None = None,
         **kwargs,
     ) -> DescribeAssociationResult:
         raise NotImplementedError
@@ -6325,9 +6325,9 @@ class SsmApi:
         context: RequestContext,
         association_id: AssociationId,
         execution_id: AssociationExecutionId,
-        filters: AssociationExecutionTargetsFilterList = None,
-        max_results: MaxResults = None,
-        next_token: NextToken = None,
+        filters: AssociationExecutionTargetsFilterList | None = None,
+        max_results: MaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeAssociationExecutionTargetsResult:
         raise NotImplementedError
@@ -6337,9 +6337,9 @@ class SsmApi:
         self,
         context: RequestContext,
         association_id: AssociationId,
-        filters: AssociationExecutionFilterList = None,
-        max_results: MaxResults = None,
-        next_token: NextToken = None,
+        filters: AssociationExecutionFilterList | None = None,
+        max_results: MaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeAssociationExecutionsResult:
         raise NotImplementedError
@@ -6348,9 +6348,9 @@ class SsmApi:
     def describe_automation_executions(
         self,
         context: RequestContext,
-        filters: AutomationExecutionFilterList = None,
-        max_results: MaxResults = None,
-        next_token: NextToken = None,
+        filters: AutomationExecutionFilterList | None = None,
+        max_results: MaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeAutomationExecutionsResult:
         raise NotImplementedError
@@ -6360,10 +6360,10 @@ class SsmApi:
         self,
         context: RequestContext,
         automation_execution_id: AutomationExecutionId,
-        filters: StepExecutionFilterList = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
-        reverse_order: Boolean = None,
+        filters: StepExecutionFilterList | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
+        reverse_order: Boolean | None = None,
         **kwargs,
     ) -> DescribeAutomationStepExecutionsResult:
         raise NotImplementedError
@@ -6372,9 +6372,9 @@ class SsmApi:
     def describe_available_patches(
         self,
         context: RequestContext,
-        filters: PatchOrchestratorFilterList = None,
-        max_results: PatchBaselineMaxResults = None,
-        next_token: NextToken = None,
+        filters: PatchOrchestratorFilterList | None = None,
+        max_results: PatchBaselineMaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeAvailablePatchesResult:
         raise NotImplementedError
@@ -6384,8 +6384,8 @@ class SsmApi:
         self,
         context: RequestContext,
         name: DocumentARN,
-        document_version: DocumentVersion = None,
-        version_name: DocumentVersionName = None,
+        document_version: DocumentVersion | None = None,
+        version_name: DocumentVersionName | None = None,
         **kwargs,
     ) -> DescribeDocumentResult:
         raise NotImplementedError
@@ -6396,8 +6396,8 @@ class SsmApi:
         context: RequestContext,
         name: DocumentName,
         permission_type: DocumentPermissionType,
-        max_results: DocumentPermissionMaxResults = None,
-        next_token: NextToken = None,
+        max_results: DocumentPermissionMaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeDocumentPermissionResponse:
         raise NotImplementedError
@@ -6407,8 +6407,8 @@ class SsmApi:
         self,
         context: RequestContext,
         instance_id: InstanceId,
-        max_results: EffectiveInstanceAssociationMaxResults = None,
-        next_token: NextToken = None,
+        max_results: EffectiveInstanceAssociationMaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeEffectiveInstanceAssociationsResult:
         raise NotImplementedError
@@ -6418,8 +6418,8 @@ class SsmApi:
         self,
         context: RequestContext,
         baseline_id: BaselineId,
-        max_results: PatchBaselineMaxResults = None,
-        next_token: NextToken = None,
+        max_results: PatchBaselineMaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeEffectivePatchesForPatchBaselineResult:
         raise NotImplementedError
@@ -6429,8 +6429,8 @@ class SsmApi:
         self,
         context: RequestContext,
         instance_id: InstanceId,
-        max_results: MaxResults = None,
-        next_token: NextToken = None,
+        max_results: MaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeInstanceAssociationsStatusResult:
         raise NotImplementedError
@@ -6439,10 +6439,10 @@ class SsmApi:
     def describe_instance_information(
         self,
         context: RequestContext,
-        instance_information_filter_list: InstanceInformationFilterList = None,
-        filters: InstanceInformationStringFilterList = None,
-        max_results: MaxResultsEC2Compatible = None,
-        next_token: NextToken = None,
+        instance_information_filter_list: InstanceInformationFilterList | None = None,
+        filters: InstanceInformationStringFilterList | None = None,
+        max_results: MaxResultsEC2Compatible | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeInstanceInformationResult:
         raise NotImplementedError
@@ -6452,8 +6452,8 @@ class SsmApi:
         self,
         context: RequestContext,
         instance_ids: InstanceIdList,
-        next_token: NextToken = None,
-        max_results: PatchComplianceMaxResults = None,
+        next_token: NextToken | None = None,
+        max_results: PatchComplianceMaxResults | None = None,
         **kwargs,
     ) -> DescribeInstancePatchStatesResult:
         raise NotImplementedError
@@ -6463,9 +6463,9 @@ class SsmApi:
         self,
         context: RequestContext,
         patch_group: PatchGroup,
-        filters: InstancePatchStateFilterList = None,
-        next_token: NextToken = None,
-        max_results: PatchComplianceMaxResults = None,
+        filters: InstancePatchStateFilterList | None = None,
+        next_token: NextToken | None = None,
+        max_results: PatchComplianceMaxResults | None = None,
         **kwargs,
     ) -> DescribeInstancePatchStatesForPatchGroupResult:
         raise NotImplementedError
@@ -6475,9 +6475,9 @@ class SsmApi:
         self,
         context: RequestContext,
         instance_id: InstanceId,
-        filters: PatchOrchestratorFilterList = None,
-        next_token: NextToken = None,
-        max_results: PatchComplianceMaxResults = None,
+        filters: PatchOrchestratorFilterList | None = None,
+        next_token: NextToken | None = None,
+        max_results: PatchComplianceMaxResults | None = None,
         **kwargs,
     ) -> DescribeInstancePatchesResult:
         raise NotImplementedError
@@ -6486,10 +6486,10 @@ class SsmApi:
     def describe_instance_properties(
         self,
         context: RequestContext,
-        instance_property_filter_list: InstancePropertyFilterList = None,
-        filters_with_operator: InstancePropertyStringFilterList = None,
-        max_results: DescribeInstancePropertiesMaxResults = None,
-        next_token: NextToken = None,
+        instance_property_filter_list: InstancePropertyFilterList | None = None,
+        filters_with_operator: InstancePropertyStringFilterList | None = None,
+        max_results: DescribeInstancePropertiesMaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeInstancePropertiesResult:
         raise NotImplementedError
@@ -6498,9 +6498,9 @@ class SsmApi:
     def describe_inventory_deletions(
         self,
         context: RequestContext,
-        deletion_id: UUID = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        deletion_id: UUID | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> DescribeInventoryDeletionsResult:
         raise NotImplementedError
@@ -6511,9 +6511,9 @@ class SsmApi:
         context: RequestContext,
         window_execution_id: MaintenanceWindowExecutionId,
         task_id: MaintenanceWindowExecutionTaskId,
-        filters: MaintenanceWindowFilterList = None,
-        max_results: MaintenanceWindowMaxResults = None,
-        next_token: NextToken = None,
+        filters: MaintenanceWindowFilterList | None = None,
+        max_results: MaintenanceWindowMaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeMaintenanceWindowExecutionTaskInvocationsResult:
         raise NotImplementedError
@@ -6523,9 +6523,9 @@ class SsmApi:
         self,
         context: RequestContext,
         window_execution_id: MaintenanceWindowExecutionId,
-        filters: MaintenanceWindowFilterList = None,
-        max_results: MaintenanceWindowMaxResults = None,
-        next_token: NextToken = None,
+        filters: MaintenanceWindowFilterList | None = None,
+        max_results: MaintenanceWindowMaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeMaintenanceWindowExecutionTasksResult:
         raise NotImplementedError
@@ -6535,9 +6535,9 @@ class SsmApi:
         self,
         context: RequestContext,
         window_id: MaintenanceWindowId,
-        filters: MaintenanceWindowFilterList = None,
-        max_results: MaintenanceWindowMaxResults = None,
-        next_token: NextToken = None,
+        filters: MaintenanceWindowFilterList | None = None,
+        max_results: MaintenanceWindowMaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeMaintenanceWindowExecutionsResult:
         raise NotImplementedError
@@ -6546,12 +6546,12 @@ class SsmApi:
     def describe_maintenance_window_schedule(
         self,
         context: RequestContext,
-        window_id: MaintenanceWindowId = None,
-        targets: Targets = None,
-        resource_type: MaintenanceWindowResourceType = None,
-        filters: PatchOrchestratorFilterList = None,
-        max_results: MaintenanceWindowSearchMaxResults = None,
-        next_token: NextToken = None,
+        window_id: MaintenanceWindowId | None = None,
+        targets: Targets | None = None,
+        resource_type: MaintenanceWindowResourceType | None = None,
+        filters: PatchOrchestratorFilterList | None = None,
+        max_results: MaintenanceWindowSearchMaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeMaintenanceWindowScheduleResult:
         raise NotImplementedError
@@ -6561,9 +6561,9 @@ class SsmApi:
         self,
         context: RequestContext,
         window_id: MaintenanceWindowId,
-        filters: MaintenanceWindowFilterList = None,
-        max_results: MaintenanceWindowMaxResults = None,
-        next_token: NextToken = None,
+        filters: MaintenanceWindowFilterList | None = None,
+        max_results: MaintenanceWindowMaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeMaintenanceWindowTargetsResult:
         raise NotImplementedError
@@ -6573,9 +6573,9 @@ class SsmApi:
         self,
         context: RequestContext,
         window_id: MaintenanceWindowId,
-        filters: MaintenanceWindowFilterList = None,
-        max_results: MaintenanceWindowMaxResults = None,
-        next_token: NextToken = None,
+        filters: MaintenanceWindowFilterList | None = None,
+        max_results: MaintenanceWindowMaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeMaintenanceWindowTasksResult:
         raise NotImplementedError
@@ -6584,9 +6584,9 @@ class SsmApi:
     def describe_maintenance_windows(
         self,
         context: RequestContext,
-        filters: MaintenanceWindowFilterList = None,
-        max_results: MaintenanceWindowMaxResults = None,
-        next_token: NextToken = None,
+        filters: MaintenanceWindowFilterList | None = None,
+        max_results: MaintenanceWindowMaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeMaintenanceWindowsResult:
         raise NotImplementedError
@@ -6597,8 +6597,8 @@ class SsmApi:
         context: RequestContext,
         targets: Targets,
         resource_type: MaintenanceWindowResourceType,
-        max_results: MaintenanceWindowSearchMaxResults = None,
-        next_token: NextToken = None,
+        max_results: MaintenanceWindowSearchMaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeMaintenanceWindowsForTargetResult:
         raise NotImplementedError
@@ -6607,9 +6607,9 @@ class SsmApi:
     def describe_ops_items(
         self,
         context: RequestContext,
-        ops_item_filters: OpsItemFilters = None,
-        max_results: OpsItemMaxResults = None,
-        next_token: String = None,
+        ops_item_filters: OpsItemFilters | None = None,
+        max_results: OpsItemMaxResults | None = None,
+        next_token: String | None = None,
         **kwargs,
     ) -> DescribeOpsItemsResponse:
         raise NotImplementedError
@@ -6618,11 +6618,11 @@ class SsmApi:
     def describe_parameters(
         self,
         context: RequestContext,
-        filters: ParametersFilterList = None,
-        parameter_filters: ParameterStringFilterList = None,
-        max_results: MaxResults = None,
-        next_token: NextToken = None,
-        shared: Boolean = None,
+        filters: ParametersFilterList | None = None,
+        parameter_filters: ParameterStringFilterList | None = None,
+        max_results: MaxResults | None = None,
+        next_token: NextToken | None = None,
+        shared: Boolean | None = None,
         **kwargs,
     ) -> DescribeParametersResult:
         raise NotImplementedError
@@ -6631,9 +6631,9 @@ class SsmApi:
     def describe_patch_baselines(
         self,
         context: RequestContext,
-        filters: PatchOrchestratorFilterList = None,
-        max_results: PatchBaselineMaxResults = None,
-        next_token: NextToken = None,
+        filters: PatchOrchestratorFilterList | None = None,
+        max_results: PatchBaselineMaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribePatchBaselinesResult:
         raise NotImplementedError
@@ -6648,9 +6648,9 @@ class SsmApi:
     def describe_patch_groups(
         self,
         context: RequestContext,
-        max_results: PatchBaselineMaxResults = None,
-        filters: PatchOrchestratorFilterList = None,
-        next_token: NextToken = None,
+        max_results: PatchBaselineMaxResults | None = None,
+        filters: PatchOrchestratorFilterList | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribePatchGroupsResult:
         raise NotImplementedError
@@ -6661,9 +6661,9 @@ class SsmApi:
         context: RequestContext,
         operating_system: OperatingSystem,
         property: PatchProperty,
-        patch_set: PatchSet = None,
-        max_results: MaxResults = None,
-        next_token: NextToken = None,
+        patch_set: PatchSet | None = None,
+        max_results: MaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribePatchPropertiesResult:
         raise NotImplementedError
@@ -6673,9 +6673,9 @@ class SsmApi:
         self,
         context: RequestContext,
         state: SessionState,
-        max_results: SessionMaxResults = None,
-        next_token: NextToken = None,
-        filters: SessionFilterList = None,
+        max_results: SessionMaxResults | None = None,
+        next_token: NextToken | None = None,
+        filters: SessionFilterList | None = None,
         **kwargs,
     ) -> DescribeSessionsResponse:
         raise NotImplementedError
@@ -6707,7 +6707,7 @@ class SsmApi:
         self,
         context: RequestContext,
         calendar_names: CalendarNameOrARNList,
-        at_time: ISO8601String = None,
+        at_time: ISO8601String | None = None,
         **kwargs,
     ) -> GetCalendarStateResponse:
         raise NotImplementedError
@@ -6718,7 +6718,7 @@ class SsmApi:
         context: RequestContext,
         command_id: CommandId,
         instance_id: InstanceId,
-        plugin_name: CommandPluginName = None,
+        plugin_name: CommandPluginName | None = None,
         **kwargs,
     ) -> GetCommandInvocationResult:
         raise NotImplementedError
@@ -6731,7 +6731,7 @@ class SsmApi:
 
     @handler("GetDefaultPatchBaseline")
     def get_default_patch_baseline(
-        self, context: RequestContext, operating_system: OperatingSystem = None, **kwargs
+        self, context: RequestContext, operating_system: OperatingSystem | None = None, **kwargs
     ) -> GetDefaultPatchBaselineResult:
         raise NotImplementedError
 
@@ -6741,7 +6741,7 @@ class SsmApi:
         context: RequestContext,
         instance_id: InstanceId,
         snapshot_id: SnapshotId,
-        baseline_override: BaselineOverride = None,
+        baseline_override: BaselineOverride | None = None,
         **kwargs,
     ) -> GetDeployablePatchSnapshotForInstanceResult:
         raise NotImplementedError
@@ -6751,9 +6751,9 @@ class SsmApi:
         self,
         context: RequestContext,
         name: DocumentARN,
-        version_name: DocumentVersionName = None,
-        document_version: DocumentVersion = None,
-        document_format: DocumentFormat = None,
+        version_name: DocumentVersionName | None = None,
+        document_version: DocumentVersion | None = None,
+        document_format: DocumentFormat | None = None,
         **kwargs,
     ) -> GetDocumentResult:
         raise NotImplementedError
@@ -6768,11 +6768,11 @@ class SsmApi:
     def get_inventory(
         self,
         context: RequestContext,
-        filters: InventoryFilterList = None,
-        aggregators: InventoryAggregatorList = None,
-        result_attributes: ResultAttributeList = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        filters: InventoryFilterList | None = None,
+        aggregators: InventoryAggregatorList | None = None,
+        result_attributes: ResultAttributeList | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> GetInventoryResult:
         raise NotImplementedError
@@ -6781,11 +6781,11 @@ class SsmApi:
     def get_inventory_schema(
         self,
         context: RequestContext,
-        type_name: InventoryItemTypeNameFilter = None,
-        next_token: NextToken = None,
-        max_results: GetInventorySchemaMaxResults = None,
-        aggregator: AggregatorSchemaOnly = None,
-        sub_type: IsSubTypeSchema = None,
+        type_name: InventoryItemTypeNameFilter | None = None,
+        next_token: NextToken | None = None,
+        max_results: GetInventorySchemaMaxResults | None = None,
+        aggregator: AggregatorSchemaOnly | None = None,
+        sub_type: IsSubTypeSchema | None = None,
         **kwargs,
     ) -> GetInventorySchemaResult:
         raise NotImplementedError
@@ -6838,7 +6838,7 @@ class SsmApi:
         self,
         context: RequestContext,
         ops_item_id: OpsItemId,
-        ops_item_arn: OpsItemArn = None,
+        ops_item_arn: OpsItemArn | None = None,
         **kwargs,
     ) -> GetOpsItemResponse:
         raise NotImplementedError
@@ -6848,8 +6848,8 @@ class SsmApi:
         self,
         context: RequestContext,
         ops_metadata_arn: OpsMetadataArn,
-        max_results: GetOpsMetadataMaxResults = None,
-        next_token: NextToken = None,
+        max_results: GetOpsMetadataMaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> GetOpsMetadataResult:
         raise NotImplementedError
@@ -6858,12 +6858,12 @@ class SsmApi:
     def get_ops_summary(
         self,
         context: RequestContext,
-        sync_name: ResourceDataSyncName = None,
-        filters: OpsFilterList = None,
-        aggregators: OpsAggregatorList = None,
-        result_attributes: OpsResultAttributeList = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        sync_name: ResourceDataSyncName | None = None,
+        filters: OpsFilterList | None = None,
+        aggregators: OpsAggregatorList | None = None,
+        result_attributes: OpsResultAttributeList | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> GetOpsSummaryResult:
         raise NotImplementedError
@@ -6873,7 +6873,7 @@ class SsmApi:
         self,
         context: RequestContext,
         name: PSParameterName,
-        with_decryption: Boolean = None,
+        with_decryption: Boolean | None = None,
         **kwargs,
     ) -> GetParameterResult:
         raise NotImplementedError
@@ -6883,9 +6883,9 @@ class SsmApi:
         self,
         context: RequestContext,
         name: PSParameterName,
-        with_decryption: Boolean = None,
-        max_results: MaxResults = None,
-        next_token: NextToken = None,
+        with_decryption: Boolean | None = None,
+        max_results: MaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> GetParameterHistoryResult:
         raise NotImplementedError
@@ -6895,7 +6895,7 @@ class SsmApi:
         self,
         context: RequestContext,
         names: ParameterNameList,
-        with_decryption: Boolean = None,
+        with_decryption: Boolean | None = None,
         **kwargs,
     ) -> GetParametersResult:
         raise NotImplementedError
@@ -6905,11 +6905,11 @@ class SsmApi:
         self,
         context: RequestContext,
         path: PSParameterName,
-        recursive: Boolean = None,
-        parameter_filters: ParameterStringFilterList = None,
-        with_decryption: Boolean = None,
-        max_results: GetParametersByPathMaxResults = None,
-        next_token: NextToken = None,
+        recursive: Boolean | None = None,
+        parameter_filters: ParameterStringFilterList | None = None,
+        with_decryption: Boolean | None = None,
+        max_results: GetParametersByPathMaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> GetParametersByPathResult:
         raise NotImplementedError
@@ -6925,7 +6925,7 @@ class SsmApi:
         self,
         context: RequestContext,
         patch_group: PatchGroup,
-        operating_system: OperatingSystem = None,
+        operating_system: OperatingSystem | None = None,
         **kwargs,
     ) -> GetPatchBaselineForPatchGroupResult:
         raise NotImplementedError
@@ -6935,8 +6935,8 @@ class SsmApi:
         self,
         context: RequestContext,
         resource_arn: ResourceArnString,
-        next_token: String = None,
-        max_results: ResourcePolicyMaxResults = None,
+        next_token: String | None = None,
+        max_results: ResourcePolicyMaxResults | None = None,
         **kwargs,
     ) -> GetResourcePoliciesResponse:
         raise NotImplementedError
@@ -6953,7 +6953,7 @@ class SsmApi:
         context: RequestContext,
         name: PSParameterName,
         labels: ParameterLabelList,
-        parameter_version: PSParameterVersion = None,
+        parameter_version: PSParameterVersion | None = None,
         **kwargs,
     ) -> LabelParameterVersionResult:
         raise NotImplementedError
@@ -6963,8 +6963,8 @@ class SsmApi:
         self,
         context: RequestContext,
         association_id: AssociationId,
-        max_results: MaxResults = None,
-        next_token: NextToken = None,
+        max_results: MaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> ListAssociationVersionsResult:
         raise NotImplementedError
@@ -6973,9 +6973,9 @@ class SsmApi:
     def list_associations(
         self,
         context: RequestContext,
-        association_filter_list: AssociationFilterList = None,
-        max_results: MaxResults = None,
-        next_token: NextToken = None,
+        association_filter_list: AssociationFilterList | None = None,
+        max_results: MaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> ListAssociationsResult:
         raise NotImplementedError
@@ -6984,12 +6984,12 @@ class SsmApi:
     def list_command_invocations(
         self,
         context: RequestContext,
-        command_id: CommandId = None,
-        instance_id: InstanceId = None,
-        max_results: CommandMaxResults = None,
-        next_token: NextToken = None,
-        filters: CommandFilterList = None,
-        details: Boolean = None,
+        command_id: CommandId | None = None,
+        instance_id: InstanceId | None = None,
+        max_results: CommandMaxResults | None = None,
+        next_token: NextToken | None = None,
+        filters: CommandFilterList | None = None,
+        details: Boolean | None = None,
         **kwargs,
     ) -> ListCommandInvocationsResult:
         raise NotImplementedError
@@ -6998,11 +6998,11 @@ class SsmApi:
     def list_commands(
         self,
         context: RequestContext,
-        command_id: CommandId = None,
-        instance_id: InstanceId = None,
-        max_results: CommandMaxResults = None,
-        next_token: NextToken = None,
-        filters: CommandFilterList = None,
+        command_id: CommandId | None = None,
+        instance_id: InstanceId | None = None,
+        max_results: CommandMaxResults | None = None,
+        next_token: NextToken | None = None,
+        filters: CommandFilterList | None = None,
         **kwargs,
     ) -> ListCommandsResult:
         raise NotImplementedError
@@ -7011,11 +7011,11 @@ class SsmApi:
     def list_compliance_items(
         self,
         context: RequestContext,
-        filters: ComplianceStringFilterList = None,
-        resource_ids: ComplianceResourceIdList = None,
-        resource_types: ComplianceResourceTypeList = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        filters: ComplianceStringFilterList | None = None,
+        resource_ids: ComplianceResourceIdList | None = None,
+        resource_types: ComplianceResourceTypeList | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> ListComplianceItemsResult:
         raise NotImplementedError
@@ -7024,9 +7024,9 @@ class SsmApi:
     def list_compliance_summaries(
         self,
         context: RequestContext,
-        filters: ComplianceStringFilterList = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        filters: ComplianceStringFilterList | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> ListComplianceSummariesResult:
         raise NotImplementedError
@@ -7037,9 +7037,9 @@ class SsmApi:
         context: RequestContext,
         name: DocumentName,
         metadata: DocumentMetadataEnum,
-        document_version: DocumentVersion = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        document_version: DocumentVersion | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> ListDocumentMetadataHistoryResponse:
         raise NotImplementedError
@@ -7049,8 +7049,8 @@ class SsmApi:
         self,
         context: RequestContext,
         name: DocumentARN,
-        max_results: MaxResults = None,
-        next_token: NextToken = None,
+        max_results: MaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> ListDocumentVersionsResult:
         raise NotImplementedError
@@ -7059,10 +7059,10 @@ class SsmApi:
     def list_documents(
         self,
         context: RequestContext,
-        document_filter_list: DocumentFilterList = None,
-        filters: DocumentKeyValuesFilterList = None,
-        max_results: MaxResults = None,
-        next_token: NextToken = None,
+        document_filter_list: DocumentFilterList | None = None,
+        filters: DocumentKeyValuesFilterList | None = None,
+        max_results: MaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> ListDocumentsResult:
         raise NotImplementedError
@@ -7073,9 +7073,9 @@ class SsmApi:
         context: RequestContext,
         instance_id: InstanceId,
         type_name: InventoryItemTypeName,
-        filters: InventoryFilterList = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        filters: InventoryFilterList | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> ListInventoryEntriesResult:
         raise NotImplementedError
@@ -7084,10 +7084,10 @@ class SsmApi:
     def list_nodes(
         self,
         context: RequestContext,
-        sync_name: ResourceDataSyncName = None,
-        filters: NodeFilterList = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        sync_name: ResourceDataSyncName | None = None,
+        filters: NodeFilterList | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> ListNodesResult:
         raise NotImplementedError
@@ -7097,10 +7097,10 @@ class SsmApi:
         self,
         context: RequestContext,
         aggregators: NodeAggregatorList,
-        sync_name: ResourceDataSyncName = None,
-        filters: NodeFilterList = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        sync_name: ResourceDataSyncName | None = None,
+        filters: NodeFilterList | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> ListNodesSummaryResult:
         raise NotImplementedError
@@ -7109,9 +7109,9 @@ class SsmApi:
     def list_ops_item_events(
         self,
         context: RequestContext,
-        filters: OpsItemEventFilters = None,
-        max_results: OpsItemEventMaxResults = None,
-        next_token: String = None,
+        filters: OpsItemEventFilters | None = None,
+        max_results: OpsItemEventMaxResults | None = None,
+        next_token: String | None = None,
         **kwargs,
     ) -> ListOpsItemEventsResponse:
         raise NotImplementedError
@@ -7120,10 +7120,10 @@ class SsmApi:
     def list_ops_item_related_items(
         self,
         context: RequestContext,
-        ops_item_id: OpsItemId = None,
-        filters: OpsItemRelatedItemsFilters = None,
-        max_results: OpsItemRelatedItemsMaxResults = None,
-        next_token: String = None,
+        ops_item_id: OpsItemId | None = None,
+        filters: OpsItemRelatedItemsFilters | None = None,
+        max_results: OpsItemRelatedItemsMaxResults | None = None,
+        next_token: String | None = None,
         **kwargs,
     ) -> ListOpsItemRelatedItemsResponse:
         raise NotImplementedError
@@ -7132,9 +7132,9 @@ class SsmApi:
     def list_ops_metadata(
         self,
         context: RequestContext,
-        filters: OpsMetadataFilterList = None,
-        max_results: ListOpsMetadataMaxResults = None,
-        next_token: NextToken = None,
+        filters: OpsMetadataFilterList | None = None,
+        max_results: ListOpsMetadataMaxResults | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> ListOpsMetadataResult:
         raise NotImplementedError
@@ -7143,9 +7143,9 @@ class SsmApi:
     def list_resource_compliance_summaries(
         self,
         context: RequestContext,
-        filters: ComplianceStringFilterList = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        filters: ComplianceStringFilterList | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> ListResourceComplianceSummariesResult:
         raise NotImplementedError
@@ -7154,9 +7154,9 @@ class SsmApi:
     def list_resource_data_sync(
         self,
         context: RequestContext,
-        sync_type: ResourceDataSyncType = None,
-        next_token: NextToken = None,
-        max_results: MaxResults = None,
+        sync_type: ResourceDataSyncType | None = None,
+        next_token: NextToken | None = None,
+        max_results: MaxResults | None = None,
         **kwargs,
     ) -> ListResourceDataSyncResult:
         raise NotImplementedError
@@ -7177,9 +7177,9 @@ class SsmApi:
         context: RequestContext,
         name: DocumentName,
         permission_type: DocumentPermissionType,
-        account_ids_to_add: AccountIdList = None,
-        account_ids_to_remove: AccountIdList = None,
-        shared_document_version: SharedDocumentVersion = None,
+        account_ids_to_add: AccountIdList | None = None,
+        account_ids_to_remove: AccountIdList | None = None,
+        shared_document_version: SharedDocumentVersion | None = None,
         **kwargs,
     ) -> ModifyDocumentPermissionResponse:
         raise NotImplementedError
@@ -7193,8 +7193,8 @@ class SsmApi:
         compliance_type: ComplianceTypeName,
         execution_summary: ComplianceExecutionSummary,
         items: ComplianceItemEntryList,
-        item_content_hash: ComplianceItemContentHash = None,
-        upload_type: ComplianceUploadType = None,
+        item_content_hash: ComplianceItemContentHash | None = None,
+        upload_type: ComplianceUploadType | None = None,
         **kwargs,
     ) -> PutComplianceItemsResult:
         raise NotImplementedError
@@ -7217,8 +7217,8 @@ class SsmApi:
         context: RequestContext,
         resource_arn: ResourceArnString,
         policy: Policy,
-        policy_id: PolicyId = None,
-        policy_hash: PolicyHash = None,
+        policy_id: PolicyId | None = None,
+        policy_hash: PolicyHash | None = None,
         **kwargs,
     ) -> PutResourcePolicyResponse:
         raise NotImplementedError
@@ -7242,10 +7242,10 @@ class SsmApi:
         window_id: MaintenanceWindowId,
         resource_type: MaintenanceWindowResourceType,
         targets: Targets,
-        owner_information: OwnerInformation = None,
-        name: MaintenanceWindowName = None,
-        description: MaintenanceWindowDescription = None,
-        client_token: ClientToken = None,
+        owner_information: OwnerInformation | None = None,
+        name: MaintenanceWindowName | None = None,
+        description: MaintenanceWindowDescription | None = None,
+        client_token: ClientToken | None = None,
         **kwargs,
     ) -> RegisterTargetWithMaintenanceWindowResult:
         raise NotImplementedError
@@ -7257,19 +7257,19 @@ class SsmApi:
         window_id: MaintenanceWindowId,
         task_arn: MaintenanceWindowTaskArn,
         task_type: MaintenanceWindowTaskType,
-        targets: Targets = None,
-        service_role_arn: ServiceRole = None,
-        task_parameters: MaintenanceWindowTaskParameters = None,
-        task_invocation_parameters: MaintenanceWindowTaskInvocationParameters = None,
-        priority: MaintenanceWindowTaskPriority = None,
-        max_concurrency: MaxConcurrency = None,
-        max_errors: MaxErrors = None,
-        logging_info: LoggingInfo = None,
-        name: MaintenanceWindowName = None,
-        description: MaintenanceWindowDescription = None,
-        client_token: ClientToken = None,
-        cutoff_behavior: MaintenanceWindowTaskCutoffBehavior = None,
-        alarm_configuration: AlarmConfiguration = None,
+        targets: Targets | None = None,
+        service_role_arn: ServiceRole | None = None,
+        task_parameters: MaintenanceWindowTaskParameters | None = None,
+        task_invocation_parameters: MaintenanceWindowTaskInvocationParameters | None = None,
+        priority: MaintenanceWindowTaskPriority | None = None,
+        max_concurrency: MaxConcurrency | None = None,
+        max_errors: MaxErrors | None = None,
+        logging_info: LoggingInfo | None = None,
+        name: MaintenanceWindowName | None = None,
+        description: MaintenanceWindowDescription | None = None,
+        client_token: ClientToken | None = None,
+        cutoff_behavior: MaintenanceWindowTaskCutoffBehavior | None = None,
+        alarm_configuration: AlarmConfiguration | None = None,
         **kwargs,
     ) -> RegisterTaskWithMaintenanceWindowResult:
         raise NotImplementedError
@@ -7303,7 +7303,7 @@ class SsmApi:
         context: RequestContext,
         automation_execution_id: AutomationExecutionId,
         signal_type: SignalType,
-        payload: AutomationParameterMap = None,
+        payload: AutomationParameterMap | None = None,
         **kwargs,
     ) -> SendAutomationSignalResult:
         raise NotImplementedError
@@ -7313,23 +7313,23 @@ class SsmApi:
         self,
         context: RequestContext,
         document_name: DocumentARN,
-        instance_ids: InstanceIdList = None,
-        targets: Targets = None,
-        document_version: DocumentVersion = None,
-        document_hash: DocumentHash = None,
-        document_hash_type: DocumentHashType = None,
-        timeout_seconds: TimeoutSeconds = None,
-        comment: Comment = None,
-        parameters: Parameters = None,
-        output_s3_region: S3Region = None,
-        output_s3_bucket_name: S3BucketName = None,
-        output_s3_key_prefix: S3KeyPrefix = None,
-        max_concurrency: MaxConcurrency = None,
-        max_errors: MaxErrors = None,
-        service_role_arn: ServiceRole = None,
-        notification_config: NotificationConfig = None,
-        cloud_watch_output_config: CloudWatchOutputConfig = None,
-        alarm_configuration: AlarmConfiguration = None,
+        instance_ids: InstanceIdList | None = None,
+        targets: Targets | None = None,
+        document_version: DocumentVersion | None = None,
+        document_hash: DocumentHash | None = None,
+        document_hash_type: DocumentHashType | None = None,
+        timeout_seconds: TimeoutSeconds | None = None,
+        comment: Comment | None = None,
+        parameters: Parameters | None = None,
+        output_s3_region: S3Region | None = None,
+        output_s3_bucket_name: S3BucketName | None = None,
+        output_s3_key_prefix: S3KeyPrefix | None = None,
+        max_concurrency: MaxConcurrency | None = None,
+        max_errors: MaxErrors | None = None,
+        service_role_arn: ServiceRole | None = None,
+        notification_config: NotificationConfig | None = None,
+        cloud_watch_output_config: CloudWatchOutputConfig | None = None,
+        alarm_configuration: AlarmConfiguration | None = None,
         **kwargs,
     ) -> SendCommandResult:
         raise NotImplementedError
@@ -7340,7 +7340,7 @@ class SsmApi:
         context: RequestContext,
         reason: String1to256,
         targets: Targets,
-        tags: TagList = None,
+        tags: TagList | None = None,
         **kwargs,
     ) -> StartAccessRequestResponse:
         raise NotImplementedError
@@ -7356,19 +7356,19 @@ class SsmApi:
         self,
         context: RequestContext,
         document_name: DocumentARN,
-        document_version: DocumentVersion = None,
-        parameters: AutomationParameterMap = None,
-        client_token: IdempotencyToken = None,
-        mode: ExecutionMode = None,
-        target_parameter_name: AutomationParameterKey = None,
-        targets: Targets = None,
-        target_maps: TargetMaps = None,
-        max_concurrency: MaxConcurrency = None,
-        max_errors: MaxErrors = None,
-        target_locations: TargetLocations = None,
-        tags: TagList = None,
-        alarm_configuration: AlarmConfiguration = None,
-        target_locations_url: TargetLocationsURL = None,
+        document_version: DocumentVersion | None = None,
+        parameters: AutomationParameterMap | None = None,
+        client_token: IdempotencyToken | None = None,
+        mode: ExecutionMode | None = None,
+        target_parameter_name: AutomationParameterKey | None = None,
+        targets: Targets | None = None,
+        target_maps: TargetMaps | None = None,
+        max_concurrency: MaxConcurrency | None = None,
+        max_errors: MaxErrors | None = None,
+        target_locations: TargetLocations | None = None,
+        tags: TagList | None = None,
+        alarm_configuration: AlarmConfiguration | None = None,
+        target_locations_url: TargetLocationsURL | None = None,
         **kwargs,
     ) -> StartAutomationExecutionResult:
         raise NotImplementedError
@@ -7379,15 +7379,15 @@ class SsmApi:
         context: RequestContext,
         document_name: DocumentARN,
         runbooks: Runbooks,
-        scheduled_time: DateTime = None,
-        document_version: DocumentVersion = None,
-        parameters: AutomationParameterMap = None,
-        change_request_name: ChangeRequestName = None,
-        client_token: IdempotencyToken = None,
-        auto_approve: Boolean = None,
-        tags: TagList = None,
-        scheduled_end_time: DateTime = None,
-        change_details: ChangeDetailsValue = None,
+        scheduled_time: DateTime | None = None,
+        document_version: DocumentVersion | None = None,
+        parameters: AutomationParameterMap | None = None,
+        change_request_name: ChangeRequestName | None = None,
+        client_token: IdempotencyToken | None = None,
+        auto_approve: Boolean | None = None,
+        tags: TagList | None = None,
+        scheduled_end_time: DateTime | None = None,
+        change_details: ChangeDetailsValue | None = None,
         **kwargs,
     ) -> StartChangeRequestExecutionResult:
         raise NotImplementedError
@@ -7397,8 +7397,8 @@ class SsmApi:
         self,
         context: RequestContext,
         document_name: DocumentName,
-        document_version: DocumentVersion = None,
-        execution_inputs: ExecutionInputs = None,
+        document_version: DocumentVersion | None = None,
+        execution_inputs: ExecutionInputs | None = None,
         **kwargs,
     ) -> StartExecutionPreviewResponse:
         raise NotImplementedError
@@ -7408,9 +7408,9 @@ class SsmApi:
         self,
         context: RequestContext,
         target: SessionTarget,
-        document_name: DocumentARN = None,
-        reason: SessionReason = None,
-        parameters: SessionManagerParameters = None,
+        document_name: DocumentARN | None = None,
+        reason: SessionReason | None = None,
+        parameters: SessionManagerParameters | None = None,
         **kwargs,
     ) -> StartSessionResponse:
         raise NotImplementedError
@@ -7443,26 +7443,26 @@ class SsmApi:
         self,
         context: RequestContext,
         association_id: AssociationId,
-        parameters: Parameters = None,
-        document_version: DocumentVersion = None,
-        schedule_expression: ScheduleExpression = None,
-        output_location: InstanceAssociationOutputLocation = None,
-        name: DocumentARN = None,
-        targets: Targets = None,
-        association_name: AssociationName = None,
-        association_version: AssociationVersion = None,
-        automation_target_parameter_name: AutomationTargetParameterName = None,
-        max_errors: MaxErrors = None,
-        max_concurrency: MaxConcurrency = None,
-        compliance_severity: AssociationComplianceSeverity = None,
-        sync_compliance: AssociationSyncCompliance = None,
-        apply_only_at_cron_interval: ApplyOnlyAtCronInterval = None,
-        calendar_names: CalendarNameOrARNList = None,
-        target_locations: TargetLocations = None,
-        schedule_offset: ScheduleOffset = None,
-        duration: Duration = None,
-        target_maps: TargetMaps = None,
-        alarm_configuration: AlarmConfiguration = None,
+        parameters: Parameters | None = None,
+        document_version: DocumentVersion | None = None,
+        schedule_expression: ScheduleExpression | None = None,
+        output_location: InstanceAssociationOutputLocation | None = None,
+        name: DocumentARN | None = None,
+        targets: Targets | None = None,
+        association_name: AssociationName | None = None,
+        association_version: AssociationVersion | None = None,
+        automation_target_parameter_name: AutomationTargetParameterName | None = None,
+        max_errors: MaxErrors | None = None,
+        max_concurrency: MaxConcurrency | None = None,
+        compliance_severity: AssociationComplianceSeverity | None = None,
+        sync_compliance: AssociationSyncCompliance | None = None,
+        apply_only_at_cron_interval: ApplyOnlyAtCronInterval | None = None,
+        calendar_names: CalendarNameOrARNList | None = None,
+        target_locations: TargetLocations | None = None,
+        schedule_offset: ScheduleOffset | None = None,
+        duration: Duration | None = None,
+        target_maps: TargetMaps | None = None,
+        alarm_configuration: AlarmConfiguration | None = None,
         **kwargs,
     ) -> UpdateAssociationResult:
         raise NotImplementedError
@@ -7484,12 +7484,12 @@ class SsmApi:
         context: RequestContext,
         content: DocumentContent,
         name: DocumentName,
-        attachments: AttachmentsSourceList = None,
-        display_name: DocumentDisplayName = None,
-        version_name: DocumentVersionName = None,
-        document_version: DocumentVersion = None,
-        document_format: DocumentFormat = None,
-        target_type: TargetType = None,
+        attachments: AttachmentsSourceList | None = None,
+        display_name: DocumentDisplayName | None = None,
+        version_name: DocumentVersionName | None = None,
+        document_version: DocumentVersion | None = None,
+        document_format: DocumentFormat | None = None,
+        target_type: TargetType | None = None,
         **kwargs,
     ) -> UpdateDocumentResult:
         raise NotImplementedError
@@ -7510,7 +7510,7 @@ class SsmApi:
         context: RequestContext,
         name: DocumentName,
         document_reviews: DocumentReviews,
-        document_version: DocumentVersion = None,
+        document_version: DocumentVersion | None = None,
         **kwargs,
     ) -> UpdateDocumentMetadataResponse:
         raise NotImplementedError
@@ -7520,18 +7520,18 @@ class SsmApi:
         self,
         context: RequestContext,
         window_id: MaintenanceWindowId,
-        name: MaintenanceWindowName = None,
-        description: MaintenanceWindowDescription = None,
-        start_date: MaintenanceWindowStringDateTime = None,
-        end_date: MaintenanceWindowStringDateTime = None,
-        schedule: MaintenanceWindowSchedule = None,
-        schedule_timezone: MaintenanceWindowTimezone = None,
-        schedule_offset: MaintenanceWindowOffset = None,
-        duration: MaintenanceWindowDurationHours = None,
-        cutoff: MaintenanceWindowCutoff = None,
-        allow_unassociated_targets: MaintenanceWindowAllowUnassociatedTargets = None,
-        enabled: MaintenanceWindowEnabled = None,
-        replace: Boolean = None,
+        name: MaintenanceWindowName | None = None,
+        description: MaintenanceWindowDescription | None = None,
+        start_date: MaintenanceWindowStringDateTime | None = None,
+        end_date: MaintenanceWindowStringDateTime | None = None,
+        schedule: MaintenanceWindowSchedule | None = None,
+        schedule_timezone: MaintenanceWindowTimezone | None = None,
+        schedule_offset: MaintenanceWindowOffset | None = None,
+        duration: MaintenanceWindowDurationHours | None = None,
+        cutoff: MaintenanceWindowCutoff | None = None,
+        allow_unassociated_targets: MaintenanceWindowAllowUnassociatedTargets | None = None,
+        enabled: MaintenanceWindowEnabled | None = None,
+        replace: Boolean | None = None,
         **kwargs,
     ) -> UpdateMaintenanceWindowResult:
         raise NotImplementedError
@@ -7542,11 +7542,11 @@ class SsmApi:
         context: RequestContext,
         window_id: MaintenanceWindowId,
         window_target_id: MaintenanceWindowTargetId,
-        targets: Targets = None,
-        owner_information: OwnerInformation = None,
-        name: MaintenanceWindowName = None,
-        description: MaintenanceWindowDescription = None,
-        replace: Boolean = None,
+        targets: Targets | None = None,
+        owner_information: OwnerInformation | None = None,
+        name: MaintenanceWindowName | None = None,
+        description: MaintenanceWindowDescription | None = None,
+        replace: Boolean | None = None,
         **kwargs,
     ) -> UpdateMaintenanceWindowTargetResult:
         raise NotImplementedError
@@ -7557,20 +7557,20 @@ class SsmApi:
         context: RequestContext,
         window_id: MaintenanceWindowId,
         window_task_id: MaintenanceWindowTaskId,
-        targets: Targets = None,
-        task_arn: MaintenanceWindowTaskArn = None,
-        service_role_arn: ServiceRole = None,
-        task_parameters: MaintenanceWindowTaskParameters = None,
-        task_invocation_parameters: MaintenanceWindowTaskInvocationParameters = None,
-        priority: MaintenanceWindowTaskPriority = None,
-        max_concurrency: MaxConcurrency = None,
-        max_errors: MaxErrors = None,
-        logging_info: LoggingInfo = None,
-        name: MaintenanceWindowName = None,
-        description: MaintenanceWindowDescription = None,
-        replace: Boolean = None,
-        cutoff_behavior: MaintenanceWindowTaskCutoffBehavior = None,
-        alarm_configuration: AlarmConfiguration = None,
+        targets: Targets | None = None,
+        task_arn: MaintenanceWindowTaskArn | None = None,
+        service_role_arn: ServiceRole | None = None,
+        task_parameters: MaintenanceWindowTaskParameters | None = None,
+        task_invocation_parameters: MaintenanceWindowTaskInvocationParameters | None = None,
+        priority: MaintenanceWindowTaskPriority | None = None,
+        max_concurrency: MaxConcurrency | None = None,
+        max_errors: MaxErrors | None = None,
+        logging_info: LoggingInfo | None = None,
+        name: MaintenanceWindowName | None = None,
+        description: MaintenanceWindowDescription | None = None,
+        replace: Boolean | None = None,
+        cutoff_behavior: MaintenanceWindowTaskCutoffBehavior | None = None,
+        alarm_configuration: AlarmConfiguration | None = None,
         **kwargs,
     ) -> UpdateMaintenanceWindowTaskResult:
         raise NotImplementedError
@@ -7586,21 +7586,21 @@ class SsmApi:
         self,
         context: RequestContext,
         ops_item_id: OpsItemId,
-        description: OpsItemDescription = None,
-        operational_data: OpsItemOperationalData = None,
-        operational_data_to_delete: OpsItemOpsDataKeysList = None,
-        notifications: OpsItemNotifications = None,
-        priority: OpsItemPriority = None,
-        related_ops_items: RelatedOpsItems = None,
-        status: OpsItemStatus = None,
-        title: OpsItemTitle = None,
-        category: OpsItemCategory = None,
-        severity: OpsItemSeverity = None,
-        actual_start_time: DateTime = None,
-        actual_end_time: DateTime = None,
-        planned_start_time: DateTime = None,
-        planned_end_time: DateTime = None,
-        ops_item_arn: OpsItemArn = None,
+        description: OpsItemDescription | None = None,
+        operational_data: OpsItemOperationalData | None = None,
+        operational_data_to_delete: OpsItemOpsDataKeysList | None = None,
+        notifications: OpsItemNotifications | None = None,
+        priority: OpsItemPriority | None = None,
+        related_ops_items: RelatedOpsItems | None = None,
+        status: OpsItemStatus | None = None,
+        title: OpsItemTitle | None = None,
+        category: OpsItemCategory | None = None,
+        severity: OpsItemSeverity | None = None,
+        actual_start_time: DateTime | None = None,
+        actual_end_time: DateTime | None = None,
+        planned_start_time: DateTime | None = None,
+        planned_end_time: DateTime | None = None,
+        ops_item_arn: OpsItemArn | None = None,
         **kwargs,
     ) -> UpdateOpsItemResponse:
         raise NotImplementedError
@@ -7610,8 +7610,8 @@ class SsmApi:
         self,
         context: RequestContext,
         ops_metadata_arn: OpsMetadataArn,
-        metadata_to_update: MetadataMap = None,
-        keys_to_delete: MetadataKeysToDeleteList = None,
+        metadata_to_update: MetadataMap | None = None,
+        keys_to_delete: MetadataKeysToDeleteList | None = None,
         **kwargs,
     ) -> UpdateOpsMetadataResult:
         raise NotImplementedError
@@ -7621,18 +7621,18 @@ class SsmApi:
         self,
         context: RequestContext,
         baseline_id: BaselineId,
-        name: BaselineName = None,
-        global_filters: PatchFilterGroup = None,
-        approval_rules: PatchRuleGroup = None,
-        approved_patches: PatchIdList = None,
-        approved_patches_compliance_level: PatchComplianceLevel = None,
-        approved_patches_enable_non_security: Boolean = None,
-        rejected_patches: PatchIdList = None,
-        rejected_patches_action: PatchAction = None,
-        description: BaselineDescription = None,
-        sources: PatchSourceList = None,
-        available_security_updates_compliance_status: PatchComplianceStatus = None,
-        replace: Boolean = None,
+        name: BaselineName | None = None,
+        global_filters: PatchFilterGroup | None = None,
+        approval_rules: PatchRuleGroup | None = None,
+        approved_patches: PatchIdList | None = None,
+        approved_patches_compliance_level: PatchComplianceLevel | None = None,
+        approved_patches_enable_non_security: Boolean | None = None,
+        rejected_patches: PatchIdList | None = None,
+        rejected_patches_action: PatchAction | None = None,
+        description: BaselineDescription | None = None,
+        sources: PatchSourceList | None = None,
+        available_security_updates_compliance_status: PatchComplianceStatus | None = None,
+        replace: Boolean | None = None,
         **kwargs,
     ) -> UpdatePatchBaselineResult:
         raise NotImplementedError

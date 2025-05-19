@@ -17,6 +17,7 @@ from localstack.config import S3_VIRTUAL_HOSTNAME
 from localstack.constants import AWS_REGION_US_EAST_1, LOCALHOST_HOSTNAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.utils.strings import short_uid
 
 
 def _bucket_url(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
@@ -44,6 +45,120 @@ def assert_timestamp_is_iso8061_s3_format(timestamp: str):
     # assert that it follows the right format and it does not raise an exception during parsing
     parsed_ts = datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%fZ")
     assert parsed_ts.microsecond == 0
+
+
+class TestS3ListBuckets:
+    @markers.aws.validated
+    def test_list_buckets_by_prefix_with_case_sensitivity(
+        self, s3_create_bucket, aws_client, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("Prefix"))
+
+        bucket_name = f"test-bucket-{short_uid()}"
+        s3_create_bucket(Bucket=bucket_name)
+        s3_create_bucket(Bucket=f"ignored-bucket-{short_uid()}")
+
+        response = aws_client.s3.list_buckets(Prefix=bucket_name.upper())
+        assert len(response["Buckets"]) == 0
+
+        snapshot.match("list-objects-by-prefix-empty", response)
+
+        response = aws_client.s3.list_buckets(Prefix=bucket_name)
+        assert len(response["Buckets"]) == 1
+
+        returned_bucket = response["Buckets"][0]
+        assert returned_bucket["Name"] == bucket_name
+
+        snapshot.match("list-objects-by-prefix-not-empty", response)
+
+    @markers.aws.validated
+    def test_list_buckets_with_max_buckets(self, s3_create_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("ContinuationToken"))
+
+        s3_create_bucket()
+        s3_create_bucket()
+
+        response = aws_client.s3.list_buckets(MaxBuckets=1)
+        assert len(response["Buckets"]) == 1
+
+        snapshot.match("list-objects-with-max-buckets", response)
+
+    @markers.aws.validated
+    def test_list_buckets_when_continuation_token_is_empty(
+        self, s3_create_bucket, aws_client, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("ContinuationToken"))
+
+        s3_create_bucket()
+        s3_create_bucket()
+
+        response = aws_client.s3.list_buckets(ContinuationToken="", MaxBuckets=1)
+        assert len(response["Buckets"]) == 1
+
+        snapshot.match("list-objects-with-empty-continuation-token", response)
+
+    @markers.aws.validated
+    # In some regions AWS returns the Owner display name (us-west-2) but in some it doesnt (eu-central-1)
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$.list-objects-by-bucket-region-empty..Owner.DisplayName"]
+    )
+    def test_list_buckets_by_bucket_region(
+        self, s3_create_bucket, s3_create_bucket_with_client, aws_client_factory, snapshot
+    ):
+        region_us_west_2 = "us-west-2"
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.regex(region_us_west_2, "<region>"))
+
+        s3_create_bucket()
+        client_us_west_2 = aws_client_factory(region_name=region_us_west_2).s3
+
+        bucket_name = f"test-bucket-{short_uid()}"
+        s3_create_bucket_with_client(
+            client_us_west_2,
+            Bucket=bucket_name,
+            CreateBucketConfiguration={"LocationConstraint": region_us_west_2},
+        )
+
+        region_eu_central_1 = "eu-central-1"
+        client_eu_central_1 = aws_client_factory(region_name=region_eu_central_1).s3
+        response = client_eu_central_1.list_buckets(
+            BucketRegion=region_eu_central_1, Prefix=bucket_name
+        )
+        assert len(response["Buckets"]) == 0
+
+        snapshot.match("list-objects-by-bucket-region-empty", response)
+
+        response = client_us_west_2.list_buckets(BucketRegion=region_us_west_2, Prefix=bucket_name)
+        assert len(response["Buckets"]) == 1
+
+        returned_bucket = response["Buckets"][0]
+        assert returned_bucket["BucketRegion"] == region_us_west_2
+
+        snapshot.match("list-objects-by-bucket-region-not-empty", response)
+
+    @markers.aws.validated
+    def test_list_buckets_with_continuation_token(self, s3_create_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("ContinuationToken"))
+
+        s3_create_bucket()
+        s3_create_bucket()
+        s3_create_bucket()
+        response = aws_client.s3.list_buckets(MaxBuckets=1)
+        assert "ContinuationToken" in response
+
+        first_returned_bucket = response["Buckets"][0]
+        continuation_token = response["ContinuationToken"]
+
+        response = aws_client.s3.list_buckets(MaxBuckets=1, ContinuationToken=continuation_token)
+
+        continuation_returned_bucket = response["Buckets"][0]
+        assert first_returned_bucket["Name"] != continuation_returned_bucket["Name"]
+
+        snapshot.match("list-objects-with-continuation", response)
 
 
 class TestS3ListObjects:

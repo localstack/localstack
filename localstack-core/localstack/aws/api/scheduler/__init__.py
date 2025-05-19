@@ -463,15 +463,15 @@ class SchedulerApi:
         name: Name,
         schedule_expression: ScheduleExpression,
         target: Target,
-        action_after_completion: ActionAfterCompletion = None,
-        client_token: ClientToken = None,
-        description: Description = None,
-        end_date: EndDate = None,
-        group_name: ScheduleGroupName = None,
-        kms_key_arn: KmsKeyArn = None,
-        schedule_expression_timezone: ScheduleExpressionTimezone = None,
-        start_date: StartDate = None,
-        state: ScheduleState = None,
+        action_after_completion: ActionAfterCompletion | None = None,
+        client_token: ClientToken | None = None,
+        description: Description | None = None,
+        end_date: EndDate | None = None,
+        group_name: ScheduleGroupName | None = None,
+        kms_key_arn: KmsKeyArn | None = None,
+        schedule_expression_timezone: ScheduleExpressionTimezone | None = None,
+        start_date: StartDate | None = None,
+        state: ScheduleState | None = None,
         **kwargs,
     ) -> CreateScheduleOutput:
         raise NotImplementedError
@@ -481,8 +481,8 @@ class SchedulerApi:
         self,
         context: RequestContext,
         name: ScheduleGroupName,
-        client_token: ClientToken = None,
-        tags: TagList = None,
+        client_token: ClientToken | None = None,
+        tags: TagList | None = None,
         **kwargs,
     ) -> CreateScheduleGroupOutput:
         raise NotImplementedError
@@ -492,8 +492,8 @@ class SchedulerApi:
         self,
         context: RequestContext,
         name: Name,
-        client_token: ClientToken = None,
-        group_name: ScheduleGroupName = None,
+        client_token: ClientToken | None = None,
+        group_name: ScheduleGroupName | None = None,
         **kwargs,
     ) -> DeleteScheduleOutput:
         raise NotImplementedError
@@ -503,14 +503,18 @@ class SchedulerApi:
         self,
         context: RequestContext,
         name: ScheduleGroupName,
-        client_token: ClientToken = None,
+        client_token: ClientToken | None = None,
         **kwargs,
     ) -> DeleteScheduleGroupOutput:
         raise NotImplementedError
 
     @handler("GetSchedule")
     def get_schedule(
-        self, context: RequestContext, name: Name, group_name: ScheduleGroupName = None, **kwargs
+        self,
+        context: RequestContext,
+        name: Name,
+        group_name: ScheduleGroupName | None = None,
+        **kwargs,
     ) -> GetScheduleOutput:
         raise NotImplementedError
 
@@ -524,9 +528,9 @@ class SchedulerApi:
     def list_schedule_groups(
         self,
         context: RequestContext,
-        max_results: MaxResults = None,
-        name_prefix: ScheduleGroupNamePrefix = None,
-        next_token: NextToken = None,
+        max_results: MaxResults | None = None,
+        name_prefix: ScheduleGroupNamePrefix | None = None,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> ListScheduleGroupsOutput:
         raise NotImplementedError
@@ -535,11 +539,11 @@ class SchedulerApi:
     def list_schedules(
         self,
         context: RequestContext,
-        group_name: ScheduleGroupName = None,
-        max_results: MaxResults = None,
-        name_prefix: NamePrefix = None,
-        next_token: NextToken = None,
-        state: ScheduleState = None,
+        group_name: ScheduleGroupName | None = None,
+        max_results: MaxResults | None = None,
+        name_prefix: NamePrefix | None = None,
+        next_token: NextToken | None = None,
+        state: ScheduleState | None = None,
         **kwargs,
     ) -> ListSchedulesOutput:
         raise NotImplementedError
@@ -570,15 +574,15 @@ class SchedulerApi:
         name: Name,
         schedule_expression: ScheduleExpression,
         target: Target,
-        action_after_completion: ActionAfterCompletion = None,
-        client_token: ClientToken = None,
-        description: Description = None,
-        end_date: EndDate = None,
-        group_name: ScheduleGroupName = None,
-        kms_key_arn: KmsKeyArn = None,
-        schedule_expression_timezone: ScheduleExpressionTimezone = None,
-        start_date: StartDate = None,
-        state: ScheduleState = None,
+        action_after_completion: ActionAfterCompletion | None = None,
+        client_token: ClientToken | None = None,
+        description: Description | None = None,
+        end_date: EndDate | None = None,
+        group_name: ScheduleGroupName | None = None,
+        kms_key_arn: KmsKeyArn | None = None,
+        schedule_expression_timezone: ScheduleExpressionTimezone | None = None,
+        start_date: StartDate | None = None,
+        state: ScheduleState | None = None,
         **kwargs,
     ) -> UpdateScheduleOutput:
         raise NotImplementedError

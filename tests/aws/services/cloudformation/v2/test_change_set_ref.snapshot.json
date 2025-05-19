@@ -2442,7 +2442,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_ref.py::TestChangeSetRef::test_supported_pseudo_parameter": {
-    "recorded-date": "07-05-2025, 15:39:00",
+    "recorded-date": "19-05-2025, 10:22:18",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -2462,12 +2462,11 @@
               "Action": "Add",
               "AfterContext": {
                 "Properties": {
-                  "TopicName": "topic-name"
+                  "TopicName": "topic_name_1"
                 }
               },
               "Details": [],
-              "LogicalResourceId": "Topic",
-              "Replacement": "True",
+              "LogicalResourceId": "Topic1",
               "ResourceType": "AWS::SNS::Topic",
               "Scope": []
             },
@@ -2496,7 +2495,7 @@
             "ResourceChange": {
               "Action": "Add",
               "Details": [],
-              "LogicalResourceId": "Topic",
+              "LogicalResourceId": "Topic1",
               "ResourceType": "AWS::SNS::Topic",
               "Scope": []
             },
@@ -2553,6 +2552,23 @@
         "Changes": [
           {
             "ResourceChange": {
+              "Action": "Remove",
+              "BeforeContext": {
+                "Properties": {
+                  "TopicName": "topic_name_1"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "Topic1",
+              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic_name_1",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SNS::Topic",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
               "Action": "Add",
               "AfterContext": {
                 "Properties": {
@@ -2576,31 +2592,17 @@
                     {
                       "Value": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
                       "Key": "StackId"
+                    },
+                    {
+                      "Value": "url_suffix",
+                      "Key": "URLSuffix"
                     }
                   ],
-                  "LogGroupName": "test-name"
+                  "TopicName": "topic_name_2"
                 }
               },
               "Details": [],
-              "LogicalResourceId": "Role",
-              "Replacement": "True",
-              "ResourceType": "AWS::Logs::LogGroup",
-              "Scope": []
-            },
-            "Type": "Resource"
-          },
-          {
-            "ResourceChange": {
-              "Action": "Remove",
-              "BeforeContext": {
-                "Properties": {
-                  "TopicName": "topic-name"
-                }
-              },
-              "Details": [],
-              "LogicalResourceId": "Topic",
-              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name",
-              "PolicyAction": "Delete",
+              "LogicalResourceId": "Topic2",
               "ResourceType": "AWS::SNS::Topic",
               "Scope": []
             },
@@ -2627,21 +2629,21 @@
         "Changes": [
           {
             "ResourceChange": {
-              "Action": "Add",
+              "Action": "Remove",
               "Details": [],
-              "LogicalResourceId": "Role",
-              "ResourceType": "AWS::Logs::LogGroup",
+              "LogicalResourceId": "Topic1",
+              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic_name_1",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SNS::Topic",
               "Scope": []
             },
             "Type": "Resource"
           },
           {
             "ResourceChange": {
-              "Action": "Remove",
+              "Action": "Add",
               "Details": [],
-              "LogicalResourceId": "Topic",
-              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name",
-              "PolicyAction": "Delete",
+              "LogicalResourceId": "Topic2",
               "ResourceType": "AWS::SNS::Topic",
               "Scope": []
             },
@@ -2684,119 +2686,11 @@
         "Tags": []
       },
       "per-resource-events": {
-        "Role": [
+        "Topic1": [
           {
-            "EventId": "Role-CREATE_COMPLETE-date",
-            "LogicalResourceId": "Role",
-            "PhysicalResourceId": "test-name",
-            "ResourceProperties": {
-              "LogGroupName": "test-name",
-              "Tags": [
-                {
-                  "Value": "aws",
-                  "Key": "Partition"
-                },
-                {
-                  "Value": "111111111111",
-                  "Key": "AccountId"
-                },
-                {
-                  "Value": "<region>",
-                  "Key": "Region"
-                },
-                {
-                  "Value": "<stack-name:1>",
-                  "Key": "StackName"
-                },
-                {
-                  "Value": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-                  "Key": "StackId"
-                }
-              ]
-            },
-            "ResourceStatus": "CREATE_COMPLETE",
-            "ResourceType": "AWS::Logs::LogGroup",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Role-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Role",
-            "PhysicalResourceId": "test-name",
-            "ResourceProperties": {
-              "LogGroupName": "test-name",
-              "Tags": [
-                {
-                  "Value": "aws",
-                  "Key": "Partition"
-                },
-                {
-                  "Value": "111111111111",
-                  "Key": "AccountId"
-                },
-                {
-                  "Value": "<region>",
-                  "Key": "Region"
-                },
-                {
-                  "Value": "<stack-name:1>",
-                  "Key": "StackName"
-                },
-                {
-                  "Value": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-                  "Key": "StackId"
-                }
-              ]
-            },
-            "ResourceStatus": "CREATE_IN_PROGRESS",
-            "ResourceStatusReason": "Resource creation Initiated",
-            "ResourceType": "AWS::Logs::LogGroup",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Role-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Role",
-            "PhysicalResourceId": "",
-            "ResourceProperties": {
-              "LogGroupName": "test-name",
-              "Tags": [
-                {
-                  "Value": "aws",
-                  "Key": "Partition"
-                },
-                {
-                  "Value": "111111111111",
-                  "Key": "AccountId"
-                },
-                {
-                  "Value": "<region>",
-                  "Key": "Region"
-                },
-                {
-                  "Value": "<stack-name:1>",
-                  "Key": "StackName"
-                },
-                {
-                  "Value": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-                  "Key": "StackId"
-                }
-              ]
-            },
-            "ResourceStatus": "CREATE_IN_PROGRESS",
-            "ResourceType": "AWS::Logs::LogGroup",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          }
-        ],
-        "Topic": [
-          {
-            "EventId": "Topic-e75c4348-9a5b-46bc-9a0b-562bb547f1d8",
-            "LogicalResourceId": "Topic",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name",
+            "EventId": "Topic1-388a0db5-23ea-4093-b725-5ad4b7b70281",
+            "LogicalResourceId": "Topic1",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic_name_1",
             "ResourceStatus": "DELETE_COMPLETE",
             "ResourceType": "AWS::SNS::Topic",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
@@ -2804,9 +2698,9 @@
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic-1a7d2ea4-1704-49cf-98fc-e7fced6aa6ab",
-            "LogicalResourceId": "Topic",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name",
+            "EventId": "Topic1-10fea0c1-3d62-4fef-966e-6367dc235129",
+            "LogicalResourceId": "Topic1",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic_name_1",
             "ResourceStatus": "DELETE_IN_PROGRESS",
             "ResourceType": "AWS::SNS::Topic",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
@@ -2814,11 +2708,11 @@
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic-CREATE_COMPLETE-date",
-            "LogicalResourceId": "Topic",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name",
+            "EventId": "Topic1-CREATE_COMPLETE-date",
+            "LogicalResourceId": "Topic1",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic_name_1",
             "ResourceProperties": {
-              "TopicName": "topic-name"
+              "TopicName": "topic_name_1"
             },
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::SNS::Topic",
@@ -2827,11 +2721,11 @@
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name",
+            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Topic1",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic_name_1",
             "ResourceProperties": {
-              "TopicName": "topic-name"
+              "TopicName": "topic_name_1"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceStatusReason": "Resource creation Initiated",
@@ -2841,11 +2735,131 @@
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic",
+            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Topic1",
             "PhysicalResourceId": "",
             "ResourceProperties": {
-              "TopicName": "topic-name"
+              "TopicName": "topic_name_1"
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SNS::Topic",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "Topic2": [
+          {
+            "EventId": "Topic2-CREATE_COMPLETE-date",
+            "LogicalResourceId": "Topic2",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic_name_2",
+            "ResourceProperties": {
+              "Tags": [
+                {
+                  "Value": "aws",
+                  "Key": "Partition"
+                },
+                {
+                  "Value": "111111111111",
+                  "Key": "AccountId"
+                },
+                {
+                  "Value": "<region>",
+                  "Key": "Region"
+                },
+                {
+                  "Value": "<stack-name:1>",
+                  "Key": "StackName"
+                },
+                {
+                  "Value": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+                  "Key": "StackId"
+                },
+                {
+                  "Value": "url_suffix",
+                  "Key": "URLSuffix"
+                }
+              ],
+              "TopicName": "topic_name_2"
+            },
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SNS::Topic",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Topic2-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Topic2",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic_name_2",
+            "ResourceProperties": {
+              "Tags": [
+                {
+                  "Value": "aws",
+                  "Key": "Partition"
+                },
+                {
+                  "Value": "111111111111",
+                  "Key": "AccountId"
+                },
+                {
+                  "Value": "<region>",
+                  "Key": "Region"
+                },
+                {
+                  "Value": "<stack-name:1>",
+                  "Key": "StackName"
+                },
+                {
+                  "Value": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+                  "Key": "StackId"
+                },
+                {
+                  "Value": "url_suffix",
+                  "Key": "URLSuffix"
+                }
+              ],
+              "TopicName": "topic_name_2"
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceStatusReason": "Resource creation Initiated",
+            "ResourceType": "AWS::SNS::Topic",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Topic2-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Topic2",
+            "PhysicalResourceId": "",
+            "ResourceProperties": {
+              "Tags": [
+                {
+                  "Value": "aws",
+                  "Key": "Partition"
+                },
+                {
+                  "Value": "111111111111",
+                  "Key": "AccountId"
+                },
+                {
+                  "Value": "<region>",
+                  "Key": "Region"
+                },
+                {
+                  "Value": "<stack-name:1>",
+                  "Key": "StackName"
+                },
+                {
+                  "Value": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+                  "Key": "StackId"
+                },
+                {
+                  "Value": "url_suffix",
+                  "Key": "URLSuffix"
+                }
+              ],
+              "TopicName": "topic_name_2"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SNS::Topic",

@@ -102,3 +102,15 @@ def test_install_with_package(runner):
     result = runner.invoke(cli, ["install", "kinesis-mock"])
     assert result.exit_code == 0
     assert os.path.exists(kinesismock_package.get_installed_dir())
+
+
+@markers.skip_offline
+def test_install_with_package_override(runner, monkeypatch):
+    from localstack import config
+    from localstack.services.kinesis.packages import kinesismock_scala_package
+
+    monkeypatch.setattr(config, "KINESIS_MOCK_PROVIDER_ENGINE", "scala")
+
+    result = runner.invoke(cli, ["install", "kinesis-mock"])
+    assert result.exit_code == 0
+    assert os.path.exists(kinesismock_scala_package.get_installed_dir())

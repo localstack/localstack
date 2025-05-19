@@ -29,6 +29,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model_visitor impor
     ChangeSetModelVisitor,
 )
 from localstack.services.cloudformation.v2.entities import ChangeSet
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.urls import localstack_host
 
 _AWS_URL_SUFFIX = localstack_host().host  # The value in AWS is "amazonaws.com"
@@ -250,11 +251,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         raise RuntimeError(f"No condition '{logical_id}' was found.")
 
     def _resolve_pseudo_parameter(self, pseudo_parameter_name: str) -> PreprocEntityDelta:
-        # TODO: review required behaviour of before and after, are pseudo parameter values constant during
-        #       change set lifecycles?
         match pseudo_parameter_name:
             case "AWS::Partition":
-                after = "aws"
+                after = get_partition(self._change_set.region_name)
             case "AWS::AccountId":
                 after = self._change_set.stack.account_id
             case "AWS::Region":

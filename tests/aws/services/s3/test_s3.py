@@ -18,6 +18,7 @@ from urllib.parse import SplitResult, parse_qs, quote, urlencode, urlparse, urlu
 from zoneinfo import ZoneInfo
 
 import boto3 as boto3
+import botocore
 import pytest
 import requests
 import xmltodict
@@ -7433,6 +7434,87 @@ class TestS3PresignedUrl:
         # however, the x-id query string parameter is not ignored
         resp = requests.put(rewritten_url, data="something", verify=False)
         assert resp.status_code == 403
+
+    @markers.aws.validated
+    def test_pre_signed_url_if_none_match(self, s3_bucket, aws_client, aws_session):
+        # there currently is a bug in Boto3: https://github.com/boto/boto3/issues/4367
+        # so we need to use botocore directly to allow testing of this, as other SDK like the Java SDK have the correct
+        # behavior
+        object_key = "temp.txt"
+
+        s3_endpoint_path_style = _endpoint_url()
+
+        # assert that the regular Boto3 client does not work, and does not sign the parameter as requested
+        client = _s3_client_pre_signed_client(
+            Config(signature_version="s3v4", s3={}),
+            endpoint_url=s3_endpoint_path_style,
+        )
+        bad_url = client.generate_presigned_url(
+            "put_object",
+            Params={"Bucket": s3_bucket, "Key": object_key, "IfNoneMatch": "*"},
+        )
+        assert "if-none-match=%2a" not in bad_url.lower()
+
+        req = botocore.awsrequest.AWSRequest(
+            method="PUT",
+            url=f"{s3_endpoint_path_style}/{s3_bucket}/{object_key}",
+            data={},
+            params={
+                "If-None-Match": "*",
+            },
+            headers={},
+        )
+
+        botocore.auth.S3SigV4QueryAuth(aws_session.get_credentials(), "s3", "us-east-1").add_auth(
+            req
+        )
+
+        assert "if-none-match=%2a" in req.url.lower()
+
+        response = requests.put(req.url)
+        assert response.status_code == 200
+
+        response = requests.put(req.url)
+        # we are now failing because the object already exists
+        assert response.status_code == 412
+
+    @markers.aws.validated
+    def test_pre_signed_url_if_match(self, s3_bucket, aws_client, aws_session):
+        key = "test-precondition"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="test")
+
+        s3_endpoint_path_style = _endpoint_url()
+        # empty object ETag is provided
+        empty_object_etag = "d41d8cd98f00b204e9800998ecf8427e"
+
+        # assert that the regular Boto3 client does not work, and does not sign the parameter as requested
+        client = _s3_client_pre_signed_client(
+            Config(signature_version="s3v4", s3={}),
+            endpoint_url=s3_endpoint_path_style,
+        )
+        bad_url = client.generate_presigned_url(
+            "put_object",
+            Params={"Bucket": s3_bucket, "Key": key, "IfMatch": empty_object_etag},
+        )
+        assert "if-match=d41d8cd98f00b204e9800998ecf8427e" not in bad_url.lower()
+
+        req = botocore.awsrequest.AWSRequest(
+            method="PUT",
+            url=f"{s3_endpoint_path_style}/{s3_bucket}/{key}",
+            data={},
+            params={
+                "If-Match": empty_object_etag,
+            },
+            headers={},
+        )
+
+        botocore.auth.S3SigV4QueryAuth(aws_session.get_credentials(), "s3", "us-east-1").add_auth(
+            req
+        )
+        assert "if-match=d41d8cd98f00b204e9800998ecf8427e" in req.url.lower()
+
+        response = requests.put(req.url)
+        assert response.status_code == 412
 
 
 class TestS3DeepArchive:
