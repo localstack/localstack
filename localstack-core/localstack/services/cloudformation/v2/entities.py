@@ -2,11 +2,9 @@ from datetime import datetime, timezone
 from typing import TypedDict
 
 from localstack.aws.api.cloudformation import (
-    Changes,
     ChangeSetStatus,
     ChangeSetType,
     CreateChangeSetInput,
-    DescribeChangeSetOutput,
     ExecutionStatus,
     Output,
     Parameter,
@@ -25,9 +23,6 @@ from localstack.services.cloudformation.engine.entities import (
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetModel,
     NodeTemplate,
-)
-from localstack.services.cloudformation.engine.v2.change_set_model_describer import (
-    ChangeSetModelDescriber,
 )
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
@@ -187,35 +182,3 @@ class ChangeSet:
             after_parameters=after_parameters,
         )
         self.update_graph = change_set_model.get_update_model()
-
-    def describe_details(self, include_property_values: bool) -> DescribeChangeSetOutput:
-        change_set_describer = ChangeSetModelDescriber(
-            node_template=self.update_graph,
-            before_resolved_resources=self.stack.resolved_resources,
-            include_property_values=include_property_values,
-        )
-        changes: Changes = change_set_describer.get_changes()
-
-        result = {
-            "Status": self.status,
-            "ChangeSetType": self.change_set_type,
-            "ChangeSetId": self.change_set_id,
-            "ChangeSetName": self.change_set_name,
-            "ExecutionStatus": self.execution_status,
-            "RollbackConfiguration": {},
-            "StackId": self.stack.stack_id,
-            "StackName": self.stack.stack_name,
-            "StackStatus": self.stack.status,
-            "CreationTime": self.creation_time,
-            "LastUpdatedTime": "",
-            "DisableRollback": "",
-            "EnableTerminationProtection": "",
-            "Transform": "",
-            # TODO: mask no echo
-            "Parameters": [
-                Parameter(ParameterKey=key, ParameterValue=value)
-                for (key, value) in self.stack.resolved_parameters.items()
-            ],
-            "Changes": changes,
-        }
-        return result

@@ -309,3 +309,40 @@ class TestChangeSetRef:
             }
         }
         capture_update_process(snapshot, template_1, template_2)
+
+    @markers.aws.validated
+    def test_supported_pseudo_parameter(
+        self,
+        snapshot,
+        capture_update_process,
+    ):
+        topic_name_1 = f"topic-name-1-{long_uid()}"
+        snapshot.add_transformer(RegexTransformer(topic_name_1, "topic_name_1"))
+        topic_name_2 = f"topic-name-2-{long_uid()}"
+        snapshot.add_transformer(RegexTransformer(topic_name_2, "topic_name_2"))
+        snapshot.add_transformer(RegexTransformer("amazonaws.com", "url_suffix"))
+        snapshot.add_transformer(RegexTransformer("localhost.localstack.cloud", "url_suffix"))
+        template_1 = {
+            "Resources": {
+                "Topic1": {"Type": "AWS::SNS::Topic", "Properties": {"TopicName": topic_name_1}},
+            }
+        }
+        template_2 = {
+            "Resources": {
+                "Topic2": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": topic_name_2,
+                        "Tags": [
+                            {"Key": "Partition", "Value": {"Ref": "AWS::Partition"}},
+                            {"Key": "AccountId", "Value": {"Ref": "AWS::AccountId"}},
+                            {"Key": "Region", "Value": {"Ref": "AWS::Region"}},
+                            {"Key": "StackName", "Value": {"Ref": "AWS::StackName"}},
+                            {"Key": "StackId", "Value": {"Ref": "AWS::StackId"}},
+                            {"Key": "URLSuffix", "Value": {"Ref": "AWS::URLSuffix"}},
+                        ],
+                    },
+                },
+            }
+        }
+        capture_update_process(snapshot, template_1, template_2)

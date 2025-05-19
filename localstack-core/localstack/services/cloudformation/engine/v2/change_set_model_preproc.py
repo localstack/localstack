@@ -28,6 +28,22 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
 from localstack.services.cloudformation.engine.v2.change_set_model_visitor import (
     ChangeSetModelVisitor,
 )
+from localstack.services.cloudformation.v2.entities import ChangeSet
+from localstack.utils.aws.arns import get_partition
+from localstack.utils.urls import localstack_host
+
+_AWS_URL_SUFFIX = localstack_host().host  # The value in AWS is "amazonaws.com"
+
+_PSEUDO_PARAMETERS: Final[set[str]] = {
+    "AWS::Partition",
+    "AWS::AccountId",
+    "AWS::Region",
+    "AWS::StackName",
+    "AWS::StackId",
+    "AWS::URLSuffix",
+    "AWS::NoValue",
+    "AWS::NotificationARNs",
+}
 
 TBefore = TypeVar("TBefore")
 TAfter = TypeVar("TAfter")
@@ -126,13 +142,15 @@ class PreprocOutput:
 
 
 class ChangeSetModelPreproc(ChangeSetModelVisitor):
+    _change_set: Final[ChangeSet]
     _node_template: Final[NodeTemplate]
     _before_resolved_resources: Final[dict]
     _processed: dict[Scope, Any]
 
-    def __init__(self, node_template: NodeTemplate, before_resolved_resources: dict):
-        self._node_template = node_template
-        self._before_resolved_resources = before_resolved_resources
+    def __init__(self, change_set: ChangeSet):
+        self._change_set = change_set
+        self._node_template = change_set.update_graph
+        self._before_resolved_resources = change_set.stack.resolved_resources
         self._processed = dict()
 
     def process(self) -> None:
@@ -157,11 +175,20 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 return node_property
         return None
 
-    @staticmethod
     def _deployed_property_value_of(
-        resource_logical_id: str, property_name: str, resolved_resources: dict
+        self, resource_logical_id: str, property_name: str, resolved_resources: dict
     ) -> Any:
         # TODO: typing around resolved resources is needed and should be reflected here.
+
+        # Before we can obtain deployed value for a resource, we need to first ensure to
+        # process the resource if this wasn't processed already. Ideally, values should only
+        # be accessible through delta objects, to ensure computation is always complete at
+        # every level.
+        node_resource = self._get_node_resource_for(
+            resource_name=resource_logical_id, node_template=self._node_template
+        )
+        self.visit(node_resource)
+
         resolved_resource = resolved_resources.get(resource_logical_id)
         if resolved_resource is None:
             raise RuntimeError(
@@ -223,7 +250,38 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             return condition_delta
         raise RuntimeError(f"No condition '{logical_id}' was found.")
 
+    def _resolve_pseudo_parameter(self, pseudo_parameter_name: str) -> PreprocEntityDelta:
+        match pseudo_parameter_name:
+            case "AWS::Partition":
+                after = get_partition(self._change_set.region_name)
+            case "AWS::AccountId":
+                after = self._change_set.stack.account_id
+            case "AWS::Region":
+                after = self._change_set.stack.region_name
+            case "AWS::StackName":
+                after = self._change_set.stack.stack_name
+            case "AWS::StackId":
+                after = self._change_set.stack.stack_id
+            case "AWS::URLSuffix":
+                after = _AWS_URL_SUFFIX
+            case "AWS::NoValue":
+                # TODO: add support for NoValue, None cannot be used to communicate a Null value in preproc classes.
+                raise NotImplementedError("The use of AWS:NoValue is currently unsupported")
+            case "AWS::NotificationARNs":
+                raise NotImplementedError(
+                    "The use of AWS::NotificationARNs is currently unsupported"
+                )
+            case _:
+                raise RuntimeError(f"Unknown pseudo parameter value '{pseudo_parameter_name}'")
+        return PreprocEntityDelta(before=after, after=after)
+
     def _resolve_reference(self, logical_id: str) -> PreprocEntityDelta:
+        if logical_id in _PSEUDO_PARAMETERS:
+            pseudo_parameter_delta = self._resolve_pseudo_parameter(
+                pseudo_parameter_name=logical_id
+            )
+            return pseudo_parameter_delta
+
         node_parameter = self._get_node_parameter_if_exists(parameter_name=logical_id)
         if isinstance(node_parameter, NodeParameter):
             parameter_delta = self.visit(node_parameter)

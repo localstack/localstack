@@ -59,8 +59,8 @@ Resources:
 """
 
 
+@pytest.mark.skip(reason="no support for DependsOn")
 # this is an `only_localstack` test because it makes use of _custom_id_ tag
-@pytest.mark.skip(reason="no support for pseudo-parameters")
 @markers.aws.only_localstack
 def test_cfn_apigateway_aws_integration(deploy_cfn_template, aws_client):
     api_name = f"rest-api-{short_uid()}"
@@ -143,7 +143,7 @@ def test_cfn_apigateway_swagger_import(deploy_cfn_template, echo_http_server_pos
     assert content["url"].endswith("/post")
 
 
-@pytest.mark.skip(reason="No support for pseudo-parameters")
+@pytest.mark.skip(reason="No support for DependsOn")
 @markers.aws.only_localstack
 def test_url_output(httpserver, deploy_cfn_template):
     httpserver.expect_request("").respond_with_data(b"", 200)
@@ -396,7 +396,6 @@ def test_cfn_apigateway_rest_api(deploy_cfn_template, aws_client):
     # assert not apis
 
 
-@pytest.mark.skip(reason="no support for pseudo-parameters")
 @markers.aws.validated
 def test_account(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(

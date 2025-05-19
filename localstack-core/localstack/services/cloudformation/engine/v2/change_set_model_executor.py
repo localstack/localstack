@@ -38,18 +38,13 @@ class ChangeSetModelExecutorResult:
 
 
 class ChangeSetModelExecutor(ChangeSetModelPreproc):
-    _change_set: Final[ChangeSet]
     # TODO: add typing for resolved resources and parameters.
     resources: Final[dict]
     outputs: Final[dict]
     resolved_parameters: Final[dict]
 
     def __init__(self, change_set: ChangeSet):
-        super().__init__(
-            node_template=change_set.update_graph,
-            before_resolved_resources=change_set.stack.resolved_resources,
-        )
-        self._change_set = change_set
+        super().__init__(change_set=change_set)
         self.resources = dict()
         self.outputs = dict()
         self.resolved_parameters = dict()
