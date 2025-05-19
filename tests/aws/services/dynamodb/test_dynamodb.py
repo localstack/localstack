@@ -1145,7 +1145,7 @@ class TestDynamoDB:
     def test_streams_on_global_tables(
         self,
         aws_client_factory,
-        dynamodb_wait_for_table_active,
+        wait_for_dynamodb_stream_ready,
         cleanups,
         snapshot,
         region_name,
@@ -1164,7 +1164,7 @@ class TestDynamoDB:
         # Create table in the original region
         table_name = f"table-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(table_name, "<table-name>"))
-        region_1_factory.dynamodb.create_table(
+        table = region_1_factory.dynamodb.create_table(
             TableName=table_name,
             KeySchema=[
                 {"AttributeName": "Artist", "KeyType": "HASH"},
@@ -1192,12 +1192,31 @@ class TestDynamoDB:
         waiter = region_2_factory.dynamodb.get_waiter("table_exists")
         waiter.wait(TableName=table_name, WaiterConfig={"Delay": WAIT_SEC, "MaxAttempts": 20})
 
-        us_streams = region_1_factory.dynamodbstreams.list_streams(TableName=table_name)
-        snapshot.match("region-streams", us_streams)
-        eu_streams = region_2_factory.dynamodbstreams.list_streams(TableName=table_name)
-        snapshot.match("secondary-region-streams", eu_streams)
+        with pytest.raises(ClientError):
+            region_2_factory.dynamodb.update_table(
+                TableName=table_name,
+                StreamSpecification=StreamSpecification(
+                    StreamEnabled=True, StreamViewType=StreamViewType.NEW_AND_OLD_IMAGES
+                ),
+            )
 
-        # TODO: use the stream
+        stream_arn = table["TableDescription"]["LatestStreamArn"]
+        wait_for_dynamodb_stream_ready(stream_arn=stream_arn)
+
+        stream_arn_region = region_1_factory.dynamodb.describe_table(TableName=table_name)["Table"][
+            "LatestStreamArn"
+        ]
+        assert region_name in stream_arn_region
+        stream_arn_secondary_region = region_2_factory.dynamodb.describe_table(
+            TableName=table_name
+        )["Table"]["LatestStreamArn"]
+        assert secondary_region_name in stream_arn_secondary_region
+
+        # Verify that we can list streams on both regions
+        streams_region_1 = region_1_factory.dynamodbstreams.list_streams(TableName=table_name)
+        snapshot.match("region-streams", streams_region_1)
+        streams_region_2 = region_2_factory.dynamodbstreams.list_streams(TableName=table_name)
+        snapshot.match("secondary-region-streams", streams_region_2)
 
     @markers.aws.only_localstack
     def test_global_tables(self, aws_client, ddb_test_table):

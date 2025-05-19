@@ -67,21 +67,7 @@ def get_original_region(
     return DynamoDBProvider.get_global_table_region(context=context, table_name=table_name)
 
 
-def replace_region_in_stream_arn(stream_arn: str | None, old_region: str, new_region: str) -> str:
-    if not stream_arn:
-        return
-    if old_region == new_region:
-        return stream_arn
-    s = stream_arn.replace(old_region, new_region)
-    return s
-
-
 class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
-    shard_iterator_to_region: dict[str, str]
-
-    def __init__(self) -> None:
-        self.shard_iterator_to_region = {}
-
     def describe_stream(
         self,
         context: RequestContext,
@@ -94,7 +80,10 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         store = get_dynamodbstreams_store(context.account_id, og_region)
         kinesis = get_kinesis_client(account_id=context.account_id, region_name=og_region)
         for stream in store.ddb_streams.values():
-            if stream["StreamArn"] == stream_arn:
+            _stream_arn = stream_arn
+            if context.region != og_region:
+                _stream_arn = DynamoDBProvider.get_stream_for_region(_stream_arn, og_region)
+            if stream["StreamArn"] == _stream_arn:
                 # get stream details
                 dynamodb = connect_to(
                     aws_access_key_id=context.account_id, region_name=og_region
@@ -126,10 +115,7 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
 
                 stream["Shards"] = stream_shards
                 stream_description = select_from_typed_dict(StreamDescription, stream)
-                if context.region != og_region:
-                    stream_description["StreamArn"] = replace_region_in_stream_arn(
-                        stream_description["StreamArn"], og_region, context.region
-                    )
+                stream_description["StreamArn"] = _stream_arn
                 return DescribeStreamOutput(StreamDescription=stream_description)
 
         raise ResourceNotFoundException(
@@ -138,13 +124,8 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
 
     @handler("GetRecords", expand=False)
     def get_records(self, context: RequestContext, payload: GetRecordsInput) -> GetRecordsOutput:
-        shard_iterator = payload["ShardIterator"]
-        region = context.region
-        if shard_iterator in self.shard_iterator_to_region:
-            region = self.shard_iterator_to_region.pop(shard_iterator)
-
-        kinesis = get_kinesis_client(account_id=context.account_id, region_name=region)
-        prefix, _, payload["ShardIterator"] = shard_iterator.rpartition("|")
+        kinesis = get_kinesis_client(account_id=context.account_id, region_name=context.region)
+        prefix, _, payload["ShardIterator"] = payload["ShardIterator"].rpartition("|")
         try:
             kinesis_records = kinesis.get_records(**payload)
         except kinesis.exceptions.ExpiredIteratorException:
@@ -184,12 +165,6 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         del result["ResponseMetadata"]
         # TODO not quite clear what the |1| exactly denotes, because at AWS it's sometimes other numbers
         result["ShardIterator"] = f"{stream_arn}|1|{result['ShardIterator']}"
-
-        # In case we are dealing with a stream for a replicated table, we need to keep track of the real region
-        #   of the shard iterator, in order to be able to retrieve the record later.
-        if context.region != og_region:
-            self.shard_iterator_to_region[result["ShardIterator"]] = og_region
-
         return GetShardIteratorOutput(**result)
 
     def list_streams(
@@ -208,10 +183,8 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
             # If this is a stream from a table replica, we need to change the region in the Stream ARN
             if context.region != og_region:
                 for stream in result:
-                    stream["StreamArn"] = replace_region_in_stream_arn(
-                        stream_arn=stream["StreamArn"],
-                        old_region=og_region,
-                        new_region=context.region,
+                    stream["StreamArn"] = DynamoDBProvider.get_stream_for_region(
+                        stream["StreamArn"], context.region
                     )
 
         return ListStreamsOutput(Streams=result)

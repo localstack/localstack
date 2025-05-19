@@ -126,9 +126,11 @@ from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import (
+    dynamodb_stream_arn,
     extract_account_id_from_arn,
     extract_region_from_arn,
     get_partition,
+    parse_arn,
 )
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
 from localstack.utils.aws.request_context import (
@@ -642,6 +644,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 # even if the billing mode is PAY_PER_REQUEST, AWS returns the Read and Write Capacity Units
                 # Terraform depends on this parity for update operations
                 gsi["ProvisionedThroughput"] = default_values | gsi.get("ProvisionedThroughput", {})
+
+        if global_table_region != context.region:
+            table_description["LatestStreamArn"] = self.get_stream_for_region(
+                table_description["LatestStreamArn"], context.region
+            )
 
         return DescribeTableOutput(
             Table=select_from_typed_dict(TableDescription, table_description)
@@ -1310,6 +1317,22 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             return table_region
 
         return context.region
+
+    @staticmethod
+    def get_stream_for_region(stream_arn: str, region: str) -> str:
+        """
+        Return the ARN of a DynamoDB Stream with a modified region. This is needed when we are dealing with global
+        tables, as the stream is kept in a single copy in the originating region.
+        """
+        arn_data = parse_arn(stream_arn)
+        # Note: a resource has the following format in a DynamoDB Stream ARN: table/<table_name>/stream/<stream_label>
+        resource_splits = arn_data["resource"].split("/")
+        return dynamodb_stream_arn(
+            table_name=resource_splits[1],
+            latest_stream_label=resource_splits[-1],
+            account_id=arn_data["account"],
+            region_name=region,
+        )
 
     @staticmethod
     def prepare_request_headers(headers: Dict, account_id: str, region_name: str):
