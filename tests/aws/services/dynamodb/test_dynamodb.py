@@ -1151,7 +1151,7 @@ class TestDynamoDB:
         snapshot,
         region_name,
         secondary_region_name,
-        dynamodbstreams_snapshot_transformers
+        dynamodbstreams_snapshot_transformers,
     ):
         """
         This test exposes an issue in LocalStack with Global tables and streams. In AWS, each regional replica should
