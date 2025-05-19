@@ -1730,7 +1730,7 @@
     }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_streams_on_global_tables": {
-    "recorded-date": "19-05-2025, 08:18:49",
+    "recorded-date": "19-05-2025, 15:46:27",
     "recorded-content": {
       "region-streams": {
         "Streams": [
