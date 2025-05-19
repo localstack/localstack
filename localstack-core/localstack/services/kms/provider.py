@@ -957,12 +957,11 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         decrypt_response = self.decrypt(
             context=context,
             ciphertext_blob=ciphertext_blob,
-            encryption_context=source_encryption_context, 
+            encryption_context=source_encryption_context,
             encryption_algorithm=source_encryption_algorithm,
             key_id=source_key_id,
             grant_tokens=grant_tokens
         )
-        
         encrypt_response = self.encrypt(
             context=context,
             encryption_context=destination_encryption_context,
@@ -971,7 +970,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             grant_tokens=grant_tokens,
             dry_run=dry_run
         )
-
         return ReEncryptResponse(
             CiphertextBlob=encrypt_response["CiphertextBlob"],
             Source_key_id=source_key_id,
