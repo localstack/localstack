@@ -4183,6 +4183,7 @@ StringList = List[String]
 class AnalysisLoadBalancerTarget(TypedDict, total=False):
     Address: Optional[IpAddress]
     AvailabilityZone: Optional[String]
+    AvailabilityZoneId: Optional[String]
     Instance: Optional[AnalysisComponent]
     Port: Optional[Port]
 
@@ -4211,6 +4212,7 @@ class Explanation(TypedDict, total=False):
     Addresses: Optional[IpAddressList]
     AttachedTo: Optional[AnalysisComponent]
     AvailabilityZones: Optional[ValueStringList]
+    AvailabilityZoneIds: Optional[ValueStringList]
     Cidrs: Optional[ValueStringList]
     Component: Optional[AnalysisComponent]
     CustomerGateway: Optional[AnalysisComponent]
@@ -4574,11 +4576,12 @@ class AllocateHostsRequest(ServiceRequest):
     OutpostArn: Optional[String]
     HostMaintenance: Optional[HostMaintenance]
     AssetIds: Optional[AssetIdList]
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     AutoPlacement: Optional[AutoPlacement]
     ClientToken: Optional[String]
     InstanceType: Optional[String]
     Quantity: Optional[Integer]
-    AvailabilityZone: String
+    AvailabilityZone: Optional[String]
 
 
 ResponseHostIdList = List[String]
@@ -5957,6 +5960,7 @@ class CapacityReservationInfo(TypedDict, total=False):
     InstanceType: Optional[String]
     AvailabilityZone: Optional[AvailabilityZoneName]
     Tenancy: Optional[CapacityReservationTenancy]
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
 
 
 class CapacityReservationBillingRequest(TypedDict, total=False):
@@ -14001,6 +14005,7 @@ class ReservedInstancesConfiguration(TypedDict, total=False):
     InstanceType: Optional[InstanceType]
     Platform: Optional[String]
     Scope: Optional[scope]
+    AvailabilityZoneId: Optional[String]
 
 
 class ReservedInstancesModificationResult(TypedDict, total=False):
@@ -14044,6 +14049,7 @@ class DescribeReservedInstancesOfferingsRequest(ServiceRequest):
     OfferingClass: Optional[OfferingClassType]
     ProductDescription: Optional[RIProductDescription]
     ReservedInstancesOfferingIds: Optional[ReservedInstancesOfferingIdStringList]
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     DryRun: Optional[Boolean]
     Filters: Optional[FilterList]
     InstanceTenancy: Optional[Tenancy]
@@ -14077,6 +14083,7 @@ class ReservedInstancesOffering(TypedDict, total=False):
     PricingDetails: Optional[PricingDetailsList]
     RecurringCharges: Optional[RecurringChargesList]
     Scope: Optional[scope]
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     ReservedInstancesOfferingId: Optional[String]
     InstanceType: Optional[InstanceType]
     AvailabilityZone: Optional[String]
@@ -14113,6 +14120,7 @@ class ReservedInstances(TypedDict, total=False):
     RecurringCharges: Optional[RecurringChargesList]
     Scope: Optional[scope]
     Tags: Optional[TagList]
+    AvailabilityZoneId: Optional[String]
     ReservedInstancesId: Optional[String]
     InstanceType: Optional[InstanceType]
     AvailabilityZone: Optional[String]
@@ -15455,6 +15463,7 @@ class VolumeStatusItem(TypedDict, total=False):
     VolumeId: Optional[String]
     VolumeStatus: Optional[VolumeStatusInfo]
     AttachmentStatuses: Optional[VolumeStatusAttachmentStatusList]
+    AvailabilityZoneId: Optional[String]
 
 
 VolumeStatusList = List[VolumeStatusItem]
@@ -20490,17 +20499,18 @@ class Ec2Api:
     def allocate_hosts(
         self,
         context: RequestContext,
-        availability_zone: String,
         instance_family: String | None = None,
         tag_specifications: TagSpecificationList | None = None,
         host_recovery: HostRecovery | None = None,
         outpost_arn: String | None = None,
         host_maintenance: HostMaintenance | None = None,
         asset_ids: AssetIdList | None = None,
+        availability_zone_id: AvailabilityZoneId | None = None,
         auto_placement: AutoPlacement | None = None,
         client_token: String | None = None,
         instance_type: String | None = None,
         quantity: Integer | None = None,
+        availability_zone: String | None = None,
         **kwargs,
     ) -> AllocateHostsResult:
         raise NotImplementedError
@@ -24601,6 +24611,7 @@ class Ec2Api:
         offering_class: OfferingClassType | None = None,
         product_description: RIProductDescription | None = None,
         reserved_instances_offering_ids: ReservedInstancesOfferingIdStringList | None = None,
+        availability_zone_id: AvailabilityZoneId | None = None,
         dry_run: Boolean | None = None,
         filters: FilterList | None = None,
         instance_tenancy: Tenancy | None = None,
