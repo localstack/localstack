@@ -16,7 +16,11 @@ from localstack.services.apigateway.next_gen.execute_api.handlers import (
     IntegrationResponseHandler,
     InvocationRequestParser,
 )
-from localstack.services.apigateway.next_gen.execute_api.variables import ContextVariables
+from localstack.services.apigateway.next_gen.execute_api.variables import (
+    ContextVariableOverrides,
+    ContextVarsRequestOverride,
+    ContextVarsResponseOverride,
+)
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 
 TEST_API_ID = "test-api"
@@ -141,7 +145,11 @@ def ctx():
     context.invocation_request = request
 
     context.integration = Integration(type=IntegrationType.HTTP)
-    context.context_variables = ContextVariables()
+    context.context_variables = {}
+    context.context_variable_overrides = ContextVariableOverrides(
+        requestOverride=ContextVarsRequestOverride(header={}, path={}, querystring={}),
+        responseOverride=ContextVarsResponseOverride(header={}, status=0),
+    )
     context.endpoint_response = EndpointResponse(
         body=b'{"foo":"bar"}',
         status_code=200,
