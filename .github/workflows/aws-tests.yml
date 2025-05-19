@@ -280,6 +280,7 @@ jobs:
           files: |
             test-results-preflight/*.xml
           check_name: "Test Results ${{ inputs.testAWSAccountId != '000000000000' && '(MA/MR) ' || ''}}- Preflight, Unit"
+          test_file_prefix: "-/opt/code/localstack/"
           action_fail_on_inconclusive: true
 
 
@@ -475,6 +476,7 @@ jobs:
           files: |
             **/pytest-junit-*.xml
           check_name: "Test Results (${{ env.PLATFORM }}${{ inputs.testAWSAccountId != '000000000000' && ', MA/MR' || ''}}) - Integration${{ env.PLATFORM == 'amd64' && ', Bootstrap' || ''}}"
+          test_file_prefix: "-/opt/code/localstack/"
           action_fail_on_inconclusive: true
 
 
@@ -590,6 +592,7 @@ jobs:
           files: |
             **/pytest-junit-*.xml
           check_name: "Test Results (${{ env.PLATFORM }}${{ inputs.testAWSAccountId != '000000000000' && ', MA/MR' || ''}}) - Acceptance"
+          test_file_prefix: "-/opt/code/localstack/"
           action_fail_on_inconclusive: true
 
   test-cloudwatch-v1:
@@ -825,6 +828,7 @@ jobs:
           files: |
             **/pytest-junit-*.xml
           check_name: "Test Results ${{ inputs.testAWSAccountId != '000000000000' && '(MA/MR) ' || ''}}- Alternative Providers"
+          test_file_prefix: "-/opt/code/localstack/"
           action_fail_on_inconclusive: true
 
   capture-not-implemented:
