@@ -560,7 +560,7 @@ class Ec2Provider(Ec2Api, ABC, ServiceLifecycleHook):
                 GroupName=sg.name,
                 OwnerId=context.account_id,
                 PrimaryVpcId=sg.vpc_id,
-                Tags=[{"Key": k, "Value": v} for k, v in (sg.get_tags() or {}).items()],
+                Tags=[{"Key": tag.get("key"), "Value": tag.get("value")} for tag in sg.get_tags()],
             )
             for sg in filtered_sgs
         ]

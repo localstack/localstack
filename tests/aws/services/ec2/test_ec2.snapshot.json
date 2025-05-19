@@ -337,7 +337,7 @@
     }
   },
   "tests/aws/services/ec2/test_ec2.py::TestEc2Integrations::test_get_security_groups_for_vpc": {
-    "recorded-date": "18-05-2025, 18:08:00",
+    "recorded-date": "19-05-2025, 13:53:56",
     "recorded-content": {
       "create_vpc_response": {
         "Vpc": {
@@ -357,6 +357,12 @@
           "IsDefault": false,
           "OwnerId": "111111111111",
           "State": "pending",
+          "Tags": [
+            {
+              "Key": "test-key",
+              "Value": "test-value"
+            }
+          ],
           "VpcId": "<vpc-id:1>"
         },
         "ResponseMetadata": {

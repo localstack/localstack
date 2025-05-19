@@ -723,6 +723,14 @@ class TestEc2Integrations:
         # Create VPC for testing
         vpc: dict = create_vpc(
             cidr_block="10.0.0.0/16",
+            tag_specifications=[
+                {
+                    "ResourceType": "vpc",
+                    "Tags": [
+                        {"Key": "test-key", "Value": "test-value"},
+                    ],
+                }
+            ],
         )
         vpc_id: str = vpc["Vpc"]["VpcId"]
         snapshot.match("create_vpc_response", vpc)
