@@ -1138,8 +1138,9 @@ class TestDynamoDB:
         assert "Replicas" not in response["Table"]
 
     @markers.aws.validated
-    @pytest.mark.skipif(
-        condition=not is_aws_cloud(), reason="Streams do not work on the regional replica"
+    # The stream label on the replica and replicated stream are the same. The region changes accordingly in the ARN
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Streams..StreamArn", "$..Streams..StreamLabel"]
     )
     def test_streams_on_global_tables(
         self,
@@ -1149,6 +1150,7 @@ class TestDynamoDB:
         snapshot,
         region_name,
         secondary_region_name,
+        dynamodbstreams_snapshot_transformers,
     ):
         """
         This test exposes an issue in LocalStack with Global tables and streams. In AWS, each regional replica should
@@ -1158,9 +1160,6 @@ class TestDynamoDB:
         region_1_factory = aws_client_factory(region_name=region_name)
         region_2_factory = aws_client_factory(region_name=secondary_region_name)
         snapshot.add_transformer(snapshot.transform.regex(secondary_region_name, "<region-2>"))
-        snapshot.add_transformer(
-            snapshot.transform.jsonpath("$..Streams..StreamLabel", "stream-label")
-        )
 
         # Create table in the original region
         table_name = f"table-{short_uid()}"
@@ -1195,9 +1194,10 @@ class TestDynamoDB:
 
         us_streams = region_1_factory.dynamodbstreams.list_streams(TableName=table_name)
         snapshot.match("region-streams", us_streams)
-        # FIXME: LS doesn't have a stream on the replica region
         eu_streams = region_2_factory.dynamodbstreams.list_streams(TableName=table_name)
         snapshot.match("secondary-region-streams", eu_streams)
+
+        # TODO: use the stream
 
     @markers.aws.only_localstack
     def test_global_tables(self, aws_client, ddb_test_table):
