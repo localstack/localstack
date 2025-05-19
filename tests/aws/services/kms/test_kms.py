@@ -878,7 +878,6 @@ class TestKMS:
             ("RSA_2048", "RSAES_OAEP_SHA_256"),
         ],
     )
-
     @markers.aws.validated
     def test_re_encript(self, kms_create_key, key_spec, algo, aws_client):
         message = b"test message 123 !%$@ 1234567890"
