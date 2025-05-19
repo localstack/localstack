@@ -3,10 +3,10 @@ from typing import List
 
 from localstack.packages import Package
 from localstack.packages.core import ArchiveDownloadAndExtractInstaller
-from localstack.utils.platform import get_arch
+from localstack.utils.platform import Arch, get_arch
 
 # Mapping LocalStack architecture to BtbN's naming convention
-ARCH_MAPPING = {"amd64": "linux64", "arm64": "linuxarm64"}
+ARCH_MAPPING = {Arch.amd64: "linux64", Arch.arm64: "linuxarm64"}
 
 # Download URL template for ffmpeg 7.1 LGPL builds from BtbN GitHub Releases
 FFMPEG_STATIC_BIN_URL = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n{version}-latest-{arch}-lgpl-{version}.tar.xz"
