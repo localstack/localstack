@@ -256,6 +256,34 @@ jobs:
             .coverage.unit
           retention-days: 30
 
+  publish-preflight-test-results:
+    name: Publish Preflight- & Unit-Test Results
+    needs: test-preflight
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: read
+      issues: read
+    # execute on success or failure, but not if the workflow is cancelled or any of the dependencies has been skipped
+    if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-preflight
+
+      - name: Publish Preflight- & Unit-Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: success() || failure()
+        with:
+          files: |
+            test-results-preflight/*.xml
+          check_name: "Test Results ${{ inputs.testAWSAccountId != '000000000000' && '(MA/MR) ' || ''}}- Preflight, Unit"
+          test_file_prefix: "-/opt/code/localstack/"
+          action_fail_on_inconclusive: true
+
+
   test-integration:
     name: "Integration Tests (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }} - ${{ matrix.group }})"
     if: ${{ !inputs.onlyAcceptanceTests }}
@@ -405,6 +433,54 @@ jobs:
             .coverage.bootstrap
           retention-days: 30
 
+  publish-test-results:
+    name: Publish Test Results
+    strategy:
+      matrix:
+        runner:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+        exclude:
+          # skip the ARM integration tests in case we are not on the master and not on the upgrade-dependencies branch and forceARMTests is not set to true
+          - runner: ${{ (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'ubuntu-24.04-arm' || ''}}
+    needs:
+      - test-integration
+      - test-bootstrap
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: read
+      issues: read
+    # execute on success or failure, but not if the workflow is cancelled or any of the dependencies has been skipped
+    if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
+    steps:
+      - name: Determine Runner Architecture
+        shell: bash
+        run: echo "PLATFORM=${{ (runner.arch == 'X64' && 'amd64') || (runner.arch == 'ARM64' && 'arm64') || '' }}" >> $GITHUB_ENV
+
+      - name: Download Bootstrap Artifacts
+        uses: actions/download-artifact@v4
+        if: ${{ env.PLATFORM == 'amd64' }}
+        with:
+          pattern: test-results-bootstrap
+
+      - name: Download Integration Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-integration-${{ env.PLATFORM }}-*
+
+      - name: Publish Bootstrap and Integration Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: success() || failure()
+        with:
+          files: |
+            **/pytest-junit-*.xml
+          check_name: "Test Results (${{ env.PLATFORM }}${{ inputs.testAWSAccountId != '000000000000' && ', MA/MR' || ''}}) - Integration${{ env.PLATFORM == 'amd64' && ', Bootstrap' || ''}}"
+          test_file_prefix: "-/opt/code/localstack/"
+          action_fail_on_inconclusive: true
+
+
   test-acceptance:
     name: "Acceptance Tests (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }}"
     needs:
@@ -480,6 +556,46 @@ jobs:
             target/pytest-junit-acceptance-${{ env.PLATFORM }}.xml
             target/.coverage.acceptance-${{ env.PLATFORM }}
           retention-days: 30
+
+  publish-acceptance-test-results:
+    name: Publish Acceptance Test Results
+    strategy:
+      matrix:
+        runner:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+        exclude:
+          # skip the ARM integration tests in case we are not on the master and not on the upgrade-dependencies branch and forceARMTests is not set to true
+          - runner: ${{ (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'ubuntu-24.04-arm' || ''}}
+    needs:
+      - test-acceptance
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: read
+      issues: read
+    # execute on success or failure, but not if the workflow is cancelled or any of the dependencies has been skipped
+    if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
+    steps:
+      - name: Determine Runner Architecture
+        shell: bash
+        run: echo "PLATFORM=${{ (runner.arch == 'X64' && 'amd64') || (runner.arch == 'ARM64' && 'arm64') || '' }}" >> $GITHUB_ENV
+
+      - name: Download Acceptance Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-acceptance-${{ env.PLATFORM }}
+
+      - name: Publish Acceptance Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: success() || failure()
+        with:
+          files: |
+            **/pytest-junit-*.xml
+          check_name: "Test Results (${{ env.PLATFORM }}${{ inputs.testAWSAccountId != '000000000000' && ', MA/MR' || ''}}) - Acceptance"
+          test_file_prefix: "-/opt/code/localstack/"
+          action_fail_on_inconclusive: true
 
   test-cloudwatch-v1:
     name: Test CloudWatch V1
@@ -670,6 +786,52 @@ jobs:
             ${{ env.COVERAGE_FILE }}
             ${{ env.JUNIT_REPORTS_FILE }}
           retention-days: 30
+
+  publish-alternative-provider-test-results:
+    name: Publish Alternative Provider Test Results
+    needs:
+      - test-cfn-v2-engine
+      - test-events-v1
+      - test-ddb-v2
+      - test-cloudwatch-v1
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: read
+      issues: read
+    # execute on success or failure, but not if the workflow is cancelled or any of the dependencies has been skipped
+    if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
+    steps:
+      - name: Download Cloudformation v2 Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-cloudformation-v2
+
+      - name: Download Cloudformation v2 Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-events-v1
+
+      - name: Download Cloudformation v2 Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-dynamodb-v2
+
+      - name: Download Cloudformation v2 Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-cloudwatch-v1
+
+      - name: Publish Bootstrap and Integration Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: success() || failure()
+        with:
+          files: |
+            **/pytest-junit-*.xml
+          check_name: "Test Results ${{ inputs.testAWSAccountId != '000000000000' && '(MA/MR) ' || ''}}- Alternative Providers"
+          test_file_prefix: "-/opt/code/localstack/"
+          action_fail_on_inconclusive: true
 
   capture-not-implemented:
     name: "Capture Not Implemented"
