@@ -261,7 +261,7 @@ jobs:
         uses: localstack/tinybird-workflow-push@v3
         with:
           # differentiate between "acceptance only" and "proper / full" runs
-          workflow_id: ${{ inputs.onlyAcceptanceTests && 'tests_acceptance' || 'tests_full' }}
+          workflow_id: ${{ (inputs.onlyAcceptanceTests == true || github.event_name == 'push') && 'tests_acceptance' || 'tests_full' }}
           tinybird_token: ${{ secrets.TINYBIRD_CI_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           tinybird_datasource: "ci_workflows"
