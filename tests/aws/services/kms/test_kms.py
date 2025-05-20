@@ -879,7 +879,7 @@ class TestKMS:
         ],
     )
     @markers.aws.validated
-    def test_re_encript(self, kms_create_key, key_spec, algo, aws_client):
+    def test_re_encrypt(self, kms_create_key, key_spec, algo, aws_client, snapshot):
         message = b"test message 123 !%$@ 1234567890"
         source_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=key_spec)["KeyId"]
         destination_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=key_spec)["KeyId"]
@@ -895,6 +895,7 @@ class TestKMS:
             SourceEncryptionAlgorithm=algo,
             DestinationEncryptionAlgorithm=algo,
         )
+        snapshot.match("test_re_encrypt", result)
         # Decrypt using the source key
         source_key_plaintext = aws_client.kms.decrypt(
             KeyId=source_key_id, CiphertextBlob=ciphertext, EncryptionAlgorithm=algo

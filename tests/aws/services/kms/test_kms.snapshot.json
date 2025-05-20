@@ -2239,10 +2239,10 @@
       }
     }
   },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encript[SYMMETRIC_DEFAULT-SYMMETRIC_DEFAULT]": {
-    "recorded-date": "19-05-2025, 07:54:39",
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt[SYMMETRIC_DEFAULT-SYMMETRIC_DEFAULT]": {
+    "recorded-date": "20-05-2025, 12:20:30",
     "recorded-content": {
-      "test_re_encript": {
+      "test_re_encrypt": {
         "CiphertextBlob": "ciphertext-blob",
         "DestinationEncryptionAlgorithm": "SYMMETRIC_DEFAULT",
         "KeyId": "<key-id:1>",
@@ -2255,10 +2255,10 @@
       }
     }
   },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encript[RSA_2048-RSAES_OAEP_SHA_256]": {
-    "recorded-date": "19-05-2025, 07:54:41",
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt[RSA_2048-RSAES_OAEP_SHA_256]": {
+    "recorded-date": "20-05-2025, 12:20:31",
     "recorded-content": {
-      "test_re_encript": {
+      "test_re_encrypt": {
         "CiphertextBlob": "ciphertext-blob",
         "DestinationEncryptionAlgorithm": "RSAES_OAEP_SHA_256",
         "KeyId": "<key-id:1>",

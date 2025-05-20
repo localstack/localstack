@@ -206,6 +206,12 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encript[SYMMETRIC_DEFAULT-SYMMETRIC_DEFAULT]": {
     "last_validated_date": "2025-05-19T07:54:39+00:00"
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt[RSA_2048-RSAES_OAEP_SHA_256]": {
+    "last_validated_date": "2025-05-20T12:20:30+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt[SYMMETRIC_DEFAULT-SYMMETRIC_DEFAULT]": {
+    "last_validated_date": "2025-05-20T12:20:29+00:00"
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_replicate_key": {
     "last_validated_date": "2024-04-11T15:53:44+00:00"
   },
