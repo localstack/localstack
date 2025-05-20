@@ -808,17 +808,17 @@ jobs:
         with:
           pattern: test-results-cloudformation-v2
 
-      - name: Download Cloudformation v2 Artifacts
+      - name: Download EventBridge v1 Artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: test-results-events-v1
 
-      - name: Download Cloudformation v2 Artifacts
+      - name: Download DynamoDB v2 Artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: test-results-dynamodb-v2
 
-      - name: Download Cloudformation v2 Artifacts
+      - name: Download CloudWatch v1 Artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: test-results-cloudwatch-v1
