@@ -172,7 +172,7 @@ jobs:
     # push image on master, target branch not set, and the dependent steps were either successful or skipped
     # TO-DO: enable job after workflow in CircleCI is disabled
     if: false
-    #    if: github.ref == 'refs/heads/master' && !failure() && !cancelled()
+    #    if: github.ref == 'refs/heads/master' && !failure() && !cancelled() && github.repository == 'localstack/localstack'
     needs:
       # all tests need to be successful for the image to be pushed
       - test
@@ -252,7 +252,7 @@ jobs:
 
   push-to-tinybird:
     name: Push Workflow Status to Tinybird
-    if: always() && github.ref == 'refs/heads/master'
+    if: always() && github.ref == 'refs/heads/master' && github.repository == 'localstack/localstack'
     runs-on: ubuntu-latest
     needs:
       - test
