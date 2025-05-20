@@ -15,7 +15,8 @@ from localstack.aws.api.dynamodbstreams import (
 )
 from localstack.services.dynamodb.server import DynamodbServer
 from localstack.services.dynamodb.utils import modify_ddblocal_arns
-from localstack.services.dynamodb.v2.provider import DynamoDBProvider
+from localstack.services.dynamodb.v2.provider import DynamoDBProvider, modify_context_region
+from localstack.services.dynamodbstreams.dynamodbstreams_api import get_original_region
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.arns import parse_arn
 
@@ -32,6 +33,14 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
 
     def on_before_start(self):
         self.server.start_dynamodb()
+
+    def _forward_request(
+        self, context: RequestContext, region: str | None, service_request: ServiceRequest
+    ) -> ServiceResponse:
+        if region:
+            with modify_context_region(context, region):
+                return self.forward_request(context, service_request=service_request)
+        return self.forward_request(context, service_request=service_request)
 
     def forward_request(
         self, context: RequestContext, service_request: ServiceRequest = None
@@ -55,12 +64,19 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         context: RequestContext,
         payload: DescribeStreamInput,
     ) -> DescribeStreamOutput:
+        global_table_region = get_original_region(context=context, stream_arn=payload["StreamArn"])
         request = payload.copy()
         request["StreamArn"] = self.modify_stream_arn_for_ddb_local(request.get("StreamArn", ""))
-        return self.forward_request(context, request)
+        return self._forward_request(
+            context=context, service_request=request, region=global_table_region
+        )
 
     @handler("GetRecords", expand=False)
     def get_records(self, context: RequestContext, payload: GetRecordsInput) -> GetRecordsOutput:
+        # Limitation note: With this current implementation, we are not able to get the records from a stream of a
+        # replicated table. To do so, we would need to kept track of the emitted ShardIterators and the originating
+        # region in `GetShardIterator`.
+
         request = payload.copy()
         request["ShardIterator"] = self.modify_stream_arn_for_ddb_local(
             request.get("ShardIterator", "")
@@ -77,5 +93,8 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
 
     @handler("ListStreams", expand=False)
     def list_streams(self, context: RequestContext, payload: ListStreamsInput) -> ListStreamsOutput:
+        global_table_region = get_original_region(context=context, stream_arn=payload["TableName"])
         # TODO: look into `ExclusiveStartStreamArn` param
-        return self.forward_request(context, payload)
+        return self._forward_request(
+            context=context, service_request=payload, region=global_table_region
+        )
