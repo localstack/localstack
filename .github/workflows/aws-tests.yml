@@ -198,7 +198,7 @@ jobs:
           fetch-depth: 0
 
       - name: Prepare Local Test Environment
-        uses: localstack/localstack/.github/actions/setup-tests-env@master
+        uses: ./.github/actions/setup-tests-env
 
       - name: Linting
         run: make lint
@@ -310,7 +310,7 @@ jobs:
             tests/aws/services/lambda_/functions/common
 
       - name: Load Localstack Docker Image
-        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+        uses: ./.github/actions/load-localstack-docker-from-artifacts
         with:
           platform: "${{ env.PLATFORM }}"
 
@@ -376,10 +376,10 @@ jobs:
           fetch-depth: 0
 
       - name: Prepare Local Test Environment
-        uses: localstack/localstack/.github/actions/setup-tests-env@master
+        uses: ./.github/actions/setup-tests-env
 
       - name: Load Localstack Docker Image
-        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+        uses: ./.github/actions/load-localstack-docker-from-artifacts
         with:
           platform: "${{ env.PLATFORM }}"
 
@@ -451,7 +451,7 @@ jobs:
           fetch-depth: 0
 
       - name: Load Localstack Docker Image
-        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+        uses: ./.github/actions/load-localstack-docker-from-artifacts
         with:
           platform: "${{ env.PLATFORM }}"
 
@@ -498,7 +498,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Prepare Local Test Environment
-        uses: localstack/localstack/.github/actions/setup-tests-env@master
+        uses: ./.github/actions/setup-tests-env
 
       - name: Run Cloudwatch v1 Provider Tests
         timeout-minutes: 30
@@ -541,7 +541,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Prepare Local Test Environment
-        uses: localstack/localstack/.github/actions/setup-tests-env@master
+        uses: ./.github/actions/setup-tests-env
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
@@ -590,7 +590,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Prepare Local Test Environment
-        uses: localstack/localstack/.github/actions/setup-tests-env@master
+        uses: ./.github/actions/setup-tests-env
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
@@ -641,7 +641,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Prepare Local Test Environment
-        uses: localstack/localstack/.github/actions/setup-tests-env@master
+        uses: ./.github/actions/setup-tests-env
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
@@ -694,7 +694,7 @@ jobs:
           fetch-depth: 0
 
       - name: Load Localstack Docker Image
-        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+        uses: ./.github/actions/load-localstack-docker-from-artifacts
         with:
           platform: "${{ env.PLATFORM }}"
 

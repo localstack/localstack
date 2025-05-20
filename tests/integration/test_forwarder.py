@@ -25,7 +25,7 @@ def test_forwarding_fallback_dispatcher():
 
     # invoke the function and expect the result from the fallback function
     dispatcher = ForwardingFallbackDispatcher(test_provider, test_request_forwarder)
-    assert dispatcher["TestOperation"](RequestContext(), ServiceRequest()) == "fallback-result"
+    assert dispatcher["TestOperation"](RequestContext(None), ServiceRequest()) == "fallback-result"
 
 
 def test_forwarding_fallback_dispatcher_avoid_fallback():
@@ -44,4 +44,4 @@ def test_forwarding_fallback_dispatcher_avoid_fallback():
     # expect a NotImplementedError exception (and not the ServiceException from the fallthrough)
     dispatcher = ForwardingFallbackDispatcher(test_provider, test_request_forwarder)
     with pytest.raises(NotImplementedError):
-        dispatcher["TestOperation"](RequestContext(), ServiceRequest())
+        dispatcher["TestOperation"](RequestContext(None), ServiceRequest())
