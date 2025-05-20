@@ -29,6 +29,7 @@ from localstack.services.dynamodbstreams.dynamodbstreams_api import (
     get_dynamodbstreams_store,
     get_kinesis_client,
     get_kinesis_stream_name,
+    get_original_region,
     get_shard_id,
     kinesis_shard_id,
     stream_name_from_stream_arn,
@@ -45,26 +46,6 @@ STREAM_STATUS_MAP = {
     "DELETING": StreamStatus.DISABLING,
     "UPDATING": StreamStatus.ENABLING,
 }
-
-
-def get_original_region(
-    context: RequestContext, stream_arn: str | None = None, table_name: str | None = None
-) -> str:
-    """
-    In DDB Global tables, we forward all the requests to the original region, instead of really replicating the data.
-    Since each table has a separate stream associated, we need to have a similar forwarding logic for DDB Streams.
-    To determine the original region, we need the table name, that can be either provided here or determined from the
-    ARN of the stream.
-    """
-    if not stream_arn and not table_name:
-        LOG.debug(
-            "No Stream ARN or table name provided. Returning region '%s' from the request",
-            context.region,
-        )
-        return context.region
-
-    table_name = table_name or table_name_from_stream_arn(stream_arn)
-    return DynamoDBProvider.get_global_table_region(context=context, table_name=table_name)
 
 
 class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
