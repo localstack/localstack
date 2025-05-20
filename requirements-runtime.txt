@@ -29,7 +29,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.40.17
     # via localstack-core (pyproject.toml)
-awscrt==0.26.1
+awscrt==0.27.2
     # via localstack-core
 boto3==1.38.18
     # via
@@ -76,7 +76,7 @@ constantly==23.10.4
     # via localstack-twisted
 crontab==1.0.4
     # via localstack-core (pyproject.toml)
-cryptography==44.0.3
+cryptography==45.0.2
     # via
     #   joserfc
     #   localstack-core
@@ -245,9 +245,9 @@ pydantic-core==2.33.2
     # via pydantic
 pygments==2.19.1
     # via rich
-pymongo==4.12.1
+pymongo==4.13.0
     # via localstack-core (pyproject.toml)
-pyopenssl==25.0.0
+pyopenssl==25.1.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -306,7 +306,7 @@ rich==14.0.0
     #   localstack-core (pyproject.toml)
 rolo==0.7.5
     # via localstack-core
-rpds-py==0.24.0
+rpds-py==0.25.0
     # via
     #   jsonschema
     #   referencing

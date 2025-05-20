@@ -9,7 +9,7 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.26.1
+awscrt==0.27.2
     # via localstack-core (pyproject.toml)
 boto3==1.38.18
     # via localstack-core (pyproject.toml)
@@ -34,7 +34,7 @@ click==8.2.0
     # via localstack-core (pyproject.toml)
 constantly==23.10.4
     # via localstack-twisted
-cryptography==44.0.3
+cryptography==45.0.2
     # via
     #   localstack-core (pyproject.toml)
     #   pyopenssl
@@ -130,7 +130,7 @@ pycparser==2.22
     # via cffi
 pygments==2.19.1
     # via rich
-pyopenssl==25.0.0
+pyopenssl==25.1.0
     # via
     #   localstack-core (pyproject.toml)
     #   localstack-twisted
@@ -166,7 +166,7 @@ rich==14.0.0
     # via localstack-core (pyproject.toml)
 rolo==0.7.5
     # via localstack-core (pyproject.toml)
-rpds-py==0.24.0
+rpds-py==0.25.0
     # via
     #   jsonschema
     #   referencing
