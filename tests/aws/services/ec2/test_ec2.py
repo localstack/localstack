@@ -3,6 +3,7 @@ import logging
 
 import pytest
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 from moto.ec2 import ec2_backends
 from moto.ec2.utils import (
     random_security_group_id,
@@ -693,6 +694,71 @@ class TestEc2Integrations:
 
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
         assert e.value.response["Error"]["Code"] == "InvalidSecurityGroupId.DuplicateCustomId"
+
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Tags",  # Tags can differ between environments
+            "$..Vpc.IsDefault",  # TODO: CreateVPC should return an IsDefault param
+            "$..Vpc.DhcpOptionsId",  # FIXME: DhcpOptionsId uses different reference formats in AWS vs LocalStack
+        ]
+    )
+    @markers.aws.validated
+    def test_get_security_groups_for_vpc(
+        self, snapshot, aws_client, create_vpc, ec2_create_security_group
+    ):
+        group_name = f"test-security-group-{short_uid()}"
+        group_description = f"Description for {group_name}"
+
+        # Returned security groups appear to be sorted by the randomly generated GroupId field,
+        # so we should sort snapshots by this value to mitigate flakiness for runs against AWS.
+        snapshot.add_transformer(
+            SortingTransformer("SecurityGroupForVpcs", lambda x: x["GroupName"])
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("GroupId"))
+        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
+        snapshot.add_transformer(snapshot.transform.key_value("VpcId"))
+        snapshot.add_transformer(snapshot.transform.key_value("AssociationId"))
+        snapshot.add_transformer(snapshot.transform.key_value("DhcpOptionsId"))
+
+        # Create VPC for testing
+        vpc: dict = create_vpc(
+            cidr_block="10.0.0.0/16",
+            tag_specifications=[
+                {
+                    "ResourceType": "vpc",
+                    "Tags": [
+                        {"Key": "test-key", "Value": "test-value"},
+                    ],
+                }
+            ],
+        )
+        vpc_id: str = vpc["Vpc"]["VpcId"]
+        snapshot.match("create_vpc_response", vpc)
+
+        # Wait to ensure VPC is available
+        waiter = aws_client.ec2.get_waiter("vpc_available")
+        waiter.wait(VpcIds=[vpc_id])
+
+        # Get all security groups in the VPC
+        get_security_groups_for_vpc = aws_client.ec2.get_security_groups_for_vpc(VpcId=vpc_id)
+        snapshot.match("get_security_groups_for_vpc", get_security_groups_for_vpc)
+
+        # Create new security group in the VPC
+        create_security_group = ec2_create_security_group(
+            GroupName=group_name,
+            Description=group_description,
+            VpcId=vpc_id,
+            ports=[22],  # TODO: Handle port issues in the fixture
+        )
+        snapshot.match("create_security_group", create_security_group)
+
+        # Ensure new security group is in the VPC
+        get_security_groups_for_vpc_after_addition = aws_client.ec2.get_security_groups_for_vpc(
+            VpcId=vpc_id
+        )
+        snapshot.match(
+            "get_security_groups_for_vpc_after_addition", get_security_groups_for_vpc_after_addition
+        )
 
 
 @markers.snapshot.skip_snapshot_verify(
