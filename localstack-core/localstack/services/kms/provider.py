@@ -968,7 +968,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             grant_tokens=grant_tokens,
         )
         # Parse Destination Key to extract metadata
-        account_id, region_name, destination_key_id = self._parse_key_id(destination_key_id, context)
+        account_id, region_name, destination_key_id = self._parse_key_id(
+            destination_key_id, context)
         destination_key = self._get_kms_key(account_id, region_name, destination_key_id)
         # Encrypt using destination key
         encrypt_response = self.encrypt(
