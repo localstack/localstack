@@ -645,11 +645,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 # Terraform depends on this parity for update operations
                 gsi["ProvisionedThroughput"] = default_values | gsi.get("ProvisionedThroughput", {})
 
-        if global_table_region != context.region:
-            table_description["LatestStreamArn"] = self.get_stream_for_region(
-                table_description["LatestStreamArn"], context.region
-            )
-
         return DescribeTableOutput(
             Table=select_from_typed_dict(TableDescription, table_description)
         )
