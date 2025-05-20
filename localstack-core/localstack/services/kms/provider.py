@@ -955,7 +955,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> ReEncryptResponse:
         # TODO: when implementing, ensure cross-account support for source_key_id and destination_key_id
-        # Parse Source Key to extract metadata
+        # Parse and fetch source Key
         account_id, region_name, source_key_id = self._parse_key_id(source_key_id, context)
         source_key = self._get_kms_key(account_id, region_name, source_key_id)
         # Decrypt using source key
@@ -967,7 +967,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             key_id=source_key_id,
             grant_tokens=grant_tokens,
         )
-        # Parse Destination Key to extract metadata
+        # Parse and fetch destination key
         account_id, region_name, destination_key_id = self._parse_key_id(
             destination_key_id, context
         )
