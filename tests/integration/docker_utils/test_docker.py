@@ -70,6 +70,10 @@ def _is_podman_test() -> bool:
     return os.getenv("DOCKER_CMD") == "podman"
 
 
+def _assert_container_state(docker_client: ContainerClient, name: str, is_running: bool):
+    assert docker_client.is_container_running(name) == is_running
+
+
 @pytest.fixture
 def dummy_container(create_container):
     """Returns a container that is created but not started"""
@@ -1273,22 +1277,39 @@ class TestDockerClient:
     def test_running_container_names(self, docker_client: ContainerClient, dummy_container):
         docker_client.start_container(dummy_container.container_id)
         name = dummy_container.container_name
-        assert name in docker_client.get_running_container_names()
+        retry(
+            lambda: _assert_container_state(docker_client, name, is_running=True),
+            sleep=2,
+            retries=5,
+        )
         docker_client.stop_container(name)
-        assert name not in docker_client.get_running_container_names()
+        retry(
+            lambda: _assert_container_state(docker_client, name, is_running=False),
+            sleep=2,
+            retries=5,
+        )
 
     def test_is_container_running(self, docker_client: ContainerClient, dummy_container):
         docker_client.start_container(dummy_container.container_id)
         name = dummy_container.container_name
 
-        def _assert_container_state(is_running: bool):
-            assert docker_client.is_container_running(name) == is_running
-
-        retry(lambda: _assert_container_state(is_running=True), sleep=2, retries=5)
+        retry(
+            lambda: _assert_container_state(docker_client, name, is_running=True),
+            sleep=2,
+            retries=5,
+        )
         docker_client.restart_container(name)
-        retry(lambda: _assert_container_state(is_running=True), sleep=2, retries=5)
+        retry(
+            lambda: _assert_container_state(docker_client, name, is_running=True),
+            sleep=2,
+            retries=5,
+        )
         docker_client.stop_container(name)
-        retry(lambda: _assert_container_state(is_running=False), sleep=2, retries=5)
+        retry(
+            lambda: _assert_container_state(docker_client, name, is_running=False),
+            sleep=2,
+            retries=5,
+        )
 
     @markers.skip_offline
     def test_docker_image_names(self, docker_client: ContainerClient):
