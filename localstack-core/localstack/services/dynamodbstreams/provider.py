@@ -24,7 +24,7 @@ from localstack.aws.api.dynamodbstreams import (
     TableName,
 )
 from localstack.aws.connect import connect_to
-from localstack.services.dynamodb.v2.provider import DynamoDBProvider
+from localstack.services.dynamodb.utils import change_region_in_ddb_stream_arn
 from localstack.services.dynamodbstreams.dynamodbstreams_api import (
     get_dynamodbstreams_store,
     get_kinesis_client,
@@ -63,7 +63,7 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         for stream in store.ddb_streams.values():
             _stream_arn = stream_arn
             if context.region != og_region:
-                _stream_arn = DynamoDBProvider.get_stream_for_region(_stream_arn, og_region)
+                _stream_arn = change_region_in_ddb_stream_arn(_stream_arn, og_region)
             if stream["StreamArn"] == _stream_arn:
                 # get stream details
                 dynamodb = connect_to(
@@ -105,6 +105,10 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
 
     @handler("GetRecords", expand=False)
     def get_records(self, context: RequestContext, payload: GetRecordsInput) -> GetRecordsOutput:
+        # Limitation note: with this current implementation, we are not able to get the records from a stream of a
+        # replicated table. To do so, we would need to kept track of the originating region when we emit a ShardIterator
+        # (see `GetShardIterator`) in order to forward the request to the region actually holding the stream data.
+
         kinesis = get_kinesis_client(account_id=context.account_id, region_name=context.region)
         prefix, _, payload["ShardIterator"] = payload["ShardIterator"].rpartition("|")
         try:
@@ -161,10 +165,11 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         result = [select_from_typed_dict(Stream, res) for res in store.ddb_streams.values()]
         if table_name:
             result: list[Stream] = [res for res in result if res["TableName"] == table_name]
-            # If this is a stream from a table replica, we need to change the region in the Stream ARN
+            # If this is a stream from a table replica, we need to change the region in the stream ARN, as LocalStack
+            # keeps a stream only in the originating region.
             if context.region != og_region:
                 for stream in result:
-                    stream["StreamArn"] = DynamoDBProvider.get_stream_for_region(
+                    stream["StreamArn"] = change_region_in_ddb_stream_arn(
                         stream["StreamArn"], context.region
                     )
 
