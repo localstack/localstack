@@ -2240,7 +2240,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt[SYMMETRIC_DEFAULT-SYMMETRIC_DEFAULT]": {
-    "recorded-date": "20-05-2025, 12:20:30",
+    "recorded-date": "21-05-2025, 10:28:51",
     "recorded-content": {
       "test_re_encrypt": {
         "CiphertextBlob": "ciphertext-blob",
@@ -2256,7 +2256,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt[RSA_2048-RSAES_OAEP_SHA_256]": {
-    "recorded-date": "20-05-2025, 12:20:31",
+    "recorded-date": "21-05-2025, 10:28:52",
     "recorded-content": {
       "test_re_encrypt": {
         "CiphertextBlob": "ciphertext-blob",
@@ -2267,6 +2267,38 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt_invalid_destination_key[SYMMETRIC_DEFAULT]": {
+    "recorded-date": "21-05-2025, 10:29:13",
+    "recorded-content": {
+      "invalid-destination-key-usage": {
+        "Error": {
+          "Code": "InvalidKeyUsageException",
+          "Message": "<key-arn> key usage is SIGN_VERIFY which is not valid for ReEncryptTo."
+        },
+        "message": "<key-arn> key usage is SIGN_VERIFY which is not valid for ReEncryptTo.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt_incorrect_source_key[SYMMETRIC_DEFAULT]": {
+    "recorded-date": "21-05-2025, 12:31:52",
+    "recorded-content": {
+      "incorrect-source-key": {
+        "Error": {
+          "Code": "IncorrectKeyException",
+          "Message": "The key ID in the request does not identify a CMK that can perform this operation."
+        },
+        "message": "The key ID in the request does not identify a CMK that can perform this operation.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
