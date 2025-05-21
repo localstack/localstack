@@ -59,7 +59,6 @@ Resources:
 """
 
 
-@pytest.mark.skip(reason="no support for DependsOn")
 # this is an `only_localstack` test because it makes use of _custom_id_ tag
 @markers.aws.only_localstack
 def test_cfn_apigateway_aws_integration(deploy_cfn_template, aws_client):
@@ -143,7 +142,10 @@ def test_cfn_apigateway_swagger_import(deploy_cfn_template, echo_http_server_pos
     assert content["url"].endswith("/post")
 
 
-@pytest.mark.skip(reason="No support for DependsOn")
+@pytest.mark.skip(
+    reason="The v2 provider appears to instead return the correct url: "
+    "https://e1i3grfiws.execute-api.us-east-1.localhost.localstack.cloud/prod/"
+)
 @markers.aws.only_localstack
 def test_url_output(httpserver, deploy_cfn_template):
     httpserver.expect_request("").respond_with_data(b"", 200)
@@ -225,7 +227,7 @@ def test_cfn_with_apigateway_resources(deploy_cfn_template, aws_client, snapshot
     # assert not apis
 
 
-@pytest.mark.skip(reason="DependsOn is unsupported")
+@pytest.mark.skip(reason="NotFoundException Invalid Method identifier specified")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
@@ -279,7 +281,6 @@ def test_cfn_deploy_apigateway_models(deploy_cfn_template, snapshot, aws_client)
     assert result.status_code == 400
 
 
-@pytest.mark.skip(reason="DependsOn is unsupported")
 @markers.aws.validated
 def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))

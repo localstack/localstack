@@ -256,6 +256,7 @@ class NodeResource(ChangeSetNode):
     type_: Final[ChangeSetTerminal]
     condition_reference: Final[Optional[TerminalValue]]
     properties: Final[NodeProperties]
+    depends_on: Final[Optional[NodeDependsOn]]
 
     def __init__(
         self,
@@ -263,14 +264,16 @@ class NodeResource(ChangeSetNode):
         change_type: ChangeType,
         name: str,
         type_: ChangeSetTerminal,
-        condition_reference: TerminalValue,
         properties: NodeProperties,
+        condition_reference: Optional[TerminalValue],
+        depends_on: Optional[NodeDependsOn],
     ):
         super().__init__(scope=scope, change_type=change_type)
         self.name = name
         self.type_ = type_
-        self.condition_reference = condition_reference
         self.properties = properties
+        self.condition_reference = condition_reference
+        self.depends_on = depends_on
 
 
 class NodeProperties(ChangeSetNode):
@@ -279,6 +282,14 @@ class NodeProperties(ChangeSetNode):
     def __init__(self, scope: Scope, change_type: ChangeType, properties: list[NodeProperty]):
         super().__init__(scope=scope, change_type=change_type)
         self.properties = properties
+
+
+class NodeDependsOn(ChangeSetNode):
+    depends_on: Final[NodeArray]
+
+    def __init__(self, scope: Scope, change_type: ChangeType, depends_on: NodeArray):
+        super().__init__(scope=scope, change_type=change_type)
+        self.depends_on = depends_on
 
 
 class NodeProperty(ChangeSetNode):
@@ -365,6 +376,7 @@ DefaultKey: Final[str] = "Default"
 ValueKey: Final[str] = "Value"
 ExportKey: Final[str] = "Export"
 OutputsKey: Final[str] = "Outputs"
+DependsOnKey: Final[str] = "DependsOn"
 # TODO: expand intrinsic functions set.
 RefKey: Final[str] = "Ref"
 FnIfKey: Final[str] = "Fn::If"
@@ -770,10 +782,18 @@ class ChangeSetModel:
         scope_condition, (before_condition, after_condition) = self._safe_access_in(
             scope, ConditionKey, before_resource, after_resource
         )
-        # TODO: condition references should be resolved for the condition's change_type?
         if before_condition or after_condition:
             condition_reference = self._visit_terminal_value(
                 scope_condition, before_condition, after_condition
+            )
+
+        depends_on = None
+        scope_depends_on, (before_depends_on, after_depends_on) = self._safe_access_in(
+            scope, DependsOnKey, before_resource, after_resource
+        )
+        if before_depends_on or after_depends_on:
+            depends_on = self._visit_depends_on(
+                scope_depends_on, before_depends_on, after_depends_on
             )
 
         scope_properties, (before_properties, after_properties) = self._safe_access_in(
@@ -793,8 +813,9 @@ class ChangeSetModel:
             change_type=change_type,
             name=resource_name,
             type_=terminal_value_type,
-            condition_reference=condition_reference,
             properties=properties,
+            condition_reference=condition_reference,
+            depends_on=depends_on,
         )
         self._visited_scopes[scope] = node_resource
         return node_resource
@@ -924,6 +945,38 @@ class ChangeSetModel:
         )
         self._visited_scopes[scope] = node_parameters
         return node_parameters
+
+    @staticmethod
+    def _normalise_depends_on_value(value: Maybe[str | list[str]]) -> Maybe[list[str]]:
+        # To simplify downstream logics, reduce the type options to array of strings.
+        # TODO: Add integrations tests for DependsOn validations (invalid types, duplicate identifiers, etc.)
+        if isinstance(value, NothingType):
+            return value
+        if isinstance(value, str):
+            value = [value]
+        elif isinstance(value, list):
+            value.sort()
+        else:
+            raise RuntimeError(
+                f"Invalid type for DependsOn, expected a String or Array of String, but got: '{value}'"
+            )
+        return value
+
+    def _visit_depends_on(
+        self,
+        scope: Scope,
+        before_depends_on: Maybe[str | list[str]],
+        after_depends_on: Maybe[str | list[str]],
+    ) -> NodeDependsOn:
+        before_depends_on = self._normalise_depends_on_value(value=before_depends_on)
+        after_depends_on = self._normalise_depends_on_value(value=after_depends_on)
+        node_array = self._visit_array(
+            scope=scope, before_array=before_depends_on, after_array=after_depends_on
+        )
+        node_depends_on = NodeDependsOn(
+            scope=scope, change_type=node_array.change_type, depends_on=node_array
+        )
+        return node_depends_on
 
     def _visit_condition(
         self,

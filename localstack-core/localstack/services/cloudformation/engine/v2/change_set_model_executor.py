@@ -7,6 +7,7 @@ from typing import Final, Optional
 from localstack.aws.api.cloudformation import ChangeAction, StackStatus
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.engine.v2.change_set_model import (
+    NodeDependsOn,
     NodeOutput,
     NodeParameter,
     NodeResource,
@@ -76,6 +77,23 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         return self._resource_physical_resource_id_from(
             logical_resource_id=resource_logical_id, resolved_resources=after_resolved_resources
         )
+
+    def visit_node_depends_on(self, node_depends_on: NodeDependsOn) -> PreprocEntityDelta:
+        array_identifiers_delta = super().visit_node_depends_on(node_depends_on=node_depends_on)
+
+        # Visit depends_on resources before returning.
+        depends_on_resource_logical_ids: set[str] = set()
+        if array_identifiers_delta.before:
+            depends_on_resource_logical_ids.update(array_identifiers_delta.before)
+        if array_identifiers_delta.after:
+            depends_on_resource_logical_ids.update(array_identifiers_delta.after)
+        for depends_on_resource_logical_id in depends_on_resource_logical_ids:
+            node_resource = self._get_node_resource_for(
+                resource_name=depends_on_resource_logical_id, node_template=self._node_template
+            )
+            self.visit_node_resource(node_resource)
+
+        return array_identifiers_delta
 
     def visit_node_resource(
         self, node_resource: NodeResource
