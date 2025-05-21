@@ -73,9 +73,9 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
 
     @handler("GetRecords", expand=False)
     def get_records(self, context: RequestContext, payload: GetRecordsInput) -> GetRecordsOutput:
-        # Limitation note: With this current implementation, we are not able to get the records from a stream of a
-        # replicated table. To do so, we would need to kept track of the emitted ShardIterators and the originating
-        # region in `GetShardIterator`.
+        # Limitation note: with this current implementation, we are not able to get the records from a stream of a
+        # replicated table. To do so, we would need to kept track of the originating region when we emit a ShardIterator
+        # (see `GetShardIterator`) in order to forward the request to the region actually holding the stream data.
 
         request = payload.copy()
         request["ShardIterator"] = self.modify_stream_arn_for_ddb_local(
