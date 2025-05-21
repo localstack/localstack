@@ -31,7 +31,7 @@ aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==41.2.0
     # via aws-cdk-lib
-aws-cdk-lib==2.195.0
+aws-cdk-lib==2.196.1
     # via localstack-core
 aws-sam-translator==1.97.0
     # via
@@ -41,7 +41,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.40.17
     # via localstack-core
-awscrt==0.26.1
+awscrt==0.27.2
     # via localstack-core
 boto3==1.38.18
     # via
@@ -102,14 +102,14 @@ coveralls==4.0.1
     # via localstack-core (pyproject.toml)
 crontab==1.0.4
     # via localstack-core
-cryptography==44.0.3
+cryptography==45.0.2
     # via
     #   joserfc
     #   localstack-core
     #   localstack-core (pyproject.toml)
     #   moto-ext
     #   pyopenssl
-cython==3.1.0
+cython==3.1.1
     # via localstack-core (pyproject.toml)
 decorator==5.2.1
     # via jsonpath-rw
@@ -296,7 +296,7 @@ pathable==0.4.4
     # via jsonschema-path
 platformdirs==4.3.8
     # via virtualenv
-pluggy==1.5.0
+pluggy==1.6.0
     # via
     #   localstack-core
     #   pytest
@@ -341,9 +341,9 @@ pydantic-core==2.33.2
     # via pydantic
 pygments==2.19.1
     # via rich
-pymongo==4.12.1
+pymongo==4.13.0
     # via localstack-core
-pyopenssl==25.0.0
+pyopenssl==25.1.0
     # via
     #   localstack-core
     #   localstack-twisted
@@ -421,7 +421,7 @@ rich==14.0.0
     #   localstack-core (pyproject.toml)
 rolo==0.7.5
     # via localstack-core
-rpds-py==0.24.0
+rpds-py==0.25.0
     # via
     #   jsonschema
     #   referencing
@@ -429,7 +429,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.11.9
+ruff==0.11.10
     # via localstack-core (pyproject.toml)
 s3transfer==0.12.0
     # via

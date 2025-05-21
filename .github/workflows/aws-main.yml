@@ -14,8 +14,21 @@ on:
       - '!.gitignore'
       - '!.git-blame-ignore-revs'
       - '!.github/**'
+      - '!docs/**'
     branches:
       - master
+  pull_request:
+    paths:
+      - '**'
+      - '.github/actions/**'
+      - '.github/workflows/aws-main.yml'
+      - '.github/workflows/aws-tests.yml'
+      - '!CODEOWNERS'
+      - '!README.md'
+      - '!.gitignore'
+      - '!.git-blame-ignore-revs'
+      - '!.github/**'
+      - '!docs/**'
   workflow_dispatch:
     inputs:
       onlyAcceptanceTests:
@@ -172,7 +185,7 @@ jobs:
     # push image on master, target branch not set, and the dependent steps were either successful or skipped
     # TO-DO: enable job after workflow in CircleCI is disabled
     if: false
-    #    if: github.ref == 'refs/heads/master' && !failure() && !cancelled()
+    #    if: github.ref == 'refs/heads/master' && !failure() && !cancelled() && github.repository == 'localstack/localstack'
     needs:
       # all tests need to be successful for the image to be pushed
       - test
@@ -184,7 +197,7 @@ jobs:
           fetch-depth: 0
 
       - name: Load Localstack ${{ env.PLATFORM_NAME_AMD64 }} Docker Image
-        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+        uses: ./.github/actions/load-localstack-docker-from-artifacts
         with:
           platform: ${{ env.PLATFORM_NAME_AMD64 }}
 
@@ -213,7 +226,7 @@ jobs:
           TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" ./bin/docker-helper.sh push
 
       - name: Load Localstack ${{ env.PLATFORM_NAME_ARM64 }} Docker Image
-        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+        uses: ./.github/actions/load-localstack-docker-from-artifacts
         with:
           platform: ${{ env.PLATFORM_NAME_ARM64 }}
 
@@ -252,7 +265,7 @@ jobs:
 
   push-to-tinybird:
     name: Push Workflow Status to Tinybird
-    if: always() && github.ref == 'refs/heads/master'
+    if: always() && github.ref == 'refs/heads/master' && github.repository == 'localstack/localstack'
     runs-on: ubuntu-latest
     needs:
       - test
@@ -261,7 +274,7 @@ jobs:
         uses: localstack/tinybird-workflow-push@v3
         with:
           # differentiate between "acceptance only" and "proper / full" runs
-          workflow_id: ${{ inputs.onlyAcceptanceTests && 'tests_acceptance' || 'tests_full' }}
+          workflow_id: ${{ (inputs.onlyAcceptanceTests == true || github.event_name == 'push') && 'tests_acceptance' || 'tests_full' }}
           tinybird_token: ${{ secrets.TINYBIRD_CI_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           tinybird_datasource: "ci_workflows"
