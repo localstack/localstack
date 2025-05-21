@@ -919,7 +919,9 @@ class TestKMS:
     @markers.aws.validated
     def test_re_encrypt_incorrect_source_key(self, kms_create_key, algo, aws_client, snapshot):
         message = b"test message 123 !%$@ 1234567890"
-        source_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")["KeyId"]
+        source_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")[
+            "KeyId"
+        ]
         ciphertext = aws_client.kms.encrypt(
             KeyId=source_key_id, Plaintext=base64.b64encode(message), EncryptionAlgorithm=algo
         )["CiphertextBlob"]
