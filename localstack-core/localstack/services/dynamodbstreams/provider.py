@@ -49,6 +49,11 @@ STREAM_STATUS_MAP = {
 
 
 class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
+    shard_to_region: dict[str, str]
+
+    def __init__(self):
+        self.shard_to_region = {}
+
     def describe_stream(
         self,
         context: RequestContext,
@@ -105,11 +110,11 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
 
     @handler("GetRecords", expand=False)
     def get_records(self, context: RequestContext, payload: GetRecordsInput) -> GetRecordsOutput:
-        # Limitation note: with this current implementation, we are not able to get the records from a stream of a
-        # replicated table. To do so, we would need to kept track of the originating region when we emit a ShardIterator
-        # (see `GetShardIterator`) in order to forward the request to the region actually holding the stream data.
+        region_name = context.region
+        if payload["ShardIterator"] in self.shard_to_region:
+            region_name = self.shard_to_region.pop(payload["ShardIterator"])
 
-        kinesis = get_kinesis_client(account_id=context.account_id, region_name=context.region)
+        kinesis = get_kinesis_client(account_id=context.account_id, region_name=region_name)
         prefix, _, payload["ShardIterator"] = payload["ShardIterator"].rpartition("|")
         try:
             kinesis_records = kinesis.get_records(**payload)
@@ -150,6 +155,9 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         del result["ResponseMetadata"]
         # TODO not quite clear what the |1| exactly denotes, because at AWS it's sometimes other numbers
         result["ShardIterator"] = f"{stream_arn}|1|{result['ShardIterator']}"
+
+        if og_region != context.region:
+            self.shard_to_region[result["ShardIterator"]] = og_region
         return GetShardIteratorOutput(**result)
 
     def list_streams(

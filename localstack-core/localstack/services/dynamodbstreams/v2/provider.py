@@ -14,7 +14,7 @@ from localstack.aws.api.dynamodbstreams import (
     ListStreamsOutput,
 )
 from localstack.services.dynamodb.server import DynamodbServer
-from localstack.services.dynamodb.utils import modify_ddblocal_arns
+from localstack.services.dynamodb.utils import change_region_in_ddb_stream_arn, modify_ddblocal_arns
 from localstack.services.dynamodb.v2.provider import DynamoDBProvider, modify_context_region
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_original_region
 from localstack.services.plugins import ServiceLifecycleHook
@@ -24,8 +24,11 @@ LOG = logging.getLogger(__name__)
 
 
 class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
+    shard_to_region: dict[str, str]
+
     def __init__(self):
         self.server = DynamodbServer.get()
+        self.shard_to_region = {}
 
     def on_after_init(self):
         # add response processor specific to ddblocal
@@ -73,23 +76,37 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
 
     @handler("GetRecords", expand=False)
     def get_records(self, context: RequestContext, payload: GetRecordsInput) -> GetRecordsOutput:
-        # Limitation note: with this current implementation, we are not able to get the records from a stream of a
-        # replicated table. To do so, we would need to kept track of the originating region when we emit a ShardIterator
-        # (see `GetShardIterator`) in order to forward the request to the region actually holding the stream data.
-
         request = payload.copy()
         request["ShardIterator"] = self.modify_stream_arn_for_ddb_local(
             request.get("ShardIterator", "")
         )
+        if payload["ShardIterator"] in self.shard_to_region:
+            original_region = self.shard_to_region.pop(payload["ShardIterator"])
+            LOG.debug("Forwarding GetRecord request to region %s", original_region)
+            return self._forward_request(
+                context=context,
+                region=self.shard_to_region.pop(payload["ShardIterator"]),
+                service_request=request,
+            )
+
         return self.forward_request(context, request)
 
     @handler("GetShardIterator", expand=False)
     def get_shard_iterator(
         self, context: RequestContext, payload: GetShardIteratorInput
     ) -> GetShardIteratorOutput:
+        global_table_region = get_original_region(context=context, stream_arn=payload["StreamArn"])
+        stream_arn = payload.get("StreamArn")
+        if global_table_region != context.region and stream_arn:
+            stream_arn = change_region_in_ddb_stream_arn(stream_arn, global_table_region)
         request = payload.copy()
-        request["StreamArn"] = self.modify_stream_arn_for_ddb_local(request.get("StreamArn", ""))
-        return self.forward_request(context, request)
+        request["StreamArn"] = self.modify_stream_arn_for_ddb_local(stream_arn)
+        response = self._forward_request(
+            context=context, service_request=request, region=global_table_region
+        )
+        if global_table_region != context and (shard_iterator := response.get("ShardIterator")):
+            self.shard_to_region[shard_iterator] = global_table_region
+        return response
 
     @handler("ListStreams", expand=False)
     def list_streams(self, context: RequestContext, payload: ListStreamsInput) -> ListStreamsOutput:
