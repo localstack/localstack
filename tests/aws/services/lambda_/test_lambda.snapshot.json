@@ -2362,7 +2362,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_lambda_concurrency_crud": {
-    "recorded-date": "08-04-2024, 16:59:43",
+    "recorded-date": "22-05-2025, 08:04:13",
     "recorded-content": {
       "get_function_concurrency_default": {
         "ResponseMetadata": {

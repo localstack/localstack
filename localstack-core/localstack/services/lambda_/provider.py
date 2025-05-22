@@ -1541,6 +1541,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 RepositoryType=image.repository_type,
                 ResolvedImageUri=image.resolved_image_uri,
             )
+        concurrency = None
+        if fn.reserved_concurrent_executions:
+            concurrency = GetFunctionConcurrencyResponse(
+                ReservedConcurrentExecutions=fn.reserved_concurrent_executions
+            )
 
         return GetFunctionResponse(
             Configuration=api_utils.map_config_out(
@@ -1548,7 +1553,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             ),
             Code=code_location,  # TODO
             **additional_fields,
-            # Concurrency={},  # TODO
+            Concurrency=concurrency,
         )
 
     def get_function_configuration(

@@ -2279,6 +2279,12 @@ class TestLambdaConcurrency:
         snapshot.match("get_function_concurrency_updated", updated_concurrency_result)
         assert updated_concurrency_result["ReservedConcurrentExecutions"] == 0
 
+        function_concurrency_info = aws_client.lambda_.get_function(FunctionName=func_name)[
+            "Concurrency"
+        ]
+        assert function_concurrency_info is not None
+        assert function_concurrency_info["ReservedConcurrentExecutions"] == 0
+
         aws_client.lambda_.delete_function_concurrency(FunctionName=func_name)
 
         deleted_concurrency_result = aws_client.lambda_.get_function_concurrency(
