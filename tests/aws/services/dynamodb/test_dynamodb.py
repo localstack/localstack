@@ -1165,7 +1165,7 @@ class TestDynamoDB:
         # Create table in the original region
         table_name = f"table-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(table_name, "<table-name>"))
-        table = region_1_factory.dynamodb.create_table(
+        region_1_factory.dynamodb.create_table(
             TableName=table_name,
             KeySchema=[
                 {"AttributeName": "Artist", "KeyType": "HASH"},
@@ -1201,17 +1201,18 @@ class TestDynamoDB:
                 ),
             )
 
-        stream_arn = table["TableDescription"]["LatestStreamArn"]
-        wait_for_dynamodb_stream_ready(stream_arn=stream_arn)
-
         stream_arn_region = region_1_factory.dynamodb.describe_table(TableName=table_name)["Table"][
             "LatestStreamArn"
         ]
         assert region_name in stream_arn_region
+        wait_for_dynamodb_stream_ready(stream_arn_region)
         stream_arn_secondary_region = region_2_factory.dynamodb.describe_table(
             TableName=table_name
         )["Table"]["LatestStreamArn"]
         assert secondary_region_name in stream_arn_secondary_region
+        wait_for_dynamodb_stream_ready(
+            stream_arn_secondary_region, region_2_factory.dynamodbstreams
+        )
 
         # Verify that we can list streams on both regions
         streams_region_1 = region_1_factory.dynamodbstreams.list_streams(TableName=table_name)

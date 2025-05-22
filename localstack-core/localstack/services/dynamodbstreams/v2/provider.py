@@ -76,20 +76,25 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
 
     @handler("GetRecords", expand=False)
     def get_records(self, context: RequestContext, payload: GetRecordsInput) -> GetRecordsOutput:
+        region = context.region
+        _shard_iterator = payload["ShardIterator"]
         request = payload.copy()
         request["ShardIterator"] = self.modify_stream_arn_for_ddb_local(
             request.get("ShardIterator", "")
         )
-        if payload["ShardIterator"] in self.shard_to_region:
-            original_region = self.shard_to_region.pop(payload["ShardIterator"])
-            LOG.debug("Forwarding GetRecord request to region %s", original_region)
+        if _shard_iterator in self.shard_to_region:
+            region = self.shard_to_region.pop(_shard_iterator)
+            LOG.debug("Forwarding GetRecord request to region %s", region)
             return self._forward_request(
                 context=context,
-                region=self.shard_to_region.pop(payload["ShardIterator"]),
+                region=region,
                 service_request=request,
             )
 
-        return self.forward_request(context, request)
+        response = self.forward_request(context, request)
+        if region != context.region and "NextShardIterator" in response:
+            self.shard_to_region[response["NextShardIterator"]] = region
+        return response
 
     @handler("GetShardIterator", expand=False)
     def get_shard_iterator(
