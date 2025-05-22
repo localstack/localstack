@@ -31,7 +31,7 @@ aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==41.2.0
     # via aws-cdk-lib
-aws-cdk-lib==2.196.1
+aws-cdk-lib==2.197.0
     # via localstack-core
 aws-sam-translator==1.97.0
     # via
@@ -80,11 +80,11 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.35.1
+cfn-lint==1.35.3
     # via moto-ext
 charset-normalizer==3.4.2
     # via requests
-click==8.2.0
+click==8.2.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -94,7 +94,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.4.2
     # via aws-cdk-lib
-coverage==7.8.0
+coverage==7.8.1
     # via
     #   coveralls
     #   localstack-core
@@ -236,7 +236,7 @@ kclpy-ext==3.0.3
     # via localstack-core
 lazy-object-proxy==1.11.0
     # via openapi-spec-validator
-localstack-snapshot==0.2.0
+localstack-snapshot==0.3.0
     # via localstack-core
 localstack-twisted==24.3.0
     # via localstack-core
@@ -421,7 +421,7 @@ rich==14.0.0
     #   localstack-core (pyproject.toml)
 rolo==0.7.5
     # via localstack-core
-rpds-py==0.25.0
+rpds-py==0.25.1
     # via
     #   jsonschema
     #   referencing
@@ -475,7 +475,7 @@ typing-extensions==4.13.2
     #   readerwriterlock
     #   referencing
     #   typing-inspection
-typing-inspection==0.4.0
+typing-inspection==0.4.1
     # via pydantic
 urllib3==2.4.0
     # via

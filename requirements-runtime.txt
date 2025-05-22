@@ -62,11 +62,11 @@ certifi==2025.4.26
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.35.1
+cfn-lint==1.35.3
     # via moto-ext
 charset-normalizer==3.4.2
     # via requests
-click==8.2.0
+click==8.2.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -306,7 +306,7 @@ rich==14.0.0
     #   localstack-core (pyproject.toml)
 rolo==0.7.5
     # via localstack-core
-rpds-py==0.25.0
+rpds-py==0.25.1
     # via
     #   jsonschema
     #   referencing
@@ -343,7 +343,7 @@ typing-extensions==4.13.2
     #   readerwriterlock
     #   referencing
     #   typing-inspection
-typing-inspection==0.4.0
+typing-inspection==0.4.1
     # via pydantic
 urllib3==2.4.0
     # via

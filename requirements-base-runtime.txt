@@ -30,7 +30,7 @@ cffi==1.17.1
     # via cryptography
 charset-normalizer==3.4.2
     # via requests
-click==8.2.0
+click==8.2.1
     # via localstack-core (pyproject.toml)
 constantly==23.10.4
     # via localstack-twisted
@@ -166,7 +166,7 @@ rich==14.0.0
     # via localstack-core (pyproject.toml)
 rolo==0.7.5
     # via localstack-core (pyproject.toml)
-rpds-py==0.25.0
+rpds-py==0.25.1
     # via
     #   jsonschema
     #   referencing
