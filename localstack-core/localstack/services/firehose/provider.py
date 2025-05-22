@@ -262,7 +262,7 @@ class FirehoseProvider(FirehoseApi):
         self,
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
-        delivery_stream_type: DeliveryStreamType = DeliveryStreamType.DirectPut,
+        delivery_stream_type: DeliveryStreamType = None,
         direct_put_source_configuration: DirectPutSourceConfiguration = None,
         kinesis_stream_source_configuration: KinesisStreamSourceConfiguration = None,
         delivery_stream_encryption_configuration_input: DeliveryStreamEncryptionConfigurationInput = None,
@@ -283,6 +283,7 @@ class FirehoseProvider(FirehoseApi):
     ) -> CreateDeliveryStreamOutput:
         # TODO add support for database_source_configuration and direct_put_source_configuration
         store = self.get_store(context.account_id, context.region)
+        delivery_stream_type = delivery_stream_type or DeliveryStreamType.DirectPut
 
         delivery_stream_arn = firehose_stream_arn(
             stream_name=delivery_stream_name,
