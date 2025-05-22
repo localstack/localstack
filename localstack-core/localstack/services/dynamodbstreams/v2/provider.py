@@ -26,7 +26,7 @@ LOG = logging.getLogger(__name__)
 class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
     shard_to_region: dict[str, str]
     """Map a shard iterator to the originating region. This is used in case of replica tables, as LocalStack keeps the
-    data in one region only, redirecting all the requests to replica regions."""
+    data in one region only, redirecting all the requests from replica regions."""
 
     def __init__(self):
         self.server = DynamodbServer.get()
