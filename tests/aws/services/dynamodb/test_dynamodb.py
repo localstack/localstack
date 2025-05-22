@@ -1222,8 +1222,6 @@ class TestDynamoDB:
         snapshot.match("secondary-region-streams", streams_region_2)
         assert secondary_region_name in streams_region_2["Streams"][0]["StreamArn"]
 
-        # TODO: run the part below against AWS
-
         region_1_factory.dynamodb.batch_write_item(
             RequestItems={
                 table_name: [
@@ -1266,10 +1264,7 @@ class TestDynamoDB:
                     shard_id_to_iterator.pop(_shard_id, None)
             return fetched_records
 
-        records = []
-
-        def _get_records_from_all_shards(_stream_arn, _expected_count, _client):
-            nonlocal records
+        def _assert_records(_stream_arn, _expected_count, _client) -> None:
             records = _read_records_from_shards(
                 _stream_arn,
                 _expected_count,
@@ -1280,7 +1275,7 @@ class TestDynamoDB:
             )
 
         retry(
-            _get_records_from_all_shards,
+            _assert_records,
             sleep=WAIT_SEC,
             retries=20,
             _stream_arn=stream_arn_region,
@@ -1289,7 +1284,7 @@ class TestDynamoDB:
         )
 
         retry(
-            _get_records_from_all_shards,
+            _assert_records,
             sleep=WAIT_SEC,
             retries=20,
             _stream_arn=stream_arn_secondary_region,

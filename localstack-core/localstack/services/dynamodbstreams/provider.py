@@ -50,6 +50,8 @@ STREAM_STATUS_MAP = {
 
 class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
     shard_to_region: dict[str, str]
+    """Map a shard iterator to the originating region. This is used in case of replica tables, as LocalStack keeps the
+    data in one region only, redirecting all the requests to replica regions."""
 
     def __init__(self):
         self.shard_to_region = {}
@@ -132,6 +134,8 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
             record_data["dynamodb"]["SequenceNumber"] = record["SequenceNumber"]
             result["Records"].append(record_data)
 
+        # Similar as the logic in GetShardIterator, we need to track the originating region when we get the
+        # NextShardIterator in the results.
         if region_name != context.region and "NextShardIterator" in result:
             self.shard_to_region[result["NextShardIterator"]] = region_name
         return GetRecordsOutput(**result)
@@ -161,6 +165,8 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         # TODO not quite clear what the |1| exactly denotes, because at AWS it's sometimes other numbers
         result["ShardIterator"] = f"{stream_arn}|1|{result['ShardIterator']}"
 
+        # In case of a replica table, we need to keep track of the real region originating the shard iterator.
+        # This region will be later used in GetRecords to redirect to the originating region, holding the data.
         if og_region != context.region:
             self.shard_to_region[result["ShardIterator"]] = og_region
         return GetShardIteratorOutput(**result)
