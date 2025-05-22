@@ -14,7 +14,7 @@ from localstack.aws.api.dynamodbstreams import (
     ListStreamsOutput,
 )
 from localstack.services.dynamodb.server import DynamodbServer
-from localstack.services.dynamodb.utils import change_region_in_ddb_stream_arn, modify_ddblocal_arns
+from localstack.services.dynamodb.utils import modify_ddblocal_arns
 from localstack.services.dynamodb.v2.provider import DynamoDBProvider, modify_context_region
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_original_region
 from localstack.services.plugins import ServiceLifecycleHook
@@ -25,6 +25,8 @@ LOG = logging.getLogger(__name__)
 
 class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
     shard_to_region: dict[str, str]
+    """Map a shard iterator to the originating region. This is used in case of replica tables, as LocalStack keeps the
+    data in one region only, redirecting all the requests to replica regions."""
 
     def __init__(self):
         self.server = DynamodbServer.get()
@@ -76,24 +78,20 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
 
     @handler("GetRecords", expand=False)
     def get_records(self, context: RequestContext, payload: GetRecordsInput) -> GetRecordsOutput:
-        region = context.region
-        _shard_iterator = payload["ShardIterator"]
         request = payload.copy()
         request["ShardIterator"] = self.modify_stream_arn_for_ddb_local(
             request.get("ShardIterator", "")
         )
-        if _shard_iterator in self.shard_to_region:
-            region = self.shard_to_region.pop(_shard_iterator)
-            LOG.debug("Forwarding GetRecord request to region %s", region)
-            return self._forward_request(
-                context=context,
-                region=region,
-                service_request=request,
-            )
-
-        response = self.forward_request(context, request)
-        if region != context.region and "NextShardIterator" in response:
-            self.shard_to_region[response["NextShardIterator"]] = region
+        region = self.shard_to_region.pop(request["ShardIterator"], None)
+        response = self._forward_request(context=context, region=region, service_request=request)
+        # Similar as the logic in GetShardIterator, we need to track the originating region when we get the
+        # NextShardIterator in the results.
+        if (
+            region
+            and region != context.region
+            and (next_shard := response.get("NextShardIterator"))
+        ):
+            self.shard_to_region[next_shard] = region
         return response
 
     @handler("GetShardIterator", expand=False)
@@ -101,15 +99,17 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         self, context: RequestContext, payload: GetShardIteratorInput
     ) -> GetShardIteratorOutput:
         global_table_region = get_original_region(context=context, stream_arn=payload["StreamArn"])
-        stream_arn = payload.get("StreamArn")
-        if global_table_region != context.region and stream_arn:
-            stream_arn = change_region_in_ddb_stream_arn(stream_arn, global_table_region)
         request = payload.copy()
-        request["StreamArn"] = self.modify_stream_arn_for_ddb_local(stream_arn)
+        request["StreamArn"] = self.modify_stream_arn_for_ddb_local(request.get("StreamArn", ""))
         response = self._forward_request(
             context=context, service_request=request, region=global_table_region
         )
-        if global_table_region != context and (shard_iterator := response.get("ShardIterator")):
+
+        # In case of a replica table, we need to keep track of the real region originating the shard iterator.
+        # This region will be later used in GetRecords to redirect to the originating region, holding the data.
+        if global_table_region != context.region and (
+            shard_iterator := response.get("ShardIterator")
+        ):
             self.shard_to_region[shard_iterator] = global_table_region
         return response
 
