@@ -1222,6 +1222,60 @@ class TestDynamoDB:
         snapshot.match("secondary-region-streams", streams_region_2)
         assert secondary_region_name in streams_region_2["Streams"][0]["StreamArn"]
 
+        # TODO: run the part below against AWS
+
+        region_1_factory.dynamodb.put_item(
+            TableName=table_name,
+            Item={"Artist": {"S": "The Queen"}, "SongTitle": {"S": "Bohemian Rhapsody"}},
+        )
+        region_1_factory.dynamodb.put_item(
+            TableName=table_name,
+            Item={"Artist": {"S": "The Oasis"}, "SongTitle": {"S": "Live Forever"}},
+        )
+
+        def _get_records_amount(record_amount, client) -> None:
+            nonlocal shard_iterator
+            if len(records) < record_amount:
+                _resp = client.get_records(ShardIterator=shard_iterator)
+                records.extend(_resp["Records"])
+                if next_shard_iterator := _resp.get("NextShardIterator"):
+                    shard_iterator = next_shard_iterator
+            assert len(records) >= record_amount
+
+        # Read from stream on region 1
+        describe_stream_result = region_1_factory.dynamodbstreams.describe_stream(
+            StreamArn=stream_arn_region
+        )
+        shard_id = describe_stream_result["StreamDescription"]["Shards"][0]["ShardId"]
+        shard_iterator = region_1_factory.dynamodbstreams.get_shard_iterator(
+            StreamArn=stream_arn_region, ShardId=shard_id, ShardIteratorType="TRIM_HORIZON"
+        )["ShardIterator"]
+
+        records = []
+        retry(
+            lambda: _get_records_amount(2, region_1_factory.dynamodbstreams),
+            sleep=WAIT_SEC,
+            retries=50,
+        )
+
+        # Read from stream on region 2
+        describe_stream_result = region_2_factory.dynamodbstreams.describe_stream(
+            StreamArn=stream_arn_secondary_region
+        )
+        shard_id = describe_stream_result["StreamDescription"]["Shards"][0]["ShardId"]
+        shard_iterator = region_2_factory.dynamodbstreams.get_shard_iterator(
+            StreamArn=stream_arn_secondary_region,
+            ShardId=shard_id,
+            ShardIteratorType="TRIM_HORIZON",
+        )["ShardIterator"]
+
+        records = []
+        retry(
+            lambda: _get_records_amount(2, region_2_factory.dynamodbstreams),
+            sleep=WAIT_SEC,
+            retries=50,
+        )
+
     @markers.aws.only_localstack
     def test_global_tables(self, aws_client, ddb_test_table):
         dynamodb = aws_client.dynamodb
