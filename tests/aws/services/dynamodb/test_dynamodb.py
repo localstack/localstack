@@ -1138,8 +1138,11 @@ class TestDynamoDB:
         assert "Replicas" not in response["Table"]
 
     @markers.aws.validated
-    # The stream label on the replica and replicated stream are the same (while they differ on AWS).
-    #   The region changes accordingly in the ARN. We test this with assertions.
+    # An ARM stream has a stream label as suffix. In AWS, such a label differs between the stream of the original table
+    # and the ones of the replicas. In LocalStack, it does not differ. The only difference in the stream ARNs is the
+    # region. Therefore, we skip the following paths from the snapshots.
+    # However, we run plain assertions to make sure that the region changes in the ARNs, i.e., the replica have their
+    # own stream.
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Streams..StreamArn", "$..Streams..StreamLabel"]
     )
@@ -1192,14 +1195,6 @@ class TestDynamoDB:
         cleanups.append(lambda: region_2_factory.dynamodb.delete_table(TableName=table_name))
         waiter = region_2_factory.dynamodb.get_waiter("table_exists")
         waiter.wait(TableName=table_name, WaiterConfig={"Delay": WAIT_SEC, "MaxAttempts": 20})
-
-        with pytest.raises(ClientError):
-            region_2_factory.dynamodb.update_table(
-                TableName=table_name,
-                StreamSpecification=StreamSpecification(
-                    StreamEnabled=True, StreamViewType=StreamViewType.NEW_AND_OLD_IMAGES
-                ),
-            )
 
         stream_arn_region = region_1_factory.dynamodb.describe_table(TableName=table_name)["Table"][
             "LatestStreamArn"
