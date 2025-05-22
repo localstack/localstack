@@ -1543,7 +1543,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
         concurrency = None
         if fn.reserved_concurrent_executions:
-            concurrency = GetFunctionConcurrencyResponse(
+            concurrency = Concurrency(
                 ReservedConcurrentExecutions=fn.reserved_concurrent_executions
             )
 
@@ -1552,8 +1552,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 version, return_qualified_arn=bool(qualifier), alias_name=alias_name
             ),
             Code=code_location,  # TODO
-            **additional_fields,
             Concurrency=concurrency,
+            **additional_fields,
         )
 
     def get_function_configuration(

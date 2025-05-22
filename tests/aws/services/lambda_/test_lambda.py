@@ -2286,6 +2286,7 @@ class TestLambdaConcurrency:
         )
         snapshot.match("get_function_concurrency_deleted", deleted_concurrency_result)
 
+    @pytest.mark.skip_snapshot_verify(paths=["$..Configuration", "$..Code"])
     @markers.aws.validated
     def test_lambda_concurrency_update(self, snapshot, create_lambda_function, aws_client):
         func_name = f"fn-concurrency-{short_uid()}"
@@ -2309,11 +2310,7 @@ class TestLambdaConcurrency:
         )
 
         function_concurrency_info = aws_client.lambda_.get_function(FunctionName=func_name)
-        assert function_concurrency_info["Concurrency"] is not None
-        assert (
-            function_concurrency_info["Concurrency"]["ReservedConcurrentExecutions"]
-            == new_reserved_concurrency
-        )
+        snapshot.match("get_function_concurrency_info", function_concurrency_info)
 
         aws_client.lambda_.delete_function_concurrency(FunctionName=func_name)
 
