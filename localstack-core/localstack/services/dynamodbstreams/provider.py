@@ -110,15 +110,17 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
 
     @handler("GetRecords", expand=False)
     def get_records(self, context: RequestContext, payload: GetRecordsInput) -> GetRecordsOutput:
+        _shard_iterator = payload["ShardIterator"]
         region_name = context.region
         if payload["ShardIterator"] in self.shard_to_region:
-            region_name = self.shard_to_region.pop(payload["ShardIterator"])
+            region_name = self.shard_to_region[_shard_iterator]
 
         kinesis = get_kinesis_client(account_id=context.account_id, region_name=region_name)
-        prefix, _, payload["ShardIterator"] = payload["ShardIterator"].rpartition("|")
+        prefix, _, payload["ShardIterator"] = _shard_iterator.rpartition("|")
         try:
             kinesis_records = kinesis.get_records(**payload)
         except kinesis.exceptions.ExpiredIteratorException:
+            self.shard_to_region.pop(_shard_iterator, None)
             LOG.debug("Shard iterator for underlying kinesis stream expired")
             raise ExpiredIteratorException("Shard iterator has expired")
         result = {
@@ -129,6 +131,9 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
             record_data = loads(record["Data"])
             record_data["dynamodb"]["SequenceNumber"] = record["SequenceNumber"]
             result["Records"].append(record_data)
+
+        if region_name != context.region and "NextShardIterator" in result:
+            self.shard_to_region[result["NextShardIterator"]] = region_name
         return GetRecordsOutput(**result)
 
     def get_shard_iterator(

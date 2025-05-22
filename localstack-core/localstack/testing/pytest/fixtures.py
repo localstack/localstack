@@ -792,11 +792,10 @@ def wait_for_delivery_stream_ready(aws_client):
 
 @pytest.fixture
 def wait_for_dynamodb_stream_ready(aws_client):
-    def _wait_for_stream_ready(stream_arn: str):
+    def _wait_for_stream_ready(stream_arn: str, client=None):
         def is_stream_ready():
-            describe_stream_response = aws_client.dynamodbstreams.describe_stream(
-                StreamArn=stream_arn
-            )
+            ddb_client = client or aws_client.dynamodbstreams
+            describe_stream_response = ddb_client.describe_stream(StreamArn=stream_arn)
             return describe_stream_response["StreamDescription"]["StreamStatus"] == "ENABLED"
 
         return poll_condition(is_stream_ready)
