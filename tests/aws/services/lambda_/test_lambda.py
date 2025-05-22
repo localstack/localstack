@@ -2279,11 +2279,41 @@ class TestLambdaConcurrency:
         snapshot.match("get_function_concurrency_updated", updated_concurrency_result)
         assert updated_concurrency_result["ReservedConcurrentExecutions"] == 0
 
-        function_concurrency_info = aws_client.lambda_.get_function(FunctionName=func_name)[
-            "Concurrency"
-        ]
-        assert function_concurrency_info is not None
-        assert function_concurrency_info["ReservedConcurrentExecutions"] == 0
+        aws_client.lambda_.delete_function_concurrency(FunctionName=func_name)
+
+        deleted_concurrency_result = aws_client.lambda_.get_function_concurrency(
+            FunctionName=func_name
+        )
+        snapshot.match("get_function_concurrency_deleted", deleted_concurrency_result)
+
+    @markers.aws.validated
+    def test_lambda_concurrency_update(self, snapshot, create_lambda_function, aws_client):
+        func_name = f"fn-concurrency-{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_12,
+        )
+        new_reserved_concurrency = 3
+        reserved_concurrency_result = aws_client.lambda_.put_function_concurrency(
+            FunctionName=func_name, ReservedConcurrentExecutions=new_reserved_concurrency
+        )
+        snapshot.match("put_function_concurrency", reserved_concurrency_result)
+
+        updated_concurrency_result = aws_client.lambda_.get_function_concurrency(
+            FunctionName=func_name
+        )
+        snapshot.match("get_function_concurrency_updated", updated_concurrency_result)
+        assert (
+            updated_concurrency_result["ReservedConcurrentExecutions"] == new_reserved_concurrency
+        )
+
+        function_concurrency_info = aws_client.lambda_.get_function(FunctionName=func_name)
+        assert function_concurrency_info["Concurrency"] is not None
+        assert (
+            function_concurrency_info["Concurrency"]["ReservedConcurrentExecutions"]
+            == new_reserved_concurrency
+        )
 
         aws_client.lambda_.delete_function_concurrency(FunctionName=func_name)
 
