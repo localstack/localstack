@@ -1224,56 +1224,77 @@ class TestDynamoDB:
 
         # TODO: run the part below against AWS
 
-        region_1_factory.dynamodb.put_item(
-            TableName=table_name,
-            Item={"Artist": {"S": "The Queen"}, "SongTitle": {"S": "Bohemian Rhapsody"}},
-        )
-        region_1_factory.dynamodb.put_item(
-            TableName=table_name,
-            Item={"Artist": {"S": "The Oasis"}, "SongTitle": {"S": "Live Forever"}},
-        )
-
-        def _get_records_amount(record_amount, client) -> None:
-            nonlocal shard_iterator
-            if len(records) < record_amount:
-                _resp = client.get_records(ShardIterator=shard_iterator)
-                records.extend(_resp["Records"])
-                if next_shard_iterator := _resp.get("NextShardIterator"):
-                    shard_iterator = next_shard_iterator
-            assert len(records) >= record_amount
-
-        # Read from stream on region 1
-        describe_stream_result = region_1_factory.dynamodbstreams.describe_stream(
-            StreamArn=stream_arn_region
-        )
-        shard_id = describe_stream_result["StreamDescription"]["Shards"][0]["ShardId"]
-        shard_iterator = region_1_factory.dynamodbstreams.get_shard_iterator(
-            StreamArn=stream_arn_region, ShardId=shard_id, ShardIteratorType="TRIM_HORIZON"
-        )["ShardIterator"]
-
-        records = []
-        retry(
-            lambda: _get_records_amount(2, region_1_factory.dynamodbstreams),
-            sleep=WAIT_SEC,
-            retries=50,
+        region_1_factory.dynamodb.batch_write_item(
+            RequestItems={
+                table_name: [
+                    {
+                        "PutRequest": {
+                            "Item": {
+                                "Artist": {"S": "The Queen"},
+                                "SongTitle": {"S": "Bohemian Rhapsody"},
+                            }
+                        }
+                    },
+                    {
+                        "PutRequest": {
+                            "Item": {"Artist": {"S": "Oasis"}, "SongTitle": {"S": "Live Forever"}}
+                        }
+                    },
+                ]
+            }
         )
 
-        # Read from stream on region 2
-        describe_stream_result = region_2_factory.dynamodbstreams.describe_stream(
-            StreamArn=stream_arn_secondary_region
-        )
-        shard_id = describe_stream_result["StreamDescription"]["Shards"][0]["ShardId"]
-        shard_iterator = region_2_factory.dynamodbstreams.get_shard_iterator(
-            StreamArn=stream_arn_secondary_region,
-            ShardId=shard_id,
-            ShardIteratorType="TRIM_HORIZON",
-        )["ShardIterator"]
+        def _read_records_from_shards(_stream_arn, _expected_record_count, _client) -> int:
+            describe_stream_result = _client.describe_stream(StreamArn=_stream_arn)
+            shard_id_to_iterator: dict[str, str] = {}
+            fetched_records = []
+            # Records can be spread over multiple shards. We need to read all over them
+            for stream_info in describe_stream_result["StreamDescription"]["Shards"]:
+                _shard_id = stream_info["ShardId"]
+                shard_iterator = _client.get_shard_iterator(
+                    StreamArn=_stream_arn, ShardId=_shard_id, ShardIteratorType="TRIM_HORIZON"
+                )["ShardIterator"]
+                shard_id_to_iterator[_shard_id] = shard_iterator
+
+            while len(fetched_records) < _expected_record_count and shard_id_to_iterator:
+                for _shard_id, _shard_iterator in list(shard_id_to_iterator.items()):
+                    _resp = _client.get_records(ShardIterator=_shard_iterator)
+                    fetched_records.extend(_resp["Records"])
+                    if next_shard_iterator := _resp.get("NextShardIterator"):
+                        shard_id_to_iterator[_shard_id] = next_shard_iterator
+                        continue
+                    shard_id_to_iterator.pop(_shard_id, None)
+            return fetched_records
 
         records = []
+
+        def _get_records_from_all_shards(_stream_arn, _expected_count, _client):
+            nonlocal records
+            records = _read_records_from_shards(
+                _stream_arn,
+                _expected_count,
+                _client,
+            )
+            assert len(records) == _expected_count, (
+                f"Expected {_expected_count} records, got {len(records)}"
+            )
+
         retry(
-            lambda: _get_records_amount(2, region_2_factory.dynamodbstreams),
+            _get_records_from_all_shards,
             sleep=WAIT_SEC,
-            retries=50,
+            retries=20,
+            _stream_arn=stream_arn_region,
+            _expected_count=2,
+            _client=region_1_factory.dynamodbstreams,
+        )
+
+        retry(
+            _get_records_from_all_shards,
+            sleep=WAIT_SEC,
+            retries=20,
+            _stream_arn=stream_arn_secondary_region,
+            _expected_count=2,
+            _client=region_2_factory.dynamodbstreams,
         )
 
     @markers.aws.only_localstack
