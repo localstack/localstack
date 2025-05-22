@@ -31,7 +31,7 @@ aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==41.2.0
     # via aws-cdk-lib
-aws-cdk-lib==2.196.1
+aws-cdk-lib==2.197.0
     # via localstack-core
 aws-sam-translator==1.97.0
     # via
@@ -49,7 +49,7 @@ boto3==1.38.18
     #   kclpy-ext
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.38.19
+boto3-stubs==1.38.21
     # via localstack-core (pyproject.toml)
 botocore==1.38.18
     # via
@@ -84,11 +84,11 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.35.1
+cfn-lint==1.35.3
     # via moto-ext
 charset-normalizer==3.4.2
     # via requests
-click==8.2.0
+click==8.2.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -98,7 +98,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.4.2
     # via aws-cdk-lib
-coverage==7.8.0
+coverage==7.8.1
     # via
     #   coveralls
     #   localstack-core
@@ -240,7 +240,7 @@ kclpy-ext==3.0.3
     # via localstack-core
 lazy-object-proxy==1.11.0
     # via openapi-spec-validator
-localstack-snapshot==0.2.0
+localstack-snapshot==0.3.0
     # via localstack-core
 localstack-twisted==24.3.0
     # via localstack-core
@@ -276,7 +276,7 @@ mypy-boto3-appconfig==1.38.7
     # via boto3-stubs
 mypy-boto3-appconfigdata==1.38.0
     # via boto3-stubs
-mypy-boto3-application-autoscaling==1.38.0
+mypy-boto3-application-autoscaling==1.38.21
     # via boto3-stubs
 mypy-boto3-appsync==1.38.2
     # via boto3-stubs
@@ -298,7 +298,7 @@ mypy-boto3-cloudfront==1.38.12
     # via boto3-stubs
 mypy-boto3-cloudtrail==1.38.0
     # via boto3-stubs
-mypy-boto3-cloudwatch==1.38.0
+mypy-boto3-cloudwatch==1.38.21
     # via boto3-stubs
 mypy-boto3-codebuild==1.38.17
     # via boto3-stubs
@@ -324,7 +324,7 @@ mypy-boto3-dynamodb==1.38.4
     # via boto3-stubs
 mypy-boto3-dynamodbstreams==1.38.0
     # via boto3-stubs
-mypy-boto3-ec2==1.38.19
+mypy-boto3-ec2==1.38.21
     # via boto3-stubs
 mypy-boto3-ecr==1.38.6
     # via boto3-stubs
@@ -354,7 +354,7 @@ mypy-boto3-fis==1.38.0
     # via boto3-stubs
 mypy-boto3-glacier==1.38.0
     # via boto3-stubs
-mypy-boto3-glue==1.38.18
+mypy-boto3-glue==1.38.20
     # via boto3-stubs
 mypy-boto3-iam==1.38.14
     # via boto3-stubs
@@ -410,7 +410,7 @@ mypy-boto3-qldb==1.38.0
     # via boto3-stubs
 mypy-boto3-qldb-session==1.38.0
     # via boto3-stubs
-mypy-boto3-rds==1.38.2
+mypy-boto3-rds==1.38.20
     # via boto3-stubs
 mypy-boto3-rds-data==1.38.0
     # via boto3-stubs
@@ -631,7 +631,7 @@ rich==14.0.0
     #   localstack-core (pyproject.toml)
 rolo==0.7.5
     # via localstack-core
-rpds-py==0.25.0
+rpds-py==0.25.1
     # via
     #   jsonschema
     #   referencing
@@ -793,7 +793,7 @@ typing-extensions==4.13.2
     #   readerwriterlock
     #   referencing
     #   typing-inspection
-typing-inspection==0.4.0
+typing-inspection==0.4.1
     # via pydantic
 urllib3==2.4.0
     # via
