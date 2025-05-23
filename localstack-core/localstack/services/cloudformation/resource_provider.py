@@ -222,23 +222,13 @@ class ResourceProvider(Generic[Properties]):
         raise NotImplementedError
 
 
-# legacy helpers
-def get_resource_type(resource: dict) -> str:
-    """this is currently overwritten in PRO to add support for custom resources"""
-    if isinstance(resource, str):
-        raise ValueError(f"Invalid argument: {resource}")
-    try:
-        resource_type: str = resource["Type"]
-
-        if resource_type.startswith("Custom::"):
-            return "AWS::CloudFormation::CustomResource"
-        return resource_type
-    except Exception:
-        LOG.warning(
-            "Failed to retrieve resource type %s",
-            resource.get("Type"),
-            exc_info=LOG.isEnabledFor(logging.DEBUG),
-        )
+def standardise_resource_type(resource_type: str) -> str:
+    """
+    Custom resources can either start with Custom:: or AWS::CloudFormation::CustomResource.
+    """
+    if resource_type.startswith("Custom::"):
+        return "AWS::CloudFormation::CustomResource"
+    return resource_type
 
 
 def invoke_function(
@@ -444,7 +434,7 @@ class ResourceProviderExecutor:
         max_iterations = max(ceil(max_timeout / sleep_time), 2)
 
         for current_iteration in range(max_iterations):
-            resource_type = get_resource_type({"Type": raw_payload["resourceType"]})
+            resource_type = standardise_resource_type(raw_payload["resourceType"])
             resource["SpecifiedProperties"] = raw_payload["requestData"]["resourceProperties"]
 
             try:
