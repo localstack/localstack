@@ -836,7 +836,9 @@ workflows:
       or:
         - << pipeline.parameters.only-acceptance-tests >>
         - and:
-          - equal: [ master,  << pipeline.git.branch>> ]
+          - or:
+            - equal: [ master,  << pipeline.git.branch>> ]
+            - matches: { pattern: "^release/.+$", value: << pipeline.git.branch >> }
           - equal: [ webhook, << pipeline.trigger_source >> ]
     jobs:
       - push-to-tinybird:
@@ -883,7 +885,9 @@ workflows:
       - push:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - /^release\/.+$/
           requires:
             - acceptance-tests-amd64
             - acceptance-tests-arm64
@@ -896,7 +900,9 @@ workflows:
       or:
         - << pipeline.parameters.only-acceptance-tests >>
         - and:
-          - equal: [ master,  << pipeline.git.branch>> ]
+          - or:
+              - equal: [ master,  << pipeline.git.branch>> ]
+              - matches: { pattern: "^release/.+$", value: << pipeline.git.branch >> }
           - equal: [ webhook, << pipeline.trigger_source >> ]
     jobs:
       - push-to-tinybird:
@@ -997,7 +1003,9 @@ workflows:
       - push:
           filters:
             branches:
-              only: master
+              only:
+               - master
+               - /^release\/.+$/
           requires:
             - itest-cloudwatch-v1-provider
             - itest-events-v1-provider
