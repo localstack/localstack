@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_amz_json_protocol": {
+    "last_validated_date": "2025-05-20T15:07:32+00:00"
+  },
   "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_aws_integration": {
     "last_validated_date": "2025-03-19T13:27:52+00:00"
   },
