@@ -148,6 +148,12 @@ def check_provider_signature(sub_class: type, base_class: type, method_name: str
                 #    arg: ArgType | None = None
                 # These should be considered equal, so until the API is fixed, we remove any Optionals
                 # This also gives us the flexibility to correct the API without fixing all implementations at the same time
+
+                if kwarg not in base_spec.annotations:
+                    # Typically happens when the implementation uses '**kwargs: Any'
+                    # This parameter is not part of the base spec, so we can't compare types
+                    continue
+
                 sub_type = _remove_optional(sub_spec.annotations[kwarg])
                 base_type = _remove_optional(base_spec.annotations[kwarg])
                 assert sub_type == base_type, (
