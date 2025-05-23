@@ -13,6 +13,7 @@ from localstack import config
 from localstack.aws.skeleton import DispatchTable, Skeleton
 from localstack.aws.spec import load_service
 from localstack.config import ServiceProviderConfig
+from localstack.runtime import hooks
 from localstack.state import StateLifecycleHook, StateVisitable, StateVisitor
 from localstack.utils.bootstrap import get_enabled_apis, is_api_enabled, log_duration
 from localstack.utils.functions import call_safe
@@ -691,3 +692,19 @@ def check_service_health(api, expect_shutdown=False):
         else:
             LOG.warning('Service "%s" still shutting down, retrying...', api)
         raise Exception("Service check failed for api: %s" % api)
+
+
+@hooks.on_infra_start(should_load=lambda: config.EAGER_SERVICE_LOADING)
+def eager_load_services():
+    from localstack.utils.bootstrap import get_preloaded_services
+
+    preloaded_apis = get_preloaded_services()
+    LOG.debug("Eager loading services: %s", sorted(preloaded_apis))
+
+    for api in preloaded_apis:
+        try:
+            SERVICE_PLUGINS.require(api)
+        except ServiceDisabled as e:
+            LOG.debug("%s", e)
+        except Exception:
+            LOG.exception("could not load service plugin %s", api)
