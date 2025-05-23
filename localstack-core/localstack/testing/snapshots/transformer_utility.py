@@ -327,6 +327,9 @@ class TransformerUtility:
     @staticmethod
     def dynamodb_streams_api():
         return [
+            RegexTransformer(
+                r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}$", replacement="<stream-label>"
+            ),
             TransformerUtility.key_value("TableName"),
             TransformerUtility.key_value("TableStatus"),
             TransformerUtility.key_value("LatestStreamLabel"),

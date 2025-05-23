@@ -1730,14 +1730,14 @@
     }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_streams_on_global_tables": {
-    "recorded-date": "15-05-2025, 13:42:48",
+    "recorded-date": "22-05-2025, 12:44:58",
     "recorded-content": {
       "region-streams": {
         "Streams": [
           {
-            "StreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name>/stream/<stream-label:1>",
+            "StreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<stream-label:1>",
             "StreamLabel": "<stream-label:1>",
-            "TableName": "<table-name>"
+            "TableName": "<table-name:1>"
           }
         ],
         "ResponseMetadata": {
@@ -1748,9 +1748,9 @@
       "secondary-region-streams": {
         "Streams": [
           {
-            "StreamArn": "arn:<partition>:dynamodb:<region-2>:111111111111:table/<table-name>/stream/<stream-label:2>",
+            "StreamArn": "arn:<partition>:dynamodb:<region-2>:111111111111:table/<table-name:1>/stream/<stream-label:2>",
             "StreamLabel": "<stream-label:2>",
-            "TableName": "<table-name>"
+            "TableName": "<table-name:1>"
           }
         ],
         "ResponseMetadata": {
