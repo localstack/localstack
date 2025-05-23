@@ -698,8 +698,10 @@ def check_service_health(api, expect_shutdown=False):
 def eager_load_services():
     from localstack.utils.bootstrap import get_preloaded_services
 
-    LOG.debug("Eager loading services")
-    for api in get_preloaded_services():
+    preloaded_apis = get_preloaded_services()
+    LOG.debug("Eager loading services: %s", sorted(preloaded_apis))
+
+    for api in preloaded_apis:
         try:
             SERVICE_PLUGINS.require(api)
         except ServiceDisabled as e:
