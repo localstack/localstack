@@ -248,3 +248,12 @@ localstack.testing.snapshots.transformer: Replacing regex '000000000000' with '1
 localstack.testing.snapshots.transformer: Replacing regex 'us-east-1' with '<region>'
 localstack.testing.snapshots.transformer: Replacing '1ad533b5-ac54-4354-a273-3ea885f0d59d' in snapshot with '<uuid:1>'
 ```
+
+### Test duration recording
+
+When a test runs successfully against AWS, its last validation date and duration are recorded in a corresponding ***.validation.json** file.
+The validation date is recorded precisely, while test durations can vary between runs.
+For example, test setup time may differ depending on whether a test runs in isolation or as part of a class test suite with class-level fixtures.
+The recorded durations should be treated as approximate indicators of test execution time rather than precise measurements.
+The goal of duration recording is to give _an idea_ about execution times.
+If no duration is present in the validation file, it means the test has not been re-validated against AWS since duration recording was implemented.
