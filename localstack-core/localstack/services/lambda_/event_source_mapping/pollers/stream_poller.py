@@ -70,11 +70,12 @@ class StreamPoller(Poller):
         processor: EventProcessor | None = None,
         partner_resource_arn: str | None = None,
         esm_uuid: str | None = None,
+        shards: dict[str, str] | None = None,
     ):
         super().__init__(source_arn, source_parameters, source_client, processor)
         self.partner_resource_arn = partner_resource_arn
         self.esm_uuid = esm_uuid
-        self.shards = {}
+        self.shards = shards if shards is not None else {}
         self.iterator_over_shards = None
 
         self._is_shutdown = threading.Event()

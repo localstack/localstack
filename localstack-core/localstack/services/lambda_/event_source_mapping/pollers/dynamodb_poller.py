@@ -21,6 +21,7 @@ class DynamoDBPoller(StreamPoller):
         processor: EventProcessor | None = None,
         partner_resource_arn: str | None = None,
         esm_uuid: str | None = None,
+        shards: dict[str, str] | None = None,
     ):
         super().__init__(
             source_arn,
@@ -29,6 +30,7 @@ class DynamoDBPoller(StreamPoller):
             processor,
             esm_uuid=esm_uuid,
             partner_resource_arn=partner_resource_arn,
+            shards=shards,
         )
 
     @property
