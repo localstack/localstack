@@ -6,6 +6,7 @@ from typing import Final, Optional
 import localstack.aws.api.cloudformation as cfn_api
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeIntrinsicFunction,
+    NodeProperty,
     NodeResource,
     PropertiesKey,
 )
@@ -45,26 +46,36 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         #  artificially limit the precision of our output to match AWS's?
 
         arguments_delta = self.visit(node_intrinsic_function.arguments)
-        before_argument_list = arguments_delta.before
-        after_argument_list = arguments_delta.after
+        before_argument: Optional[list[str]] = arguments_delta.before
+        if isinstance(before_argument, str):
+            before_argument = before_argument.split(".")
+        after_argument: Optional[list[str]] = arguments_delta.after
+        if isinstance(after_argument, str):
+            after_argument = after_argument.split(".")
 
         before = None
-        if before_argument_list:
-            before_logical_name_of_resource = before_argument_list[0]
-            before_attribute_name = before_argument_list[1]
+        if before_argument:
+            before_logical_name_of_resource = before_argument[0]
+            before_attribute_name = before_argument[1]
             before_node_resource = self._get_node_resource_for(
                 resource_name=before_logical_name_of_resource, node_template=self._node_template
             )
-            before_node_property = self._get_node_property_for(
+            before_node_property: Optional[NodeProperty] = self._get_node_property_for(
                 property_name=before_attribute_name, node_resource=before_node_resource
             )
-            before_property_delta = self.visit(before_node_property)
-            before = before_property_delta.before
+            if before_node_property is not None:
+                before_property_delta = self.visit(before_node_property)
+                before = before_property_delta.before
+            else:
+                before = self._before_deployed_property_value_of(
+                    resource_logical_id=before_logical_name_of_resource,
+                    property_name=before_attribute_name,
+                )
 
         after = None
-        if after_argument_list:
-            after_logical_name_of_resource = after_argument_list[0]
-            after_attribute_name = after_argument_list[1]
+        if after_argument:
+            after_logical_name_of_resource = after_argument[0]
+            after_attribute_name = after_argument[1]
             after_node_resource = self._get_node_resource_for(
                 resource_name=after_logical_name_of_resource, node_template=self._node_template
             )
@@ -74,12 +85,18 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
             )
             if after_node_property is not None:
                 after_property_delta = self.visit(after_node_property)
+                if after_property_delta.before == after_property_delta.after:
+                    after = after_property_delta.after
+                else:
+                    after = CHANGESET_KNOWN_AFTER_APPLY
             else:
-                after_property_delta = PreprocEntityDelta(after=CHANGESET_KNOWN_AFTER_APPLY)
-            if after_property_delta.before == after_property_delta.after:
-                after = after_property_delta.after
-            else:
-                after = CHANGESET_KNOWN_AFTER_APPLY
+                try:
+                    after = self._after_deployed_property_value_of(
+                        resource_logical_id=after_logical_name_of_resource,
+                        property_name=after_attribute_name,
+                    )
+                except RuntimeError:
+                    after = CHANGESET_KNOWN_AFTER_APPLY
 
         return PreprocEntityDelta(before=before, after=after)
 

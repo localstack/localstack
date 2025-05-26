@@ -1,3 +1,7 @@
+import pytest
+
+from localstack.services.cloudformation.v2.utils import is_v2_engine
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 
@@ -15,6 +19,11 @@ Outputs:
   Cert:
     Value: !Ref cert1
 """
+
+pytestmark = pytest.mark.skipif(
+    condition=not is_v2_engine() and not is_aws_cloud(),
+    reason="Only targeting the new engine",
+)
 
 
 @markers.aws.only_localstack
