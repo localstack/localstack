@@ -268,7 +268,6 @@ HOST_PREFIXES_NO_SUBDOMAIN = [
     "analytics-",
     "control-storage-",
     "data-",
-    "discovery-",
     "query-",
     "runtime-",
     "storage-",
