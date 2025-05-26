@@ -115,7 +115,7 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
 
     @handler("ListStreams", expand=False)
     def list_streams(self, context: RequestContext, payload: ListStreamsInput) -> ListStreamsOutput:
-        global_table_region = get_original_region(context=context, stream_arn=payload["TableName"])
+        global_table_region = get_original_region(context=context, stream_arn=payload.get("TableName"))
         # TODO: look into `ExclusiveStartStreamArn` param
         return self._forward_request(
             context=context, service_request=payload, region=global_table_region
