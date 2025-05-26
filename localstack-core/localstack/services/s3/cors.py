@@ -30,7 +30,7 @@ _s3_virtual_host_regex = re.compile(S3_VIRTUAL_HOSTNAME_REGEX)
 FAKE_HOST_ID = "9Gjjt1m+cjU4OPvX9O9/8RuvnG41MRb/18Oux2o5H5MY7ISNTlXN+Dz9IG62/ILVxhAGI0qyPfg="
 
 # TODO: refactor those to expose the needed methods maybe in another way that both can import
-add_default_headers = CorsResponseEnricher.add_cors_headers
+add_default_headers = CorsResponseEnricher.add_default_cors_headers
 is_origin_allowed_default = CorsEnforcer.is_cors_origin_allowed
 
 
