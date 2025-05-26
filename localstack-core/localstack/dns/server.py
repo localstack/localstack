@@ -282,7 +282,8 @@ HOST_PREFIX_NAME_PATTERNS = [
 
 NAME_PATTERNS_POINTING_TO_LOCALSTACK = [
     f".*{LOCALHOST_HOSTNAME}",
-].extend(HOST_PREFIX_NAME_PATTERNS)
+    *HOST_PREFIX_NAME_PATTERNS,
+]
 
 
 def exclude_from_resolution(domain_regex: str):
