@@ -54,6 +54,7 @@ InsightRuleIsManaged = bool
 InsightRuleMaxResults = int
 InsightRuleMetricName = str
 InsightRuleName = str
+InsightRuleOnTransformedLogs = bool
 InsightRuleOrderBy = str
 InsightRuleSchema = str
 InsightRuleState = str
@@ -207,6 +208,12 @@ class ConcurrentModificationException(ServiceException):
     code: str = "ConcurrentModificationException"
     sender_fault: bool = True
     status_code: int = 429
+
+
+class ConflictException(ServiceException):
+    code: str = "ConflictException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class DashboardValidationMessage(TypedDict, total=False):
@@ -606,6 +613,7 @@ class InsightRule(TypedDict, total=False):
     Schema: InsightRuleSchema
     Definition: InsightRuleDefinition
     ManagedRule: Optional[InsightRuleIsManaged]
+    ApplyOnTransformedLogs: Optional[InsightRuleOnTransformedLogs]
 
 
 InsightRules = List[InsightRule]
@@ -1024,6 +1032,7 @@ class PutInsightRuleInput(ServiceRequest):
     RuleState: Optional[InsightRuleState]
     RuleDefinition: InsightRuleDefinition
     Tags: Optional[TagList]
+    ApplyOnTransformedLogs: Optional[InsightRuleOnTransformedLogs]
 
 
 class PutInsightRuleOutput(TypedDict, total=False):
@@ -1440,6 +1449,7 @@ class CloudwatchApi:
         rule_definition: InsightRuleDefinition,
         rule_state: InsightRuleState | None = None,
         tags: TagList | None = None,
+        apply_on_transformed_logs: InsightRuleOnTransformedLogs | None = None,
         **kwargs,
     ) -> PutInsightRuleOutput:
         raise NotImplementedError
