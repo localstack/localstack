@@ -974,3 +974,50 @@ def test_raise_create_volume_without_size(snapshot, aws_client):
     with pytest.raises(ClientError) as e:
         aws_client.ec2.create_volume(AvailabilityZone="eu-central-1a")
     snapshot.match("request-missing-size", e.value.response)
+
+
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        # not implemented in LS
+        "$..AvailabilityZones..GroupLongName",
+        "$..AvailabilityZones..GroupName",
+        "$..AvailabilityZones..NetworkBorderGroup",
+        "$..AvailabilityZones..OptInStatus",
+    ]
+)
+@markers.aws.validated
+def test_describe_availability_zones_filter_with_zone_names(snapshot, aws_client):
+    availability_zones = aws_client.ec2.describe_availability_zones(ZoneNames=["us-east-1a"])
+    snapshot.match("availability_zones", availability_zones)
+
+
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        # not implemented in LS
+        "$..AvailabilityZones..GroupLongName",
+        "$..AvailabilityZones..GroupName",
+        "$..AvailabilityZones..NetworkBorderGroup",
+        "$..AvailabilityZones..OptInStatus",
+    ]
+)
+@markers.aws.validated
+def test_describe_availability_zones_filter_with_zone_ids(snapshot, aws_client):
+    availability_zones = aws_client.ec2.describe_availability_zones(ZoneIds=["use1-az1"])
+    snapshot.match("availability_zones", availability_zones)
+
+
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        # not implemented in LS
+        "$..AvailabilityZones..GroupLongName",
+        "$..AvailabilityZones..GroupName",
+        "$..AvailabilityZones..NetworkBorderGroup",
+        "$..AvailabilityZones..OptInStatus",
+    ]
+)
+@markers.aws.validated
+def test_describe_availability_zones_filters(snapshot, aws_client):
+    availability_zones = aws_client.ec2.describe_availability_zones(
+        Filters=[{"Name": "zone-name", "Values": ["us-east-1a"]}]
+    )
+    snapshot.match("availability_zones", availability_zones)
