@@ -20,6 +20,9 @@ from localstack.aws.api.dynamodb import (
     TableName,
     Update,
 )
+from localstack.aws.api.dynamodbstreams import (
+    ResourceNotFoundException as DynamoDBStreamsResourceNotFoundException,
+)
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.http import Response
@@ -372,7 +375,9 @@ def change_region_in_ddb_stream_arn(arn: str, region: str) -> str:
     #   arn:aws:dynamodb:<region>:<account>:table/<table_name>/stream/<latest_stream_label>
     resource_splits = arn_data["resource"].split("/")
     if len(resource_splits) != 4:
-        raise Exception(f"The format of the '{arn}' ARN is not valid")
+        raise DynamoDBStreamsResourceNotFoundException(
+            f"The format of the '{arn}' ARN is not valid"
+        )
 
     return dynamodb_stream_arn(
         table_name=resource_splits[1],

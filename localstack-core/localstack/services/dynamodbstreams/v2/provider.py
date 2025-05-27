@@ -42,6 +42,12 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
     def _forward_request(
         self, context: RequestContext, region: str | None, service_request: ServiceRequest
     ) -> ServiceResponse:
+        """
+        Modify the context region and then forward request to DynamoDB Local.
+
+        This is used for operations impacted by global tables. In LocalStack, a single copy of global table
+        is kept, and any requests to replicated tables are forwarded to this original table.
+        """
         if region:
             with modify_context_region(context, region):
                 return self.forward_request(context, service_request=service_request)
