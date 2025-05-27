@@ -419,5 +419,80 @@
         }
       }
     }
+  },
+  "tests/aws/services/ec2/test_ec2.py::test_describe_availability_zones_filter_with_zone_names": {
+    "recorded-date": "26-05-2025, 13:36:03",
+    "recorded-content": {
+      "availability_zones": {
+        "AvailabilityZones": [
+          {
+            "GroupLongName": "US East (N. Virginia) 1",
+            "GroupName": "<region>-zg-1",
+            "Messages": [],
+            "NetworkBorderGroup": "<region>",
+            "OptInStatus": "opt-in-not-required",
+            "RegionName": "<region>",
+            "State": "available",
+            "ZoneId": "use1-az6",
+            "ZoneName": "<region>a",
+            "ZoneType": "availability-zone"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ec2/test_ec2.py::test_describe_availability_zones_filter_with_zone_ids": {
+    "recorded-date": "26-05-2025, 13:34:49",
+    "recorded-content": {
+      "availability_zones": {
+        "AvailabilityZones": [
+          {
+            "GroupLongName": "US East (N. Virginia) 1",
+            "GroupName": "<region>-zg-1",
+            "Messages": [],
+            "NetworkBorderGroup": "<region>",
+            "OptInStatus": "opt-in-not-required",
+            "RegionName": "<region>",
+            "State": "available",
+            "ZoneId": "use1-az1",
+            "ZoneName": "<region>b",
+            "ZoneType": "availability-zone"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ec2/test_ec2.py::test_describe_availability_zones_filters": {
+    "recorded-date": "26-05-2025, 13:48:29",
+    "recorded-content": {
+      "availability_zones": {
+        "AvailabilityZones": [
+          {
+            "GroupLongName": "US East (N. Virginia) 1",
+            "GroupName": "<region>-zg-1",
+            "Messages": [],
+            "NetworkBorderGroup": "<region>",
+            "OptInStatus": "opt-in-not-required",
+            "RegionName": "<region>",
+            "State": "available",
+            "ZoneId": "use1-az6",
+            "ZoneName": "<region>a",
+            "ZoneType": "availability-zone"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
