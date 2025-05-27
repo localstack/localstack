@@ -20,7 +20,7 @@ botocore==1.38.23
     #   s3transfer
 build==1.2.2.post1
     # via localstack-core (pyproject.toml)
-cachetools==5.5.2
+cachetools==6.0.0
     # via localstack-core (pyproject.toml)
 cbor2==5.6.5
     # via localstack-core (pyproject.toml)
@@ -34,7 +34,7 @@ click==8.2.1
     # via localstack-core (pyproject.toml)
 constantly==23.10.4
     # via localstack-twisted
-cryptography==45.0.2
+cryptography==45.0.3
     # via
     #   localstack-core (pyproject.toml)
     #   pyopenssl
@@ -79,7 +79,7 @@ jsonpatch==1.33
     # via localstack-core (pyproject.toml)
 jsonpointer==3.0.0
     # via jsonpatch
-jsonschema==4.23.0
+jsonschema==4.24.0
     # via
     #   openapi-core
     #   openapi-schema-validator
@@ -164,7 +164,7 @@ rfc3339-validator==0.1.4
     # via openapi-schema-validator
 rich==14.0.0
     # via localstack-core (pyproject.toml)
-rolo==0.7.5
+rolo==0.7.6
     # via localstack-core (pyproject.toml)
 rpds-py==0.25.1
     # via
