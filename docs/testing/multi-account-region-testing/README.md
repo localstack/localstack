@@ -30,7 +30,7 @@ connect_to.with_assumed_role(
 ```
 
 When there is no role specified, you should use the source arn conceptually if cross-account is allowed.
-This can be seen in a case where `account_id` was added [added](https://github.com/localstack/localstack/blob/ae31f63bb6d8254edc0c85a66e3c36cd0c7dc7b0/localstack/utils/aws/message_forwarding.py#L42) to [send events to the target](https://github.com/localstack/localstack/blob/ae31f63bb6d8254edc0c85a66e3c36cd0c7dc7b0/localstack/utils/aws/message_forwarding.py#L31) service like SQS, SNS, Lambda, etc.
+This can be seen in a case where `account_id` was [added](https://github.com/localstack/localstack/blob/ae31f63bb6d8254edc0c85a66e3c36cd0c7dc7b0/localstack/utils/aws/message_forwarding.py#L42) to [send events to the target](https://github.com/localstack/localstack/blob/ae31f63bb6d8254edc0c85a66e3c36cd0c7dc7b0/localstack/utils/aws/message_forwarding.py#L31) service like SQS, SNS, Lambda, etc.
 
 Always refer to the official AWS documentation and investigate how the the services communicate with each other.
 For example, here are the [AWS Firehose docs](https://docs.aws.amazon.com/firehose/latest/dev/controlling-access.html#cross-account-delivery-s3) explaining Firehose and S3 integration.
