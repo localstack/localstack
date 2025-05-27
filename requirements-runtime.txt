@@ -49,7 +49,7 @@ build==1.2.2.post1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cachetools==5.5.2
+cachetools==6.0.0
     # via
     #   airspeed-ext
     #   localstack-core
@@ -76,7 +76,7 @@ constantly==23.10.4
     # via localstack-twisted
 crontab==1.0.4
     # via localstack-core (pyproject.toml)
-cryptography==45.0.2
+cryptography==45.0.3
     # via
     #   joserfc
     #   localstack-core
@@ -139,7 +139,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.0.4
+joserfc==1.1.0
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core (pyproject.toml)
@@ -157,7 +157,7 @@ jsonpath-rw==1.4.0
     # via localstack-core (pyproject.toml)
 jsonpointer==3.0.0
     # via jsonpatch
-jsonschema==4.23.0
+jsonschema==4.24.0
     # via
     #   aws-sam-translator
     #   moto-ext
@@ -239,7 +239,7 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.11.4
+pydantic==2.11.5
     # via aws-sam-translator
 pydantic-core==2.33.2
     # via pydantic
@@ -304,7 +304,7 @@ rich==14.0.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-rolo==0.7.5
+rolo==0.7.6
     # via localstack-core
 rpds-py==0.25.1
     # via

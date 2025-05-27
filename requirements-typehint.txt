@@ -25,13 +25,13 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.236
+aws-cdk-asset-awscli-v1==2.2.237
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==41.2.0
     # via aws-cdk-lib
-aws-cdk-lib==2.197.0
+aws-cdk-lib==2.198.0
     # via localstack-core
 aws-sam-translator==1.97.0
     # via
@@ -49,7 +49,7 @@ boto3==1.38.23
     #   kclpy-ext
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.38.21
+boto3-stubs==1.38.23
     # via localstack-core (pyproject.toml)
 botocore==1.38.23
     # via
@@ -65,7 +65,7 @@ build==1.2.2.post1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cachetools==5.5.2
+cachetools==6.0.0
     # via
     #   airspeed-ext
     #   localstack-core
@@ -98,7 +98,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.4.2
     # via aws-cdk-lib
-coverage==7.8.1
+coverage==7.8.2
     # via
     #   coveralls
     #   localstack-core
@@ -106,7 +106,7 @@ coveralls==4.0.1
     # via localstack-core
 crontab==1.0.4
     # via localstack-core
-cryptography==45.0.2
+cryptography==45.0.3
     # via
     #   joserfc
     #   localstack-core
@@ -172,7 +172,7 @@ hyperframe==6.1.0
     # via h2
 hyperlink==21.0.0
     # via localstack-twisted
-identify==2.6.10
+identify==2.6.12
     # via pre-commit
 idna==3.10
     # via
@@ -195,7 +195,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.0.4
+joserfc==1.1.0
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core
@@ -221,7 +221,7 @@ jsonpath-rw==1.4.0
     # via localstack-core
 jsonpointer==3.0.0
     # via jsonpatch
-jsonschema==4.23.0
+jsonschema==4.24.0
     # via
     #   aws-sam-translator
     #   moto-ext
@@ -324,7 +324,7 @@ mypy-boto3-dynamodb==1.38.4
     # via boto3-stubs
 mypy-boto3-dynamodbstreams==1.38.0
     # via boto3-stubs
-mypy-boto3-ec2==1.38.21
+mypy-boto3-ec2==1.38.23
     # via boto3-stubs
 mypy-boto3-ecr==1.38.6
     # via boto3-stubs
@@ -354,7 +354,7 @@ mypy-boto3-fis==1.38.0
     # via boto3-stubs
 mypy-boto3-glacier==1.38.0
     # via boto3-stubs
-mypy-boto3-glue==1.38.20
+mypy-boto3-glue==1.38.22
     # via boto3-stubs
 mypy-boto3-iam==1.38.14
     # via boto3-stubs
@@ -545,7 +545,7 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.11.4
+pydantic==2.11.5
     # via aws-sam-translator
 pydantic-core==2.33.2
     # via pydantic
@@ -629,7 +629,7 @@ rich==14.0.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-rolo==0.7.5
+rolo==0.7.6
     # via localstack-core
 rpds-py==0.25.1
     # via
@@ -639,7 +639,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core
-ruff==0.11.10
+ruff==0.11.11
     # via localstack-core
 s3transfer==0.13.0
     # via
