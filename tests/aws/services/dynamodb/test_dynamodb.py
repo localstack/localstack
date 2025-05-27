@@ -1138,7 +1138,7 @@ class TestDynamoDB:
         assert "Replicas" not in response["Table"]
 
     @markers.aws.validated
-    # An ARM stream has a stream label as suffix. In AWS, such a label differs between the stream of the original table
+    # An ARN stream has a stream label as suffix. In AWS, such a label differs between the stream of the original table
     # and the ones of the replicas. In LocalStack, it does not differ. The only difference in the stream ARNs is the
     # region. Therefore, we skip the following paths from the snapshots.
     # However, we run plain assertions to make sure that the region changes in the ARNs, i.e., the replica have their
