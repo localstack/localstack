@@ -366,9 +366,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             delta: PreprocEntityDelta = self.visit(change_set_entity=change_set_entity)
             delta_before = delta.before
             delta_after = delta.after
-            if not is_nothing(before) and not is_nothing(delta_before):
+            if not is_nothing(before) and not is_nothing(delta_before) and delta_before is not None:
                 before[name] = delta_before
-            if not is_nothing(after) and not is_nothing(delta_after):
+            if not is_nothing(after) and not is_nothing(delta_after) and delta_after is not None:
                 after[name] = delta_after
         return PreprocEntityDelta(before=before, after=after)
 
@@ -759,9 +759,17 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             delta = self.visit(node_property)
             delta_before = delta.before
             delta_after = delta.after
-            if not is_nothing(before_bindings) and not is_nothing(delta_before):
+            if (
+                not is_nothing(before_bindings)
+                and not is_nothing(delta_before)
+                and delta_before is not None
+            ):
                 before_bindings[property_name] = delta_before
-            if not is_nothing(after_bindings) and not is_nothing(delta_after):
+            if (
+                not is_nothing(after_bindings)
+                and not is_nothing(delta_after)
+                and delta_after is not None
+            ):
                 after_bindings[property_name] = delta_after
         before = Nothing
         if not is_nothing(before_bindings):
