@@ -11,6 +11,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeOutput,
     NodeParameter,
     NodeResource,
+    is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
     ChangeSetModelPreproc,
@@ -113,13 +114,13 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             # There are no updates for this resource; iff the resource was previously
             # deployed, then the resolved details are copied in the current state for
             # references or other downstream operations.
-            if before is not None:
+            if not is_nothing(before):
                 before_logical_id = delta.before.logical_id
                 before_resource = self._before_resolved_resources.get(before_logical_id, dict())
                 self.resources[before_logical_id] = before_resource
 
         # Update the latest version of this resource for downstream references.
-        if after is not None:
+        if not is_nothing(after):
             after_logical_id = after.logical_id
             after_physical_id: str = self._after_resource_physical_id(
                 resource_logical_id=after_logical_id
@@ -132,7 +133,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
     ) -> PreprocEntityDelta[PreprocOutput, PreprocOutput]:
         delta = super().visit_node_output(node_output=node_output)
         after = delta.after
-        if after is None or (isinstance(after, PreprocOutput) and after.condition is False):
+        if is_nothing(after) or (isinstance(after, PreprocOutput) and after.condition is False):
             return delta
         self.outputs[delta.after.name] = delta.after.value
         return delta
@@ -142,7 +143,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
     ) -> None:
         # Changes are to be made about this resource.
         # TODO: this logic is a POC and should be revised.
-        if before is not None and after is not None:
+        if not is_nothing(before) and not is_nothing(after):
             # Case: change on same type.
             if before.resource_type == after.resource_type:
                 # Register a Modified if changed.
@@ -177,7 +178,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     before_properties=None,
                     after_properties=after.properties,
                 )
-        elif before is not None:
+        elif not is_nothing(before):
             # Case: removal
             # XXX hacky, stick the previous resources' properties into the payload
             # XXX hacky, stick the previous resources' properties into the payload
@@ -190,7 +191,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 before_properties=before_properties,
                 after_properties=None,
             )
-        elif after is not None:
+        elif not is_nothing(after):
             # Case: addition
             self._execute_resource_action(
                 action=ChangeAction.Add,

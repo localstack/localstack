@@ -8,7 +8,9 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeIntrinsicFunction,
     NodeProperty,
     NodeResource,
+    Nothing,
     PropertiesKey,
+    is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
     ChangeSetModelPreproc,
@@ -53,8 +55,8 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         if isinstance(after_argument, str):
             after_argument = after_argument.split(".")
 
-        before = None
-        if before_argument:
+        before = Nothing
+        if not is_nothing(before_argument):
             before_logical_name_of_resource = before_argument[0]
             before_attribute_name = before_argument[1]
             before_node_resource = self._get_node_resource_for(
@@ -72,8 +74,8 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
                     property_name=before_attribute_name,
                 )
 
-        after = None
-        if after_argument:
+        after = Nothing
+        if not is_nothing(after_argument):
             after_logical_name_of_resource = after_argument[0]
             after_attribute_name = after_argument[1]
             after_node_resource = self._get_node_resource_for(
@@ -154,7 +156,7 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         if before == after:
             # unchanged: nothing to do.
             return
-        if before is not None and after is not None:
+        if not is_nothing(before) and not is_nothing(after):
             # Case: change on same type.
             if before.resource_type == after.resource_type:
                 # Register a Modified if changed.
@@ -184,7 +186,7 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
                     before_properties=None,
                     after_properties=after.properties,
                 )
-        elif before is not None:
+        elif not is_nothing(before):
             # Case: removal
             self._register_resource_change(
                 logical_id=name,
@@ -193,7 +195,7 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
                 before_properties=before.properties,
                 after_properties=None,
             )
-        elif after is not None:
+        elif not is_nothing(after):
             # Case: addition
             self._register_resource_change(
                 logical_id=name,
