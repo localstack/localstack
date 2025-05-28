@@ -829,6 +829,7 @@ def test_integration_mock_with_vtl_map_assignation(create_rest_apigw, aws_client
     #set($context.requestOverride.querystring[$paramName] = "bar")
     #set($paramPutName = "putfoo")
     $context.requestOverride.querystring.put($paramPutName, "putBar")
+    #set($context["requestOverride"].querystring["nestedfoo"] = "nestedFoo")
     {
       "statusCode": 200
     }
@@ -846,9 +847,11 @@ def test_integration_mock_with_vtl_map_assignation(create_rest_apigw, aws_client
     response_template = textwrap.dedent("""
     #set($value = $context.requestOverride.querystring["foo"])
     #set($value2 = $context.requestOverride.querystring["putfoo"])
+    #set($value3 = $context.requestOverride.querystring["nestedfoo"])
     {
         "value": "$value",
-        "value2": "$value2"
+        "value2": "$value2",
+        "value3": "$value3",
     }
     """)
 
