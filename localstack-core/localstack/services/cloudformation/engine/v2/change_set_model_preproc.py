@@ -649,7 +649,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def visit_node_intrinsic_function_fn_select(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ):
-        # TODO: add support for schema validation
+        # TODO: add further support for schema validation
         arguments_delta = self.visit(node_intrinsic_function.arguments)
         arguments_before = arguments_delta.before
         arguments_after = arguments_delta.after
@@ -659,7 +659,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             if not isinstance(values, list) or not values:
                 raise RuntimeError(f"Invalid arguments list value for Fn::Select: '{values}'")
             values_len = len(values)
-            index: int = args[0]
+            index: int = int(args[0])
             if not isinstance(index, int) or index < 0 or index > values_len:
                 raise RuntimeError(f"Invalid or out of range index value for Fn::Select: '{index}'")
             selection = values[index]

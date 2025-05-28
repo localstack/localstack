@@ -1202,7 +1202,6 @@ class TestCfnLambdaDestinations:
 
     """
 
-    # @pytest.mark.skip(reason="CFNV2:Other")
     @pytest.mark.parametrize(
         ["on_success", "on_failure"],
         [
