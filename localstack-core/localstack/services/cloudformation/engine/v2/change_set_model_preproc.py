@@ -646,6 +646,35 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             after = _compute_join(arguments_after)
         return PreprocEntityDelta(before=before, after=after)
 
+    def visit_node_intrinsic_function_fn_select(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ):
+        # TODO: add support for schema validation
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        arguments_before = arguments_delta.before
+        arguments_after = arguments_delta.after
+
+        def _compute_fn_select(args: list[Any]) -> Any:
+            values: list[Any] = args[1]
+            if not isinstance(values, list) or not values:
+                raise RuntimeError(f"Invalid arguments list value for Fn::Select: '{values}'")
+            values_len = len(values)
+            index: int = args[0]
+            if not isinstance(index, int) or index < 0 or index > values_len:
+                raise RuntimeError(f"Invalid or out of range index value for Fn::Select: '{index}'")
+            selection = values[index]
+            return selection
+
+        before = Nothing
+        if not is_nothing(arguments_before):
+            before = _compute_fn_select(arguments_before)
+
+        after = Nothing
+        if not is_nothing(arguments_after):
+            after = _compute_fn_select(arguments_after)
+
+        return PreprocEntityDelta(before=before, after=after)
+
     def visit_node_intrinsic_function_fn_find_in_map(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
