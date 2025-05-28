@@ -472,6 +472,13 @@ def _print_service_table(services: Dict[str, str]) -> None:
     is_flag=True,
     default=False,
 )
+@click.option(
+    "--stack",
+    "-s",
+    type=str,
+    help="Use a specific LocalStack stack",
+    required=False,
+)
 @publish_invocation
 def cmd_start(
     docker: bool,
@@ -483,6 +490,7 @@ def cmd_start(
     publish: Tuple = (),
     volume: Tuple = (),
     host_dns: bool = False,
+    stack: str = None,
 ) -> None:
     """
     Start the LocalStack runtime.
@@ -495,6 +503,9 @@ def cmd_start(
         raise CLIError("Please specify either --docker or --host")
     if host and detached:
         raise CLIError("Cannot start detached in host mode")
+
+    if stack:
+        os.environ["IMAGE_NAME"] = f"localstack/{stack}:latest"
 
     if not no_banner:
         print_banner()
