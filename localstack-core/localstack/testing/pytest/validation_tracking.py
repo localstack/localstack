@@ -12,9 +12,8 @@ from pathlib import Path
 from typing import Dict, Optional
 
 import pytest
-from _pytest.reports import TestReport
-from _pytest.stash import StashKey
 from pluggy import Result
+from pytest import StashKey, TestReport
 
 from localstack.testing.aws.util import is_aws_cloud
 
