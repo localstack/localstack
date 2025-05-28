@@ -51,11 +51,11 @@ def is_nothing(value: Any) -> bool:
 
 
 def is_created(before: Maybe[Any], after: Maybe[Any]) -> bool:
-    return isinstance(before, NothingType) and not isinstance(after, NothingType)
+    return is_nothing(before) and not is_nothing(after)
 
 
 def is_removed(before: Maybe[Any], after: Maybe[Any]) -> bool:
-    return not isinstance(before, NothingType) and isinstance(after, NothingType)
+    return not is_nothing(before) and is_nothing(after)
 
 
 def parent_change_type_of(children: list[Maybe[ChangeSetEntity]]):
