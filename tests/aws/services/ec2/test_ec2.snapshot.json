@@ -421,7 +421,7 @@
     }
   },
   "tests/aws/services/ec2/test_ec2.py::test_describe_availability_zones_filter_with_zone_names": {
-    "recorded-date": "26-05-2025, 13:36:03",
+    "recorded-date": "28-05-2025, 09:16:53",
     "recorded-content": {
       "availability_zones": {
         "AvailabilityZones": [
@@ -446,7 +446,7 @@
     }
   },
   "tests/aws/services/ec2/test_ec2.py::test_describe_availability_zones_filter_with_zone_ids": {
-    "recorded-date": "26-05-2025, 13:34:49",
+    "recorded-date": "28-05-2025, 09:17:24",
     "recorded-content": {
       "availability_zones": {
         "AvailabilityZones": [
@@ -471,7 +471,7 @@
     }
   },
   "tests/aws/services/ec2/test_ec2.py::test_describe_availability_zones_filters": {
-    "recorded-date": "26-05-2025, 13:48:29",
+    "recorded-date": "28-05-2025, 09:17:47",
     "recorded-content": {
       "availability_zones": {
         "AvailabilityZones": [
