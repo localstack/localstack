@@ -46,6 +46,7 @@ def test_statemachine_definitionsubstitution(deploy_cfn_template, aws_client):
     assert "hello from statemachine" in execution_desc["output"]
 
 
+@pytest.mark.skip(reason="CFNV2:Fn::Split")
 @markers.aws.validated
 def test_nested_statemachine_with_sync2(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
