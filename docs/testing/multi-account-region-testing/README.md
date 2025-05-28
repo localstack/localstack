@@ -38,8 +38,9 @@ For example, here are the [AWS Firehose docs](https://docs.aws.amazon.com/fireho
 
 ## Test changes in CI with random credentials
 
-We regularly run the test suite on GitHub Actions to verify compatibility with multi-account and multi-region features. A [scheduled GitHub Actions workflow](https://github.com/localstack/localstack/actions/workflows/aws-tests-mamr.yml) runs on working days at 01:00 UTC, executing the tests with randomized account IDs and regions.
+We regularly run the test suite on GitHub Actions to verify compatibility with multi-account and multi-region features.
 
+A [scheduled GitHub Actions workflow](https://github.com/localstack/localstack/actions/workflows/aws-tests-mamr.yml) runs on working days at 01:00 UTC, executing the tests with randomized account IDs and regions.
 If you have the necessary permissions, you can also manually trigger the [workflow](https://github.com/localstack/localstack/actions/workflows/aws-tests-mamr.yml) directly from GitHub.
 
 ## Test changes locally with random credentials
