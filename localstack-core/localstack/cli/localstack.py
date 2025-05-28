@@ -475,8 +475,8 @@ def _print_service_table(services: Dict[str, str]) -> None:
 @click.option(
     "--stack",
     "-s",
-    type=click.Choice(["snowflake"], case_sensitive=False),
-    help="Use a specific LocalStack stack",
+    type=str,
+    help="Use a specific LocalStack stack with optional version.",
     required=False,
 )
 @publish_invocation
@@ -505,7 +505,17 @@ def cmd_start(
         raise CLIError("Cannot start detached in host mode")
 
     if stack:
-        os.environ["IMAGE_NAME"] = f"localstack/{stack}:latest"
+        # Validate allowed stacks
+        stack_name = stack.split(":")[0]
+        if stack_name.lower() not in ["localstack", "snowflake"]:
+            raise CLIError(
+                f"Invalid stack '{stack_name}'. Only 'localstack' and 'snowflake' are supported."
+            )
+
+        # Set IMAGE_NAME, defaulting to :latest if no version specified
+        if ":" not in stack:
+            stack = f"{stack}:latest"
+        os.environ["IMAGE_NAME"] = f"localstack/{stack}"
 
     if not no_banner:
         print_banner()
