@@ -249,6 +249,7 @@ class TestCloudFormationMappings:
 
             aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
 
+    # @pytest.mark.skip(reason="CFNV2:Mappings")
     @markers.aws.validated
     def test_aws_refs_in_mappings(self, deploy_cfn_template, account_id):
         """
