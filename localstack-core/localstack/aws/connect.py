@@ -515,7 +515,7 @@ class InternalClientFactory(ClientFactory):
 
         endpoint_url = endpoint_url or get_service_endpoint()
         if service_name == "s3" and endpoint_url:
-            if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
+            if re.match(r"https?://localhost(:[0-9]+)$", endpoint_url):
                 endpoint_url = endpoint_url.replace("://localhost", f"://{get_s3_hostname()}")
 
         return self._get_client(
@@ -579,7 +579,7 @@ class ExternalClientFactory(ClientFactory):
 
         endpoint_url = endpoint_url or get_service_endpoint()
         if service_name == "s3":
-            if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
+            if re.match(r"https?://localhost(:[0-9]+)$", endpoint_url):
                 endpoint_url = endpoint_url.replace("://localhost", f"://{get_s3_hostname()}")
 
         # Prevent `PartialCredentialsError` when only access key ID is provided

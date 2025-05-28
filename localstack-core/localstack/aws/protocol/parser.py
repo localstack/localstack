@@ -69,6 +69,7 @@ import functools
 import re
 from abc import ABC
 from email.utils import parsedate_to_datetime
+from functools import lru_cache
 from typing import IO, Any, Dict, List, Mapping, Optional, Tuple, Union
 from xml.etree import ElementTree as ETree
 
@@ -1007,7 +1008,7 @@ class S3RequestParser(RestXMLRequestParser):
 
         def __enter__(self):
             # only modify the request if it uses the virtual host addressing
-            if bucket_name := self._is_vhost_address_get_bucket(self.request):
+            if bucket_name := self._is_vhost_address_get_bucket(self.request.host):
                 # save the original path and host for restoring on context exit
                 self.old_path = self.request.path
                 self.old_host = self.request.host
@@ -1067,10 +1068,11 @@ class S3RequestParser(RestXMLRequestParser):
                 pass
 
         @staticmethod
-        def _is_vhost_address_get_bucket(request: Request) -> str | None:
+        @lru_cache
+        def _is_vhost_address_get_bucket(host: str) -> str | None:
             from localstack.services.s3.utils import uses_host_addressing
 
-            if bucket_name := uses_host_addressing(request.headers):
+            if bucket_name := uses_host_addressing({"host": host}):
                 return bucket_name
 
             # FIXME: this is a hack to allow recognizing some virtual-hosted S3 requests targeting the regular
@@ -1078,9 +1080,8 @@ class S3RequestParser(RestXMLRequestParser):
             #  this is the case for CDK, that doesn't allow easy configuration of service specific endpoints. However,
             #  while this allows us to understand the S3 request, this is "limited support" as it doesn't work for
             #  pre-signed URL and S3-specific CORS.
-            request_host = request.headers.get("host", "")
             pattern = r"(?P<bucket>.*)\." + config.LOCALSTACK_HOST.host + r"(?::\d.+)"
-            if match := re.match(pattern, request_host):
+            if (match := re.match(pattern, host)) and match.group("bucket") != "s3":
                 return match.group("bucket")
 
     @_handle_exceptions
