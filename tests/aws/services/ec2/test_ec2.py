@@ -989,7 +989,7 @@ def test_raise_create_volume_without_size(snapshot, aws_client):
 def test_describe_availability_zones_filter_with_zone_names(snapshot, aws_client_factory):
     snapshot.add_transformer(snapshot.transform.regex(AWS_REGION_US_EAST_1, "<region>"))
 
-    ec2_client = aws_client_factory(region_name="us-east-1").ec2
+    ec2_client = aws_client_factory(region_name=AWS_REGION_US_EAST_1).ec2
     availability_zones = ec2_client.describe_availability_zones(ZoneNames=["us-east-1a"])
     snapshot.match("availability_zones", availability_zones)
 
@@ -1007,7 +1007,7 @@ def test_describe_availability_zones_filter_with_zone_names(snapshot, aws_client
 def test_describe_availability_zones_filter_with_zone_ids(snapshot, aws_client_factory):
     snapshot.add_transformer(snapshot.transform.regex(AWS_REGION_US_EAST_1, "<region>"))
 
-    ec2_client = aws_client_factory(region_name="us-east-1").ec2
+    ec2_client = aws_client_factory(region_name=AWS_REGION_US_EAST_1).ec2
     availability_zones = ec2_client.describe_availability_zones(ZoneIds=["use1-az1"])
     snapshot.match("availability_zones", availability_zones)
 
@@ -1025,7 +1025,7 @@ def test_describe_availability_zones_filter_with_zone_ids(snapshot, aws_client_f
 def test_describe_availability_zones_filters(snapshot, aws_client_factory):
     snapshot.add_transformer(snapshot.transform.regex(AWS_REGION_US_EAST_1, "<region>"))
 
-    ec2_client = aws_client_factory(region_name="us-east-1").ec2
+    ec2_client = aws_client_factory(region_name=AWS_REGION_US_EAST_1).ec2
     availability_zones = ec2_client.describe_availability_zones(
         Filters=[{"Name": "zone-name", "Values": ["us-east-1a"]}]
     )
