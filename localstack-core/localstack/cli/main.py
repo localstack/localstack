@@ -6,7 +6,10 @@ def main():
     os.environ["LOCALSTACK_CLI"] = "1"
 
     # config profiles are the first thing that need to be loaded (especially before localstack.config!)
-    from .profiles import set_and_remove_profile_from_sys_argv
+    from .profiles import create_default_profiles, set_and_remove_profile_from_sys_argv
+
+    # create default profiles if they do not exist
+    create_default_profiles()
 
     # WARNING: This function modifies sys.argv to remove the profile argument.
     set_and_remove_profile_from_sys_argv()

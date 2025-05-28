@@ -64,3 +64,26 @@ def parse_p_argument(args) -> Optional[str]:
                 return None
 
     return None
+
+
+def create_default_profiles():
+    """
+    Create default profiles if they do not exist.
+
+    This is to ensure that alternative emulators can be started with a profile name like this:
+    `localstack -p snowflake start`
+    """
+    profiles = {
+        "snowflake": {
+            "IMAGE_NAME": "localstack/snowflake:latest",
+        }
+    }
+    profiles_dir = os.path.join(os.path.expanduser("~"), ".localstack")
+    if not os.path.exists(profiles_dir):
+        os.makedirs(profiles_dir)
+    for profile_name, profile_data in profiles.items():
+        profile_path = os.path.join(profiles_dir, f"{profile_name}.env")
+        if not os.path.exists(profile_path):
+            with open(profile_path, "w") as f:
+                for key, value in profile_data.items():
+                    f.write(f"{key}={value}\n")
