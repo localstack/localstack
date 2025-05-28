@@ -6,7 +6,7 @@ PIP_CMD ?= pip3
 TEST_PATH ?= .
 TEST_EXEC ?= python -m
 PYTEST_LOGLEVEL ?= warning
-export DISABLE_EVENTS ?= 1	## disable analytics events from being sent to the backend
+export LOCALSTACK_DISABLE_EVENTS ?= 1	## disable analytics events from being sent to the backend
 
 uname_m := $(shell uname -m)
 ifeq ($(uname_m),x86_64)
