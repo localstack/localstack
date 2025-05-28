@@ -192,6 +192,22 @@ class TestSNSTopicCrud:
             aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
         snapshot.match("topic-not-exists", e.value.response)
 
+        delete_topic = aws_client.sns.delete_topic(TopicArn=topic_arn)
+        snapshot.match("delete-topic-not-exists", delete_topic)
+
+    @markers.aws.validated
+    def test_delete_topic_idempotency(self, sns_create_topic, aws_client, snapshot):
+        topic_arn = sns_create_topic()["TopicArn"]
+
+        response = aws_client.sns.delete_topic(TopicArn=topic_arn)
+        snapshot.match("delete-topic", response)
+
+        with pytest.raises(ClientError):
+            aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+
+        delete_topic = aws_client.sns.delete_topic(TopicArn=topic_arn)
+        snapshot.match("delete-topic-again", delete_topic)
+
     @markers.aws.validated
     def test_create_duplicate_topic_with_more_tags(self, sns_create_topic, snapshot, aws_client):
         topic_name = "test-duplicated-topic-more-tags"

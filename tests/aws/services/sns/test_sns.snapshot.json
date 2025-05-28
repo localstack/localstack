@@ -5206,5 +5206,22 @@
         }
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_delete_topic_idempotency": {
+    "recorded-date": "28-05-2025, 10:08:38",
+    "recorded-content": {
+      "delete-topic": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-topic-again": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -233,6 +233,9 @@
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_create_topic_with_attributes": {
     "last_validated_date": "2023-10-06T18:11:02+00:00"
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_delete_topic_idempotency": {
+    "last_validated_date": "2025-05-28T10:08:38+00:00"
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_tags": {
     "last_validated_date": "2023-08-24T20:30:44+00:00"
   },
