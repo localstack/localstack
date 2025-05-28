@@ -6,7 +6,9 @@ from pathlib import Path
 from typing import Optional, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
+from localstack import config
 from localstack.services.cloudformation.resource_provider import (
+    ConvertingInternalClientFactory,
     OperationStatus,
     ProgressEvent,
     ResourceProvider,
@@ -62,7 +64,18 @@ class SNSSubscriptionProvider(ResourceProvider[SNSSubscriptionProperties]):
 
         """
         model = request.desired_state
-        sns = request.aws_client_factory.sns
+        if subscription_region := model.get("Region"):
+            # FIXME: this is hacky, maybe we should have access to the original parameters for the `aws_client_factory`
+            #  as we now need to manually use them
+            # Not all internal CloudFormation requests will be directed to the same region and account
+            # maybe we could need to expose a proper client factory where we can override some parameters like the
+            # Region
+            factory = ConvertingInternalClientFactory(use_ssl=config.DISTRIBUTED_MODE)
+            client_params = dict(request.aws_client_factory._client_creation_params)
+            client_params["region_name"] = subscription_region
+            sns = factory(**client_params).sns
+        else:
+            sns = request.aws_client_factory.sns
 
         params = util.select_attributes(model=model, params=["TopicArn", "Protocol", "Endpoint"])
 
