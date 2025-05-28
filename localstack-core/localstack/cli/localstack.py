@@ -475,7 +475,7 @@ def _print_service_table(services: Dict[str, str]) -> None:
 @click.option(
     "--stack",
     "-s",
-    type=str,
+    type=click.Choice(["snowflake"], case_sensitive=False),
     help="Use a specific LocalStack stack",
     required=False,
 )
