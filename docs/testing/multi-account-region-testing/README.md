@@ -50,6 +50,5 @@ To test changes locally for multi-account and multi-region compatibility, set th
 - `TEST_AWS_ACCESS_KEY_ID` (Any value except `000000000000`)
 - `TEST_AWS_REGION` (Any value except `us-east-1`)
 
-You may also opt to create a commit (for example: [`da3f8d5`](https://github.com/localstack/localstack/pull/9751/commits/da3f8d5f2328adb7c5c025722994fea4433c08ba)) to test the pipeline for non-default credentials against your changes.
 Note that within all tests you must use `account_id`, `secondary_account_id`, `region_name`, `secondary_region_name` fixtures.
 Importing and using `localstack.constants.TEST_` values is not advised.
