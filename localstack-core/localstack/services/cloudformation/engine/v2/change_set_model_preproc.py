@@ -809,7 +809,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         depends_on_before = Nothing
         depends_on_after = Nothing
         if not is_nothing(node_resource.depends_on):
-            depends_on_delta = self.visit_node_depends_on(node_resource.depends_on)
+            depends_on_delta = self.visit(node_resource.depends_on)
             depends_on_before = depends_on_delta.before
             depends_on_after = depends_on_delta.after
 
