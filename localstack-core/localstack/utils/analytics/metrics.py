@@ -355,7 +355,20 @@ def publish_metrics() -> None:
     This function is automatically triggered on infrastructure shutdown.
     """
     if config.DISABLE_EVENTS:
+        LOG.info(f"Skip publishing metrics given DISABLE_EVENTS={config.DISABLE_EVENTS}")  # noqa
         return
+
+    metadata = EventMetadata(
+        session_id=get_session_id(),
+        client_time=str(datetime.datetime.now()),
+    )
+    collected_metrics = MetricRegistry().collect()
+    LOG.info(
+        f"Publish metrics given DISABLE_EVENTS={config.DISABLE_EVENTS}.Would publish:\n"  # noqa
+        f"{metadata=}\n"  # noqa
+        f"{collected_metrics=}"  # noqa
+    )
+    raise Exception("Intentionally fail to debug CI analytics pollution")
 
     collected_metrics = MetricRegistry().collect()
     if not collected_metrics.payload:  # Skip publishing if no metrics remain after filtering
