@@ -68,7 +68,6 @@ class TestCloudFormationConditions:
             t for t in aws_client.sns.list_topics()["Topics"] if topic_name in t["TopicArn"]
         ] == []
 
-    @pytest.mark.skip(reason="CFNV2:AWS::NoValue")
     @pytest.mark.parametrize(
         "should_set_custom_name",
         ["yep", "nope"],
