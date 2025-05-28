@@ -48,7 +48,12 @@ class ChangeSetModelVisitor(abc.ABC):
             self.visit(child)
 
     def visit_node_template(self, node_template: NodeTemplate):
-        self.visit_children(node_template)
+        # Visit the resources, which will lazily evaluate all the referenced (direct and indirect)
+        # entities (parameters, mappings, conditions, etc.). Then compute the output fields; computing
+        # only the output fields would only result in the deployment logic of the referenced outputs
+        # being evaluated, hence enforce the visiting of all the resources first.
+        self.visit(node_template.resources)
+        self.visit(node_template.outputs)
 
     def visit_node_outputs(self, node_outputs: NodeOutputs):
         self.visit_children(node_outputs)

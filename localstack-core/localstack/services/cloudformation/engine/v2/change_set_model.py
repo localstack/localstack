@@ -523,7 +523,6 @@ class ChangeSetModel:
     def _resolve_intrinsic_function_ref(self, arguments: ChangeSetEntity) -> ChangeType:
         if arguments.change_type != ChangeType.UNCHANGED:
             return arguments.change_type
-        # TODO: add support for nested functions, here we assume the argument is a logicalID.
         if not isinstance(arguments, TerminalValue):
             return arguments.change_type
 
@@ -1170,7 +1169,7 @@ class ChangeSetModel:
                 parameters_scope, parameter_name, before_parameters, after_parameters
             )
             node_parameter = self._visit_parameter(
-                parameters_scope,
+                parameter_scope,
                 parameter_name,
                 before_parameter=before_parameter,
                 after_parameter=after_parameter,

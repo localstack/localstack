@@ -48,7 +48,6 @@ class TestChangeSetValues:
         snapshot.add_transformer(RegexTransformer(test_name, "test-name"))
         template_1 = {
             "Resources": {
-                "Topic": {"Type": "AWS::SNS::Topic", "Properties": {"TopicName": test_name}},
                 "Role": {
                     "Type": "AWS::Logs::LogGroup",
                     "Properties": {
@@ -58,6 +57,7 @@ class TestChangeSetValues:
                         "Tags": [],
                     },
                 },
+                "Topic": {"Type": "AWS::SNS::Topic", "Properties": {"TopicName": test_name}},
             }
         }
         template_2 = {
