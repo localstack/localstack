@@ -6,7 +6,7 @@ import threading
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple, Union, overload
+from typing import Any, Optional, Union, overload
 
 from localstack import config
 from localstack.runtime import hooks
@@ -21,6 +21,51 @@ LOG = logging.getLogger(__name__)
 class MetricRegistryKey:
     namespace: str
     name: str
+
+
+@dataclass(frozen=True)
+class CounterSnapshot:
+    """An immutable snapshot of a counter metric at the time of collection."""
+
+    namespace: str
+    name: str
+    value: int
+    type: str
+    labels: Optional[dict[str, Union[str, float]]] = None
+
+    def as_dict(self) -> dict[str, Any]:
+        """Convert to dictionary format expected by analytics backend."""
+        result = {
+            "namespace": self.namespace,
+            "name": self.name,
+            "value": self.value,
+            "type": self.type,
+        }
+
+        if self.labels:
+            # Convert labels to the expected format (label_1, label_1_value, etc.)
+            for i, (label_name, label_value) in enumerate(self.labels.items(), 1):
+                result[f"label_{i}"] = label_name
+                result[f"label_{i}_value"] = label_value
+
+        return result
+
+
+@dataclass
+class MetricsCollection:
+    """Container for collected metric snapshots."""
+
+    _snapshots: list[CounterSnapshot]  # support for other metric types may be added in the future.
+
+    @property
+    def snapshots(self) -> list[CounterSnapshot]:
+        return self._snapshots
+
+    def __init__(self, snapshots: list[CounterSnapshot]):
+        self._snapshots = snapshots
+
+    def as_dict(self) -> dict[str, list[dict[str, Any]]]:
+        return {"metrics": [snapshot.as_dict() for snapshot in self._snapshots]}
 
 
 class MetricRegistry:
@@ -46,7 +91,7 @@ class MetricRegistry:
             self._registry = dict()
 
     @property
-    def registry(self) -> Dict[MetricRegistryKey, "Metric"]:
+    def registry(self) -> dict[MetricRegistryKey, "Metric"]:
         return self._registry
 
     def register(self, metric: Metric) -> None:
@@ -72,17 +117,17 @@ class MetricRegistry:
 
         self._registry[registry_unique_key] = metric
 
-    def collect(self) -> Dict[str, List[Dict[str, Union[str, int]]]]:
+    def collect(self) -> MetricsCollection:
         """
         Collects all registered metrics.
         """
-        return {
-            "metrics": [
-                metric
-                for metric_instance in self._registry.values()
-                for metric in metric_instance.collect()
-            ]
-        }
+        metric_snapshots = [
+            metric
+            for metric_instance in self._registry.values()
+            for metric in metric_instance.collect()
+        ]
+
+        return MetricsCollection(snapshots=metric_snapshots)
 
 
 class Metric(ABC):
@@ -113,7 +158,9 @@ class Metric(ABC):
         return self._name
 
     @abstractmethod
-    def collect(self) -> List[Dict[str, Union[str, int]]]:
+    def collect(
+        self,
+    ) -> list[CounterSnapshot]:  # support for other metric types may be added in the future.
         """
         Collects and returns metric data. Subclasses must implement this to return collected metric data.
         """
@@ -173,7 +220,7 @@ class CounterMetric(Metric, BaseCounter):
         self._type = "counter"
         MetricRegistry().register(self)
 
-    def collect(self) -> List[Dict[str, Union[str, int]]]:
+    def collect(self) -> list[CounterSnapshot]:
         """Collects the metric unless events are disabled."""
         if config.DISABLE_EVENTS:
             return list()
@@ -181,13 +228,11 @@ class CounterMetric(Metric, BaseCounter):
         if self._count == 0:
             # Return an empty list if the count is 0, as there are no metrics to send to the analytics backend.
             return list()
+
         return [
-            {
-                "namespace": self._namespace,
-                "name": self.name,
-                "value": self._count,
-                "type": self._type,
-            }
+            CounterSnapshot(
+                namespace=self._namespace, name=self.name, value=self._count, type=self._type
+            )
         ]
 
 
@@ -200,10 +245,10 @@ class LabeledCounterMetric(Metric):
     _type: str
     _unit: str
     _labels: list[str]
-    _label_values: Tuple[Optional[Union[str, float]], ...]
-    _counters_by_label_values: defaultdict[Tuple[Optional[Union[str, float]], ...], BaseCounter]
+    _label_values: tuple[Optional[Union[str, float]], ...]
+    _counters_by_label_values: defaultdict[tuple[Optional[Union[str, float]], ...], BaseCounter]
 
-    def __init__(self, namespace: str, name: str, labels: List[str]):
+    def __init__(self, namespace: str, name: str, labels: list[str]):
         super(LabeledCounterMetric, self).__init__(namespace=namespace, name=name)
 
         if not labels:
@@ -238,7 +283,7 @@ class LabeledCounterMetric(Metric):
 
         return self._counters_by_label_values[_label_values]
 
-    def _as_list(self) -> List[Dict[str, Union[str, int]]]:
+    def _as_list(self) -> list[dict[str, Union[str, int]]]:
         num_labels = len(self._labels)
 
         static_key_label_value = [f"label_{i + 1}_value" for i in range(num_labels)]
@@ -269,10 +314,40 @@ class LabeledCounterMetric(Metric):
 
         return collected_metrics
 
-    def collect(self) -> List[Dict[str, Union[str, int]]]:
+    def collect(self) -> list[CounterSnapshot]:
         if config.DISABLE_EVENTS:
             return list()
-        return self._as_list()
+
+        metric_snapshots = []
+        num_labels = len(self._labels)
+
+        for label_values, counter in self._counters_by_label_values.items():
+            if counter.count == 0:
+                continue  # Skip items with a count of 0, as they should not be sent to the analytics backend.
+
+            if len(label_values) != num_labels:
+                raise ValueError(
+                    f"Label count mismatch: expected {num_labels} labels {self._labels}, "
+                    f"but got {len(label_values)} values {label_values}."
+                )
+
+            # Create labels dictionary
+            labels_dict = {
+                label_name: label_value
+                for label_name, label_value in zip(self._labels, label_values)
+            }
+
+            snapshot = CounterSnapshot(
+                namespace=self._namespace,
+                name=self.name,
+                value=counter.count,
+                type=self._type,
+                labels=labels_dict,
+            )
+            metric_snapshots.append(snapshot)
+
+        return metric_snapshots
+        # return self._as_list()
 
 
 class Counter:
@@ -289,11 +364,11 @@ class Counter:
         return CounterMetric(namespace=namespace, name=name)
 
     @overload
-    def __new__(cls, namespace: str, name: str, labels: List[str]) -> LabeledCounterMetric:
+    def __new__(cls, namespace: str, name: str, labels: list[str]) -> LabeledCounterMetric:
         return LabeledCounterMetric(namespace=namespace, name=name, labels=labels)
 
     def __new__(
-        cls, namespace: str, name: str, labels: Optional[List[str]] = None
+        cls, namespace: str, name: str, labels: Optional[list[str]] = None
     ) -> Union[CounterMetric, LabeledCounterMetric]:
         if labels is not None:
             return LabeledCounterMetric(namespace=namespace, name=name, labels=labels)
@@ -312,7 +387,7 @@ def publish_metrics() -> None:
         return
 
     collected_metrics = MetricRegistry().collect()
-    if not collected_metrics["metrics"]:  # Skip publishing if no metrics remain after filtering
+    if not collected_metrics.snapshots:  # Skip publishing if no metrics remain after filtering
         return
 
     metadata = EventMetadata(
@@ -322,4 +397,6 @@ def publish_metrics() -> None:
 
     if collected_metrics:
         publisher = AnalyticsClientPublisher()
-        publisher.publish([Event(name="ls_metrics", metadata=metadata, payload=collected_metrics)])
+        publisher.publish(
+            [Event(name="ls_metrics", metadata=metadata, payload=collected_metrics.as_dict())]
+        )
