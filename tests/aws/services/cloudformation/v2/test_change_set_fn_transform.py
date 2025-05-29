@@ -79,3 +79,56 @@ class TestChangeSetFnTransform:
             },
         }
         capture_update_process(snapshot, template_1, template_2)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("include_format", ["yml", "json"])
+    def test_global_fn_transform_include(
+        self, include_format, snapshot, capture_update_process, s3_bucket, aws_client, tmp_path
+    ):
+        name1 = f"topic-name-1-{long_uid()}"
+        snapshot.add_transformer(RegexTransformer(name1, "topic-name-1"))
+
+        bucket = s3_bucket
+        file = tmp_path / "bucket_definition.yml"
+
+        if include_format == "json":
+            template = '{"Outputs":{"TopicRef":{"Value":{"Ref":"Topic1"}}}} '
+        else:
+            template = """
+            Outputs:
+                TopicRef:
+                    Value:
+                        Ref: Topic1
+            """
+
+        file.write_text(data=template)
+        aws_client.s3.upload_file(
+            Bucket=bucket,
+            Key="template",
+            Filename=str(file.absolute()),
+        )
+
+        template_1 = {
+            "Resources": {
+                "Topic1": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {"TopicName": name1, "DisplayName": "display-value-1"},
+                },
+            }
+        }
+        template_2 = {
+            "Transform": {
+                "Name": "AWS::Include",
+                "Parameters": {"Location": f"s3://{bucket}/template"},
+            },
+            "Resources": {
+                "Topic1": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "TopicName": name1,
+                        "DisplayName": {"Fn::Sub": "The stack name is ${AWS::StackName}"},
+                    },
+                },
+            },
+        }
+        capture_update_process(snapshot, template_1, template_2)
