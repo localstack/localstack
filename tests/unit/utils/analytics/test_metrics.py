@@ -20,7 +20,7 @@ def test_counter_increment():
     counter.increment()
     counter.increment(value=3)
     collected = counter.collect()
-    assert collected[0]["value"] == 4, (
+    assert collected[0].value == 4, (
         f"Unexpected counter value: expected 4, got {collected[0]['value']}"
     )
 
@@ -42,10 +42,13 @@ def test_labeled_counter_increment():
     collected_metrics = labeled_counter.collect()
 
     assert any(
-        metric["value"] == 2 for metric in collected_metrics if metric["label_1_value"] == "success"
+        metric.value == 2 and metric.labels and metric.labels.get("status") == "success"
+        for metric in collected_metrics
     ), "Unexpected counter value for label success"
+
     assert any(
-        metric["value"] == 3 for metric in collected_metrics if metric["label_1_value"] == "error"
+        metric.value == 3 and metric.labels and metric.labels.get("status") == "error"
+        for metric in collected_metrics
     ), "Unexpected counter value for label error"
 
 
@@ -60,12 +63,16 @@ def test_labeled_counter_reset():
 
     collected_metrics = labeled_counter.collect()
 
-    assert all(metric["label_1_value"] != "success" for metric in collected_metrics), (
-        "Metric for label 'success' should not appear after reset."
-    )
+    # Assert that no metric with label "success" is present anymore
+    assert all(
+        not metric.labels or metric.labels.get("status") != "success"
+        for metric in collected_metrics
+    ), "Metric for label 'success' should not appear after reset."
 
+    # Assert that metric with label "error" is still there with correct value
     assert any(
-        metric["value"] == 4 for metric in collected_metrics if metric["label_1_value"] == "error"
+        metric.value == 4 and metric.labels and metric.labels.get("status") == "error"
+        for metric in collected_metrics
     ), "Unexpected counter value for label error"
 
 
@@ -92,9 +99,9 @@ def test_metric_registry_register_and_collect():
         "Counter should automatically register itself"
     )
     counter.increment(value=7)
-    collected = registry.collect()
-    assert any(metric["value"] == 7 for metric in collected["metrics"]), (
-        f"Unexpected collected metrics: {collected}"
+    collected_metrics = registry.collect()
+    assert any(metric.value == 7 for metric in collected_metrics.snapshots), (
+        f"Unexpected collected metrics: {collected_metrics}"
     )
 
 
@@ -123,9 +130,9 @@ def test_thread_safety():
     for thread in threads:
         thread.join()
 
-    collected = counter.collect()
-    assert collected[0]["value"] == 5000, (
-        f"Unexpected counter value: expected 5000, got {collected[0]['value']}"
+    collected_metrics = counter.collect()
+    assert collected_metrics[0].value == 5000, (
+        f"Unexpected counter value: expected 5000, got {collected_metrics[0].value}"
     )
 
 
@@ -184,8 +191,10 @@ def test_label_kwargs_order_independent():
     collected_metrics = labeled_counter.collect()
 
     assert any(
-        metric["value"] == 5 for metric in collected_metrics if metric["label_1_value"] == "success"
+        metric.value == 5 and metric.labels and metric.labels.get("status") == "success"
+        for metric in collected_metrics
     ), "Unexpected counter value for label success"
     assert any(
-        metric["value"] == 3 for metric in collected_metrics if metric["label_1_value"] == "error"
+        metric.value == 3 and metric.labels and metric.labels.get("status") == "error"
+        for metric in collected_metrics
     ), "Unexpected counter value for label error"
