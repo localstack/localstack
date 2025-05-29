@@ -6,6 +6,7 @@ on:
   push:
     paths:
       - '**'
+      - '!.github/**'
       - '.github/actions/**'
       - '.github/workflows/aws-main.yml'
       - '.github/workflows/aws-tests.yml'
@@ -13,13 +14,13 @@ on:
       - '!README.md'
       - '!.gitignore'
       - '!.git-blame-ignore-revs'
-      - '!.github/**'
       - '!docs/**'
     branches:
       - master
   pull_request:
     paths:
       - '**'
+      - '!.github/**'
       - '.github/actions/**'
       - '.github/workflows/aws-main.yml'
       - '.github/workflows/aws-tests.yml'
@@ -27,7 +28,6 @@ on:
       - '!README.md'
       - '!.gitignore'
       - '!.git-blame-ignore-revs'
-      - '!.github/**'
       - '!docs/**'
   workflow_dispatch:
     inputs:
