@@ -5,6 +5,7 @@ import logging
 import threading
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple, Union, overload
 
 from localstack import config
@@ -14,6 +15,12 @@ from localstack.utils.analytics.events import Event, EventMetadata
 from localstack.utils.analytics.publisher import AnalyticsClientPublisher
 
 LOG = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class MetricRegistryKey:
+    namespace: str
+    name: str
 
 
 class MetricRegistry:
@@ -39,7 +46,7 @@ class MetricRegistry:
             self._registry = dict()
 
     @property
-    def registry(self) -> Dict[str, "Metric"]:
+    def registry(self) -> Dict[MetricRegistryKey, "Metric"]:
         return self._registry
 
     def register(self, metric: Metric) -> None:
@@ -54,10 +61,16 @@ class MetricRegistry:
         if not isinstance(metric, Metric):
             raise TypeError("Only subclasses of `Metric` can be registered.")
 
-        if metric.name in self._registry:
-            raise ValueError(f"Metric '{metric.name}' already exists.")
+        if not metric.namespace:
+            raise ValueError("Metric 'namespace' must be defined and non-empty.")
 
-        self._registry[metric.name] = metric
+        registry_unique_key = MetricRegistryKey(namespace=metric.namespace, name=metric.name)
+        if registry_unique_key in self._registry:
+            raise ValueError(
+                f"Metric '{metric.name}' in namespace '{metric.namespace}' is already registered."
+            )
+
+        self._registry[registry_unique_key] = metric
 
     def collect(self) -> Dict[str, List[Dict[str, Union[str, int]]]]:
         """
@@ -79,13 +92,21 @@ class Metric(ABC):
     Each subclass must implement the `collect()` method.
     """
 
+    _namespace: str
     _name: str
 
-    def __init__(self, name: str):
+    def __init__(self, namespace: str, name: str):
+        if not namespace or namespace.strip() == "":
+            raise ValueError("Namespace must be non-empty string.")
+        self._namespace = namespace
+
         if not name or name.strip() == "":
             raise ValueError("Metric name must be non-empty string.")
-
         self._name = name
+
+    @property
+    def namespace(self) -> str:
+        return self._namespace
 
     @property
     def name(self) -> str:
@@ -143,14 +164,12 @@ class CounterMetric(Metric, BaseCounter):
     This class should not be instantiated directly, use the Counter class instead.
     """
 
-    _namespace: Optional[str]
     _type: str
 
-    def __init__(self, name: str, namespace: Optional[str] = ""):
-        Metric.__init__(self, name=name)
+    def __init__(self, namespace: str, name: str):
+        Metric.__init__(self, namespace=namespace, name=name)
         BaseCounter.__init__(self)
 
-        self._namespace = namespace.strip() if namespace else ""
         self._type = "counter"
         MetricRegistry().register(self)
 
@@ -178,15 +197,14 @@ class LabeledCounterMetric(Metric):
     This class should not be instantiated directly, use the Counter class instead.
     """
 
-    _namespace: Optional[str]
     _type: str
     _unit: str
     _labels: list[str]
     _label_values: Tuple[Optional[Union[str, float]], ...]
     _counters_by_label_values: defaultdict[Tuple[Optional[Union[str, float]], ...], BaseCounter]
 
-    def __init__(self, name: str, labels: List[str], namespace: Optional[str] = ""):
-        super(LabeledCounterMetric, self).__init__(name=name)
+    def __init__(self, namespace: str, name: str, labels: List[str]):
+        super(LabeledCounterMetric, self).__init__(namespace=namespace, name=name)
 
         if not labels:
             raise ValueError("At least one label is required; the labels list cannot be empty.")
@@ -197,7 +215,6 @@ class LabeledCounterMetric(Metric):
         if len(labels) > 8:
             raise ValueError("A maximum of 8 labels are allowed.")
 
-        self._namespace = namespace.strip() if namespace else ""
         self._type = "counter"
         self._labels = labels
         self._counters_by_label_values = defaultdict(BaseCounter)
@@ -268,17 +285,15 @@ class Counter:
     """
 
     @overload
-    def __new__(cls, name: str, namespace: Optional[str] = "") -> CounterMetric:
+    def __new__(cls, namespace: str, name: str) -> CounterMetric:
         return CounterMetric(namespace=namespace, name=name)
 
     @overload
-    def __new__(
-        cls, name: str, labels: List[str], namespace: Optional[str] = ""
-    ) -> LabeledCounterMetric:
+    def __new__(cls, namespace: str, name: str, labels: List[str]) -> LabeledCounterMetric:
         return LabeledCounterMetric(namespace=namespace, name=name, labels=labels)
 
     def __new__(
-        cls, name: str, namespace: Optional[str] = "", labels: Optional[List[str]] = None
+        cls, namespace: str, name: str, labels: Optional[List[str]] = None
     ) -> Union[CounterMetric, LabeledCounterMetric]:
         if labels is not None:
             return LabeledCounterMetric(namespace=namespace, name=name, labels=labels)
