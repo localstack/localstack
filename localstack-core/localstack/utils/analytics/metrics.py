@@ -67,7 +67,7 @@ class MetricRegistry:
         registry_unique_key = MetricRegistryKey(namespace=metric.namespace, name=metric.name)
         if registry_unique_key in self._registry:
             raise ValueError(
-                f"Metric '{metric.name}' in namespace '{metric.namespace}' is already registered."
+                f"A metric named '{metric.name}' already exists in the '{metric.namespace}' namespace"
             )
 
         self._registry[registry_unique_key] = metric
