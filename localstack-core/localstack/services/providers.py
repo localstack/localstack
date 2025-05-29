@@ -320,11 +320,7 @@ def sns():
 
 @aws_provider()
 def sqs():
-    from localstack.services import edge
-    from localstack.services.sqs import query_api
     from localstack.services.sqs.provider import SqsProvider
-
-    query_api.register(edge.ROUTER)
 
     provider = SqsProvider()
     return Service.for_provider(provider)

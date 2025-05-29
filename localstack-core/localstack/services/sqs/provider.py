@@ -77,6 +77,7 @@ from localstack.http import Request, route
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sqs import constants as sqs_constants
+from localstack.services.sqs import query_api
 from localstack.services.sqs.constants import (
     HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT,
     HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS,
@@ -828,6 +829,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         return sqs_stores[account_id][region]
 
     def on_before_start(self):
+        query_api.register(ROUTER)
         self._router_rules = ROUTER.add(SqsDeveloperEndpoints())
         self._queue_update_worker.start()
         self._start_cloudwatch_metrics_reporting()
