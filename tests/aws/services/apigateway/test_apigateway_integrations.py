@@ -851,7 +851,7 @@ def test_integration_mock_with_vtl_map_assignation(create_rest_apigw, aws_client
     {
         "value": "$value",
         "value2": "$value2",
-        "value3": "$value3",
+        "value3": "$value3"
     }
     """)
 
