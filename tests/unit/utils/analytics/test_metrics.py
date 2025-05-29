@@ -5,6 +5,7 @@ import pytest
 from localstack.utils.analytics.metrics import (
     Counter,
     MetricRegistry,
+    MetricRegistryKey,
 )
 
 
@@ -15,7 +16,7 @@ def test_metric_registry_singleton():
 
 
 def test_counter_increment():
-    counter = Counter(name="test_counter")
+    counter = Counter(namespace="test_namespace", name="test_counter")
     counter.increment()
     counter.increment(value=3)
     collected = counter.collect()
@@ -25,7 +26,7 @@ def test_counter_increment():
 
 
 def test_counter_reset():
-    counter = Counter(name="test_counter")
+    counter = Counter(namespace="test_namespace", name="test_counter")
     counter.increment(value=5)
     counter.reset()
     collected = counter.collect()
@@ -33,7 +34,9 @@ def test_counter_reset():
 
 
 def test_labeled_counter_increment():
-    labeled_counter = Counter(name="test_multilabel_counter", labels=["status"])
+    labeled_counter = Counter(
+        namespace="test_namespace", name="test_multilabel_counter", labels=["status"]
+    )
     labeled_counter.labels(status="success").increment(value=2)
     labeled_counter.labels(status="error").increment(value=3)
     collected_metrics = labeled_counter.collect()
@@ -47,7 +50,9 @@ def test_labeled_counter_increment():
 
 
 def test_labeled_counter_reset():
-    labeled_counter = Counter(name="test_multilabel_counter", labels=["status"])
+    labeled_counter = Counter(
+        namespace="test_namespace", name="test_multilabel_counter", labels=["status"]
+    )
     labeled_counter.labels(status="success").increment(value=5)
     labeled_counter.labels(status="error").increment(value=4)
 
@@ -65,23 +70,27 @@ def test_labeled_counter_reset():
 
 
 def test_counter_when_events_disabled(disable_analytics):
-    counter = Counter(name="test_counter")
+    counter = Counter(namespace="test_namespace", name="test_counter")
     counter.increment(value=10)
     assert counter.collect() == [], "Counter should not collect any data"
 
 
 def test_labeled_counter_when_events_disabled_(disable_analytics):
-    labeled_counter = Counter(name="test_multilabel_counter", labels=["status"])
+    labeled_counter = Counter(
+        namespace="test_namespace", name="test_multilabel_counter", labels=["status"]
+    )
     labeled_counter.labels(status="status").increment(value=5)
     assert labeled_counter.collect() == [], "Counter should not collect any data"
 
 
 def test_metric_registry_register_and_collect():
-    counter = Counter(name="test_counter")
+    counter = Counter(namespace="test_namespace", name="test_counter")
     registry = MetricRegistry()
 
     # Ensure the counter is already registered
-    assert counter.name in registry._registry, "Counter should automatically register itself"
+    assert MetricRegistryKey("test_namespace", "test_counter") in registry._registry, (
+        "Counter should automatically register itself"
+    )
     counter.increment(value=7)
     collected = registry.collect()
     assert any(metric["value"] == 7 for metric in collected["metrics"]), (
@@ -90,16 +99,19 @@ def test_metric_registry_register_and_collect():
 
 
 def test_metric_registry_register_duplicate_counter():
-    counter = Counter(name="test_counter")
+    counter = Counter(namespace="test_namespace", name="test_counter")
     registry = MetricRegistry()
 
     # Attempt to manually register the counter again, expecting a ValueError
-    with pytest.raises(ValueError, match=f"Metric '{counter.name}' already exists."):
+    with pytest.raises(
+        ValueError,
+        match=f"A metric named '{counter.name}' already exists in the '{counter.namespace}' namespace",
+    ):
         registry.register(counter)
 
 
 def test_thread_safety():
-    counter = Counter(name="test_counter")
+    counter = Counter(namespace="test_namespace", name="test_counter")
 
     def increment():
         for _ in range(1000):
@@ -119,35 +131,53 @@ def test_thread_safety():
 
 def test_max_labels_limit():
     with pytest.raises(ValueError, match="A maximum of 8 labels are allowed."):
-        Counter(name="test_counter", labels=["l1", "l2", "l3", "l4", "l5", "l6", "l7", "l8", "l9"])
+        Counter(
+            namespace="test_namespace",
+            name="test_counter",
+            labels=["l1", "l2", "l3", "l4", "l5", "l6", "l7", "l8", "l9"],
+        )
+
+
+def test_counter_raises_error_if_namespace_is_empty():
+    with pytest.raises(ValueError, match="Namespace must be non-empty string."):
+        Counter(namespace="", name="")
+
+    with pytest.raises(ValueError, match="Metric name must be non-empty string."):
+        Counter(namespace="test_namespace", name="  ")
 
 
 def test_counter_raises_error_if_name_is_empty():
     with pytest.raises(ValueError, match="Metric name must be non-empty string."):
-        Counter(name="")
+        Counter(namespace="test_namespace", name="")
 
     with pytest.raises(ValueError, match="Metric name must be non-empty string."):
-        Counter(name="  ")
+        Counter(namespace="test_namespace", name="  ")
 
 
 def test_counter_raises_if_label_values_off():
     with pytest.raises(
         ValueError, match="At least one label is required; the labels list cannot be empty."
     ):
-        Counter(name="test_counter", labels=[]).labels(l1="a")
+        Counter(namespace="test_namespace", name="test_counter", labels=[]).labels(l1="a")
 
     with pytest.raises(ValueError):
-        Counter(name="test_counter", labels=["l1", "l2"]).labels(l1="a", non_existing="asdf")
+        Counter(namespace="test_namespace", name="test_counter", labels=["l1", "l2"]).labels(
+            l1="a", non_existing="asdf"
+        )
 
     with pytest.raises(ValueError):
-        Counter(name="test_counter", labels=["l1", "l2"]).labels(l1="a")
+        Counter(namespace="test_namespace", name="test_counter", labels=["l1", "l2"]).labels(l1="a")
 
     with pytest.raises(ValueError):
-        Counter(name="test_counter", labels=["l1", "l2"]).labels(l1="a", l2="b", l3="c")
+        Counter(namespace="test_namespace", name="test_counter", labels=["l1", "l2"]).labels(
+            l1="a", l2="b", l3="c"
+        )
 
 
 def test_label_kwargs_order_independent():
-    labeled_counter = Counter(name="test_multilabel_counter", labels=["status", "type"])
+    labeled_counter = Counter(
+        namespace="test_namespace", name="test_multilabel_counter", labels=["status", "type"]
+    )
     labeled_counter.labels(status="success", type="counter").increment(value=2)
     labeled_counter.labels(type="counter", status="success").increment(value=3)
     labeled_counter.labels(type="counter", status="error").increment(value=3)
