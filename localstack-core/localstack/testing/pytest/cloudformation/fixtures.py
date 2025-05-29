@@ -112,6 +112,18 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
         ]
         snapshot.match("post-create-1-describe", describe)
 
+        # capture templates
+        original_template_1 = aws_client_no_retry.cloudformation.get_template(
+            ChangeSetName=change_set_id,
+            TemplateStage="Original",
+        )
+        snapshot.match("post-create-1-original-template", original_template_1["TemplateBody"])
+        processed_template_1 = aws_client_no_retry.cloudformation.get_template(
+            ChangeSetName=change_set_id,
+            TemplateStage="Processed",
+        )
+        snapshot.match("post-create-1-processed-template", processed_template_1["TemplateBody"])
+
         # update stack
         change_set_details = aws_client_no_retry.cloudformation.create_change_set(
             StackName=stack_name,
@@ -152,6 +164,18 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
             0
         ]
         snapshot.match("post-create-2-describe", describe)
+
+        original_template_2 = aws_client_no_retry.cloudformation.get_template(
+            ChangeSetName=change_set_id,
+            TemplateStage="Original",
+        )
+        snapshot.match("post-create-2-original-template", original_template_2["TemplateBody"])
+        processed_template_2 = aws_client_no_retry.cloudformation.get_template(
+            ChangeSetName=change_set_id,
+            TemplateStage="Processed",
+        )
+        snapshot.match("post-create-2-processed-template", processed_template_2["TemplateBody"])
+
 
         events = capture_per_resource_events(stack_name)
         snapshot.match("per-resource-events", events)

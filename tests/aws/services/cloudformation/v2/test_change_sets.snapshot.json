@@ -95,7 +95,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_direct_update": {
-    "recorded-date": "24-04-2025, 17:00:59",
+    "recorded-date": "29-05-2025, 14:21:59",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -189,6 +189,26 @@
         "StackName": "<stack-name:1>",
         "StackStatus": "CREATE_COMPLETE",
         "Tags": []
+      },
+      "post-create-1-original-template": {
+        "Resources": {
+          "Foo": {
+            "Properties": {
+              "TopicName": "topic-1"
+            },
+            "Type": "AWS::SNS::Topic"
+          }
+        }
+      },
+      "post-create-1-processed-template": {
+        "Resources": {
+          "Foo": {
+            "Properties": {
+              "TopicName": "topic-1"
+            },
+            "Type": "AWS::SNS::Topic"
+          }
+        }
       },
       "create-change-set-2": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
@@ -322,10 +342,30 @@
         "StackStatus": "UPDATE_COMPLETE",
         "Tags": []
       },
+      "post-create-2-original-template": {
+        "Resources": {
+          "Foo": {
+            "Properties": {
+              "TopicName": "topic-2"
+            },
+            "Type": "AWS::SNS::Topic"
+          }
+        }
+      },
+      "post-create-2-processed-template": {
+        "Resources": {
+          "Foo": {
+            "Properties": {
+              "TopicName": "topic-2"
+            },
+            "Type": "AWS::SNS::Topic"
+          }
+        }
+      },
       "per-resource-events": {
         "Foo": [
           {
-            "EventId": "Foo-8fa001c0-096c-4f9e-9aed-0c31f45ded09",
+            "EventId": "Foo-2b449933-cc78-428d-bae9-f6f1c118562d",
             "LogicalResourceId": "Foo",
             "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-1",
             "ResourceStatus": "DELETE_COMPLETE",
@@ -335,7 +375,7 @@
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Foo-57ec24a9-92bd-4f31-8d36-972323072283",
+            "EventId": "Foo-797905cd-caac-4d08-ad12-e33bcf13c60a",
             "LogicalResourceId": "Foo",
             "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-1",
             "ResourceStatus": "DELETE_IN_PROGRESS",
