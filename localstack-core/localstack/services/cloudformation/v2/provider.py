@@ -18,6 +18,7 @@ from localstack.aws.api.cloudformation import (
     DisableRollback,
     ExecuteChangeSetOutput,
     ExecutionStatus,
+    GetTemplateOutput,
     IncludePropertyValues,
     InvalidChangeSetStatusException,
     NextToken,
@@ -29,6 +30,7 @@ from localstack.aws.api.cloudformation import (
     StackName,
     StackNameOrId,
     StackStatus,
+    TemplateStage,
 )
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import template_preparer
@@ -62,12 +64,27 @@ def is_changeset_arn(change_set_name_or_id: str) -> bool:
     return ARN_CHANGESET_REGEX.match(change_set_name_or_id) is not None
 
 
+def find_stack_v2(state: CloudFormationStore, stack_name_or_id: str) -> Stack | None:
+    if is_stack_arn(stack_name_or_id):
+        return state.stacks_v2[stack_name_or_id]
+    else:
+        stack_candidates = []
+        for stack in state.stacks_v2.values():
+            if stack.stack_name == stack_name_or_id and stack.status != StackStatus.DELETE_COMPLETE:
+                stack_candidates.append(stack)
+        if len(stack_candidates) == 0:
+            raise ValidationError(f"No stack with name {stack_name_or_id} found")
+        elif len(stack_candidates) > 1:
+            raise RuntimeError("Programing error, duplicate stacks found")
+        else:
+            return stack_candidates[0]
+
+
 def find_change_set_v2(
     state: CloudFormationStore, change_set_name: str, stack_name: str | None = None
 ) -> ChangeSet | None:
-    change_set: ChangeSet | None = None
     if is_changeset_arn(change_set_name):
-        change_set = state.change_sets[change_set_name]
+        return state.change_sets[change_set_name]
     else:
         if stack_name is not None:
             stack: Stack | None = None
@@ -89,12 +106,9 @@ def find_change_set_v2(
             for change_set_id in stack.change_set_ids:
                 change_set_candidate = state.change_sets[change_set_id]
                 if change_set_candidate.change_set_name == change_set_name:
-                    change_set = change_set_candidate
-                    break
+                    return change_set_candidate
         else:
             raise NotImplementedError
-
-    return change_set
 
 
 class CloudformationProviderV2(CloudformationProvider):
@@ -358,22 +372,7 @@ class CloudformationProviderV2(CloudformationProvider):
     ) -> DescribeStacksOutput:
         state = get_cloudformation_store(context.account_id, context.region)
         if stack_name:
-            if is_stack_arn(stack_name):
-                stack = state.stacks_v2[stack_name]
-            else:
-                stack_candidates = []
-                for stack in state.stacks_v2.values():
-                    if (
-                        stack.stack_name == stack_name
-                        and stack.status != StackStatus.DELETE_COMPLETE
-                    ):
-                        stack_candidates.append(stack)
-                if len(stack_candidates) == 0:
-                    raise ValidationError(f"No stack with name {stack_name} found")
-                elif len(stack_candidates) > 1:
-                    raise RuntimeError("Programing error, duplicate stacks found")
-                else:
-                    stack = stack_candidates[0]
+            stack = find_stack_v2(state, stack_name)
         else:
             raise NotImplementedError
 
@@ -388,6 +387,38 @@ class CloudformationProviderV2(CloudformationProvider):
         **kwargs,
     ) -> DescribeStackEventsOutput:
         return DescribeStackEventsOutput(StackEvents=[])
+
+    @handler("GetTemplate")
+    def get_template(
+        self,
+        context: RequestContext,
+        stack_name: StackName = None,
+        change_set_name: ChangeSetNameOrId = None,
+        template_stage: TemplateStage = None,
+        **kwargs,
+    ) -> GetTemplateOutput:
+        state = get_cloudformation_store(context.account_id, context.region)
+        stack = None
+        if change_set_name:
+            change_set = find_change_set_v2(state, change_set_name, stack_name)
+            if not change_set:
+                raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
+            stack = change_set.stack
+        elif stack_name:
+            stack = find_stack_v2(state, stack_name)
+        else:
+            raise NotImplementedError("Neither stack_name nor change_set_name provided")
+
+        if not stack:
+            raise ValidationError("Stack with id %s does not exist", stack_name)
+
+        # TODO: handle template_stage
+        template = stack.template
+
+        return GetTemplateOutput(
+            TemplateBody=template,
+            StagesAvailable=[TemplateStage.Original, TemplateStage.Processed],
+        )
 
     @handler("DeleteStack")
     def delete_stack(
