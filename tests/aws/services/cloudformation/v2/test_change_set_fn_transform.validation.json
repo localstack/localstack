@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_embedded_fn_transform_include[json]": {
+    "last_validated_date": "2025-05-29T18:22:17+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_embedded_fn_transform_include[yml]": {
+    "last_validated_date": "2025-05-29T18:20:45+00:00"
+  }
+}
