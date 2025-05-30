@@ -1,10 +1,10 @@
 {
   "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_create_update_stages": {
-    "recorded-date": "30-05-2025, 13:00:01",
+    "recorded-date": "30-05-2025, 16:53:20",
     "recorded-content": {
       "create-deployment-1": {
         "createdDate": "datetime",
-        "id": "e3ddus",
+        "id": "<deployment-id:2>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -12,7 +12,7 @@
       },
       "create-deployment-2": {
         "createdDate": "datetime",
-        "id": "g27dxg",
+        "id": "<deployment-id:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -22,7 +22,7 @@
         "cacheClusterEnabled": false,
         "cacheClusterStatus": "NOT_AVAILABLE",
         "canarySettings": {
-          "deploymentId": "g27dxg",
+          "deploymentId": "<deployment-id:1>",
           "percentTraffic": 50.0,
           "stageVariableOverrides": {
             "testVar": "canary"
@@ -30,7 +30,7 @@
           "useStageCache": false
         },
         "createdDate": "datetime",
-        "deploymentId": "e3ddus",
+        "deploymentId": "<deployment-id:2>",
         "description": "dev stage",
         "lastUpdatedDate": "datetime",
         "methodSettings": {},
@@ -48,7 +48,7 @@
         "cacheClusterEnabled": false,
         "cacheClusterStatus": "NOT_AVAILABLE",
         "canarySettings": {
-          "deploymentId": "g27dxg",
+          "deploymentId": "<deployment-id:1>",
           "percentTraffic": 50.0,
           "stageVariableOverrides": {
             "testVar": "canary"
@@ -56,7 +56,7 @@
           "useStageCache": false
         },
         "createdDate": "datetime",
-        "deploymentId": "e3ddus",
+        "deploymentId": "<deployment-id:2>",
         "description": "dev stage",
         "lastUpdatedDate": "datetime",
         "methodSettings": {},
@@ -74,7 +74,7 @@
         "cacheClusterEnabled": false,
         "cacheClusterStatus": "NOT_AVAILABLE",
         "canarySettings": {
-          "deploymentId": "g27dxg",
+          "deploymentId": "<deployment-id:1>",
           "percentTraffic": 50.0,
           "stageVariableOverrides": {
             "testVar": "updated"
@@ -82,7 +82,7 @@
           "useStageCache": false
         },
         "createdDate": "datetime",
-        "deploymentId": "e3ddus",
+        "deploymentId": "<deployment-id:2>",
         "description": "dev stage",
         "lastUpdatedDate": "datetime",
         "methodSettings": {},
@@ -100,7 +100,7 @@
         "cacheClusterEnabled": false,
         "cacheClusterStatus": "NOT_AVAILABLE",
         "createdDate": "datetime",
-        "deploymentId": "e3ddus",
+        "deploymentId": "<deployment-id:2>",
         "description": "dev stage",
         "lastUpdatedDate": "datetime",
         "methodSettings": {},
@@ -118,7 +118,72 @@
         "cacheClusterEnabled": false,
         "cacheClusterStatus": "NOT_AVAILABLE",
         "createdDate": "datetime",
-        "deploymentId": "e3ddus",
+        "deploymentId": "<deployment-id:2>",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "variables": {
+          "testVar": "default"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_create_canary_deployment_with_stage": {
+    "recorded-date": "30-05-2025, 16:54:10",
+    "recorded-content": {
+      "create-deployment": {
+        "createdDate": "datetime",
+        "id": "<deployment-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "variables": {
+          "testVar": "default"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-canary-deployment": {
+        "createdDate": "datetime",
+        "id": "<deployment-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "canarySettings": {
+          "deploymentId": "<deployment-id:2>",
+          "percentTraffic": 50.0,
+          "stageVariableOverrides": {
+            "testVar": "canary"
+          },
+          "useStageCache": false
+        },
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
         "description": "dev stage",
         "lastUpdatedDate": "datetime",
         "methodSettings": {},
@@ -135,11 +200,11 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_create_canary_deployment": {
-    "recorded-date": "30-05-2025, 15:32:07",
+    "recorded-date": "30-05-2025, 16:54:51",
     "recorded-content": {
       "create-deployment": {
         "createdDate": "datetime",
-        "id": "vjnf3h",
+        "id": "<deployment-id:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -149,7 +214,7 @@
         "cacheClusterEnabled": false,
         "cacheClusterStatus": "NOT_AVAILABLE",
         "canarySettings": {
-          "deploymentId": "vjnf3h",
+          "deploymentId": "<deployment-id:1>",
           "percentTraffic": 40.0,
           "stageVariableOverrides": {
             "testVar": "canary1"
@@ -157,7 +222,7 @@
           "useStageCache": false
         },
         "createdDate": "datetime",
-        "deploymentId": "vjnf3h",
+        "deploymentId": "<deployment-id:1>",
         "description": "dev stage",
         "lastUpdatedDate": "datetime",
         "methodSettings": {},
@@ -173,7 +238,7 @@
       },
       "create-canary-deployment": {
         "createdDate": "datetime",
-        "id": "9g3p39",
+        "id": "<deployment-id:2>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -183,7 +248,7 @@
         "cacheClusterEnabled": false,
         "cacheClusterStatus": "NOT_AVAILABLE",
         "canarySettings": {
-          "deploymentId": "9g3p39",
+          "deploymentId": "<deployment-id:2>",
           "percentTraffic": 50.0,
           "stageVariableOverrides": {
             "testVar": "canary2"
@@ -191,7 +256,7 @@
           "useStageCache": false
         },
         "createdDate": "datetime",
-        "deploymentId": "vjnf3h",
+        "deploymentId": "<deployment-id:1>",
         "description": "dev stage",
         "lastUpdatedDate": "datetime",
         "methodSettings": {},
@@ -209,7 +274,7 @@
         "cacheClusterEnabled": false,
         "cacheClusterStatus": "NOT_AVAILABLE",
         "canarySettings": {
-          "deploymentId": "9g3p39",
+          "deploymentId": "<deployment-id:2>",
           "percentTraffic": 60.0,
           "stageVariableOverrides": {
             "testVar": "canary-overridden"
@@ -217,7 +282,7 @@
           "useStageCache": false
         },
         "createdDate": "datetime",
-        "deploymentId": "vjnf3h",
+        "deploymentId": "<deployment-id:1>",
         "description": "dev stage",
         "lastUpdatedDate": "datetime",
         "methodSettings": {},
@@ -230,6 +295,246 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
         }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_create_canary_deployment_by_stage_update": {
+    "recorded-date": "30-05-2025, 16:52:40",
+    "recorded-content": {
+      "create-deployment": {
+        "createdDate": "datetime",
+        "id": "<deployment-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-deployment-2": {
+        "createdDate": "datetime",
+        "id": "<deployment-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "variables": {
+          "testVar": "default"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "update-stage-with-deployment": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "canarySettings": {
+          "deploymentId": "<deployment-id:2>",
+          "percentTraffic": 0.0,
+          "useStageCache": false
+        },
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "variables": {
+          "testVar": "default"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "remove-stage-canary": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "variables": {
+          "testVar": "default"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-stage-with-percent": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "canarySettings": {
+          "deploymentId": "<deployment-id:1>",
+          "percentTraffic": 50.0,
+          "useStageCache": false
+        },
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "variables": {
+          "testVar": "default"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_create_canary_deployment_validation": {
+    "recorded-date": "30-05-2025, 16:55:48",
+    "recorded-content": {
+      "create-canary-deployment-no-stage": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid deployment content specified.Non null and non empty stageName must be provided for canary deployment. Provided value is null"
+        },
+        "message": "Invalid deployment content specified.Non null and non empty stageName must be provided for canary deployment. Provided value is null",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-canary-deployment-non-existing-stage": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid deployment content specified.Stage non-existing must already be created before making a canary release deployment"
+        },
+        "message": "Invalid deployment content specified.Stage non-existing must already be created before making a canary release deployment",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_update_stage_canary_deployment_validation": {
+    "recorded-date": "30-05-2025, 16:56:23",
+    "recorded-content": {
+      "update-stage-canary-settings-remove-overrides": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Cannot remove method setting canarySettings/stageVariableOverrides because there is no method setting for this method "
+        },
+        "message": "Cannot remove method setting canarySettings/stageVariableOverrides because there is no method setting for this method ",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-stage-canary-settings-bad-path": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Cannot remove method setting canarySettings/badPath because there is no method setting for this method "
+        },
+        "message": "Cannot remove method setting canarySettings/badPath because there is no method setting for this method ",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-stage-canary-settings-replace-bad-path": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid method setting path: /canarySettings/badPath. Must be one of: [/deploymentId, /description, /cacheClusterEnabled, /cacheClusterSize, /clientCertificateId, /accessLogSettings, /accessLogSettings/destinationArn, /accessLogSettings/format, /{resourcePath}/{httpMethod}/metrics/enabled, /{resourcePath}/{httpMethod}/logging/dataTrace, /{resourcePath}/{httpMethod}/logging/loglevel, /{resourcePath}/{httpMethod}/throttling/burstLimit/{resourcePath}/{httpMethod}/throttling/rateLimit/{resourcePath}/{httpMethod}/caching/ttlInSeconds, /{resourcePath}/{httpMethod}/caching/enabled, /{resourcePath}/{httpMethod}/caching/dataEncrypted, /{resourcePath}/{httpMethod}/caching/requireAuthorizationForCacheControl, /{resourcePath}/{httpMethod}/caching/unauthorizedCacheControlHeaderStrategy, /*/*/metrics/enabled, /*/*/logging/dataTrace, /*/*/logging/loglevel, /*/*/throttling/burstLimit /*/*/throttling/rateLimit /*/*/caching/ttlInSeconds, /*/*/caching/enabled, /*/*/caching/dataEncrypted, /*/*/caching/requireAuthorizationForCacheControl, /*/*/caching/unauthorizedCacheControlHeaderStrategy, /variables/{variable_name}, /tracingEnabled]"
+        },
+        "message": "Invalid method setting path: /canarySettings/badPath. Must be one of: [/deploymentId, /description, /cacheClusterEnabled, /cacheClusterSize, /clientCertificateId, /accessLogSettings, /accessLogSettings/destinationArn, /accessLogSettings/format, /{resourcePath}/{httpMethod}/metrics/enabled, /{resourcePath}/{httpMethod}/logging/dataTrace, /{resourcePath}/{httpMethod}/logging/loglevel, /{resourcePath}/{httpMethod}/throttling/burstLimit/{resourcePath}/{httpMethod}/throttling/rateLimit/{resourcePath}/{httpMethod}/caching/ttlInSeconds, /{resourcePath}/{httpMethod}/caching/enabled, /{resourcePath}/{httpMethod}/caching/dataEncrypted, /{resourcePath}/{httpMethod}/caching/requireAuthorizationForCacheControl, /{resourcePath}/{httpMethod}/caching/unauthorizedCacheControlHeaderStrategy, /*/*/metrics/enabled, /*/*/logging/dataTrace, /*/*/logging/loglevel, /*/*/throttling/burstLimit /*/*/throttling/rateLimit /*/*/caching/ttlInSeconds, /*/*/caching/enabled, /*/*/caching/dataEncrypted, /*/*/caching/requireAuthorizationForCacheControl, /*/*/caching/unauthorizedCacheControlHeaderStrategy, /variables/{variable_name}, /tracingEnabled]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-stage-add-deployment": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid add operation with path: /canarySettings/deploymentId"
+        },
+        "message": "Invalid add operation with path: /canarySettings/deploymentId",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_canary.py::TestCanaryDeployments::test_invoking_canary_deployment": {
+    "recorded-date": "30-05-2025, 16:27:07",
+    "recorded-content": {
+      "create-deployment-1": {
+        "createdDate": "datetime",
+        "id": "<deployment-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-deployment-2": {
+        "createdDate": "datetime",
+        "id": "<deployment-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "response-deployment-1": {
+        "isCanary": "false",
+        "message": "default deployment",
+        "nonExistingDefault": "",
+        "statusCode": 200,
+        "variable": "default"
+      },
+      "update-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "canarySettings": {
+          "deploymentId": "<deployment-id:1>",
+          "percentTraffic": 100.0,
+          "stageVariableOverrides": {
+            "noStageVar": "canary",
+            "testVar": "canary"
+          },
+          "useStageCache": false
+        },
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:2>",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "variables": {
+          "testVar": "default"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "response-canary-deployment": {
+        "isCanary": "true",
+        "message": "canary deployment",
+        "nonExistingDefault": "canary",
+        "statusCode": 200,
+        "variable": "canary"
       }
     }
   }

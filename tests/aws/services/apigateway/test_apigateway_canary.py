@@ -1,17 +1,17 @@
-# TODO: also see .test_apigateway_common.TestStages
 import json
 
 import pytest
+import requests
 from botocore.exceptions import ClientError
 
 from localstack.testing.pytest import markers
-
-# TODO: think of a way to assert we are in a canary deployment? returning different MOCK response + stage variable over
+from localstack.utils.sync import retry
+from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url
 
 
 @pytest.fixture
 def create_api_for_deployment(aws_client, create_rest_apigw):
-    def _create():
+    def _create(response_template=None):
         # create API, method, integration, deployment
         api_id, _, root_id = create_rest_apigw()
 
@@ -37,28 +37,22 @@ def create_api_for_deployment(aws_client, create_rest_apigw):
             requestTemplates={"application/json": '{"statusCode": 200}'},
         )
 
+        response_template = response_template or {
+            "statusCode": 200,
+            "message": "default deployment",
+        }
         aws_client.apigateway.put_integration_response(
             restApiId=api_id,
             resourceId=root_id,
             httpMethod="GET",
             statusCode="200",
             selectionPattern="",
-            responseTemplates={
-                "application/json": json.dumps({"statusCode": 200, "message": "default deployment"})
-            },
+            responseTemplates={"application/json": json.dumps(response_template)},
         )
 
         return api_id, root_id
 
     return _create
-
-
-# TODO:
-# You create a canary release deployment when deploying the API with canary settings as an additional input to the deployment creation operation.
-#
-# You can also create a canary release deployment from an existing non-canary deployment by making a stage:update request to add the canary settings on the stage.
-#
-# When creating a non-canary release deployment, you can specify a non-existing stage name. API Gateway creates one if the specified stage does not exist. However, you cannot specify any non-existing stage name when creating a canary release deployment. You will get an error and API Gateway will not create any canary release deployment.
 
 
 class TestStageCrudCanary:
@@ -133,16 +127,6 @@ class TestStageCrudCanary:
             ],
         )
         snapshot.match("update-stage-canary-settings-overrides", update_stage)
-
-        # TODO: this fails because no more overrides, add in validation test
-        # update_stage = aws_client.apigateway.update_stage(
-        #     restApiId=api_id,
-        #     stageName=stage_name,
-        #     patchOperations=[
-        #         {"op": "remove", "path": "/canarySettings/stageVariableOverrides"},
-        #     ],
-        # )
-        # snapshot.match("update-stage-canary-settings-remove-overrides", update_stage)
 
         # remove canary settings
         update_stage = aws_client.apigateway.update_stage(
@@ -295,6 +279,10 @@ class TestStageCrudCanary:
         snapshot.match("create-deployment", create_deployment)
         deployment_id = create_deployment["id"]
 
+        create_deployment_2 = aws_client.apigateway.create_deployment(restApiId=api_id)
+        snapshot.match("create-deployment-2", create_deployment_2)
+        deployment_id_2 = create_deployment_2["id"]
+
         stage_name = "dev"
         create_stage = aws_client.apigateway.create_stage(
             restApiId=api_id,
@@ -312,13 +300,34 @@ class TestStageCrudCanary:
             stageName=stage_name,
             patchOperations=[
                 {
-                    "op": "add",
+                    "op": "replace",
                     "path": "/canarySettings/deploymentId",
-                    "value": deployment_id,
+                    "value": deployment_id_2,
                 },
             ],
         )
-        snapshot.match("update-stage", update_stage)
+        snapshot.match("update-stage-with-deployment", update_stage)
+
+        update_stage = aws_client.apigateway.update_stage(
+            restApiId=api_id,
+            stageName=stage_name,
+            patchOperations=[
+                {
+                    "op": "remove",
+                    "path": "/canarySettings",
+                },
+            ],
+        )
+        snapshot.match("remove-stage-canary", update_stage)
+
+        update_stage = aws_client.apigateway.update_stage(
+            restApiId=api_id,
+            stageName=stage_name,
+            patchOperations=[
+                {"op": "replace", "path": "/canarySettings/percentTraffic", "value": "50"}
+            ],
+        )
+        snapshot.match("update-stage-with-percent", update_stage)
 
     @markers.aws.validated
     def test_create_canary_deployment_validation(
@@ -351,56 +360,161 @@ class TestStageCrudCanary:
             )
         snapshot.match("create-canary-deployment-non-existing-stage", e.value.response)
 
-        # create_canary_deployment = aws_client.apigateway.create_deployment(restApiId=api_id)
-        # snapshot.match("create-canary-deployment", create_deployment_1)
-        # canary_deployment_id = create_deployment_1["id"]
+    @markers.aws.validated
+    def test_update_stage_canary_deployment_validation(
+        self, create_api_for_deployment, aws_client, create_rest_apigw, snapshot
+    ):
+        api_id, resource_id = create_api_for_deployment()
 
-        # with pytest.raises(ClientError) as e:
-        #     aws_client.apigateway.update_stage(
-        #         restApiId=api_id,
-        #         stageName="s1",
-        #         patchOperations=[
-        #             {"op": "replace", "path": "/documentation_version", "value": "123"}
-        #         ],
-        #     )
-        # snapshot.match("error-update-doc-version", e.value.response)
-        #
-        # with pytest.raises(ClientError) as ctx:
-        #     client.update_stage(
-        #         restApiId=api_id,
-        #         stageName="s1",
-        #         patchOperations=[
-        #             {"op": "replace", "path": "/tags/tag1", "value": "value1"},
-        #         ],
-        #     )
-        # snapshot.match("error-update-tags", ctx.value.response)
-        #
-        # # update & get stage
-        # response = client.update_stage(
-        #     restApiId=api_id,
-        #     stageName="s1",
-        #     patchOperations=[
-        #         {"op": "replace", "path": "/description", "value": "stage new"},
-        #         {"op": "replace", "path": "/variables/var1", "value": "test"},
-        #         {"op": "replace", "path": "/variables/var2", "value": "test2"},
-        #         {"op": "replace", "path": "/*/*/throttling/burstLimit", "value": "123"},
-        #         {"op": "replace", "path": "/*/*/caching/enabled", "value": "true"},
-        #         {"op": "replace", "path": "/tracingEnabled", "value": "true"},
-        #         {"op": "replace", "path": "/test/GET/throttling/burstLimit", "value": "124"},
-        #     ],
-        # )
-        # snapshot.match("update-stage", response)
-        #
-        # response = client.get_stage(restApiId=api_id, stageName="s1")
-        # snapshot.match("get-stage", response)
-        #
-        # # show that updating */* does not override previously set values, only
-        # # provides default values then like shown above
-        # response = client.update_stage(
-        #     restApiId=api_id,
-        #     stageName="s1",
-        #     patchOperations=[
-        #         {"op": "replace", "path": "/*/*/throttling/burstLimit", "value": "100"},
-        #     ],
-        # )
-        # snapshot.match("update-stage-override", response)
+        stage_name = "dev"
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+        aws_client.apigateway.create_deployment(
+            restApiId=api_id,
+            stageName=stage_name,
+            canarySettings={
+                "percentTraffic": 50,
+                "stageVariableOverrides": {
+                    "testVar": "canary",
+                },
+            },
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_stage(
+                restApiId=api_id,
+                stageName=stage_name,
+                patchOperations=[
+                    {"op": "remove", "path": "/canarySettings/stageVariableOverrides"},
+                ],
+            )
+        snapshot.match("update-stage-canary-settings-remove-overrides", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_stage(
+                restApiId=api_id,
+                stageName=stage_name,
+                patchOperations=[
+                    {"op": "remove", "path": "/canarySettings/badPath"},
+                ],
+            )
+        snapshot.match("update-stage-canary-settings-bad-path", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_stage(
+                restApiId=api_id,
+                stageName=stage_name,
+                patchOperations=[
+                    {"op": "replace", "path": "/canarySettings/badPath", "value": "badPath"},
+                ],
+            )
+        snapshot.match("update-stage-canary-settings-replace-bad-path", e.value.response)
+
+        # create deployment and stage with no canary settings
+        stage_no_canary = "dev2"
+        deployment_2 = aws_client.apigateway.create_deployment(
+            restApiId=api_id, stageName=stage_no_canary
+        )
+        deployment_2_id = deployment_2["id"]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_stage(
+                restApiId=api_id,
+                stageName=stage_no_canary,
+                patchOperations=[
+                    # you need to use replace for every canarySettings, `add` is not supported
+                    {"op": "add", "path": "/canarySettings/deploymentId", "value": deployment_2_id},
+                ],
+            )
+        snapshot.match("update-stage-add-deployment", e.value.response)
+
+
+class TestCanaryDeployments:
+    @markers.aws.validated
+    def test_invoking_canary_deployment(self, aws_client, create_api_for_deployment, snapshot):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("deploymentId"),
+                snapshot.transform.key_value("id"),
+            ]
+        )
+        api_id, resource_id = create_api_for_deployment(
+            response_template={
+                "statusCode": 200,
+                "message": "default deployment",
+                "variable": "$stageVariables.testVar",
+                "nonExistingDefault": "$stageVariables.noStageVar",
+                "isCanary": "$context.isCanaryRequest",
+            }
+        )
+
+        stage_name = "dev"
+        create_deployment_1 = aws_client.apigateway.create_deployment(
+            restApiId=api_id,
+            stageName=stage_name,
+            variables={"testVar": "default"},
+        )
+        snapshot.match("create-deployment-1", create_deployment_1)
+
+        aws_client.apigateway.update_integration_response(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            patchOperations=[
+                {
+                    "op": "replace",
+                    "path": "/responseTemplates/application~1json",
+                    "value": json.dumps(
+                        {
+                            "statusCode": 200,
+                            "message": "canary deployment",
+                            "variable": "$stageVariables.testVar",
+                            "nonExistingDefault": "$stageVariables.noStageVar",
+                            "isCanary": "$context.isCanaryRequest",
+                        }
+                    ),
+                }
+            ],
+        )
+
+        create_deployment_2 = aws_client.apigateway.create_deployment(
+            restApiId=api_id,
+            stageName=stage_name,
+            canarySettings={
+                "percentTraffic": 0,
+                "stageVariableOverrides": {
+                    "testVar": "canary",
+                    "noStageVar": "canary",
+                },
+            },
+        )
+        snapshot.match("create-deployment-2", create_deployment_2)
+
+        invocation_url = api_invoke_url(api_id=api_id, stage=stage_name, path="/")
+
+        def invoke_api(url: str, expected: str) -> dict:
+            _response = requests.get(url, verify=False)
+            assert _response.ok
+            response_content = _response.json()
+            assert expected in response_content["message"]
+            return response_content
+
+        response_data = retry(
+            invoke_api, sleep=2, retries=10, url=invocation_url, expected="default"
+        )
+        snapshot.match("response-deployment-1", response_data)
+
+        # update stage to always redirect to canary
+        update_stage = aws_client.apigateway.update_stage(
+            restApiId=api_id,
+            stageName=stage_name,
+            patchOperations=[
+                {"op": "replace", "path": "/canarySettings/percentTraffic", "value": "100.0"},
+            ],
+        )
+        snapshot.match("update-stage", update_stage)
+
+        response_data = retry(
+            invoke_api, sleep=2, retries=10, url=invocation_url, expected="canary"
+        )
+        snapshot.match("response-canary-deployment", response_data)
