@@ -3980,6 +3980,37 @@ class TestS3:
         assert resp.ok
         assert b"<Bucket" in resp.content
 
+    @markers.aws.only_localstack
+    def test_virtual_host_parsing_with_non_prefixed_endpoint(
+        self, s3_bucket, aws_client_factory, cleanups, aws_client, s3_empty_bucket
+    ):
+        non_prefixed_endpoint = config.internal_service_url(host=LOCALHOST_HOSTNAME)
+        assert "s3." not in non_prefixed_endpoint
+        s3_client = aws_client_factory(
+            config=Config(s3={"addressing_style": "virtual"}),
+            endpoint_url=non_prefixed_endpoint,
+        ).s3
+        bucket_name = f"bucket-{short_uid()}"
+        response = s3_client.create_bucket(Bucket=bucket_name)
+        cleanups.append(lambda: aws_client.s3.delete_bucket(Bucket=bucket_name))
+        cleanups.append(lambda: s3_empty_bucket(bucket_name))
+        assert bucket_name in response["Location"]
+
+        response = s3_client.put_object(Bucket=bucket_name, Key="test/key", Body="test")
+        assert response["ETag"]
+
+        response = s3_client.get_object(Bucket=bucket_name, Key="test/key")
+        assert response["Body"].read() == b"test"
+
+        list_buckets = s3_client.list_buckets()
+        assert len(list_buckets["Buckets"]) >= 2
+        bucket_names = [bucket["Name"] for bucket in list_buckets["Buckets"]]
+        assert s3_bucket in bucket_names
+        assert bucket_name in bucket_names
+
+        list_objects = s3_client.list_objects_v2(Bucket=bucket_name)
+        assert len(list_objects["Contents"]) >= 1
+
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="Lambda not enabled in S3 image")
     @markers.skip_offline
     @markers.aws.validated
