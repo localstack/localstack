@@ -59,7 +59,6 @@ class SdkDockerClient(ContainerClient):
     docker_client: Optional[DockerClient]
 
     def __init__(self):
-        super().__init__()
         try:
             self.docker_client = self._create_client()
             logging.getLogger("urllib3").setLevel(logging.INFO)
@@ -468,6 +467,7 @@ class SdkDockerClient(ContainerClient):
         pull: bool = True,
         strip_wellknown_repo_prefixes: bool = True,
     ) -> Dict[str, Union[dict, list, str]]:
+        image_name = self.registry_resolver_strategy.resolve(image_name)
         try:
             result = self.client().images.get(image_name).attrs
             if strip_wellknown_repo_prefixes:

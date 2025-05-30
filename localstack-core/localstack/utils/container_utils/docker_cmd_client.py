@@ -356,6 +356,7 @@ class CmdDockerClient(ContainerClient):
 
     def pull_image(self, docker_image: str, platform: Optional[DockerPlatform] = None) -> None:
         cmd = self._docker_cmd()
+        docker_image = self.registry_resolver_strategy.resolve(docker_image)
         cmd += ["pull", docker_image]
         if platform:
             cmd += ["--platform", platform]
@@ -518,6 +519,7 @@ class CmdDockerClient(ContainerClient):
         pull: bool = True,
         strip_wellknown_repo_prefixes: bool = True,
     ) -> Dict[str, Union[dict, list, str]]:
+        image_name = self.registry_resolver_strategy.resolve(image_name)
         try:
             result = self._inspect_object(image_name)
             if strip_wellknown_repo_prefixes:
@@ -656,6 +658,7 @@ class CmdDockerClient(ContainerClient):
             return False
 
     def create_container(self, image_name: str, **kwargs) -> str:
+        image_name = self.registry_resolver_strategy.resolve(image_name)
         cmd, env_file = self._build_run_create_cmd("create", image_name, **kwargs)
         LOG.debug("Create container with cmd: %s", cmd)
         try:
@@ -674,6 +677,7 @@ class CmdDockerClient(ContainerClient):
             Util.rm_env_vars_file(env_file)
 
     def run_container(self, image_name: str, stdin=None, **kwargs) -> Tuple[bytes, bytes]:
+        image_name = self.registry_resolver_strategy.resolve(image_name)
         cmd, env_file = self._build_run_create_cmd("run", image_name, **kwargs)
         LOG.debug("Run container with cmd: %s", cmd)
         try:
