@@ -329,6 +329,17 @@ class TestStageCrudCanary:
         )
         snapshot.match("update-stage-with-percent", update_stage)
 
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_stage(
+                restApiId=api_id,
+                stageName=stage_name,
+                patchOperations=[
+                    {"op": "replace", "path": "/canarySettings/deploymentId", "value": "deploy"}
+                ],
+            )
+
+        snapshot.match("wrong-deployment-id", e.value.response)
+
     @markers.aws.validated
     def test_create_canary_deployment_validation(
         self, create_api_for_deployment, aws_client, create_rest_apigw, snapshot
@@ -426,6 +437,71 @@ class TestStageCrudCanary:
                 ],
             )
         snapshot.match("update-stage-add-deployment", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_stage(
+                restApiId=api_id,
+                stageName=stage_no_canary,
+                patchOperations=[
+                    {"op": "replace", "path": "/canarySettings/deploymentId", "value": "deploy"},
+                ],
+            )
+        snapshot.match("update-stage-no-deployment", e.value.response)
+
+    @markers.aws.validated
+    def test_update_stage_with_copy_ops(
+        self, create_api_for_deployment, aws_client, create_rest_apigw, snapshot
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("deploymentId"),
+                snapshot.transform.key_value("id"),
+            ]
+        )
+        api_id, resource_id = create_api_for_deployment()
+
+        stage_name = "dev"
+        aws_client.apigateway.create_deployment(
+            restApiId=api_id,
+            stageName=stage_name,
+            variables={
+                "testVar": "test",
+                "testVar2": "test2",
+            },
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_stage(
+                restApiId=api_id,
+                stageName=stage_name,
+                patchOperations=[
+                    {
+                        "op": "copy",
+                        "from": "/canarySettings/stageVariableOverrides",
+                        "path": "/variables",
+                    },
+                    {"op": "copy", "from": "/canarySettings/deploymentId", "path": "/deploymentId"},
+                ],
+            )
+        snapshot.match("copy-with-no-replace", e.value.response)
+
+        update_stage = aws_client.apigateway.update_stage(
+            restApiId=api_id,
+            stageName=stage_name,
+            patchOperations=[
+                {"op": "replace", "value": "0.0", "path": "/canarySettings/percentTraffic"},
+                # copy is said to be unsupported, but it is partially. It actually doesn't copy, just apply the first
+                # call above, create the canary with default params and ignore what's under
+                # https://docs.aws.amazon.com/apigateway/latest/api/patch-operations.html#UpdateStage-Patch
+                {"op": "copy", "from": "/canarySettings/deploymentId", "path": "/deploymentId"},
+                {
+                    "op": "copy",
+                    "from": "/canarySettings/stageVariableOverrides",
+                    "path": "/variables",
+                },
+            ],
+        )
+        snapshot.match("update-stage-with-copy", update_stage)
 
 
 class TestCanaryDeployments:

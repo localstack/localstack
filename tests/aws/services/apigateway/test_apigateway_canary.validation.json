@@ -6,7 +6,7 @@
     "last_validated_date": "2025-05-30T16:54:51+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_create_canary_deployment_by_stage_update": {
-    "last_validated_date": "2025-05-30T16:52:40+00:00"
+    "last_validated_date": "2025-05-30T19:03:13+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_create_canary_deployment_validation": {
     "last_validated_date": "2025-05-30T16:55:48+00:00"
@@ -18,6 +18,9 @@
     "last_validated_date": "2025-05-30T16:53:20+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_update_stage_canary_deployment_validation": {
-    "last_validated_date": "2025-05-30T16:56:23+00:00"
+    "last_validated_date": "2025-05-30T19:00:50+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_update_stage_with_copy_ops": {
+    "last_validated_date": "2025-05-30T18:06:48+00:00"
   }
 }

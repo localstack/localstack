@@ -299,7 +299,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_create_canary_deployment_by_stage_update": {
-    "recorded-date": "30-05-2025, 16:52:40",
+    "recorded-date": "30-05-2025, 19:03:13",
     "recorded-content": {
       "create-deployment": {
         "createdDate": "datetime",
@@ -398,6 +398,17 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "wrong-deployment-id": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Deployment id does not exist"
+        },
+        "message": "Deployment id does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
       }
     }
   },
@@ -429,7 +440,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_update_stage_canary_deployment_validation": {
-    "recorded-date": "30-05-2025, 16:56:23",
+    "recorded-date": "30-05-2025, 19:00:50",
     "recorded-content": {
       "update-stage-canary-settings-remove-overrides": {
         "Error": {
@@ -470,6 +481,17 @@
           "Message": "Invalid add operation with path: /canarySettings/deploymentId"
         },
         "message": "Invalid add operation with path: /canarySettings/deploymentId",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-stage-no-deployment": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Deployment id does not exist"
+        },
+        "message": "Deployment id does not exist",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -538,6 +560,45 @@
         "nonOverridden": "default",
         "statusCode": 200,
         "variable": "canary"
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_update_stage_with_copy_ops": {
+    "recorded-date": "30-05-2025, 18:06:48",
+    "recorded-content": {
+      "copy-with-no-replace": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Promotion not available. Canary does not exist."
+        },
+        "message": "Promotion not available. Canary does not exist.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-stage-with-copy": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "canarySettings": {
+          "deploymentId": "<deployment-id:1>",
+          "percentTraffic": 0.0,
+          "useStageCache": false
+        },
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "variables": {
+          "testVar": "test",
+          "testVar2": "test2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   }
