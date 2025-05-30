@@ -601,8 +601,7 @@ class HardCodedResolver:
 # TODO: remove Docker/Podman compatibility switches (in particular strip_wellknown_repo_prefixes=...)
 #  from the container client base interface and introduce derived Podman client implementations instead!
 class ContainerClient(metaclass=ABCMeta):
-    def __init__(self):
-        self.registry_resolver_strategy: RegistryResolverStrategy = HardCodedResolver()
+    registry_resolver_strategy: RegistryResolverStrategy = HardCodedResolver()
 
     @abstractmethod
     def get_system_info(self) -> dict:
