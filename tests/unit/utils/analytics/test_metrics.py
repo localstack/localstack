@@ -100,7 +100,7 @@ def test_metric_registry_register_and_collect():
     )
     counter.increment(value=7)
     collected_metrics = registry.collect()
-    assert any(metric.value == 7 for metric in collected_metrics.snapshots), (
+    assert any(metric.value == 7 for metric in collected_metrics.payload), (
         f"Unexpected collected metrics: {collected_metrics}"
     )
 
