@@ -4,7 +4,7 @@ import json
 import logging
 import re
 from copy import deepcopy
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import IO, Any
 
 from moto.apigateway import models as apigw_models
@@ -360,7 +360,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
             fixed_patch_ops.append(patch_op)
 
-        _patch_api_gateway_entity(rest_api, fixed_patch_ops)
+        patch_api_gateway_entity(rest_api, fixed_patch_ops)
 
         # fix data types after patches have been applied
         endpoint_configs = rest_api.endpoint_configuration or {}
@@ -684,7 +684,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     )
 
         # TODO: test with multiple patch operations which would not be compatible between each other
-        _patch_api_gateway_entity(moto_resource, patch_operations)
+        patch_api_gateway_entity(moto_resource, patch_operations)
 
         # after setting it, mutate the store
         if moto_resource.parent_id != current_parent_id:
@@ -914,7 +914,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 ]
 
         # TODO: test with multiple patch operations which would not be compatible between each other
-        _patch_api_gateway_entity(moto_method, applicable_patch_operations)
+        patch_api_gateway_entity(moto_method, applicable_patch_operations)
 
         # if we removed all values of those fields, set them to None so that they're not returned anymore
         if had_req_params and len(moto_method.request_parameters) == 0:
@@ -985,8 +985,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     # TODO: add createdDate / lastUpdatedDate in Stage operations below!
     @handler("CreateStage", expand=False)
     def create_stage(self, context: RequestContext, request: CreateStageRequest) -> Stage:
-        # TODO: we need to internalize Stages and Deployments in LocalStack, we have a lot of split logic
-
         call_moto(context)
         moto_api = get_moto_rest_api(context, rest_api_id=request["restApiId"])
         stage = moto_api.stages.get(request["stageName"])
@@ -995,26 +993,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         if not hasattr(stage, "documentation_version"):
             stage.documentation_version = request.get("documentationVersion")
-
-        if not hasattr(stage, "canary_settings"):
-            # TODO: validate canarySettings
-            if canary_settings := request.get("canarySettings"):
-                if (
-                    deployment_id := canary_settings.get("deploymentId")
-                ) and deployment_id not in moto_api.deployments:
-                    raise BadRequestException("Deployment id does not exist")
-
-                default_settings = {
-                    "deploymentId": stage.deployment_id,
-                    "percentTraffic": 0.0,
-                    "useStageCache": False,
-                }
-                default_settings.update(canary_settings)
-                stage.canary_settings = default_settings
-            else:
-                stage.canary_settings = None
-
-        # TODO: add createdData, lastUpdatedData
 
         # make sure we update the stage_name on the deployment entity in moto
         deployment = moto_api.deployments.get(request["deploymentId"])
@@ -1050,7 +1028,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         patch_operations: ListOfPatchOperation = None,
         **kwargs,
     ) -> Stage:
-        moto_rest_api = get_moto_rest_api(context, rest_api_id)
+        call_moto(context)
+
+        moto_backend = get_moto_backend(context.account_id, context.region)
+        moto_rest_api: MotoRestAPI = moto_backend.apis.get(rest_api_id)
         if not (moto_stage := moto_rest_api.stages.get(stage_name)):
             raise NotFoundException("Invalid Stage identifier specified")
 
@@ -1059,17 +1040,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         # copy the patch operations to not mutate them, so that we're logging the correct input
         patch_operations = copy.deepcopy(patch_operations) or []
-        # we are only passing a subset of operations to Moto as it does not handle properly all of them
-        moto_patch_operations = []
-        moto_stage_copy = copy.deepcopy(moto_stage)
         for patch_operation in patch_operations:
-            skip_moto_apply = False
             patch_path = patch_operation["path"]
-            patch_op = patch_operation["op"]
 
             # special case: handle updates (op=remove) for wildcard method settings
             patch_path_stripped = patch_path.strip("/")
-            if patch_path_stripped == "*/*" and patch_op == "remove":
+            if patch_path_stripped == "*/*" and patch_operation["op"] == "remove":
                 if not moto_stage.method_settings.pop(patch_path_stripped, None):
                     raise BadRequestException(
                         "Cannot remove method setting */* because there is no method setting for this method "
@@ -1081,39 +1057,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             path_valid = patch_path in STAGE_UPDATE_PATHS or any(
                 re.match(regex, patch_path) for regex in path_regexes
             )
-            if is_canary := patch_path.startswith("/canarySettings"):
-                skip_moto_apply = True
-                path_valid = is_canary_settings_update_patch_valid(op=patch_op, path=patch_path)
-                # it seems our JSON Patch utility does not handle replace properly if the value does not exists before
-                # it seems to maybe be a Stage-only thing, so replacing it here
-                if patch_op == "replace":
-                    patch_operation["op"] = "add"
-
-            if patch_op == "copy":
-                copy_from = patch_operation.get("from")
-                if patch_path not in ("/deploymentId", "/variables") or copy_from not in (
-                    "/canarySettings/deploymentId",
-                    "/canarySettings/stageVariableOverrides",
-                ):
-                    raise BadRequestException(
-                        "Invalid copy operation with path: /canarySettings/stageVariableOverrides and from /variables. Valid copy:path are [/deploymentId, /variables] and valid copy:from are [/canarySettings/deploymentId, /canarySettings/stageVariableOverrides]"
-                    )
-
-                if copy_from.startswith("/canarySettings") and not getattr(
-                    moto_stage_copy, "canary_settings", None
-                ):
-                    raise BadRequestException("Promotion not available. Canary does not exist.")
-
-                if patch_path == "/variables":
-                    moto_stage_copy.variables.update(
-                        moto_stage_copy.canary_settings.get("stageVariableOverrides", {})
-                    )
-                elif patch_path == "/deploymentId":
-                    moto_stage_copy.deployment_id = moto_stage_copy.canary_settings["deploymentId"]
-
-                # we manually assign `copy` ops, no need to apply them
-                continue
-
             if not path_valid:
                 valid_paths = f"[{', '.join(STAGE_UPDATE_PATHS)}]"
                 # note: weird formatting in AWS - required for snapshot testing
@@ -1131,33 +1074,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             if patch_path == "/tracingEnabled" and (value := patch_operation.get("value")):
                 patch_operation["value"] = value and value.lower() == "true" or False
 
-            elif patch_path in ("/canarySettings/deploymentId", "/deploymentId"):
-                if patch_op != "copy" and not moto_rest_api.deployments.get(
-                    patch_operation.get("value")
-                ):
-                    raise BadRequestException("Deployment id does not exist")
+        patch_api_gateway_entity(moto_stage, patch_operations)
+        moto_stage.apply_operations(patch_operations)
 
-            if not skip_moto_apply:
-                # we need to copy the patch operation because `_patch_api_gateway_entity` is mutating it in place
-                moto_patch_operations.append(dict(patch_operation))
-
-            # we need to apply patch operation individually to be able to validate the logic
-            _patch_api_gateway_entity(moto_stage_copy, [patch_operation])
-            if is_canary and (canary_settings := getattr(moto_stage_copy, "canary_settings", None)):
-                default_canary_settings = {
-                    "deploymentId": moto_stage_copy.deployment_id,
-                    "percentTraffic": 0.0,
-                    "useStageCache": False,
-                }
-                default_canary_settings.update(canary_settings)
-                moto_stage_copy.canary_settings = default_canary_settings
-
-        moto_rest_api.stages[stage_name] = moto_stage_copy
-        moto_stage_copy.apply_operations(moto_patch_operations)
-
-        moto_stage_copy.last_updated_date = datetime.now(tz=UTC)
-
-        response = moto_stage_copy.to_json()
+        response = moto_stage.to_json()
         self._patch_stage_response(response)
         return response
 
@@ -1544,7 +1464,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if not result:
             raise NotFoundException(f"Documentation version not found: {documentation_version}")
 
-        _patch_api_gateway_entity(result, patch_operations)
+        patch_api_gateway_entity(result, patch_operations)
 
         return result
 
@@ -2091,7 +2011,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             raise NotFoundException("Invalid Integration identifier specified")
 
         integration = method.method_integration
-        _patch_api_gateway_entity(integration, patch_operations)
+        patch_api_gateway_entity(integration, patch_operations)
 
         # fix data types
         if integration.timeout_in_millis:
@@ -2697,7 +2617,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                                 f"Invalid null or empty value in {param_type}"
                             )
 
-        _patch_api_gateway_entity(patched_entity, patch_operations)
+        patch_api_gateway_entity(patched_entity, patch_operations)
 
         return patched_entity
 
@@ -2819,7 +2739,7 @@ def create_custom_context(
     return ctx
 
 
-def _patch_api_gateway_entity(entity: Any, patch_operations: ListOfPatchOperation):
+def patch_api_gateway_entity(entity: Any, patch_operations: ListOfPatchOperation):
     patch_operations = patch_operations or []
 
     if isinstance(entity, dict):
@@ -2914,33 +2834,6 @@ def to_response_json(model_type, data, api_id=None, self_link=None, id_attr=None
     }
     result["_links"]["%s:delete" % model_type] = {"href": self_link}
     return result
-
-
-def is_canary_settings_update_patch_valid(op: str, path: str) -> bool:
-    path_regexes = (
-        r"\/canarySettings\/percentTraffic",
-        r"\/canarySettings\/deploymentId",
-        r"\/canarySettings\/stageVariableOverrides\/.+",
-        r"\/canarySettings\/useStageCache",
-    )
-    if path == "/canarySettings" and op == "remove":
-        return True
-
-    matches_path = any(re.match(regex, path) for regex in path_regexes)
-
-    if op not in ("replace", "copy"):
-        if matches_path:
-            raise BadRequestException(f"Invalid {op} operation with path: {path}")
-
-        raise BadRequestException(
-            f"Cannot {op} method setting {path.lstrip('/')} because there is no method setting for this method "
-        )
-
-    # stageVariableOverrides is a bit special as it's nested, it doesn't return the same error message
-    if not matches_path and path != "/canarySettings/stageVariableOverrides":
-        return False
-
-    return True
 
 
 DEFAULT_EMPTY_MODEL = Model(
