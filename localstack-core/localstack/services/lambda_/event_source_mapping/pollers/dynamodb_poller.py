@@ -7,6 +7,7 @@ from localstack.aws.api.dynamodbstreams import StreamStatus
 from localstack.services.lambda_.event_source_mapping.event_processor import (
     EventProcessor,
 )
+from localstack.services.lambda_.event_source_mapping.pipe_utils import get_current_time
 from localstack.services.lambda_.event_source_mapping.pollers.stream_poller import StreamPoller
 
 LOG = logging.getLogger(__name__)
@@ -21,6 +22,7 @@ class DynamoDBPoller(StreamPoller):
         processor: EventProcessor | None = None,
         partner_resource_arn: str | None = None,
         esm_uuid: str | None = None,
+        shards: dict[str, str] | None = None,
     ):
         super().__init__(
             source_arn,
@@ -29,6 +31,7 @@ class DynamoDBPoller(StreamPoller):
             processor,
             esm_uuid=esm_uuid,
             partner_resource_arn=partner_resource_arn,
+            shards=shards,
         )
 
     @property
@@ -107,7 +110,7 @@ class DynamoDBPoller(StreamPoller):
         # Optional according to AWS docs:
         # https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_streams_StreamRecord.html
         # TODO: parse float properly if present from ApproximateCreationDateTime -> now works, compare via debug!
-        return record["dynamodb"].get("todo", datetime.utcnow().timestamp())
+        return record["dynamodb"].get("todo", get_current_time().timestamp())
 
     def format_datetime(self, time: datetime) -> str:
         return f"{time.isoformat(timespec='seconds')}Z"
