@@ -103,40 +103,44 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         `after` delta with the physical resource ID, if side effects resulted in an update.
         """
         delta = super().visit_node_resource(node_resource=node_resource)
-        self._execute_on_resource_change(
-            name=node_resource.name, before=delta.before, after=delta.after
-        )
-        after_resource = delta.after
-        if after_resource is not None and delta.before != delta.after:
-            after_logical_id = after_resource.logical_id
-            after_physical_id: Optional[str] = self._after_resource_physical_id(
+        before = delta.before
+        after = delta.after
+
+        if before != after:
+            # There are changes for this resource.
+            self._execute_resource_change(name=node_resource.name, before=before, after=after)
+        else:
+            # There are no updates for this resource; iff the resource was previously
+            # deployed, then the resolved details are copied in the current state for
+            # references or other downstream operations.
+            if before is not None:
+                before_logical_id = delta.before.logical_id
+                before_resource = self._before_resolved_resources.get(before_logical_id, dict())
+                self.resources[before_logical_id] = before_resource
+
+        # Update the latest version of this resource for downstream references.
+        if after is not None:
+            after_logical_id = after.logical_id
+            after_physical_id: str = self._after_resource_physical_id(
                 resource_logical_id=after_logical_id
             )
-            if after_physical_id is None:
-                raise RuntimeError(
-                    f"No PhysicalResourceId was found for resource '{after_physical_id}' post-update."
-                )
-            after_resource.physical_resource_id = after_physical_id
+            after.physical_resource_id = after_physical_id
         return delta
 
     def visit_node_output(
         self, node_output: NodeOutput
     ) -> PreprocEntityDelta[PreprocOutput, PreprocOutput]:
         delta = super().visit_node_output(node_output=node_output)
-        if delta.after is None:
-            # handling deletion so the output does not really matter
-            # TODO: are there other situations?
+        after = delta.after
+        if after is None or (isinstance(after, PreprocOutput) and after.condition is False):
             return delta
-
         self.outputs[delta.after.name] = delta.after.value
         return delta
 
-    def _execute_on_resource_change(
+    def _execute_resource_change(
         self, name: str, before: Optional[PreprocResource], after: Optional[PreprocResource]
     ) -> None:
-        if before == after:
-            # unchanged: nothing to do.
-            return
+        # Changes are to be made about this resource.
         # TODO: this logic is a POC and should be revised.
         if before is not None and after is not None:
             # Case: change on same type.
@@ -257,11 +261,34 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             case OperationStatus.SUCCESS:
                 # merge the resources state with the external state
                 # TODO: this is likely a duplicate of updating from extra_resource_properties
+
+                # TODO: add typing
+                # TODO: avoid the use of string literals for sampling from the object, use typed classes instead
+                # TODO: avoid sampling from resources and use tmp var reference
+                # TODO: add utils functions to abstract this logic away (resource.update(..))
+                # TODO: avoid the use of setdefault (debuggability/readability)
+                # TODO: review the use of merge
+
                 self.resources[logical_resource_id]["Properties"].update(event.resource_model)
                 self.resources[logical_resource_id].update(extra_resource_properties)
                 # XXX for legacy delete_stack compatibility
                 self.resources[logical_resource_id]["LogicalResourceId"] = logical_resource_id
                 self.resources[logical_resource_id]["Type"] = resource_type
+
+                # TODO: review why the physical id is returned as None during updates
+                # TODO: abstract this in member function of resource classes instead
+                physical_resource_id = None
+                try:
+                    physical_resource_id = self._after_resource_physical_id(logical_resource_id)
+                except RuntimeError:
+                    # The physical id is missing or is set to None, which is invalid.
+                    pass
+                if physical_resource_id is None:
+                    # The physical resource id is None after an update that didn't rewrite the resource, the previous
+                    # resource id is therefore the current physical id of this resource.
+                    physical_resource_id = self._before_resource_physical_id(logical_resource_id)
+                    self.resources[logical_resource_id]["PhysicalResourceId"] = physical_resource_id
+
             case OperationStatus.FAILED:
                 reason = event.message
                 LOG.warning(

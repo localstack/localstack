@@ -4,7 +4,7 @@ from typing import Callable
 
 import pytest
 
-from localstack.aws.api.cloudformation import StackEvent
+from localstack.aws.api.cloudformation import DescribeChangeSetOutput, StackEvent
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
@@ -27,6 +27,12 @@ def capture_per_resource_events(
         return per_resource_events
 
     return capture
+
+
+def _normalise_describe_change_set_output(value: DescribeChangeSetOutput) -> None:
+    value.get("Changes", list()).sort(
+        key=lambda change: change.get("ResourceChange", dict()).get("LogicalResourceId", str())
+    )
 
 
 @pytest.fixture
@@ -64,6 +70,11 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
             ChangeSetName=change_set_name,
             TemplateBody=t1,
             ChangeSetType="CREATE",
+            Capabilities=[
+                "CAPABILITY_IAM",
+                "CAPABILITY_NAMED_IAM",
+                "CAPABILITY_AUTO_EXPAND",
+            ],
             Parameters=[{"ParameterKey": k, "ParameterValue": v} for (k, v) in p1.items()],
         )
         snapshot.match("create-change-set-1", change_set_details)
@@ -84,12 +95,15 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
                 ChangeSetName=change_set_id, IncludePropertyValues=True
             )
         )
+        _normalise_describe_change_set_output(describe_change_set_with_prop_values)
         snapshot.match("describe-change-set-1-prop-values", describe_change_set_with_prop_values)
+
         describe_change_set_without_prop_values = (
             aws_client_no_retry.cloudformation.describe_change_set(
                 ChangeSetName=change_set_id, IncludePropertyValues=False
             )
         )
+        _normalise_describe_change_set_output(describe_change_set_without_prop_values)
         snapshot.match("describe-change-set-1", describe_change_set_without_prop_values)
 
         execute_results = aws_client_no_retry.cloudformation.execute_change_set(
@@ -119,6 +133,11 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
             TemplateBody=t2,
             ChangeSetType="UPDATE",
             Parameters=[{"ParameterKey": k, "ParameterValue": v} for (k, v) in p2.items()],
+            Capabilities=[
+                "CAPABILITY_IAM",
+                "CAPABILITY_NAMED_IAM",
+                "CAPABILITY_AUTO_EXPAND",
+            ],
         )
         snapshot.match("create-change-set-2", change_set_details)
         stack_id = change_set_details["StackId"]
@@ -132,12 +151,15 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
                 ChangeSetName=change_set_id, IncludePropertyValues=True
             )
         )
+        _normalise_describe_change_set_output(describe_change_set_with_prop_values)
         snapshot.match("describe-change-set-2-prop-values", describe_change_set_with_prop_values)
+
         describe_change_set_without_prop_values = (
             aws_client_no_retry.cloudformation.describe_change_set(
                 ChangeSetName=change_set_id, IncludePropertyValues=False
             )
         )
+        _normalise_describe_change_set_output(describe_change_set_without_prop_values)
         snapshot.match("describe-change-set-2", describe_change_set_without_prop_values)
 
         execute_results = aws_client_no_retry.cloudformation.execute_change_set(

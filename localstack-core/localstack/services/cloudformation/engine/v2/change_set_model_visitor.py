@@ -48,7 +48,12 @@ class ChangeSetModelVisitor(abc.ABC):
             self.visit(child)
 
     def visit_node_template(self, node_template: NodeTemplate):
-        self.visit_children(node_template)
+        # Visit the resources, which will lazily evaluate all the referenced (direct and indirect)
+        # entities (parameters, mappings, conditions, etc.). Then compute the output fields; computing
+        # only the output fields would only result in the deployment logic of the referenced outputs
+        # being evaluated, hence enforce the visiting of all the resources first.
+        self.visit(node_template.resources)
+        self.visit(node_template.outputs)
 
     def visit_node_outputs(self, node_outputs: NodeOutputs):
         self.visit_children(node_outputs)
@@ -106,6 +111,14 @@ class ChangeSetModelVisitor(abc.ABC):
     def visit_node_intrinsic_function_fn_equals(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ):
+        self.visit_children(node_intrinsic_function)
+
+    def visit_node_intrinsic_function_fn_transform(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ):
+        self.visit_children(node_intrinsic_function)
+
+    def visit_node_intrinsic_function_fn_sub(self, node_intrinsic_function: NodeIntrinsicFunction):
         self.visit_children(node_intrinsic_function)
 
     def visit_node_intrinsic_function_fn_if(self, node_intrinsic_function: NodeIntrinsicFunction):

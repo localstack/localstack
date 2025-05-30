@@ -1,6 +1,6 @@
 {
   "tests/aws/services/cloudformation/v2/test_change_set_values.py::TestChangeSetValues::test_property_empy_list": {
-    "recorded-date": "05-05-2025, 09:29:10",
+    "recorded-date": "23-05-2025, 17:56:06",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -26,7 +26,6 @@
               },
               "Details": [],
               "LogicalResourceId": "Role",
-              "Replacement": "True",
               "ResourceType": "AWS::Logs::LogGroup",
               "Scope": []
             },
@@ -42,7 +41,6 @@
               },
               "Details": [],
               "LogicalResourceId": "Topic",
-              "Replacement": "True",
               "ResourceType": "AWS::SNS::Topic",
               "Scope": []
             },
@@ -224,7 +222,7 @@
       "per-resource-events": {
         "Role": [
           {
-            "EventId": "Role-ee0fb3e1-9185-484c-bf64-d6940c6bb890",
+            "EventId": "Role-75252f50-c30e-438a-a31f-671c38789f0e",
             "LogicalResourceId": "Role",
             "PhysicalResourceId": "test-name",
             "ResourceStatus": "DELETE_COMPLETE",
@@ -234,7 +232,7 @@
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Role-f162af75-2fcc-4c0a-9b65-88e843ee6d8d",
+            "EventId": "Role-b0bd92dc-5bcc-44e3-8628-8eebb1e8d16d",
             "LogicalResourceId": "Role",
             "PhysicalResourceId": "test-name",
             "ResourceStatus": "DELETE_IN_PROGRESS",
