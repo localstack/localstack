@@ -474,8 +474,22 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_update_stage_canary_deployment_validation": {
-    "recorded-date": "30-05-2025, 20:02:51",
+    "recorded-date": "30-05-2025, 22:27:14",
     "recorded-content": {
+      "get-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "update-stage-canary-settings-remove-overrides": {
         "Error": {
           "Code": "BadRequestException",

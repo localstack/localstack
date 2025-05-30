@@ -1066,7 +1066,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             skip_moto_apply = False
             patch_path = patch_operation["path"]
             patch_op = patch_operation["op"]
-            print(f"{patch_op=}, {patch_operation=}")
 
             # special case: handle updates (op=remove) for wildcard method settings
             patch_path_stripped = patch_path.strip("/")
@@ -1082,7 +1081,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             path_valid = patch_path in STAGE_UPDATE_PATHS or any(
                 re.match(regex, patch_path) for regex in path_regexes
             )
-            if patch_path.startswith("/canarySettings"):
+            if is_canary := patch_path.startswith("/canarySettings"):
                 skip_moto_apply = True
                 path_valid = is_canary_settings_update_patch_valid(op=patch_op, path=patch_path)
                 # it seems our JSON Patch utility does not handle replace properly if the value does not exists before
@@ -1092,7 +1091,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
             if patch_op == "copy":
                 copy_from = patch_operation.get("from")
-                print(f"{copy_from=}, {patch_path=}")
                 if patch_path not in ("/deploymentId", "/variables") or copy_from not in (
                     "/canarySettings/deploymentId",
                     "/canarySettings/stageVariableOverrides",
@@ -1102,15 +1100,19 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     )
 
                 if copy_from.startswith("/canarySettings") and not getattr(
-                    moto_stage, "canary_settings", None
+                    moto_stage_copy, "canary_settings", None
                 ):
                     raise BadRequestException("Promotion not available. Canary does not exist.")
 
-                # moto does not handle this case
-                skip_moto_apply = True
                 if patch_path == "/variables":
-                    # this is a special case for canarySettings
-                    path_valid = True
+                    moto_stage_copy.variables.update(
+                        moto_stage_copy.canary_settings.get("stageVariableOverrides", {})
+                    )
+                elif patch_path == "/deploymentId":
+                    moto_stage_copy.deployment_id = moto_stage_copy.canary_settings["deploymentId"]
+
+                # we manually assign `copy` ops, no need to apply them
+                continue
 
             if not path_valid:
                 valid_paths = f"[{', '.join(STAGE_UPDATE_PATHS)}]"
@@ -1139,21 +1141,18 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 moto_patch_operations.append(patch_operation)
 
             # we need to apply patch operation individually to be able to validate the logic
-            print(f"{patch_operation=}")
-            print(f"{getattr(moto_stage_copy, 'canary_settings', None)=}")
             _patch_api_gateway_entity(moto_stage_copy, [patch_operation])
-            print(f"{getattr(moto_stage_copy, 'canary_settings', None)=}")
+            if is_canary and (canary_settings := getattr(moto_stage_copy, "canary_settings", None)):
+                default_canary_settings = {
+                    "deploymentId": moto_stage_copy.deployment_id,
+                    "percentTraffic": 0.0,
+                    "useStageCache": False,
+                }
+                default_canary_settings.update(canary_settings)
+                moto_stage_copy.canary_settings = default_canary_settings
 
         moto_rest_api.stages[stage_name] = moto_stage_copy
         moto_stage_copy.apply_operations(moto_patch_operations)
-        if canary_settings := getattr(moto_stage_copy, "canary_settings", None):
-            default_canary_settings = {
-                "deploymentId": moto_stage_copy.deployment_id,
-                "percentTraffic": 0.0,
-                "useStageCache": False,
-            }
-            default_canary_settings.update(canary_settings)
-            moto_stage_copy.canary_settings = default_canary_settings
 
         response = moto_stage_copy.to_json()
         self._patch_stage_response(response)

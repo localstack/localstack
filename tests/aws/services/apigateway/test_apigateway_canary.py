@@ -395,10 +395,17 @@ class TestStageCrudCanary:
     def test_update_stage_canary_deployment_validation(
         self, create_api_for_deployment, aws_client, create_rest_apigw, snapshot
     ):
+        snapshot.add_transformer(snapshot.transform.key_value("deploymentId"))
         api_id, resource_id = create_api_for_deployment()
 
         stage_name = "dev"
         aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+        get_stage = aws_client.apigateway.get_stage(
+            restApiId=api_id,
+            stageName=stage_name,
+        )
+        snapshot.match("get-stage", get_stage)
 
         aws_client.apigateway.create_deployment(
             restApiId=api_id,

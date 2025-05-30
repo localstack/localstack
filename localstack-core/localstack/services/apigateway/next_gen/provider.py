@@ -174,12 +174,13 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
                 }
                 default_settings.update(canary_settings)
                 moto_stage.canary_settings = default_settings
+            else:
+                moto_stage.canary_settings = None
 
             if variables:
                 moto_stage.variables = variables
 
-            if stage_description:
-                moto_stage.description = stage_description
+            moto_stage.description = stage_description
 
             if cache_cluster_enabled is not None:
                 moto_stage.cache_cluster_enabled = cache_cluster_enabled
