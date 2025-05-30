@@ -4,7 +4,7 @@ import json
 import logging
 import re
 from copy import deepcopy
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import IO, Any
 
 from moto.apigateway import models as apigw_models
@@ -1138,7 +1138,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     raise BadRequestException("Deployment id does not exist")
 
             if not skip_moto_apply:
-                moto_patch_operations.append(patch_operation)
+                # we need to copy the patch operation because `_patch_api_gateway_entity` is mutating it in place
+                moto_patch_operations.append(dict(patch_operation))
 
             # we need to apply patch operation individually to be able to validate the logic
             _patch_api_gateway_entity(moto_stage_copy, [patch_operation])
@@ -1153,6 +1154,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         moto_rest_api.stages[stage_name] = moto_stage_copy
         moto_stage_copy.apply_operations(moto_patch_operations)
+
+        moto_stage_copy.last_updated_date = datetime.now(tz=UTC)
 
         response = moto_stage_copy.to_json()
         self._patch_stage_response(response)
