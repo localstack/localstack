@@ -310,7 +310,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_create_canary_deployment_by_stage_update": {
-    "recorded-date": "30-05-2025, 19:26:29",
+    "recorded-date": "30-05-2025, 21:04:43",
     "recorded-content": {
       "create-deployment": {
         "createdDate": "datetime",
@@ -388,6 +388,29 @@
         }
       },
       "update-stage-with-percent": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "canarySettings": {
+          "deploymentId": "<deployment-id:1>",
+          "percentTraffic": 50.0,
+          "useStageCache": false
+        },
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "variables": {
+          "testVar": "default"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stage": {
         "cacheClusterEnabled": false,
         "cacheClusterStatus": "NOT_AVAILABLE",
         "canarySettings": {
@@ -586,8 +609,27 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_update_stage_with_copy_ops": {
-    "recorded-date": "30-05-2025, 18:06:48",
+    "recorded-date": "30-05-2025, 21:21:21",
     "recorded-content": {
+      "deployment-1": {
+        "createdDate": "datetime",
+        "id": "<deployment-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "copy-with-bad-statement": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid copy operation with path: /canarySettings/stageVariableOverrides and from /variables. Valid copy:path are [/deploymentId, /variables] and valid copy:from are [/canarySettings/deploymentId, /canarySettings/stageVariableOverrides]"
+        },
+        "message": "Invalid copy operation with path: /canarySettings/stageVariableOverrides and from /variables. Valid copy:path are [/deploymentId, /variables] and valid copy:from are [/canarySettings/deploymentId, /canarySettings/stageVariableOverrides]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "copy-with-no-replace": {
         "Error": {
           "Code": "BadRequestException",
@@ -615,6 +657,66 @@
         "tracingEnabled": false,
         "variables": {
           "testVar": "test",
+          "testVar2": "test2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "deployment-canary": {
+        "createdDate": "datetime",
+        "id": "<deployment-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "canarySettings": {
+          "deploymentId": "<deployment-id:2>",
+          "percentTraffic": 50.0,
+          "stageVariableOverrides": {
+            "testVar": "override"
+          },
+          "useStageCache": false
+        },
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "variables": {
+          "testVar": "test",
+          "testVar2": "test2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-stage-with-copy-2": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "canarySettings": {
+          "deploymentId": "<deployment-id:2>",
+          "percentTraffic": 0.0,
+          "stageVariableOverrides": {
+            "testVar": "override"
+          },
+          "useStageCache": false
+        },
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:2>",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "variables": {
+          "testVar": "override",
           "testVar2": "test2"
         },
         "ResponseMetadata": {

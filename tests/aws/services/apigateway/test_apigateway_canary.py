@@ -341,6 +341,12 @@ class TestStageCrudCanary:
         )
         snapshot.match("update-stage-with-percent", update_stage)
 
+        get_stage = aws_client.apigateway.get_stage(
+            restApiId=api_id,
+            stageName=stage_name,
+        )
+        snapshot.match("get-stage", get_stage)
+
     @markers.aws.validated
     def test_create_canary_deployment_validation(
         self, create_api_for_deployment, aws_client, create_rest_apigw, snapshot
@@ -485,7 +491,7 @@ class TestStageCrudCanary:
         api_id, resource_id = create_api_for_deployment()
 
         stage_name = "dev"
-        aws_client.apigateway.create_deployment(
+        deployment_1 = aws_client.apigateway.create_deployment(
             restApiId=api_id,
             stageName=stage_name,
             variables={
@@ -493,6 +499,22 @@ class TestStageCrudCanary:
                 "testVar2": "test2",
             },
         )
+        snapshot.match("deployment-1", deployment_1)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_stage(
+                restApiId=api_id,
+                stageName=stage_name,
+                patchOperations=[
+                    {
+                        "op": "copy",
+                        "path": "/canarySettings/stageVariableOverrides",
+                        "from": "/variables",
+                    },
+                    {"op": "copy", "path": "/canarySettings/deploymentId", "from": "/deploymentId"},
+                ],
+            )
+        snapshot.match("copy-with-bad-statement", e.value.response)
 
         with pytest.raises(ClientError) as e:
             aws_client.apigateway.update_stage(
@@ -514,6 +536,38 @@ class TestStageCrudCanary:
             stageName=stage_name,
             patchOperations=[
                 {"op": "replace", "value": "0.0", "path": "/canarySettings/percentTraffic"},
+                # the example in the docs is misleading, the copy op only works from a canary to promote it to default
+                {"op": "copy", "from": "/canarySettings/deploymentId", "path": "/deploymentId"},
+                {
+                    "op": "copy",
+                    "from": "/canarySettings/stageVariableOverrides",
+                    "path": "/variables",
+                },
+            ],
+        )
+        snapshot.match("update-stage-with-copy", update_stage)
+
+        deployment_canary = aws_client.apigateway.create_deployment(
+            restApiId=api_id,
+            stageName=stage_name,
+            canarySettings={
+                "percentTraffic": 50,
+                "stageVariableOverrides": {"testVar": "override"},
+            },
+        )
+        snapshot.match("deployment-canary", deployment_canary)
+
+        get_stage = aws_client.apigateway.get_stage(
+            restApiId=api_id,
+            stageName=stage_name,
+        )
+        snapshot.match("get-stage", get_stage)
+
+        update_stage_2 = aws_client.apigateway.update_stage(
+            restApiId=api_id,
+            stageName=stage_name,
+            patchOperations=[
+                {"op": "replace", "value": "0.0", "path": "/canarySettings/percentTraffic"},
                 # copy is said to be unsupported, but it is partially. It actually doesn't copy, just apply the first
                 # call above, create the canary with default params and ignore what's under
                 # https://docs.aws.amazon.com/apigateway/latest/api/patch-operations.html#UpdateStage-Patch
@@ -525,7 +579,7 @@ class TestStageCrudCanary:
                 },
             ],
         )
-        snapshot.match("update-stage-with-copy", update_stage)
+        snapshot.match("update-stage-with-copy-2", update_stage_2)
 
 
 class TestCanaryDeployments:
