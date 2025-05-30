@@ -1,6 +1,6 @@
 {
   "tests/aws/services/apigateway/test_apigateway_canary.py::TestCanaryDeployments::test_invoking_canary_deployment": {
-    "last_validated_date": "2025-05-30T16:27:07+00:00"
+    "last_validated_date": "2025-05-30T17:06:30+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_create_canary_deployment": {
     "last_validated_date": "2025-05-30T16:54:51+00:00"

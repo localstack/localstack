@@ -443,6 +443,7 @@ class TestCanaryDeployments:
                 "message": "default deployment",
                 "variable": "$stageVariables.testVar",
                 "nonExistingDefault": "$stageVariables.noStageVar",
+                "nonOverridden": "$stageVariables.defaultVar",
                 "isCanary": "$context.isCanaryRequest",
             }
         )
@@ -451,7 +452,10 @@ class TestCanaryDeployments:
         create_deployment_1 = aws_client.apigateway.create_deployment(
             restApiId=api_id,
             stageName=stage_name,
-            variables={"testVar": "default"},
+            variables={
+                "testVar": "default",
+                "defaultVar": "default",
+            },
         )
         snapshot.match("create-deployment-1", create_deployment_1)
 
@@ -470,6 +474,7 @@ class TestCanaryDeployments:
                             "message": "canary deployment",
                             "variable": "$stageVariables.testVar",
                             "nonExistingDefault": "$stageVariables.noStageVar",
+                            "nonOverridden": "$stageVariables.defaultVar",
                             "isCanary": "$context.isCanaryRequest",
                         }
                     ),

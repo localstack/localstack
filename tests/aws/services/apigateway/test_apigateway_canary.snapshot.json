@@ -478,7 +478,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_canary.py::TestCanaryDeployments::test_invoking_canary_deployment": {
-    "recorded-date": "30-05-2025, 16:27:07",
+    "recorded-date": "30-05-2025, 17:06:30",
     "recorded-content": {
       "create-deployment-1": {
         "createdDate": "datetime",
@@ -500,6 +500,7 @@
         "isCanary": "false",
         "message": "default deployment",
         "nonExistingDefault": "",
+        "nonOverridden": "default",
         "statusCode": 200,
         "variable": "default"
       },
@@ -522,6 +523,7 @@
         "stageName": "dev",
         "tracingEnabled": false,
         "variables": {
+          "defaultVar": "default",
           "testVar": "default"
         },
         "ResponseMetadata": {
@@ -533,6 +535,7 @@
         "isCanary": "true",
         "message": "canary deployment",
         "nonExistingDefault": "canary",
+        "nonOverridden": "default",
         "statusCode": 200,
         "variable": "canary"
       }
