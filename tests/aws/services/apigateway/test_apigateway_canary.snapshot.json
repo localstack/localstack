@@ -1,0 +1,236 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_create_update_stages": {
+    "recorded-date": "30-05-2025, 13:00:01",
+    "recorded-content": {
+      "create-deployment-1": {
+        "createdDate": "datetime",
+        "id": "e3ddus",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-deployment-2": {
+        "createdDate": "datetime",
+        "id": "g27dxg",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "canarySettings": {
+          "deploymentId": "g27dxg",
+          "percentTraffic": 50.0,
+          "stageVariableOverrides": {
+            "testVar": "canary"
+          },
+          "useStageCache": false
+        },
+        "createdDate": "datetime",
+        "deploymentId": "e3ddus",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "variables": {
+          "testVar": "default"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "canarySettings": {
+          "deploymentId": "g27dxg",
+          "percentTraffic": 50.0,
+          "stageVariableOverrides": {
+            "testVar": "canary"
+          },
+          "useStageCache": false
+        },
+        "createdDate": "datetime",
+        "deploymentId": "e3ddus",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "variables": {
+          "testVar": "default"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-stage-canary-settings-overrides": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "canarySettings": {
+          "deploymentId": "g27dxg",
+          "percentTraffic": 50.0,
+          "stageVariableOverrides": {
+            "testVar": "updated"
+          },
+          "useStageCache": false
+        },
+        "createdDate": "datetime",
+        "deploymentId": "e3ddus",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "variables": {
+          "testVar": "default"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-stage-remove-canary-settings": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "e3ddus",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "variables": {
+          "testVar": "default"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stage-after-remove": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "e3ddus",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "variables": {
+          "testVar": "default"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_create_canary_deployment": {
+    "recorded-date": "30-05-2025, 15:32:07",
+    "recorded-content": {
+      "create-deployment": {
+        "createdDate": "datetime",
+        "id": "vjnf3h",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "canarySettings": {
+          "deploymentId": "vjnf3h",
+          "percentTraffic": 40.0,
+          "stageVariableOverrides": {
+            "testVar": "canary1"
+          },
+          "useStageCache": false
+        },
+        "createdDate": "datetime",
+        "deploymentId": "vjnf3h",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev1",
+        "tracingEnabled": false,
+        "variables": {
+          "testVar": "default"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-canary-deployment": {
+        "createdDate": "datetime",
+        "id": "9g3p39",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-stage-1": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "canarySettings": {
+          "deploymentId": "9g3p39",
+          "percentTraffic": 50.0,
+          "stageVariableOverrides": {
+            "testVar": "canary2"
+          },
+          "useStageCache": false
+        },
+        "createdDate": "datetime",
+        "deploymentId": "vjnf3h",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev1",
+        "tracingEnabled": false,
+        "variables": {
+          "testVar": "default"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-stage-2": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "canarySettings": {
+          "deploymentId": "9g3p39",
+          "percentTraffic": 60.0,
+          "stageVariableOverrides": {
+            "testVar": "canary-overridden"
+          },
+          "useStageCache": false
+        },
+        "createdDate": "datetime",
+        "deploymentId": "vjnf3h",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev2",
+        "tracingEnabled": false,
+        "variables": {
+          "testVar": "default"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
+  }
+}
