@@ -507,10 +507,9 @@ def cmd_start(
     if stack:
         # Validate allowed stacks
         stack_name = stack.split(":")[0]
-        if stack_name.lower() not in ["localstack", "snowflake"]:
-            raise CLIError(
-                f"Invalid stack '{stack_name}'. Only 'localstack' and 'snowflake' are supported."
-            )
+        allowed_stacks = ("localstack", "localstack-pro", "snowflake")
+        if stack_name.lower() not in allowed_stacks:
+            raise CLIError(f"Invalid stack '{stack_name}'. Allowed stacks: {allowed_stacks}.")
 
         # Set IMAGE_NAME, defaulting to :latest if no version specified
         if ":" not in stack:
