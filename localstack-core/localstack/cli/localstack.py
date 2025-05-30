@@ -476,7 +476,7 @@ def _print_service_table(services: Dict[str, str]) -> None:
     "--stack",
     "-s",
     type=str,
-    help="Use a specific LocalStack stack with optional version.",
+    help="Use a specific stack with optional version. Examples: [localstack:4.5, snowflake]",
     required=False,
 )
 @publish_invocation
